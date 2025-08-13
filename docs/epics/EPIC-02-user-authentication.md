@@ -1,24 +1,32 @@
 # [EPIC] User Authentication & Management
 
 ## Description
-User login system and role-based access control for admin and staff users
+Multi-role authentication system supporting three distinct user types: Customers, Technicians/Sales Reps, and Owners/Managers, each with their own interface and permissions
 
 ## Success Criteria
-- [ ] Users can register and log in securely
+- [ ] Three user roles are implemented: Customer, Staff (Technician/Sales), Admin (Owner/Manager)
 - [ ] JWT-based authentication is implemented
-- [ ] Role-based permissions are enforced (Admin/Staff)
+- [ ] Role-based permissions are enforced across all features
+- [ ] Each role sees appropriate UI/dashboard
+- [ ] Customer self-registration is available
 - [ ] Session management is functional
-- [ ] Password reset functionality works
+- [ ] Password reset functionality works for all user types
+- [ ] Audit logging tracks admin actions
 
 ## Tasks
-- [ ] Create user database table and model
-- [ ] Implement user registration endpoint
-- [ ] Implement login/logout functionality
-- [ ] Add JWT token authentication
-- [ ] Create role-based permissions (Admin/Staff)
-- [ ] Build login UI page
-- [ ] Implement session management
-- [ ] Add password reset functionality
+- [ ] Create user database table with role field
+- [ ] Design permission matrix for three roles
+- [ ] Implement customer self-registration endpoint
+- [ ] Implement staff/admin registration (admin-only)
+- [ ] Implement login/logout for all user types
+- [ ] Add JWT token authentication with role claims
+- [ ] Create role-based permission middleware
+- [ ] Build three distinct login UI pages
+- [ ] Implement role-based dashboard routing
+- [ ] Add session management per role
+- [ ] Add password reset for all user types
+- [ ] Implement audit logging for admin actions
+- [ ] Create role management UI for admins
 
 ## Labels
 - epic

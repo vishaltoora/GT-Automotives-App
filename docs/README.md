@@ -9,17 +9,20 @@ Since the GitHub token didn't have the necessary permissions to create issues di
 docs/
 ├── README.md (this file)
 ├── PROJECT_ROADMAP.md - Complete project overview and timeline
-├── epics/ - All 7 epic descriptions
+├── ROLE_PERMISSIONS.md - Detailed role-based access control matrix
+├── epics/ - All 8 epic descriptions
 │   ├── EPIC-01-project-setup.md
-│   ├── EPIC-02-user-authentication.md
+│   ├── EPIC-02-user-authentication.md (Updated: 3-role system)
 │   ├── EPIC-03-tire-inventory.md
 │   ├── EPIC-04-customer-management.md
-│   ├── EPIC-05-invoicing-system.md
+│   ├── EPIC-05-invoicing-system.md (Updated: printing capabilities)
 │   ├── EPIC-06-appointment-scheduling.md
-│   └── EPIC-07-reporting-dashboard.md
+│   ├── EPIC-07-reporting-dashboard.md
+│   └── EPIC-08-customer-portal.md (NEW)
 └── tasks/ - Sample task descriptions
     ├── TASK-01-01-initialize-project.md
-    └── TASK-01-02-setup-database.md
+    ├── TASK-01-02-setup-database.md
+    └── TASK-05-01-invoice-printing.md (NEW)
 
 scripts/
 └── create-github-issues.sh - Script to create GitHub issues
@@ -54,25 +57,35 @@ scripts/
 
 ## Project Summary
 
+### Three User Interfaces
+1. **Customer Portal:** Self-service for appointments, invoices, and service history
+2. **Technician/Sales Dashboard:** Operational tools for daily business
+3. **Owner/Manager Admin:** Full control with analytics and management
+
 ### Version 1.0 Features
+- **Three-Role Authentication:** Customer, Staff (Tech/Sales), Admin (Owner/Manager)
 - **Tire Inventory:** Track new and used tires with conditions and photos
 - **Customer Management:** Customer profiles with vehicle information
-- **Invoicing:** Create invoices for tire sales and services
+- **Professional Invoicing:** Create and print invoices (8.5x11, thermal, PDF)
 - **Appointments:** Calendar-based scheduling with reminders
-- **Basic Reports:** Daily sales, inventory levels, monthly summaries
+- **Customer Portal:** Self-service access for customers
+- **Reports:** Daily sales, inventory, monthly summaries (role-based access)
 
 ### Timeline
-- **Total Duration:** 10 weeks
-- **Phase 1 (Weeks 1-2):** Setup and Authentication
-- **Phase 2 (Weeks 3-6):** Core Features (Inventory & Customers)
-- **Phase 3 (Weeks 7-9):** Business Operations (Invoicing & Appointments)
-- **Phase 4 (Week 10):** Reporting
+- **Total Duration:** 12 weeks
+- **Phase 1 (Weeks 1-3):** Setup and Three-Role Authentication
+- **Phase 2 (Weeks 4-7):** Core Features (Inventory & Customers)
+- **Phase 3 (Weeks 8-10):** Business Operations (Invoicing & Appointments)
+- **Phase 4 (Weeks 11-12):** Customer Portal & Analytics
 
 ### Technology Stack
-- Frontend: React or Vue.js
+- Frontend: React or Vue.js with role-based routing
 - Backend: Node.js/Express or Django
 - Database: PostgreSQL or MySQL
-- Authentication: JWT
+- Authentication: JWT with role claims
+- PDF Generation: PDFKit or similar
+- Email: SendGrid or AWS SES
+- SMS: Twilio
 
 ## Next Steps
 1. **Fix GitHub Token Permissions** to enable issue creation
@@ -81,9 +94,10 @@ scripts/
 4. **Begin with EPIC-01** tasks
 
 ## Total Work Items
-- **7 Epics** covering all major features
-- **65+ Tasks** broken down from epics
-- **4 Development Phases** over 10 weeks
+- **8 Epics** covering all major features
+- **75+ Tasks** broken down from epics
+- **4 Development Phases** over 12 weeks
+- **3 User Roles** with distinct interfaces
 
 All epic and task descriptions include:
 - Clear acceptance criteria

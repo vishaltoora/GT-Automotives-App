@@ -1,15 +1,20 @@
 # GT Automotive App - Version 1.0 Roadmap
 
 ## Project Overview
-A web application for managing tire sales (new and used) and automotive mechanical services, including inventory management, invoicing, and appointment scheduling.
+A comprehensive web application for managing tire sales (new and used) and automotive mechanical services, featuring three distinct user interfaces: Customer Portal, Technician/Sales Rep Dashboard, and Owner/Manager Administration.
+
+## User Roles & Interfaces
+1. **Customer Portal**: Self-service for appointments, invoices, and service history
+2. **Technician/Sales Dashboard**: Operational tools for daily business
+3. **Owner/Manager Admin**: Full control with analytics and management features
 
 ## Timeline
-**Target Release:** 10 weeks from project start
+**Target Release:** 12 weeks from project start
 **Development Methodology:** Agile with 2-week sprints
 
 ## Epics Overview
 
-### Phase 1: Foundation (Weeks 1-2)
+### Phase 1: Foundation & Authentication (Weeks 1-3)
 1. **[EPIC-01: Project Setup & Infrastructure](epics/EPIC-01-project-setup.md)**
    - Priority: HIGH
    - Duration: 2 weeks
@@ -17,61 +22,73 @@ A web application for managing tire sales (new and used) and automotive mechanic
 
 2. **[EPIC-02: User Authentication & Management](epics/EPIC-02-user-authentication.md)**
    - Priority: HIGH
-   - Duration: 1 week
-   - Implement secure login and role-based access
+   - Duration: 1.5 weeks
+   - Three-role authentication system (Customer, Staff, Admin)
 
-### Phase 2: Core Features (Weeks 3-6)
+### Phase 2: Core Features (Weeks 4-7)
 3. **[EPIC-03: Tire Inventory Management](epics/EPIC-03-tire-inventory.md)**
    - Priority: HIGH
    - Duration: 2 weeks
-   - Complete tire inventory system for new and used tires
+   - Complete tire inventory system with role-based access
 
 4. **[EPIC-04: Customer & Vehicle Management](epics/EPIC-04-customer-management.md)**
    - Priority: HIGH
    - Duration: 1.5 weeks
    - Customer database with vehicle tracking
 
-### Phase 3: Business Operations (Weeks 7-9)
+### Phase 3: Business Operations (Weeks 8-10)
 5. **[EPIC-05: Invoicing System](epics/EPIC-05-invoicing-system.md)**
    - Priority: HIGH
    - Duration: 2 weeks
-   - Complete invoicing for sales and services
+   - Complete invoicing with professional printing capabilities
 
 6. **[EPIC-06: Appointment Scheduling](epics/EPIC-06-appointment-scheduling.md)**
    - Priority: MEDIUM
    - Duration: 1.5 weeks
    - Calendar-based appointment management
 
-### Phase 4: Analytics (Week 10)
-7. **[EPIC-07: Reporting Dashboard](epics/EPIC-07-reporting-dashboard.md)**
+### Phase 4: Customer Experience & Analytics (Weeks 11-12)
+7. **[EPIC-08: Customer Portal](epics/EPIC-08-customer-portal.md)**
+   - Priority: MEDIUM
+   - Duration: 2 weeks
+   - Self-service portal for customers
+
+8. **[EPIC-07: Reporting Dashboard](epics/EPIC-07-reporting-dashboard.md)**
    - Priority: LOW
    - Duration: 1 week
-   - Business analytics and reporting
+   - Business analytics and reporting for owners/managers
 
 ## Technology Stack
-- **Frontend:** React or Vue.js
+- **Frontend:** React or Vue.js (with role-based routing)
 - **Backend:** Node.js with Express or Django
 - **Database:** PostgreSQL or MySQL
-- **Authentication:** JWT
+- **Authentication:** JWT with role claims
+- **PDF Generation:** PDFKit, jsPDF, or similar
+- **Printing:** Print CSS + PDF generation
+- **Email Service:** SendGrid or AWS SES
+- **SMS Service:** Twilio or similar
 - **Hosting:** Cloud (DigitalOcean, Heroku, or AWS)
 
 ## Development Priorities
 1. **Must Have (MVP):**
+   - Three-role authentication system
    - Basic tire inventory management
-   - Customer records
-   - Invoice creation
+   - Customer records with role-based access
+   - Professional invoice creation with printing
    - Simple appointment calendar
+   - Customer self-service portal
 
 2. **Should Have:**
    - Email/SMS notifications
    - Advanced search filters
    - Photo uploads for used tires
-   - Daily reports
+   - Daily reports for staff/owners
+   - Thermal printer support
 
 3. **Nice to Have:**
-   - Advanced analytics
+   - Advanced analytics dashboard
    - Mobile app
-   - Online customer portal
+   - Integration with accounting software
 
 ## Success Metrics
 - All tire inventory tracked digitally
