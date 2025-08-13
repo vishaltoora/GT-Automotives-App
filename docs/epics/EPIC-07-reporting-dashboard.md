@@ -1,5 +1,9 @@
 # [EPIC] Reporting Dashboard
 
+📋 **GitHub Issue:** [#7](https://github.com/vishaltoora/GT-Automotives-App/issues/7)  
+🏷️ **Labels:** `epic`, `priority:low`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Basic reporting and analytics dashboard for business operations
 

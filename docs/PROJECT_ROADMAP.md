@@ -15,45 +15,45 @@ A comprehensive web application for managing tire sales (new and used) and autom
 ## Epics Overview
 
 ### Phase 1: Foundation & Authentication (Weeks 1-3)
-1. **[EPIC-01: Project Setup & Infrastructure](epics/EPIC-01-project-setup.md)**
+1. **[EPIC-01: Project Setup & Infrastructure](epics/EPIC-01-project-setup.md)** → [GitHub Issue #1](https://github.com/vishaltoora/GT-Automotives-App/issues/1)
    - Priority: HIGH
    - Duration: 2 weeks
    - Setup development environment, database, and frameworks
 
-2. **[EPIC-02: User Authentication & Management](epics/EPIC-02-user-authentication.md)**
+2. **[EPIC-02: User Authentication & Management](epics/EPIC-02-user-authentication.md)** → [GitHub Issue #2](https://github.com/vishaltoora/GT-Automotives-App/issues/2)
    - Priority: HIGH
    - Duration: 1.5 weeks
    - Three-role authentication system (Customer, Staff, Admin)
 
 ### Phase 2: Core Features (Weeks 4-7)
-3. **[EPIC-03: Tire Inventory Management](epics/EPIC-03-tire-inventory.md)**
+3. **[EPIC-03: Tire Inventory Management](epics/EPIC-03-tire-inventory.md)** → [GitHub Issue #3](https://github.com/vishaltoora/GT-Automotives-App/issues/3)
    - Priority: HIGH
    - Duration: 2 weeks
    - Complete tire inventory system with role-based access
 
-4. **[EPIC-04: Customer & Vehicle Management](epics/EPIC-04-customer-management.md)**
+4. **[EPIC-04: Customer & Vehicle Management](epics/EPIC-04-customer-management.md)** → [GitHub Issue #4](https://github.com/vishaltoora/GT-Automotives-App/issues/4)
    - Priority: HIGH
    - Duration: 1.5 weeks
    - Customer database with vehicle tracking
 
 ### Phase 3: Business Operations (Weeks 8-10)
-5. **[EPIC-05: Invoicing System](epics/EPIC-05-invoicing-system.md)**
+5. **[EPIC-05: Invoicing System](epics/EPIC-05-invoicing-system.md)** → [GitHub Issue #5](https://github.com/vishaltoora/GT-Automotives-App/issues/5)
    - Priority: HIGH
    - Duration: 2 weeks
    - Complete invoicing with professional printing capabilities
 
-6. **[EPIC-06: Appointment Scheduling](epics/EPIC-06-appointment-scheduling.md)**
+6. **[EPIC-06: Appointment Scheduling](epics/EPIC-06-appointment-scheduling.md)** → [GitHub Issue #6](https://github.com/vishaltoora/GT-Automotives-App/issues/6)
    - Priority: MEDIUM
    - Duration: 1.5 weeks
    - Calendar-based appointment management
 
 ### Phase 4: Customer Experience & Analytics (Weeks 11-12)
-7. **[EPIC-08: Customer Portal](epics/EPIC-08-customer-portal.md)**
+7. **[EPIC-08: Customer Portal](epics/EPIC-08-customer-portal.md)** → [GitHub Issue #8](https://github.com/vishaltoora/GT-Automotives-App/issues/8)
    - Priority: MEDIUM
    - Duration: 2 weeks
    - Self-service portal for customers
 
-8. **[EPIC-07: Reporting Dashboard](epics/EPIC-07-reporting-dashboard.md)**
+8. **[EPIC-07: Reporting Dashboard](epics/EPIC-07-reporting-dashboard.md)** → [GitHub Issue #7](https://github.com/vishaltoora/GT-Automotives-App/issues/7)
    - Priority: LOW
    - Duration: 1 week
    - Business analytics and reporting for owners/managers

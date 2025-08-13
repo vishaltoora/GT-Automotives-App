@@ -1,5 +1,9 @@
 # [EPIC] User Authentication & Management
 
+📋 **GitHub Issue:** [#2](https://github.com/vishaltoora/GT-Automotives-App/issues/2)  
+🏷️ **Labels:** `epic`, `priority:high`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Multi-role authentication system supporting three distinct user types: Customers, Technicians/Sales Reps, and Owners/Managers, each with their own interface and permissions
 

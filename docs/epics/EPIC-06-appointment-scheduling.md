@@ -1,5 +1,9 @@
 # [EPIC] Appointment Scheduling
 
+📋 **GitHub Issue:** [#6](https://github.com/vishaltoora/GT-Automotives-App/issues/6)  
+🏷️ **Labels:** `epic`, `priority:medium`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Calendar-based appointment booking and management system with reminders
 

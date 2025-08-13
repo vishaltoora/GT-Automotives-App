@@ -1,5 +1,9 @@
 # [EPIC] Tire Inventory Management
 
+📋 **GitHub Issue:** [#3](https://github.com/vishaltoora/GT-Automotives-App/issues/3)  
+🏷️ **Labels:** `epic`, `priority:high`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Complete tire inventory system for managing new and used tire stock
 

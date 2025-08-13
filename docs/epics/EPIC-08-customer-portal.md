@@ -1,5 +1,9 @@
 # [EPIC] Customer Portal
 
+📋 **GitHub Issue:** [#8](https://github.com/vishaltoora/GT-Automotives-App/issues/8)  
+🏷️ **Labels:** `epic`, `priority:medium`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Self-service customer portal allowing customers to view their service history, request appointments, download invoices, and manage their vehicle information
 

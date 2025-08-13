@@ -1,5 +1,9 @@
 # [EPIC] Project Setup & Infrastructure
 
+📋 **GitHub Issue:** [#1](https://github.com/vishaltoora/GT-Automotives-App/issues/1)  
+🏷️ **Labels:** `epic`, `priority:high`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Initial project setup, database design, and core infrastructure
 

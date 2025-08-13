@@ -1,5 +1,9 @@
 # [EPIC] Invoicing System
 
+📋 **GitHub Issue:** [#5](https://github.com/vishaltoora/GT-Automotives-App/issues/5)  
+🏷️ **Labels:** `epic`, `priority:high`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Complete invoicing system for tire sales and mechanical services with payment tracking
 

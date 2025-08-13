@@ -1,5 +1,9 @@
 # [EPIC] Customer & Vehicle Management
 
+📋 **GitHub Issue:** [#4](https://github.com/vishaltoora/GT-Automotives-App/issues/4)  
+🏷️ **Labels:** `epic`, `priority:high`  
+📅 **Milestone:** Version 1.0 - MVP Release  
+
 ## Description
 Customer database with vehicle information tracking and service history
 
