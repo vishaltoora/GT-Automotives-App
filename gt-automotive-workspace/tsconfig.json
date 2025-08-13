@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/webApp"
+    },
+    {
+      "path": "./server-e2e"
+    },
+    {
+      "path": "./server"
+    },
+    {
+      "path": "./libs/shared/dto"
+    },
+    {
+      "path": "./libs/shared/dto"
+    },
+    {
+      "path": "./libs/shared/validation"
+    },
+    {
+      "path": "./libs/shared/interfaces"
+    },
+    {
+      "path": "./libs/database"
+    }
+  ]
+}
