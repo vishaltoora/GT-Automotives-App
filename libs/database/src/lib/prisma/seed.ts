@@ -1,5 +1,4 @@
 import { PrismaClient, RoleName } from '@prisma/client';
-import { PERMISSIONS } from '@gt-automotive/shared-interfaces';
 
 const prisma = new PrismaClient();
 
@@ -209,6 +208,7 @@ async function main() {
         isActive: true,
       },
     });
+    console.log('✅ Created admin user:', adminUser.email);
 
     // Demo Staff
     const staffUser = await prisma.user.upsert({
@@ -223,6 +223,7 @@ async function main() {
         isActive: true,
       },
     });
+    console.log('✅ Created staff user:', staffUser.email);
 
     // Demo Customer
     const customerUser = await prisma.user.upsert({

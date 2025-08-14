@@ -25,7 +25,7 @@ A comprehensive web application for managing a small business that sells new and
 ## Project Structure
 
 ```
-gt-automotive-workspace/
+GT-AUTOMOTIVES-APP/
 ├── apps/
 │   ├── webApp/          # React frontend application
 │   └── server/          # NestJS backend API
@@ -53,7 +53,7 @@ gt-automotive-workspace/
 ```bash
 # Clone the repository
 git clone https://github.com/vishaltoora/GT-Automotives-App.git
-cd GT-Automotives-App/gt-automotive-workspace
+cd GT-AUTOMOTIVES-APP
 
 # Install dependencies
 yarn install
