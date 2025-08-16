@@ -1,0 +1,8 @@
+# Global owner - all PRs need your approval
+* @vishaltoora
+
+# Specific paths can have different owners if needed
+/docs/ @vishaltoora
+/apps/webApp/ @vishaltoora
+/server/ @vishaltoora
+/.github/ @vishaltoora

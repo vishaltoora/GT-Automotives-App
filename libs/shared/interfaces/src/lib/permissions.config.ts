@@ -1,4 +1,4 @@
-import { Resource, Action, RoleName } from './roles.enum';
+import { Resource, Action, RoleName } from './roles.enum.js';
 
 export interface PermissionDefinition {
   resource: Resource;

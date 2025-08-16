@@ -18,7 +18,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 
 ## Project Status
 
-**Current Phase:** Foundation Complete, Ready for Feature Development
+**Current Phase:** Core Features Development - 3 of 8 Epics Complete, Ready for Customer Management (EPIC-04)
 
 ### Completed
 - ✅ 8 Epics fully documented and created as GitHub issues (#1-#8)
@@ -31,9 +31,22 @@ GT Automotive is a comprehensive web application for managing a small business t
 - ✅ 8 custom labels configured
 - ✅ Repository pushed to GitHub
 - ✅ **EPIC-01 COMPLETE:** Nx monorepo initialized with React frontend and NestJS backend
+- ✅ **EPIC-02 COMPLETE:** Three-role authentication system with Clerk integration
+- ✅ **EPIC-03 COMPLETE:** Tire inventory management with full CRUD operations
 - ✅ Shared libraries created (DTOs, validation, interfaces)
 - ✅ CI/CD pipelines configured with GitHub Actions
 - ✅ Development environment ready with Docker Compose
+- ✅ Repository pattern implemented for database operations
+- ✅ Role-based routing and guards implemented
+- ✅ Development mode authentication without Clerk keys
+- ✅ MockClerkProvider for seamless local development
+- ✅ Fixed login redirect and blank dashboard issues
+- ✅ ES6 module imports for browser compatibility
+- ✅ **Public-Facing Website COMPLETE:** Professional theme system and all public pages implemented
+- ✅ Comprehensive theme system with consistent branding
+- ✅ Responsive mobile navigation with hamburger menu
+- ✅ Reusable component library for public interface
+- ✅ **Inventory Management COMPLETE:** Full tire inventory system with stock tracking
 
 ### GitHub Integration
 - **Repository:** https://github.com/vishaltoora/GT-Automotives-App
@@ -44,8 +57,11 @@ GT Automotive is a comprehensive web application for managing a small business t
 ### Next Steps
 1. ~~Initialize project structure~~ ✅ COMPLETE
 2. ~~Set up development environment (EPIC-01)~~ ✅ COMPLETE
-3. Implement three-role authentication ([Issue #2](https://github.com/vishaltoora/GT-Automotives-App/issues/2)) - EPIC-02
-4. Begin core feature development
+3. ~~Implement three-role authentication (EPIC-02)~~ ✅ COMPLETE
+4. ~~Implement tire inventory management (EPIC-03)~~ ✅ COMPLETE
+5. Implement customer and vehicle management ([Issue #4](https://github.com/vishaltoora/GT-Automotives-App/issues/4)) - EPIC-04
+6. Build invoicing system (EPIC-05)
+7. Add appointment scheduling (EPIC-06)
 
 ## User Roles & Permissions
 
@@ -78,6 +94,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 - **Routing:** React Router with role-based protected routes
 - **State Management:** React Query + Context API
 - **UI Components:** Material-UI (MUI) ✅
+- **Theme System:** Custom colors.ts and theme.ts for consistent branding ✅
 - **Print Styling:** Custom CSS for invoices
 
 ### Backend
@@ -122,6 +139,27 @@ GT Automotive is a comprehensive web application for managing a small business t
 7. **[EPIC-07: Reporting](https://github.com/vishaltoora/GT-Automotives-App/issues/7)** - Business analytics (admin-only)
 8. **[EPIC-08: Customer Portal](https://github.com/vishaltoora/GT-Automotives-App/issues/8)** - Self-service interface
 
+## Development Mode (Without Clerk)
+
+The application can run in development mode without Clerk authentication configured:
+
+### Setup
+1. Comment out `VITE_CLERK_PUBLISHABLE_KEY` in `apps/webApp/.env.local`
+2. Start servers (frontend and backend)
+3. Access the application with automatic mock authentication
+
+### Mock User Details
+- **Email:** customer@example.com
+- **Name:** Test Customer
+- **Role:** Customer (automatically assigned)
+- **Access:** Full customer portal features
+
+### How It Works
+- `MockClerkProvider` provides fake Clerk hooks
+- Automatic authentication bypass for development
+- No external dependencies required
+- Instant development setup
+
 ## Development Setup
 
 ### Prerequisites
@@ -138,8 +176,9 @@ GT Automotive is a comprehensive web application for managing a small business t
 # Database
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/gt_automotive"
 
-# Clerk Authentication
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+# Clerk Authentication (Optional for development)
+# Comment out for development mode with mock authentication
+# VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_WEBHOOK_SECRET=whsec_...
 
@@ -224,6 +263,25 @@ yarn lint          # Run linting
 yarn lint:fix      # Fix linting issues
 ```
 
+### Troubleshooting Commands
+```bash
+# Clear Nx cache
+yarn nx reset
+
+# Check running servers
+ps aux | grep -E "(vite|nest)"
+lsof -i :4200 -i :3000
+
+# Install with version override
+yarn install --ignore-engines
+
+# Start frontend only
+cd apps/webApp && yarn vite --host
+
+# Start backend only
+cd server && yarn start:dev
+```
+
 ## Testing Approach
 
 ### Role-Based Testing
@@ -259,6 +317,30 @@ GET    /api/reports/financial // Admin only
 - Add role checks at controller level
 - Log all admin actions
 - Use transactions for critical operations
+
+### Using the Theme System
+```javascript
+// Import theme colors in components
+import { colors } from '../../theme/colors';
+
+// Use in Material-UI sx prop
+<Box sx={{ 
+  backgroundColor: colors.primary.main,
+  color: colors.text.primary,
+  background: colors.gradients.hero
+}} />
+
+// Access theme in components
+import { useTheme } from '@mui/material';
+const theme = useTheme();
+```
+
+### Component Development
+- Always use theme colors instead of hardcoded values
+- Create reusable components in `/components/public/`
+- Follow the established pattern for service cards and CTAs
+- Ensure all components are fully responsive
+- Test on mobile devices using browser dev tools
 
 ### Git Workflow
 ```bash
@@ -299,6 +381,22 @@ gt-automotives-app/
 │   ├── webApp/              # React frontend ✅
 │   │   ├── src/
 │   │   │   ├── app/
+│   │   │   │   ├── theme/        # Theme configuration ✅
+│   │   │   │   │   ├── colors.ts
+│   │   │   │   │   └── theme.ts
+│   │   │   │   ├── components/
+│   │   │   │   │   └── public/   # Public components ✅
+│   │   │   │   │       ├── Hero.tsx
+│   │   │   │   │       ├── ServiceCard.tsx
+│   │   │   │   │       ├── FeatureHighlight.tsx
+│   │   │   │   │       ├── CTASection.tsx
+│   │   │   │   │       └── TestimonialCard.tsx
+│   │   │   │   └── pages/
+│   │   │   │       └── public/   # Public pages ✅
+│   │   │   │           ├── Home.tsx
+│   │   │   │           ├── Services.tsx
+│   │   │   │           ├── About.tsx
+│   │   │   │           └── Contact.tsx
 │   │   │   ├── assets/
 │   │   │   └── styles.css
 │   │   ├── public/
@@ -421,10 +519,41 @@ const testInvoice = {
 - [ ] Admin user created
 - [ ] Test data removed
 
+## Common Issues & Solutions
+
+### Blank Pages / Nothing Displayed
+**Problem:** Pages show blank content, no errors in terminal
+**Solution:** Fixed by replacing CommonJS `require()` with ES6 imports in:
+- `apps/webApp/src/app/hooks/useAuth.ts`
+- `apps/webApp/src/app/pages/auth/Login.tsx`
+- `apps/webApp/src/app/pages/auth/Register.tsx`
+
+### Login Redirects to Home
+**Problem:** After login, user redirected to home instead of dashboard
+**Solution:** Remove hardcoded `afterSignInUrl` from Clerk SignIn component
+
+### TypeScript Compilation Errors
+**Problem:** Build fails with "Cannot find module" errors
+**Solution:** 
+```bash
+yarn nx reset        # Clear Nx cache
+yarn install --ignore-engines
+```
+
+### Node Version Incompatibility
+**Problem:** Vite requires newer Node version
+**Solution:** Use `yarn install --ignore-engines` or update Node.js
+
+### Cannot Access Customer Dashboard
+**Problem:** Customer dashboard shows "page can't be reached"
+**Solution:** Ensure both servers are running:
+- Frontend: http://localhost:4200
+- Backend: http://localhost:3000/api
+
 ## Completed Work
 
 ### EPIC-01: Project Setup & Infrastructure ✅
-**Completed on:** August 14, 2025
+**Completed on:** August 15, 2025
 
 #### What Was Implemented:
 - **Nx Monorepo:** Full workspace configuration with apps and libs
@@ -440,15 +569,27 @@ const testInvoice = {
 - **CI/CD:** GitHub Actions workflows for testing and deployment
 - **Development Environment:** Docker Compose for PostgreSQL (or local PostgreSQL)
 
-#### Quick Start:
+#### Quick Start (Development Mode - No Clerk):
+```bash
+cd gt-automotives-app
+yarn install --ignore-engines  # Use --ignore-engines if Node version mismatch
+# Comment out VITE_CLERK_PUBLISHABLE_KEY in apps/webApp/.env.local
+
+# Start both servers
+yarn dev
+
+# Or start separately:
+# Terminal 1: cd apps/webApp && yarn vite --host
+# Terminal 2: cd server && yarn start:dev
+```
+
+#### Quick Start (Production Mode - With Clerk):
 ```bash
 cd gt-automotives-app
 yarn install
-# If Docker available: yarn docker:up
-# Otherwise use local PostgreSQL
-yarn db:generate
+# Ensure Clerk keys are set in .env files
 yarn db:migrate
-NODE_ENV=development yarn db:seed
+yarn db:seed
 yarn dev
 ```
 
@@ -457,25 +598,283 @@ yarn dev
 - Database migrated with all tables
 - Frontend running on http://localhost:4200
 - Backend API running on http://localhost:3000/api
+- Public-facing website complete with all pages
 
 #### Demo Data Created:
 **Users:**
-- Admin: admin@gtautomotive.com
-- Staff: staff@gtautomotive.com
-- Customer: customer@example.com
+- Admin: admin@gtautomotive.com (password: Admin@123)
+- Staff: staff@gtautomotive.com (password: Staff@123)
+- Customer: customer@example.com (password: Customer@123)
 
 **Inventory:**
 - 5 tire models in stock (Michelin, Bridgestone, Goodyear, Continental, BF Goodrich)
 - Roles and permissions configured
 - Sample customer profile created
 
+### EPIC-02: User Authentication & Management ✅
+**Completed on:** August 15, 2025
+
+#### What Was Implemented:
+
+**Backend (NestJS):**
+- **Repository Pattern:** Complete separation of database logic
+  - UserRepository, RoleRepository, AuditRepository
+  - BaseRepository abstract class
+- **Authentication Module:** JWT-based authentication with Clerk integration
+  - JWT strategy with Passport
+  - Role-based guards (@Roles, @Public, @CurrentUser decorators)
+  - Clerk webhook handler for user sync
+- **User Management:** Full CRUD operations with role assignment
+- **Audit Logging:** Track all admin actions
+- **Password Security:** bcryptjs for local authentication
+- **CORS Configuration:** Enabled for frontend communication
+
+**Frontend (React):**
+- **Clerk Provider:** Optional integration (works without keys)
+- **useAuth Hook:** Centralized authentication state
+- **Guard Components:** AuthGuard and RoleGuard for route protection
+- **Authentication Pages:** Login, Register, Unauthorized
+- **Role-Based Layouts:**
+  - PublicLayout: No authentication required
+  - CustomerLayout: Customer portal with sidebar navigation
+  - StaffLayout: Staff dashboard with operational tools
+  - AdminLayout: Full admin panel with complete access
+- **Dashboard Pages:** Customized for each role
+- **Protected Routing:** Automatic redirects based on role
+
+**Repository Structure:**
+```
+server/src/
+├── auth/
+│   ├── decorators/
+│   ├── guards/
+│   ├── strategies/
+│   └── webhooks/
+├── users/
+│   └── repositories/
+├── roles/
+│   └── repositories/
+└── audit/
+    └── repositories/
+```
+
+#### API Endpoints Created:
+- `POST /api/auth/login` - Local authentication
+- `POST /api/auth/register` - Customer self-registration
+- `GET /api/auth/me` - Get current user
+- `POST /api/webhooks/clerk` - Clerk webhook for user sync
+- `GET /api/users` - List all users (Staff/Admin)
+- `POST /api/users` - Create new user (Admin only)
+- `PUT /api/users/:id` - Update user (Admin only)
+- `PUT /api/users/:id/role` - Assign role (Admin only)
+- `DELETE /api/users/:id` - Deactivate user (Admin only)
+
+#### Running Without Clerk:
+The application can run in development mode without Clerk API keys:
+1. Frontend shows instructions for setting up Clerk
+2. Public pages are fully accessible
+3. Protected routes redirect to login
+4. Backend gracefully handles missing Clerk configuration
+
+### Development Mode Authentication ✅
+**Implemented on:** August 15, 2025
+
+#### What Was Fixed:
+- **MockClerkProvider:** Complete mock implementation of Clerk hooks
+- **Conditional Imports:** ES6 imports with runtime selection
+- **Development Bypass:** Automatic customer authentication
+- **Browser Compatibility:** Removed CommonJS require() statements
+
+#### Files Modified:
+- `apps/webApp/src/app/providers/MockClerkProvider.tsx` (new)
+- `apps/webApp/src/app/providers/ClerkProvider.tsx`
+- `apps/webApp/src/app/hooks/useAuth.ts`
+- `apps/webApp/src/app/pages/auth/Login.tsx`
+- `apps/webApp/src/app/pages/auth/Register.tsx`
+- `apps/webApp/src/app/layouts/CustomerLayout.tsx`
+
+### Public-Facing Website & Theme System ✅
+**Completed on:** August 15, 2025
+
+#### What Was Implemented:
+
+**Theme System:**
+- **colors.ts:** Comprehensive brand color palette
+  - Primary colors (professional blue)
+  - Secondary colors (energetic orange)
+  - Semantic colors (success, warning, error, info)
+  - Gradients for hero sections
+  - Social media colors
+- **theme.ts:** Material-UI theme configuration
+  - Custom typography scales
+  - Responsive breakpoints
+  - Component overrides
+  - Consistent spacing system
+
+**Reusable Public Components:**
+- **Hero:** Eye-catching banner with CTAs and gradient backgrounds
+- **ServiceCard:** Service display with pricing, features, and categories
+- **FeatureHighlight:** Grid layout for showcasing business features
+- **CTASection:** Call-to-action sections with multiple variants
+- **TestimonialCard:** Customer review cards with ratings
+
+**Public Pages Completed:**
+
+1. **Home Page (`/`):**
+   - Hero section with main CTAs
+   - Statistics bar (5,000+ customers, 10,000+ tires)
+   - Featured services showcase
+   - Current promotions section
+   - Customer testimonials with ratings
+   - Service areas listing
+
+2. **Services Page (`/services`):**
+   - Tabbed interface (All/Tire/Mechanical services)
+   - 10+ detailed service cards with pricing
+   - "Why Choose Us" section
+   - Service statistics
+   - Professional service descriptions
+
+3. **About Page (`/about`):**
+   - Company story and journey
+   - Timeline of milestones (2010-2023)
+   - Meet the team section (6 team members)
+   - Core values display
+   - Awards & certifications
+   - Statistics and achievements
+
+4. **Contact Page (`/contact`):**
+   - Interactive contact form with validation
+   - Business hours display
+   - Contact information cards
+   - Quick action buttons
+   - Map placeholder for Google Maps
+   - Emergency service callout
+
+**Navigation & Layout:**
+- GT Automotive logo integrated in header
+- Responsive navigation with mobile hamburger menu
+- Active state indicators for current page
+- Professional footer with:
+  - Company information
+  - Quick links
+  - Contact details
+  - Business hours
+  - Social media links
+
+#### Key Features:
+- ✅ **Fully Responsive:** Works perfectly on all devices
+- ✅ **Interactive Elements:** Hover effects, smooth animations
+- ✅ **Consistent Theme:** Uses theme colors throughout
+- ✅ **Professional Design:** Modern, clean layout
+- ✅ **User-Friendly Navigation:** Mobile menu, active states
+- ✅ **Business Information:** Complete contact details, hours
+- ✅ **Strategic CTAs:** Call-to-actions throughout for conversion
+
+#### Accessing Public Pages:
+```bash
+cd gt-automotives-app
+yarn dev  # Starts both frontend and backend
+
+# Visit:
+# http://localhost:4200         - Home page
+# http://localhost:4200/services - Services catalog
+# http://localhost:4200/about    - Company information
+# http://localhost:4200/contact  - Contact form and details
+```
+
+### EPIC-03: Tire Inventory Management ✅
+**Completed on:** August 16, 2025
+
+#### What Was Implemented:
+
+**Backend (NestJS):**
+- **Complete REST API:** Full CRUD operations for tire management
+  - Public endpoints for customers to browse inventory
+  - Staff endpoints for stock management (no price changes)
+  - Admin endpoints with full control including pricing
+- **Repository Pattern:** TireRepository for database operations
+- **Stock Management:** Adjustment tracking (add/remove/set)
+- **Low Stock Alerts:** Automatic detection when quantity ≤ minStock
+- **Inventory Reports:** Financial metrics and analytics (admin only)
+- **Audit Logging:** All inventory changes tracked
+- **Search & Filter:** Advanced search with multiple criteria
+- **Bulk Operations:** Support for bulk price updates
+
+**Frontend (React):**
+- **TireList Component:** 
+  - Grid and list view modes
+  - Advanced filtering and sorting
+  - Pagination support
+  - Export to CSV functionality
+- **TireForm:** Create and edit tires with validation
+- **TireDetails:** Detailed view with stock status
+- **InventoryDashboard:** 
+  - Analytics and metrics
+  - Low stock alerts
+  - Quick actions
+- **Role-Based Features:**
+  - Customers: Browse inventory, see prices
+  - Staff: Manage stock, cannot change prices
+  - Admin: Full control including costs
+- **Real-time Updates:** React Query for data synchronization
+- **Responsive Design:** Mobile-optimized interface
+
+**Components Created:**
+```
+apps/webApp/src/app/
+├── pages/inventory/
+│   ├── TireList.tsx          # Main inventory list
+│   ├── TireListSimple.tsx    # Simplified view
+│   ├── TireForm.tsx          # Create/edit form
+│   ├── TireFormSimple.tsx    # Simple form variant
+│   ├── TireDetails.tsx       # Detailed view
+│   └── InventoryDashboard.tsx # Analytics dashboard
+├── components/inventory/
+│   ├── TireCard.tsx          # Tire display card
+│   ├── TireFilter.tsx        # Filter component
+│   ├── StockAdjustmentDialog.tsx # Stock adjustment UI
+│   └── TireImageUpload.tsx   # Image upload component
+├── hooks/
+│   └── useTires.ts           # React Query hooks
+└── services/
+    └── tire.service.ts       # API client
+```
+
+#### Key Features:
+- ✅ **Full CRUD Operations:** Create, read, update, delete tires
+- ✅ **Stock Tracking:** Real-time inventory levels
+- ✅ **Low Stock Alerts:** Automatic alerts at 5 units
+- ✅ **Used Tire Support:** Condition ratings (Excellent/Good/Fair)
+- ✅ **Advanced Search:** Filter by brand, model, size, type, condition, price
+- ✅ **Inventory Reports:** Total value, cost analysis, stock by brand/type
+- ✅ **Role-Based Access:** Different features for each user role
+- ✅ **Audit Trail:** All changes logged with user and timestamp
+- ✅ **Export Functionality:** Download inventory data as CSV
+- ✅ **Responsive UI:** Works on desktop, tablet, and mobile
+
+#### Accessing Tire Inventory:
+```bash
+# Start the application
+cd gt-automotives-app
+yarn dev
+
+# Access inventory pages:
+# http://localhost:4200/inventory         - Tire list (all users)
+# http://localhost:4200/inventory/new     - Add tire (staff/admin)
+# http://localhost:4200/inventory/:id     - View tire details
+# http://localhost:4200/inventory/:id/edit - Edit tire (staff/admin)
+# http://localhost:4200/inventory/dashboard - Analytics (staff/admin)
+```
+
 ## Notes
 
 ### Current Limitations
 - No payment processing integration yet
 - SMS notifications are optional in V1
-- Clerk API keys needed for authentication
-- Backend running on port 3000 (not 3333 as originally planned)
+- ~~Clerk API keys needed for authentication~~ ✅ Development mode available
+- Backend running on port 3000 (configured in VITE_API_URL)
+- Image upload uses URLs (file upload ready but not implemented)
 
 ### Future Enhancements (V2)
 - Mobile applications
@@ -502,4 +901,4 @@ For questions about implementation details, refer to the epic and task documenta
 
 ---
 
-**Last Updated:** August 14, 2025 - Project structure updated, workspace paths corrected
+**Last Updated:** August 16, 2025 - EPIC-01, EPIC-02, and EPIC-03 completed. Tire inventory management fully implemented with role-based access control. Ready for EPIC-04 (Customer Management)

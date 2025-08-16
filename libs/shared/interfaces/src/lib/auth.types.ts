@@ -1,5 +1,4 @@
-import { User, Permission } from './user.interface';
-import { RoleName } from './roles.enum';
+import { RoleName } from './roles.enum.js';
 
 export interface AuthUser {
   id: string;

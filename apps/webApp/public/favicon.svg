@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Simplified version for smaller size -->
+  <rect width="32" height="32" fill="#243c55" rx="6"/>
+  <text x="16" y="23" 
+        font-family="Arial, sans-serif" 
+        font-size="18" 
+        font-weight="bold" 
+        fill="white" 
+        text-anchor="middle">GT</text>
+</svg>

@@ -2,306 +2,305 @@
 
 A comprehensive web application for managing a small business that sells new and used tires and provides automotive mechanical services.
 
-## Features
+## 🚀 Current Status
 
-- **Three-Role System**: Customer, Staff, and Admin interfaces with role-based permissions
-- **Tire Inventory Management**: Track new and used tire inventory with automatic stock management
-- **Customer & Vehicle Tracking**: Complete customer database with vehicle information
-- **Professional Invoicing**: Generate and print invoices in multiple formats (8.5x11, thermal, PDF)
-- **Appointment Scheduling**: Online booking system with automated reminders
-- **Business Analytics**: Comprehensive reporting and analytics (admin-only)
+- **EPIC-01:** ✅ Project Setup & Infrastructure (Complete - Aug 15, 2025)
+- **EPIC-02:** ✅ User Authentication & Management (Complete - Aug 15, 2025)
+- **EPIC-03:** ✅ Tire Inventory Management (Complete - Aug 16, 2025)
+- **EPIC-04:** 📅 Customer & Vehicle Management (Next)
+- **Application:** Running with 3 of 8 epics complete
 
-## Tech Stack
+## 📌 Features
+
+### Implemented
+- ✅ **Three-Role Authentication System**: Customer, Staff, and Admin with role-based permissions
+- ✅ **Repository Pattern**: Clean architecture with separated database logic
+- ✅ **Role-Based Routing**: Protected routes with automatic redirects
+- ✅ **Audit Logging**: Track all admin actions
+- ✅ **Development Mode**: Runs without Clerk API keys for easy setup
+- ✅ **Tire Inventory Management**: Full CRUD with stock tracking and low stock alerts
+- ✅ **Advanced Search & Filter**: Multi-criteria search for inventory
+- ✅ **Inventory Reports**: Financial metrics and analytics (admin-only)
+- ✅ **Stock Adjustments**: Track all inventory changes with audit trail
+- ✅ **Public Website**: Professional landing pages with services catalog
+
+### In Development
+- 🔄 **Customer & Vehicle Tracking**: Complete customer database
+- 🔄 **Professional Invoicing**: Multiple print formats (8.5x11, thermal, PDF)
+
+### Planned
+- 📋 **Appointment Scheduling**: Online booking with reminders
+- 📋 **Business Analytics**: Comprehensive reporting dashboards
+- 📋 **Customer Portal**: Self-service interface for customers
+
+## 🛠 Tech Stack
 
 - **Monorepo**: Nx workspace
 - **Frontend**: React 18 + TypeScript + Material UI
-- **Backend**: NestJS + TypeScript
+- **Backend**: NestJS + TypeScript + Repository Pattern
 - **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: Clerk (identity verification)
-- **Authorization**: Local role & permission management
-- **Validation**: Yup schemas
-- **State Management**: React Query
+- **Authentication**: Clerk (optional) + JWT
+- **State Management**: React Query + Context API
+- **Validation**: Class-validator + Yup schemas
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-GT-AUTOMOTIVES-APP/
+gt-automotives-app/
 ├── apps/
-│   ├── webApp/          # React frontend application
-│   └── server/          # NestJS backend API
+│   ├── webApp/              # React frontend
+│   │   └── src/
+│   │       ├── app/
+│   │       │   ├── guards/      # Auth & Role guards
+│   │       │   ├── hooks/       # Custom hooks
+│   │       │   ├── layouts/     # Role-based layouts
+│   │       │   ├── pages/       # Route pages
+│   │       │   └── providers/   # Context providers
+│   │       └── main.tsx
+│   └── server/              # NestJS backend
+│       └── src/
+│           ├── auth/        # Authentication module
+│           ├── users/       # User management
+│           ├── roles/       # Role management
+│           └── audit/       # Audit logging
 ├── libs/
 │   ├── shared/
-│   │   ├── dto/         # Shared DTOs
-│   │   ├── validation/  # Yup validation schemas
-│   │   └── interfaces/  # TypeScript interfaces
-│   └── database/        # Prisma database library
-├── docker-compose.yml   # PostgreSQL development setup
-└── .env.example        # Environment variables template
+│   │   ├── dto/            # Data transfer objects
+│   │   ├── validation/     # Validation schemas
+│   │   └── interfaces/     # TypeScript interfaces
+│   └── database/           # Prisma ORM
+├── docker-compose.yml      # PostgreSQL setup
+└── docs/                   # Documentation
 ```
 
-## Prerequisites
+## ⚡ Quick Start
 
-- Node.js 18+ 
-- yarn 1.22+
-- Docker & Docker Compose (for PostgreSQL)
-- Clerk account (for authentication)
-
-## Quick Start
+### Prerequisites
+- Node.js 18+ (v20.13.1 recommended)
+- Yarn 1.22+
+- PostgreSQL 13+ (local or Docker)
+- Git
 
 ### 1. Clone and Install
 
 ```bash
-# Clone the repository
 git clone https://github.com/vishaltoora/GT-Automotives-App.git
-cd GT-AUTOMOTIVES-APP
-
-# Install dependencies
-yarn install
+cd gt-automotives-app
+npm install --legacy-peer-deps
 ```
 
 ### 2. Database Setup
 
 ```bash
-# Start PostgreSQL with Docker
-docker-compose up -d
+# Option 1: Using Docker
+yarn docker:up
 
-# Wait for database to be ready
-sleep 5
+# Option 2: Use local PostgreSQL
+# Update DATABASE_URL in server/.env
 
 # Generate Prisma client
-yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
+yarn db:generate
 
-# Run database migrations
-yarn prisma migrate dev --schema=libs/database/src/lib/prisma/schema.prisma --name init
+# Run migrations
+yarn db:migrate
+
+# Seed with test data
+NODE_ENV=development yarn db:seed
 ```
 
-### 3. Environment Configuration
-
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env and add your Clerk API keys:
-# - VITE_CLERK_PUBLISHABLE_KEY
-# - CLERK_SECRET_KEY
-# - CLERK_WEBHOOK_SECRET
-```
-
-### 4. Clerk Setup
-
-1. Create an account at [clerk.com](https://clerk.com)
-2. Create a new application
-3. Copy your API keys to `.env`
-4. Configure webhook endpoint: `http://localhost:3333/webhooks/clerk`
-5. Select webhook events: `user.created`, `user.updated`, `user.deleted`
-
-### 5. Seed Database (Optional)
-
-```bash
-# Create initial roles and permissions
-yarn prisma db seed --schema=libs/database/src/lib/prisma/schema.prisma
-```
-
-### 6. Start Development Servers
+### 3. Start Development (No Clerk Required)
 
 ```bash
 # Start both frontend and backend
-yarn dev
+npx nx serve server &
+npx nx serve webApp
 
-# Or start individually:
-yarn dev:web    # Frontend on http://localhost:4200
-yarn dev:server # Backend on http://localhost:3333
+# Or use separate terminals:
+# Terminal 1:
+npx nx serve server
+
+# Terminal 2:
+npx nx serve webApp
 ```
 
-## Available Scripts
+- Frontend: http://localhost:4200
+- Backend API: http://localhost:3000/api
+
+### 4. Test Users (After Seeding)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@gtautomotive.com | Admin@123 |
+| Staff | staff@gtautomotive.com | Staff@123 |
+| Customer | customer@example.com | Customer@123 |
+
+## 🔐 Authentication Setup (Optional)
+
+The app works without Clerk, but for full authentication:
+
+### 1. Get Clerk API Keys
+1. Sign up at [clerk.com](https://clerk.com)
+2. Create a new application
+3. Copy your API keys
+
+### 2. Configure Environment
+
+Create `apps/webApp/.env.local`:
+```env
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+```
+
+Create `server/.env`:
+```env
+CLERK_SECRET_KEY=sk_test_...
+CLERK_WEBHOOK_SECRET=whsec_...
+JWT_SECRET=your-secret-key
+```
+
+### 3. Configure Webhook
+- Endpoint: `http://localhost:3000/api/webhooks/clerk`
+- Events: `user.created`, `user.updated`, `user.deleted`
+
+## 📝 Available Scripts
 
 ```bash
 # Development
 yarn dev              # Start all services
-yarn dev:web          # Start frontend only
-yarn dev:server       # Start backend only
+yarn dev:web          # Frontend only
+yarn dev:server       # Backend only
 
 # Database
 yarn db:generate      # Generate Prisma client
 yarn db:migrate       # Run migrations
-yarn db:seed          # Seed database
-yarn db:studio        # Open Prisma Studio
+yarn db:seed          # Seed test data
+yarn db:studio        # Prisma Studio GUI
 
 # Testing
 yarn test             # Run all tests
-yarn test:web         # Test frontend
-yarn test:server      # Test backend
+yarn lint             # Lint code
+yarn typecheck        # Type checking
 
 # Building
 yarn build            # Build all apps
 yarn build:web        # Build frontend
 yarn build:server     # Build backend
 
-# Linting
-yarn lint             # Lint all projects
-yarn lint:fix         # Fix linting issues
-
 # Nx Commands
-yarn nx graph                 # View project dependency graph
-yarn nx affected:test         # Test affected projects
-yarn nx affected:build        # Build affected projects
+npx nx graph          # View dependency graph
+npx nx affected:test  # Test affected projects
 ```
 
-## Development Workflow
-
-### Adding a New Feature
-
-1. Check which epic it belongs to in `/docs/epics/`
-2. Verify role permissions needed
-3. Create API endpoint with role checks
-4. Build UI components for each role
-5. Test with all three user types
-6. Update documentation
-
-### Testing Role Permissions
-
-```typescript
-// Test as Customer
-- Can only see own data
-- Cannot access staff/admin features
-
-// Test as Staff  
-- Can see all customer data
-- Cannot see financial totals
-- Cannot modify prices
-
-// Test as Admin
-- Has complete access
-- Can manage users and roles
-- Can view financial reports
-```
-
-## API Documentation
-
-### Base URL
-```
-Development: http://localhost:3333
-Production: https://api.gtautomotive.com
-```
+## 🔌 API Endpoints
 
 ### Authentication
-All API requests require a Bearer token from Clerk:
-```
-Authorization: Bearer <clerk-jwt-token>
-```
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/auth/login` | Local login | No |
+| POST | `/api/auth/register` | Customer registration | No |
+| GET | `/api/auth/me` | Get current user | Yes |
 
-### Main Endpoints
+### User Management
+| Method | Endpoint | Description | Role |
+|--------|----------|-------------|------|
+| GET | `/api/users` | List all users | Staff/Admin |
+| POST | `/api/users` | Create user | Admin |
+| PUT | `/api/users/:id` | Update user | Admin |
+| PUT | `/api/users/:id/role` | Assign role | Admin |
+| DELETE | `/api/users/:id` | Deactivate user | Admin |
 
-```
-# Auth
-GET    /auth/me              # Get current user with permissions
+## 🏗 Repository Pattern
 
-# Customers
-GET    /customers            # List customers (role-based)
-POST   /customers            # Create customer (staff/admin)
-GET    /customers/:id        # Get customer details
-PUT    /customers/:id        # Update customer
-DELETE /customers/:id        # Delete customer (admin only)
+The backend uses a clean repository pattern:
 
-# Vehicles
-GET    /vehicles             # List vehicles
-POST   /vehicles             # Create vehicle
-PUT    /vehicles/:id         # Update vehicle
-DELETE /vehicles/:id         # Delete vehicle
+```typescript
+// Service Layer (Business Logic)
+UsersService → UserRepository → Prisma → Database
 
-# Tires
-GET    /tires                # List tire inventory
-POST   /tires                # Add tire (admin only)
-PUT    /tires/:id            # Update tire
-DELETE /tires/:id            # Delete tire (admin only)
-
-# Invoices
-GET    /invoices             # List invoices (role-based)
-POST   /invoices             # Create invoice (staff/admin)
-GET    /invoices/:id         # Get invoice details
-PUT    /invoices/:id         # Update invoice
-DELETE /invoices/:id         # Delete invoice (admin only)
-
-# Appointments
-GET    /appointments         # List appointments (role-based)
-POST   /appointments         # Create appointment
-PUT    /appointments/:id     # Update appointment
-DELETE /appointments/:id     # Delete appointment
+// Example:
+class UsersService {
+  constructor(private userRepository: UserRepository) {}
+  
+  async findAll() {
+    return this.userRepository.findAll();
+  }
+}
 ```
 
-## Database Management
+## 🛡 Role-Based Access
 
-### Access Database UI
+### Customer
+- ✅ View own data (invoices, vehicles, appointments)
+- ✅ Self-registration
+- ❌ Cannot see other customers
+- ❌ No access to staff/admin features
+
+### Staff
+- ✅ View all customers
+- ✅ Create invoices
+- ✅ Manage inventory (no prices)
+- ❌ Cannot see financial reports
+- ❌ Cannot manage users
+
+### Admin
+- ✅ Full system access
+- ✅ User management
+- ✅ Financial reports
+- ✅ Price controls
+- ✅ All actions logged
+
+## 🐛 Troubleshooting
+
+### Node Version Issues
 ```bash
-# Option 1: Adminer (included in docker-compose)
-open http://localhost:8080
-# Server: postgres
-# Username: postgres
-# Password: postgres
-# Database: gt_automotive
-
-# Option 2: Prisma Studio
-yarn prisma studio --schema=libs/database/src/lib/prisma/schema.prisma
+# If you see vite engine incompatibility:
+npm install --legacy-peer-deps
 ```
 
-### Reset Database
+### Lock File Conflicts
 ```bash
-# Drop all tables and re-run migrations
-yarn prisma migrate reset --schema=libs/database/src/lib/prisma/schema.prisma
+# Remove lock files and reinstall:
+rm yarn.lock package-lock.json
+npm install --legacy-peer-deps
 ```
 
-## Deployment
-
-### Production Build
+### Database Connection
 ```bash
-# Build all applications
-yarn build
-
-# Frontend output: dist/apps/webApp
-# Backend output: dist/apps/server
+# Check PostgreSQL is running:
+docker ps
+# Or check local PostgreSQL:
+psql -U postgres -d gt_automotive
 ```
 
-### Environment Variables (Production)
-```env
-DATABASE_URL=postgresql://user:pass@host:5432/dbname
-CLERK_SECRET_KEY=sk_live_...
-VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
-NODE_ENV=production
-```
+### Ports in Use
+- Frontend: Change in `apps/webApp/vite.config.ts`
+- Backend: Change PORT in `server/.env`
 
-## Troubleshooting
+## 📚 Documentation
 
-### Common Issues
+- [Project Roadmap](docs/PROJECT_ROADMAP.md)
+- [Role Permissions](docs/ROLE_PERMISSIONS.md)
+- [GitHub Issues](https://github.com/vishaltoora/GT-Automotives-App/issues)
+- [Epic Documentation](docs/epics/)
+- [Claude AI Instructions](CLAUDE.md)
 
-1. **Database connection failed**
-   - Ensure Docker is running: `docker ps`
-   - Check PostgreSQL logs: `docker logs gt_automotive_postgres`
+## 🤝 Contributing
 
-2. **Clerk authentication not working**
-   - Verify API keys in `.env`
-   - Check webhook configuration in Clerk dashboard
+1. Check open issues in GitHub
+2. Create feature branch: `git checkout -b feature/epic-XX-description`
+3. Follow existing code patterns
+4. Test with all three roles
+5. Create pull request
 
-3. **Prisma client errors**
-   - Regenerate client: `yarn db:generate`
-   - Check schema path is correct
-
-4. **Port already in use**
-   - Frontend: Change port in `apps/webApp/project.json`
-   - Backend: Change port in `.env` (API_PORT)
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/epic-XX-description`
-2. Make your changes
-3. Run tests: `yarn test`
-4. Commit: `git commit -m "Epic-XX: Add feature"`
-5. Push: `git push origin feature/epic-XX-description`
-6. Create pull request
-
-## License
+## 📄 License
 
 Private - GT Automotive
 
-## Support
+## 💬 Support
 
-For questions or issues, contact the development team or create an issue in the [GitHub repository](https://github.com/vishaltoora/GT-Automotives-App/issues).
+- Create an issue in [GitHub](https://github.com/vishaltoora/GT-Automotives-App/issues)
+- Check [CLAUDE.md](CLAUDE.md) for AI assistant instructions
+- Review [docs/](docs/) for detailed documentation
+
+---
+
+**Last Updated:** August 15, 2025 | **Version:** 0.2.0 | **Status:** Active Development

@@ -3,6 +3,9 @@
   "include": [],
   "references": [
     {
+      "path": "../../libs/shared/interfaces"
+    },
+    {
       "path": "./tsconfig.app.json"
     },
     {

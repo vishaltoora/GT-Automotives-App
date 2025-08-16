@@ -1,51 +1,158 @@
-// Uncomment this line to use CSS modules
-// import styles from './app.module.css';
-import NxWelcome from './nx-welcome';
+import React from 'react';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { ThemeProvider, CssBaseline, Box } from '@mui/material';
+import { theme } from './theme/theme';
 
-import { Route, Routes, Link } from 'react-router-dom';
+// Layouts
+import { PublicLayout } from './layouts/PublicLayout';
+import { CustomerLayout } from './layouts/CustomerLayout';
+import { StaffLayout } from './layouts/StaffLayout';
+import { AdminLayout } from './layouts/AdminLayout';
+
+// Guards
+import { AuthGuard } from './guards/AuthGuard';
+import { RoleGuard } from './guards/RoleGuard';
+
+// Auth Pages
+import { Login } from './pages/auth/Login';
+import { Register } from './pages/auth/Register';
+import { Unauthorized } from './pages/auth/Unauthorized';
+
+// Public Pages
+import { Home } from './pages/public/Home';
+import { Services } from './pages/public/Services';
+import { Contact } from './pages/public/Contact';
+import { About } from './pages/public/About';
+
+// Customer Pages
+import { CustomerDashboard } from './pages/customer/Dashboard';
+
+// Staff Pages
+import { StaffDashboard } from './pages/staff/Dashboard';
+
+// Admin Pages
+import { AdminDashboard } from './pages/admin/Dashboard';
+
+// Inventory Pages
+import TireListSimple from './pages/inventory/TireListSimple';
+import TireFormSimple from './pages/inventory/TireFormSimple';
+import TireDetails from './pages/inventory/TireDetails';
+import InventoryDashboard from './pages/inventory/InventoryDashboard';
 
 export function App() {
   return (
-    <div>
-      <NxWelcome title="@gt-automotive-workspace/webApp" />
-
-      {/* START: routes */}
-      {/* These routes and navigation have been generated for you */}
-      {/* Feel free to move and update them to fit your needs */}
-      <br />
-      <hr />
-      <br />
-      <div role="navigation">
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/page-2">Page 2</Link>
-          </li>
-        </ul>
-      </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
       <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<PublicLayout />}>
+          <Route index element={<Home />} />
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
+          <Route path="unauthorized" element={<Unauthorized />} />
+          <Route path="services" element={<Services />} />
+          <Route path="about" element={<About />} />
+          <Route path="contact" element={<Contact />} />
+        </Route>
+
+        {/* Customer Routes */}
         <Route
-          path="/"
+          path="/customer/*"
           element={
-            <div>
-              This is the generated root route.{' '}
-              <Link to="/page-2">Click here for page 2.</Link>
-            </div>
+            <AuthGuard>
+              <RoleGuard allowedRoles={['customer']}>
+                <CustomerLayout />
+              </RoleGuard>
+            </AuthGuard>
           }
-        />
+        >
+          <Route path="dashboard" element={<CustomerDashboard />} />
+          <Route path="vehicles" element={<div>My Vehicles</div>} />
+          <Route path="invoices" element={<div>My Invoices</div>} />
+          <Route path="appointments" element={<div>My Appointments</div>} />
+          <Route path="profile" element={<div>My Profile</div>} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
+
+        {/* Staff Routes */}
         <Route
-          path="/page-2"
+          path="/staff/*"
           element={
-            <div>
-              <Link to="/">Click here to go back to root page.</Link>
-            </div>
+            <AuthGuard>
+              <RoleGuard allowedRoles={['staff', 'admin']}>
+                <StaffLayout />
+              </RoleGuard>
+            </AuthGuard>
           }
-        />
+        >
+          <Route path="dashboard" element={<StaffDashboard />} />
+          <Route path="customers" element={<div>Customers</div>} />
+          <Route path="invoices" element={<div>Invoices</div>} />
+          <Route path="appointments" element={<div>Appointments</div>} />
+          <Route path="reports" element={<div>Reports</div>} />
+          <Route path="settings" element={<div>Settings</div>} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <AuthGuard>
+              <RoleGuard allowedRoles={['admin']}>
+                <AdminLayout />
+              </RoleGuard>
+            </AuthGuard>
+          }
+        >
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<div>User Management</div>} />
+          <Route path="customers" element={<div>All Customers</div>} />
+          <Route path="invoices" element={<div>All Invoices</div>} />
+          <Route path="appointments" element={<div>All Appointments</div>} />
+          <Route path="reports" element={<div>Financial Reports</div>} />
+          <Route path="analytics" element={<div>Analytics</div>} />
+          <Route path="security" element={<div>Security Settings</div>} />
+          <Route path="settings" element={<div>System Settings</div>} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
+
+        {/* Shared Inventory Routes - Available to all authenticated users */}
+        <Route
+          path="/inventory"
+          element={
+            <AuthGuard>
+              <RoleGuard allowedRoles={['customer', 'staff', 'admin']}>
+                <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
+                  <Outlet />
+                </Box>
+              </RoleGuard>
+            </AuthGuard>
+          }
+        >
+          <Route index element={<TireListSimple />} />
+          <Route path="new" element={
+            <RoleGuard allowedRoles={['staff', 'admin']}>
+              <TireFormSimple />
+            </RoleGuard>
+          } />
+          <Route path=":id" element={<TireDetails />} />
+          <Route path=":id/edit" element={
+            <RoleGuard allowedRoles={['staff', 'admin']}>
+              <TireFormSimple />
+            </RoleGuard>
+          } />
+          <Route path="dashboard" element={
+            <RoleGuard allowedRoles={['staff', 'admin']}>
+              <InventoryDashboard />
+            </RoleGuard>
+          } />
+        </Route>
+
+        {/* Catch all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {/* END: routes */}
-    </div>
+    </ThemeProvider>
   );
 }
 
