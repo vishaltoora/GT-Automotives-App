@@ -7,8 +7,9 @@ A comprehensive web application for managing a small business that sells new and
 - **EPIC-01:** ✅ Project Setup & Infrastructure (Complete - Aug 15, 2025)
 - **EPIC-02:** ✅ User Authentication & Management (Complete - Aug 15, 2025)
 - **EPIC-03:** ✅ Tire Inventory Management (Complete - Aug 16, 2025)
-- **EPIC-04:** 📅 Customer & Vehicle Management (Next)
-- **Application:** Running with 3 of 8 epics complete
+- **EPIC-04:** ✅ Customer & Vehicle Management (Complete - Aug 17, 2025)
+- **EPIC-05:** 📅 Invoicing System (Next)
+- **Progress:** 4 of 8 epics complete (50% MVP)
 
 ## 📌 Features
 
@@ -19,13 +20,14 @@ A comprehensive web application for managing a small business that sells new and
 - ✅ **Audit Logging**: Track all admin actions
 - ✅ **Development Mode**: Runs without Clerk API keys for easy setup
 - ✅ **Tire Inventory Management**: Full CRUD with stock tracking and low stock alerts
-- ✅ **Advanced Search & Filter**: Multi-criteria search for inventory
-- ✅ **Inventory Reports**: Financial metrics and analytics (admin-only)
-- ✅ **Stock Adjustments**: Track all inventory changes with audit trail
+- ✅ **Customer Management**: Complete customer profiles with contact information
+- ✅ **Vehicle Tracking**: Vehicle database with VIN validation and mileage tracking
+- ✅ **Customer-Vehicle Relationships**: Properly linked with referential integrity
+- ✅ **Advanced Search & Filter**: Multi-criteria search for inventory, customers, and vehicles
+- ✅ **Statistics & Reports**: Customer spending, vehicle service history, inventory metrics
 - ✅ **Public Website**: Professional landing pages with services catalog
 
 ### In Development
-- 🔄 **Customer & Vehicle Tracking**: Complete customer database
 - 🔄 **Professional Invoicing**: Multiple print formats (8.5x11, thermal, PDF)
 
 ### Planned

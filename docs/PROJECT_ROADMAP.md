@@ -25,7 +25,7 @@ A comprehensive web application for managing tire sales (new and used) and autom
    - Status: ✅ COMPLETE (August 15, 2025)
    - Three-role authentication system with repository pattern
 
-### Phase 2: Core Features (Weeks 4-7) 🔄 IN PROGRESS
+### Phase 2: Core Features (Weeks 4-7) ✅ COMPLETE
 3. **[EPIC-03: Tire Inventory Management](epics/EPIC-03-tire-inventory.md)** → [GitHub Issue #3](https://github.com/vishaltoora/GT-Automotives-App/issues/3)
    - Priority: HIGH
    - Status: ✅ COMPLETE (August 16, 2025)
@@ -34,13 +34,14 @@ A comprehensive web application for managing tire sales (new and used) and autom
 
 4. **[EPIC-04: Customer & Vehicle Management](epics/EPIC-04-customer-management.md)** → [GitHub Issue #4](https://github.com/vishaltoora/GT-Automotives-App/issues/4)
    - Priority: HIGH
-   - Status: 📅 NEXT UP
+   - Status: ✅ COMPLETE (August 17, 2025)
    - Duration: 1.5 weeks
-   - Customer database with vehicle tracking
+   - Full customer and vehicle management with relationship linking
 
-### Phase 3: Business Operations (Weeks 8-10)
+### Phase 3: Business Operations (Weeks 8-10) 🔄 IN PROGRESS
 5. **[EPIC-05: Invoicing System](epics/EPIC-05-invoicing-system.md)** → [GitHub Issue #5](https://github.com/vishaltoora/GT-Automotives-App/issues/5)
    - Priority: HIGH
+   - Status: 📅 NEXT UP
    - Duration: 2 weeks
    - Complete invoicing with professional printing capabilities
 
@@ -114,16 +115,19 @@ A comprehensive web application for managing tire sales (new and used) and autom
 3. ~~Create database schema~~ ✅ COMPLETE
 4. ~~Begin Sprint 1 with EPIC-01 tasks~~ ✅ COMPLETE
 5. ~~Implement EPIC-03 - Tire Inventory Management~~ ✅ COMPLETE
-6. **Current:** Begin EPIC-04 - Customer & Vehicle Management
-7. **Next:** Implement EPIC-05 - Invoicing System
+6. ~~Implement EPIC-04 - Customer & Vehicle Management~~ ✅ COMPLETE
+7. **Current:** Begin EPIC-05 - Invoicing System
+8. **Next:** Implement EPIC-06 - Appointment Scheduling
 
 ## Completion Status
-- **Epics Completed:** 3 of 8 (37.5%)
-- **EPIC-01:** ✅ Project Setup & Infrastructure
-- **EPIC-02:** ✅ User Authentication & Management  
-- **EPIC-03:** ✅ Tire Inventory Management
-- **In Progress:** Phase 2 - Core Features
+- **Epics Completed:** 4 of 8 (50%)
+- **EPIC-01:** ✅ Project Setup & Infrastructure (August 15, 2025)
+- **EPIC-02:** ✅ User Authentication & Management (August 15, 2025)
+- **EPIC-03:** ✅ Tire Inventory Management (August 16, 2025)
+- **EPIC-04:** ✅ Customer & Vehicle Management (August 17, 2025)
+- **In Progress:** Phase 3 - Business Operations
 - **Estimated Completion:** On track for 12-week target
+- **Overall Progress:** 50% of MVP features complete
 
 ## How to Use These Documents
 1. Each epic has its own detailed file in `/docs/epics/`

@@ -62,7 +62,7 @@ export function AdminLayout() {
     { text: 'Customers', icon: <People />, path: '/customers' },
     { text: 'Vehicles', icon: <DirectionsCar />, path: '/vehicles' },
     { text: 'Inventory', icon: <Inventory />, path: '/inventory' },
-    { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
+    { text: 'Invoices', icon: <Receipt />, path: '/invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
     { divider: true },
     { text: 'Reports', icon: <Assessment />, path: '/admin/reports' },

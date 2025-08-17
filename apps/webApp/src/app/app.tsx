@@ -45,6 +45,12 @@ import { CustomerForm } from './pages/customers/CustomerForm';
 import { VehicleList } from './pages/customers/VehicleList';
 import { VehicleForm } from './pages/customers/VehicleForm';
 
+// Invoice Pages
+import InvoiceList from './pages/invoices/InvoiceList';
+import InvoiceForm from './pages/invoices/InvoiceForm';
+import InvoiceDetails from './pages/invoices/InvoiceDetails';
+import CashReport from './pages/invoices/CashReport';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -189,6 +195,31 @@ export function App() {
           <Route index element={<VehicleList />} />
           <Route path="new" element={<VehicleForm />} />
           <Route path=":id/edit" element={<VehicleForm />} />
+        </Route>
+
+        {/* Invoice Routes - Available to all authenticated users */}
+        <Route
+          path="/invoices"
+          element={
+            <AuthGuard>
+              <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
+                <Outlet />
+              </Box>
+            </AuthGuard>
+          }
+        >
+          <Route index element={<InvoiceList />} />
+          <Route path="new" element={
+            <RoleGuard allowedRoles={['staff', 'admin']}>
+              <InvoiceForm />
+            </RoleGuard>
+          } />
+          <Route path="cash-report" element={
+            <RoleGuard allowedRoles={['staff', 'admin']}>
+              <CashReport />
+            </RoleGuard>
+          } />
+          <Route path=":id" element={<InvoiceDetails />} />
         </Route>
 
         {/* Catch all redirect */}

@@ -21,8 +21,11 @@ const setAuthState = (isSignedIn: boolean) => {
   try {
     if (isSignedIn) {
       sessionStorage.setItem(MOCK_AUTH_KEY, 'true');
+      // Also set a mock JWT token for API calls
+      localStorage.setItem('authToken', 'mock-jwt-token-development');
     } else {
       sessionStorage.removeItem(MOCK_AUTH_KEY);
+      localStorage.removeItem('authToken');
     }
   } catch {}
 };
@@ -161,9 +164,22 @@ export function MockClerkProvider({ children }: MockClerkProviderProps) {
   const [isSignedIn, setIsSignedIn] = useState(getAuthState());
   
   useEffect(() => {
+    // Set token on initial mount if signed in
+    if (isSignedIn && !localStorage.getItem('authToken')) {
+      localStorage.setItem('authToken', 'mock-jwt-token-development');
+    }
+    
     // Check auth state on mount and window focus
     const checkAuth = () => {
-      setIsSignedIn(getAuthState());
+      const newSignedIn = getAuthState();
+      setIsSignedIn(newSignedIn);
+      
+      // Sync token with auth state
+      if (newSignedIn && !localStorage.getItem('authToken')) {
+        localStorage.setItem('authToken', 'mock-jwt-token-development');
+      } else if (!newSignedIn) {
+        localStorage.removeItem('authToken');
+      }
     };
     
     window.addEventListener('focus', checkAuth);
@@ -173,7 +189,7 @@ export function MockClerkProvider({ children }: MockClerkProviderProps) {
       window.removeEventListener('focus', checkAuth);
       window.removeEventListener('storage', checkAuth);
     };
-  }, []);
+  }, [isSignedIn]);
   
   const mockValue = {
     isLoaded: true,

@@ -18,7 +18,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 
 ## Project Status
 
-**Current Phase:** Core Features Development - 3 of 8 Epics Complete, Ready for Customer Management (EPIC-04)
+**Current Phase:** Core Features Development - 4 of 8 Epics Complete (50%), Ready for Invoicing System (EPIC-05)
 
 ### Completed
 - ✅ 8 Epics fully documented and created as GitHub issues (#1-#8)
@@ -33,6 +33,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 - ✅ **EPIC-01 COMPLETE:** Nx monorepo initialized with React frontend and NestJS backend
 - ✅ **EPIC-02 COMPLETE:** Three-role authentication system with full Clerk integration
 - ✅ **EPIC-03 COMPLETE:** Tire inventory management with full CRUD operations
+- ✅ **EPIC-04 COMPLETE:** Customer and vehicle management with relationship linking
 - ✅ Shared libraries created (DTOs, validation, interfaces)
 - ✅ CI/CD pipelines configured with GitHub Actions
 - ✅ Development environment ready with Docker Compose
@@ -48,6 +49,8 @@ GT Automotive is a comprehensive web application for managing a small business t
 - ✅ Responsive mobile navigation with hamburger menu
 - ✅ Reusable component library for public interface
 - ✅ **Inventory Management COMPLETE:** Full tire inventory system with stock tracking
+- ✅ **Customer Management COMPLETE:** Full customer profiles with contact info
+- ✅ **Vehicle Management COMPLETE:** Vehicle tracking with VIN validation and mileage
 
 ### GitHub Integration
 - **Repository:** https://github.com/vishaltoora/GT-Automotives-App
@@ -60,9 +63,11 @@ GT Automotive is a comprehensive web application for managing a small business t
 2. ~~Set up development environment (EPIC-01)~~ ✅ COMPLETE
 3. ~~Implement three-role authentication (EPIC-02)~~ ✅ COMPLETE
 4. ~~Implement tire inventory management (EPIC-03)~~ ✅ COMPLETE
-5. Implement customer and vehicle management ([Issue #4](https://github.com/vishaltoora/GT-Automotives-App/issues/4)) - EPIC-04
-6. Build invoicing system (EPIC-05)
-7. Add appointment scheduling (EPIC-06)
+5. ~~Implement customer and vehicle management (EPIC-04)~~ ✅ COMPLETE
+6. Build invoicing system ([Issue #5](https://github.com/vishaltoora/GT-Automotives-App/issues/5)) - EPIC-05
+7. Add appointment scheduling ([Issue #6](https://github.com/vishaltoora/GT-Automotives-App/issues/6)) - EPIC-06
+8. Implement reporting & analytics ([Issue #7](https://github.com/vishaltoora/GT-Automotives-App/issues/7)) - EPIC-07
+9. Build customer portal ([Issue #8](https://github.com/vishaltoora/GT-Automotives-App/issues/8)) - EPIC-08
 
 ## User Roles & Permissions
 
@@ -134,7 +139,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 1. **[EPIC-01: Project Setup](https://github.com/vishaltoora/GT-Automotives-App/issues/1)** - Infrastructure and environment ✅ **COMPLETE**
 2. **[EPIC-02: Authentication](https://github.com/vishaltoora/GT-Automotives-App/issues/2)** - Three-role system with Clerk ✅ **COMPLETE**
 3. **[EPIC-03: Tire Inventory](https://github.com/vishaltoora/GT-Automotives-App/issues/3)** - New/used tire management ✅ **COMPLETE**
-4. **[EPIC-04: Customer Management](https://github.com/vishaltoora/GT-Automotives-App/issues/4)** - Customers and vehicles
+4. **[EPIC-04: Customer Management](https://github.com/vishaltoora/GT-Automotives-App/issues/4)** - Customers and vehicles ✅ **COMPLETE**
 5. **[EPIC-05: Invoicing](https://github.com/vishaltoora/GT-Automotives-App/issues/5)** - Creation and printing (8.5x11, thermal, PDF)
 6. **[EPIC-06: Appointments](https://github.com/vishaltoora/GT-Automotives-App/issues/6)** - Scheduling with reminders
 7. **[EPIC-07: Reporting](https://github.com/vishaltoora/GT-Automotives-App/issues/7)** - Business analytics (admin-only)
@@ -918,9 +923,48 @@ yarn dev
 - **Issues:** https://github.com/vishaltoora/GT-Automotives-App/issues
 - **Milestone:** https://github.com/vishaltoora/GT-Automotives-App/milestone/1
 
+### EPIC-04: Customer and Vehicle Management ✅
+**Completed on:** August 17, 2025
+
+#### What Was Implemented:
+
+**Backend (NestJS):**
+- **Customer Module:** Complete CRUD operations with repository pattern
+  - Customer profiles with contact information
+  - Customer statistics (total spent, vehicle count, appointments)
+  - Search functionality by name, email, phone, or address
+- **Vehicle Module:** Full vehicle management system
+  - Vehicle tracking linked to customers
+  - VIN validation and uniqueness checks
+  - Mileage tracking with validation (cannot decrease)
+  - Search by make, model, VIN, or license plate
+- **Role-Based Access:** 
+  - Customers see only their own data
+  - Staff can manage all customers/vehicles (no deletion)
+  - Admin has full control including deletion
+- **Audit Logging:** All customer and vehicle changes tracked
+
+**Frontend (React):**
+- **Customer Components:**
+  - `CustomerList`: Display all customers with statistics
+  - `CustomerForm`: Add/edit customer profiles
+- **Vehicle Components:**
+  - `VehicleList`: Display all vehicles with owner info
+  - `VehicleForm`: Add/edit vehicles with autocomplete for makes
+- **Services:** API clients for customer and vehicle operations
+- **Routes:** Protected routes with role-based access
+- **Navigation:** Updated staff and admin layouts with menu items
+
+#### Key Features:
+- ✅ **Customer-Vehicle Relationships:** Properly linked with referential integrity
+- ✅ **Data Validation:** Phone numbers, emails, VIN format
+- ✅ **Search & Filter:** Advanced search across multiple fields
+- ✅ **Statistics:** Customer spending, vehicle service history
+- ✅ **Cascade Operations:** Proper handling of related data
+
 ### Contact
 For questions about implementation details, refer to the epic and task documentation in `/docs/` or create an issue in the repository.
 
 ---
 
-**Last Updated:** August 16, 2025 - EPIC-01, EPIC-02, and EPIC-03 completed. Full Clerk authentication integrated with publishable and secret keys. Tire inventory management fully implemented with role-based access control. Application running successfully with both development (mock) and production (Clerk) authentication modes. Ready for EPIC-04 (Customer Management)
+**Last Updated:** August 17, 2025 - EPIC-01, EPIC-02, EPIC-03, and EPIC-04 completed. Customer and vehicle management system fully implemented with relationship linking, search functionality, and role-based access control. Authentication flow issues fixed with proper session storage in MockClerkProvider. Application running successfully with 50% of MVP features complete. Ready for EPIC-05 (Invoicing System)

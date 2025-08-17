@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { TiresModule } from '../tires/tires.module';
 import { CustomersModule } from '../customers/customers.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
+import { InvoicesModule } from '../invoices/invoices.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -22,6 +23,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     TiresModule,
     CustomersModule,
     VehiclesModule,
+    InvoicesModule,
   ],
   controllers: [AppController],
   providers: [

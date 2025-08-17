@@ -1,11 +1,38 @@
 import { PrismaService } from '@gt-automotive/database';
 
-export abstract class BaseRepository<T> {
-  constructor(protected readonly prisma: PrismaService) {}
+export abstract class BaseRepository<T, CreateInput = any, UpdateInput = any, FindManyArgs = any> {
+  constructor(
+    protected readonly prisma: PrismaService,
+    protected readonly modelName: string,
+  ) {}
 
-  abstract findAll(filters?: any): Promise<T[]>;
-  abstract findById(id: string | number): Promise<T | null>;
-  abstract create(data: any): Promise<T>;
-  abstract update(id: string | number, data: any): Promise<T>;
-  abstract delete(id: string | number): Promise<boolean>;
+  async findAll(args?: FindManyArgs): Promise<T[]> {
+    return this.prisma[this.modelName].findMany(args);
+  }
+
+  async findById(id: string | number): Promise<T | null> {
+    return this.prisma[this.modelName].findUnique({
+      where: { id },
+    });
+  }
+
+  async create(data: CreateInput): Promise<T> {
+    return this.prisma[this.modelName].create({
+      data,
+    });
+  }
+
+  async update(id: string | number, data: UpdateInput): Promise<T> {
+    return this.prisma[this.modelName].update({
+      where: { id },
+      data,
+    });
+  }
+
+  async delete(id: string | number): Promise<boolean> {
+    await this.prisma[this.modelName].delete({
+      where: { id },
+    });
+    return true;
+  }
 }

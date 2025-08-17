@@ -18,6 +18,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // Development mode bypass for mock token
+    if (process.env.NODE_ENV === 'development' && payload === 'mock-jwt-token-development') {
+      // Return a mock user for development
+      return {
+        id: 'dev-user-1',
+        email: 'customer@example.com',
+        role: { name: 'CUSTOMER' },
+        firstName: 'Test',
+        lastName: 'Customer',
+        customerId: 'dev-customer-1',
+      };
+    }
+    
     const user = await this.userRepository.findById(payload.sub);
     
     if (!user || !user.isActive) {
