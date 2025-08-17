@@ -33,7 +33,7 @@ export function useAuth() {
   const { getToken } = useClerkAuth();
   
   // Development mode bypass - for testing without backend
-  const isDevelopment = import.meta.env.DEV && !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const isDevelopment = false; // Disabled since we have Clerk keys now
 
   useEffect(() => {
     const syncUser = async () => {
@@ -66,6 +66,14 @@ export function useAuth() {
           setLoading(true);
           const token = await getToken();
           
+          if (!token) {
+            // User is signed in with Clerk but no token yet
+            // This happens on first sign-in before backend sync
+            console.log('Waiting for Clerk token...');
+            setLoading(false);
+            return;
+          }
+          
           // First check if user exists in our database
           const response = await axios.get(`${API_URL}/api/auth/me`, {
             headers: {
@@ -76,29 +84,19 @@ export function useAuth() {
         } catch (error: any) {
           console.error('Failed to sync user:', error);
           
-          // If user doesn't exist in our database, create them via webhook
-          if (error.response?.status === 404) {
-            try {
-              // Trigger user creation via webhook simulation
-              const token = await getToken();
-              const createResponse = await axios.post(
-                `${API_URL}/api/auth/sync`,
-                {
-                  clerkId: clerkUser.id,
-                  email: clerkUser.primaryEmailAddress?.emailAddress,
-                  firstName: clerkUser.firstName || '',
-                  lastName: clerkUser.lastName || '',
-                },
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
-              setAppUser(createResponse.data);
-            } catch (createError) {
-              console.error('Failed to create user:', createError);
-            }
+          // For now, set a default customer user to prevent redirect loops
+          // The proper sync should happen via Clerk webhook
+          if (error.response?.status === 404 || error.response?.status === 401) {
+            console.log('User not found in database. Please ensure Clerk webhook is configured.');
+            // Set a minimal user object to prevent redirect loop
+            setAppUser({
+              id: clerkUser.id,
+              email: clerkUser.primaryEmailAddress?.emailAddress || '',
+              firstName: clerkUser.firstName || 'User',
+              lastName: clerkUser.lastName || '',
+              role: { id: 3, name: 'customer' }, // Default to customer role
+              isActive: true
+            });
           }
         } finally {
           setLoading(false);

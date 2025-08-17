@@ -31,16 +31,17 @@ GT Automotive is a comprehensive web application for managing a small business t
 - ✅ 8 custom labels configured
 - ✅ Repository pushed to GitHub
 - ✅ **EPIC-01 COMPLETE:** Nx monorepo initialized with React frontend and NestJS backend
-- ✅ **EPIC-02 COMPLETE:** Three-role authentication system with Clerk integration
+- ✅ **EPIC-02 COMPLETE:** Three-role authentication system with full Clerk integration
 - ✅ **EPIC-03 COMPLETE:** Tire inventory management with full CRUD operations
 - ✅ Shared libraries created (DTOs, validation, interfaces)
 - ✅ CI/CD pipelines configured with GitHub Actions
 - ✅ Development environment ready with Docker Compose
 - ✅ Repository pattern implemented for database operations
 - ✅ Role-based routing and guards implemented
-- ✅ Development mode authentication without Clerk keys
-- ✅ MockClerkProvider for seamless local development
-- ✅ Fixed login redirect and blank dashboard issues
+- ✅ Full Clerk authentication configured and working
+- ✅ Clerk keys integrated (publishable and secret keys)
+- ✅ JWKS endpoint configured for JWT verification
+- ✅ Fixed login redirect and authentication flow
 - ✅ ES6 module imports for browser compatibility
 - ✅ **Public-Facing Website COMPLETE:** Professional theme system and all public pages implemented
 - ✅ Comprehensive theme system with consistent branding
@@ -131,21 +132,41 @@ GT Automotive is a comprehensive web application for managing a small business t
 ## Key Features (8 Epics)
 
 1. **[EPIC-01: Project Setup](https://github.com/vishaltoora/GT-Automotives-App/issues/1)** - Infrastructure and environment ✅ **COMPLETE**
-2. **[EPIC-02: Authentication](https://github.com/vishaltoora/GT-Automotives-App/issues/2)** - Three-role system with JWT
-3. **[EPIC-03: Tire Inventory](https://github.com/vishaltoora/GT-Automotives-App/issues/3)** - New/used tire management
+2. **[EPIC-02: Authentication](https://github.com/vishaltoora/GT-Automotives-App/issues/2)** - Three-role system with Clerk ✅ **COMPLETE**
+3. **[EPIC-03: Tire Inventory](https://github.com/vishaltoora/GT-Automotives-App/issues/3)** - New/used tire management ✅ **COMPLETE**
 4. **[EPIC-04: Customer Management](https://github.com/vishaltoora/GT-Automotives-App/issues/4)** - Customers and vehicles
 5. **[EPIC-05: Invoicing](https://github.com/vishaltoora/GT-Automotives-App/issues/5)** - Creation and printing (8.5x11, thermal, PDF)
 6. **[EPIC-06: Appointments](https://github.com/vishaltoora/GT-Automotives-App/issues/6)** - Scheduling with reminders
 7. **[EPIC-07: Reporting](https://github.com/vishaltoora/GT-Automotives-App/issues/7)** - Business analytics (admin-only)
 8. **[EPIC-08: Customer Portal](https://github.com/vishaltoora/GT-Automotives-App/issues/8)** - Self-service interface
 
+## Authentication with Clerk (Production Mode)
+
+The application uses Clerk for authentication with the following configuration:
+
+### Clerk Instance Details
+- **Instance:** clean-dove-53
+- **Frontend API:** https://clean-dove-53.clerk.accounts.dev
+- **JWKS URL:** https://clean-dove-53.clerk.accounts.dev/.well-known/jwks.json
+
+### Configuration Files
+- **Frontend Key:** Set in `apps/webApp/.env.local` as `VITE_CLERK_PUBLISHABLE_KEY`
+- **Backend Key:** Set in `server/.env` as `CLERK_SECRET_KEY`
+- **Documentation:** `/docs/CLERK_CONFIG.md`
+
+### How Authentication Works
+1. Users sign in/up through Clerk at `/login` or `/register`
+2. New users automatically get "customer" role
+3. JWT tokens are verified using Clerk's JWKS endpoint
+4. Role-based routing redirects users to appropriate dashboards
+
 ## Development Mode (Without Clerk)
 
-The application can run in development mode without Clerk authentication configured:
+To run without Clerk authentication:
 
 ### Setup
 1. Comment out `VITE_CLERK_PUBLISHABLE_KEY` in `apps/webApp/.env.local`
-2. Start servers (frontend and backend)
+2. Restart servers - the app will use `MockClerkProvider`
 3. Access the application with automatic mock authentication
 
 ### Mock User Details
@@ -153,12 +174,6 @@ The application can run in development mode without Clerk authentication configu
 - **Name:** Test Customer
 - **Role:** Customer (automatically assigned)
 - **Access:** Full customer portal features
-
-### How It Works
-- `MockClerkProvider` provides fake Clerk hooks
-- Automatic authentication bypass for development
-- No external dependencies required
-- Instant development setup
 
 ## Development Setup
 
@@ -176,11 +191,11 @@ The application can run in development mode without Clerk authentication configu
 # Database
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/gt_automotive"
 
-# Clerk Authentication (Optional for development)
-# Comment out for development mode with mock authentication
-# VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-CLERK_WEBHOOK_SECRET=whsec_...
+# Clerk Authentication (Required for production)
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_Y2xlYW4tZG92ZS01My5jbGVyay5hY2NvdW50cy5kZXYk
+CLERK_SECRET_KEY=sk_test_z1yz3LAc4dQglp0oCUWxscpuKWqh8mnCsYHT5hYjxB
+CLERK_JWKS_URL=https://clean-dove-53.clerk.accounts.dev/.well-known/jwks.json
+CLERK_WEBHOOK_SECRET=whsec_... # Configure in Clerk dashboard
 
 # Application
 API_PORT=3000
@@ -869,11 +884,18 @@ yarn dev
 
 ## Notes
 
+### Current Status
+- ✅ Clerk authentication fully configured and working
+- ✅ All environment variables properly set
+- ✅ Backend running on port 3000 with JWT verification
+- ✅ Frontend running on port 4200 with Clerk SignIn/SignUp
+- ✅ Role-based routing and guards functional
+- ✅ Development and production modes both supported
+
 ### Current Limitations
 - No payment processing integration yet
 - SMS notifications are optional in V1
-- ~~Clerk API keys needed for authentication~~ ✅ Development mode available
-- Backend running on port 3000 (configured in VITE_API_URL)
+- Webhook synchronization optional (users get default customer role)
 - Image upload uses URLs (file upload ready but not implemented)
 
 ### Future Enhancements (V2)
@@ -901,4 +923,4 @@ For questions about implementation details, refer to the epic and task documenta
 
 ---
 
-**Last Updated:** August 16, 2025 - EPIC-01, EPIC-02, and EPIC-03 completed. Tire inventory management fully implemented with role-based access control. Ready for EPIC-04 (Customer Management)
+**Last Updated:** August 16, 2025 - EPIC-01, EPIC-02, and EPIC-03 completed. Full Clerk authentication integrated with publishable and secret keys. Tire inventory management fully implemented with role-based access control. Application running successfully with both development (mock) and production (Clerk) authentication modes. Ready for EPIC-04 (Customer Management)

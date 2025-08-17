@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { TiresModule } from '../tires/tires.module';
+import { CustomersModule } from '../customers/customers.module';
+import { VehiclesModule } from '../vehicles/vehicles.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -18,6 +20,8 @@ import { RoleGuard } from '../auth/guards/role.guard';
     AuthModule,
     UsersModule,
     TiresModule,
+    CustomersModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [

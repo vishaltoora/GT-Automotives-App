@@ -1,14 +1,41 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Mock Clerk context
 const MockClerkContext = createContext<any>({});
 
+// Create a simple session storage key for mock auth
+const MOCK_AUTH_KEY = 'gt_automotive_mock_auth';
+
+// Helper to get auth state from sessionStorage
+const getAuthState = () => {
+  try {
+    const stored = sessionStorage.getItem(MOCK_AUTH_KEY);
+    return stored === 'true';
+  } catch {
+    return false;
+  }
+};
+
+// Helper to set auth state in sessionStorage
+const setAuthState = (isSignedIn: boolean) => {
+  try {
+    if (isSignedIn) {
+      sessionStorage.setItem(MOCK_AUTH_KEY, 'true');
+    } else {
+      sessionStorage.removeItem(MOCK_AUTH_KEY);
+    }
+  } catch {}
+};
+
 // Mock useUser hook
 export const useUser = () => {
+  const context = useContext(MockClerkContext);
+  const isSignedIn = context?.isSignedIn ?? false;
+  
   return {
     isLoaded: true,
-    isSignedIn: true,
-    user: {
+    isSignedIn,
+    user: isSignedIn ? {
       id: 'dev-user-1',
       primaryEmailAddress: {
         emailAddress: 'customer@example.com'
@@ -20,24 +47,28 @@ export const useUser = () => {
       publicMetadata: {},
       privateMetadata: {},
       unsafeMetadata: {}
-    }
+    } : null
   };
 };
 
 // Mock useAuth hook
 export const useAuth = () => {
+  const context = useContext(MockClerkContext);
+  const isSignedIn = context?.isSignedIn ?? false;
+  
   return {
     isLoaded: true,
-    isSignedIn: true,
-    userId: 'dev-user-1',
-    sessionId: 'dev-session-1',
+    isSignedIn,
+    userId: isSignedIn ? 'dev-user-1' : null,
+    sessionId: isSignedIn ? 'dev-session-1' : null,
     actor: null,
     orgId: null,
     orgRole: null,
     orgSlug: null,
     has: () => false,
-    getToken: async () => 'mock-jwt-token',
+    getToken: async () => isSignedIn ? 'mock-jwt-token' : null,
     signOut: async () => {
+      setAuthState(false);
       window.location.href = '/';
     }
   };
@@ -45,8 +76,12 @@ export const useAuth = () => {
 
 // Mock useClerk hook
 export const useClerk = () => {
+  const context = useContext(MockClerkContext);
+  const isSignedIn = context?.isSignedIn ?? false;
+  
   return {
     signOut: async () => {
+      setAuthState(false);
       window.location.href = '/';
     },
     signIn: {
@@ -59,31 +94,37 @@ export const useClerk = () => {
       prepareEmailAddressVerification: async () => {},
       attemptEmailAddressVerification: async () => {}
     },
-    user: {
+    user: isSignedIn ? {
       id: 'dev-user-1',
       primaryEmailAddress: {
         emailAddress: 'customer@example.com'
       },
       firstName: 'Test',
       lastName: 'Customer'
-    },
-    session: {
+    } : null,
+    session: isSignedIn ? {
       id: 'dev-session-1',
       status: 'active'
-    }
+    } : null
   };
 };
 
 // Mock SignIn component
 export const SignIn = ({ signUpUrl }: any) => {
+  const handleSignIn = () => {
+    setAuthState(true);
+    // Force a page reload to trigger auth state update
+    window.location.href = '/customer/dashboard';
+  };
+  
   return (
     <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h2>Development Mode - Auto Sign In</h2>
-      <p>You are automatically signed in as a test customer.</p>
+      <h2>Development Mode - Sign In</h2>
+      <p>Click below to sign in as a test customer.</p>
       <p>Email: customer@example.com</p>
       <p>Role: Customer</p>
       <button 
-        onClick={() => window.location.href = '/customer/dashboard'}
+        onClick={handleSignIn}
         style={{
           padding: '10px 20px',
           backgroundColor: '#1976d2',
@@ -94,7 +135,7 @@ export const SignIn = ({ signUpUrl }: any) => {
           marginTop: '10px'
         }}
       >
-        Go to Dashboard
+        Sign In
       </button>
     </div>
   );
@@ -117,10 +158,27 @@ interface MockClerkProviderProps {
 }
 
 export function MockClerkProvider({ children }: MockClerkProviderProps) {
+  const [isSignedIn, setIsSignedIn] = useState(getAuthState());
+  
+  useEffect(() => {
+    // Check auth state on mount and window focus
+    const checkAuth = () => {
+      setIsSignedIn(getAuthState());
+    };
+    
+    window.addEventListener('focus', checkAuth);
+    window.addEventListener('storage', checkAuth);
+    
+    return () => {
+      window.removeEventListener('focus', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
+  
   const mockValue = {
-    user: useUser().user,
     isLoaded: true,
-    isSignedIn: true
+    isSignedIn,
+    setIsSignedIn
   };
 
   return (
@@ -134,8 +192,21 @@ export function MockClerkProvider({ children }: MockClerkProviderProps) {
 export const ClerkProvider = MockClerkProvider;
 export const RedirectToSignIn = () => <div>Redirecting to sign in...</div>;
 export const RedirectToSignUp = () => <div>Redirecting to sign up...</div>;
-export const SignedIn = ({ children }: any) => <>{children}</>;
-export const SignedOut = ({ children }: any) => null;
-export const UserButton = () => (
-  <button onClick={() => window.location.href = '/'}>Sign Out</button>
-);
+export const SignedIn = ({ children }: any) => {
+  const context = useContext(MockClerkContext);
+  return context?.isSignedIn ? <>{children}</> : null;
+};
+export const SignedOut = ({ children }: any) => {
+  const context = useContext(MockClerkContext);
+  return !context?.isSignedIn ? <>{children}</> : null;
+};
+export const UserButton = () => {
+  const handleSignOut = () => {
+    setAuthState(false);
+    window.location.href = '/';
+  };
+  
+  return (
+    <button onClick={handleSignOut}>Sign Out</button>
+  );
+};

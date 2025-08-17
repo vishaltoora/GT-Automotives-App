@@ -31,7 +31,7 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../libs/shared/interfaces/tsconfig.lib.json"
+      "path": "../../libs/shared/interfaces"
     }
   ]
 }

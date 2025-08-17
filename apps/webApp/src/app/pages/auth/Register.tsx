@@ -25,6 +25,8 @@ export function Register() {
           Register to access your invoices, schedule appointments, and manage your vehicles.
         </Alert>
         <SignUp
+          routing="path"
+          path="/register"
           appearance={{
             elements: {
               rootBox: {

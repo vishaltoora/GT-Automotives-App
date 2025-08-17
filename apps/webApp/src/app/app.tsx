@@ -39,6 +39,12 @@ import TireFormSimple from './pages/inventory/TireFormSimple';
 import TireDetails from './pages/inventory/TireDetails';
 import InventoryDashboard from './pages/inventory/InventoryDashboard';
 
+// Customer Management Pages
+import { CustomerList } from './pages/customers/CustomerList';
+import { CustomerForm } from './pages/customers/CustomerForm';
+import { VehicleList } from './pages/customers/VehicleList';
+import { VehicleForm } from './pages/customers/VehicleForm';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -147,6 +153,42 @@ export function App() {
               <InventoryDashboard />
             </RoleGuard>
           } />
+        </Route>
+
+        {/* Customer Management Routes - Available to all authenticated users */}
+        <Route
+          path="/customers"
+          element={
+            <AuthGuard>
+              <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
+                <Outlet />
+              </Box>
+            </AuthGuard>
+          }
+        >
+          <Route index element={<CustomerList />} />
+          <Route path="new" element={
+            <RoleGuard allowedRoles={['staff', 'admin']}>
+              <CustomerForm />
+            </RoleGuard>
+          } />
+          <Route path=":id/edit" element={<CustomerForm />} />
+        </Route>
+
+        {/* Vehicle Management Routes - Available to all authenticated users */}
+        <Route
+          path="/vehicles"
+          element={
+            <AuthGuard>
+              <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
+                <Outlet />
+              </Box>
+            </AuthGuard>
+          }
+        >
+          <Route index element={<VehicleList />} />
+          <Route path="new" element={<VehicleForm />} />
+          <Route path=":id/edit" element={<VehicleForm />} />
         </Route>
 
         {/* Catch all redirect */}

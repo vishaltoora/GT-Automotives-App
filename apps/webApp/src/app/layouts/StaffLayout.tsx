@@ -24,7 +24,8 @@ import {
   Assessment,
   Settings,
   Logout,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  DirectionsCar
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
@@ -53,8 +54,9 @@ export function StaffLayout() {
 
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/staff/dashboard' },
-    { text: 'Customers', icon: <People />, path: '/staff/customers' },
-    { text: 'Inventory', icon: <Inventory />, path: '/inventory/dashboard' },
+    { text: 'Customers', icon: <People />, path: '/customers' },
+    { text: 'Vehicles', icon: <DirectionsCar />, path: '/vehicles' },
+    { text: 'Inventory', icon: <Inventory />, path: '/inventory' },
     { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
     { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },

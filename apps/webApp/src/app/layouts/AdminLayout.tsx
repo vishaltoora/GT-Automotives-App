@@ -28,7 +28,8 @@ import {
   Settings,
   Security,
   Logout,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  DirectionsCar
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
@@ -58,8 +59,9 @@ export function AdminLayout() {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
     { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
-    { text: 'Customers', icon: <People />, path: '/admin/customers' },
-    { text: 'Inventory', icon: <Inventory />, path: '/inventory/dashboard' },
+    { text: 'Customers', icon: <People />, path: '/customers' },
+    { text: 'Vehicles', icon: <DirectionsCar />, path: '/vehicles' },
+    { text: 'Inventory', icon: <Inventory />, path: '/inventory' },
     { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
     { divider: true },

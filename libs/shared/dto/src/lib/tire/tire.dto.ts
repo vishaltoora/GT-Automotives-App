@@ -12,7 +12,7 @@ import {
   IsBoolean,
   IsInt,
 } from 'class-validator';
-import { Transform, Exclude } from 'class-transformer';
+import { Exclude } from 'class-transformer';
 import { TireType, TireCondition } from '@gt-automotive/shared-interfaces';
 
 export class CreateTireDto {
