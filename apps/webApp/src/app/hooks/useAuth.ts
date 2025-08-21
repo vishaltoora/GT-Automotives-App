@@ -87,16 +87,31 @@ export function useAuth() {
           // For now, set a default customer user to prevent redirect loops
           // The proper sync should happen via Clerk webhook
           if (error.response?.status === 404 || error.response?.status === 401) {
-            console.log('User not found in database. Please ensure Clerk webhook is configured.');
-            // Set a minimal user object to prevent redirect loop
-            setAppUser({
-              id: clerkUser.id,
-              email: clerkUser.primaryEmailAddress?.emailAddress || '',
-              firstName: clerkUser.firstName || 'User',
-              lastName: clerkUser.lastName || '',
-              role: { id: 3, name: 'customer' }, // Default to customer role
-              isActive: true
-            });
+            console.log('User not found in database. Checking for pre-seeded user...');
+            
+            // Check if this is Vishal's account
+            const userEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
+            if (userEmail === 'vishal.alawalpuria@gmail.com') {
+              // This is Vishal - should be admin
+              setAppUser({
+                id: clerkUser.id,
+                email: userEmail,
+                firstName: clerkUser.firstName || 'Vishal',
+                lastName: clerkUser.lastName || 'Toora',
+                role: { id: 1, name: 'admin' }, // Admin role
+                isActive: true
+              });
+            } else {
+              // Default to customer role for other users
+              setAppUser({
+                id: clerkUser.id,
+                email: userEmail,
+                firstName: clerkUser.firstName || 'User',
+                lastName: clerkUser.lastName || '',
+                role: { id: 3, name: 'customer' }, // Default to customer role
+                isActive: true
+              });
+            }
           }
         } finally {
           setLoading(false);
@@ -115,9 +130,9 @@ export function useAuth() {
     clerkUser,
     isAuthenticated: isDevelopment ? true : isSignedIn,
     isLoading: loading || (!isDevelopment && !isLoaded),
-    role: appUser?.role?.name || null,
-    isAdmin: appUser?.role?.name === 'admin',
-    isStaff: appUser?.role?.name === 'staff',
-    isCustomer: appUser?.role?.name === 'customer',
+    role: appUser?.role?.name?.toLowerCase() || null,
+    isAdmin: appUser?.role?.name?.toLowerCase() === 'admin',
+    isStaff: appUser?.role?.name?.toLowerCase() === 'staff',
+    isCustomer: appUser?.role?.name?.toLowerCase() === 'customer',
   };
 }

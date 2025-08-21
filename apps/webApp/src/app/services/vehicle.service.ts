@@ -56,8 +56,9 @@ export interface UpdateVehicleDto {
 class VehicleService {
   private getAuthHeader() {
     // In production, get the actual token from Clerk
-    const token = 'mock-jwt-token'; // This will be replaced with actual token
+    const token = localStorage.getItem('authToken') || 'mock-jwt-token';
     return {
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     };
   }

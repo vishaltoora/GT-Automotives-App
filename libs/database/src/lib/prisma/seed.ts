@@ -210,6 +210,23 @@ async function main() {
     });
     console.log('✅ Created admin user:', adminUser.email);
 
+    // Vishal Toora - Admin User
+    const vishalAdmin = await prisma.user.upsert({
+      where: { email: 'vishal.alawalpuria@gmail.com' },
+      update: {
+        clerkId: 'user_31JM1BAB2lrW82JVPgrbBekTx5H',
+      },
+      create: {
+        clerkId: 'user_31JM1BAB2lrW82JVPgrbBekTx5H',
+        email: 'vishal.alawalpuria@gmail.com',
+        firstName: 'Vishal',
+        lastName: 'Toora',
+        roleId: adminRole.id,
+        isActive: true,
+      },
+    });
+    console.log('✅ Created admin user:', vishalAdmin.email);
+
     // Demo Staff
     const staffUser = await prisma.user.upsert({
       where: { email: 'staff@gtautomotive.com' },

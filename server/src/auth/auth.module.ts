@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { ClerkJwtStrategy } from './strategies/clerk-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RoleGuard } from './guards/role.guard';
 import { ClerkWebhookController } from './webhooks/clerk-webhook.controller';
@@ -15,7 +16,7 @@ import { PrismaService } from '@gt-automotive/database';
 
 @Module({
   imports: [
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule.register({ defaultStrategy: 'clerk-jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -32,6 +33,7 @@ import { PrismaService } from '@gt-automotive/database';
   providers: [
     AuthService,
     JwtStrategy,
+    ClerkJwtStrategy,
     JwtAuthGuard,
     RoleGuard,
     UserRepository,

@@ -43,7 +43,8 @@ export function PublicLayout() {
   const navItems = [
     { label: 'Home', path: '/' },
     { label: 'Services', path: '/services' },
-    { label: 'About', path: '/about' },
+    { label: 'Products', path: '/products' },
+    { label: 'Pricing', path: '/pricing' },
     { label: 'Contact', path: '/contact' },
   ];
 
@@ -291,17 +292,14 @@ export function PublicLayout() {
       </Drawer>
 
       {/* Main Content */}
-      <Container 
+      <Box 
         component="main" 
         sx={{ 
-          flex: 1, 
-          py: { xs: 3, md: 6 },
-          px: { xs: 2, sm: 3, md: 4 },
+          flex: 1,
         }}
-        maxWidth="xl"
       >
         <Outlet />
-      </Container>
+      </Box>
 
       {/* Footer */}
       <Box 

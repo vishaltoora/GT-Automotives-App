@@ -33,7 +33,7 @@ export function RoleGuard({
     return <Navigate to="/login" replace />;
   }
 
-  if (!allowedRoles.includes(role)) {
+  if (!allowedRoles.map(r => r.toLowerCase()).includes(role.toLowerCase())) {
     return <Navigate to={redirectTo} replace />;
   }
 

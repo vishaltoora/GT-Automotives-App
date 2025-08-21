@@ -36,6 +36,11 @@ export const Hero: React.FC<HeroProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Helper function to check if a path is external
+  const isExternalPath = (path: string) => {
+    return path.startsWith('http') || path.startsWith('tel:') || path.startsWith('mailto:') || path.startsWith('#');
+  };
+
   return (
     <Box
       sx={{
@@ -149,8 +154,10 @@ export const Hero: React.FC<HeroProps> = ({
             >
               {primaryAction && (
                 <Button
-                  component={Link}
-                  to={primaryAction.path}
+                  {...(isExternalPath(primaryAction.path) 
+                    ? { href: primaryAction.path } 
+                    : { component: Link, to: primaryAction.path }
+                  )}
                   variant="contained"
                   size="large"
                   endIcon={<ArrowForwardIcon />}
@@ -175,8 +182,10 @@ export const Hero: React.FC<HeroProps> = ({
 
               {secondaryAction && (
                 <Button
-                  component={Link}
-                  to={secondaryAction.path}
+                  {...(isExternalPath(secondaryAction.path) 
+                    ? { href: secondaryAction.path } 
+                    : { component: Link, to: secondaryAction.path }
+                  )}
                   variant="outlined"
                   size="large"
                   sx={{

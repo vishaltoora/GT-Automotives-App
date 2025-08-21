@@ -51,9 +51,15 @@ export interface Vehicle {
 }
 
 export interface CreateCustomerDto {
-  email: string;
-  firstName: string;
-  lastName: string;
+  user?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  businessName?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
   phone: string;
   address?: string;
 }
@@ -69,8 +75,9 @@ export interface UpdateCustomerDto {
 class CustomerService {
   private getAuthHeader() {
     // In production, get the actual token from Clerk
-    const token = 'mock-jwt-token'; // This will be replaced with actual token
+    const token = localStorage.getItem('authToken') || 'mock-jwt-token';
     return {
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     };
   }
@@ -80,6 +87,10 @@ class CustomerService {
       headers: this.getAuthHeader(),
     });
     return response.data;
+  }
+
+  async getCustomers(): Promise<Customer[]> {
+    return this.getAllCustomers();
   }
 
   async getCustomer(id: string): Promise<Customer> {

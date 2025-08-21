@@ -18,7 +18,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 
 ## Project Status
 
-**Current Phase:** Core Features Development - 4 of 8 Epics Complete (50%), Ready for Invoicing System (EPIC-05)
+**Current Phase:** Core Features Development - 5 of 8 Epics Complete (62.5%), Ready for Appointment Scheduling (EPIC-06)
 
 ### Completed
 - ✅ 8 Epics fully documented and created as GitHub issues (#1-#8)
@@ -45,12 +45,24 @@ GT Automotive is a comprehensive web application for managing a small business t
 - ✅ Fixed login redirect and authentication flow
 - ✅ ES6 module imports for browser compatibility
 - ✅ **Public-Facing Website COMPLETE:** Professional theme system and all public pages implemented
+- ✅ **Animated Hero Sections:** Modern GT logo design with pulsing circles and floating service icons
+- ✅ **MUI Grid2 Migration:** All components updated to latest Material-UI Grid syntax
+- ✅ **Redesigned Contact Page:** Professional layout with modern form design
 - ✅ Comprehensive theme system with consistent branding
 - ✅ Responsive mobile navigation with hamburger menu
 - ✅ Reusable component library for public interface
 - ✅ **Inventory Management COMPLETE:** Full tire inventory system with stock tracking
 - ✅ **Customer Management COMPLETE:** Full customer profiles with contact info
 - ✅ **Vehicle Management COMPLETE:** Vehicle tracking with VIN validation and mileage
+- ✅ **EPIC-05 COMPLETE:** Invoicing system with comprehensive billing features
+- ✅ **Mobile Tire Service Pricing:** Complete pricing structure with 6 service categories
+- ✅ **Contact Information Updated:** New phone (250-570-2333) and email (gt-automotives@outlook.com)
+- ✅ **Service Area Defined:** 20km free service zone with detailed area listings
+- ✅ **Clerk JWT Verification:** Dual strategy authentication with Clerk JWT and local JWT
+- ✅ **Admin User Created:** Vishal Toora configured with full admin access
+- ✅ **Admin Dashboard Redesigned:** Modern UI with gradient stat cards and business insights
+- ✅ **Navigation Bar Update:** GT logo integrated across all layouts (Admin, Staff, Customer)
+- ✅ **Consistent Branding:** Unified design system across all user interfaces
 
 ### GitHub Integration
 - **Repository:** https://github.com/vishaltoora/GT-Automotives-App
@@ -64,7 +76,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 3. ~~Implement three-role authentication (EPIC-02)~~ ✅ COMPLETE
 4. ~~Implement tire inventory management (EPIC-03)~~ ✅ COMPLETE
 5. ~~Implement customer and vehicle management (EPIC-04)~~ ✅ COMPLETE
-6. Build invoicing system ([Issue #5](https://github.com/vishaltoora/GT-Automotives-App/issues/5)) - EPIC-05
+6. ~~Build invoicing system (EPIC-05)~~ ✅ COMPLETE
 7. Add appointment scheduling ([Issue #6](https://github.com/vishaltoora/GT-Automotives-App/issues/6)) - EPIC-06
 8. Implement reporting & analytics ([Issue #7](https://github.com/vishaltoora/GT-Automotives-App/issues/7)) - EPIC-07
 9. Build customer portal ([Issue #8](https://github.com/vishaltoora/GT-Automotives-App/issues/8)) - EPIC-08
@@ -162,8 +174,16 @@ The application uses Clerk for authentication with the following configuration:
 ### How Authentication Works
 1. Users sign in/up through Clerk at `/login` or `/register`
 2. New users automatically get "customer" role
-3. JWT tokens are verified using Clerk's JWKS endpoint
+3. JWT tokens are verified using Clerk's JWKS endpoint via `ClerkJwtStrategy`
 4. Role-based routing redirects users to appropriate dashboards
+5. Dual JWT strategy support: Clerk JWT (primary) and local JWT (fallback)
+
+### Admin User (Vishal Toora)
+- **Email:** vishal.alawalpuria@gmail.com
+- **Clerk ID:** user_31JM1BAB2lrW82JVPgrbBekTx5H
+- **Role:** Admin (full system access)
+- **Database ID:** cmekadftv003xvbokv2ioi7op
+- **Status:** Active and ready for login
 
 ## Development Mode (Without Clerk)
 
@@ -355,12 +375,50 @@ import { useTheme } from '@mui/material';
 const theme = useTheme();
 ```
 
+### MUI Grid2 Migration (August 19, 2025)
+All components have been updated to use MUI Grid2 syntax:
+```javascript
+// Updated import (NEW)
+import { Grid } from '@mui/material';  // This now imports Grid2
+
+// Usage remains the same
+<Grid container spacing={2}>
+  <Grid item xs={12} md={6}>
+    Content here
+  </Grid>
+</Grid>
+```
+
 ### Component Development
 - Always use theme colors instead of hardcoded values
 - Create reusable components in `/components/public/`
 - Follow the established pattern for service cards and CTAs
+- Use animated hero sections with GT logo and floating icons
 - Ensure all components are fully responsive
 - Test on mobile devices using browser dev tools
+
+### Animated Hero Pattern (August 19, 2025)
+All public pages now feature consistent animated hero sections:
+```javascript
+// Hero structure (used across all public pages)
+<Box sx={{ /* animated gradient background */ }}>
+  <Grid container spacing={4} alignItems="center">
+    <Grid xs={12} md={6}>
+      {/* Animated GT logo with pulsing circles */}
+      <Box sx={{ /* logo animation styles */ }}>
+        <Typography>GT</Typography>
+        {/* Floating service icons */}
+      </Box>
+    </Grid>
+    <Grid xs={12} md={6}>
+      {/* Page content */}
+      <Typography variant="h1">{pageTitle}</Typography>
+      <Typography variant="h5">{pageSubtitle}</Typography>
+      {/* Action buttons */}
+    </Grid>
+  </Grid>
+</Box>
+```
 
 ### Git Workflow
 ```bash
@@ -715,6 +773,7 @@ The application can run in development mode without Clerk API keys:
 
 ### Public-Facing Website & Theme System ✅
 **Completed on:** August 15, 2025
+**Redesigned on:** August 18, 2025
 
 #### What Was Implemented:
 
@@ -736,17 +795,26 @@ The application can run in development mode without Clerk API keys:
 - **ServiceCard:** Service display with pricing, features, and categories
 - **FeatureHighlight:** Grid layout for showcasing business features
 - **CTASection:** Call-to-action sections with multiple variants
-- **TestimonialCard:** Customer review cards with ratings
+- **TestimonialCard:** Customer review cards with ratings (removed in redesign)
 
 **Public Pages Completed:**
 
-1. **Home Page (`/`):**
-   - Hero section with main CTAs
-   - Statistics bar (5,000+ customers, 10,000+ tires)
-   - Featured services showcase
-   - Current promotions section
-   - Customer testimonials with ratings
-   - Service areas listing
+1. **Home Page (`/`):** - **REDESIGNED August 18-19, 2025**
+   - **New Hero Section:**
+     - Title: "Professional Tire & Auto Services"
+     - Subheading: "Expert tire installation, mobile services, and mechanical repairs by certified technicians at competitive prices"
+     - Action buttons: "Browse Tires" and "Contact Us" (replaced Get Quote and Emergency)
+     - Animated gradient background with floating elements
+   - **Quick Actions Bar:** 4 primary service buttons with icons
+   - **Statistics Bar:** 5,000+ customers served, 10,000+ tires sold, 15+ years experience, 100% satisfaction
+   - **Services Section:** CSS Grid layout with equal-width cards (3 per row on desktop)
+   - **Mobile Emergency Service:** Redesigned banner without phone numbers
+   - **Why Choose Us:** Single-row flexbox layout with smaller, equal-sized cards
+   - **Tire Brands:** Grid display with 🛞 emoji for each brand
+   - **Get in Touch:** 3 equal-width cards (Call Us, Email Us, Business Hours)
+   - **Why GT Automotive:** CSS Grid with equal-width items
+   - **Service Area:** Simple text-based section for "Prince George and 100km radius"
+   - **Removed Sections:** Current promotions, customer testimonials, town cards, main hub card, emergency response card
 
 2. **Services Page (`/services`):**
    - Tabbed interface (All/Tire/Mechanical services)
@@ -763,13 +831,14 @@ The application can run in development mode without Clerk API keys:
    - Awards & certifications
    - Statistics and achievements
 
-4. **Contact Page (`/contact`):**
-   - Interactive contact form with validation
-   - Business hours display
-   - Contact information cards
-   - Quick action buttons
-   - Map placeholder for Google Maps
-   - Emergency service callout
+4. **Contact Page (`/contact`):** - **REDESIGNED August 19, 2025**
+   - Animated hero section with GT logo and floating icons
+   - Modern contact form with professional styling
+   - Business hours and location information
+   - Multiple contact methods (phone, email, address)
+   - Service area coverage details
+   - Emergency contact information
+   - Fully responsive design with MUI Grid2
 
 **Navigation & Layout:**
 - GT Automotive logo integrated in header
@@ -790,6 +859,8 @@ The application can run in development mode without Clerk API keys:
 - ✅ **User-Friendly Navigation:** Mobile menu, active states
 - ✅ **Business Information:** Complete contact details, hours
 - ✅ **Strategic CTAs:** Call-to-actions throughout for conversion
+- ✅ **Animated Branding:** Consistent GT logo animation across all pages
+- ✅ **MUI Grid2 Syntax:** Modern Material-UI Grid implementation
 
 #### Accessing Public Pages:
 ```bash
@@ -890,12 +961,22 @@ yarn dev
 ## Notes
 
 ### Current Status
-- ✅ Clerk authentication fully configured and working
+- ✅ Clerk authentication fully configured and working with dual JWT strategy
 - ✅ All environment variables properly set
-- ✅ Backend running on port 3000 with JWT verification
+- ✅ Backend running on port 3000 with Clerk JWT verification via JWKS
 - ✅ Frontend running on port 4200 with Clerk SignIn/SignUp
-- ✅ Role-based routing and guards functional
+- ✅ Role-based routing and guards functional with case-insensitive checking
 - ✅ Development and production modes both supported
+- ✅ Vishal Toora configured as admin user with full system access
+
+### Authentication Files (August 20, 2025)
+- **Created:** `server/src/auth/strategies/clerk-jwt.strategy.ts` - Clerk JWT verification
+- **Modified:** `server/src/auth/guards/jwt-auth.guard.ts` - Dual strategy support
+- **Modified:** `server/src/auth/auth.module.ts` - Added ClerkJwtStrategy provider
+- **Modified:** `apps/webApp/src/app/hooks/useAuth.ts` - Admin user handling
+- **Modified:** `apps/webApp/src/app/guards/RoleGuard.tsx` - Case-insensitive roles
+- **Modified:** `libs/database/src/lib/prisma/seed.ts` - Added Vishal as admin
+- **Created:** `scripts/update-vishal-clerk-id.ts` - Clerk ID update script
 
 ### Current Limitations
 - No payment processing integration yet
@@ -922,6 +1003,50 @@ yarn dev
 - **Repository:** https://github.com/vishaltoora/GT-Automotives-App
 - **Issues:** https://github.com/vishaltoora/GT-Automotives-App/issues
 - **Milestone:** https://github.com/vishaltoora/GT-Automotives-App/milestone/1
+
+### Admin Dashboard UI Redesign ✅
+**Completed on:** August 20, 2025
+
+#### What Was Implemented:
+
+**Navigation Updates (All Layouts):**
+- **GT Logo Integration:** Professional branding with GT Automotives logo in all navigation bars
+- **Consistent Header Design:** White header bar with clean borders matching public site
+- **User Profile Section:** Avatar display with role indicators in sidebar
+- **Responsive Mobile Navigation:** Optimized for all screen sizes with hamburger menu
+- **Dark Gradient Sidebar:** Professional appearance with 280px width for better readability
+- **Active State Indicators:** Visual feedback with colored borders and backgrounds
+
+**Admin Dashboard Redesign:**
+- **Modern Stat Cards:** 
+  - Gradient backgrounds with glassmorphism effects
+  - Equal-width cards using CSS Grid layout
+  - Trend indicators with up/down arrows and percentages
+  - Full horizontal space utilization
+- **Quick Actions Section (75% width):**
+  - 6 equal-width action cards using CSS Grid
+  - Hover effects with elevation changes
+  - Icon-based navigation for common tasks
+  - Responsive grid: 1 column (mobile) → 6 columns (large screens)
+- **Recent Activity Feed (25% width):**
+  - Compact sidebar design
+  - Status icons with color coding
+  - Chronological activity listing
+- **System Health Monitoring:**
+  - Animated progress bars for metrics
+  - Database performance tracking
+  - Storage usage indicators
+  - API response time monitoring
+- **Business Insights Section:**
+  - 6 equal-width metric cards
+  - CSS Grid for perfect horizontal space usage
+  - Key performance indicators
+  - Hover animations for interactivity
+
+**Color-Coded Elements:**
+- Orange accent for admin-specific actions
+- Blue accent for staff-specific actions  
+- Consistent use of brand colors from theme system
 
 ### EPIC-04: Customer and Vehicle Management ✅
 **Completed on:** August 17, 2025
@@ -967,4 +1092,4 @@ For questions about implementation details, refer to the epic and task documenta
 
 ---
 
-**Last Updated:** August 17, 2025 - EPIC-01, EPIC-02, EPIC-03, and EPIC-04 completed. Customer and vehicle management system fully implemented with relationship linking, search functionality, and role-based access control. Authentication flow issues fixed with proper session storage in MockClerkProvider. Application running successfully with 50% of MVP features complete. Ready for EPIC-05 (Invoicing System)
+**Last Updated:** August 20, 2025 - Complete Admin Dashboard UI redesign with modern interface. Implemented gradient stat cards with equal-width CSS Grid layout for full horizontal space utilization. Updated all navigation bars (Admin, Staff, Customer) with GT Automotives logo and consistent branding. Quick Actions section now uses 75% width with 6 equal-width cards, Recent Activity uses 25% as compact sidebar. Added Business Insights section with 6 metric cards using CSS Grid. System Health monitoring with animated progress bars. Dark gradient sidebar with user profiles and active state indicators. Previous updates: Clerk authentication with dual JWT strategy, Vishal Toora admin user setup, public website with Mobile Tire Service pricing. Frontend: http://localhost:4200, Backend: http://localhost:3000. EPIC-01 through EPIC-05 completed (62.5% MVP). Ready for EPIC-06 (Appointment Scheduling).

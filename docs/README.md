@@ -22,7 +22,7 @@ docs/
 ├── epics/                      # Epic-level feature documentation
 │   ├── EPIC-01-project-setup.md         ✅ COMPLETE
 │   ├── EPIC-02-user-authentication.md   ✅ COMPLETE
-│   ├── EPIC-03-tire-inventory.md        🔄 Next
+│   ├── EPIC-03-tire-inventory.md        ✅ COMPLETE
 │   ├── EPIC-04-customer-management.md
 │   ├── EPIC-05-invoicing-system.md
 │   ├── EPIC-06-appointment-scheduling.md
@@ -49,14 +49,20 @@ docs/
    - Clerk integration (optional)
    - Role-based routing complete
 
-### In Progress
-3. **EPIC-03: Tire Inventory Management** 🔄
-   - Next priority
+3. **EPIC-03: Tire Inventory Management** ✅
+   - Status: ✅ COMPLETE (August 16, 2025)
    - [View Issue #3](https://github.com/vishaltoora/GT-Automotives-App/issues/3)
 
+4. **EPIC-04: Customer & Vehicle Management** ✅
+   - Status: ✅ COMPLETE (August 17, 2025)
+   - [View Issue #4](https://github.com/vishaltoora/GT-Automotives-App/issues/4)
+
+### In Progress
+5. **EPIC-05: Invoicing System** 🔄
+   - Next priority
+   - [View Issue #5](https://github.com/vishaltoora/GT-Automotives-App/issues/5)
+
 ### Upcoming
-4. Customer & Vehicle Management
-5. Invoicing System
 6. Appointment Scheduling
 7. Reporting Dashboard
 8. Customer Portal
@@ -73,9 +79,9 @@ docs/
 |------|-------------|--------|----------|
 | Project Setup | [#1](https://github.com/vishaltoora/GT-Automotives-App/issues/1) | ✅ Complete | High |
 | Authentication | [#2](https://github.com/vishaltoora/GT-Automotives-App/issues/2) | ✅ Complete | High |
-| Tire Inventory | [#3](https://github.com/vishaltoora/GT-Automotives-App/issues/3) | 🔄 Next | High |
-| Customer Management | [#4](https://github.com/vishaltoora/GT-Automotives-App/issues/4) | 📋 Planned | High |
-| Invoicing | [#5](https://github.com/vishaltoora/GT-Automotives-App/issues/5) | 📋 Planned | High |
+| Tire Inventory | [#3](https://github.com/vishaltoora/GT-Automotives-App/issues/3) | ✅ Complete | High |
+| Customer Management | [#4](https://github.com/vishaltoora/GT-Automotives-App/issues/4) | ✅ Complete | High |
+| Invoicing | [#5](https://github.com/vishaltoora/GT-Automotives-App/issues/5) | 🔄 Next | High |
 | Appointments | [#6](https://github.com/vishaltoora/GT-Automotives-App/issues/6) | 📋 Planned | Medium |
 | Reporting | [#7](https://github.com/vishaltoora/GT-Automotives-App/issues/7) | 📋 Planned | Low |
 | Customer Portal | [#8](https://github.com/vishaltoora/GT-Automotives-App/issues/8) | 📋 Planned | Medium |
@@ -126,7 +132,7 @@ docs/
 - Authentication system
 - Basic infrastructure
 
-### Phase 2: Core Features (Weeks 4-7) 🔄
+### Phase 2: Core Features (Weeks 4-7) ✅
 - Tire inventory
 - Customer management
 - Vehicle tracking
@@ -196,4 +202,4 @@ docs/
 
 ---
 
-**Last Updated:** August 15, 2025 | **Version:** 0.2.0 | **Status:** Active Development - EPIC-03 In Progress
+**Last Updated:** August 19, 2025 | **Version:** 0.3.0 | **Status:** Active Development - All public pages redesigned with animated heroes and MUI Grid2

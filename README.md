@@ -1,6 +1,6 @@
 # GT Automotive Management System
 
-A comprehensive web application for managing a small business that sells new and used tires and provides automotive mechanical services.
+A comprehensive web application for managing a small business that sells new and used tires and provides automotive mechanical services in Prince George, BC.
 
 ## 🚀 Current Status
 
@@ -8,8 +8,19 @@ A comprehensive web application for managing a small business that sells new and
 - **EPIC-02:** ✅ User Authentication & Management (Complete - Aug 15, 2025)
 - **EPIC-03:** ✅ Tire Inventory Management (Complete - Aug 16, 2025)
 - **EPIC-04:** ✅ Customer & Vehicle Management (Complete - Aug 17, 2025)
-- **EPIC-05:** 📅 Invoicing System (Next)
-- **Progress:** 4 of 8 epics complete (50% MVP)
+- **EPIC-05:** ✅ Invoicing System (Complete - Aug 19, 2025)
+- **Progress:** 5 of 8 epics complete (62.5% MVP)
+- **Latest:** Public website updated with mobile tire service pricing, contact updates, and service area details
+
+## 📞 Contact Information
+
+- **Main Phone:** (250) 570-2333
+- **Email:** gt-automotives@outlook.com
+- **Team Contacts:**
+  - Johny (Mechanic/Tire Specialist): (250) 986-9191
+  - Harjinder Gill (Sales/Marketing): (250) 565-1571
+  - Vishal (Sales/Marketing): (250) 649-9699
+  - Karan (Tire Specialist): (250) 986-9794
 
 ## 📌 Features
 
@@ -25,13 +36,29 @@ A comprehensive web application for managing a small business that sells new and
 - ✅ **Customer-Vehicle Relationships**: Properly linked with referential integrity
 - ✅ **Advanced Search & Filter**: Multi-criteria search for inventory, customers, and vehicles
 - ✅ **Statistics & Reports**: Customer spending, vehicle service history, inventory metrics
-- ✅ **Public Website**: Professional landing pages with services catalog
+- ✅ **Public Website**: Professional landing pages with animated hero sections
+- ✅ **Modern UI**: All pages feature animated GT logo with floating service icons
+- ✅ **MUI Grid2**: Updated to latest Material-UI Grid syntax across all components
+- ✅ **Mobile Tire Service**: Complete pricing structure with work hours and emergency rates
+- ✅ **Service Area Coverage**: 20km free service zone with detailed area listings
+
+### Recent Updates (August 19, 2025)
+- ✅ **Mobile Tire Service Pricing**: Comprehensive pricing for on-site tire services
+  - Small cars & SUVs (up to 18"): $139 + tax
+  - Pickup trucks: $149 + tax
+  - Low profile tires: $149 + tax
+  - Flat tire repair: $29 + supplies + tax
+  - Tire rotation: $69 + tax
+  - 4 tires balance: $69
+- ✅ **Emergency Service**: 24/7 availability with $99 out call + $99/hour
+- ✅ **Service Area**: 20km free zone from Prince George city center, $2/km beyond
+- ✅ **Contact Updates**: New email and phone numbers across all pages
+- ✅ **Statistics Update**: 10+ years experience, 1,000+ happy customers
 
 ### In Development
-- 🔄 **Professional Invoicing**: Multiple print formats (8.5x11, thermal, PDF)
+- 🔄 **Appointment Scheduling**: Online booking with reminders
 
 ### Planned
-- 📋 **Appointment Scheduling**: Online booking with reminders
 - 📋 **Business Analytics**: Comprehensive reporting dashboards
 - 📋 **Customer Portal**: Self-service interface for customers
 
@@ -57,6 +84,8 @@ gt-automotives-app/
 │   │       │   ├── hooks/       # Custom hooks
 │   │       │   ├── layouts/     # Role-based layouts
 │   │       │   ├── pages/       # Route pages
+│   │       │   │   └── public/  # Public-facing pages
+│   │       │   ├── components/  # Reusable components
 │   │       │   └── providers/   # Context providers
 │   │       └── main.tsx
 │   └── server/              # NestJS backend
@@ -75,6 +104,34 @@ gt-automotives-app/
 └── docs/                   # Documentation
 ```
 
+## 🗺️ Service Areas (20km Free Zone)
+
+### North & Northeast
+- Hart Highway (to Salmon Valley)
+- Chief Lake Road Area
+- North Nechako
+- Cranbrook Hill
+
+### South & Southwest
+- Pineview
+- Buckhorn
+- West Lake
+- Blackwater
+
+### East & Southeast
+- Upper Fraser
+- Tabor Lake
+- Red Rock
+- Mud River
+
+### West & Northwest
+- Miworth
+- Beaverly
+- North Kelly
+- West Austin
+
+**City Areas**: All neighborhoods within Prince George city limits including Downtown, College Heights, VLA, Heritage, Spruceland, Foothills, Crescents, Lakewood, and Charella Gardens.
+
 ## ⚡ Quick Start
 
 ### Prerequisites
@@ -88,7 +145,7 @@ gt-automotives-app/
 ```bash
 git clone https://github.com/vishaltoora/GT-Automotives-App.git
 cd gt-automotives-app
-npm install --legacy-peer-deps
+yarn install
 ```
 
 ### 2. Database Setup
@@ -107,22 +164,21 @@ yarn db:generate
 yarn db:migrate
 
 # Seed with test data
-NODE_ENV=development yarn db:seed
+yarn db:seed
 ```
 
-### 3. Start Development (No Clerk Required)
+### 3. Start Development
 
 ```bash
 # Start both frontend and backend
-npx nx serve server &
-npx nx serve webApp
+yarn dev
 
 # Or use separate terminals:
 # Terminal 1:
-npx nx serve server
+yarn dev:server
 
 # Terminal 2:
-npx nx serve webApp
+yarn dev:web
 ```
 
 - Frontend: http://localhost:4200
@@ -210,6 +266,23 @@ npx nx affected:test  # Test affected projects
 | PUT | `/api/users/:id/role` | Assign role | Admin |
 | DELETE | `/api/users/:id` | Deactivate user | Admin |
 
+### Tire Inventory
+| Method | Endpoint | Description | Role |
+|--------|----------|-------------|------|
+| GET | `/api/tires` | List all tires | All |
+| POST | `/api/tires` | Add tire | Staff/Admin |
+| PUT | `/api/tires/:id` | Update tire | Staff/Admin |
+| DELETE | `/api/tires/:id` | Delete tire | Admin |
+| POST | `/api/tires/:id/adjust-stock` | Adjust stock | Staff/Admin |
+
+### Customers & Vehicles
+| Method | Endpoint | Description | Role |
+|--------|----------|-------------|------|
+| GET | `/api/customers` | List customers | Staff/Admin |
+| POST | `/api/customers` | Add customer | Staff/Admin |
+| GET | `/api/vehicles` | List vehicles | Staff/Admin |
+| POST | `/api/vehicles` | Add vehicle | Staff/Admin |
+
 ## 🏗 Repository Pattern
 
 The backend uses a clean repository pattern:
@@ -255,14 +328,7 @@ class UsersService {
 ### Node Version Issues
 ```bash
 # If you see vite engine incompatibility:
-npm install --legacy-peer-deps
-```
-
-### Lock File Conflicts
-```bash
-# Remove lock files and reinstall:
-rm yarn.lock package-lock.json
-npm install --legacy-peer-deps
+yarn install --ignore-engines
 ```
 
 ### Database Connection
@@ -276,6 +342,12 @@ psql -U postgres -d gt_automotive
 ### Ports in Use
 - Frontend: Change in `apps/webApp/vite.config.ts`
 - Backend: Change PORT in `server/.env`
+
+### Server Stops on File Changes
+This is normal behavior during development. Simply restart with:
+```bash
+yarn dev
+```
 
 ## 📚 Documentation
 
@@ -305,4 +377,4 @@ Private - GT Automotive
 
 ---
 
-**Last Updated:** August 15, 2025 | **Version:** 0.2.0 | **Status:** Active Development
+**Last Updated:** August 19, 2025 | **Version:** 0.5.0 | **Status:** Active Development - Mobile Service & Contact Updates Complete

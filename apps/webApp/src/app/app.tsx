@@ -23,6 +23,8 @@ import { Home } from './pages/public/Home';
 import { Services } from './pages/public/Services';
 import { Contact } from './pages/public/Contact';
 import { About } from './pages/public/About';
+import { Products } from './pages/public/Products';
+import { Pricing } from './pages/public/Pricing';
 
 // Customer Pages
 import { CustomerDashboard } from './pages/customer/Dashboard';
@@ -63,6 +65,8 @@ export function App() {
           <Route path="register" element={<Register />} />
           <Route path="unauthorized" element={<Unauthorized />} />
           <Route path="services" element={<Services />} />
+          <Route path="products" element={<Products />} />
+          <Route path="pricing" element={<Pricing />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
         </Route>

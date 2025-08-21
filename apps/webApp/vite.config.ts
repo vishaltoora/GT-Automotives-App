@@ -8,6 +8,14 @@ export default defineConfig(() => ({
   server: {
     port: 4200,
     host: 'localhost',
+    hmr: {
+      overlay: true,
+      // Remove separate HMR port to use WebSocket on same port
+    },
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
   },
   preview: {
     port: 4200,

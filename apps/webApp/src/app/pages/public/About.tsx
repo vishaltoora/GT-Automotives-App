@@ -123,7 +123,7 @@ export const About: React.FC = () => {
       {/* Company Story */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Grid container spacing={6} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography
               variant="overline"
               sx={{
@@ -182,7 +182,7 @@ export const About: React.FC = () => {
               satisfaction has made us the trusted choice for vehicle maintenance and repair.
             </Typography>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Box
               sx={{
                 backgroundColor: colors.background.light,
@@ -363,7 +363,7 @@ export const About: React.FC = () => {
 
           <Grid container spacing={4}>
             {teamMembers.map((member, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
                 <Card
                   sx={{
                     height: '100%',
@@ -473,7 +473,7 @@ export const About: React.FC = () => {
             { icon: <CheckIcon />, title: 'ASE Certified', subtitle: 'All Technicians' },
             { icon: <SecurityIcon />, title: 'BBB Accredited', subtitle: 'A+ Rating' },
           ].map((award, index) => (
-            <Grid item xs={6} sm={3} key={index}>
+            <Grid size={{ xs: 6, sm: 3 }} key={index}>
               <Box sx={{ textAlign: 'center' }}>
                 <Box
                   sx={{
