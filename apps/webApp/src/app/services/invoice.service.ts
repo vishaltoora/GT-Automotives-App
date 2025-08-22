@@ -1,6 +1,14 @@
 import axios from 'axios';
+import { useAuth } from '@clerk/clerk-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Helper to get fresh token from Clerk
+let getClerkToken: (() => Promise<string | null>) | null = null;
+
+export function setClerkTokenGetter(getter: () => Promise<string | null>) {
+  getClerkToken = getter;
+}
 
 export interface InvoiceItem {
   id?: string;
@@ -51,12 +59,25 @@ export interface UpdateInvoiceDto {
 }
 
 class InvoiceService {
-  private getAuthToken(): string | null {
+  private async getAuthToken(): Promise<string | null> {
+    // Try to get fresh token from Clerk first
+    if (getClerkToken) {
+      try {
+        const freshToken = await getClerkToken();
+        if (freshToken) {
+          localStorage.setItem('authToken', freshToken);
+          return freshToken;
+        }
+      } catch (error) {
+        console.error('Failed to get fresh Clerk token:', error);
+      }
+    }
+    // Fallback to localStorage
     return localStorage.getItem('authToken');
   }
 
-  private getHeaders() {
-    const token = this.getAuthToken();
+  private async getHeaders() {
+    const token = await this.getAuthToken();
     return {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -65,28 +86,28 @@ class InvoiceService {
 
   async createInvoice(data: CreateInvoiceDto): Promise<Invoice> {
     const response = await axios.post(`${API_URL}/api/invoices`, data, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     return response.data;
   }
 
   async getInvoices(): Promise<Invoice[]> {
     const response = await axios.get(`${API_URL}/api/invoices`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     return response.data;
   }
 
   async getInvoice(id: string): Promise<Invoice> {
     const response = await axios.get(`${API_URL}/api/invoices/${id}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     return response.data;
   }
 
   async updateInvoice(id: string, data: UpdateInvoiceDto): Promise<Invoice> {
     const response = await axios.patch(`${API_URL}/api/invoices/${id}`, data, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     return response.data;
   }
@@ -96,7 +117,7 @@ class InvoiceService {
       `${API_URL}/api/invoices/${id}/pay`,
       { paymentMethod },
       {
-        headers: this.getHeaders(),
+        headers: await this.getHeaders(),
       }
     );
     return response.data;
@@ -104,7 +125,7 @@ class InvoiceService {
 
   async cancelInvoice(id: string): Promise<void> {
     await axios.delete(`${API_URL}/api/invoices/${id}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
   }
 
@@ -121,14 +142,14 @@ class InvoiceService {
     });
 
     const response = await axios.get(`${API_URL}/api/invoices/search?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     return response.data;
   }
 
   async getCustomerInvoices(customerId: string): Promise<Invoice[]> {
     const response = await axios.get(`${API_URL}/api/invoices/customer/${customerId}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     return response.data;
   }
@@ -136,7 +157,7 @@ class InvoiceService {
   async getDailyCashReport(date?: string): Promise<any> {
     const queryParam = date ? `?date=${date}` : '';
     const response = await axios.get(`${API_URL}/api/invoices/cash-report${queryParam}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     return response.data;
   }
@@ -146,6 +167,9 @@ class InvoiceService {
     const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
 
+    // GT Logo - using actual logo.png
+    const gtLogo = `<img src="/src/app/images-and-logos/logo.png" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+
     return `
       <!DOCTYPE html>
       <html>
@@ -153,24 +177,42 @@ class InvoiceService {
         <title>Invoice ${invoice.invoiceNumber}</title>
         <style>
           @media print {
-            body { margin: 0; }
+            body { margin: 0; padding: 20px; }
             .no-print { display: none; }
+            @page { 
+              margin: 0.5in; 
+              size: A4;
+              @top-left { content: ""; }
+              @top-center { content: ""; }
+              @top-right { content: ""; }
+              @bottom-left { content: ""; }
+              @bottom-center { content: ""; }
+              @bottom-right { content: ""; }
+            }
           }
           body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
           }
           .invoice-header {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid #243c55;
+          }
+          .company-info {
+            flex: 1;
           }
           .company-info h1 {
-            color: #1976d2;
+            color: #243c55;
             margin: 0;
+            font-size: 28px;
           }
           .invoice-details {
             text-align: right;
@@ -223,11 +265,17 @@ class InvoiceService {
       <body>
         <div class="invoice-header">
           <div class="company-info">
-            <h1>GT Automotive</h1>
-            <p>123 Main Street<br>
-            Houston, TX 77001<br>
-            Phone: (555) 123-4567<br>
-            Email: info@gtautomotive.com</p>
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+              ${gtLogo}
+              <div>
+                <h1 style="margin: 0; color: #243c55;">GT Automotives</h1>
+                <p style="margin: 0; font-size: 14px; color: #666;">Professional Tire & Auto Services</p>
+                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
+              </div>
+            </div>
+            <p style="margin-top: 10px;">Prince George, BC<br>
+            Phone: 250-570-2333<br>
+            Email: gt-automotives@outlook.com</p>
           </div>
           <div class="invoice-details">
             <h2>INVOICE</h2>
@@ -304,22 +352,184 @@ class InvoiceService {
         ` : ''}
 
         <div class="footer">
-          <p>Thank you for your business!</p>
-          <p>GT Automotive - Your trusted automotive partner</p>
+          <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 40px;">
+            <p style="font-weight: bold; color: #1976d2; margin-bottom: 5px;">Thank you for your business!</p>
+            <p style="margin: 0;">GT Automotive - Your trusted automotive partner</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">
+              Mobile Service Available | Licensed & Insured | Satisfaction Guaranteed
+            </p>
+          </div>
         </div>
       </body>
       </html>
     `;
   }
 
-  // Print invoice
+  // Get print HTML content for dialog preview
+  getPrintContent(invoice: Invoice): string {
+    const formatCurrency = (amount: number | string) => {
+      const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+      return `$${(numAmount || 0).toFixed(2)}`;
+    };
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
+
+    // GT Logo - using actual logo.png
+    const gtLogo = `<img src="/src/app/images-and-logos/logo.png" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+
+    return `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; max-width: 800px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #243c55;">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+              ${gtLogo}
+              <div>
+                <h1 style="margin: 0; color: #243c55; font-size: 28px;">GT Automotives</h1>
+                <p style="margin: 0; font-size: 14px; color: #666;">Professional Tire & Auto Services</p>
+                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
+              </div>
+            </div>
+            <p style="margin-top: 10px;">Prince George, BC<br>
+            Phone: 250-570-2333<br>
+            Email: gt-automotives@outlook.com</p>
+          </div>
+          <div style="text-align: right;">
+            <h2 style="margin: 0; color: #333;">INVOICE</h2>
+            <p><strong>Invoice #:</strong> ${invoice.invoiceNumber}<br>
+            <strong>Date:</strong> ${formatDate(invoice.createdAt)}<br>
+            <strong>Status:</strong> ${invoice.status}</p>
+          </div>
+        </div>
+
+        <div style="margin: 20px 0;">
+          <h3>Bill To:</h3>
+          <p>${invoice.customer?.user?.firstName} ${invoice.customer?.user?.lastName}<br>
+          ${invoice.customer?.phone}<br>
+          ${invoice.customer?.address || ''}</p>
+          ${invoice.vehicle ? `
+            <p><strong>Vehicle:</strong> ${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}<br>
+            <strong>VIN:</strong> ${invoice.vehicle.vin || 'N/A'}<br>
+            <strong>License Plate:</strong> ${invoice.vehicle.licensePlate || 'N/A'}</p>
+          ` : ''}
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f4f4f4; font-weight: bold;">Description</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f4f4f4; font-weight: bold;">Type</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f4f4f4; font-weight: bold;">Quantity</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f4f4f4; font-weight: bold;">Unit Price</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f4f4f4; font-weight: bold;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoice.items.map(item => `
+              <tr>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.description}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.itemType}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.quantity}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(item.unitPrice)}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(item.total || item.quantity * item.unitPrice)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div style="text-align: right; margin-top: 20px;">
+          <table style="margin-left: auto; width: 300px;">
+            <tr>
+              <td style="padding: 5px;">Subtotal:</td>
+              <td style="padding: 5px;">${formatCurrency(invoice.subtotal)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px;">Tax (${(invoice.taxRate * 100).toFixed(2)}%):</td>
+              <td style="padding: 5px;">${formatCurrency(invoice.taxAmount)}</td>
+            </tr>
+            <tr style="font-weight: bold; font-size: 1.2em; border-top: 2px solid #333;">
+              <td style="padding: 5px;">Total:</td>
+              <td style="padding: 5px;">${formatCurrency(invoice.total)}</td>
+            </tr>
+          </table>
+        </div>
+
+        ${invoice.notes ? `
+          <div style="margin-top: 20px;">
+            <h3>Notes:</h3>
+            <p>${invoice.notes}</p>
+          </div>
+        ` : ''}
+
+        ${invoice.paymentMethod ? `
+          <div style="margin-top: 20px;">
+            <p><strong>Payment Method:</strong> ${invoice.paymentMethod.replace(/_/g, ' ')}</p>
+            ${invoice.paidAt ? `<p><strong>Paid On:</strong> ${formatDate(invoice.paidAt)}</p>` : ''}
+          </div>
+        ` : ''}
+
+        <div style="margin-top: 50px; text-align: center; color: #666; font-size: 0.9em;">
+          <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 40px;">
+            <p style="font-weight: bold; color: #1976d2; margin-bottom: 5px;">Thank you for your business!</p>
+            <p style="margin: 0;">GT Automotive - Your trusted automotive partner</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">
+              Mobile Service Available | Licensed & Insured | Satisfaction Guaranteed
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Print invoice in new window
   printInvoice(invoice: Invoice): void {
-    const printWindow = window.open('', '_blank');
+    const htmlContent = this.getPrintContent(invoice);
+    const printWindow = window.open('', '', 'width=800,height=600');
+    
     if (printWindow) {
-      printWindow.document.write(this.generatePrintHTML(invoice));
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Invoice ${invoice.invoiceNumber}</title>
+            <style>
+              @media print {
+                body { margin: 0; padding: 20px; }
+                .no-print { display: none; }
+                @page { 
+                  margin: 0.5in; 
+                  size: A4;
+                  @top-left { content: ""; }
+                  @top-center { content: ""; }
+                  @top-right { content: ""; }
+                  @bottom-left { content: ""; }
+                  @bottom-center { content: ""; }
+                  @bottom-right { content: ""; }
+                }
+              }
+              body {
+                font-family: 'Segoe UI', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                padding: 20px;
+                max-width: 800px;
+                margin: 0 auto;
+              }
+            </style>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+        </html>
+      `);
       printWindow.document.close();
-      printWindow.focus();
+      
       setTimeout(() => {
+        printWindow.focus();
+        // Show tip about removing headers/footers
+        const showTip = !localStorage.getItem('invoice-print-tip-shown');
+        if (showTip) {
+          alert('Tip: For cleaner printing without headers/footers, go to Print Settings and uncheck "Headers and footers" option.');
+          localStorage.setItem('invoice-print-tip-shown', 'true');
+        }
         printWindow.print();
       }, 250);
     }

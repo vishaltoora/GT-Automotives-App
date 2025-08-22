@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Box, Container, Typography } from '@mui/material';
 import { SignIn as ClerkSignIn } from '@clerk/clerk-react';
 import { SignIn as MockSignIn } from '../../providers/MockClerkProvider';
+import { AuthLoading } from '../../components/AuthLoading';
 
 // Conditionally use Clerk or Mock SignIn based on environment
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -38,6 +39,19 @@ export function Login() {
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, role, user, navigate, location, isLoading]);
+
+  // Show loading screen immediately when authenticated (even before user data is synced)
+  if (isAuthenticated) {
+    const roleDisplayName = role === 'admin' ? 'Admin Panel' : 
+                           role === 'staff' ? 'Staff Dashboard' : 
+                           'Customer Portal';
+    
+    const message = user && role ? 
+      `Redirecting to ${roleDisplayName}...` : 
+      'Verifying your account...';
+    
+    return <AuthLoading message={message} />;
+  }
 
   return (
     <Container maxWidth="sm">

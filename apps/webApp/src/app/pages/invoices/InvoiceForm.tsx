@@ -179,45 +179,9 @@ const InvoiceForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    let customerId = formData.customerId;
+    const customerId = formData.customerId;
 
-    // Create new customer if needed
-    if (isNewCustomer && !customerId) {
-      if (!customerForm.name || !customerForm.phone) {
-        alert('Please provide at least customer name and phone number');
-        return;
-      }
-
-      try {
-        const [firstName, ...lastNameParts] = customerForm.name.split(' ');
-        const lastName = lastNameParts.join(' ') || '';
-        
-        const newCustomerData = {
-          user: {
-            firstName,
-            lastName,
-            email: customerForm.email || `${firstName.toLowerCase()}${lastName.toLowerCase()}@customer.local`,
-          },
-          businessName: customerForm.businessName,
-          phone: customerForm.phone,
-          email: customerForm.email,
-          address: customerForm.address,
-        };
-
-        const newCustomer = await customerService.createCustomer(newCustomerData);
-        customerId = newCustomer.id;
-        
-        // Refresh customers list
-        const customersData = await customerService.getCustomers();
-        setCustomers(customersData);
-      } catch (error) {
-        console.error('Error creating customer:', error);
-        alert('Error creating customer. Please try again.');
-        return;
-      }
-    }
-
-    // Check if we have customer info (either existing customer ID or new customer data)
+    // Validate customer information
     if (!customerId && (!customerForm.name || !customerForm.phone)) {
       alert('Please provide customer information (name and phone are required)');
       return;
@@ -229,26 +193,86 @@ const InvoiceForm: React.FC = () => {
     }
 
     try {
-      const invoiceData = {
-        customerId,
-        vehicleId: formData.vehicleId || undefined,
-        items: items.map(({ itemType, description, quantity, unitPrice, tireId }) => ({
-          itemType,
-          description,
-          quantity,
-          unitPrice,
-          tireId,
-        })),
+      const invoiceData: any = {
+        items: items.map(({ itemType, description, quantity, unitPrice, tireId }) => {
+          const item: any = {
+            itemType,
+            description,
+            quantity,
+            unitPrice,
+          };
+          // Only add tireId if it exists
+          if (tireId) {
+            item.tireId = tireId;
+          }
+          return item;
+        }),
         taxRate: formData.gstRate + formData.pstRate, // Combined tax rate for backend
-        paymentMethod: formData.paymentMethod || undefined,
-        notes: formData.notes || undefined,
       };
+      
+      // Only add optional fields if they have values
+      if (formData.paymentMethod) {
+        invoiceData.paymentMethod = formData.paymentMethod;
+      }
+      if (formData.notes) {
+        invoiceData.notes = formData.notes;
+      }
 
-      const invoice = await invoiceService.createInvoice(invoiceData as any);
+      // Add customerId if we have an existing customer
+      if (customerId) {
+        invoiceData.customerId = customerId;
+      } else if (customerForm.name && customerForm.phone) {
+        // Send customer data for customer creation (regardless of isNewCustomer flag)
+        invoiceData.customerData = {
+          name: customerForm.name,
+          phone: customerForm.phone,
+        };
+        // Only add optional fields if they have values
+        if (customerForm.businessName) {
+          invoiceData.customerData.businessName = customerForm.businessName;
+        }
+        if (customerForm.address) {
+          invoiceData.customerData.address = customerForm.address;
+        }
+        if (customerForm.email) {
+          invoiceData.customerData.email = customerForm.email;
+        }
+      }
+
+      // Only add vehicleId if it exists
+      if (formData.vehicleId) {
+        invoiceData.vehicleId = formData.vehicleId;
+      }
+
+      // Debug logs
+      console.log('Debug - customerId:', customerId);
+      console.log('Debug - isNewCustomer:', isNewCustomer);
+      console.log('Debug - customerForm:', customerForm);
+      console.log('Debug - formData.customerId:', formData.customerId);
+      console.log('Debug - items before mapping:', items);
+      console.log('Sending invoice data:', invoiceData);
+      console.log('Invoice items detail:', invoiceData.items);
+
+      // Validate that we have customer information
+      if (!invoiceData.customerId && !invoiceData.customerData) {
+        alert('Error: No customer information provided. Please select an existing customer or enter new customer details.');
+        return;
+      }
+
+      const invoice = await invoiceService.createInvoice(invoiceData);
       navigate(`/invoices/${invoice.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating invoice:', error);
-      alert('Error creating invoice');
+      if (error.response?.data) {
+        console.error('Error details:', error.response.data);
+        console.error('Error message array:', error.response.data.message);
+        const errorMessage = Array.isArray(error.response.data.message) 
+          ? error.response.data.message.join(', ')
+          : error.response.data.message || 'Unknown error';
+        alert(`Error creating invoice: ${errorMessage}`);
+      } else {
+        alert('Error creating invoice');
+      }
     }
   };
 
@@ -372,7 +396,13 @@ const InvoiceForm: React.FC = () => {
                           size="small"
                           label="Customer Name"
                           value={customerForm.name}
-                          onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
+                          onChange={(e) => {
+                            setCustomerForm({ ...customerForm, name: e.target.value });
+                            // If editing manually and no customerId, mark as new customer
+                            if (!formData.customerId) {
+                              setIsNewCustomer(true);
+                            }
+                          }}
                           required
                           InputProps={{
                             startAdornment: <PersonIcon sx={{ color: colors.text.secondary, mr: 1, fontSize: 20 }} />,
@@ -405,7 +435,13 @@ const InvoiceForm: React.FC = () => {
                           size="small"
                           label="Phone Number"
                           value={customerForm.phone}
-                          onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                          onChange={(e) => {
+                            setCustomerForm({ ...customerForm, phone: e.target.value });
+                            // If editing manually and no customerId, mark as new customer
+                            if (!formData.customerId) {
+                              setIsNewCustomer(true);
+                            }
+                          }}
                           required
                           placeholder="(250) 555-0123"
                         />
@@ -518,7 +554,7 @@ const InvoiceForm: React.FC = () => {
         {/* SECOND ROW: Add Items Section - Full Width */}
         <Box sx={{ mb: 3 }}>
           <Grid container>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
             <Card sx={{ 
               borderRadius: 2,
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
@@ -540,7 +576,7 @@ const InvoiceForm: React.FC = () => {
                   mb: 3
                 }}>
                   <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={2}>
+                    <Grid size={{ xs: 12, md: 2 }}>
                       <FormControl fullWidth size="small">
                         <InputLabel>Type</InputLabel>
                         <Select
@@ -567,7 +603,7 @@ const InvoiceForm: React.FC = () => {
                     </Grid>
 
                     {newItem.itemType === 'TIRE' ? (
-                      <Grid item xs={12} md={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
                         <FormControl fullWidth size="small">
                           <InputLabel>Select Tire</InputLabel>
                           <Select
@@ -592,7 +628,7 @@ const InvoiceForm: React.FC = () => {
                         </FormControl>
                       </Grid>
                     ) : (
-                      <Grid item xs={12} md={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
                         <TextField
                           fullWidth
                           size="small"
@@ -604,7 +640,7 @@ const InvoiceForm: React.FC = () => {
                       </Grid>
                     )}
 
-                    <Grid item xs={6} md={2}>
+                    <Grid size={{ xs: 6, md: 2 }}>
                       <TextField
                         fullWidth
                         size="small"
@@ -616,7 +652,7 @@ const InvoiceForm: React.FC = () => {
                       />
                     </Grid>
 
-                    <Grid item xs={6} md={2}>
+                    <Grid size={{ xs: 6, md: 2 }}>
                       <TextField
                         fullWidth
                         size="small"
@@ -631,7 +667,7 @@ const InvoiceForm: React.FC = () => {
                       />
                     </Grid>
 
-                    <Grid item xs={12} md={2}>
+                    <Grid size={{ xs: 12, md: 2 }}>
                       <Button
                         fullWidth
                         variant="contained"
@@ -736,7 +772,7 @@ const InvoiceForm: React.FC = () => {
         {/* THIRD ROW: Invoice Summary - Full Width */}
         <Box>
           <Grid container>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
             <Card sx={{ 
               borderRadius: 2,
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
@@ -752,7 +788,7 @@ const InvoiceForm: React.FC = () => {
                 </Box>
 
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={8}>
+                  <Grid size={{ xs: 12, md: 8 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {/* Subtotal */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -843,7 +879,7 @@ const InvoiceForm: React.FC = () => {
                     </Box>
                   </Grid>
 
-                  <Grid item xs={12} md={4}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <Button
                         fullWidth

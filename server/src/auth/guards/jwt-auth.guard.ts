@@ -29,7 +29,7 @@ export class JwtAuthGuard extends AuthGuard(['clerk-jwt', 'jwt']) {
         request.user = {
           id: 'dev-user-1',
           email: 'customer@example.com',
-          role: 'STAFF', // Give STAFF role for testing invoice creation
+          role: { name: 'STAFF' }, // Give STAFF role for testing invoice creation
           firstName: 'Test',
           lastName: 'User',
           customerId: 'dev-customer-1',

@@ -65,10 +65,10 @@ export function StaffLayout() {
 
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/staff/dashboard' },
-    { text: 'Customers', icon: <People />, path: '/customers' },
-    { text: 'Vehicles', icon: <DirectionsCar />, path: '/vehicles' },
-    { text: 'Inventory', icon: <Inventory />, path: '/inventory' },
-    { text: 'Invoices', icon: <Receipt />, path: '/invoices' },
+    { text: 'Customers', icon: <People />, path: '/staff/customers' },
+    { text: 'Vehicles', icon: <DirectionsCar />, path: '/staff/vehicles' },
+    { text: 'Inventory', icon: <Inventory />, path: '/staff/inventory' },
+    { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
     { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
     { text: 'Settings', icon: <Settings />, path: '/staff/settings' },

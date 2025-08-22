@@ -1,10 +1,10 @@
-import { IsString, IsOptional, IsNumber, IsArray, ValidateNested, IsEnum, Min, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, ValidateNested, IsEnum, Min, IsEmail } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethod, InvoiceItemType } from '@prisma/client';
 
 export class CreateInvoiceItemDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
   tireId?: string;
 
   @IsEnum(InvoiceItemType)
@@ -22,12 +22,38 @@ export class CreateInvoiceItemDto {
   unitPrice: number;
 }
 
-export class CreateInvoiceDto {
-  @IsUUID()
-  customerId: string;
+export class CreateCustomerDto {
+  @IsString()
+  name: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  businessName?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsString()
+  phone: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
+export class CreateInvoiceDto {
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateCustomerDto)
+  customerData?: CreateCustomerDto;
+
+  @IsOptional()
+  @IsString()
   vehicleId?: string;
 
   @IsArray()

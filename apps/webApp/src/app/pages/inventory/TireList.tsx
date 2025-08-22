@@ -30,16 +30,14 @@ import {
   ViewList as ListViewIcon,
   ViewModule as GridViewIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireFilters, ITireSearchParams, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { ITireSearchParams, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
 import TireCard from '../../components/inventory/TireCard';
-import TireFilter from '../../components/inventory/TireFilter';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'brand' | 'model' | 'size' | 'price' | 'quantity' | 'updatedAt';
@@ -71,22 +69,19 @@ export function TireList({
   // State
   const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'grid' : 'list');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<ITireFilters>({});
   const [sortBy, setSortBy] = useState<SortOption>('updatedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(embedded ? 6 : 12);
-  const [showFilters, setShowFilters] = useState(!embedded);
 
   // Debounced search
   const searchParams = useMemo<ITireSearchParams>(() => ({
     search: searchQuery || undefined,
-    filters,
     sortBy,
     sortOrder,
     page,
     limit: pageSize,
-  }), [searchQuery, filters, sortBy, sortOrder, page, pageSize]);
+  }), [searchQuery, sortBy, sortOrder, page, pageSize]);
 
   // Data fetching
   const { 
@@ -109,13 +104,8 @@ export function TireList({
     setPage(1); // Reset to first page when searching
   };
 
-  const handleFiltersChange = (newFilters: ITireFilters) => {
-    setFilters(newFilters);
-    setPage(1);
-  };
 
   const handleClearFilters = () => {
-    setFilters({});
     setSearchQuery('');
     setPage(1);
   };
@@ -166,19 +156,70 @@ export function TireList({
       headerName: 'Image',
       width: 80,
       sortable: false,
-      renderCell: (params) => (
-        <Box
-          component="img"
-          src={params.value || '/placeholder-tire.png'}
-          alt="Tire"
-          sx={{
-            width: 40,
-            height: 40,
-            objectFit: 'cover',
-            borderRadius: 1,
-          }}
-        />
-      ),
+      renderCell: (params) => {
+        const tire = params.row;
+        
+        // Function to get emoji based on tire type
+        const getTireEmoji = (type: TireType) => {
+          switch (type) {
+            case 'ALL_SEASON':
+              return '🌤️'; // All weather conditions
+            case 'SUMMER':
+              return '☀️'; // Summer sun
+            case 'WINTER':
+              return '❄️'; // Winter snowflake
+            case 'PERFORMANCE':
+              return '🏁'; // Racing/performance
+            case 'OFF_ROAD':
+              return '🏔️'; // Mountain/rugged terrain
+            case 'RUN_FLAT':
+              return '🛡️'; // Protection/safety
+            default:
+              return '🛞'; // Default tire
+          }
+        };
+
+        if (tire.imageUrl) {
+          return (
+            <Box
+              component="img"
+              src={tire.imageUrl}
+              alt={`${tire.brand} ${tire.model}`}
+              sx={{
+                width: 40,
+                height: 40,
+                objectFit: 'cover',
+                borderRadius: 1,
+              }}
+              onError={(e) => {
+                // Hide broken images
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          );
+        }
+        
+        // Show type-specific emoji placeholder when no image
+        return (
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'grey.50',
+              borderRadius: 1,
+              fontSize: '20px',
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+            title={`${tire.type.replace('_', ' ')} tire`}
+          >
+            {getTireEmoji(tire.type)}
+          </Box>
+        );
+      },
     },
     {
       field: 'brand',
@@ -291,7 +332,7 @@ export function TireList({
   const LoadingSkeleton = () => (
     <Grid container spacing={2}>
       {[...Array(pageSize)].map((_, index) => (
-        <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
           <Card>
             <Skeleton variant="rectangular" height={200} />
             <CardContent>
@@ -370,13 +411,6 @@ export function TireList({
             </ToggleButton>
           </ToggleButtonGroup>
 
-          {/* Filter Toggle */}
-          <IconButton
-            onClick={() => setShowFilters(!showFilters)}
-            color={showFilters ? 'primary' : 'default'}
-          >
-            <FilterIcon />
-          </IconButton>
 
           {/* Actions */}
           {showActions && (isStaff || isAdmin) && (
@@ -399,17 +433,6 @@ export function TireList({
         </Toolbar>
       </Card>
 
-      {/* Filters */}
-      {showFilters && (
-        <Box sx={{ mb: 3 }}>
-          <TireFilter
-            filters={filters}
-            onChange={handleFiltersChange}
-            onClear={handleClearFilters}
-            isCompact={embedded}
-          />
-        </Box>
-      )}
 
       {/* Error State */}
       {isError && (
@@ -425,11 +448,12 @@ export function TireList({
         <Grid container spacing={2}>
           {tires.map((tire) => (
             <Grid 
-              item 
-              xs={12} 
-              sm={6} 
-              md={embedded ? 6 : 4} 
-              lg={embedded ? 4 : 3} 
+              size={{ 
+                xs: 12, 
+                sm: 6, 
+                md: embedded ? 6 : 4, 
+                lg: embedded ? 4 : 3 
+              }} 
               key={tire.id}
             >
               <TireCard
@@ -476,8 +500,8 @@ export function TireList({
             No tires found
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {searchQuery || Object.keys(filters).length > 0
-              ? 'Try adjusting your search or filters'
+            {searchQuery
+              ? 'Try adjusting your search'
               : 'Get started by adding your first tire to the inventory'
             }
           </Typography>

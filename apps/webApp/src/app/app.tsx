@@ -83,8 +83,13 @@ export function App() {
           }
         >
           <Route path="dashboard" element={<CustomerDashboard />} />
-          <Route path="vehicles" element={<div>My Vehicles</div>} />
-          <Route path="invoices" element={<div>My Invoices</div>} />
+          <Route path="inventory" element={<TireListSimple />} />
+          <Route path="inventory/:id" element={<TireDetails />} />
+          <Route path="vehicles" element={<VehicleList />} />
+          <Route path="vehicles/new" element={<VehicleForm />} />
+          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="appointments" element={<div>My Appointments</div>} />
           <Route path="profile" element={<div>My Profile</div>} />
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -102,8 +107,21 @@ export function App() {
           }
         >
           <Route path="dashboard" element={<StaffDashboard />} />
-          <Route path="customers" element={<div>Customers</div>} />
-          <Route path="invoices" element={<div>Invoices</div>} />
+          <Route path="customers" element={<CustomerList />} />
+          <Route path="customers/new" element={<CustomerForm />} />
+          <Route path="customers/:id/edit" element={<CustomerForm />} />
+          <Route path="vehicles" element={<VehicleList />} />
+          <Route path="vehicles/new" element={<VehicleForm />} />
+          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+          <Route path="inventory" element={<TireListSimple />} />
+          <Route path="inventory/new" element={<TireFormSimple />} />
+          <Route path="inventory/:id" element={<TireDetails />} />
+          <Route path="inventory/:id/edit" element={<TireFormSimple />} />
+          <Route path="inventory/dashboard" element={<InventoryDashboard />} />
+          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="invoices/new" element={<InvoiceForm />} />
+          <Route path="invoices/:id" element={<InvoiceDetails />} />
+          <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="appointments" element={<div>Appointments</div>} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
@@ -123,8 +141,21 @@ export function App() {
         >
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<div>User Management</div>} />
-          <Route path="customers" element={<div>All Customers</div>} />
-          <Route path="invoices" element={<div>All Invoices</div>} />
+          <Route path="customers" element={<CustomerList />} />
+          <Route path="customers/new" element={<CustomerForm />} />
+          <Route path="customers/:id/edit" element={<CustomerForm />} />
+          <Route path="vehicles" element={<VehicleList />} />
+          <Route path="vehicles/new" element={<VehicleForm />} />
+          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+          <Route path="inventory" element={<TireListSimple />} />
+          <Route path="inventory/new" element={<TireFormSimple />} />
+          <Route path="inventory/:id" element={<TireDetails />} />
+          <Route path="inventory/:id/edit" element={<TireFormSimple />} />
+          <Route path="inventory/dashboard" element={<InventoryDashboard />} />
+          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="invoices/new" element={<InvoiceForm />} />
+          <Route path="invoices/:id" element={<InvoiceDetails />} />
+          <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="reports" element={<div>Financial Reports</div>} />
           <Route path="analytics" element={<div>Analytics</div>} />
@@ -133,98 +164,6 @@ export function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
-        {/* Shared Inventory Routes - Available to all authenticated users */}
-        <Route
-          path="/inventory"
-          element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={['customer', 'staff', 'admin']}>
-                <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
-                  <Outlet />
-                </Box>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        >
-          <Route index element={<TireListSimple />} />
-          <Route path="new" element={
-            <RoleGuard allowedRoles={['staff', 'admin']}>
-              <TireFormSimple />
-            </RoleGuard>
-          } />
-          <Route path=":id" element={<TireDetails />} />
-          <Route path=":id/edit" element={
-            <RoleGuard allowedRoles={['staff', 'admin']}>
-              <TireFormSimple />
-            </RoleGuard>
-          } />
-          <Route path="dashboard" element={
-            <RoleGuard allowedRoles={['staff', 'admin']}>
-              <InventoryDashboard />
-            </RoleGuard>
-          } />
-        </Route>
-
-        {/* Customer Management Routes - Available to all authenticated users */}
-        <Route
-          path="/customers"
-          element={
-            <AuthGuard>
-              <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
-                <Outlet />
-              </Box>
-            </AuthGuard>
-          }
-        >
-          <Route index element={<CustomerList />} />
-          <Route path="new" element={
-            <RoleGuard allowedRoles={['staff', 'admin']}>
-              <CustomerForm />
-            </RoleGuard>
-          } />
-          <Route path=":id/edit" element={<CustomerForm />} />
-        </Route>
-
-        {/* Vehicle Management Routes - Available to all authenticated users */}
-        <Route
-          path="/vehicles"
-          element={
-            <AuthGuard>
-              <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
-                <Outlet />
-              </Box>
-            </AuthGuard>
-          }
-        >
-          <Route index element={<VehicleList />} />
-          <Route path="new" element={<VehicleForm />} />
-          <Route path=":id/edit" element={<VehicleForm />} />
-        </Route>
-
-        {/* Invoice Routes - Available to all authenticated users */}
-        <Route
-          path="/invoices"
-          element={
-            <AuthGuard>
-              <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
-                <Outlet />
-              </Box>
-            </AuthGuard>
-          }
-        >
-          <Route index element={<InvoiceList />} />
-          <Route path="new" element={
-            <RoleGuard allowedRoles={['staff', 'admin']}>
-              <InvoiceForm />
-            </RoleGuard>
-          } />
-          <Route path="cash-report" element={
-            <RoleGuard allowedRoles={['staff', 'admin']}>
-              <CashReport />
-            </RoleGuard>
-          } />
-          <Route path=":id" element={<InvoiceDetails />} />
-        </Route>
 
         {/* Catch all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

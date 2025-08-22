@@ -322,4 +322,37 @@ export class TireRepository extends BaseRepository<Tire> {
 
     return where;
   }
+
+  async getBrands(): Promise<string[]> {
+    const result = await this.prisma.tire.findMany({
+      select: { brand: true },
+      distinct: ['brand'],
+      orderBy: { brand: 'asc' },
+    });
+    return result.map((tire) => tire.brand);
+  }
+
+  async getModelsForBrand(brand: string): Promise<string[]> {
+    const result = await this.prisma.tire.findMany({
+      where: {
+        brand: {
+          equals: brand,
+          mode: 'insensitive',
+        },
+      },
+      select: { model: true },
+      distinct: ['model'],
+      orderBy: { model: 'asc' },
+    });
+    return result.map((tire) => tire.model);
+  }
+
+  async getSizes(): Promise<string[]> {
+    const result = await this.prisma.tire.findMany({
+      select: { size: true },
+      distinct: ['size'],
+      orderBy: { size: 'asc' },
+    });
+    return result.map((tire) => tire.size);
+  }
 }

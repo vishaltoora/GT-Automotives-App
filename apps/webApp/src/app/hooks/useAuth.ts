@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useUser as useClerkUser, useAuth as useClerkAuthHook } from '@clerk/clerk-react';
+import { useUser as useClerkUser, useAuth as useClerkAuthHook, useClerk } from '@clerk/clerk-react';
 import { useUser as useMockUser, useAuth as useMockAuth } from '../providers/MockClerkProvider';
 
 // Conditionally use Clerk or Mock hooks based on environment
@@ -31,23 +31,27 @@ export function useAuth() {
   // Use Clerk hooks
   const { user: clerkUser, isLoaded, isSignedIn } = useUser();
   const { getToken } = useClerkAuth();
+  const clerk = publishableKey ? useClerk() : null;
   
   // Development mode bypass - for testing without backend
-  const isDevelopment = false; // Disabled since we have Clerk keys now
+  const isDevelopment = false; // Disabled - using real Clerk authentication
 
   useEffect(() => {
     const syncUser = async () => {
       // Development mode with mock data
       if (isDevelopment) {
-        // Simulate a logged-in customer user for development
+        // Store mock token for API requests
+        localStorage.setItem('authToken', 'mock-jwt-token-development');
+        
+        // Simulate a logged-in admin user for development
         const mockUser: AppUser = {
           id: 'dev-user-1',
-          email: 'customer@example.com',
+          email: 'admin@gtautomotive.com',
           firstName: 'Test',
-          lastName: 'Customer',
+          lastName: 'Admin',
           role: {
-            id: 3,
-            name: 'customer'
+            id: 1,
+            name: 'admin'
           },
           isActive: true
         };
@@ -73,6 +77,9 @@ export function useAuth() {
             setLoading(false);
             return;
           }
+          
+          // Store token in localStorage for services to use
+          localStorage.setItem('authToken', token);
           
           // First check if user exists in our database
           const response = await axios.get(`${API_URL}/api/auth/me`, {
@@ -119,11 +126,34 @@ export function useAuth() {
       } else {
         setAppUser(null);
         setLoading(false);
+        // Clear token from localStorage when not signed in
+        localStorage.removeItem('authToken');
       }
     };
 
     syncUser();
   }, [clerkUser, isLoaded, isSignedIn, getToken, isDevelopment]);
+
+  const logout = async () => {
+    try {
+      if (clerk) {
+        await clerk.signOut();
+      }
+      // Clear local storage
+      localStorage.removeItem('authToken');
+      setAppUser(null);
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
+  const clearAuthState = () => {
+    // Clear all auth-related localStorage
+    localStorage.removeItem('authToken');
+    localStorage.clear(); // Clear all Clerk session data
+    setAppUser(null);
+    window.location.reload(); // Force page reload to reset Clerk state
+  };
 
   return {
     user: appUser,
@@ -134,5 +164,7 @@ export function useAuth() {
     isAdmin: appUser?.role?.name?.toLowerCase() === 'admin',
     isStaff: appUser?.role?.name?.toLowerCase() === 'staff',
     isCustomer: appUser?.role?.name?.toLowerCase() === 'customer',
+    logout,
+    clearAuthState,
   };
 }

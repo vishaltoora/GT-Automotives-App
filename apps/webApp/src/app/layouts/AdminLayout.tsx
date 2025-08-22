@@ -44,7 +44,7 @@ const drawerWidth = 280;
 
 export function AdminLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -55,24 +55,17 @@ export function AdminLayout() {
   };
 
   const handleSignOut = async () => {
-    // Handle signout - in dev mode just navigate
-    try {
-      const { useClerk } = await import('@clerk/clerk-react');
-      const { signOut } = useClerk();
-      await signOut();
-    } catch (error) {
-      console.log('Clerk not available, navigating to home');
-    }
+    await logout();
     navigate('/');
   };
 
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
     { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
-    { text: 'Customers', icon: <People />, path: '/customers' },
-    { text: 'Vehicles', icon: <DirectionsCar />, path: '/vehicles' },
-    { text: 'Inventory', icon: <Inventory />, path: '/inventory' },
-    { text: 'Invoices', icon: <Receipt />, path: '/invoices' },
+    { text: 'Customers', icon: <People />, path: '/admin/customers' },
+    { text: 'Vehicles', icon: <DirectionsCar />, path: '/admin/vehicles' },
+    { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
+    { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
     { divider: true },
     { text: 'Reports', icon: <Assessment />, path: '/admin/reports' },

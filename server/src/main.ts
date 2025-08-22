@@ -22,7 +22,6 @@ async function bootstrap() {
     transform: true,
   }));
   
-  // Remove global prefix for webhooks
   const port = process.env.PORT || 3000;
   await app.listen(port);
   Logger.log(

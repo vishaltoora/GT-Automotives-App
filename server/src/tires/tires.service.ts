@@ -324,4 +324,19 @@ export class TiresService {
     const lowStockTires = await this.tireRepository.findLowStock();
     return this.formatTireResponse(lowStockTires, 'admin');
   }
+
+  // Get all unique brands
+  async getBrands(userRole?: string): Promise<string[]> {
+    return this.tireRepository.getBrands();
+  }
+
+  // Get all models for a specific brand
+  async getModelsForBrand(brand: string, userRole?: string): Promise<string[]> {
+    return this.tireRepository.getModelsForBrand(brand);
+  }
+
+  // Get all unique sizes
+  async getSizes(userRole?: string): Promise<string[]> {
+    return this.tireRepository.getSizes();
+  }
 }

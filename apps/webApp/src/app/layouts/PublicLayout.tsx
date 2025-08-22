@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { AuthRedirect } from '../components/AuthRedirect';
 import {
   AppBar,
   Toolbar,
@@ -298,6 +299,7 @@ export function PublicLayout() {
           flex: 1,
         }}
       >
+        <AuthRedirect />
         <Outlet />
       </Box>
 

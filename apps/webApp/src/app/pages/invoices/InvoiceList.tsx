@@ -162,7 +162,7 @@ const InvoiceList: React.FC = () => {
 
       <Paper sx={{ mb: 3, p: 2 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <TextField
               fullWidth
               label="Invoice Number"
@@ -177,7 +177,7 @@ const InvoiceList: React.FC = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <TextField
               fullWidth
               label="Customer Name"
@@ -185,7 +185,7 @@ const InvoiceList: React.FC = () => {
               onChange={(e) => setSearchParams({ ...searchParams, customerName: e.target.value })}
             />
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <TextField
               fullWidth
               select
@@ -201,7 +201,7 @@ const InvoiceList: React.FC = () => {
               <MenuItem value="REFUNDED">Refunded</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <Button
               fullWidth
               variant="contained"

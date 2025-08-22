@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(yarn dev)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)",
+      "Bash(rm:*)",
+      "Bash(pkill:*)",
+      "Bash(yarn db:generate:*)",
+      "Bash(mkdir:*)",
+      "WebSearch",
+      "Bash(node:*)",
+      "Bash(yarn lint)",
+      "Bash(yarn tsc:*)"
     ],
     "deny": [],
     "ask": []

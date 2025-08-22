@@ -46,7 +46,7 @@ export function CustomerLayout() {
 
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/customer/dashboard' },
-    { text: 'Browse Tires', icon: <InventoryIcon />, path: '/inventory' },
+    { text: 'Browse Tires', icon: <InventoryIcon />, path: '/customer/inventory' },
     { text: 'My Vehicles', icon: <DirectionsCar />, path: '/customer/vehicles' },
     { text: 'Invoices', icon: <Receipt />, path: '/customer/invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/customer/appointments' },

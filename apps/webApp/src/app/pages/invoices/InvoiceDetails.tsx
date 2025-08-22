@@ -141,7 +141,20 @@ const InvoiceDetails: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <style>
+        {`
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+        `}
+      </style>
+      <Box className="no-print" sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Button startIcon={<BackIcon />} onClick={() => navigate('/invoices')}>
           Back to Invoices
         </Button>
@@ -174,7 +187,7 @@ const InvoiceDetails: React.FC = () => {
 
       <Paper sx={{ p: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="h4" gutterBottom>
               Invoice #{invoice.invoiceNumber}
             </Typography>
@@ -182,7 +195,7 @@ const InvoiceDetails: React.FC = () => {
               Created: {formatDateTime(invoice.createdAt)}
             </Typography>
           </Grid>
-          <Grid item xs={12} md={6} sx={{ textAlign: 'right' }}>
+          <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: 'right' }}>
             <Chip
               label={invoice.status}
               color={getStatusColor(invoice.status)}
@@ -201,11 +214,11 @@ const InvoiceDetails: React.FC = () => {
             )}
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Divider />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -230,7 +243,7 @@ const InvoiceDetails: React.FC = () => {
           </Grid>
 
           {invoice.vehicle && (
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -259,7 +272,7 @@ const InvoiceDetails: React.FC = () => {
             </Grid>
           )}
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
               Invoice Items
             </Typography>
@@ -293,7 +306,7 @@ const InvoiceDetails: React.FC = () => {
             </TableContainer>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             {invoice.notes && (
               <Card variant="outlined">
                 <CardContent>
@@ -306,32 +319,32 @@ const InvoiceDetails: React.FC = () => {
             )}
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card variant="outlined">
               <CardContent>
                 <Box sx={{ textAlign: 'right' }}>
                   <Grid container spacing={1}>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body1">Subtotal:</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body1">{formatCurrency(invoice.subtotal)}</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body1">
                         Tax ({(invoice.taxRate * 100).toFixed(2)}%):
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body1">{formatCurrency(invoice.taxAmount)}</Typography>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <Divider sx={{ my: 1 }} />
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="h6">Total:</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="h6">{formatCurrency(invoice.total)}</Typography>
                     </Grid>
                   </Grid>

@@ -15,9 +15,7 @@ export class VehiclesService {
 
   async create(createVehicleDto: CreateVehicleDto, userId: string, userRole: string) {
     // Verify customer exists
-    const customer = await this.customerRepository.findOne({ 
-      id: createVehicleDto.customerId 
-    });
+    const customer = await this.customerRepository.findById(createVehicleDto.customerId);
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
@@ -73,7 +71,7 @@ export class VehiclesService {
   }
 
   async findByCustomer(customerId: string, userId: string, userRole: string) {
-    const customer = await this.customerRepository.findOne({ id: customerId });
+    const customer = await this.customerRepository.findById(customerId);
 
     if (!customer) {
       throw new NotFoundException('Customer not found');

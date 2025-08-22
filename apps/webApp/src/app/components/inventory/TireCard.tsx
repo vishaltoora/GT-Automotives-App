@@ -23,6 +23,26 @@ import {
 } from '@mui/icons-material';
 import { ITire, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
 
+// Helper function to get emoji based on tire type
+const getTireEmoji = (type: TireType): string => {
+  switch (type) {
+    case TireType.ALL_SEASON:
+      return '🌤️'; // All weather conditions
+    case TireType.SUMMER:
+      return '☀️'; // Summer sun
+    case TireType.WINTER:
+      return '❄️'; // Winter snowflake
+    case TireType.PERFORMANCE:
+      return '🏁'; // Racing/performance
+    case TireType.OFF_ROAD:
+      return '🏔️'; // Mountain/rugged terrain
+    case TireType.RUN_FLAT:
+      return '🛡️'; // Protection/safety
+    default:
+      return '🛞'; // Default tire
+  }
+};
+
 interface TireCardProps {
   tire: ITire;
   onEdit?: () => void;
@@ -106,13 +126,40 @@ export function TireCard({
           </Box>
         )}
 
-        <CardMedia
-          component="img"
-          height="120"
-          image={tire.imageUrl || placeholderImage}
-          alt={`${tire.brand} ${tire.model}`}
-          sx={{ objectFit: 'cover' }}
-        />
+        <Box sx={{ position: 'relative', height: 120 }}>
+          <CardMedia
+            component="img"
+            height="120"
+            image={tire.imageUrl || placeholderImage}
+            alt={`${tire.brand} ${tire.model}`}
+            sx={{ objectFit: 'cover' }}
+            onError={(e) => {
+              // Replace with emoji fallback on error
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent && !parent.querySelector('.emoji-fallback')) {
+                const fallback = document.createElement('div');
+                fallback.className = 'emoji-fallback';
+                fallback.style.cssText = `
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background: #f5f5f5;
+                  font-size: 40px;
+                  border: 1px solid #e0e0e0;
+                `;
+                fallback.textContent = getTireEmoji(tire.type);
+                parent.appendChild(fallback);
+              }
+            }}
+          />
+        </Box>
         
         <CardContent sx={{ flexGrow: 1, p: 2 }}>
           <Typography variant="h6" component="h3" noWrap>
@@ -201,13 +248,40 @@ export function TireCard({
         </Box>
       )}
 
-      <CardMedia
-        component="img"
-        height="200"
-        image={tire.imageUrl || placeholderImage}
-        alt={`${tire.brand} ${tire.model}`}
-        sx={{ objectFit: 'cover' }}
-      />
+      <Box sx={{ position: 'relative', height: 200 }}>
+        <CardMedia
+          component="img"
+          height="200"
+          image={tire.imageUrl || placeholderImage}
+          alt={`${tire.brand} ${tire.model}`}
+          sx={{ objectFit: 'cover' }}
+          onError={(e) => {
+            // Replace with emoji fallback on error
+            const target = e.currentTarget;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent && !parent.querySelector('.emoji-fallback')) {
+              const fallback = document.createElement('div');
+              fallback.className = 'emoji-fallback';
+              fallback.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #f5f5f5;
+                font-size: 60px;
+                border: 1px solid #e0e0e0;
+              `;
+              fallback.textContent = getTireEmoji(tire.type);
+              parent.appendChild(fallback);
+            }
+          }}
+        />
+      </Box>
       
       <CardContent sx={{ flexGrow: 1 }}>
         <Typography variant="h5" component="h2" gutterBottom>

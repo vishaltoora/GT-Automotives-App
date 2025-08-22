@@ -12,7 +12,7 @@ import {
   IsBoolean,
   IsInt,
 } from 'class-validator';
-import { Exclude } from 'class-transformer';
+import { Exclude, Type } from 'class-transformer';
 import { TireType, TireCondition } from '@gt-automotive/shared-interfaces';
 
 export class CreateTireDto {
@@ -171,20 +171,24 @@ export class TireSearchDto {
   condition?: TireCondition;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   minPrice?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Max(99999)
   maxPrice?: number;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   inStock?: boolean;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   lowStock?: boolean;
 
@@ -201,11 +205,13 @@ export class TireSearchDto {
   sortOrder?: 'asc' | 'desc';
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   @Max(100)

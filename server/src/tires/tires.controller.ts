@@ -39,7 +39,7 @@ export class TiresController {
   @Get()
   @Public()
   async findAll(
-    @Query() searchDto: TireSearchDto,
+    @Query(new ValidationPipe({ transform: true })) searchDto: TireSearchDto,
     @CurrentUser() user?: any,
   ): Promise<TireResponseDto[] | TireSearchResultDto> {
     const userRole = user?.role?.name;
@@ -74,6 +74,37 @@ export class TiresController {
     };
 
     return this.tiresService.findAll(filters, userRole);
+  }
+
+  // Public endpoint - get all tire brands
+  @Get('brands')
+  @Public()
+  async getBrands(
+    @CurrentUser() user?: any,
+  ): Promise<string[]> {
+    const userRole = user?.role?.name;
+    return this.tiresService.getBrands(userRole);
+  }
+
+  // Public endpoint - get all tire models for a brand
+  @Get('brands/:brand/models')
+  @Public()
+  async getModelsForBrand(
+    @Param('brand') brand: string,
+    @CurrentUser() user?: any,
+  ): Promise<string[]> {
+    const userRole = user?.role?.name;
+    return this.tiresService.getModelsForBrand(brand, userRole);
+  }
+
+  // Public endpoint - get all tire sizes
+  @Get('sizes')
+  @Public()
+  async getSizes(
+    @CurrentUser() user?: any,
+  ): Promise<string[]> {
+    const userRole = user?.role?.name;
+    return this.tiresService.getSizes(userRole);
   }
 
   // Public endpoint - customers can view individual tires

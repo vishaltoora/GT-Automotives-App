@@ -2,17 +2,76 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
-import { Invoice, InvoiceStatus, Prisma } from '@prisma/client';
+import { Invoice, InvoiceStatus, Prisma, RoleName } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
+import { CustomerRepository } from '../customers/repositories/customer.repository';
+import { RoleRepository } from '../roles/repositories/role.repository';
 
 @Injectable()
 export class InvoicesService {
   constructor(
     private readonly invoiceRepository: InvoiceRepository,
     private readonly auditRepository: AuditRepository,
+    private readonly customerRepository: CustomerRepository,
+    private readonly roleRepository: RoleRepository,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
+    console.log('Creating invoice with data:', JSON.stringify(createInvoiceDto, null, 2));
+    let customerId = createInvoiceDto.customerId;
+
+    // Create customer if customerData is provided and no customerId
+    if (!customerId && createInvoiceDto.customerData) {
+      const { name, businessName, address, phone, email } = createInvoiceDto.customerData;
+      
+      // Split name into first and last name
+      const [firstName, ...lastNameParts] = name.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+      
+      try {
+        // Get customer role
+        const customerRole = await this.roleRepository.findByName(RoleName.CUSTOMER);
+        if (!customerRole) {
+          throw new BadRequestException('Customer role not found');
+        }
+        
+        console.log('Creating customer with role:', customerRole.id);
+        
+        // Generate a temporary clerk ID for customers created through invoices
+        const tempClerkId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        
+        // Create customer with user
+        const customerData = {
+          user: {
+            create: {
+              firstName,
+              lastName,
+              email: email || `${firstName.toLowerCase()}${lastName.toLowerCase()}@customer.local`,
+              clerkId: tempClerkId, // Temporary ID for customers created without Clerk signup
+              roleId: customerRole.id,
+            }
+          },
+          businessName,
+          phone,
+          email,
+          address,
+        };
+
+        console.log('Customer data to create:', JSON.stringify(customerData, null, 2));
+        const newCustomer = await this.customerRepository.create(customerData);
+        customerId = newCustomer.id;
+        console.log('Customer created with ID:', customerId);
+      } catch (error) {
+        console.error('Error creating customer:', error);
+        throw new BadRequestException(`Failed to create customer: ${error.message}`);
+      }
+    }
+
+    // Validate that we have a customerId
+    if (!customerId) {
+      throw new BadRequestException('Either customerId or customerData must be provided');
+    }
+
     // Calculate totals
     let subtotal = 0;
     const items = createInvoiceDto.items.map(item => {
@@ -36,7 +95,7 @@ export class InvoicesService {
     const invoice = await this.invoiceRepository.createWithItems(
       {
         invoiceNumber,
-        customer: { connect: { id: createInvoiceDto.customerId } },
+        customer: { connect: { id: customerId } },
         vehicle: createInvoiceDto.vehicleId ? { connect: { id: createInvoiceDto.vehicleId } } : undefined,
         subtotal,
         taxRate,
