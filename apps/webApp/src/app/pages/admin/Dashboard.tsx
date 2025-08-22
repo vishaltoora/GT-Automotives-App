@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -42,9 +42,13 @@ import {
   LocalShipping,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+
   // Mock data for demonstration
   const stats = {
     revenue: { value: 125430, change: 12.5, trend: 'up' },
@@ -59,6 +63,11 @@ export function AdminDashboard() {
     { id: 3, type: 'inventory', text: 'Low stock alert: Michelin Pilot Sport 4S', time: '2 hours ago', status: 'warning' },
     { id: 4, type: 'appointment', text: 'Appointment scheduled for tomorrow 9 AM', time: '3 hours ago', status: 'info' },
   ];
+
+  const handleInvoiceSuccess = (invoice: any) => {
+    // Navigate to the newly created invoice details
+    navigate(`/admin/invoices/${invoice.id}`);
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -312,7 +321,7 @@ export function AdminDashboard() {
       {/* Charts and Activity Section */}
       <Grid container spacing={3} sx={{ mt: 3 }}>
         {/* Quick Actions */}
-        <Grid size={{ xs: 12, lg: 9 }}>
+        <Grid xs={12} lg={9}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -341,13 +350,11 @@ export function AdminDashboard() {
               mb: 3,
             }}>
               <Paper
-                component={Link}
-                to="/invoices/new"
+                onClick={() => setInvoiceDialogOpen(true)}
                 sx={{
                   p: 2,
                   textAlign: 'center',
                   cursor: 'pointer',
-                  textDecoration: 'none',
                   border: `1px solid ${colors.neutral[200]}`,
                   transition: 'all 0.2s',
                   '&:hover': {
@@ -550,7 +557,7 @@ export function AdminDashboard() {
         </Grid>
 
         {/* Recent Activity */}
-        <Grid size={{ xs: 12, lg: 3 }}>
+        <Grid xs={12} lg={3}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -611,7 +618,7 @@ export function AdminDashboard() {
 
       {/* Business Insights */}
       <Grid container spacing={3} sx={{ mt: 3 }}>
-        <Grid size={12}>
+        <Grid xs={12}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -776,6 +783,13 @@ export function AdminDashboard() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Invoice Dialog */}
+      <InvoiceDialog
+        open={invoiceDialogOpen}
+        onClose={() => setInvoiceDialogOpen(false)}
+        onSuccess={handleInvoiceSuccess}
+      />
     </Box>
   );
 }

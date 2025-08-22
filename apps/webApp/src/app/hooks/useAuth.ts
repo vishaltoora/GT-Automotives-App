@@ -155,15 +155,23 @@ export function useAuth() {
     window.location.reload(); // Force page reload to reset Clerk state
   };
 
+  const userRole = appUser?.role?.name?.toLowerCase() || null;
+
+  // Don't mark as finished loading until we have either:
+  // 1. User data loaded OR
+  // 2. Determined user is not authenticated
+  const isStillLoading = loading || (!isDevelopment && !isLoaded) || 
+    (isSignedIn && clerkUser && !appUser && !isDevelopment);
+  
   return {
     user: appUser,
     clerkUser,
     isAuthenticated: isDevelopment ? true : isSignedIn,
-    isLoading: loading || (!isDevelopment && !isLoaded),
-    role: appUser?.role?.name?.toLowerCase() || null,
-    isAdmin: appUser?.role?.name?.toLowerCase() === 'admin',
-    isStaff: appUser?.role?.name?.toLowerCase() === 'staff',
-    isCustomer: appUser?.role?.name?.toLowerCase() === 'customer',
+    isLoading: isStillLoading,
+    role: userRole,
+    isAdmin: userRole === 'admin',
+    isStaff: userRole === 'staff',
+    isCustomer: userRole === 'customer',
     logout,
     clearAuthState,
   };

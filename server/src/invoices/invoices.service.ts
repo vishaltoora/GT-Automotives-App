@@ -53,7 +53,6 @@ export class InvoicesService {
           },
           businessName,
           phone,
-          email,
           address,
         };
 

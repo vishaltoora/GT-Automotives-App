@@ -50,9 +50,11 @@ import { customerService } from '../../services/customer.service';
 import { vehicleService } from '../../services/vehicle.service';
 import TireService from '../../services/tire.service';
 import { colors } from '../../theme/colors';
+import { useAuth } from '../../hooks/useAuth';
 
 const InvoiceForm: React.FC = () => {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [customers, setCustomers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [tires, setTires] = useState<any[]>([]);
@@ -260,7 +262,8 @@ const InvoiceForm: React.FC = () => {
       }
 
       const invoice = await invoiceService.createInvoice(invoiceData);
-      navigate(`/invoices/${invoice.id}`);
+      const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+      navigate(`${basePath}/invoices/${invoice.id}`);
     } catch (error: any) {
       console.error('Error creating invoice:', error);
       if (error.response?.data) {
@@ -910,7 +913,10 @@ const InvoiceForm: React.FC = () => {
                         fullWidth
                         variant="outlined"
                         startIcon={<CancelIcon />}
-                        onClick={() => navigate('/invoices')}
+                        onClick={() => {
+                          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+                          navigate(`${basePath}/invoices`);
+                        }}
                         sx={{
                           borderColor: colors.neutral[400],
                           color: colors.text.secondary,

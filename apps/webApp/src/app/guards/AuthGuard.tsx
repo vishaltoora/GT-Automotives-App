@@ -11,6 +11,7 @@ interface AuthGuardProps {
 export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  
 
   if (isLoading) {
     return (

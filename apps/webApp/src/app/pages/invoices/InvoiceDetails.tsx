@@ -30,7 +30,7 @@ import { useAuth } from '../../hooks/useAuth';
 const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -132,7 +132,10 @@ const InvoiceDetails: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>Invoice not found</Typography>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/invoices')} sx={{ mt: 2 }}>
+        <Button startIcon={<BackIcon />} onClick={() => {
+          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+          navigate(`${basePath}/invoices`);
+        }} sx={{ mt: 2 }}>
           Back to Invoices
         </Button>
       </Box>
@@ -155,7 +158,10 @@ const InvoiceDetails: React.FC = () => {
         `}
       </style>
       <Box className="no-print" sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/invoices')}>
+        <Button startIcon={<BackIcon />} onClick={() => {
+          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+          navigate(`${basePath}/invoices`);
+        }}>
           Back to Invoices
         </Button>
         <Box sx={{ display: 'flex', gap: 2 }}>

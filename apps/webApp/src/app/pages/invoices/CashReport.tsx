@@ -22,9 +22,11 @@ import {
   Today as TodayIcon,
 } from '@mui/icons-material';
 import { invoiceService } from '../../services/invoice.service';
+import { useAuth } from '../../hooks/useAuth';
 
 const CashReport: React.FC = () => {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -63,7 +65,10 @@ const CashReport: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/invoices')}>
+        <Button startIcon={<BackIcon />} onClick={() => {
+          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+          navigate(`${basePath}/invoices`);
+        }}>
           Back to Invoices
         </Button>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>

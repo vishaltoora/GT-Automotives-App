@@ -30,10 +30,11 @@ import {
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { useAuth } from '../../hooks/useAuth';
+import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useState({
@@ -41,6 +42,7 @@ const InvoiceList: React.FC = () => {
     invoiceNumber: '',
     status: '',
   });
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     loadInvoices();
@@ -100,6 +102,14 @@ const InvoiceList: React.FC = () => {
     }
   };
 
+  const handleInvoiceSuccess = (invoice: any) => {
+    // Refresh the invoice list to show the new invoice
+    loadInvoices();
+    // Optionally navigate to the newly created invoice details
+    const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+    navigate(`${basePath}/invoices/${invoice.id}`);
+  };
+
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
       case 'PAID':
@@ -143,7 +153,10 @@ const InvoiceList: React.FC = () => {
             <Button
               variant="outlined"
               startIcon={<ReportIcon />}
-              onClick={() => navigate('/invoices/cash-report')}
+              onClick={() => {
+                const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+                navigate(`${basePath}/invoices/cash-report`);
+              }}
             >
               Cash Report
             </Button>
@@ -152,7 +165,7 @@ const InvoiceList: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => navigate('/invoices/new')}
+              onClick={() => setDialogOpen(true)}
             >
               New Invoice
             </Button>
@@ -257,7 +270,10 @@ const InvoiceList: React.FC = () => {
                     <Tooltip title="View">
                       <IconButton
                         size="small"
-                        onClick={() => navigate(`/invoices/${invoice.id}`)}
+                        onClick={() => {
+                          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+                          navigate(`${basePath}/invoices/${invoice.id}`);
+                        }}
                       >
                         <ViewIcon />
                       </IconButton>
@@ -306,6 +322,13 @@ const InvoiceList: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Invoice Dialog */}
+      <InvoiceDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSuccess={handleInvoiceSuccess}
+      />
     </Box>
   );
 };

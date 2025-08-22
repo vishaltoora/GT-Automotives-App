@@ -87,6 +87,20 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
+### August 2025 - Invoice System Enhancements
+- ✅ **Dialog-Based Invoice Creation**: Converted Admin Dashboard quick actions from navigation to modal dialog
+- ✅ **Grid2 Size Property**: Updated all Grid components to use modern `size={{ xs: 12, md: 6 }}` syntax
+- ✅ **UI/UX Improvements**: Set invoice dialog width to xl for better user experience
+- ✅ **Backend Schema Fix**: Resolved Prisma validation errors in customer creation during invoice process
+- ✅ **Authentication Guards**: Enhanced loading state handling to prevent redirect loops
+
+### August 2025 - Home Page Component Refactoring
+- ✅ **Component Modularization**: Split 1900-line Home.tsx into 9 focused components
+- ✅ **Better Organization**: Created `/components/home` directory structure
+- ✅ **Improved Maintainability**: Each component has single responsibility
+- ✅ **TypeScript Enhancements**: Proper interfaces and type definitions
+- ✅ **Performance**: Better code splitting with smaller components
+
 ### December 2024 - Invoice Printing Enhancements
 - ✅ **Logo Integration**: Implemented actual GT logo from `/images-and-logos/logo.png`
 - ✅ **Business Registration**: Added "16472991 Canada INC." to invoice headers
@@ -96,5 +110,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated:** December 2024 - Invoice printing enhancements completed
+**Last Updated:** August 22, 2025 - Invoice system enhancements with Grid2 size property updates completed
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.
