@@ -49,25 +49,20 @@ jobs:
           NODE_ENV: test
         run: yarn test
 
-      - name: Build Frontend
+      - name: Build All Applications
         env:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.gtautomotive.com' }}
           NODE_ENV: production
           VITE_BUILD_VERSION: ${{ steps.version.outputs.version }}
-        run: yarn build:web
-
-      - name: Build Backend
-        env:
-          NODE_ENV: production
           BUILD_VERSION: ${{ steps.version.outputs.version }}
-        run: yarn build:server
+        run: yarn build
 
       - name: Create deployment package
         run: |
           mkdir -p deployment-package
-          cp -r dist/apps/webApp deployment-package/frontend
-          cp -r dist/apps/server deployment-package/backend
+          cp -r apps/webApp/dist deployment-package/frontend
+          cp -r server/dist deployment-package/backend
           cp -r libs/database/src/lib/prisma deployment-package/prisma
           cp package.json deployment-package/
           cp yarn.lock deployment-package/
@@ -85,14 +80,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build-${{ github.sha }}
-          path: dist/apps/webApp
+          path: apps/webApp/dist
           retention-days: 30
 
       - name: Upload Backend Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: backend-build-${{ github.sha }}
-          path: dist/apps/server
+          path: server/dist
           retention-days: 30
 
       - name: Upload Deployment Package
