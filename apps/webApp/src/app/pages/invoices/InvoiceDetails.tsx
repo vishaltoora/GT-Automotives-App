@@ -336,14 +336,42 @@ const InvoiceDetails: React.FC = () => {
                     <Grid size={6}>
                       <Typography variant="body1">{formatCurrency(invoice.subtotal)}</Typography>
                     </Grid>
-                    <Grid size={6}>
-                      <Typography variant="body1">
-                        Tax ({(invoice.taxRate * 100).toFixed(2)}%):
-                      </Typography>
-                    </Grid>
-                    <Grid size={6}>
-                      <Typography variant="body1">{formatCurrency(invoice.taxAmount)}</Typography>
-                    </Grid>
+                    {invoice.gstRate != null && invoice.gstRate > 0 && (
+                      <>
+                        <Grid size={6}>
+                          <Typography variant="body1">
+                            GST ({(invoice.gstRate * 100).toFixed(2)}%):
+                          </Typography>
+                        </Grid>
+                        <Grid size={6}>
+                          <Typography variant="body1">{formatCurrency(invoice.gstAmount || 0)}</Typography>
+                        </Grid>
+                      </>
+                    )}
+                    {invoice.pstRate != null && invoice.pstRate > 0 && (
+                      <>
+                        <Grid size={6}>
+                          <Typography variant="body1">
+                            PST ({(invoice.pstRate * 100).toFixed(2)}%):
+                          </Typography>
+                        </Grid>
+                        <Grid size={6}>
+                          <Typography variant="body1">{formatCurrency(invoice.pstAmount || 0)}</Typography>
+                        </Grid>
+                      </>
+                    )}
+                    {(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) && (
+                      <>
+                        <Grid size={6}>
+                          <Typography variant="body1">
+                            Tax ({(invoice.taxRate * 100).toFixed(2)}%):
+                          </Typography>
+                        </Grid>
+                        <Grid size={6}>
+                          <Typography variant="body1">{formatCurrency(invoice.taxAmount)}</Typography>
+                        </Grid>
+                      </>
+                    )}
                     <Grid size={12}>
                       <Divider sx={{ my: 1 }} />
                     </Grid>

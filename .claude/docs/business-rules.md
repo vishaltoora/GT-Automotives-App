@@ -11,6 +11,8 @@
 - Low stock alerts at 5 units
 - Used tires require condition rating
 - Photos required for used tires
+- Tire identification format: "Brand - Size" (e.g., "Firestone - 225/65R17")
+- Visual tire type indicators using emoji system for quick recognition
 
 ## Data Access Rules
 - Customers see ONLY their own data

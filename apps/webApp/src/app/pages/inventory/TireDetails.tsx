@@ -113,7 +113,7 @@ export function TireDetails() {
 
   const isLowStock = tire.quantity <= tire.minStock;
   const isOutOfStock = tire.quantity === 0;
-  const placeholderImage = `https://via.placeholder.com/400x300/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' ' + tire.model)}`;
+  const placeholderImage = `https://via.placeholder.com/400x300/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' - ' + tire.size)}`;
   const primaryImage = tire.imageUrl || placeholderImage;
   const allImages = tire.images || [primaryImage];
 
@@ -138,7 +138,7 @@ export function TireDetails() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Tire Label - ${tire.brand} ${tire.model}</title>
+            <title>Tire Label - ${tire.brand} - ${tire.size}</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; }
               .label { border: 2px solid #000; padding: 20px; max-width: 400px; }
@@ -150,7 +150,7 @@ export function TireDetails() {
           </head>
           <body>
             <div class="label">
-              <div class="title">${tire.brand} ${tire.model}</div>
+              <div class="title">${tire.brand} - ${tire.size}</div>
               <div class="info">Size: ${tire.size}</div>
               <div class="info">Type: ${formatTireType(tire.type)}</div>
               <div class="info">Condition: ${formatCondition(tire.condition)}</div>
@@ -171,8 +171,8 @@ export function TireDetails() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${tire.brand} ${tire.model}`,
-          text: `Check out this tire: ${tire.brand} ${tire.model} - ${tire.size}`,
+          title: `${tire.brand} - ${tire.size}`,
+          text: `Check out this tire: ${tire.brand} - ${tire.size}`,
           url: window.location.href,
         });
       } catch (error) {
@@ -200,7 +200,7 @@ export function TireDetails() {
         </IconButton>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h4" component="h1">
-            {tire.brand} {tire.model}
+            {tire.brand}
           </Typography>
           <Typography variant="h6" color="text.secondary">
             {tire.size}
@@ -250,7 +250,7 @@ export function TireDetails() {
               component="img"
               height="300"
               image={primaryImage}
-              alt={`${tire.brand} ${tire.model}`}
+              alt={`${tire.brand} - ${tire.size}`}
               sx={{ 
                 objectFit: 'cover',
                 cursor: allImages.length > 1 ? 'pointer' : 'default',
@@ -274,7 +274,7 @@ export function TireDetails() {
                     >
                       <img
                         src={image}
-                        alt={`${tire.brand} ${tire.model} ${index + 1}`}
+                        alt={`${tire.brand} ${index + 1}`}
                         loading="lazy"
                         style={{ objectFit: 'cover' }}
                       />
@@ -309,15 +309,6 @@ export function TireDetails() {
                     </Typography>
                     <Typography variant="body1">
                       {tire.brand}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Model
-                    </Typography>
-                    <Typography variant="body1">
-                      {tire.model}
                     </Typography>
                   </Box>
                   
@@ -506,7 +497,7 @@ export function TireDetails() {
           </Typography>
           <Paper sx={{ p: 2, mt: 2, bgcolor: 'grey.50' }}>
             <Typography variant="subtitle2">
-              {tire.brand} {tire.model} - {tire.size}
+              {tire.brand} - {tire.size}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Current stock: {tire.quantity} units
@@ -545,7 +536,7 @@ export function TireDetails() {
               <Grid item xs={12} sm={6} md={4} key={index}>
                 <img
                   src={image}
-                  alt={`${tire.brand} ${tire.model} ${index + 1}`}
+                  alt={`${tire.brand} ${index + 1}`}
                   style={{
                     width: '100%',
                     height: 'auto',

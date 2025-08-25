@@ -150,7 +150,7 @@ export function StockAdjustmentDialog({
         <Box>
           <Typography variant="h6">Adjust Stock</Typography>
           <Typography variant="body2" color="text.secondary">
-            {tire.brand} {tire.model} - {tire.size}
+            {tire.brand} - {tire.size}
           </Typography>
         </Box>
         <IconButton onClick={onClose} size="small">

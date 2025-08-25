@@ -88,7 +88,6 @@ export function TireFormSimple() {
     if (tire && isEditing) {
       setFormData({
         brand: tire.brand || '',
-        model: tire.model || '',
         size: tire.size || '',
         type: tire.type || TireType.ALL_SEASON,
         condition: tire.condition || TireCondition.NEW,
@@ -194,7 +193,7 @@ export function TireFormSimple() {
           </Typography>
           <Typography variant="body1" color="text.secondary">
             {isEditing 
-              ? `Update details for ${tire?.brand} ${tire?.model}`
+              ? `Update details for ${tire?.brand} - ${tire?.size}`
               : 'Enter tire information to add to inventory'
             }
           </Typography>

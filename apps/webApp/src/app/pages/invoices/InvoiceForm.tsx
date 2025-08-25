@@ -163,7 +163,7 @@ const InvoiceForm: React.FC = () => {
         ...newItem,
         tireId: tire.id,
         itemType: 'TIRE',
-        description: `${tire.brand} ${tire.model} ${tire.size}`,
+        description: `${tire.brand} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
       });
     }
@@ -617,7 +617,7 @@ const InvoiceForm: React.FC = () => {
                             {tires.filter(t => t.quantity > 0).map(tire => (
                               <MenuItem key={tire.id} value={tire.id}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                                  <span>{tire.brand} {tire.model} {tire.size}</span>
+                                  <span>{tire.brand} - {tire.size}</span>
                                   <Chip 
                                     label={`Stock: ${tire.quantity}`} 
                                     size="small" 

@@ -31,6 +31,7 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -39,14 +40,21 @@ import {
   Search as SearchIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { ITireSearchParams, ITire, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { useMutation } from '@tanstack/react-query';
+import { TireService } from '../../services/tire.service';
 import TireCard from '../../components/inventory/TireCard';
+import TireDialog from '../../components/inventory/TireDialog';
+import DeleteConfirmDialog from '../../components/inventory/DeleteConfirmDialog';
 
 type ViewMode = 'grid' | 'list';
-type SortOption = 'brand' | 'model' | 'size' | 'price' | 'quantity' | 'updatedAt';
+type SortOption = 'brand' | 'size' | 'price' | 'quantity' | 'updatedAt';
 
 interface TireListSimpleProps {
   variant?: 'full' | 'compact';
@@ -79,6 +87,19 @@ export function TireListSimple({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(embedded ? 6 : 12);
+  
+  // Dialog states
+  const [tireDialogOpen, setTireDialogOpen] = useState(false);
+  const [selectedTire, setSelectedTire] = useState<ITire | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tireToDelete, setTireToDelete] = useState<ITire | null>(null);
+  
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   // Debounced search
   const searchParams = useMemo<ITireSearchParams>(() => ({
@@ -99,6 +120,28 @@ export function TireListSimple({
 
   const exportMutation = useExportTires();
   const invalidateQueries = useInvalidateTireQueries();
+  
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => TireService.deleteTire(id),
+    onSuccess: () => {
+      invalidateQueries();
+      setSnackbar({
+        open: true,
+        message: 'Tire deleted successfully',
+        severity: 'success',
+      });
+      setDeleteDialogOpen(false);
+      setTireToDelete(null);
+    },
+    onError: (error: any) => {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Failed to delete tire',
+        severity: 'error',
+      });
+    },
+  });
 
   const tires = tiresResult?.items || [];
   const totalCount = tiresResult?.total || 0;
@@ -135,12 +178,35 @@ export function TireListSimple({
     }
   };
 
-  const handleTireEdit = (tireId: string) => {
-    navigate(`/inventory/${tireId}/edit`);
+  const handleTireEdit = (tire: ITire) => {
+    setSelectedTire(tire);
+    setTireDialogOpen(true);
   };
 
   const handleTireCreate = () => {
-    navigate('/inventory/new');
+    setSelectedTire(null);
+    setTireDialogOpen(true);
+  };
+  
+  const handleTireDelete = (tire: ITire) => {
+    setTireToDelete(tire);
+    setDeleteDialogOpen(true);
+  };
+  
+  const handleConfirmDelete = () => {
+    if (tireToDelete) {
+      deleteMutation.mutate(tireToDelete.id);
+    }
+  };
+  
+  const handleDialogClose = () => {
+    setTireDialogOpen(false);
+    setSelectedTire(null);
+  };
+  
+  const handleDeleteDialogClose = () => {
+    setDeleteDialogOpen(false);
+    setTireToDelete(null);
   };
 
   const handleExport = async () => {
@@ -179,63 +245,45 @@ export function TireListSimple({
           <TableRow>
             <TableCell>Image</TableCell>
             <TableCell>Brand</TableCell>
-            <TableCell>Model</TableCell>
+            <TableCell>Location</TableCell>
             <TableCell>Size</TableCell>
             <TableCell>Type</TableCell>
             <TableCell>Condition</TableCell>
             <TableCell>Stock</TableCell>
             <TableCell>Price</TableCell>
             {isAdmin && <TableCell>Cost</TableCell>}
-            {showActions && (isStaff || isAdmin) && <TableCell>Actions</TableCell>}
+            {showActions && (isStaff || isAdmin) && <TableCell align="right">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
           {tires.map((tire) => (
             <TableRow key={tire.id}>
               <TableCell>
-                {tire.imageUrl ? (
-                  <Box
-                    component="img"
-                    src={tire.imageUrl}
-                    alt={`${tire.brand} ${tire.model}`}
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                    }}
-                    onError={(e) => {
-                      // Hide broken images
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: 'grey.50',
-                      borderRadius: 1,
-                      fontSize: '20px',
-                      border: '1px solid',
-                      borderColor: 'grey.200',
-                    }}
-                    title={`${tire.type.replace('_', ' ')} tire`}
-                  >
-                    {tire.type === 'ALL_SEASON' ? '🌤️' :
-                     tire.type === 'SUMMER' ? '☀️' :
-                     tire.type === 'WINTER' ? '❄️' :
-                     tire.type === 'PERFORMANCE' ? '🏁' :
-                     tire.type === 'OFF_ROAD' ? '🏔️' :
-                     tire.type === 'RUN_FLAT' ? '🛡️' : '🛞'}
-                  </Box>
-                )}
+                <Box
+                  sx={{
+                    width: 50,
+                    height: 50,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'grey.50',
+                    borderRadius: 1,
+                    fontSize: '24px',
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                  }}
+                  title={`${tire.type.replace('_', ' ')} tire`}
+                >
+                  {tire.type === 'ALL_SEASON' ? '🌤️' :
+                   tire.type === 'SUMMER' ? '☀️' :
+                   tire.type === 'WINTER' ? '❄️' :
+                   tire.type === 'PERFORMANCE' ? '🏁' :
+                   tire.type === 'OFF_ROAD' ? '🏔️' :
+                   tire.type === 'RUN_FLAT' ? '🛡️' : '🛞'}
+                </Box>
               </TableCell>
               <TableCell>{tire.brand}</TableCell>
-              <TableCell>{tire.model}</TableCell>
+              <TableCell>{tire.location || '-'}</TableCell>
               <TableCell>{tire.size}</TableCell>
               <TableCell>
                 <Chip 
@@ -267,20 +315,33 @@ export function TireListSimple({
                 </TableCell>
               )}
               {showActions && (isStaff || isAdmin) && (
-                <TableCell>
-                  <Stack direction="row" spacing={0.5}>
-                    <Button
+                <TableCell align="right">
+                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                    <IconButton
                       size="small"
                       onClick={() => handleTireView(tire.id)}
+                      title="View Details"
                     >
-                      View
-                    </Button>
-                    <Button
+                      <ViewIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
                       size="small"
-                      onClick={() => handleTireEdit(tire.id)}
+                      onClick={() => handleTireEdit(tire)}
+                      color="primary"
+                      title="Edit"
                     >
-                      Edit
-                    </Button>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    {isAdmin && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleTireDelete(tire)}
+                        color="error"
+                        title="Delete"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </Stack>
                 </TableCell>
               )}
@@ -333,7 +394,6 @@ export function TireListSimple({
               onChange={(e) => handleSortChange(e.target.value as SortOption)}
             >
               <MenuItem value="brand">Brand</MenuItem>
-              <MenuItem value="model">Model</MenuItem>
               <MenuItem value="size">Size</MenuItem>
               <MenuItem value="price">Price</MenuItem>
               <MenuItem value="quantity">Stock</MenuItem>
@@ -360,6 +420,15 @@ export function TireListSimple({
           {/* Actions */}
           {showActions && (isStaff || isAdmin) && (
             <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleTireCreate}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                Add New Tire
+              </Button>
+              
               <IconButton onClick={handleRefresh} title="Refresh">
                 <RefreshIcon />
               </IconButton>
@@ -404,7 +473,8 @@ export function TireListSimple({
               <TireCard
                 tire={tire}
                 onView={() => handleTireView(tire.id)}
-                onEdit={showActions && (isStaff || isAdmin) ? () => handleTireEdit(tire.id) : undefined}
+                onEdit={showActions && (isStaff || isAdmin) ? () => handleTireEdit(tire) : undefined}
+                onDelete={showActions && isAdmin ? () => handleTireDelete(tire) : undefined}
                 showCost={isAdmin}
                 variant={embedded ? 'compact' : 'detailed'}
                 showActions={showActions}
@@ -468,6 +538,48 @@ export function TireListSimple({
           <AddIcon />
         </Fab>
       )}
+      
+      {/* Tire Add/Edit Dialog */}
+      <TireDialog
+        open={tireDialogOpen}
+        onClose={handleDialogClose}
+        tire={selectedTire}
+        onSuccess={() => {
+          setSnackbar({
+            open: true,
+            message: selectedTire ? 'Tire updated successfully' : 'Tire added successfully',
+            severity: 'success',
+          });
+        }}
+      />
+      
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteDialogClose}
+        onConfirm={handleConfirmDelete}
+        title="Delete Tire"
+        message="Are you sure you want to delete this tire from inventory?"
+        itemName={tireToDelete ? `${tireToDelete.brand} - ${tireToDelete.size}` : ''}
+        warningMessage={tireToDelete && tireToDelete.quantity > 0 ? `This tire still has ${tireToDelete.quantity} units in stock.` : undefined}
+        isLoading={deleteMutation.isPending}
+      />
+      
+      {/* Success/Error Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

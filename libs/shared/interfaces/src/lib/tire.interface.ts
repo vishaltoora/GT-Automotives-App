@@ -17,7 +17,6 @@ export enum TireCondition {
 export interface ITire {
   id: string;
   brand: string;
-  model: string;
   size: string;
   type: TireType;
   condition: TireCondition;
@@ -35,7 +34,6 @@ export interface ITire {
 
 export interface ITireCreateInput {
   brand: string;
-  model: string;
   size: string;
   type: TireType;
   condition: TireCondition;
@@ -50,7 +48,6 @@ export interface ITireCreateInput {
 
 export interface ITireUpdateInput {
   brand?: string;
-  model?: string;
   size?: string;
   type?: TireType;
   condition?: TireCondition;
@@ -65,7 +62,6 @@ export interface ITireUpdateInput {
 
 export interface ITireFilters {
   brand?: string;
-  model?: string;
   size?: string;
   type?: TireType;
   condition?: TireCondition;
@@ -78,7 +74,7 @@ export interface ITireFilters {
 export interface ITireSearchParams {
   filters?: ITireFilters;
   search?: string;
-  sortBy?: 'brand' | 'model' | 'size' | 'price' | 'quantity' | 'updatedAt';
+  sortBy?: 'brand' | 'size' | 'price' | 'quantity' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;

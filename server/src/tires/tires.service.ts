@@ -69,24 +69,19 @@ export class TiresService {
     userRole: string,
   ): Promise<TireResponseDto> {
     // Check if user has permission to create tires
-    if (!['staff', 'admin'].includes(userRole)) {
+    if (!['STAFF', 'ADMIN'].includes(userRole)) {
       throw new ForbiddenException('Insufficient permissions to create tires');
     }
 
-    // Check for duplicates (same brand, model, size, type, condition)
-    const existingTires = await this.tireRepository.findByBrandAndModel(
-      createTireDto.brand,
-      createTireDto.model,
-    );
+    // Check for duplicates (same brand, size, type, condition)
+    const existingTires = await this.tireRepository.findAll({
+      brand: createTireDto.brand,
+      size: createTireDto.size,
+      type: createTireDto.type,
+      condition: createTireDto.condition,
+    });
 
-    const duplicate = existingTires.find(
-      (tire) =>
-        tire.size === createTireDto.size &&
-        tire.type === createTireDto.type &&
-        tire.condition === createTireDto.condition,
-    );
-
-    if (duplicate) {
+    if (existingTires.length > 0) {
       throw new ConflictException(
         'Tire with the same specifications already exists. Consider updating the quantity instead.',
       );
@@ -110,7 +105,6 @@ export class TiresService {
       entityId: tire.id,
       details: {
         brand: tire.brand,
-        model: tire.model,
         size: tire.size,
         quantity: tire.quantity,
       },
@@ -126,7 +120,7 @@ export class TiresService {
     userRole: string,
   ): Promise<TireResponseDto> {
     // Check if user has permission to update tires
-    if (!['staff', 'admin'].includes(userRole)) {
+    if (!['STAFF', 'ADMIN'].includes(userRole)) {
       throw new ForbiddenException('Insufficient permissions to update tires');
     }
 
@@ -155,7 +149,6 @@ export class TiresService {
         changes: updateTireDto,
         oldValues: {
           brand: existingTire.brand,
-          model: existingTire.model,
           price: existingTire.price,
         },
       },
@@ -166,7 +159,7 @@ export class TiresService {
 
   async delete(id: string, userId: string, userRole: string): Promise<{ success: boolean }> {
     // Only admin can delete tires
-    if (userRole !== 'admin') {
+    if (userRole !== 'ADMIN') {
       throw new ForbiddenException('Only administrators can delete tires');
     }
 
@@ -189,7 +182,6 @@ export class TiresService {
       entityId: id,
       details: {
         brand: tire.brand,
-        model: tire.model,
         size: tire.size,
       },
     });
@@ -204,7 +196,7 @@ export class TiresService {
     userRole: string,
   ): Promise<TireResponseDto> {
     // Check if user has permission to adjust stock
-    if (!['staff', 'admin'].includes(userRole)) {
+    if (!['STAFF', 'ADMIN'].includes(userRole)) {
       throw new ForbiddenException('Insufficient permissions to adjust stock');
     }
 
@@ -250,7 +242,7 @@ export class TiresService {
 
   async getLowStock(userRole: string): Promise<TireResponseDto[]> {
     // Check if user has permission to view stock reports
-    if (!['staff', 'admin'].includes(userRole)) {
+    if (!['STAFF', 'ADMIN'].includes(userRole)) {
       throw new ForbiddenException('Insufficient permissions to view stock reports');
     }
 
@@ -263,7 +255,7 @@ export class TiresService {
     userRole?: string,
   ): Promise<InventoryReportDto> {
     // Only admin can view inventory reports
-    if (userRole !== 'admin') {
+    if (userRole !== 'ADMIN') {
       throw new ForbiddenException('Only administrators can view inventory reports');
     }
 
@@ -293,7 +285,7 @@ export class TiresService {
     });
 
     // Hide cost from non-admin users
-    if (userRole !== 'admin') {
+    if (userRole !== 'ADMIN') {
       delete response.cost;
     }
 

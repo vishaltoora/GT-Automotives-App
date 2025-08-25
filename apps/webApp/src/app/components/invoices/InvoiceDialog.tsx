@@ -169,6 +169,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           return item;
         }),
         taxRate: formData.gstRate + formData.pstRate,
+        gstRate: formData.gstRate,
+        pstRate: formData.pstRate,
       };
       
       if (formData.paymentMethod) {
@@ -267,7 +269,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         ...newItem,
         tireId: tire.id,
         itemType: 'TIRE',
-        description: `${tire.brand} ${tire.model} ${tire.size}`,
+        description: `${tire.brand} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
       });
     }

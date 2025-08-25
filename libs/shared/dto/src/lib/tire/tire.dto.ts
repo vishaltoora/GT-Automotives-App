@@ -23,11 +23,6 @@ export class CreateTireDto {
 
   @IsString()
   @MinLength(1)
-  @MaxLength(100)
-  model: string;
-
-  @IsString()
-  @MinLength(1)
   @MaxLength(50)
   size: string;
 
@@ -78,12 +73,6 @@ export class UpdateTireDto {
   @MinLength(1)
   @MaxLength(100)
   brand?: string;
-
-  @IsOptional()
-  @IsString()
-  @MinLength(1)
-  @MaxLength(100)
-  model?: string;
 
   @IsOptional()
   @IsString()
@@ -156,10 +145,6 @@ export class TireSearchDto {
 
   @IsOptional()
   @IsString()
-  model?: string;
-
-  @IsOptional()
-  @IsString()
   size?: string;
 
   @IsOptional()
@@ -197,8 +182,8 @@ export class TireSearchDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(['brand', 'model', 'size', 'price', 'quantity', 'updatedAt'])
-  sortBy?: 'brand' | 'model' | 'size' | 'price' | 'quantity' | 'updatedAt';
+  @IsEnum(['brand', 'size', 'price', 'quantity', 'updatedAt'])
+  sortBy?: 'brand' | 'size' | 'price' | 'quantity' | 'updatedAt';
 
   @IsOptional()
   @IsEnum(['asc', 'desc'])
@@ -221,7 +206,6 @@ export class TireSearchDto {
 export class TireResponseDto {
   id: string;
   brand: string;
-  model: string;
   size: string;
   type: TireType;
   condition: TireCondition;

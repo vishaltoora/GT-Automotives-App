@@ -208,14 +208,11 @@ export class TireRepository extends BaseRepository<Tire> {
   }
 
   async findByBrandAndModel(brand: string, model: string): Promise<Tire[]> {
+    // Model field has been removed, search by brand only
     return this.prisma.tire.findMany({
       where: {
         brand: {
           equals: brand,
-          mode: 'insensitive',
-        },
-        model: {
-          equals: model,
           mode: 'insensitive',
         },
       },
@@ -236,7 +233,7 @@ export class TireRepository extends BaseRepository<Tire> {
 
     return this.prisma.tire.findMany({
       where,
-      orderBy: [{ brand: 'asc' }, { model: 'asc' }],
+      orderBy: [{ brand: 'asc' }, { size: 'asc' }],
     });
   }
 
@@ -254,12 +251,6 @@ export class TireRepository extends BaseRepository<Tire> {
         };
       }
 
-      if (filters.model) {
-        where.model = {
-          contains: filters.model,
-          mode: 'insensitive',
-        };
-      }
 
       if (filters.size) {
         where.size = {
@@ -306,12 +297,6 @@ export class TireRepository extends BaseRepository<Tire> {
           },
         },
         {
-          model: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
           size: {
             contains: search,
             mode: 'insensitive',
@@ -333,18 +318,8 @@ export class TireRepository extends BaseRepository<Tire> {
   }
 
   async getModelsForBrand(brand: string): Promise<string[]> {
-    const result = await this.prisma.tire.findMany({
-      where: {
-        brand: {
-          equals: brand,
-          mode: 'insensitive',
-        },
-      },
-      select: { model: true },
-      distinct: ['model'],
-      orderBy: { model: 'asc' },
-    });
-    return result.map((tire) => tire.model);
+    // Model field has been removed, return empty array
+    return [];
   }
 
   async getSizes(): Promise<string[]> {

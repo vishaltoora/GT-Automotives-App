@@ -90,7 +90,7 @@ export function TireCard({
   const isLowStock = tire.quantity <= tire.minStock;
   const isOutOfStock = tire.quantity === 0;
 
-  const placeholderImage = `https://via.placeholder.com/300x200/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' ' + tire.model)}`;
+  const placeholderImage = `https://via.placeholder.com/300x200/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' ' + tire.size)}`;
 
   if (variant === 'compact') {
     return (
@@ -126,13 +126,13 @@ export function TireCard({
           </Box>
         )}
 
-        <Box sx={{ position: 'relative', height: 120 }}>
+        <Box sx={{ position: 'relative', height: 140 }}>
           <CardMedia
             component="img"
-            height="120"
+            height="140"
             image={tire.imageUrl || placeholderImage}
-            alt={`${tire.brand} ${tire.model}`}
-            sx={{ objectFit: 'cover' }}
+            alt={`${tire.brand} ${tire.size}`}
+            sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
             onError={(e) => {
               // Replace with emoji fallback on error
               const target = e.currentTarget;
@@ -163,12 +163,18 @@ export function TireCard({
         
         <CardContent sx={{ flexGrow: 1, p: 2 }}>
           <Typography variant="h6" component="h3" noWrap>
-            {tire.brand} {tire.model}
+            {tire.brand}
           </Typography>
           
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {tire.size}
           </Typography>
+
+          {tire.location && (
+            <Typography variant="body2" color="primary" gutterBottom sx={{ fontWeight: 500 }}>
+              📍 {tire.location}
+            </Typography>
+          )}
 
           <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
             <Chip 
@@ -248,13 +254,13 @@ export function TireCard({
         </Box>
       )}
 
-      <Box sx={{ position: 'relative', height: 200 }}>
+      <Box sx={{ position: 'relative', height: 240 }}>
         <CardMedia
           component="img"
-          height="200"
+          height="240"
           image={tire.imageUrl || placeholderImage}
-          alt={`${tire.brand} ${tire.model}`}
-          sx={{ objectFit: 'cover' }}
+          alt={`${tire.brand} ${tire.size}`}
+          sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
           onError={(e) => {
             // Replace with emoji fallback on error
             const target = e.currentTarget;
@@ -285,12 +291,18 @@ export function TireCard({
       
       <CardContent sx={{ flexGrow: 1 }}>
         <Typography variant="h5" component="h2" gutterBottom>
-          {tire.brand} {tire.model}
+          {tire.brand}
         </Typography>
         
         <Typography variant="h6" color="text.secondary" gutterBottom>
           {tire.size}
         </Typography>
+
+        {tire.location && (
+          <Typography variant="body1" color="primary" gutterBottom sx={{ fontWeight: 500, mb: 2 }}>
+            📍 Location: {tire.location}
+          </Typography>
+        )}
 
         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
           <Chip 
@@ -318,20 +330,12 @@ export function TireCard({
             )}
           </Box>
 
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <InventoryIcon fontSize="small" color="action" />
-              <Typography variant="body1" color={isLowStock ? 'error' : 'text.primary'}>
-                {tire.quantity} in stock
-              </Typography>
-            </Box>
-            
-            {tire.location && (
-              <Typography variant="body2" color="text.secondary">
-                {tire.location}
-              </Typography>
-            )}
-          </Stack>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <InventoryIcon fontSize="small" color="action" />
+            <Typography variant="body1" color={isLowStock ? 'error' : 'text.primary'}>
+              {tire.quantity} in stock
+            </Typography>
+          </Box>
         </Box>
 
         {tire.notes && (

@@ -35,12 +35,41 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
     }
 
     // Find user by Clerk ID
-    const user = await this.userRepository.findByClerkId(clerkUserId);
+    let user = await this.userRepository.findByClerkId(clerkUserId);
     
     if (!user) {
-      // If user doesn't exist, we might want to create them
-      // For now, throw an error - the user should be created via webhook
-      throw new UnauthorizedException('User not found. Please ensure your account is properly synced.');
+      // Auto-create user if they don't exist
+      // This handles the case where Clerk webhook hasn't fired yet
+      const email = payload.email;
+      const firstName = payload.given_name || payload.first_name || 'User';
+      const lastName = payload.family_name || payload.last_name || '';
+      
+      if (!email) {
+        throw new UnauthorizedException('Invalid token: no email found');
+      }
+
+      // Determine role based on email
+      let roleId = 3; // Default to customer role
+      if (email === 'vishal.alawalpuria@gmail.com') {
+        roleId = 1; // Admin role
+      }
+
+      try {
+        user = await this.userRepository.create({
+          clerkId: clerkUserId,
+          email,
+          firstName,
+          lastName,
+          roleId,
+          isActive: true,
+        });
+      } catch (error) {
+        // If creation fails, maybe the user was created in parallel
+        user = await this.userRepository.findByClerkId(clerkUserId);
+        if (!user) {
+          throw new UnauthorizedException('Failed to create or find user');
+        }
+      }
     }
 
     if (!user.isActive) {

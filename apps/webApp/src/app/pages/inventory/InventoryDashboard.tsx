@@ -255,7 +255,7 @@ export function InventoryDashboard() {
               </Typography>
               <Typography variant="body2">
                 Consider restocking: {lowStockTires.slice(0, 3).map(tire => 
-                  `${tire.brand} ${tire.model}`
+                  `${tire.brand} - ${tire.size}`
                 ).join(', ')}
                 {lowStockTires.length > 3 && ` and ${lowStockTires.length - 3} more`}
               </Typography>
@@ -385,7 +385,7 @@ export function InventoryDashboard() {
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={`${tire.brand} ${tire.model}`}
+                          primary={`${tire.brand} - ${tire.size}`}
                           secondary={`${tire.size} • ${formatCurrency(tire.price)}`}
                         />
                       </ListItem>

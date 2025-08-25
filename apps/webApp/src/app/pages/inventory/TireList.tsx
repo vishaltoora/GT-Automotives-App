@@ -184,7 +184,7 @@ export function TireList({
             <Box
               component="img"
               src={tire.imageUrl}
-              alt={`${tire.brand} ${tire.model}`}
+              alt={`${tire.brand} - ${tire.size}`}
               sx={{
                 width: 40,
                 height: 40,

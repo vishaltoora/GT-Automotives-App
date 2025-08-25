@@ -9,6 +9,17 @@ import {
   ITireImage,
 } from '@gt-automotive/shared-interfaces';
 
+// Type declaration for Clerk global
+declare global {
+  interface Window {
+    Clerk?: {
+      session?: {
+        getToken(): Promise<string>;
+      };
+    };
+  }
+}
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Create axios instance with common configuration
@@ -21,8 +32,24 @@ const apiClient = axios.create({
 
 // Add token interceptor for authentication
 apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
+  async (config) => {
+    let token = localStorage.getItem('authToken');
+    
+    // If no token in localStorage, try to get it from Clerk
+    if (!token) {
+      try {
+        // Check if Clerk is available
+        if (window.Clerk && window.Clerk.session) {
+          token = await window.Clerk.session.getToken();
+          if (token) {
+            localStorage.setItem('authToken', token);
+          }
+        }
+      } catch (error) {
+        // Silently handle token retrieval errors
+      }
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -38,9 +65,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login
+      // Handle unauthorized - clear token but don't redirect automatically
+      // Let the component handle the redirect appropriately
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

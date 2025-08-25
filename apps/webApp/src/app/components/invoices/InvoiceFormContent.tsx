@@ -384,7 +384,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         {tires.filter(t => t.quantity > 0).map(tire => (
                           <MenuItem key={tire.id} value={tire.id}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                              <span>{tire.brand} {tire.model} {tire.size}</span>
+                              <span>{tire.brand} - {tire.size}</span>
                               <Chip 
                                 label={`Stock: ${tire.quantity}`} 
                                 size="small" 

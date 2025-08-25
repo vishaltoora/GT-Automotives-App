@@ -32,6 +32,10 @@ export interface Invoice {
   subtotal: number;
   taxRate: number;
   taxAmount: number;
+  gstRate?: number;
+  gstAmount?: number;
+  pstRate?: number;
+  pstAmount?: number;
   total: number;
   status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
   paymentMethod?: 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CHECK' | 'E_TRANSFER' | 'FINANCING';
@@ -326,10 +330,21 @@ class InvoiceService {
               <td>Subtotal:</td>
               <td>${formatCurrency(invoice.subtotal)}</td>
             </tr>
+${invoice.gstRate != null && invoice.gstRate > 0 ? `
+            <tr>
+              <td>GST (${(invoice.gstRate * 100).toFixed(2)}%):</td>
+              <td>${formatCurrency(invoice.gstAmount || 0)}</td>
+            </tr>` : ''}
+${invoice.pstRate != null && invoice.pstRate > 0 ? `
+            <tr>
+              <td>PST (${(invoice.pstRate * 100).toFixed(2)}%):</td>
+              <td>${formatCurrency(invoice.pstAmount || 0)}</td>
+            </tr>` : ''}
+${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) ? `
             <tr>
               <td>Tax (${(invoice.taxRate * 100).toFixed(2)}%):</td>
               <td>${formatCurrency(invoice.taxAmount)}</td>
-            </tr>
+            </tr>` : ''}
             <tr class="total-row">
               <td>Total:</td>
               <td>${formatCurrency(invoice.total)}</td>
@@ -441,10 +456,21 @@ class InvoiceService {
               <td style="padding: 5px;">Subtotal:</td>
               <td style="padding: 5px;">${formatCurrency(invoice.subtotal)}</td>
             </tr>
+${invoice.gstRate != null && invoice.gstRate > 0 ? `
+            <tr>
+              <td style="padding: 5px;">GST (${(invoice.gstRate * 100).toFixed(2)}%):</td>
+              <td style="padding: 5px;">${formatCurrency(invoice.gstAmount || 0)}</td>
+            </tr>` : ''}
+${invoice.pstRate != null && invoice.pstRate > 0 ? `
+            <tr>
+              <td style="padding: 5px;">PST (${(invoice.pstRate * 100).toFixed(2)}%):</td>
+              <td style="padding: 5px;">${formatCurrency(invoice.pstAmount || 0)}</td>
+            </tr>` : ''}
+${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) ? `
             <tr>
               <td style="padding: 5px;">Tax (${(invoice.taxRate * 100).toFixed(2)}%):</td>
               <td style="padding: 5px;">${formatCurrency(invoice.taxAmount)}</td>
-            </tr>
+            </tr>` : ''}
             <tr style="font-weight: bold; font-size: 1.2em; border-top: 2px solid #333;">
               <td style="padding: 5px;">Total:</td>
               <td style="padding: 5px;">${formatCurrency(invoice.total)}</td>

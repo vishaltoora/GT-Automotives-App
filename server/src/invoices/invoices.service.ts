@@ -82,10 +82,36 @@ export class InvoicesService {
       };
     });
 
-    // Default tax rate if not provided (8.25% for Texas)
-    const taxRate = createInvoiceDto.taxRate ?? 0.0825;
+    // Handle tax calculations - support both combined and separate rates
+    let taxRate: number;
+    let gstRate: number | undefined;
+    let pstRate: number | undefined;
+    let gstAmount: number | undefined;
+    let pstAmount: number | undefined;
+
+    if (createInvoiceDto.gstRate !== undefined || createInvoiceDto.pstRate !== undefined) {
+      // Use separate GST/PST rates
+      gstRate = createInvoiceDto.gstRate ?? 0;
+      pstRate = createInvoiceDto.pstRate ?? 0;
+      gstAmount = subtotal * gstRate;
+      pstAmount = subtotal * pstRate;
+      taxRate = gstRate + pstRate;
+    } else {
+      // Use combined tax rate (backward compatibility)
+      taxRate = createInvoiceDto.taxRate ?? 0.0825;
+    }
+
     const taxAmount = subtotal * taxRate;
     const total = subtotal + taxAmount;
+
+    console.log('Calculated tax values:', {
+      gstRate,
+      pstRate,
+      gstAmount,
+      pstAmount,
+      taxRate,
+      taxAmount
+    });
 
     // Generate invoice number
     const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber();
@@ -99,6 +125,10 @@ export class InvoicesService {
         subtotal,
         taxRate,
         taxAmount,
+        ...(gstRate !== undefined && { gstRate }),
+        ...(gstAmount !== undefined && { gstAmount }),
+        ...(pstRate !== undefined && { pstRate }),
+        ...(pstAmount !== undefined && { pstAmount }),
         total,
         status: createInvoiceDto.paymentMethod ? 'PAID' : 'PENDING',
         paymentMethod: createInvoiceDto.paymentMethod,

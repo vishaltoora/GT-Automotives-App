@@ -11,7 +11,6 @@ import {
   ValidationPipe,
   HttpCode,
   HttpStatus,
-  ParseUUIDPipe,
   UsePipes,
 } from '@nestjs/common';
 import { TiresService } from './tires.service';
@@ -111,7 +110,7 @@ export class TiresController {
   @Get(':id')
   @Public()
   async findById(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() user?: any,
   ): Promise<TireResponseDto> {
     const userRole = user?.role?.name;
@@ -121,7 +120,7 @@ export class TiresController {
   // Staff and Admin - Create new tire
   @Post()
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   @UsePipes(new ValidationPipe({ transform: true }))
   async create(
     @Body() createTireDto: CreateTireDto,
@@ -137,10 +136,10 @@ export class TiresController {
   // Staff and Admin - Update tire
   @Put(':id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   @UsePipes(new ValidationPipe({ transform: true }))
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() updateTireDto: UpdateTireDto,
     @CurrentUser() user: any,
   ): Promise<TireResponseDto> {
@@ -155,10 +154,10 @@ export class TiresController {
   // Admin only - Delete tire
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() user: any,
   ): Promise<{ success: boolean }> {
     return this.tiresService.delete(id, user.id, user.role.name);
@@ -167,10 +166,10 @@ export class TiresController {
   // Staff and Admin - Adjust stock
   @Post(':id/adjust-stock')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   @UsePipes(new ValidationPipe({ transform: true }))
   async adjustStock(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() adjustmentDto: StockAdjustmentDto,
     @CurrentUser() user: any,
   ): Promise<TireResponseDto> {
@@ -185,7 +184,7 @@ export class TiresController {
   // Staff and Admin - Get low stock items
   @Get('reports/low-stock')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   async getLowStock(
     @CurrentUser() user: any,
   ): Promise<TireResponseDto[]> {
@@ -195,7 +194,7 @@ export class TiresController {
   // Admin only - Get inventory report
   @Get('reports/inventory')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
+  @Roles('ADMIN')
   async getInventoryReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -211,7 +210,7 @@ export class TiresController {
   // Staff and Admin - Search by brand and model
   @Get('search/brand/:brand/model/:model')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   async findByBrandAndModel(
     @Param('brand') brand: string,
     @Param('model') model: string,
@@ -239,7 +238,7 @@ export class TiresController {
   // Staff and Admin - Get stock alerts
   @Get('alerts/low-stock')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   async getStockAlerts(): Promise<TireResponseDto[]> {
     return this.tiresService.checkLowStockAlerts();
   }
@@ -249,7 +248,7 @@ export class TiresController {
   // @UseGuards(JwtAuthGuard, RoleGuard)
   // @Roles('staff', 'admin')
   // async uploadImage(
-  //   @Param('id', ParseUUIDPipe) id: string,
+  //   @Param('id') id: string,
   //   @UploadedFile() file: Express.Multer.File,
   //   @CurrentUser() user: any,
   // ): Promise<{ imageUrl: string }> {
@@ -260,7 +259,7 @@ export class TiresController {
   // @UseGuards(JwtAuthGuard, RoleGuard)
   // @Roles('staff', 'admin')
   // async deleteImage(
-  //   @Param('id', ParseUUIDPipe) id: string,
+  //   @Param('id') id: string,
   //   @Param('imageId', ParseUUIDPipe) imageId: string,
   //   @CurrentUser() user: any,
   // ): Promise<{ success: boolean }> {
