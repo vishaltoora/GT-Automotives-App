@@ -15,7 +15,7 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
-import Grid2 from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
@@ -276,9 +276,9 @@ export function TireImageUpload({
           <Typography variant="subtitle2" gutterBottom>
             Current Images
           </Typography>
-          <Grid2 container spacing={2}>
+          <Grid container spacing={2}>
             {existingImages.map((imageUrl, index) => (
-              <Grid2 size={{ xs: 6, sm: 4, md: 3 }} key={imageUrl}>
+              <Grid item xs={6} sm={4} md={3} key={imageUrl}>
                 <Card>
                   <CardMedia
                     component="img"
@@ -316,9 +316,9 @@ export function TireImageUpload({
                     />
                   )}
                 </Card>
-              </Grid2>
+              </Grid>
             ))}
-          </Grid2>
+          </Grid>
         </Box>
       )}
 
@@ -328,9 +328,9 @@ export function TireImageUpload({
           <Typography variant="subtitle2" gutterBottom>
             Uploading...
           </Typography>
-          <Grid2 container spacing={2}>
+          <Grid container spacing={2}>
             {selectedFiles.map((imageFile) => (
-              <Grid2 size={{ xs: 6, sm: 4, md: 3 }} key={imageFile.id}>
+              <Grid item xs={6} sm={4} md={3} key={imageFile.id}>
                 <Card>
                   <CardMedia
                     component="img"
@@ -358,9 +358,9 @@ export function TireImageUpload({
                     </IconButton>
                   </CardActions>
                 </Card>
-              </Grid2>
+              </Grid>
             ))}
-          </Grid2>
+          </Grid>
         </Box>
       )}
 

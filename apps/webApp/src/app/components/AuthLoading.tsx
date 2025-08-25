@@ -1,4 +1,4 @@
-import React from 'react';
+// React import removed - not needed with modern JSX transform
 import { Box, Typography, Fade, CircularProgress } from '@mui/material';
 import { keyframes } from '@emotion/react';
 import { colors } from '../theme/colors';
