@@ -1,13 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import TireService, { InventoryReport } from '../services/tire.service';
+import TireService from '../services/tire.service';
 import {
   ITire,
   ITireCreateInput,
   ITireUpdateInput,
   ITireSearchParams,
   ITireSearchResult,
-  ITireImage,
 } from '@gt-automotive/shared-interfaces';
 
 // Query Keys
@@ -28,9 +27,9 @@ export function useTires(params: ITireSearchParams = {}) {
   return useQuery({
     queryKey: TIRE_QUERY_KEYS.list(params),
     queryFn: () => TireService.getTires(params),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 
@@ -41,7 +40,7 @@ export function useTire(id: string, enabled = true) {
     queryFn: () => TireService.getTireById(id),
     enabled: enabled && !!id,
     staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 
@@ -52,7 +51,7 @@ export function useLowStockTires(enabled = true) {
     queryFn: () => TireService.getLowStockTires(),
     enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    cacheTime: 5 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 }
 
@@ -66,7 +65,7 @@ export function useInventoryReport(
     queryFn: () => TireService.getInventoryReport(params),
     enabled,
     staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 
@@ -76,7 +75,7 @@ export function useTireBrands() {
     queryKey: TIRE_QUERY_KEYS.brands(),
     queryFn: () => TireService.getTireBrands(),
     staleTime: 30 * 60 * 1000, // 30 minutes
-    cacheTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 60 * 60 * 1000, // 1 hour
   });
 }
 
@@ -87,7 +86,7 @@ export function useTireSizeSuggestions(query: string, enabled = true) {
     queryFn: () => TireService.getTireSizeSuggestions(query),
     enabled: enabled && query.length >= 2,
     staleTime: 10 * 60 * 1000,
-    cacheTime: 15 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 }
 

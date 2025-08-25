@@ -115,7 +115,7 @@ const ActionsMenu: React.FC<ActionsMenuProps> = ({
                 px: 2,
                 minHeight: 'auto',
                 ...(action.color && action.color !== 'default' && {
-                  color: theme => theme.palette[action.color as keyof typeof theme.palette].main,
+                  color: `${action.color}.main`,
                   '& .MuiListItemIcon-root': {
                     color: 'inherit',
                   }

@@ -233,7 +233,7 @@ export function TireDetails() {
               color="error"
               onClick={() => setShowDeleteDialog(true)}
               startIcon={<DeleteIcon />}
-              loading={deleteMutation.isLoading}
+              loading={deleteMutation.isPending}
             >
               Delete
             </LoadingButton>
@@ -511,7 +511,7 @@ export function TireDetails() {
           <LoadingButton
             onClick={handleDelete}
             color="error"
-            loading={deleteMutation.isLoading}
+            loading={deleteMutation.isPending}
           >
             Delete Tire
           </LoadingButton>
