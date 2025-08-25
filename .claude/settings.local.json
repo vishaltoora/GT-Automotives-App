@@ -44,7 +44,8 @@
       "Bash(yarn typecheck)",
       "Bash(yarn build)",
       "Bash(nx build:*)",
-      "Bash(nx reset:*)"
+      "Bash(nx reset:*)",
+      "Bash(yarn test)"
     ],
     "deny": [],
     "ask": []
