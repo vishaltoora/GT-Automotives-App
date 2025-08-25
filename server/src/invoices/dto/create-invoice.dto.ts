@@ -34,8 +34,9 @@ export class CreateCustomerDto {
   @IsString()
   address?: string;
 
+  @IsOptional()
   @IsString()
-  phone: string;
+  phone?: string;
 
   @IsOptional()
   @IsEmail()

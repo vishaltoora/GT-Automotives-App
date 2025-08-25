@@ -53,6 +53,7 @@ export interface CreateInvoiceDto {
   taxRate?: number;
   paymentMethod?: Invoice['paymentMethod'];
   notes?: string;
+  status?: Invoice['status'];
 }
 
 export interface UpdateInvoiceDto {
@@ -291,8 +292,23 @@ class InvoiceService {
 
         <div class="customer-info">
           <h3>Bill To:</h3>
-          <p>${invoice.customer?.user?.firstName} ${invoice.customer?.user?.lastName}<br>
-          ${invoice.customer?.phone}<br>
+          <p>${(() => {
+            const customer = invoice.customer;
+            let customerName = '';
+            
+            if (customer?.user?.firstName || customer?.user?.lastName) {
+              const firstName = customer.user.firstName || '';
+              const lastName = customer.user.lastName || '';
+              customerName = `${firstName} ${lastName}`.trim();
+            } else if (customer?.name) {
+              customerName = customer.name;
+            } else {
+              customerName = 'Customer';
+            }
+            
+            return customerName;
+          })()}<br>
+          ${invoice.customer?.phone ? `${invoice.customer.phone}<br>` : ''}
           ${invoice.customer?.address || ''}</p>
           ${invoice.vehicle ? `
             <p><strong>Vehicle:</strong> ${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}<br>
@@ -417,8 +433,23 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
 
         <div style="margin: 20px 0;">
           <h3>Bill To:</h3>
-          <p>${invoice.customer?.user?.firstName} ${invoice.customer?.user?.lastName}<br>
-          ${invoice.customer?.phone}<br>
+          <p>${(() => {
+            const customer = invoice.customer;
+            let customerName = '';
+            
+            if (customer?.user?.firstName || customer?.user?.lastName) {
+              const firstName = customer.user.firstName || '';
+              const lastName = customer.user.lastName || '';
+              customerName = `${firstName} ${lastName}`.trim();
+            } else if (customer?.name) {
+              customerName = customer.name;
+            } else {
+              customerName = 'Customer';
+            }
+            
+            return customerName;
+          })()}<br>
+          ${invoice.customer?.phone ? `${invoice.customer.phone}<br>` : ''}
           ${invoice.customer?.address || ''}</p>
           ${invoice.vehicle ? `
             <p><strong>Vehicle:</strong> ${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}<br>

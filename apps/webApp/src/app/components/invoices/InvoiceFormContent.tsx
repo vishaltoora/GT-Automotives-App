@@ -60,6 +60,7 @@ interface InvoiceFormContentProps {
     pstRate: number;
     paymentMethod: string;
     notes: string;
+    status: string;
   };
   setFormData: (data: any) => void;
   items: InvoiceItem[];
@@ -90,6 +91,10 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   onRemoveItem,
   onTireSelect,
 }) => {
+
+  const formatTireType = (type: string) => {
+    return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -214,8 +219,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         label="Phone Number"
                         value={customerForm.phone}
                         onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                        required
-                        placeholder="(250) 555-0123"
+                        placeholder="(250) 555-0123 (Optional)"
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -279,6 +283,21 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 </Box>
 
                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      label="Status"
+                    >
+                      <MenuItem value="DRAFT">📝 Draft</MenuItem>
+                      <MenuItem value="PENDING">⏳ Pending</MenuItem>
+                      <MenuItem value="PAID">✅ Paid</MenuItem>
+                      <MenuItem value="CANCELLED">❌ Cancelled</MenuItem>
+                      <MenuItem value="REFUNDED">↩️ Refunded</MenuItem>
+                    </Select>
+                  </FormControl>
+
                   <FormControl fullWidth>
                     <InputLabel>Payment Method</InputLabel>
                     <Select
@@ -384,7 +403,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         {tires.filter(t => t.quantity > 0).map(tire => (
                           <MenuItem key={tire.id} value={tire.id}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                              <span>{tire.brand} - {tire.size}</span>
+                              <span>{tire.brand} {formatTireType(tire.type)} - {tire.size}</span>
                               <Chip 
                                 label={`Stock: ${tire.quantity}`} 
                                 size="small" 

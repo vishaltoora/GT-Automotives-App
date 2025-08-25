@@ -53,7 +53,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [customerForm, setCustomerForm] = useState({
     name: '',
     businessName: '',
-    address: '',
+    address: 'Prince George, BC',
     phone: '',
     email: '',
   });
@@ -65,6 +65,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     pstRate: 0.07,
     paymentMethod: '',
     notes: '',
+    status: 'PENDING',
   });
   
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -74,6 +75,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     quantity: 1,
     unitPrice: 0,
   });
+
+  const formatTireType = (type: string) => {
+    return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   useEffect(() => {
     if (open) {
@@ -93,7 +98,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     setCustomerForm({
       name: '',
       businessName: '',
-      address: '',
+      address: 'Prince George, BC',
       phone: '',
       email: '',
     });
@@ -104,6 +109,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       pstRate: 0.07,
       paymentMethod: '',
       notes: '',
+      status: 'PENDING',
     });
     setItems([]);
     setNewItem({
@@ -143,8 +149,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     
     const customerId = formData.customerId;
 
-    if (!customerId && (!customerForm.name || !customerForm.phone)) {
-      alert('Please provide customer information (name and phone are required)');
+    if (!customerId && !customerForm.name) {
+      alert('Please provide customer name');
       return;
     }
 
@@ -179,14 +185,19 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       if (formData.notes) {
         invoiceData.notes = formData.notes;
       }
+      if (formData.status) {
+        invoiceData.status = formData.status;
+      }
 
       if (customerId) {
         invoiceData.customerId = customerId;
-      } else if (customerForm.name && customerForm.phone) {
+      } else if (customerForm.name) {
         invoiceData.customerData = {
           name: customerForm.name,
-          phone: customerForm.phone,
         };
+        if (customerForm.phone && customerForm.phone.trim() !== '') {
+          invoiceData.customerData.phone = customerForm.phone.trim();
+        }
         if (customerForm.businessName) {
           invoiceData.customerData.businessName = customerForm.businessName;
         }
@@ -238,7 +249,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setCustomerForm({
         name: '',
         businessName: '',
-        address: '',
+        address: 'Prince George, BC',
         phone: '',
         email: '',
       });
@@ -269,7 +280,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         ...newItem,
         tireId: tire.id,
         itemType: 'TIRE',
-        description: `${tire.brand} - ${tire.size}`,
+        description: `${tire.brand} ${formatTireType(tire.type)} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
       });
     }
@@ -370,7 +381,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           onClick={handleSubmit}
           variant="contained"
           size="large"
-          disabled={loading || (!formData.customerId && (!customerForm.name || !customerForm.phone)) || items.length === 0}
+          disabled={loading || (!formData.customerId && !customerForm.name) || items.length === 0}
           sx={{
             background: colors.primary.main,
             color: 'white',

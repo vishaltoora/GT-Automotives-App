@@ -12,12 +12,17 @@ import {
   Button,
   Typography,
   Chip,
-  IconButton,
   TextField,
   Grid,
   MenuItem,
   InputAdornment,
-  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -27,10 +32,92 @@ import {
   Payment as PaymentIcon,
   Cancel as CancelIcon,
   Assessment as ReportIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
+import { ActionsMenu, ActionItem } from '../../components/common';
+
+// Edit Invoice Dialog Component
+interface EditInvoiceDialogProps {
+  open: boolean;
+  invoice: Invoice | null;
+  onClose: () => void;
+  onUpdate: (invoiceId: string, status: string, paymentMethod?: string) => void;
+}
+
+const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
+  open,
+  invoice,
+  onClose,
+  onUpdate,
+}) => {
+  const [status, setStatus] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+
+  useEffect(() => {
+    if (invoice) {
+      setStatus(invoice.status);
+      setPaymentMethod(invoice.paymentMethod || '');
+    }
+  }, [invoice]);
+
+  const handleSave = () => {
+    if (invoice && status) {
+      onUpdate(invoice.id, status, paymentMethod || undefined);
+    }
+  };
+
+  if (!invoice) return null;
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Edit Invoice #{invoice.invoiceNumber}</DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              label="Status"
+            >
+              <MenuItem value="DRAFT">Draft</MenuItem>
+              <MenuItem value="PENDING">Pending</MenuItem>
+              <MenuItem value="PAID">Paid</MenuItem>
+              <MenuItem value="CANCELLED">Cancelled</MenuItem>
+              <MenuItem value="REFUNDED">Refunded</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Payment Method</InputLabel>
+            <Select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              label="Payment Method"
+            >
+              <MenuItem value="">No Payment Method</MenuItem>
+              <MenuItem value="CASH">💵 Cash</MenuItem>
+              <MenuItem value="CREDIT_CARD">💳 Credit Card</MenuItem>
+              <MenuItem value="DEBIT_CARD">💳 Debit Card</MenuItem>
+              <MenuItem value="CHECK">📝 Check</MenuItem>
+              <MenuItem value="E_TRANSFER">📱 E-Transfer</MenuItem>
+              <MenuItem value="FINANCING">🏦 Financing</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained" color="primary">
+          Update Invoice
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
@@ -43,6 +130,8 @@ const InvoiceList: React.FC = () => {
     status: '',
   });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadInvoices();
@@ -102,6 +191,26 @@ const InvoiceList: React.FC = () => {
     }
   };
 
+  const handleEdit = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateStatus = async (invoiceId: string, status: string, paymentMethod?: string) => {
+    try {
+      await invoiceService.updateInvoice(invoiceId, { 
+        status: status as any,
+        ...(paymentMethod && { paymentMethod: paymentMethod as any })
+      });
+      loadInvoices();
+      setEditDialogOpen(false);
+      setEditingInvoice(null);
+    } catch (error) {
+      console.error('Error updating invoice:', error);
+      alert('Error updating invoice status');
+    }
+  };
+
   const handleInvoiceSuccess = (invoice: any) => {
     // Refresh the invoice list to show the new invoice
     loadInvoices();
@@ -138,9 +247,50 @@ const InvoiceList: React.FC = () => {
     return new Date(dateStr).toLocaleDateString();
   };
 
-  const canCreateInvoice = user?.role === 'STAFF' || user?.role === 'ADMIN';
-  const canManageInvoice = user?.role === 'STAFF' || user?.role === 'ADMIN';
-  const canViewReports = user?.role === 'STAFF' || user?.role === 'ADMIN';
+  const canCreateInvoice = role === 'staff' || role === 'admin';
+  const canManageInvoice = role === 'staff' || role === 'admin';
+  const canViewReports = role === 'staff' || role === 'admin';
+
+  const getInvoiceActions = (invoice: Invoice): ActionItem[] => {
+    const actions: ActionItem[] = [
+      {
+        id: 'view',
+        label: 'View Details',
+        icon: <ViewIcon />,
+        onClick: () => {
+          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+          navigate(`${basePath}/invoices/${invoice.id}`);
+        },
+        show: true,
+      },
+      {
+        id: 'print',
+        label: 'Print Invoice',
+        icon: <PrintIcon />,
+        onClick: () => handlePrint(invoice),
+        show: true,
+      },
+      {
+        id: 'edit',
+        label: 'Edit Invoice',
+        icon: <EditIcon />,
+        onClick: () => handleEdit(invoice),
+        show: canManageInvoice,
+        color: 'primary',
+      },
+      {
+        id: 'cancel',
+        label: 'Cancel Invoice',
+        icon: <CancelIcon />,
+        onClick: () => handleCancel(invoice),
+        show: canManageInvoice && invoice.status === 'PENDING',
+        color: 'error',
+        dividerAfter: true,
+      },
+    ];
+
+    return actions;
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -247,7 +397,18 @@ const InvoiceList: React.FC = () => {
                 <TableCell>{invoice.invoiceNumber}</TableCell>
                 <TableCell>{formatDate(invoice.createdAt)}</TableCell>
                 <TableCell>
-                  {invoice.customer?.user?.firstName} {invoice.customer?.user?.lastName}
+                  {(() => {
+                    const customer = invoice.customer;
+                    if (customer?.user?.firstName || customer?.user?.lastName) {
+                      const firstName = customer.user.firstName || '';
+                      const lastName = customer.user.lastName || '';
+                      return `${firstName} ${lastName}`.trim();
+                    } else if (customer?.name) {
+                      return customer.name;
+                    } else {
+                      return 'Customer';
+                    }
+                  })()}
                 </TableCell>
                 <TableCell>
                   {invoice.vehicle
@@ -266,49 +427,11 @@ const InvoiceList: React.FC = () => {
                   {invoice.paymentMethod ? invoice.paymentMethod.replace(/_/g, ' ') : '-'}
                 </TableCell>
                 <TableCell align="center">
-                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                    <Tooltip title="View">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
-                          navigate(`${basePath}/invoices/${invoice.id}`);
-                        }}
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Print">
-                      <IconButton
-                        size="small"
-                        onClick={() => handlePrint(invoice)}
-                      >
-                        <PrintIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {canManageInvoice && invoice.status === 'PENDING' && (
-                      <Tooltip title="Mark as Paid">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          onClick={() => handleMarkAsPaid(invoice)}
-                        >
-                          <PaymentIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {canManageInvoice && invoice.status === 'PENDING' && (
-                      <Tooltip title="Cancel">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleCancel(invoice)}
-                        >
-                          <CancelIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Box>
+                  <ActionsMenu 
+                    actions={getInvoiceActions(invoice)}
+                    tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
+                    id={`invoice-${invoice.id}`}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -322,6 +445,17 @@ const InvoiceList: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Edit Invoice Dialog */}
+      <EditInvoiceDialog
+        open={editDialogOpen}
+        invoice={editingInvoice}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setEditingInvoice(null);
+        }}
+        onUpdate={handleUpdateStatus}
+      />
 
       {/* Invoice Dialog */}
       <InvoiceDialog

@@ -6,7 +6,7 @@ on:
     types: [opened, synchronize, reopened]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
@@ -132,10 +132,14 @@ jobs:
 
       - name: List affected projects
         run: |
-          echo "🔍 Affected Projects:"
-          yarn nx affected:apps --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+          echo "🔍 Affected Applications:"
+          yarn nx show projects --affected --type app --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }} || echo "No affected applications found"
+          echo ""
           echo "📦 Affected Libraries:"
-          yarn nx affected:libs --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+          yarn nx show projects --affected --type lib --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }} || echo "No affected libraries found"
+          echo ""
+          echo "🎯 All Affected Projects:"
+          yarn nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }} || echo "No affected projects found"
 
   security-scan:
     name: 🔒 Security Scan

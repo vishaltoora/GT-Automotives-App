@@ -1,10 +1,9 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Typography,
   Paper,
   IconButton,
-  Grid,
   Card,
   CardMedia,
   CardActions,
@@ -16,6 +15,7 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,

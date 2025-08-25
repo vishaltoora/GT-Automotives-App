@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -142,7 +142,7 @@ export function StockAdjustmentDialog({
   if (!tire) return null;
 
   const newQuantity = calculateNewQuantity();
-  const isLoading = stockAdjustmentMutation.isLoading;
+  const isLoading = stockAdjustmentMutation.isPending;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>

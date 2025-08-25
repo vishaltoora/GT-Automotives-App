@@ -275,7 +275,6 @@ async function main() {
     const tireData = [
       {
         brand: 'Michelin',
-        model: 'Pilot Sport 4S',
         size: '225/45R17',
         type: 'SUMMER' as const,
         condition: 'NEW' as const,
@@ -286,7 +285,6 @@ async function main() {
       },
       {
         brand: 'Bridgestone',
-        model: 'Blizzak WS90',
         size: '215/60R16',
         type: 'WINTER' as const,
         condition: 'NEW' as const,
@@ -297,7 +295,6 @@ async function main() {
       },
       {
         brand: 'Goodyear',
-        model: 'Eagle F1',
         size: '245/40R18',
         type: 'PERFORMANCE' as const,
         condition: 'NEW' as const,
@@ -308,7 +305,6 @@ async function main() {
       },
       {
         brand: 'Continental',
-        model: 'CrossContact LX25',
         size: '235/65R17',
         type: 'ALL_SEASON' as const,
         condition: 'NEW' as const,
@@ -319,7 +315,6 @@ async function main() {
       },
       {
         brand: 'BF Goodrich',
-        model: 'All-Terrain T/A KO2',
         size: '265/70R17',
         type: 'OFF_ROAD' as const,
         condition: 'NEW' as const,

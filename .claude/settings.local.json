@@ -35,7 +35,16 @@
       "Bash(npx prisma studio:*)",
       "Bash(npx prisma db pull:*)",
       "Bash(npx prisma db execute:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(git checkout:*)",
+      "Bash(yarn db:reset:*)",
+      "Bash(echo:*)",
+      "Bash(NODE_ENV=development yarn db:seed)",
+      "Bash(yarn nx:*)",
+      "Bash(yarn typecheck)",
+      "Bash(yarn build)",
+      "Bash(nx build:*)",
+      "Bash(nx reset:*)"
     ],
     "deny": [],
     "ask": []
