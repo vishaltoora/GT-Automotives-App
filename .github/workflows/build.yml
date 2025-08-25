@@ -10,6 +10,11 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: write  # Required for creating releases and tags
+  packages: write  # Required for package operations
+  actions: read    # Required for workflow operations
+
 env:
   NODE_VERSION: '20'
   BUILD_CACHE_KEY: build-${{ github.sha }}
@@ -18,6 +23,9 @@ jobs:
   build-and-store:
     name: 🏗️ Build Applications
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating releases
+      packages: write  # Required for package operations
     outputs:
       build-version: ${{ steps.version.outputs.version }}
     steps:
@@ -99,31 +107,30 @@ jobs:
 
       - name: Create GitHub Release (Draft)
         if: github.event_name == 'push'
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: build-${{ steps.version.outputs.version }}
-          release_name: Build ${{ steps.version.outputs.version }}
-          body: |
-            ## 📦 Build Information
-            - **Version:** ${{ steps.version.outputs.version }}
-            - **Commit:** ${{ github.sha }}
-            - **Built by:** ${{ github.actor }}
-            - **Build Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-            
-            ## 🎯 Artifacts
-            - Frontend build available
-            - Backend build available
-            - Database migrations included
-            
-            ## 📝 Changes
-            View changes: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
-            
-            ---
-            ⚠️ **Note:** This is a build artifact. Deployment to production requires manual approval.
-          draft: true
-          prerelease: true
+        run: |
+          # Create release using GitHub CLI
+          gh release create "build-${{ steps.version.outputs.version }}" \
+            --draft \
+            --prerelease \
+            --title "Build ${{ steps.version.outputs.version }}" \
+            --notes "## 📦 Build Information
+          - **Version:** ${{ steps.version.outputs.version }}
+          - **Commit:** ${{ github.sha }}
+          - **Built by:** ${{ github.actor }}
+          - **Build Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ## 🎯 Artifacts
+          - Frontend build available
+          - Backend build available
+          - Database migrations included
+          
+          ## 📝 Changes
+          View changes: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+          
+          ---
+          ⚠️ **Note:** This is a build artifact. Deployment to production requires manual approval."
 
   notify-build:
     name: 📢 Build Notification
