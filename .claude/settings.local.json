@@ -40,7 +40,11 @@
       "Bash(yarn db:reset:*)",
       "Bash(echo:*)",
       "Bash(NODE_ENV=development yarn db:seed)",
-      "Bash(yarn nx:*)"
+      "Bash(yarn nx:*)",
+      "Bash(yarn typecheck)",
+      "Bash(yarn build)",
+      "Bash(nx build:*)",
+      "Bash(nx reset:*)"
     ],
     "deny": [],
     "ask": []

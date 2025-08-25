@@ -98,7 +98,6 @@ export function TireForm() {
   const { isAdmin } = useAuth();
   
   const isEditing = Boolean(id && id !== 'new');
-  const [isDraft, setIsDraft] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [sizeQuery, setSizeQuery] = useState('');
 
@@ -111,7 +110,7 @@ export function TireForm() {
   const createMutation = useCreateTire();
   const updateMutation = useUpdateTire();
 
-  const isLoading = createMutation.isLoading || updateMutation.isLoading;
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // Form setup
   const formik = useFormik({
@@ -130,7 +129,7 @@ export function TireForm() {
       notes: '',
     },
     validationSchema,
-    onSubmit: async (values) => {
+    onSubmit: async (values: typeof formik.initialValues) => {
       try {
         const submitData = {
           ...values,

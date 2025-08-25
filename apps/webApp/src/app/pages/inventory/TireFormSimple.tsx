@@ -12,7 +12,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
   Divider,
   Stack,
   IconButton,
@@ -25,7 +24,6 @@ import {
 } from '@mui/material';
 import {
   Save as SaveIcon,
-  Cancel as CancelIcon,
   ArrowBack as BackIcon,
 } from '@mui/icons-material';
 import {
@@ -45,11 +43,11 @@ const TIRE_TYPES = Object.values(TireType);
 const TIRE_CONDITIONS = Object.values(TireCondition);
 
 const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
 const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
 export function TireFormSimple() {
@@ -61,7 +59,6 @@ export function TireFormSimple() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [formData, setFormData] = useState({
     brand: '',
-    model: '',
     size: '',
     type: TireType.ALL_SEASON,
     condition: TireCondition.NEW,
