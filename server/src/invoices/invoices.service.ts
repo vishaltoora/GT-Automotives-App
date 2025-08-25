@@ -20,7 +20,8 @@ export class InvoicesService {
     console.log('Creating invoice with data:', JSON.stringify(createInvoiceDto, null, 2));
     let customerId = createInvoiceDto.customerId;
 
-    // Create customer if customerData is provided and no customerId
+    // Create customer ONLY if customerData is provided AND no customerId exists
+    // This prevents creating duplicate customers when an existing customer is selected
     if (!customerId && createInvoiceDto.customerData) {
       const { name, businessName, address, phone, email } = createInvoiceDto.customerData;
       
