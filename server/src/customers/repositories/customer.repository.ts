@@ -16,15 +16,10 @@ export class CustomerRepository extends BaseRepository<
     super(prisma, 'customer');
   }
 
-  async findByUserId(userId: string) {
-    return this.prisma.customer.findUnique({
-      where: { userId },
+  async findByEmail(email: string) {
+    return this.prisma.customer.findFirst({
+      where: { email },
       include: {
-        user: {
-          include: {
-            role: true,
-          },
-        },
         vehicles: true,
         _count: {
           select: {
@@ -39,11 +34,6 @@ export class CustomerRepository extends BaseRepository<
   async findAllWithDetails() {
     return this.prisma.customer.findMany({
       include: {
-        user: {
-          include: {
-            role: true,
-          },
-        },
         vehicles: true,
         _count: {
           select: {
@@ -63,11 +53,6 @@ export class CustomerRepository extends BaseRepository<
     return this.prisma.customer.findUnique({
       where: { id },
       include: {
-        user: {
-          include: {
-            role: true,
-          },
-        },
         vehicles: {
           orderBy: {
             createdAt: 'desc',
@@ -100,25 +85,15 @@ export class CustomerRepository extends BaseRepository<
     return this.prisma.customer.findMany({
       where: {
         OR: [
-          {
-            user: {
-              OR: [
-                { firstName: { contains: searchTerm, mode: 'insensitive' } },
-                { lastName: { contains: searchTerm, mode: 'insensitive' } },
-                { email: { contains: searchTerm, mode: 'insensitive' } },
-              ],
-            },
-          },
+          { firstName: { contains: searchTerm, mode: 'insensitive' } },
+          { lastName: { contains: searchTerm, mode: 'insensitive' } },
+          { email: { contains: searchTerm, mode: 'insensitive' } },
           { phone: { contains: searchTerm, mode: 'insensitive' } },
           { address: { contains: searchTerm, mode: 'insensitive' } },
+          { businessName: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       include: {
-        user: {
-          include: {
-            role: true,
-          },
-        },
         vehicles: true,
         _count: {
           select: {
@@ -168,5 +143,11 @@ export class CustomerRepository extends BaseRepository<
       appointmentCount,
       lastVisitDate: lastVisit?.createdAt || null,
     };
+  }
+
+  async findById(id: string) {
+    return this.prisma.customer.findUnique({
+      where: { id },
+    });
   }
 }

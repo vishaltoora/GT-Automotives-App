@@ -4,12 +4,14 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserRepository } from '../../users/repositories/user.repository';
 import { passportJwtSecret } from 'jwks-rsa';
+import { PrismaService } from '@gt-automotive/database';
 
 @Injectable()
 export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
   constructor(
     private configService: ConfigService,
     private userRepository: UserRepository,
+    private prismaService: PrismaService,
   ) {
     const jwksUrl = configService.get<string>('CLERK_JWKS_URL', 'https://clean-dove-53.clerk.accounts.dev/.well-known/jwks.json');
     
@@ -49,9 +51,19 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
       }
 
       // Determine role based on email
-      let roleId = 3; // Default to customer role
+      let roleName = 'CUSTOMER'; // Default to customer role
       if (email === 'vishal.alawalpuria@gmail.com') {
-        roleId = 1; // Admin role
+        roleName = 'ADMIN'; // Admin role
+      }
+
+
+      // Look up the role ID by name
+      const role = await this.prismaService.role.findUnique({
+        where: { name: roleName as any }
+      });
+
+      if (!role) {
+        throw new UnauthorizedException(`Role ${roleName} not found in database`);
       }
 
       try {
@@ -60,7 +72,7 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
           email,
           firstName,
           lastName,
-          roleId,
+          roleId: role.id,
           isActive: true,
         });
       } catch (error) {

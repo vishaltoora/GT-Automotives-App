@@ -1,8 +1,8 @@
 export class CreateCustomerDto {
-  email!: string;
   firstName!: string;
   lastName!: string;
-  phone!: string;
+  email?: string;
+  phone?: string;
   address?: string;
   businessName?: string;
 }
@@ -10,6 +10,7 @@ export class CreateCustomerDto {
 export class UpdateCustomerDto {
   firstName?: string;
   lastName?: string;
+  email?: string;
   phone?: string;
   address?: string;
   businessName?: string;
@@ -17,11 +18,10 @@ export class UpdateCustomerDto {
 
 export class CustomerDto {
   id!: string;
-  userId!: string;
-  email!: string;
-  firstName?: string;
-  lastName?: string;
-  phone!: string;
+  firstName!: string;
+  lastName!: string;
+  email?: string;
+  phone?: string;
   address?: string;
   businessName?: string;
   vehicleCount?: number;

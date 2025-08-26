@@ -14,11 +14,12 @@ GET    /api/reports/financial // Admin only
 
 ## Code Style
 - Use async/await over callbacks
-- Implement proper error handling
+- Implement proper error handling with custom error dialogs
 - Add role checks at controller level
 - Log all admin actions
 - Use transactions for critical operations
 - Use Grid2 size property syntax: `<Grid size={{ xs: 12, md: 6 }}>` instead of `<Grid xs={12} md={6}>`
+- Never use browser dialogs (`window.alert`, `window.confirm`) - use custom dialog system
 
 ## Using the Theme System
 ```javascript
@@ -75,11 +76,15 @@ import { Grid } from '@mui/material';  // This now imports Grid2
 - Use animated hero sections with GT logo and floating icons
 - Ensure all components are fully responsive
 - Test on mobile devices using browser dev tools
+- Use the confirmation dialog system for all user confirmations (never use window.confirm or alert)
 
-### Component Structure (Updated August 22, 2025)
+### Component Structure (Updated August 26, 2025)
 ```
 apps/webApp/src/app/components/
-├── public/           # Shared public components
+├── common/          # Common reusable components
+│   ├── ConfirmationDialog.tsx
+│   └── ErrorDialog.tsx
+├── public/          # Shared public components
 │   ├── Hero.tsx
 │   ├── ServiceCard.tsx
 │   ├── CTASection.tsx
@@ -122,10 +127,125 @@ apps/webApp/src/app/components/
 │   ├── ContactForm.tsx
 │   ├── ContactTeam.tsx
 │   └── index.ts
+├── customers/       # Customer management components
+│   └── CustomerDialog.tsx
+├── invoices/        # Invoice-related components
+│   ├── InvoiceDialog.tsx
+│   └── InvoiceFormContent.tsx
 ├── admin/           # Admin-specific components
 ├── staff/           # Staff-specific components
 └── customer/        # Customer-specific components
 ```
+
+### Confirmation Dialog Usage (Added August 26, 2025)
+
+Use the standard confirmation dialog system for all user confirmations:
+
+```typescript
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
+
+export function MyComponent() {
+  const { confirmDelete, confirmCancel, confirmSave, confirmAction } = useConfirmationHelpers();
+
+  const handleDelete = async (item) => {
+    const confirmed = await confirmDelete(`item "${item.name}"`);
+    if (confirmed) {
+      // Perform delete operation
+      await deleteItem(item.id);
+    }
+  };
+
+  const handleCustomAction = async () => {
+    const confirmed = await confirmAction(
+      'Export Data', 
+      'This will export all customer data to CSV. Continue?'
+    );
+    if (confirmed) {
+      // Perform export
+    }
+  };
+}
+```
+
+**Never use:**
+- `window.confirm()`
+- `window.alert()`
+- `alert()`
+- `confirm()`
+
+**Always use the confirmation dialog for:**
+- Delete operations
+- Cancel operations
+- Destructive actions
+- Important state changes
+- Data exports
+- Any user confirmation needs
+
+### Error Handling Patterns (Added August 26, 2025)
+
+Use the custom error dialog system for all error messages and user notifications:
+
+```typescript
+import { useError, useErrorHelpers } from '../../contexts/ErrorContext';
+
+export function MyComponent() {
+  const { showError, showWarning, showInfo } = useError();
+  const { showApiError, showValidationError, showSuccess, showNetworkError } = useErrorHelpers();
+
+  // API Error handling (most common)
+  const handleApiCall = async () => {
+    try {
+      const result = await apiService.saveData(data);
+      showSuccess('Data saved successfully!');
+    } catch (error) {
+      showApiError(error, 'Failed to save data');
+    }
+  };
+
+  // Form validation error
+  const handleValidation = () => {
+    if (!formData.name) {
+      showValidationError('Name is required');
+      return;
+    }
+  };
+
+  // Custom error with details
+  const handleCustomError = () => {
+    showError({
+      title: 'Import Failed',
+      message: 'The CSV file format is not supported.',
+      details: 'Expected columns: name, email, phone. Found: firstName, lastName, contact.',
+      confirmText: 'Choose Different File'
+    });
+  };
+}
+```
+
+**Error Dialog Best Practices:**
+- Use `showApiError()` for all API/network errors - it handles error parsing automatically
+- Use `showValidationError()` for form validation issues
+- Use `showSuccess()` for positive feedback after successful operations
+- Include helpful error messages that guide users toward solutions
+- Add technical details for developers while keeping main message user-friendly
+- Use appropriate severity levels (error, warning, info)
+
+**Migration from Console Logging:**
+```typescript
+// OLD - Don't do this
+console.error('Error loading data:', error);
+alert('Failed to load data');
+
+// NEW - Do this instead
+showApiError(error, 'Failed to load data');
+```
+
+**Error Context Benefits:**
+- Consistent styling across the application
+- Automatic error logging to console
+- User-friendly error messages with expandable technical details
+- Centralized error handling reduces code duplication
+- Improved user experience with branded dialogs
 
 ### Component Guidelines
 - **Single Responsibility:** Each component should have one clear purpose

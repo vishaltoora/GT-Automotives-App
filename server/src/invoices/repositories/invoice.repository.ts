@@ -18,11 +18,7 @@ export class InvoiceRepository extends BaseRepository<
     return this.prisma.invoice.findMany({
       where: { customerId },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         vehicle: true,
         items: includeItems ? {
           include: {
@@ -38,11 +34,7 @@ export class InvoiceRepository extends BaseRepository<
     return this.prisma.invoice.findMany({
       where: { status },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         vehicle: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -53,11 +45,7 @@ export class InvoiceRepository extends BaseRepository<
     return this.prisma.invoice.findUnique({
       where: { id },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         vehicle: true,
         items: {
           include: {
@@ -81,11 +69,7 @@ export class InvoiceRepository extends BaseRepository<
           },
         },
         include: {
-          customer: {
-            include: {
-              user: true,
-            },
-          },
+          customer: true,
           vehicle: true,
           items: {
             include: {
@@ -121,11 +105,7 @@ export class InvoiceRepository extends BaseRepository<
         paidAt: status === 'PAID' ? (paidAt || new Date()) : undefined,
       },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         vehicle: true,
         items: {
           include: {
@@ -152,11 +132,7 @@ export class InvoiceRepository extends BaseRepository<
         status: 'PAID',
       },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
       },
     });
 
@@ -216,33 +192,27 @@ export class InvoiceRepository extends BaseRepository<
 
     if (searchParams.customerName) {
       where.customer = {
-        user: {
-          OR: [
-            {
-              firstName: {
-                contains: searchParams.customerName,
-                mode: 'insensitive',
-              },
+        OR: [
+          {
+            firstName: {
+              contains: searchParams.customerName,
+              mode: 'insensitive',
             },
-            {
-              lastName: {
-                contains: searchParams.customerName,
-                mode: 'insensitive',
-              },
+          },
+          {
+            lastName: {
+              contains: searchParams.customerName,
+              mode: 'insensitive',
             },
-          ],
-        },
+          },
+        ],
       };
     }
 
     return this.prisma.invoice.findMany({
       where,
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         vehicle: true,
         items: true,
       },

@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CustomerRepository } from './repositories/customer.repository';
-import { UserRepository } from '../users/repositories/user.repository';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { AuditRepository } from '../audit/repositories/audit.repository';
@@ -10,81 +9,45 @@ import { PrismaService } from '@gt-automotive/database';
 export class CustomersService {
   constructor(
     private readonly customerRepository: CustomerRepository,
-    private readonly userRepository: UserRepository,
     private readonly auditRepository: AuditRepository,
     private readonly prisma: PrismaService,
   ) {}
 
   async create(createCustomerDto: CreateCustomerDto, createdBy: string) {
-    // First, create the user account
-    const existingUser = await this.userRepository.findByEmail(createCustomerDto.email);
-
-    if (existingUser) {
-      throw new BadRequestException('A user with this email already exists');
+    // Check for existing customer with same email if provided
+    if (createCustomerDto.email) {
+      const existingCustomer = await this.customerRepository.findByEmail(createCustomerDto.email);
+      if (existingCustomer) {
+        throw new BadRequestException('A customer with this email already exists');
+      }
     }
 
-    // Get customer role
-    const customerRole = await this.prisma.role.findUnique({
-      where: { name: 'CUSTOMER' },
+    // Create customer directly without user account
+    const customer = await this.prisma.customer.create({
+      data: {
+        firstName: createCustomerDto.firstName,
+        lastName: createCustomerDto.lastName,
+        email: createCustomerDto.email,
+        phone: createCustomerDto.phone,
+        address: createCustomerDto.address,
+        businessName: createCustomerDto.businessName,
+      },
     });
 
-    if (!customerRole) {
-      throw new BadRequestException('Customer role not found');
-    }
-
-    // Create user and customer in a transaction
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // Create user
-      const user = await prisma.user.create({
-        data: {
-          clerkId: `customer_${Date.now()}`, // Temporary ID, should be updated by Clerk webhook
-          email: createCustomerDto.email,
-          firstName: createCustomerDto.firstName,
-          lastName: createCustomerDto.lastName,
-          roleId: customerRole.id,
-        },
-      });
-
-      // Create customer profile
-      const customer = await prisma.customer.create({
-        data: {
-          userId: user.id,
-          phone: createCustomerDto.phone,
-          address: createCustomerDto.address,
-          businessName: createCustomerDto.businessName,
-        },
-        include: {
-          user: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      });
-
-      // Log the action
-      await this.auditRepository.create({
-        userId: createdBy,
-        action: 'CREATE_CUSTOMER',
-        resource: 'customer',
-        resourceId: customer.id,
-        newValue: customer,
-      });
-
-      return customer;
+    // Log the action
+    await this.auditRepository.create({
+      userId: createdBy,
+      action: 'CREATE_CUSTOMER',
+      entityType: 'customer',
+      entityId: customer.id,
+      details: customer,
     });
 
-    return result;
+    return customer;
   }
 
   async findAll(userId: string, userRole: string) {
-    // Customers can only see their own profile
-    if (userRole === 'customer') {
-      const customer = await this.customerRepository.findByUserId(userId);
-      return customer ? [customer] : [];
-    }
-
-    // Staff and admin can see all customers
+    // Only staff and admin can see all customers
     return this.customerRepository.findAllWithDetails();
   }
 
@@ -93,11 +56,6 @@ export class CustomersService {
 
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
-    }
-
-    // Customers can only see their own profile
-    if (userRole === 'customer' && customer.userId !== userId) {
-      throw new ForbiddenException('You can only view your own customer profile');
     }
 
     // Get customer statistics
@@ -116,59 +74,32 @@ export class CustomersService {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
-    // Customers can only update their own profile
-    if (userRole === 'customer' && customer.userId !== userId) {
-      throw new ForbiddenException('You can only update your own customer profile');
-    }
-
-    // Update user and customer data in a transaction
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // Update user data if provided
-      if (updateCustomerDto.email || updateCustomerDto.firstName || updateCustomerDto.lastName) {
-        await prisma.user.update({
-          where: { id: customer.userId },
-          data: {
-            ...(updateCustomerDto.email && { email: updateCustomerDto.email }),
-            ...(updateCustomerDto.firstName && { firstName: updateCustomerDto.firstName }),
-            ...(updateCustomerDto.lastName && { lastName: updateCustomerDto.lastName }),
-          },
-        });
-      }
-
-      // Update customer data
-      const updatedCustomer = await prisma.customer.update({
-        where: { id },
-        data: {
-          ...(updateCustomerDto.phone && { phone: updateCustomerDto.phone }),
-          ...(updateCustomerDto.address !== undefined && { address: updateCustomerDto.address }),
-          ...(updateCustomerDto.businessName !== undefined && { businessName: updateCustomerDto.businessName }),
-        },
-        include: {
-          user: {
-            include: {
-              role: true,
-            },
-          },
-          vehicles: true,
-        },
-      });
-
-      // Log the action if not a self-update
-      if (userRole !== 'customer') {
-        await this.auditRepository.create({
-          userId,
-          action: 'UPDATE_CUSTOMER',
-          resource: 'customer',
-          resourceId: id,
-          oldValue: customer,
-          newValue: updatedCustomer,
-        });
-      }
-
-      return updatedCustomer;
+    // Update customer data directly
+    const updatedCustomer = await this.prisma.customer.update({
+      where: { id },
+      data: {
+        ...(updateCustomerDto.firstName && { firstName: updateCustomerDto.firstName }),
+        ...(updateCustomerDto.lastName && { lastName: updateCustomerDto.lastName }),
+        ...(updateCustomerDto.email !== undefined && { email: updateCustomerDto.email }),
+        ...(updateCustomerDto.phone !== undefined && { phone: updateCustomerDto.phone }),
+        ...(updateCustomerDto.address !== undefined && { address: updateCustomerDto.address }),
+        ...(updateCustomerDto.businessName !== undefined && { businessName: updateCustomerDto.businessName }),
+      },
+      include: {
+        vehicles: true,
+      },
     });
 
-    return result;
+    // Log the action
+    await this.auditRepository.create({
+      userId,
+      action: 'UPDATE_CUSTOMER',
+      entityType: 'customer',
+      entityId: id,
+      details: { old: customer, new: updatedCustomer },
+    });
+
+    return updatedCustomer;
   }
 
   async remove(id: string, userId: string) {
@@ -189,59 +120,29 @@ export class CustomersService {
 
     if (hasInvoices > 0 || hasAppointments > 0) {
       throw new BadRequestException(
-        'Cannot delete customer with existing invoices or appointments. Please deactivate the user instead.',
+        'Cannot delete customer with existing invoices or appointments.',
       );
     }
 
-    // Delete customer and user in a transaction
-    await this.prisma.$transaction(async (prisma) => {
-      // Delete customer (vehicles will be cascade deleted)
-      await prisma.customer.delete({
-        where: { id },
-      });
+    // Delete customer (vehicles will be cascade deleted)
+    await this.prisma.customer.delete({
+      where: { id },
+    });
 
-      // Deactivate user instead of deleting
-      await prisma.user.update({
-        where: { id: customer.userId },
-        data: { isActive: false },
-      });
-
-      // Log the action
-      await this.auditRepository.create({
-        userId,
-        action: 'DELETE_CUSTOMER',
-        resource: 'customer',
-        resourceId: id,
-        oldValue: customer,
-      });
+    // Log the action
+    await this.auditRepository.create({
+      userId,
+      action: 'DELETE_CUSTOMER',
+      entityType: 'customer',
+      entityId: id,
+      details: customer,
     });
 
     return { message: 'Customer deleted successfully' };
   }
 
   async search(searchTerm: string, userId: string, userRole: string) {
-    // Customers cannot search for other customers
-    if (userRole === 'customer') {
-      throw new ForbiddenException('You are not authorized to search customers');
-    }
-
     return this.customerRepository.search(searchTerm);
   }
 
-  async getMyProfile(userId: string) {
-    const customer = await this.customerRepository.findByUserId(userId);
-
-    if (!customer) {
-      // User exists but doesn't have a customer profile yet
-      // This can happen for staff/admin users
-      return null;
-    }
-
-    const stats = await this.customerRepository.getCustomerStats(customer.id);
-
-    return {
-      ...customer,
-      stats,
-    };
-  }
 }

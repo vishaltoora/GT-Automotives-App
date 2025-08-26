@@ -24,7 +24,7 @@ export class CustomersController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   create(
     @Body() createCustomerDto: CreateCustomerDto,
     @CurrentUser() user: any,
@@ -39,7 +39,7 @@ export class CustomersController {
 
   @Get('search')
   @UseGuards(RoleGuard)
-  @Roles('staff', 'admin')
+  @Roles('STAFF', 'ADMIN')
   search(
     @Query('q') searchTerm: string,
     @CurrentUser() user: any,
@@ -47,10 +47,6 @@ export class CustomersController {
     return this.customersService.search(searchTerm, user.id, user.role.name);
   }
 
-  @Get('profile')
-  getMyProfile(@CurrentUser() user: any) {
-    return this.customersService.getMyProfile(user.id);
-  }
 
   @Get(':id')
   findOne(
@@ -71,7 +67,7 @@ export class CustomersController {
 
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('admin')
+  @Roles('ADMIN')
   remove(
     @Param('id') id: string,
     @CurrentUser() user: any,

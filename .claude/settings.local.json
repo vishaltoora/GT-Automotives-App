@@ -45,7 +45,16 @@
       "Bash(yarn build)",
       "Bash(nx build:*)",
       "Bash(nx reset:*)",
-      "Bash(yarn test)"
+      "Bash(yarn test)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(yarn info:*)",
+      "Bash(npm view:*)",
+      "Bash(yarn upgrade:*)",
+      "Bash(yarn check:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev --name \"finalize_customer_schema_changes\" --schema=libs/database/src/lib/prisma/schema.prisma)",
+      "Bash(prisma migrate dev:*)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []

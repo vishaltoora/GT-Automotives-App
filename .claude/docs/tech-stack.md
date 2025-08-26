@@ -4,7 +4,11 @@
 - **Framework:** React 18 + TypeScript ✅
 - **Routing:** React Router with role-based protected routes
 - **State Management:** React Query + Context API
-- **UI Components:** Material-UI (MUI) ✅
+- **UI Components:** Material-UI v7.3.1 (latest stable) ✅
+  - Grid system with modern `size={{ xs: 12, md: 6 }}` syntax
+  - Icons Material v7.3.1 
+  - Lab components v7.0.0-beta.16
+  - Data Grid v8.10.1 and Date Pickers v8.10.0
 - **Theme System:** Custom colors.ts and theme.ts for consistent branding ✅
 - **Print Styling:** Custom CSS for invoices
 

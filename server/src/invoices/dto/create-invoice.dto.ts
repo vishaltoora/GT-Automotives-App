@@ -24,7 +24,10 @@ export class CreateInvoiceItemDto {
 
 export class CreateCustomerDto {
   @IsString()
-  name: string;
+  firstName: string;
+
+  @IsString()
+  lastName: string;
 
   @IsOptional()
   @IsString()

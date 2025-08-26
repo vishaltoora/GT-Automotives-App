@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { theme } from './theme/theme';
+import { ConfirmationProvider } from './contexts/ConfirmationContext';
+import { ErrorProvider } from './contexts/ErrorContext';
 
 // Layouts
 import { PublicLayout } from './layouts/PublicLayout';
@@ -56,7 +58,9 @@ export function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Routes>
+      <ErrorProvider>
+        <ConfirmationProvider>
+          <Routes>
         {/* Public Routes */}
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<Home />} />
@@ -166,7 +170,9 @@ export function App() {
 
         {/* Catch all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          </Routes>
+        </ConfirmationProvider>
+      </ErrorProvider>
     </ThemeProvider>
   );
 }

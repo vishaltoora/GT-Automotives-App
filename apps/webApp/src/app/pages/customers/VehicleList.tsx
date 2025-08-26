@@ -36,10 +36,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { vehicleService, Vehicle } from '../../services/vehicle.service';
 import { useAuth } from '../../hooks/useAuth';
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 
 export function VehicleList() {
   const navigate = useNavigate();
   const { role } = useAuth();
+  const { confirmDelete } = useConfirmationHelpers();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,13 +88,17 @@ export function VehicleList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this vehicle?')) {
+  const handleDelete = async (vehicle: Vehicle) => {
+    const vehicleDescription = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+    const confirmed = await confirmDelete(`vehicle "${vehicleDescription}"`);
+    
+    if (confirmed) {
       try {
-        await vehicleService.deleteVehicle(id);
+        await vehicleService.deleteVehicle(vehicle.id);
         await loadVehicles();
       } catch (err: any) {
-        alert(err.response?.data?.message || 'Failed to delete vehicle');
+        // TODO: Replace with error notification
+        console.error('Failed to delete vehicle:', err);
       }
     }
   };
@@ -261,7 +267,7 @@ export function VehicleList() {
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => handleDelete(vehicle.id)}
+                            onClick={() => handleDelete(vehicle)}
                           >
                             <DeleteIcon />
                           </IconButton>

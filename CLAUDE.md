@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Tech Stack](.claude/docs/tech-stack.md)** - Technologies, frameworks, and architecture
 - **[Development Setup](.claude/docs/development-setup.md)** - Environment setup and commands
 - **[Development Guidelines](.claude/docs/development-guidelines.md)** - Code style, patterns, and best practices
+- **[UI Components](.claude/docs/ui-components.md)** - Component documentation and usage guidelines
 - **[Business Rules](.claude/docs/business-rules.md)** - Requirements and domain logic
 - **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
 - **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions
@@ -83,10 +84,23 @@ yarn test          # Run tests
 - Financial reports are admin-only
 - All authentication flows use Clerk (or MockClerkProvider in dev)
 - Invoice printing must support 8.5x11, thermal, and PDF formats
+- **Never use browser dialogs** (window.alert, window.confirm) - use custom dialog system
+- **All errors must use ErrorContext** for consistent user experience
 
 ---
 
 ## 🔄 Recent Updates
+
+### August 26, 2025 - Customer System Overhaul & UI Enhancements
+- ✅ **Customer Independence**: Removed User-Customer relationship - customers are now external entities
+- ✅ **Direct Properties**: firstName, lastName, email (optional), phone (optional) stored directly on Customer
+- ✅ **Data Migration**: Successfully migrated existing customer data from User to Customer records
+- ✅ **Authentication Fix**: Fixed role case sensitivity (ADMIN, STAFF, CUSTOMER) for proper authorization
+- ✅ **Confirmation Dialog System**: Created reusable confirmation dialog to replace window.confirm/alert
+- ✅ **Custom Error Dialog System**: Comprehensive error handling with branded dialogs, expandable details, and helper functions
+- ✅ **UI Improvements**: Email field editable, default address "Prince George, BC", consistent "No phone"/"No email" display
+- ✅ **Printable Invoice Fix**: Fixed customer name display and removed contact info from printed invoices
+- ✅ **Invoice List Enhancement**: Removed vehicle column, improved customer name display, replaced browser alerts with custom dialogs
 
 ### August 2025 - Customer Management & Invoice System Enhancements
 - ✅ **Business Name Support**: Added optional business name field for commercial customers
@@ -96,9 +110,9 @@ yarn test          # Run tests
 - ✅ **Database Migration**: Successfully added business name field via migration `20250826145527`
 - ✅ **Service Layer Updates**: Enhanced customer services and DTOs for business name handling
 - ✅ **Dialog-Based Invoice Creation**: Converted Admin Dashboard quick actions from navigation to modal dialog
-- ✅ **Grid2 Size Property**: Updated all Grid components to use modern `size={{ xs: 12, md: 6 }}` syntax
-- ✅ **UI/UX Improvements**: Set invoice dialog width to xl for better user experience
-- ✅ **Authentication Guards**: Enhanced loading state handling to prevent redirect loops
+- ✅ **Grid Component Fixes**: Fixed Grid2 import issues and updated to use modern Material-UI Grid syntax
+- ✅ **Material-UI Updates**: Verified latest versions (7.3.1) and resolved import compatibility
+- ✅ **Build System Fixes**: Resolved ESM/CommonJS compatibility issues in shared libraries
 
 ### August 2025 - Home Page Component Refactoring
 - ✅ **Component Modularization**: Split 1900-line Home.tsx into 9 focused components
@@ -125,5 +139,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated:** August 26, 2025 - Customer management enhancements and business name support completed
+**Last Updated:** August 26, 2025 - Customer system overhaul, custom error dialog system, confirmation dialog system, and UI improvements completed
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.

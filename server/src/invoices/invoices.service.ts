@@ -2,10 +2,9 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
-import { Invoice, InvoiceStatus, Prisma, RoleName } from '@prisma/client';
+import { Invoice, InvoiceStatus, Prisma } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
-import { RoleRepository } from '../roles/repositories/role.repository';
 
 @Injectable()
 export class InvoicesService {
@@ -13,7 +12,6 @@ export class InvoicesService {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly auditRepository: AuditRepository,
     private readonly customerRepository: CustomerRepository,
-    private readonly roleRepository: RoleRepository,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
@@ -23,46 +21,20 @@ export class InvoicesService {
     // Create customer ONLY if customerData is provided AND no customerId exists
     // This prevents creating duplicate customers when an existing customer is selected
     if (!customerId && createInvoiceDto.customerData) {
-      const { name, businessName, address, phone, email } = createInvoiceDto.customerData;
-      
-      // Split name into first and last name
-      const [firstName, ...lastNameParts] = name.split(' ');
-      const lastName = lastNameParts.join(' ') || '';
+      const { firstName, lastName, businessName, address, phone, email } = createInvoiceDto.customerData;
       
       try {
-        // Get customer role
-        const customerRole = await this.roleRepository.findByName(RoleName.CUSTOMER);
-        if (!customerRole) {
-          throw new BadRequestException('Customer role not found');
-        }
+        console.log('Creating customer with firstName:', firstName, 'lastName:', lastName);
         
-        console.log('Creating customer with role:', customerRole.id);
-        
-        // Generate a temporary clerk ID for customers created through invoices
-        const tempClerkId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        
-        // Create customer with user
+        // Create customer directly without user relationship
         const customerData: any = {
-          user: {
-            create: {
-              firstName,
-              lastName,
-              email: email || `${firstName.toLowerCase()}${lastName.toLowerCase()}@customer.local`,
-              clerkId: tempClerkId, // Temporary ID for customers created without Clerk signup
-              roleId: customerRole.id,
-            }
-          }
+          firstName,
+          lastName,
+          email: email || '', // Empty string instead of generated email
+          phone: phone || null,
+          address: address || null,
+          businessName: businessName || null,
         };
-        
-        // Only add phone if provided
-        if (phone) {
-          customerData.phone = phone;
-        }
-        
-        // Only add address if provided
-        if (address) {
-          customerData.address = address;
-        }
 
         console.log('Customer data to create:', JSON.stringify(customerData, null, 2));
         const newCustomer = await this.customerRepository.create(customerData);
@@ -151,9 +123,9 @@ export class InvoicesService {
     await this.auditRepository.create({
       userId,
       action: 'CREATE_INVOICE',
-      resource: 'invoice',
-      resourceId: invoice.id,
-      newValue: invoice as any,
+      entityType: 'invoice',
+      entityId: invoice.id,
+      details: invoice as any,
     });
 
     return invoice;
@@ -172,11 +144,7 @@ export class InvoicesService {
     // Staff and Admin can see all invoices
     return this.invoiceRepository.findAll({
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         vehicle: true,
         items: {
           include: {
