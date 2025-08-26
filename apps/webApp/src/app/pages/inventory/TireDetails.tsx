@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -38,7 +38,6 @@ import { LoadingButton } from '@mui/lab';
 import {
   TireType,
   TireCondition,
-  ITire,
 } from '@gt-automotive/shared-interfaces';
 import { useAuth } from '../../hooks/useAuth';
 import { useTire, useDeleteTire } from '../../hooks/useTires';
@@ -65,13 +64,12 @@ export function TireDetails() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isAdmin, isStaff, isCustomer } = useAuth();
+  const { isAdmin, isStaff } = useAuth();
 
   // State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [showImageGallery, setShowImageGallery] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string>('');
 
   // Data fetching
   const { data: tire, isLoading, isError, error } = useTire(id || '');
@@ -186,8 +184,7 @@ export function TireDetails() {
     }
   };
 
-  const handleImageClick = (imageUrl: string) => {
-    setSelectedImage(imageUrl);
+  const handleImageClick = () => {
     setShowImageGallery(true);
   };
 
@@ -255,7 +252,7 @@ export function TireDetails() {
                 objectFit: 'cover',
                 cursor: allImages.length > 1 ? 'pointer' : 'default',
               }}
-              onClick={() => allImages.length > 1 && handleImageClick(primaryImage)}
+              onClick={() => allImages.length > 1 && handleImageClick()}
             />
             
             {allImages.length > 1 && (
@@ -270,7 +267,7 @@ export function TireDetails() {
                         borderColor: image === primaryImage ? 'primary.main' : 'divider',
                         borderRadius: 1,
                       }}
-                      onClick={() => handleImageClick(image)}
+                      onClick={() => handleImageClick()}
                     >
                       <img
                         src={image}
