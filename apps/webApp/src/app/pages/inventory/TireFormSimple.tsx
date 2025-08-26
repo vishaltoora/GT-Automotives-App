@@ -29,9 +29,8 @@ import {
 import {
   ITireCreateInput,
   ITireUpdateInput,
-  TireType,
-  TireCondition,
 } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 import { useAuth } from '../../hooks/useAuth';
 import { 
   useTire, 

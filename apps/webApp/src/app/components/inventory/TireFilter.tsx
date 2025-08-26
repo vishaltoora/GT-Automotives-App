@@ -25,7 +25,8 @@ import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
-import { ITireFilters, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { ITireFilters } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 import { useTireBrands, useTireSizeSuggestions } from '../../hooks/useTires';
 
 interface TireFilterProps {

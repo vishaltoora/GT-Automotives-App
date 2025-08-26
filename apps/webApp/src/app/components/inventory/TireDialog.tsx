@@ -19,10 +19,9 @@ import {
 import { 
   ITire, 
   ITireCreateInput, 
-  ITireUpdateInput,
-  TireType,
-  TireCondition 
+  ITireUpdateInput
 } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TireService } from '../../services/tire.service';
 import { useAuth } from '../../hooks/useAuth';
