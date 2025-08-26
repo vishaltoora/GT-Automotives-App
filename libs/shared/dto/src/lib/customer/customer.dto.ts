@@ -4,6 +4,7 @@ export class CreateCustomerDto {
   lastName!: string;
   phone!: string;
   address?: string;
+  businessName?: string;
 }
 
 export class UpdateCustomerDto {
@@ -11,6 +12,7 @@ export class UpdateCustomerDto {
   lastName?: string;
   phone?: string;
   address?: string;
+  businessName?: string;
 }
 
 export class CustomerDto {
@@ -21,6 +23,7 @@ export class CustomerDto {
   lastName?: string;
   phone!: string;
   address?: string;
+  businessName?: string;
   vehicleCount?: number;
   createdAt!: Date;
   updatedAt!: Date;

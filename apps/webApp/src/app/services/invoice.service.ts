@@ -182,10 +182,10 @@ class InvoiceService {
         <title>Invoice ${invoice.invoiceNumber}</title>
         <style>
           @media print {
-            body { margin: 0; padding: 20px; }
+            body { margin: 0; padding: 10px; }
             .no-print { display: none; }
             @page { 
-              margin: 0.5in; 
+              margin: 0.3in; 
               size: A4;
               @top-left { content: ""; }
               @top-center { content: ""; }
@@ -197,9 +197,9 @@ class InvoiceService {
           }
           body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            line-height: 1.6;
+            line-height: 1.4;
             color: #333;
-            padding: 20px;
+            padding: 10px;
             max-width: 800px;
             margin: 0 auto;
           }
@@ -207,8 +207,8 @@ class InvoiceService {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             border-bottom: 2px solid #243c55;
           }
           .company-info {
@@ -227,15 +227,15 @@ class InvoiceService {
             color: #333;
           }
           .customer-info {
-            margin: 20px 0;
+            margin: 10px 0;
           }
           .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 12px 0;
           }
           .items-table th, .items-table td {
-            padding: 10px;
+            padding: 6px 8px;
             text-align: left;
             border-bottom: 1px solid #ddd;
           }
@@ -245,32 +245,32 @@ class InvoiceService {
           }
           .totals {
             text-align: right;
-            margin-top: 20px;
+            margin-top: 12px;
           }
           .totals table {
             margin-left: auto;
-            width: 300px;
+            width: 280px;
           }
           .totals td {
-            padding: 5px;
+            padding: 3px 5px;
           }
           .total-row {
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1.1em;
             border-top: 2px solid #333;
           }
           .footer {
-            margin-top: 50px;
+            margin-top: 25px;
             text-align: center;
             color: #666;
-            font-size: 0.9em;
+            font-size: 0.85em;
           }
         </style>
       </head>
       <body>
         <div class="invoice-header">
           <div class="company-info">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
                 <h1 style="margin: 0; color: #243c55;">GT Automotives</h1>
@@ -278,7 +278,7 @@ class InvoiceService {
                 <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
               </div>
             </div>
-            <p style="margin-top: 10px;">Prince George, BC<br>
+            <p style="margin-top: 8px; font-size: 13px;">Prince George, BC<br>
             Phone: 250-570-2333<br>
             Email: gt-automotives@outlook.com</p>
           </div>
@@ -308,13 +308,8 @@ class InvoiceService {
             
             return customerName;
           })()}<br>
-          ${invoice.customer?.phone ? `${invoice.customer.phone}<br>` : ''}
+          ${invoice.customer?.businessName ? `<strong>${invoice.customer.businessName}</strong><br>` : ''}
           ${invoice.customer?.address || ''}</p>
-          ${invoice.vehicle ? `
-            <p><strong>Vehicle:</strong> ${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}<br>
-            <strong>VIN:</strong> ${invoice.vehicle.vin || 'N/A'}<br>
-            <strong>License Plate:</strong> ${invoice.vehicle.licensePlate || 'N/A'}</p>
-          ` : ''}
         </div>
 
         <table class="items-table">
@@ -408,18 +403,18 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
     const gtLogo = `<img src="/src/app/images-and-logos/logo.png" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
 
     return `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; max-width: 800px; margin: 0 auto;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #243c55;">
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: #333; padding: 10px; max-width: 800px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #243c55;">
           <div style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55; font-size: 28px;">GT Automotives</h1>
+                <h1 style="margin: 0; color: #243c55; font-size: 26px;">GT Automotives</h1>
                 <p style="margin: 0; font-size: 14px; color: #666;">Professional Tire & Auto Services</p>
                 <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
               </div>
             </div>
-            <p style="margin-top: 10px;">Prince George, BC<br>
+            <p style="margin-top: 8px; font-size: 13px;">Prince George, BC<br>
             Phone: 250-570-2333<br>
             Email: gt-automotives@outlook.com</p>
           </div>
@@ -431,7 +426,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
           </div>
         </div>
 
-        <div style="margin: 20px 0;">
+        <div style="margin: 10px 0;">
           <h3>Bill To:</h3>
           <p>${(() => {
             const customer = invoice.customer;
@@ -449,13 +444,8 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             
             return customerName;
           })()}<br>
-          ${invoice.customer?.phone ? `${invoice.customer.phone}<br>` : ''}
+          ${invoice.customer?.businessName ? `<strong>${invoice.customer.businessName}</strong><br>` : ''}
           ${invoice.customer?.address || ''}</p>
-          ${invoice.vehicle ? `
-            <p><strong>Vehicle:</strong> ${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}<br>
-            <strong>VIN:</strong> ${invoice.vehicle.vin || 'N/A'}<br>
-            <strong>License Plate:</strong> ${invoice.vehicle.licensePlate || 'N/A'}</p>
-          ` : ''}
         </div>
 
         <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -484,50 +474,50 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
         <div style="text-align: right; margin-top: 20px;">
           <table style="margin-left: auto; width: 300px;">
             <tr>
-              <td style="padding: 5px;">Subtotal:</td>
-              <td style="padding: 5px;">${formatCurrency(invoice.subtotal)}</td>
+              <td style="padding: 3px 5px;">Subtotal:</td>
+              <td style="padding: 3px 5px;">${formatCurrency(invoice.subtotal)}</td>
             </tr>
 ${invoice.gstRate != null && invoice.gstRate > 0 ? `
             <tr>
-              <td style="padding: 5px;">GST (${(invoice.gstRate * 100).toFixed(2)}%):</td>
-              <td style="padding: 5px;">${formatCurrency(invoice.gstAmount || 0)}</td>
+              <td style="padding: 3px 5px;">GST (${(invoice.gstRate * 100).toFixed(2)}%):</td>
+              <td style="padding: 3px 5px;">${formatCurrency(invoice.gstAmount || 0)}</td>
             </tr>` : ''}
 ${invoice.pstRate != null && invoice.pstRate > 0 ? `
             <tr>
-              <td style="padding: 5px;">PST (${(invoice.pstRate * 100).toFixed(2)}%):</td>
-              <td style="padding: 5px;">${formatCurrency(invoice.pstAmount || 0)}</td>
+              <td style="padding: 3px 5px;">PST (${(invoice.pstRate * 100).toFixed(2)}%):</td>
+              <td style="padding: 3px 5px;">${formatCurrency(invoice.pstAmount || 0)}</td>
             </tr>` : ''}
 ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) ? `
             <tr>
-              <td style="padding: 5px;">Tax (${(invoice.taxRate * 100).toFixed(2)}%):</td>
-              <td style="padding: 5px;">${formatCurrency(invoice.taxAmount)}</td>
+              <td style="padding: 3px 5px;">Tax (${(invoice.taxRate * 100).toFixed(2)}%):</td>
+              <td style="padding: 3px 5px;">${formatCurrency(invoice.taxAmount)}</td>
             </tr>` : ''}
-            <tr style="font-weight: bold; font-size: 1.2em; border-top: 2px solid #333;">
-              <td style="padding: 5px;">Total:</td>
-              <td style="padding: 5px;">${formatCurrency(invoice.total)}</td>
+            <tr style="font-weight: bold; font-size: 1.1em; border-top: 2px solid #333;">
+              <td style="padding: 3px 5px;">Total:</td>
+              <td style="padding: 3px 5px;">${formatCurrency(invoice.total)}</td>
             </tr>
           </table>
         </div>
 
         ${invoice.notes ? `
-          <div style="margin-top: 20px;">
-            <h3>Notes:</h3>
-            <p>${invoice.notes}</p>
+          <div style="margin-top: 12px;">
+            <h3 style="margin-bottom: 8px;">Notes:</h3>
+            <p style="margin: 0;">${invoice.notes}</p>
           </div>
         ` : ''}
 
         ${invoice.paymentMethod ? `
-          <div style="margin-top: 20px;">
-            <p><strong>Payment Method:</strong> ${invoice.paymentMethod.replace(/_/g, ' ')}</p>
-            ${invoice.paidAt ? `<p><strong>Paid On:</strong> ${formatDate(invoice.paidAt)}</p>` : ''}
+          <div style="margin-top: 12px;">
+            <p style="margin: 0; font-size: 13px;"><strong>Payment Method:</strong> ${invoice.paymentMethod.replace(/_/g, ' ')}</p>
+            ${invoice.paidAt ? `<p style="margin: 0; font-size: 13px;"><strong>Paid On:</strong> ${formatDate(invoice.paidAt)}</p>` : ''}
           </div>
         ` : ''}
 
-        <div style="margin-top: 50px; text-align: center; color: #666; font-size: 0.9em;">
-          <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 40px;">
-            <p style="font-weight: bold; color: #1976d2; margin-bottom: 5px;">Thank you for your business!</p>
-            <p style="margin: 0;">GT Automotive - Your trusted automotive partner</p>
-            <p style="margin: 5px 0; font-size: 12px; color: #666;">
+        <div style="margin-top: 25px; text-align: center; color: #666; font-size: 0.85em;">
+          <div style="border-top: 1px solid #ddd; padding-top: 12px; margin-top: 20px;">
+            <p style="font-weight: bold; color: #1976d2; margin: 0 0 3px 0;">Thank you for your business!</p>
+            <p style="margin: 0; font-size: 12px;">GT Automotive - Your trusted automotive partner</p>
+            <p style="margin: 2px 0; font-size: 10px; color: #666;">
               Mobile Service Available | Licensed & Insured | Satisfaction Guaranteed
             </p>
           </div>

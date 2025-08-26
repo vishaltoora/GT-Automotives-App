@@ -20,6 +20,13 @@
 - Financial reports are admin-only
 - All admin actions are logged
 
+## Customer Management Rules
+- Support both individual and business customers
+- Business name field is optional but recommended for commercial clients
+- Prevent duplicate customer creation during invoice process
+- Business customers should have business name displayed on invoices
+- Customer display format: "Business Name (Contact Name)" for businesses, "First Last" for individuals
+
 ## Mobile Tire Service Pricing
 Complete pricing structure with 6 service categories:
 - Installation & Balancing

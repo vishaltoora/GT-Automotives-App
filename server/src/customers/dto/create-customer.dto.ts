@@ -21,4 +21,8 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @IsString()
+  @IsOptional()
+  businessName?: string;
 }

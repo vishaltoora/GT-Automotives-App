@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Development Setup](.claude/docs/development-setup.md)** - Environment setup and commands
 - **[Development Guidelines](.claude/docs/development-guidelines.md)** - Code style, patterns, and best practices
 - **[Business Rules](.claude/docs/business-rules.md)** - Requirements and domain logic
+- **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
 - **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions
 - **[Completed Work](.claude/docs/completed-work.md)** - Detailed log of implemented features
 
@@ -87,11 +88,16 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
-### August 2025 - Invoice System Enhancements
+### August 2025 - Customer Management & Invoice System Enhancements
+- ✅ **Business Name Support**: Added optional business name field for commercial customers
+- ✅ **Enhanced Customer Forms**: Updated CustomerForm and CustomerList with business name support
+- ✅ **Invoice Dialog Improvements**: Enhanced invoice creation workflow with better state management
+- ✅ **Duplicate Prevention**: Improved customer creation process to prevent duplicates in invoice system
+- ✅ **Database Migration**: Successfully added business name field via migration `20250826145527`
+- ✅ **Service Layer Updates**: Enhanced customer services and DTOs for business name handling
 - ✅ **Dialog-Based Invoice Creation**: Converted Admin Dashboard quick actions from navigation to modal dialog
 - ✅ **Grid2 Size Property**: Updated all Grid components to use modern `size={{ xs: 12, md: 6 }}` syntax
 - ✅ **UI/UX Improvements**: Set invoice dialog width to xl for better user experience
-- ✅ **Backend Schema Fix**: Resolved Prisma validation errors in customer creation during invoice process
 - ✅ **Authentication Guards**: Enhanced loading state handling to prevent redirect loops
 
 ### August 2025 - Home Page Component Refactoring
@@ -119,5 +125,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated:** August 25, 2025 - Tire schema improvements and display enhancements completed
+**Last Updated:** August 26, 2025 - Customer management enhancements and business name support completed
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.

@@ -118,7 +118,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       quantity: 1,
       unitPrice: 0,
     });
-    setIsNewCustomer(false);
+    // Start with new customer mode since no customer is selected
+    setIsNewCustomer(true);
   };
 
   const loadData = async () => {
@@ -250,15 +251,14 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       });
       setIsNewCustomer(false);
     } else {
+      // When null is passed, it means we're switching to new customer mode
+      // Don't clear the form - the name might have already been typed
       setFormData({ ...formData, customerId: '', vehicleId: '' });
-      setCustomerForm({
-        name: '',
-        businessName: '',
-        address: 'Prince George, BC',
-        phone: '',
-        email: '',
-      });
       setIsNewCustomer(true);
+      // Only reset address if it's empty
+      if (!customerForm.address) {
+        setCustomerForm({ ...customerForm, address: 'Prince George, BC' });
+      }
     }
   };
 
