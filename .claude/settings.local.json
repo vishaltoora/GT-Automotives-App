@@ -60,7 +60,9 @@
       "Bash(git revert:*)",
       "Bash(yarn remove:*)",
       "Bash(yarn build:*)",
-      "Bash(yarn typecheck:web)"
+      "Bash(yarn typecheck:web)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/update-docs.sh:*)"
     ],
     "deny": [],
     "ask": []

@@ -36,7 +36,8 @@
     "db:studio": "prisma studio --schema=libs/database/src/lib/prisma/schema.prisma",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "docs:update": "./scripts/update-docs.sh"
   },
   "private": true,
   "devDependencies": {
