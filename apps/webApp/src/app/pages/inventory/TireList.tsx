@@ -36,7 +36,8 @@ import {
 import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { ITireSearchParams } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 import TireCard from '../../components/inventory/TireCard';
 
 type ViewMode = 'grid' | 'list';

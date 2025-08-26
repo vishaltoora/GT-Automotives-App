@@ -21,7 +21,8 @@ import {
   Visibility as ViewIcon,
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
-import { ITire, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { ITire } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 
 // Helper function to get emoji based on tire type
 const getTireEmoji = (type: TireType): string => {

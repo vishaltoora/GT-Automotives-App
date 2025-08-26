@@ -46,7 +46,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams, ITire, TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { ITireSearchParams, ITire } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 import { useMutation } from '@tanstack/react-query';
 import { TireService } from '../../services/tire.service';
 import TireCard from '../../components/inventory/TireCard';
