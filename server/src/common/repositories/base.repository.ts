@@ -7,30 +7,30 @@ export abstract class BaseRepository<T, CreateInput = any, UpdateInput = any, Fi
   ) {}
 
   async findAll(args?: FindManyArgs): Promise<T[]> {
-    return this.prisma[this.modelName].findMany(args);
+    return (this.prisma as any)[this.modelName].findMany(args);
   }
 
   async findById(id: string | number): Promise<T | null> {
-    return this.prisma[this.modelName].findUnique({
+    return (this.prisma as any)[this.modelName].findUnique({
       where: { id },
     });
   }
 
   async create(data: CreateInput): Promise<T> {
-    return this.prisma[this.modelName].create({
+    return (this.prisma as any)[this.modelName].create({
       data,
     });
   }
 
   async update(id: string | number, data: UpdateInput): Promise<T> {
-    return this.prisma[this.modelName].update({
+    return (this.prisma as any)[this.modelName].update({
       where: { id },
       data,
     });
   }
 
   async delete(id: string | number): Promise<boolean> {
-    await this.prisma[this.modelName].delete({
+    await (this.prisma as any)[this.modelName].delete({
       where: { id },
     });
     return true;

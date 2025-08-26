@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
-import { Invoice, InvoiceStatus, Prisma } from '@prisma/client';
+import { Invoice, InvoiceStatus, PaymentMethod } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
 
@@ -42,7 +42,7 @@ export class InvoicesService {
         console.log('Customer created with ID:', customerId);
       } catch (error) {
         console.error('Error creating customer:', error);
-        throw new BadRequestException(`Failed to create customer: ${error.message}`);
+        throw new BadRequestException(`Failed to create customer: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
@@ -195,7 +195,7 @@ export class InvoicesService {
     await this.auditRepository.create({
       userId,
       action: 'UPDATE_INVOICE',
-      resource: 'invoice',
+      entityType: 'invoice',
       resourceId: id,
       oldValue: oldValue as any,
       newValue: updated as any,
@@ -222,7 +222,7 @@ export class InvoicesService {
     await this.auditRepository.create({
       userId,
       action: 'CANCEL_INVOICE',
-      resource: 'invoice',
+      entityType: 'invoice',
       resourceId: id,
       oldValue: invoice as any,
     });
@@ -295,7 +295,7 @@ export class InvoicesService {
     await this.auditRepository.create({
       userId,
       action: 'MARK_INVOICE_PAID',
-      resource: 'invoice',
+      entityType: 'invoice',
       resourceId: id,
       newValue: { paymentMethod, paidAt: new Date() } as any,
     });

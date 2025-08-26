@@ -8,26 +8,26 @@ export class CreateInvoiceItemDto {
   tireId?: string;
 
   @IsEnum(InvoiceItemType)
-  itemType: InvoiceItemType;
+  itemType!: InvoiceItemType;
 
   @IsString()
-  description: string;
+  description!: string;
 
   @IsNumber()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 
   @IsNumber()
   @Min(0)
-  unitPrice: number;
+  unitPrice!: number;
 }
 
 export class CreateCustomerDto {
   @IsString()
-  firstName: string;
+  firstName!: string;
 
   @IsString()
-  lastName: string;
+  lastName!: string;
 
   @IsOptional()
   @IsString()
@@ -63,7 +63,7 @@ export class CreateInvoiceDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateInvoiceItemDto)
-  items: CreateInvoiceItemDto[];
+  items!: CreateInvoiceItemDto[];
 
   @IsOptional()
   @IsNumber()

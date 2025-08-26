@@ -11,7 +11,7 @@
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
     "strict": false,
-    "module": "esnext",
+    "module": "commonjs",
     "moduleResolution": "node",
     "skipLibCheck": true,
     "target": "es2022",

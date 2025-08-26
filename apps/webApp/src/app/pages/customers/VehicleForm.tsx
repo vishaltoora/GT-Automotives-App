@@ -164,7 +164,7 @@ export function VehicleForm() {
       <Card>
         <CardContent>
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
+            <Grid item container spacing={3}>
               {/* Only show customer selection for staff/admin or when adding new vehicle */}
               {(role !== 'customer' || !isEdit) && (
                 <Grid item xs={12}>
@@ -178,7 +178,7 @@ export function VehicleForm() {
                     >
                       {customers.map((customer) => (
                         <MenuItem key={customer.id} value={customer.id}>
-                          {customer.user.firstName} {customer.user.lastName} - {customer.user.email}
+                          {customer.firstName} {customer.lastName} {customer.email ? `- ${customer.email}` : ''}
                         </MenuItem>
                       ))}
                     </Select>
