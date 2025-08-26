@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Typography, Grid, Card, CardContent, Button } from '@mui/material';
 import { DirectionsCar, Receipt, CalendarMonth, Person } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';

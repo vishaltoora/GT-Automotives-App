@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Container, Typography, Alert } from '@mui/material';
 import { SignUp as ClerkSignUp } from '@clerk/clerk-react';
 import { SignUp as MockSignUp } from '../../providers/MockClerkProvider';

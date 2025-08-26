@@ -58,7 +58,9 @@
       "Bash(yarn add:*)",
       "Bash(yarn lint:*)",
       "Bash(git revert:*)",
-      "Bash(yarn remove:*)"
+      "Bash(yarn remove:*)",
+      "Bash(yarn build:*)",
+      "Bash(yarn typecheck:web)"
     ],
     "deny": [],
     "ask": []

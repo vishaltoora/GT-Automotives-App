@@ -8,9 +8,7 @@ export class CustomerRepository extends BaseRepository<
   Customer,
   Prisma.CustomerCreateInput,
   Prisma.CustomerUpdateInput,
-  Prisma.CustomerWhereUniqueInput,
-  Prisma.CustomerWhereInput,
-  Prisma.CustomerOrderByWithRelationInput
+  Prisma.CustomerFindManyArgs
 > {
   constructor(prisma: PrismaService) {
     super(prisma, 'customer');
@@ -145,7 +143,7 @@ export class CustomerRepository extends BaseRepository<
     };
   }
 
-  async findById(id: string) {
+  override async findById(id: string) {
     return this.prisma.customer.findUnique({
       where: { id },
     });

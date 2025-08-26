@@ -81,9 +81,9 @@ export class InvoiceRepository extends BaseRepository<
 
       // Deduct tire inventory for tire items
       for (const item of items) {
-        if (item.itemType === 'TIRE' && item.tireId) {
+        if (item.itemType === 'TIRE' && (item as any).tireId) {
           await tx.tire.update({
-            where: { id: item.tireId as string },
+            where: { id: (item as any).tireId as string },
             data: {
               quantity: {
                 decrement: item.quantity,

@@ -9,9 +9,9 @@ import { PrismaService } from '@gt-automotive/database';
 @Injectable()
 export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
   constructor(
-    private configService: ConfigService,
     private userRepository: UserRepository,
     private prismaService: PrismaService,
+    configService: ConfigService,
   ) {
     const jwksUrl = configService.get<string>('CLERK_JWKS_URL', 'https://clean-dove-53.clerk.accounts.dev/.well-known/jwks.json');
     
@@ -72,7 +72,7 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
           email,
           firstName,
           lastName,
-          roleId: role.id,
+          role: { connect: { id: role.id } },
           isActive: true,
         });
       } catch (error) {

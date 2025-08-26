@@ -1,23 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
-import { Tire, Prisma, TireType, TireCondition } from '@prisma/client';
+import { Tire, Prisma, TireType } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
 import { ITireFilters, ITireSearchParams, ITireSearchResult } from '@gt-automotive/shared-interfaces';
 
 @Injectable()
 export class TireRepository extends BaseRepository<Tire> {
-  constructor(protected readonly prisma: PrismaService) {
-    super(prisma);
+  constructor(prisma: PrismaService) {
+    super(prisma, 'tire');
   }
 
-  async findAll(filters?: ITireFilters): Promise<Tire[]> {
+  override async findAll(filters?: ITireFilters): Promise<Tire[]> {
     return this.prisma.tire.findMany({
       where: this.buildWhereClause(filters),
       orderBy: { updatedAt: 'desc' },
     });
   }
 
-  async findById(id: string): Promise<Tire | null> {
+  override async findById(id: string): Promise<Tire | null> {
     return this.prisma.tire.findUnique({
       where: { id },
     });
