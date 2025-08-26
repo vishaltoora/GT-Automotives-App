@@ -410,7 +410,7 @@ export function InventoryDashboard() {
         )}
 
         {/* Recent Tire Activity or Quick Inventory View */}
-        <Grid item xs={12} md={lowStockTires.length > 0 ? 6 : 12}>
+        <Grid item xs={12} md={(lowStockTires.length > 0 ? 6 : 12) as 6 | 12}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
