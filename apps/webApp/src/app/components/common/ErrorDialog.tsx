@@ -44,22 +44,22 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
   const getSeverityIcon = () => {
     switch (severity) {
       case 'warning':
-        return <WarningIcon sx={{ color: colors.warning.main }} />;
+        return <WarningIcon sx={{ color: colors.semantic.warning }} />;
       case 'info':
-        return <InfoIcon sx={{ color: colors.info.main }} />;
+        return <InfoIcon sx={{ color: colors.semantic.info }} />;
       default:
-        return <ErrorIcon sx={{ color: colors.error.main }} />;
+        return <ErrorIcon sx={{ color: colors.semantic.error }} />;
     }
   };
 
   const getSeverityColor = () => {
     switch (severity) {
       case 'warning':
-        return colors.warning.main;
+        return colors.semantic.warning;
       case 'info':
-        return colors.info.main;
+        return colors.semantic.info;
       default:
-        return colors.error.main;
+        return colors.semantic.error;
     }
   };
 
