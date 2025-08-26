@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -66,7 +66,7 @@ export function CustomerList() {
         return (
           fullName.includes(searchLower) ||
           (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
-          customer.phone.includes(searchTerm) ||
+          (customer.phone && customer.phone.includes(searchTerm)) ||
           (customer.address && customer.address.toLowerCase().includes(searchLower)) ||
           (customer.businessName && customer.businessName.toLowerCase().includes(searchLower))
         );

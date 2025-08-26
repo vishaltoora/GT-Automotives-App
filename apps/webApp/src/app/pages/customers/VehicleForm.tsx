@@ -64,11 +64,12 @@ export function VehicleForm() {
       const data = await customerService.getAllCustomers();
       setCustomers(data);
       
-      // If customer role, set their customer ID automatically
+      // If customer role, they should only see their own data
+      // Note: Customer-specific filtering should be handled on the backend
       if (role === 'customer' && data.length > 0) {
-        const userCustomer = data.find(c => c.userId === user?.id);
-        if (userCustomer) {
-          setFormData(prev => ({ ...prev, customerId: userCustomer.id }));
+        // For now, if there's only one customer, use that
+        if (data.length === 1) {
+          setFormData(prev => ({ ...prev, customerId: data[0].id }));
         }
       }
     } catch (err: any) {
