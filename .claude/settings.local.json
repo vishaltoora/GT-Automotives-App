@@ -54,7 +54,11 @@
       "Bash(yarn check:*)",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev --name \"finalize_customer_schema_changes\" --schema=libs/database/src/lib/prisma/schema.prisma)",
       "Bash(prisma migrate dev:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(yarn add:*)",
+      "Bash(yarn lint:*)",
+      "Bash(git revert:*)",
+      "Bash(yarn remove:*)"
     ],
     "deny": [],
     "ask": []
