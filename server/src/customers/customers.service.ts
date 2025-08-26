@@ -4,6 +4,7 @@ import { UserRepository } from '../users/repositories/user.repository';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { AuditRepository } from '../audit/repositories/audit.repository';
+import { PrismaService } from '@gt-automotive/database';
 
 @Injectable()
 export class CustomersService {
@@ -11,20 +12,19 @@ export class CustomersService {
     private readonly customerRepository: CustomerRepository,
     private readonly userRepository: UserRepository,
     private readonly auditRepository: AuditRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async create(createCustomerDto: CreateCustomerDto, createdBy: string) {
     // First, create the user account
-    const existingUser = await this.userRepository.findOne({
-      email: createCustomerDto.email,
-    });
+    const existingUser = await this.userRepository.findByEmail(createCustomerDto.email);
 
     if (existingUser) {
       throw new BadRequestException('A user with this email already exists');
     }
 
     // Get customer role
-    const customerRole = await this.userRepository.prisma.role.findUnique({
+    const customerRole = await this.prisma.role.findUnique({
       where: { name: 'CUSTOMER' },
     });
 
@@ -33,7 +33,7 @@ export class CustomersService {
     }
 
     // Create user and customer in a transaction
-    const result = await this.userRepository.prisma.$transaction(async (prisma) => {
+    const result = await this.prisma.$transaction(async (prisma) => {
       // Create user
       const user = await prisma.user.create({
         data: {
@@ -51,6 +51,7 @@ export class CustomersService {
           userId: user.id,
           phone: createCustomerDto.phone,
           address: createCustomerDto.address,
+          businessName: createCustomerDto.businessName,
         },
         include: {
           user: {
@@ -109,7 +110,7 @@ export class CustomersService {
   }
 
   async update(id: string, updateCustomerDto: UpdateCustomerDto, userId: string, userRole: string) {
-    const customer = await this.customerRepository.findOne({ id });
+    const customer = await this.customerRepository.findById(id);
 
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
@@ -121,7 +122,7 @@ export class CustomersService {
     }
 
     // Update user and customer data in a transaction
-    const result = await this.customerRepository.prisma.$transaction(async (prisma) => {
+    const result = await this.prisma.$transaction(async (prisma) => {
       // Update user data if provided
       if (updateCustomerDto.email || updateCustomerDto.firstName || updateCustomerDto.lastName) {
         await prisma.user.update({
@@ -140,6 +141,7 @@ export class CustomersService {
         data: {
           ...(updateCustomerDto.phone && { phone: updateCustomerDto.phone }),
           ...(updateCustomerDto.address !== undefined && { address: updateCustomerDto.address }),
+          ...(updateCustomerDto.businessName !== undefined && { businessName: updateCustomerDto.businessName }),
         },
         include: {
           user: {
@@ -170,18 +172,18 @@ export class CustomersService {
   }
 
   async remove(id: string, userId: string) {
-    const customer = await this.customerRepository.findOne({ id });
+    const customer = await this.customerRepository.findById(id);
 
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
     // Check for existing invoices or appointments
-    const hasInvoices = await this.customerRepository.prisma.invoice.count({
+    const hasInvoices = await this.prisma.invoice.count({
       where: { customerId: id },
     });
 
-    const hasAppointments = await this.customerRepository.prisma.appointment.count({
+    const hasAppointments = await this.prisma.appointment.count({
       where: { customerId: id },
     });
 
@@ -192,7 +194,7 @@ export class CustomersService {
     }
 
     // Delete customer and user in a transaction
-    await this.customerRepository.prisma.$transaction(async (prisma) => {
+    await this.prisma.$transaction(async (prisma) => {
       // Delete customer (vehicles will be cascade deleted)
       await prisma.customer.delete({
         where: { id },

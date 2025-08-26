@@ -118,7 +118,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       quantity: 1,
       unitPrice: 0,
     });
-    setIsNewCustomer(false);
+    // Start with new customer mode since no customer is selected
+    setIsNewCustomer(true);
   };
 
   const loadData = async () => {
@@ -161,6 +162,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
     try {
       setLoading(true);
+      console.log('Creating invoice - customerId:', customerId, 'isNewCustomer:', isNewCustomer);
+      
       const invoiceData: any = {
         items: items.map(({ itemType, description, quantity, unitPrice, tireId }) => {
           const item: any = {
@@ -190,8 +193,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       }
 
       if (customerId) {
+        // When using existing customer, only send customerId
         invoiceData.customerId = customerId;
-      } else if (customerForm.name) {
+      } else if (isNewCustomer && customerForm.name) {
+        // When creating new customer, send customerData
         invoiceData.customerData = {
           name: customerForm.name,
         };
@@ -214,6 +219,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       }
 
 
+      console.log('Invoice data being sent:', invoiceData);
       const invoice = await invoiceService.createInvoice(invoiceData);
       onSuccess(invoice);
       onClose();
@@ -245,15 +251,14 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       });
       setIsNewCustomer(false);
     } else {
+      // When null is passed, it means we're switching to new customer mode
+      // Don't clear the form - the name might have already been typed
       setFormData({ ...formData, customerId: '', vehicleId: '' });
-      setCustomerForm({
-        name: '',
-        businessName: '',
-        address: 'Prince George, BC',
-        phone: '',
-        email: '',
-      });
       setIsNewCustomer(true);
+      // Only reset address if it's empty
+      if (!customerForm.address) {
+        setCustomerForm({ ...customerForm, address: 'Prince George, BC' });
+      }
     }
   };
 

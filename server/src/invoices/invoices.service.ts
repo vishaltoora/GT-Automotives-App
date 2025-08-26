@@ -20,7 +20,8 @@ export class InvoicesService {
     console.log('Creating invoice with data:', JSON.stringify(createInvoiceDto, null, 2));
     let customerId = createInvoiceDto.customerId;
 
-    // Create customer if customerData is provided and no customerId
+    // Create customer ONLY if customerData is provided AND no customerId exists
+    // This prevents creating duplicate customers when an existing customer is selected
     if (!customerId && createInvoiceDto.customerData) {
       const { name, businessName, address, phone, email } = createInvoiceDto.customerData;
       
@@ -41,7 +42,7 @@ export class InvoicesService {
         const tempClerkId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
         
         // Create customer with user
-        const customerData = {
+        const customerData: any = {
           user: {
             create: {
               firstName,
@@ -50,11 +51,18 @@ export class InvoicesService {
               clerkId: tempClerkId, // Temporary ID for customers created without Clerk signup
               roleId: customerRole.id,
             }
-          },
-          businessName,
-          phone,
-          address,
+          }
         };
+        
+        // Only add phone if provided
+        if (phone) {
+          customerData.phone = phone;
+        }
+        
+        // Only add address if provided
+        if (address) {
+          customerData.address = address;
+        }
 
         console.log('Customer data to create:', JSON.stringify(customerData, null, 2));
         const newCustomer = await this.customerRepository.create(customerData);

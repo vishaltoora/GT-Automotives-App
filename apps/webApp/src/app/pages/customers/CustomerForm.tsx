@@ -28,6 +28,7 @@ export function CustomerForm() {
     lastName: '',
     phone: '',
     address: '',
+    businessName: '',
   });
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export function CustomerForm() {
         lastName: customer.user.lastName || '',
         phone: customer.phone,
         address: customer.address || '',
+        businessName: customer.businessName || '',
       });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load customer');
@@ -150,7 +152,17 @@ export function CustomerForm() {
                   placeholder="(555) 123-4567"
                 />
               </Grid>
-              <Grid size={12}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Business Name"
+                  value={formData.businessName}
+                  onChange={handleChange('businessName')}
+                  disabled={saving}
+                  placeholder="Optional"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
                   label="Address"

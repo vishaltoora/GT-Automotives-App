@@ -37,6 +37,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { customerService, Customer } from '../../services/customer.service';
 import { useAuth } from '../../hooks/useAuth';
+import { CustomerDialog } from '../../components/customers/CustomerDialog';
 
 export function CustomerList() {
   const navigate = useNavigate();
@@ -46,6 +47,9 @@ export function CustomerList() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>(undefined);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     loadCustomers();
@@ -61,7 +65,8 @@ export function CustomerList() {
           fullName.includes(searchLower) ||
           customer.user.email.toLowerCase().includes(searchLower) ||
           customer.phone.includes(searchTerm) ||
-          (customer.address && customer.address.toLowerCase().includes(searchLower))
+          (customer.address && customer.address.toLowerCase().includes(searchLower)) ||
+          (customer.businessName && customer.businessName.toLowerCase().includes(searchLower))
         );
       });
       setFilteredCustomers(filtered);
@@ -99,6 +104,29 @@ export function CustomerList() {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
+  const handleAddClick = () => {
+    setSelectedCustomer(undefined);
+    setSelectedCustomerId(undefined);
+    setDialogOpen(true);
+  };
+
+  const handleEditClick = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setSelectedCustomerId(customer.id);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedCustomer(undefined);
+    setSelectedCustomerId(undefined);
+  };
+
+  const handleDialogSuccess = () => {
+    loadCustomers();
+    handleDialogClose();
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -126,7 +154,7 @@ export function CustomerList() {
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
-            onClick={() => navigate('/customers/new')}
+            onClick={handleAddClick}
           >
             Add Customer
           </Button>
@@ -205,9 +233,16 @@ export function CustomerList() {
                     </Stack>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
-                      {customer.address || '-'}
-                    </Typography>
+                    <Stack spacing={0.5}>
+                      {customer.businessName && (
+                        <Typography variant="body2" fontWeight="medium">
+                          {customer.businessName}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" color={customer.businessName ? 'textSecondary' : 'inherit'}>
+                        {customer.address || '-'}
+                      </Typography>
+                    </Stack>
                   </TableCell>
                   <TableCell align="center">
                     <Chip
@@ -247,7 +282,7 @@ export function CustomerList() {
                         <Tooltip title="Edit">
                           <IconButton
                             size="small"
-                            onClick={() => navigate(`/customers/${customer.id}/edit`)}
+                            onClick={() => handleEditClick(customer)}
                           >
                             <EditIcon />
                           </IconButton>
@@ -272,6 +307,14 @@ export function CustomerList() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <CustomerDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        onSuccess={handleDialogSuccess}
+        customerId={selectedCustomerId}
+        customer={selectedCustomer}
+      />
     </Box>
   );
 }

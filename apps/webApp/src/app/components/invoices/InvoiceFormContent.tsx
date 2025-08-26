@@ -154,7 +154,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     value={customers.find(c => c.id === formData.customerId) || null}
                     onChange={(_, newValue) => {
                       if (typeof newValue === 'string') {
+                        // User typed a new name directly
                         setCustomerForm({ ...customerForm, name: newValue });
+                        setFormData({ ...formData, customerId: '' }); // Clear customerId
+                        // Signal that this is a new customer
+                        onCustomerSelect(null);
                       } else {
                         onCustomerSelect(newValue);
                       }
@@ -185,7 +189,13 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         size="small"
                         label="Customer Name"
                         value={customerForm.name}
-                        onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
+                        onChange={(e) => {
+                          setCustomerForm({ ...customerForm, name: e.target.value });
+                          // If user types in the name field and there's no customer selected, mark as new customer
+                          if (!formData.customerId) {
+                            onCustomerSelect(null);
+                          }
+                        }}
                         required
                         InputProps={{
                           startAdornment: <PersonIcon sx={{ color: colors.text.secondary, mr: 1, fontSize: 20 }} />,
