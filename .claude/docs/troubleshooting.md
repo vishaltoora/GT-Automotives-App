@@ -25,16 +25,52 @@ yarn install --ignore-engines
 **Problem:** Vite requires newer Node version
 **Solution:** Use `yarn install --ignore-engines` or update Node.js
 
+### Grid2 Import Error
+**Problem:** `Failed to resolve import "@mui/material/Grid2"` or `SyntaxError: The requested module does not provide an export named 'Grid2'`
+**Solution:** Use the standard Grid import instead:
+```typescript
+// ❌ Wrong - Grid2 is not available in MUI 7.3.1
+import Grid from '@mui/material/Grid2';
+import { Grid2 as Grid } from '@mui/material';
+
+// ✅ Correct - Use standard Grid with modern syntax
+import { Grid } from '@mui/material';
+
+// Then use: <Grid size={{ xs: 12, md: 6 }}>
+```
+
+### Customer Dialog Header Overlap
+**Problem:** Dialog header overlaps with form fields
+**Solution:** Ensure proper spacing in DialogContent:
+```typescript
+<DialogContent sx={{ p: 3, pt: 3, overflow: 'visible' }}>
+  <Grid container spacing={3} sx={{ mt: 1 }}>
+```
+
 ### Cannot Access Customer Dashboard
 **Problem:** Customer dashboard shows "page can't be reached"
 **Solution:** Ensure both servers are running:
 - Frontend: http://localhost:4200
 - Backend: http://localhost:3000/api
 
+### ESM/CommonJS Compatibility Issues
+**Problem:** `SyntaxError: Unexpected token 'export'` in shared libraries
+**Solution:** Update shared library tsconfig to use CommonJS:
+```json
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node"
+  }
+}
+```
+
 ## Current Issues Resolved ✅
 - ✅ **Invoice Creation Error:** Fixed missing `/api` prefix in controller routes
 - ✅ **Authentication 401/403 Errors:** Proper Clerk JWT token handling
-- ✅ **MUI Grid2 Warnings:** Updated deprecated Grid syntax across all components
+- ✅ **MUI Grid Import Errors:** Fixed Grid2 import issues, now using standard Grid with modern syntax
+- ✅ **Customer Dialog Layout:** Resolved header overlap with proper spacing and padding
+- ✅ **ESM/CommonJS Compatibility:** Fixed shared library build issues
 - ✅ **Login Redirect Loop:** Fixed role-based routing logic
 - ✅ **Public Page Flash:** Eliminated brief content visibility during authentication
 - ✅ **Loading Screen Visual:** Replaced blur effect with solid professional background

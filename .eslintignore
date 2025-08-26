@@ -1,0 +1,36 @@
+# Build outputs
+dist/
+build/
+out-tsc/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Config files
+*.config.js
+*.config.ts
+webpack.config.js
+
+# Generated files
+*.generated.ts
+*.d.ts
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Material-UI Grid legacy issues (if any specific files causing problems)
+# Add specific files here if needed

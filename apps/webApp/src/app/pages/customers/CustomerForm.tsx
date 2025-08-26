@@ -27,7 +27,7 @@ export function CustomerForm() {
     firstName: '',
     lastName: '',
     phone: '',
-    address: '',
+    address: 'Prince George, BC',
     businessName: '',
   });
 
@@ -42,10 +42,10 @@ export function CustomerForm() {
       setLoading(true);
       const customer = await customerService.getCustomer(customerId);
       setFormData({
-        email: customer.user.email,
-        firstName: customer.user.firstName || '',
-        lastName: customer.user.lastName || '',
-        phone: customer.phone,
+        email: customer.email || '',
+        firstName: customer.firstName || '',
+        lastName: customer.lastName || '',
+        phone: customer.phone || '',
         address: customer.address || '',
         businessName: customer.businessName || '',
       });
@@ -133,9 +133,8 @@ export function CustomerForm() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
-                  required
                   type="email"
-                  label="Email"
+                  label="Email (Optional)"
                   value={formData.email}
                   onChange={handleChange('email')}
                   disabled={saving}
@@ -144,8 +143,7 @@ export function CustomerForm() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
-                  required
-                  label="Phone"
+                  label="Phone (Optional)"
                   value={formData.phone}
                   onChange={handleChange('phone')}
                   disabled={saving}

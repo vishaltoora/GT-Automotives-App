@@ -296,9 +296,9 @@ class InvoiceService {
             const customer = invoice.customer;
             let customerName = '';
             
-            if (customer?.user?.firstName || customer?.user?.lastName) {
-              const firstName = customer.user.firstName || '';
-              const lastName = customer.user.lastName || '';
+            if (customer?.firstName || customer?.lastName) {
+              const firstName = customer.firstName || '';
+              const lastName = customer.lastName || '';
               customerName = `${firstName} ${lastName}`.trim();
             } else if (customer?.name) {
               customerName = customer.name;
@@ -432,9 +432,9 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             const customer = invoice.customer;
             let customerName = '';
             
-            if (customer?.user?.firstName || customer?.user?.lastName) {
-              const firstName = customer.user.firstName || '';
-              const lastName = customer.user.lastName || '';
+            if (customer?.firstName || customer?.lastName) {
+              const firstName = customer.firstName || '';
+              const lastName = customer.lastName || '';
               customerName = `${firstName} ${lastName}`.trim();
             } else if (customer?.name) {
               customerName = customer.name;

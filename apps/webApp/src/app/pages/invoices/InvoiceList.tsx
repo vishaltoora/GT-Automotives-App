@@ -38,6 +38,8 @@ import { invoiceService, Invoice } from '../../services/invoice.service';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import { ActionsMenu, ActionItem } from '../../components/common';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
+import { useErrorHelpers } from '../../contexts/ErrorContext';
 
 // Edit Invoice Dialog Component
 interface EditInvoiceDialogProps {
@@ -122,6 +124,8 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
   const { user, role } = useAuth();
+  const { confirm } = useConfirmation();
+  const { showApiError, showValidationError, showNetworkError } = useErrorHelpers();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useState({
@@ -143,7 +147,7 @@ const InvoiceList: React.FC = () => {
       const data = await invoiceService.getInvoices();
       setInvoices(data);
     } catch (error) {
-      console.error('Error loading invoices:', error);
+      showApiError(error, 'Failed to load invoices');
     } finally {
       setLoading(false);
     }
@@ -160,7 +164,7 @@ const InvoiceList: React.FC = () => {
         : await invoiceService.getInvoices();
       setInvoices(filtered);
     } catch (error) {
-      console.error('Error searching invoices:', error);
+      showApiError(error, 'Failed to search invoices');
     }
   };
 
@@ -176,17 +180,26 @@ const InvoiceList: React.FC = () => {
         loadInvoices();
       }
     } catch (error) {
-      console.error('Error marking invoice as paid:', error);
+      showApiError(error, 'Failed to mark invoice as paid');
     }
   };
 
   const handleCancel = async (invoice: Invoice) => {
-    if (window.confirm(`Are you sure you want to cancel invoice ${invoice.invoiceNumber}?`)) {
+    const confirmed = await confirm({
+      title: 'Cancel Invoice',
+      message: `Are you sure you want to cancel invoice ${invoice.invoiceNumber}? This action cannot be undone.`,
+      confirmText: 'Cancel Invoice',
+      cancelText: 'Keep Invoice',
+      severity: 'error',
+      confirmButtonColor: 'error',
+    });
+    
+    if (confirmed) {
       try {
         await invoiceService.cancelInvoice(invoice.id);
         loadInvoices();
       } catch (error) {
-        console.error('Error cancelling invoice:', error);
+        showApiError(error, 'Failed to cancel invoice');
       }
     }
   };
@@ -206,8 +219,7 @@ const InvoiceList: React.FC = () => {
       setEditDialogOpen(false);
       setEditingInvoice(null);
     } catch (error) {
-      console.error('Error updating invoice:', error);
-      alert('Error updating invoice status');
+      showApiError(error, 'Failed to update invoice status');
     }
   };
 
@@ -384,7 +396,6 @@ const InvoiceList: React.FC = () => {
               <TableCell>Invoice #</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Customer</TableCell>
-              <TableCell>Vehicle</TableCell>
               <TableCell>Total</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Payment</TableCell>
@@ -399,21 +410,15 @@ const InvoiceList: React.FC = () => {
                 <TableCell>
                   {(() => {
                     const customer = invoice.customer;
-                    if (customer?.user?.firstName || customer?.user?.lastName) {
-                      const firstName = customer.user.firstName || '';
-                      const lastName = customer.user.lastName || '';
-                      return `${firstName} ${lastName}`.trim();
-                    } else if (customer?.name) {
-                      return customer.name;
-                    } else {
-                      return 'Customer';
+                    if (customer?.firstName || customer?.lastName) {
+                      const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+                      if (customer.businessName) {
+                        return `${fullName} (${customer.businessName})`;
+                      }
+                      return fullName || 'Customer';
                     }
+                    return 'Customer';
                   })()}
-                </TableCell>
-                <TableCell>
-                  {invoice.vehicle
-                    ? `${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}`
-                    : '-'}
                 </TableCell>
                 <TableCell>{formatCurrency(invoice.total)}</TableCell>
                 <TableCell>
@@ -437,7 +442,7 @@ const InvoiceList: React.FC = () => {
             ))}
             {invoices.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={7} align="center">
                   {loading ? 'Loading...' : 'No invoices found'}
                 </TableCell>
               </TableRow>

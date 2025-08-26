@@ -34,7 +34,7 @@ export function useAuth() {
   const clerk = publishableKey ? useClerk() : null;
   
   // Development mode bypass - for testing without backend
-  const isDevelopment = false; // Disabled - using real Clerk authentication
+  const isDevelopment = false; // Set to false to enable Clerk authentication
 
   useEffect(() => {
     const syncUser = async () => {
@@ -51,7 +51,7 @@ export function useAuth() {
           lastName: 'Admin',
           role: {
             id: 1,
-            name: 'ADMIN'
+            name: 'admin'
           },
           isActive: true
         };
@@ -105,7 +105,7 @@ export function useAuth() {
                 email: userEmail,
                 firstName: clerkUser.firstName || 'Vishal',
                 lastName: clerkUser.lastName || 'Toora',
-                role: { id: 1, name: 'ADMIN' }, // Admin role
+                role: { id: 1, name: 'admin' }, // Admin role
                 isActive: true
               });
             } else {
@@ -115,7 +115,7 @@ export function useAuth() {
                 email: userEmail,
                 firstName: clerkUser.firstName || 'User',
                 lastName: clerkUser.lastName || '',
-                role: { id: 3, name: 'CUSTOMER' }, // Default to customer role
+                role: { id: 3, name: 'customer' }, // Default to customer role
                 isActive: true
               });
             }

@@ -58,7 +58,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     firstName: '',
     lastName: '',
     phone: '',
-    address: '',
+    address: 'Prince George, BC',
     businessName: '',
   });
 
@@ -67,9 +67,9 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
       if (initialCustomer) {
         // If customer data is provided directly
         setFormData({
-          email: initialCustomer.user?.email || '',
-          firstName: initialCustomer.user?.firstName || '',
-          lastName: initialCustomer.user?.lastName || '',
+          email: initialCustomer.email || '',
+          firstName: initialCustomer.firstName || '',
+          lastName: initialCustomer.lastName || '',
           phone: initialCustomer.phone || '',
           address: initialCustomer.address || '',
           businessName: initialCustomer.businessName || '',
@@ -84,7 +84,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           firstName: '',
           lastName: '',
           phone: '',
-          address: '',
+          address: 'Prince George, BC',
           businessName: '',
         });
       }
@@ -97,10 +97,10 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
       setLoading(true);
       const customer = await customerService.getCustomer(id);
       setFormData({
-        email: customer.user.email,
-        firstName: customer.user.firstName || '',
-        lastName: customer.user.lastName || '',
-        phone: customer.phone,
+        email: customer.email || '',
+        firstName: customer.firstName || '',
+        lastName: customer.lastName || '',
+        phone: customer.phone || '',
         address: customer.address || '',
         businessName: customer.businessName || '',
       });
@@ -163,19 +163,15 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          py: 2,
+          py: 1.5,
+          px: 2.5,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {isEdit ? <EditIcon sx={{ fontSize: 28 }} /> : <PersonAddIcon sx={{ fontSize: 28 }} />}
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              {isEdit ? 'Edit Customer' : 'Add New Customer'}
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              {isEdit ? 'Update customer information' : 'Create a new customer profile'}
-            </Typography>
-          </Box>
+          {isEdit ? <EditIcon sx={{ fontSize: 24 }} /> : <PersonAddIcon sx={{ fontSize: 24 }} />}
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {isEdit ? 'Edit Customer' : 'Add New Customer'}
+          </Typography>
         </Box>
         <IconButton
           onClick={onClose}
@@ -188,7 +184,16 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3 }}>
+      <DialogContent 
+        sx={{ 
+          p: 3, 
+          pt: 3,
+          overflow: 'visible',
+          '&:first-of-type': {
+            paddingTop: 3
+          }
+        }}
+      >
         {loading ? (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
             <CircularProgress />
@@ -201,7 +206,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
               </Alert>
             )}
             
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
@@ -225,20 +230,17 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
-                  required
                   type="email"
-                  label="Email"
+                  label="Email (Optional)"
                   value={formData.email}
                   onChange={handleChange('email')}
-                  disabled={saving || isEdit}
-                  helperText={isEdit ? "Email cannot be changed" : ""}
+                  disabled={saving}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
-                  required
-                  label="Phone"
+                  label="Phone (Optional)"
                   value={formData.phone}
                   onChange={handleChange('phone')}
                   disabled={saving}

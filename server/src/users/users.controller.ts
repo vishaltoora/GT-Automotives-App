@@ -24,7 +24,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles('admin', 'staff')
+  @Roles('ADMIN', 'STAFF')
   async findAll(
     @Query('roleId') roleId?: string,
     @Query('isActive') isActive?: string,
@@ -37,13 +37,13 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles('admin', 'staff')
+  @Roles('ADMIN', 'STAFF')
   async findById(@Param('id') id: string) {
     return this.usersService.findById(id);
   }
 
   @Post()
-  @Roles('admin')
+  @Roles('ADMIN')
   async create(
     @Body(new ValidationPipe()) createUserDto: {
       email: string;
@@ -62,7 +62,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @Roles('admin')
+  @Roles('ADMIN')
   async update(
     @Param('id') id: string,
     @Body(new ValidationPipe()) updateUserDto: {
@@ -81,7 +81,7 @@ export class UsersController {
   }
 
   @Put(':id/role')
-  @Roles('admin')
+  @Roles('ADMIN')
   async assignRole(
     @Param('id') id: string,
     @Body('roleId') roleId: number,
@@ -91,7 +91,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async delete(
     @Param('id') id: string,
@@ -118,7 +118,7 @@ export class UsersController {
   }
 
   @Post(':id/reset-password')
-  @Roles('admin')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Param('id') id: string,

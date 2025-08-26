@@ -51,7 +51,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   
   const [customerForm, setCustomerForm] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     businessName: '',
     address: 'Prince George, BC',
     phone: '',
@@ -96,7 +97,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
   const resetForm = () => {
     setCustomerForm({
-      name: '',
+      firstName: '',
+      lastName: '',
       businessName: '',
       address: 'Prince George, BC',
       phone: '',
@@ -150,8 +152,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     
     const customerId = formData.customerId;
 
-    if (!customerId && !customerForm.name) {
-      alert('Please provide customer name');
+    if (!customerId && (!customerForm.firstName || !customerForm.lastName)) {
+      alert('Please provide customer first and last name');
       return;
     }
 
@@ -195,10 +197,11 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       if (customerId) {
         // When using existing customer, only send customerId
         invoiceData.customerId = customerId;
-      } else if (isNewCustomer && customerForm.name) {
+      } else if (isNewCustomer && customerForm.firstName && customerForm.lastName) {
         // When creating new customer, send customerData
         invoiceData.customerData = {
-          name: customerForm.name,
+          firstName: customerForm.firstName,
+          lastName: customerForm.lastName,
         };
         if (customerForm.phone && customerForm.phone.trim() !== '') {
           invoiceData.customerData.phone = customerForm.phone.trim();
@@ -243,11 +246,12 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     if (customer) {
       setFormData({ ...formData, customerId: customer.id, vehicleId: '' });
       setCustomerForm({
-        name: `${customer.user?.firstName || ''} ${customer.user?.lastName || ''}`.trim(),
+        firstName: customer.firstName || '',
+        lastName: customer.lastName || '',
         businessName: customer.businessName || '',
         address: customer.address || '',
         phone: customer.phone || '',
-        email: customer.email || customer.user?.email || '',
+        email: customer.email || '',
       });
       setIsNewCustomer(false);
     } else {
@@ -386,7 +390,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           onClick={handleSubmit}
           variant="contained"
           size="large"
-          disabled={loading || (!formData.customerId && !customerForm.name) || items.length === 0}
+          disabled={loading || (!formData.customerId && (!customerForm.firstName || !customerForm.lastName)) || items.length === 0}
           sx={{
             background: colors.primary.main,
             color: 'white',

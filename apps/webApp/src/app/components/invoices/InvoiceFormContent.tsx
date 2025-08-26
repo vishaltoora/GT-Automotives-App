@@ -46,7 +46,8 @@ interface InvoiceFormContentProps {
   tires: any[];
   isNewCustomer: boolean;
   customerForm: {
-    name: string;
+    firstName: string;
+    lastName: string;
     businessName: string;
     address: string;
     phone: string;
@@ -149,13 +150,28 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     options={customers}
                     getOptionLabel={(option) => {
                       if (typeof option === 'string') return option;
-                      return `${option.user?.firstName} ${option.user?.lastName} - ${option.phone}`;
+                      return `${option.firstName} ${option.lastName}`;
+                    }}
+                    filterOptions={(options, { inputValue }) => {
+                      if (!inputValue) return options;
+                      const searchValue = inputValue.toLowerCase();
+                      return options.filter((option) => {
+                        const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
+                        const phone = (option.phone || '').toLowerCase();
+                        const email = (option.email || '').toLowerCase();
+                        return fullName.includes(searchValue) || 
+                               phone.includes(searchValue) || 
+                               email.includes(searchValue);
+                      });
                     }}
                     value={customers.find(c => c.id === formData.customerId) || null}
                     onChange={(_, newValue) => {
                       if (typeof newValue === 'string') {
-                        // User typed a new name directly
-                        setCustomerForm({ ...customerForm, name: newValue });
+                        // User typed a new name directly - try to parse firstName/lastName
+                        const nameParts = newValue.trim().split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        setCustomerForm({ ...customerForm, firstName, lastName });
                         setFormData({ ...formData, customerId: '' }); // Clear customerId
                         // Signal that this is a new customer
                         onCustomerSelect(null);
@@ -167,7 +183,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       <TextField 
                         {...params} 
                         label="Search or Add Customer" 
-                        placeholder="Type to search or enter new customer name"
+                        placeholder="Search by name, phone, or email"
                         fullWidth
                         variant="outlined"
                         size="small"
@@ -187,10 +203,10 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       <TextField
                         fullWidth
                         size="small"
-                        label="Customer Name"
-                        value={customerForm.name}
+                        label="First Name"
+                        value={customerForm.firstName}
                         onChange={(e) => {
-                          setCustomerForm({ ...customerForm, name: e.target.value });
+                          setCustomerForm({ ...customerForm, firstName: e.target.value });
                           // If user types in the name field and there's no customer selected, mark as new customer
                           if (!formData.customerId) {
                             onCustomerSelect(null);
@@ -200,6 +216,22 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         InputProps={{
                           startAdornment: <PersonIcon sx={{ color: colors.text.secondary, mr: 1, fontSize: 20 }} />,
                         }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Last Name"
+                        value={customerForm.lastName}
+                        onChange={(e) => {
+                          setCustomerForm({ ...customerForm, lastName: e.target.value });
+                          // If user types in the name field and there's no customer selected, mark as new customer
+                          if (!formData.customerId) {
+                            onCustomerSelect(null);
+                          }
+                        }}
+                        required
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>

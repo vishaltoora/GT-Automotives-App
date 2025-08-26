@@ -26,11 +26,13 @@ import {
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { useAuth } from '../../hooks/useAuth';
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 
 const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, role } = useAuth();
+  const { confirmCancel } = useConfirmationHelpers();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,8 +48,8 @@ const InvoiceDetails: React.FC = () => {
       const data = await invoiceService.getInvoice(id!);
       setInvoice(data);
     } catch (error) {
+      // TODO: Replace with error notification
       console.error('Error loading invoice:', error);
-      alert('Error loading invoice');
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,8 @@ const InvoiceDetails: React.FC = () => {
   const handleCancel = async () => {
     if (!invoice) return;
     
-    if (window.confirm(`Are you sure you want to cancel invoice ${invoice.invoiceNumber}?`)) {
+    const confirmed = await confirmCancel(`invoice ${invoice.invoiceNumber}`);
+    if (confirmed) {
       try {
         await invoiceService.cancelInvoice(invoice.id);
         loadInvoice();
@@ -231,10 +234,10 @@ const InvoiceDetails: React.FC = () => {
                   Customer Information
                 </Typography>
                 <Typography variant="body1">
-                  {invoice.customer?.user?.firstName} {invoice.customer?.user?.lastName}
+                  {invoice.customer?.firstName} {invoice.customer?.lastName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Email: {invoice.customer?.user?.email}
+                  Email: {invoice.customer?.email}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Phone: {invoice.customer?.phone}

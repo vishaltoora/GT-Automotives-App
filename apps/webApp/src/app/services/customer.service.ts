@@ -4,19 +4,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface Customer {
   id: string;
-  userId: string;
-  phone: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
   address?: string;
-  user: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role: {
-      id: string;
-      name: string;
-    };
-  };
+  businessName?: string;
   vehicles?: Vehicle[];
   _count?: {
     invoices: number;
@@ -51,34 +44,34 @@ export interface Vehicle {
 }
 
 export interface CreateCustomerDto {
-  user?: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  businessName?: string;
+  firstName: string;
+  lastName: string;
   email?: string;
-  firstName?: string;
-  lastName?: string;
-  phone: string;
+  phone?: string;
   address?: string;
+  businessName?: string;
 }
 
 export interface UpdateCustomerDto {
-  email?: string;
   firstName?: string;
   lastName?: string;
+  email?: string;
   phone?: string;
   address?: string;
+  businessName?: string;
 }
 
 class CustomerService {
   private getAuthHeader() {
-    // In production, get the actual token from Clerk
-    const token = localStorage.getItem('authToken') || 'mock-jwt-token';
+    const token = localStorage.getItem('authToken');
+    
+    // In development mode, use the development token if no real token exists
+    const devToken = 'mock-jwt-token-development';
+    const finalToken = token || devToken;
+    
     return {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${finalToken}`,
     };
   }
 

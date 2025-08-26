@@ -38,10 +38,12 @@ import { useNavigate } from 'react-router-dom';
 import { customerService, Customer } from '../../services/customer.service';
 import { useAuth } from '../../hooks/useAuth';
 import { CustomerDialog } from '../../components/customers/CustomerDialog';
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 
 export function CustomerList() {
   const navigate = useNavigate();
   const { role } = useAuth();
+  const { confirmDelete } = useConfirmationHelpers();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,11 +61,11 @@ export function CustomerList() {
     // Filter customers based on search term
     if (searchTerm) {
       const filtered = customers.filter((customer) => {
-        const fullName = `${customer.user.firstName} ${customer.user.lastName}`.toLowerCase();
+        const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
         const searchLower = searchTerm.toLowerCase();
         return (
           fullName.includes(searchLower) ||
-          customer.user.email.toLowerCase().includes(searchLower) ||
+          (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
           customer.phone.includes(searchTerm) ||
           (customer.address && customer.address.toLowerCase().includes(searchLower)) ||
           (customer.businessName && customer.businessName.toLowerCase().includes(searchLower))
@@ -89,13 +91,17 @@ export function CustomerList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
+  const handleDelete = async (customer: Customer) => {
+    const customerName = `${customer.firstName} ${customer.lastName}`;
+    const confirmed = await confirmDelete(`customer "${customerName}"`);
+    
+    if (confirmed) {
       try {
-        await customerService.deleteCustomer(id);
+        await customerService.deleteCustomer(customer.id);
         await loadCustomers();
       } catch (err: any) {
-        alert(err.response?.data?.message || 'Failed to delete customer');
+        // TODO: Replace with error notification
+        console.error('Failed to delete customer:', err);
       }
     }
   };
@@ -208,11 +214,11 @@ export function CustomerList() {
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={2}>
                       <Avatar sx={{ bgcolor: 'primary.main' }}>
-                        {getInitials(customer.user.firstName, customer.user.lastName)}
+                        {getInitials(customer.firstName, customer.lastName)}
                       </Avatar>
                       <Box>
                         <Typography variant="body1" fontWeight="medium">
-                          {customer.user.firstName} {customer.user.lastName}
+                          {customer.firstName} {customer.lastName}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
                           ID: {customer.id.slice(0, 8)}...
@@ -224,11 +230,11 @@ export function CustomerList() {
                     <Stack spacing={0.5}>
                       <Box display="flex" alignItems="center" gap={0.5}>
                         <EmailIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{customer.user.email}</Typography>
+                        <Typography variant="body2">{customer.email || 'No email'}</Typography>
                       </Box>
                       <Box display="flex" alignItems="center" gap={0.5}>
                         <PhoneIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{customer.phone}</Typography>
+                        <Typography variant="body2">{customer.phone || 'No phone'}</Typography>
                       </Box>
                     </Stack>
                   </TableCell>
@@ -293,7 +299,7 @@ export function CustomerList() {
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => handleDelete(customer.id)}
+                            onClick={() => handleDelete(customer)}
                           >
                             <DeleteIcon />
                           </IconButton>
