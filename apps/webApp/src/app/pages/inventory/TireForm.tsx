@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -14,7 +14,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
   Divider,
   Stack,
   IconButton,
@@ -28,10 +27,8 @@ import {
 } from '@mui/material';
 import {
   Save as SaveIcon,
-  Cancel as CancelIcon,
   ArrowBack as BackIcon,
-  Draft as DraftIcon,
-  Preview as PreviewIcon,
+  Drafts as DraftIcon,
 } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 import {
@@ -64,7 +61,6 @@ const formatCondition = (condition: TireCondition): string => {
 // Validation schema
 const validationSchema = Yup.object({
   brand: Yup.string().required('Brand is required').min(2, 'Brand must be at least 2 characters'),
-  model: Yup.string().required('Model is required').min(2, 'Model must be at least 2 characters'),
   size: Yup.string()
     .required('Size is required')
     .matches(/^\d{3}\/\d{2}R\d{2}$/, 'Size must be in format like 225/45R17'),
@@ -79,11 +75,9 @@ const validationSchema = Yup.object({
     .min(0.01, 'Price must be greater than 0'),
   cost: Yup.number()
     .min(0, 'Cost cannot be negative')
-    .when('price', (price, schema) => {
-      return schema.test('cost-less-than-price', 'Cost should be less than price', (cost) => {
-        if (!cost || !price) return true;
-        return cost <= price[0];
-      });
+    .test('cost-less-than-price', 'Cost should be less than price', function(cost) {
+      if (!cost || !this.parent.price) return true;
+      return cost <= this.parent.price;
     }),
   minStock: Yup.number()
     .min(0, 'Minimum stock cannot be negative')
@@ -100,6 +94,7 @@ export function TireForm() {
   const isEditing = Boolean(id && id !== 'new');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [sizeQuery, setSizeQuery] = useState('');
+  const [isDraft, setIsDraft] = useState(false);
 
   // Data fetching
   const { data: tire, isLoading: tireLoading } = useTire(id || '', isEditing);
@@ -116,7 +111,6 @@ export function TireForm() {
   const formik = useFormik({
     initialValues: {
       brand: '',
-      model: '',
       size: '',
       type: TireType.ALL_SEASON,
       condition: TireCondition.NEW,
@@ -253,18 +247,6 @@ export function TireForm() {
                     />
                   </Grid>
 
-                  {/* Model */}
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Model *"
-                      name="model"
-                      value={formik.values.model}
-                      onChange={formik.handleChange}
-                      error={formik.touched.model && Boolean(formik.errors.model)}
-                      helperText={formik.touched.model && formik.errors.model}
-                    />
-                  </Grid>
 
                   {/* Size */}
                   <Grid item xs={12} sm={6}>
@@ -458,7 +440,7 @@ export function TireForm() {
             </Card>
 
             {/* Preview Card */}
-            {formik.values.brand && formik.values.model && (
+            {formik.values.brand && formik.values.size && (
               <Card sx={{ mt: 2 }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -466,7 +448,7 @@ export function TireForm() {
                   </Typography>
                   <Stack spacing={1}>
                     <Typography variant="subtitle1">
-                      {formik.values.brand} {formik.values.model}
+                      {formik.values.brand} - {formik.values.size}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {formik.values.size}
