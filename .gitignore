@@ -2,6 +2,9 @@
 
 # compiled output
 dist
+# Allow production builds for deployment
+!server/dist
+!apps/webApp/dist
 tmp
 out-tsc
 
