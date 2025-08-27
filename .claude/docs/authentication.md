@@ -12,11 +12,19 @@
 - **Backend Key:** Set in `server/.env` as `CLERK_SECRET_KEY`
 
 ### How Authentication Works
-1. Users sign in/up through Clerk at `/login` or `/register`
-2. New users automatically get "customer" role
-3. JWT tokens are verified using Clerk's JWKS endpoint via `ClerkJwtStrategy`
-4. Role-based routing redirects users to appropriate dashboards
-5. Dual JWT strategy support: Clerk JWT (primary) and local JWT (fallback)
+1. **Admin/Staff Login**: Secure login with username or email via branded login page
+2. **JWT Verification**: Tokens verified using Clerk's JWKS endpoint via `ClerkJwtStrategy`
+3. **Role-based Routing**: Automatic redirect to appropriate dashboard based on user role
+4. **User Synchronization**: Automatic sync between Clerk and local database
+5. **Session Management**: Secure session handling with proper timeout and refresh
+
+### Enhanced Authentication Features
+- **Dual Login Support**: Users can login with either username or email
+- **Branded Login UI**: Professional GT Automotive branded login interface
+- **Admin-only Registration**: Public signup disabled - only admins can create accounts
+- **Role-based Redirects**: Automatic navigation to role-appropriate dashboards
+- **Loading States**: Professional loading screens during authentication
+- **Error Handling**: Comprehensive error management with custom dialogs
 
 ### Admin User (Vishal Toora)
 - **Email:** vishal.alawalpuria@gmail.com
@@ -43,23 +51,29 @@ To run without Clerk authentication:
 ## User Roles & Permissions
 
 ### Customer Role
-- Self-registration enabled
-- View own data only (invoices, appointments, vehicles)
-- Request appointments online
-- Download invoices as PDF
+- **Portal Access**: Self-service customer portal with branded interface
+- **Data Isolation**: View own data only (invoices, appointments, vehicles)
+- **Appointment Management**: Request and manage service appointments
+- **Invoice Access**: View and download invoices as PDF
+- **Vehicle Management**: Add and manage personal vehicles
+- **Tire Browsing**: Browse available tire inventory
 
 ### Staff Role (Technician/Sales)
-- Create and manage invoices
-- View all customers
-- Manage inventory (no price changes)
-- Schedule appointments
-- View operational reports
+- **Operational Dashboard**: Comprehensive staff dashboard for daily operations
+- **Customer Management**: Create, view, and manage all customer accounts
+- **Invoice Creation**: Create and manage invoices with full item support
+- **Inventory Management**: Manage tire inventory (view prices, no modifications)
+- **Appointment Scheduling**: Schedule and manage customer appointments
+- **Operational Reports**: Access to operational and inventory reports
+- **Logout Functionality**: Secure logout with proper session cleanup
 
 ### Admin Role (Owner/Manager)
-- Full system access
-- User management
-- Financial reports
-- Price controls
-- Business analytics
+- **Full System Access**: Complete access to all application features
+- **User Management**: Create, edit, and manage all user accounts (Staff/Admin only)
+- **User Creation**: Professional user creation dialogs with validation
+- **Financial Control**: Full access to financial reports and price management
+- **System Configuration**: Modify system settings and business rules
+- **Analytics Dashboard**: Business intelligence and comprehensive reporting
+- **Audit Capabilities**: View all system activities and changes
 
 **See `/docs/ROLE_PERMISSIONS.md` for complete permissions matrix**

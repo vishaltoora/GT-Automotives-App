@@ -1,0 +1,260 @@
+name: Deploy to AWS Lightsail
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+        type: string
+      deploy_backend:
+        description: 'Deploy Backend'
+        required: true
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: 'Deploy Frontend'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      
+    - name: Build Backend
+      if: inputs.deploy_backend
+      run: |
+        cd server
+        yarn build
+        
+    - name: Build Frontend
+      if: inputs.deploy_frontend
+      run: |
+        cd apps/webApp
+        yarn build
+        
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment
+        
+        # Copy backend files
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          cp -r server/dist deployment/
+          cp server/package.json deployment/
+          cp -r server/prisma deployment/
+        fi
+        
+        # Copy frontend files
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          mkdir -p deployment/frontend
+          cp -r apps/webApp/dist/* deployment/frontend/
+        fi
+        
+        # Copy deployment scripts
+        cp scripts/deploy/* deployment/ 2>/dev/null || true
+        
+        # Create deployment info
+        echo "DEPLOYMENT_DATE=$(date)" > deployment/deployment-info.txt
+        echo "COMMIT_SHA=${{ github.sha }}" >> deployment/deployment-info.txt
+        echo "BRANCH=${{ inputs.branch }}" >> deployment/deployment-info.txt
+        echo "ENVIRONMENT=${{ inputs.environment }}" >> deployment/deployment-info.txt
+        
+    - name: Archive deployment package
+      run: |
+        tar -czf gt-automotive-deployment-${{ github.sha }}.tar.gz -C deployment .
+        
+    - name: Configure AWS CLI
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        
+    - name: Upload to S3
+      run: |
+        aws s3 cp gt-automotive-deployment-${{ github.sha }}.tar.gz \
+          s3://${{ secrets.DEPLOYMENT_BUCKET }}/deployments/
+        
+    - name: Deploy to Lightsail
+      run: |
+        # Create deployment script
+        cat > deploy-script.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        DEPLOYMENT_FILE="gt-automotive-deployment-${{ github.sha }}.tar.gz"
+        DEPLOYMENT_DIR="/home/ubuntu/gt-automotive-deployment"
+        APP_DIR="/home/ubuntu/GT-Automotives-App"
+        
+        echo "🚀 Starting deployment..."
+        
+        # Download deployment package
+        cd /tmp
+        aws s3 cp s3://${{ secrets.DEPLOYMENT_BUCKET }}/deployments/$DEPLOYMENT_FILE .
+        
+        # Create deployment directory
+        rm -rf $DEPLOYMENT_DIR
+        mkdir -p $DEPLOYMENT_DIR
+        
+        # Extract deployment package
+        tar -xzf $DEPLOYMENT_FILE -C $DEPLOYMENT_DIR
+        
+        # Stop services
+        echo "⏹️ Stopping services..."
+        pm2 stop gt-automotive-backend || true
+        pm2 stop gt-automotive-frontend || true
+        
+        # Backup current deployment
+        if [ -d "$APP_DIR" ]; then
+          echo "📦 Creating backup..."
+          cp -r $APP_DIR $APP_DIR.backup.$(date +%Y%m%d_%H%M%S)
+          # Keep only last 3 backups
+          ls -dt $APP_DIR.backup.* | tail -n +4 | xargs rm -rf
+        fi
+        
+        # Deploy backend
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          echo "🔧 Deploying backend..."
+          mkdir -p $APP_DIR/server
+          cp -r $DEPLOYMENT_DIR/dist $APP_DIR/server/
+          cp $DEPLOYMENT_DIR/package.json $APP_DIR/server/
+          cp -r $DEPLOYMENT_DIR/prisma $APP_DIR/server/
+          
+          # Install production dependencies
+          cd $APP_DIR/server
+          npm install --only=production
+          
+          # Run database migrations
+          npx prisma generate
+          npx prisma migrate deploy
+        fi
+        
+        # Deploy frontend
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          echo "🎨 Deploying frontend..."
+          mkdir -p $APP_DIR/frontend
+          cp -r $DEPLOYMENT_DIR/frontend/* $APP_DIR/frontend/
+        fi
+        
+        # Copy deployment info
+        cp $DEPLOYMENT_DIR/deployment-info.txt $APP_DIR/
+        
+        # Start services
+        echo "▶️ Starting services..."
+        cd $APP_DIR
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          pm2 start ecosystem.config.js --only gt-automotive-backend || pm2 reload gt-automotive-backend
+        fi
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          pm2 start ecosystem.config.js --only gt-automotive-frontend || pm2 reload gt-automotive-frontend
+        fi
+        
+        # Health check
+        echo "🏥 Running health check..."
+        sleep 10
+        
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          curl -f http://localhost:3000/api/health || (echo "❌ Backend health check failed" && exit 1)
+        fi
+        
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          curl -f http://localhost:4200 || (echo "❌ Frontend health check failed" && exit 1)
+        fi
+        
+        echo "✅ Deployment completed successfully!"
+        echo "📊 Deployment info:"
+        cat $APP_DIR/deployment-info.txt
+        
+        # Cleanup
+        rm -rf $DEPLOYMENT_DIR
+        rm /tmp/$DEPLOYMENT_FILE
+        EOF
+        
+        # Make script executable
+        chmod +x deploy-script.sh
+        
+        # Execute deployment on Lightsail instance
+        aws lightsail put-instance-state \
+          --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
+          --state running
+          
+        # Wait for instance to be running
+        aws lightsail wait instance-running \
+          --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }}
+        
+        # Copy and execute deployment script
+        scp -o StrictHostKeyChecking=no \
+          -i /tmp/lightsail-key.pem \
+          deploy-script.sh ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
+          
+        ssh -o StrictHostKeyChecking=no \
+          -i /tmp/lightsail-key.pem \
+          ubuntu@${{ secrets.LIGHTSAIL_IP }} \
+          'chmod +x /tmp/deploy-script.sh && sudo /tmp/deploy-script.sh'
+        
+    - name: Setup SSH key
+      run: |
+        echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > /tmp/lightsail-key.pem
+        chmod 600 /tmp/lightsail-key.pem
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment to ${{ inputs.environment }} completed successfully!"
+          echo "🌐 Frontend: https://${{ secrets.FRONTEND_DOMAIN }}"
+          echo "🔧 Backend API: https://${{ secrets.BACKEND_DOMAIN }}/api"
+        else
+          echo "❌ Deployment failed. Check the logs above for details."
+        fi
+        
+    - name: Create deployment summary
+      if: always()
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+        ## 🚀 Deployment Summary
+        
+        **Environment:** ${{ inputs.environment }}
+        **Branch:** ${{ inputs.branch }}
+        **Commit:** ${{ github.sha }}
+        **Status:** ${{ job.status }}
+        
+        ### Services Deployed
+        - **Backend:** ${{ inputs.deploy_backend == 'true' && '✅ Deployed' || '⏭️ Skipped' }}
+        - **Frontend:** ${{ inputs.deploy_frontend == 'true' && '✅ Deployed' || '⏭️ Skipped' }}
+        
+        ### URLs
+        - **Frontend:** https://${{ secrets.FRONTEND_DOMAIN }}
+        - **Backend API:** https://${{ secrets.BACKEND_DOMAIN }}/api
+        - **Health Check:** https://${{ secrets.BACKEND_DOMAIN }}/api/health
+        
+        ### Deployment Info
+        - **Date:** $(date)
+        - **Triggered by:** @${{ github.actor }}
+        EOF

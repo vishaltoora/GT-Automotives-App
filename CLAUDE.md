@@ -5,8 +5,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ## Quick Reference
 
 ### 📁 Documentation Structure
+- **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview
 - **[Project Overview](.claude/docs/project-overview.md)** - Application summary, status, and roadmap
 - **[Authentication](.claude/docs/authentication.md)** - Clerk setup, user roles, and permissions
+- **[User Management](.claude/docs/user-management.md)** - Complete user management system documentation
+- **[API Documentation](.claude/docs/api-documentation.md)** - Comprehensive REST API reference
+- **[Grid Modernization](.claude/docs/grid-modernization.md)** - Material-UI Grid updates and best practices
 - **[Tech Stack](.claude/docs/tech-stack.md)** - Technologies, frameworks, and architecture
 - **[Development Setup](.claude/docs/development-setup.md)** - Environment setup and commands
 - **[Development Guidelines](.claude/docs/development-guidelines.md)** - Code style, patterns, and best practices
@@ -91,15 +95,16 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
-### August 26, 2025 - TypeScript Build System & Development Environment Fixes
-- ✅ **Build System Resolution**: Fixed all TypeScript compilation errors preventing CI/CD builds
-- ✅ **Server-Side TypeScript Fixes**: Resolved DTOs with definite assignment assertions, auth strategy issues, repository inheritance
-- ✅ **Module Compatibility**: Fixed CommonJS/ESM compatibility issues in shared libraries for Node.js server compatibility  
-- ✅ **Enum Import Resolution**: Updated tire-related components to import TireType/TireCondition from @prisma/client instead of shared interfaces
-- ✅ **Development Servers**: Both frontend (localhost:4200) and backend (localhost:3000) now running successfully
-- ✅ **Production Build**: Vite build now completes successfully in ~29.5 seconds with proper chunking
-- ✅ **Code Cleanup**: Removed unused React imports and fixed Grid component import issues
-- ✅ **Error Handling**: Enhanced error handling with proper type checking and audit log fixes
+### August 27, 2025 - User Management System & Material-UI Modernization
+- ✅ **Complete User Management**: Full admin interface for creating/managing staff and admin users
+- ✅ **Professional User Dialogs**: CreateUserDialog and EditUserDialog with validation and Clerk integration
+- ✅ **Username Support**: Dual login capability (username or email) with enhanced authentication flow
+- ✅ **Branded Login UI**: Professional GT Automotive login page with logo, colors, and responsive design
+- ✅ **Admin-only Registration**: Disabled public signup for enhanced security
+- ✅ **Material-UI Grid Modernization**: Updated all Grid components to modern `size` prop syntax
+- ✅ **Deprecation Warning Fixes**: Eliminated all Grid deprecation warnings with proper item props
+- ✅ **Logout Fixes**: Resolved logout functionality across all layouts (Admin/Staff/Customer)
+- ✅ **Enhanced Documentation**: Created comprehensive user management and Grid modernization docs
 
 ### August 26, 2025 - TypeScript Build System & Development Environment Fixes
 - ✅ **Build System Resolution**: Fixed all TypeScript compilation errors preventing CI/CD builds

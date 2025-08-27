@@ -139,6 +139,17 @@ export function Login() {
           </Box>
 
           <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
+            <Typography
+              variant="h6"
+              sx={{
+                textAlign: 'center',
+                color: colors.text.primary,
+                fontWeight: 600,
+                mb: 3,
+              }}
+            >
+              Admin / Staff logins only
+            </Typography>
             <Box
               sx={{
                 display: 'flex',

@@ -64,7 +64,8 @@
       "Bash(chmod:*)",
       "Bash(./scripts/update-docs.sh:*)",
       "Bash(yarn docs:update:*)",
-      "Bash(yarn prisma migrate dev:*)"
+      "Bash(yarn prisma migrate dev:*)",
+      "Bash(openssl rand:*)"
     ],
     "deny": [],
     "ask": []
