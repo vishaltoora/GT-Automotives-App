@@ -16,6 +16,15 @@ on:
         required: true
         default: 'main'
         type: string
+      commit_sha:
+        description: 'Specific commit SHA to deploy (optional - uses latest if empty)'
+        required: false
+        type: string
+      skip_build:
+        description: 'Skip build and use existing build artifacts'
+        required: true
+        default: true
+        type: boolean
       deploy_backend:
         description: 'Deploy Backend'
         required: true
@@ -36,26 +45,55 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ inputs.branch }}
+        ref: ${{ inputs.commit_sha || inputs.branch }}
         
     - name: Setup Node.js
+      if: inputs.skip_build == false
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
         
     - name: Install dependencies
+      if: inputs.skip_build == false
       run: yarn install --frozen-lockfile
       
     - name: Build Backend
-      if: inputs.deploy_backend
+      if: inputs.deploy_backend && inputs.skip_build == false
       run: |
         yarn nx build server --configuration=production
         
     - name: Build Frontend
-      if: inputs.deploy_frontend
+      if: inputs.deploy_frontend && inputs.skip_build == false
       run: |
         yarn nx build webApp --configuration=production
+        
+    - name: Check for existing build artifacts in git
+      if: inputs.skip_build == true
+      run: |
+        echo "Checking for committed build artifacts..."
+        echo "Commit SHA: ${{ inputs.commit_sha || github.sha }}"
+        echo "Branch: ${{ inputs.branch }}"
+        
+        if [ "${{ inputs.deploy_backend }}" == "true" ] && [ ! -f "server/dist/main.js" ]; then
+          echo "❌ Backend build not found in this commit."
+          echo "💡 Either:"
+          echo "   1. Build and commit: yarn nx build server --configuration=production && git add . && git commit"
+          echo "   2. Or set 'skip_build' to false to build during deployment"
+          exit 1
+        fi
+        
+        if [ "${{ inputs.deploy_frontend }}" == "true" ] && [ ! -f "apps/webApp/dist/index.html" ]; then
+          echo "❌ Frontend build not found in this commit."
+          echo "💡 Either:"
+          echo "   1. Build and commit: yarn nx build webApp --configuration=production && git add . && git commit"  
+          echo "   2. Or set 'skip_build' to false to build during deployment"
+          exit 1
+        fi
+        
+        echo "✅ Build artifacts found in git commit"
+        ls -la server/dist/ || echo "Backend dist contents not available"
+        ls -la apps/webApp/dist/ || echo "Frontend dist contents not available"
         
     - name: Create deployment package
       run: |
@@ -64,8 +102,9 @@ jobs:
         # Copy backend files
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           cp -r server/dist deployment/server
-          cp server/package.json deployment/
-          cp -r server/prisma deployment/
+          cp server/package.json deployment/server-package.json
+          cp package.json deployment/
+          cp -r libs/database/src/lib/prisma deployment/
         fi
         
         # Copy frontend files
