@@ -50,14 +50,12 @@ jobs:
     - name: Build Backend
       if: inputs.deploy_backend
       run: |
-        cd server
-        yarn build
+        yarn nx build server --configuration=production
         
     - name: Build Frontend
       if: inputs.deploy_frontend
       run: |
-        cd apps/webApp
-        yarn build
+        yarn nx build webApp --configuration=production
         
     - name: Create deployment package
       run: |
@@ -65,7 +63,7 @@ jobs:
         
         # Copy backend files
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
-          cp -r server/dist deployment/
+          cp -r dist/server deployment/
           cp server/package.json deployment/
           cp -r server/prisma deployment/
         fi
@@ -73,7 +71,7 @@ jobs:
         # Copy frontend files
         if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
           mkdir -p deployment/frontend
-          cp -r apps/webApp/dist/* deployment/frontend/
+          cp -r dist/apps/webApp/* deployment/frontend/
         fi
         
         # Copy deployment scripts
