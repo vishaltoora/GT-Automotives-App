@@ -1,16 +1,18 @@
 # GT Automotive Management System
 
-A comprehensive web application for managing a small business that sells new and used tires and provides automotive mechanical services in Prince George, BC.
+A comprehensive automotive service management application built for GT Automotive, featuring tire inventory management, customer relationship management, invoicing, and user administration.
+
+![GT Automotive](apps/webApp/src/app/images-and-logos/logo.png)
 
 ## 🚀 Current Status
 
 - **EPIC-01:** ✅ Project Setup & Infrastructure (Complete - Aug 15, 2025)
-- **EPIC-02:** ✅ User Authentication & Management (Complete - Aug 15, 2025)
+- **EPIC-02:** ✅ User Authentication & Management (Complete - Aug 27, 2025)
 - **EPIC-03:** ✅ Tire Inventory Management (Complete - Aug 16, 2025)
 - **EPIC-04:** ✅ Customer & Vehicle Management (Complete - Aug 17, 2025)
 - **EPIC-05:** ✅ Invoicing System (Complete - Aug 19, 2025)
 - **Progress:** 5 of 8 epics complete (62.5% MVP)
-- **Latest:** Public website updated with mobile tire service pricing, contact updates, and service area details
+- **Latest:** Complete user management system with professional admin interface, branded authentication, and Material-UI Grid modernization
 
 ## 📞 Contact Information
 
@@ -42,18 +44,14 @@ A comprehensive web application for managing a small business that sells new and
 - ✅ **Mobile Tire Service**: Complete pricing structure with work hours and emergency rates
 - ✅ **Service Area Coverage**: 20km free service zone with detailed area listings
 
-### Recent Updates (August 19, 2025)
-- ✅ **Mobile Tire Service Pricing**: Comprehensive pricing for on-site tire services
-  - Small cars & SUVs (up to 18"): $139 + tax
-  - Pickup trucks: $149 + tax
-  - Low profile tires: $149 + tax
-  - Flat tire repair: $29 + supplies + tax
-  - Tire rotation: $69 + tax
-  - 4 tires balance: $69
-- ✅ **Emergency Service**: 24/7 availability with $99 out call + $99/hour
-- ✅ **Service Area**: 20km free zone from Prince George city center, $2/km beyond
-- ✅ **Contact Updates**: New email and phone numbers across all pages
-- ✅ **Statistics Update**: 10+ years experience, 1,000+ happy customers
+### Recent Updates (August 27, 2025)
+- ✅ **Complete User Management System**: Professional admin interface for creating and managing staff/admin users
+- ✅ **Enhanced Authentication**: Username/email dual login with branded GT Automotive login page
+- ✅ **Material-UI Grid Modernization**: Updated all Grid components to modern `size` prop syntax
+- ✅ **Professional UI Components**: CreateUserDialog and EditUserDialog with comprehensive validation
+- ✅ **Security Enhancements**: Admin-only user creation, disabled public registration
+- ✅ **Build System Fixes**: Resolved all TypeScript compilation errors, production builds working
+- ✅ **Documentation**: Comprehensive API documentation and user management guides
 
 ### In Development
 - 🔄 **Appointment Scheduling**: Online booking with reminders
@@ -377,4 +375,4 @@ Private - GT Automotive
 
 ---
 
-**Last Updated:** August 19, 2025 | **Version:** 0.5.0 | **Status:** Active Development - Mobile Service & Contact Updates Complete
+**Last Updated:** August 27, 2025 | **Version:** 2.0.0 | **Status:** Active Development - User Management & Grid Modernization Complete
