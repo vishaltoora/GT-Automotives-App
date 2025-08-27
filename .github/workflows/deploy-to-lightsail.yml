@@ -64,8 +64,9 @@ jobs:
         # Copy backend files
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           cp -r server/dist deployment/server
-          cp server/package.json deployment/
-          cp -r server/prisma deployment/
+          cp server/package.json deployment/server-package.json
+          cp package.json deployment/
+          cp -r libs/database/src/lib/prisma deployment/
         fi
         
         # Copy frontend files
