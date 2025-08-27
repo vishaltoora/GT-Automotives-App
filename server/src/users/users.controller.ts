@@ -30,8 +30,8 @@ export class UsersController {
     @Query('isActive') isActive?: string,
   ) {
     const filters = {
-      roleId: roleId ? parseInt(roleId, 10) : undefined,
-      isActive: isActive === 'true',
+      roleId: roleId || undefined,
+      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
     };
     return this.usersService.findAll(filters);
   }
@@ -47,15 +47,33 @@ export class UsersController {
   async create(
     @Body(new ValidationPipe()) createUserDto: {
       email: string;
-      password?: string;
       firstName: string;
       lastName: string;
-      phone?: string;
-      roleId: number;
+      roleId: string;
     },
     @CurrentUser() currentUser: any,
   ) {
     return this.usersService.create({
+      ...createUserDto,
+      createdBy: currentUser.id,
+    });
+  }
+
+  @Post('admin-staff')
+  @Roles('ADMIN')
+  async createAdminOrStaff(
+    @Body(new ValidationPipe()) createUserDto: {
+      email: string;
+      username: string;
+      firstName: string;
+      lastName: string;
+      phone?: string;
+      roleName: 'ADMIN' | 'STAFF';
+      password: string;
+    },
+    @CurrentUser() currentUser: any,
+  ) {
+    return this.usersService.createAdminOrStaff({
       ...createUserDto,
       createdBy: currentUser.id,
     });
@@ -69,7 +87,6 @@ export class UsersController {
       email?: string;
       firstName?: string;
       lastName?: string;
-      phone?: string;
       isActive?: boolean;
     },
     @CurrentUser() currentUser: any,
@@ -84,7 +101,7 @@ export class UsersController {
   @Roles('ADMIN')
   async assignRole(
     @Param('id') id: string,
-    @Body('roleId') roleId: number,
+    @Body('roleId') roleId: string,
     @CurrentUser() currentUser: any,
   ) {
     return this.usersService.assignRole(id, roleId, currentUser.id);
@@ -138,7 +155,6 @@ export class UsersController {
     @Body() updateProfileDto: {
       firstName?: string;
       lastName?: string;
-      phone?: string;
     },
     @CurrentUser() currentUser: any,
   ) {

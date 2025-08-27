@@ -34,6 +34,7 @@ import {
   AccountCircle
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
+import { useClerk } from '@clerk/clerk-react';
 import { colors } from '../theme/colors';
 import gtLogo from '../images-and-logos/gt-automotive-logo.svg';
 
@@ -42,6 +43,7 @@ const drawerWidth = 280;
 export function StaffLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { user } = useAuth();
+  const { signOut } = useClerk();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -52,15 +54,13 @@ export function StaffLayout() {
   };
 
   const handleSignOut = async () => {
-    // Handle signout - in dev mode just navigate
     try {
-      const { useClerk } = await import('@clerk/clerk-react');
-      const { signOut } = useClerk();
-      await signOut();
+      await signOut({ redirectUrl: '/' });
     } catch (error) {
-      console.log('Clerk not available, navigating to home');
+      console.error('Error signing out:', error);
+      // Fallback navigation if signOut fails
+      navigate('/');
     }
-    navigate('/');
   };
 
   const menuItems = [

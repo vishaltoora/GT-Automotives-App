@@ -119,3 +119,32 @@ cd apps/webApp && yarn vite --host
 # Start backend only
 cd server && yarn start:dev
 ```
+## Recent Build Fixes (August 2025)
+
+The development environment has been stabilized with recent TypeScript and build system fixes:
+
+- **Clean Builds**: All TypeScript compilation errors resolved
+- **Module Compatibility**: Shared libraries properly configured for both frontend (Vite/ESM) and backend (Node.js/CommonJS) 
+- **Enum Imports**: Tire-related components now import types directly from @prisma/client for better reliability
+- **Development Servers**: Both servers start successfully with `yarn dev`
+
+If you encounter build issues, try:
+1. `yarn nx reset` - Clear Nx cache
+2. `yarn build` - Verify production build works
+3. Check that shared libraries use CommonJS module format
+
+
+## Recent Build Fixes (August 2025)
+
+The development environment has been stabilized with recent TypeScript and build system fixes:
+
+- **Clean Builds**: All TypeScript compilation errors resolved
+- **Module Compatibility**: Shared libraries properly configured for both frontend (Vite/ESM) and backend (Node.js/CommonJS) 
+- **Enum Imports**: Tire-related components now import types directly from @prisma/client for better reliability
+- **Development Servers**: Both servers start successfully with `yarn dev`
+
+If you encounter build issues, try:
+1. `yarn nx reset` - Clear Nx cache
+2. `yarn build` - Verify production build works
+3. Check that shared libraries use CommonJS module format
+

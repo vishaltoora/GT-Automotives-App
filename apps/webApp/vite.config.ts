@@ -8,6 +8,12 @@ export default defineConfig(() => ({
   server: {
     port: 4200,
     host: 'localhost',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
     hmr: {
       overlay: true,
       // Remove separate HMR port to use WebSocket on same port
