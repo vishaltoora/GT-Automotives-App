@@ -3,7 +3,9 @@ import {
   NotFoundException, 
   ConflictException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UserRepository } from './repositories/user.repository';
 import { RoleRepository } from '../roles/repositories/role.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
@@ -15,9 +17,10 @@ export class UsersService {
     private userRepository: UserRepository,
     private roleRepository: RoleRepository,
     private auditRepository: AuditRepository,
+    private configService: ConfigService,
   ) {}
 
-  async findAll(filters?: { roleId?: number; isActive?: boolean }) {
+  async findAll(filters?: { roleId?: string; isActive?: boolean }) {
     return this.userRepository.findAll(filters);
   }
 
@@ -38,8 +41,7 @@ export class UsersService {
     password?: string;
     firstName: string;
     lastName: string;
-    phone?: string;
-    roleId: number;
+    roleId: string;
     createdBy: string;
   }) {
     const existingUser = await this.userRepository.findByEmail(data.email);
@@ -57,14 +59,11 @@ export class UsersService {
       : undefined;
 
     const user = await this.userRepository.create({
+      clerkId: '', // Will need proper Clerk ID if using Clerk
       email: data.email,
-      password: hashedPassword,
       firstName: data.firstName,
       lastName: data.lastName,
-      phone: data.phone,
-      role: {
-        connect: { id: data.roleId },
-      },
+      roleId: data.roleId,
     });
 
     await this.auditRepository.create({
@@ -78,11 +77,93 @@ export class UsersService {
     return user;
   }
 
+  async createAdminOrStaff(data: {
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    roleName: 'ADMIN' | 'STAFF';
+    createdBy: string;
+    password: string;
+  }) {
+    // Check if user already exists in our database
+    const existingUser = await this.userRepository.findByEmail(data.email);
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Get role by name
+    const role = await this.roleRepository.findByName(data.roleName);
+    if (!role) {
+      throw new NotFoundException(`Role ${data.roleName} not found`);
+    }
+
+    let clerkUserId: string | null = null;
+
+    // Create user in Clerk if configured
+    const clerkSecretKey = this.configService.get<string>('CLERK_SECRET_KEY');
+    if (clerkSecretKey) {
+      try {
+        const { clerkClient } = await import('@clerk/clerk-sdk-node');
+        
+        const clerkUser = await clerkClient.users.createUser({
+          emailAddress: [data.email],
+          username: data.username,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          password: data.password,
+        });
+        
+        clerkUserId = clerkUser.id;
+        
+        // Set metadata for role
+        await clerkClient.users.updateUserMetadata(clerkUserId, {
+          publicMetadata: {
+            role: data.roleName,
+          },
+        });
+        
+      } catch (clerkError: any) {
+        console.error('Failed to create user in Clerk:', clerkError);
+        throw new InternalServerErrorException(
+          `Failed to create user in Clerk: ${clerkError.message}`
+        );
+      }
+    }
+
+    // Create user in our database
+    const user = await this.userRepository.create({
+      clerkId: clerkUserId || '',
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      roleId: role.id,
+    });
+
+    // Create audit log
+    await this.auditRepository.create({
+      userId: data.createdBy,
+      action: 'ADMIN_STAFF_USER_CREATED',
+      entityType: 'user',
+      entityId: user.id,
+      details: { 
+        email: data.email, 
+        role: data.roleName,
+        clerkId: clerkUserId,
+      },
+    });
+
+    return {
+      ...user,
+      clerkCreated: !!clerkUserId,
+    };
+  }
+
   async update(id: string, data: {
     email?: string;
     firstName?: string;
     lastName?: string;
-    phone?: string;
     isActive?: boolean;
     updatedBy: string;
   }) {
@@ -99,7 +180,6 @@ export class UsersService {
       email: data.email,
       firstName: data.firstName,
       lastName: data.lastName,
-      phone: data.phone,
       isActive: data.isActive,
     });
 
@@ -114,7 +194,7 @@ export class UsersService {
     return updatedUser;
   }
 
-  async assignRole(userId: string, roleId: number, assignedBy: string) {
+  async assignRole(userId: string, roleId: string, assignedBy: string) {
     const user = await this.findById(userId);
     const role = await this.roleRepository.findById(roleId);
     
@@ -123,9 +203,9 @@ export class UsersService {
     }
 
     // Prevent changing admin users by non-admins
-    if (user.role.name === 'admin') {
+    if (user.role.name === 'ADMIN') {
       const assigningUser = await this.userRepository.findById(assignedBy);
-      if (assigningUser?.role.name !== 'admin') {
+      if (assigningUser?.role.name !== 'ADMIN') {
         throw new ForbiddenException('Only admins can modify admin users');
       }
     }
@@ -150,9 +230,9 @@ export class UsersService {
     const user = await this.findById(id);
 
     // Prevent deleting admin users
-    if (user.role.name === 'admin') {
+    if (user.role.name === 'ADMIN') {
       const deletingUser = await this.userRepository.findById(deletedBy);
-      if (deletingUser?.role.name !== 'admin') {
+      if (deletingUser?.role.name !== 'ADMIN') {
         throw new ForbiddenException('Only admins can delete admin users');
       }
     }
@@ -173,51 +253,13 @@ export class UsersService {
     return deactivatedUser;
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
-    const user = await this.findById(userId);
-
-    if (!user.password) {
-      throw new ForbiddenException('Password change not allowed for SSO users');
-    }
-
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isOldPasswordValid) {
-      throw new ForbiddenException('Current password is incorrect');
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
-    await this.userRepository.update(userId, {
-      password: hashedPassword,
-    });
-
-    await this.auditRepository.create({
-      userId,
-      action: 'PASSWORD_CHANGED',
-      entityType: 'user',
-      entityId: userId,
-    });
-
-    return { message: 'Password changed successfully' };
+  async changePassword(_userId: string, _oldPassword: string, _newPassword: string) {
+    // Passwords are managed by Clerk, not our system
+    throw new ForbiddenException('Password management is handled by Clerk authentication system');
   }
 
-  async resetPassword(userId: string, newPassword: string, resetBy: string) {
-    const user = await this.findById(userId);
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
-    await this.userRepository.update(userId, {
-      password: hashedPassword,
-    });
-
-    await this.auditRepository.create({
-      userId: resetBy,
-      action: 'PASSWORD_RESET',
-      entityType: 'user',
-      entityId: userId,
-      details: { targetEmail: user.email },
-    });
-
-    return { message: 'Password reset successfully' };
+  async resetPassword(_userId: string, _newPassword: string, _resetBy: string) {
+    // Passwords are managed by Clerk, not our system
+    throw new ForbiddenException('Password management is handled by Clerk authentication system');
   }
 }

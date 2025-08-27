@@ -49,7 +49,13 @@ export class UserRepository {
     }) as Promise<UserWithRole | null>;
   }
 
-  async create(data: Prisma.UserCreateInput): Promise<UserWithRole> {
+  async create(data: {
+    clerkId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    roleId: string;
+  }): Promise<UserWithRole> {
     return this.prisma.user.create({
       data,
       include: {

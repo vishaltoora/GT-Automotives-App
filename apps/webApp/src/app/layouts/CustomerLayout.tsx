@@ -31,16 +31,15 @@ const drawerWidth = 240;
 
 export function CustomerLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleSignOut = () => {
-    // Handle signout - in dev mode just navigate to home
-    // In production with Clerk, this would trigger Clerk's signOut
+  const handleSignOut = async () => {
+    await logout();
     navigate('/');
   };
 

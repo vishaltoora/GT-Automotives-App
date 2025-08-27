@@ -62,7 +62,9 @@
       "Bash(yarn build:*)",
       "Bash(yarn typecheck:web)",
       "Bash(chmod:*)",
-      "Bash(./scripts/update-docs.sh:*)"
+      "Bash(./scripts/update-docs.sh:*)",
+      "Bash(yarn docs:update:*)",
+      "Bash(yarn prisma migrate dev:*)"
     ],
     "deny": [],
     "ask": []

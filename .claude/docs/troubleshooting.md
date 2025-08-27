@@ -115,3 +115,36 @@ import { TireType, TireCondition } from '@prisma/client';
 }
 ```
 
+
+## Build Issues (August 2025)
+
+### TypeScript Compilation Errors
+**Problem:** Server-side TypeScript compilation failing with various errors
+**Solution:** 
+- Add definite assignment assertions (`!`) to DTO properties
+- Fix repository inheritance with proper `override` modifiers  
+- Update auth strategy parameter ordering
+- Use type casting for dynamic model access in base repositories
+
+### TireType/TireCondition Import Errors
+**Problem:** Vite build failing with "TireType is not exported" errors
+**Solution:** Import enums directly from `@prisma/client` instead of shared interfaces:
+```typescript
+// Before
+import { TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+
+// After  
+import { TireType, TireCondition } from '@prisma/client';
+```
+
+### CommonJS/ESM Module Issues
+**Problem:** Server startup failing with "Unexpected token 'export'" errors
+**Solution:** Keep shared libraries as CommonJS for Node.js compatibility:
+```json
+{
+  "compilerOptions": {
+    "module": "commonjs"
+  }
+}
+```
+

@@ -321,7 +321,7 @@ export function AdminDashboard() {
       {/* Charts and Activity Section */}
       <Grid container spacing={3} sx={{ mt: 3 }}>
         {/* Quick Actions */}
-        <Grid xs={12} lg={9}>
+        <Grid item size={{ xs: 12, lg: 9 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -557,7 +557,7 @@ export function AdminDashboard() {
         </Grid>
 
         {/* Recent Activity */}
-        <Grid xs={12} lg={3}>
+        <Grid item size={{ xs: 12, lg: 3 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -618,7 +618,7 @@ export function AdminDashboard() {
 
       {/* Business Insights */}
       <Grid container spacing={3} sx={{ mt: 3 }}>
-        <Grid xs={12}>
+        <Grid item size={12}>
           <Paper 
             elevation={0} 
             sx={{ 

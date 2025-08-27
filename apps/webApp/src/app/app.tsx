@@ -35,6 +35,7 @@ import { StaffDashboard } from './pages/staff/Dashboard';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/Dashboard';
+import UserManagement from '../pages/admin/UserManagement';
 
 // Inventory Pages
 import TireListSimple from './pages/inventory/TireListSimple';
@@ -143,7 +144,7 @@ export function App() {
           }
         >
           <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<div>User Management</div>} />
+          <Route path="users" element={<UserManagement />} />
           <Route path="customers" element={<CustomerList />} />
           <Route path="customers/new" element={<CustomerForm />} />
           <Route path="customers/:id/edit" element={<CustomerForm />} />

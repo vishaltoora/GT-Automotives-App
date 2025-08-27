@@ -1,0 +1,356 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  IconButton,
+  Chip,
+  TextField,
+  InputAdornment,
+  Button,
+  Typography,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Stack,
+  Tooltip,
+  Alert,
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Person as PersonIcon,
+  AdminPanelSettings as AdminIcon,
+  Engineering as StaffIcon,
+  Block as BlockIcon,
+  CheckCircle as ActiveIcon,
+} from '@mui/icons-material';
+import { useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
+import { useError } from '../../app/contexts/ErrorContext';
+import { useConfirmation } from '../../app/contexts/ConfirmationContext';
+import CreateUserDialog from '../../components/users/CreateUserDialog';
+import EditUserDialog from '../../components/users/EditUserDialog';
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: {
+    id: string;
+    name: string;
+  };
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const UserManagement: React.FC = () => {
+  const { getToken } = useAuth();
+  const navigate = useNavigate();
+  const { showError, showInfo } = useError();
+  const { confirm } = useConfirmation();
+
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch('/api/users', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      showError('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    const confirmed = await confirm({
+      title: 'Deactivate User',
+      message: `Are you sure you want to deactivate ${user.firstName} ${user.lastName}? They will no longer be able to access the system.`,
+      confirmText: 'Deactivate',
+      cancelText: 'Cancel',
+      severity: 'warning',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const token = await getToken();
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to deactivate user');
+      }
+
+      showInfo('User deactivated successfully');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deactivating user:', error);
+      showError('Failed to deactivate user');
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setEditDialogOpen(true);
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return <AdminIcon />;
+      case 'STAFF':
+        return <StaffIcon />;
+      default:
+        return <PersonIcon />;
+    }
+  };
+
+  const getRoleColor = (role: string): 'error' | 'warning' | 'info' | 'default' => {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return 'error';
+      case 'STAFF':
+        return 'warning';
+      case 'CUSTOMER':
+        return 'info';
+      default:
+        return 'default';
+    }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = 
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = !roleFilter || user.role.name === roleFilter;
+    const matchesStatus = 
+      !statusFilter || 
+      (statusFilter === 'active' && user.isActive) ||
+      (statusFilter === 'inactive' && !user.isActive);
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const paginatedUsers = filteredUsers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" component="h1">
+          User Management
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => setCreateDialogOpen(true)}
+        >
+          Add User
+        </Button>
+      </Box>
+
+      <Paper sx={{ mb: 2, p: 2 }}>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <TextField
+            placeholder="Search users..."
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flexGrow: 1, maxWidth: 400 }}
+          />
+          
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={roleFilter}
+              label="Role"
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="ADMIN">Admin</MenuItem>
+              <MenuItem value="STAFF">Staff</MenuItem>
+              <MenuItem value="CUSTOMER">Customer</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
+
+      {loading ? (
+        <Alert severity="info">Loading users...</Alert>
+      ) : filteredUsers.length === 0 ? (
+        <Alert severity="info">No users found</Alert>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Created</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    {user.firstName} {user.lastName}
+                  </TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={getRoleIcon(user.role.name)}
+                      label={user.role.name}
+                      color={getRoleColor(user.role.name)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={user.isActive ? <ActiveIcon /> : <BlockIcon />}
+                      label={user.isActive ? 'Active' : 'Inactive'}
+                      color={user.isActive ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Edit">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditUser(user)}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Deactivate">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteUser(user)}
+                        color="error"
+                        disabled={!user.isActive}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <TablePagination
+            component="div"
+            count={filteredUsers.length}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+          />
+        </TableContainer>
+      )}
+
+      <CreateUserDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onUserCreated={() => {
+          setCreateDialogOpen(false);
+          fetchUsers();
+        }}
+      />
+
+      {selectedUser && (
+        <EditUserDialog
+          open={editDialogOpen}
+          user={selectedUser}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setSelectedUser(null);
+          }}
+          onUserUpdated={() => {
+            setEditDialogOpen(false);
+            setSelectedUser(null);
+            fetchUsers();
+          }}
+        />
+      )}
+    </Box>
+  );
+};
+
+export default UserManagement;
