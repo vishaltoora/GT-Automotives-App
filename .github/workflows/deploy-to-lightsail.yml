@@ -131,12 +131,12 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+        aws-region: us-east-1  # Default region for S3 operations
         
     - name: Upload to S3
       run: |
         aws s3 cp gt-automotive-deployment-${{ github.sha }}.tar.gz \
-          s3://${{ secrets.DEPLOYMENT_BUCKET }}/
+          s3://${{ secrets.DEPLOYMENT_BUCKET }}/ --region us-east-1
         
     - name: Setup SSH key
       run: |
@@ -147,11 +147,12 @@ jobs:
       run: |
         echo "Checking Lightsail configuration..."
         echo "Instance Name: ${{ secrets.LIGHTSAIL_INSTANCE_NAME }}"
-        echo "Region: ${{ secrets.AWS_REGION }}"
+        echo "Lightsail Region: ${{ secrets.LIGHTSAIL_REGION }}"
+        echo "S3 Region: us-east-1"
         
         # List all instances in the region to help debug
-        echo "Available instances in region:"
-        aws lightsail get-instances --region ${{ secrets.AWS_REGION }} --query 'instances[].name' --output text || echo "Failed to list instances"
+        echo "Available instances in Lightsail region:"
+        aws lightsail get-instances --region ${{ secrets.LIGHTSAIL_REGION }} --query 'instances[].name' --output text || echo "Failed to list instances"
         
     - name: Deploy to Lightsail
       run: |
@@ -168,7 +169,7 @@ jobs:
         
         # Download deployment package
         cd /tmp
-        aws s3 cp s3://${{ secrets.DEPLOYMENT_BUCKET }}/$DEPLOYMENT_FILE .
+        aws s3 cp s3://${{ secrets.DEPLOYMENT_BUCKET }}/$DEPLOYMENT_FILE . --region us-east-1
         
         # Create deployment directory
         rm -rf $DEPLOYMENT_DIR
@@ -254,7 +255,7 @@ jobs:
         # Check if instance is running
         INSTANCE_STATE=$(aws lightsail get-instance-state \
           --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
-          --region ${{ secrets.AWS_REGION }} \
+          --region ${{ secrets.LIGHTSAIL_REGION }} \
           --query 'state.name' \
           --output text)
         
@@ -262,7 +263,7 @@ jobs:
           echo "Starting Lightsail instance..."
           aws lightsail start-instance \
             --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ secrets.LIGHTSAIL_REGION }}
           
           # Wait for instance to be running
           echo "Waiting for instance to start..."
