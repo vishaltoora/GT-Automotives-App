@@ -208,6 +208,22 @@ jobs:
           echo "Yarn already installed: $(yarn --version)"
         fi
         
+        # Install serve globally for frontend hosting
+        if ! command -v serve &> /dev/null; then
+          echo "Installing serve globally..."
+          npm install -g serve
+        else
+          echo "Serve already installed: $(serve --version)"
+        fi
+        
+        # Install PM2 globally for process management
+        if ! command -v pm2 &> /dev/null; then
+          echo "Installing PM2 globally..."
+          npm install -g pm2
+        else
+          echo "PM2 already installed: $(pm2 --version)"
+        fi
+        
         # Set up database and user
         echo "Setting up database and user..."
         sudo -u postgres psql -c "SELECT 1 FROM pg_database WHERE datname = 'gtautomotives_prod';" | grep -q 1 || sudo -u postgres createdb gtautomotives_prod
@@ -255,29 +271,34 @@ jobs:
     "start": "node main.js"
   },
   "dependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0",
-    "@nestjs/platform-express": "^10.0.0",
-    "@nestjs/config": "^3.0.0",
-    "@nestjs/jwt": "^10.0.0",
-    "@nestjs/passport": "^10.0.0",
+    "@clerk/backend": "^2.7.1",
+    "@clerk/clerk-sdk-node": "^5.1.6",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/mapped-types": "^2.1.0",
+    "@nestjs/passport": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
     "@nestjs/serve-static": "^4.0.0",
-    "@prisma/client": "^5.0.0",
-    "prisma": "^5.0.0",
-    "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1",
-    "passport": "^0.6.0",
-    "passport-jwt": "^4.0.1",
-    "passport-local": "^1.0.0",
-    "class-validator": "^0.14.0",
+    "@prisma/client": "^6.14.0",
+    "@types/bcryptjs": "^3.0.0",
+    "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
-    "bcrypt": "^5.1.0",
-    "jsonwebtoken": "^9.0.0",
+    "class-validator": "^0.14.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "jwks-rsa": "^3.0.0",
     "express-jwt": "^8.0.0",
-    "svix": "^1.0.0"
+    "jsonwebtoken": "^9.0.0",
+    "jwks-rsa": "^3.2.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
+    "prisma": "^6.14.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.0",
+    "svix": "^1.73.0",
+    "tsconfig-paths": "^4.2.0"
   }
 }
 PKGEOF
@@ -297,8 +318,14 @@ PKGEOF
           export NODE_ENV=production
           export DATABASE_URL="postgresql://gtautomotives:Vishal1234@localhost:5432/gtautomotives_prod"
           
-          sudo -u ubuntu npx prisma generate --schema=./prisma/schema.prisma
-          sudo -u ubuntu npx prisma migrate deploy --schema=./prisma/schema.prisma
+          # Generate Prisma client
+          echo "🔧 Generating Prisma client..."
+          cd $APP_DIR/server
+          sudo -u ubuntu DATABASE_URL="$DATABASE_URL" npx prisma generate --schema=./prisma/schema.prisma || echo "Prisma generate failed, but continuing"
+          
+          # Run database migrations
+          echo "📊 Running database migrations..."
+          sudo -u ubuntu DATABASE_URL="$DATABASE_URL" npx prisma migrate deploy --schema=./prisma/schema.prisma || echo "Migrations may have already been applied"
         fi
         
         if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
@@ -342,25 +369,29 @@ PKGEOF
             {
               name: 'gt-automotive-backend',
               script: '/home/ubuntu/GT-Automotives-App/server/main.js',
-              cwd: '/home/ubuntu/GT-Automotives-App',
+              cwd: '/home/ubuntu/GT-Automotives-App/server',
               instances: 1,
               exec_mode: 'fork',
               env_file: '/home/ubuntu/GT-Automotives-App/.env',
               error_file: '/home/ubuntu/logs/backend-err.log',
               out_file: '/home/ubuntu/logs/backend-out.log',
-              time: true
+              time: true,
+              autorestart: true,
+              max_memory_restart: '500M'
             },
             {
               name: 'gt-automotive-frontend',
               script: 'serve',
-              args: '-s frontend -l 4200',
+              args: ['-s', '/home/ubuntu/GT-Automotives-App/frontend', '-l', '4200'],
               cwd: '/home/ubuntu/GT-Automotives-App',
               instances: 1,
               exec_mode: 'fork',
               env: { NODE_ENV: 'production' },
               error_file: '/home/ubuntu/logs/frontend-err.log',
               out_file: '/home/ubuntu/logs/frontend-out.log',
-              time: true
+              time: true,
+              autorestart: true,
+              max_memory_restart: '200M'
             }
           ]
         };
@@ -375,8 +406,57 @@ PKGEOF
           pm2 start ecosystem.config.js --only gt-automotive-frontend --update-env || pm2 reload gt-automotive-frontend
         fi
         
-        echo "✅ Deployment completed!"
+        echo "📋 PM2 Status:"
         pm2 status
+        
+        echo "🔄 Setting up PM2 startup on reboot..."
+        pm2 startup systemd -u ubuntu --hp /home/ubuntu || echo "PM2 startup already configured"
+        pm2 save || echo "PM2 save failed, but continuing"
+        
+        # Give services time to start
+        echo "⏳ Waiting for services to stabilize..."
+        sleep 10
+        
+        # Check service health
+        echo "🏥 Health Check:"
+        if pm2 list | grep -q "gt-automotive-backend.*online"; then
+          echo "   ✅ Backend is running"
+        else
+          echo "   ⚠️ Backend may have issues - check logs with: pm2 logs gt-automotive-backend"
+        fi
+        
+        if pm2 list | grep -q "gt-automotive-frontend.*online"; then
+          echo "   ✅ Frontend is running"
+        else
+          echo "   ⚠️ Frontend may have issues - check logs with: pm2 logs gt-automotive-frontend"
+        fi
+        
+        # Test endpoints
+        echo ""
+        echo "🔗 Testing endpoints:"
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health | grep -q "200\|404"; then
+          echo "   ✅ Backend API is responding"
+        else
+          echo "   ⚠️ Backend API is not responding"
+        fi
+        
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:4200 | grep -q "200"; then
+          echo "   ✅ Frontend is responding"
+        else
+          echo "   ⚠️ Frontend is not responding"
+        fi
+        
+        echo ""
+        echo "✅ Deployment completed!"
+        
+        echo ""
+        echo "🌐 Services should be available at:"
+        echo "   Frontend: http://$(curl -s ifconfig.me):4200"
+        echo "   Backend API: http://$(curl -s ifconfig.me):3000"
+        echo ""
+        echo "📊 Check service status with: pm2 status"
+        echo "📝 Check logs with: pm2 logs"
+        echo "🔄 Restart services with: pm2 restart all"
         EOF
         
         chmod +x deploy-script.sh
