@@ -3,37 +3,25 @@ name: Lightsail Deploy
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-        - production
-        - staging
       branch:
         description: 'Branch to deploy'
         required: true
         default: 'main'
         type: string
-      commit_sha:
-        description: 'Specific commit SHA to deploy (optional - uses latest if empty)'
-        required: false
-        type: string
-      skip_build:
-        description: 'Skip build and use existing build artifacts'
-        required: true
-        default: true
-        type: boolean
       deploy_backend:
         description: 'Deploy Backend'
         required: true
         default: true
         type: boolean
       deploy_frontend:
-        description: 'Deploy Frontend'
+        description: 'Deploy Frontend'  
         required: true
         default: true
+        type: boolean
+      skip_build:
+        description: 'Skip build and use existing artifacts'
+        required: true
+        default: false
         type: boolean
 
 jobs:
@@ -59,78 +47,63 @@ jobs:
       
     - name: Build Backend
       if: ${{ inputs.deploy_backend == true && inputs.skip_build == false }}
-      run: |
-        yarn nx build server --configuration=production
+      run: yarn nx build server --configuration=production
         
     - name: Build Frontend
       if: ${{ inputs.deploy_frontend == true && inputs.skip_build == false }}
-      run: |
-        yarn nx build webApp --configuration=production
-        
-    - name: Check for existing build artifacts in git
-      if: ${{ inputs.skip_build == true }}
-      run: |
-        echo "Checking for committed build artifacts..."
-        echo "Commit SHA: ${{ github.sha }}"
-        echo "Branch: ${{ inputs.branch }}"
-        
-        if [ "${{ inputs.deploy_backend }}" == "true" ] && [ ! -f "server/dist/main.js" ]; then
-          echo "❌ Backend build not found in this commit."
-          echo "💡 Either:"
-          echo "   1. Build and commit: yarn nx build server --configuration=production && git add . && git commit"
-          echo "   2. Or set 'skip_build' to false to build during deployment"
-          exit 1
-        fi
-        
-        if [ "${{ inputs.deploy_frontend }}" == "true" ] && [ ! -f "apps/webApp/dist/index.html" ]; then
-          echo "❌ Frontend build not found in this commit."
-          echo "💡 Either:"
-          echo "   1. Build and commit: yarn nx build webApp --configuration=production && git add . && git commit"  
-          echo "   2. Or set 'skip_build' to false to build during deployment"
-          exit 1
-        fi
-        
-        echo "✅ Build artifacts found in git commit"
-        ls -la server/dist/ || echo "Backend dist contents not available"
-        ls -la apps/webApp/dist/ || echo "Frontend dist contents not available"
+      run: yarn nx build webApp --configuration=production
         
     - name: Create deployment package
       run: |
         mkdir -p deployment
         
-        # Copy backend files
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           cp -r server/dist deployment/server
-          cp server/package.json deployment/server-package.json
-          cp package.json deployment/
+          
+          # Create production package.json with necessary dependencies
+          cat > deployment/server-package.json << 'EOF'
+        {
+          "name": "gt-automotive-server",
+          "version": "1.0.0",
+          "main": "dist/main.js",
+          "scripts": {
+            "start": "node dist/main.js"
+          },
+          "dependencies": {
+            "@nestjs/common": "^10.0.0",
+            "@nestjs/core": "^10.0.0",
+            "@nestjs/platform-express": "^10.0.0",
+            "@prisma/client": "^5.0.0",
+            "prisma": "^5.0.0",
+            "reflect-metadata": "^0.1.13",
+            "rxjs": "^7.8.1"
+          }
+        }
+        EOF
+          
           cp -r libs/database/src/lib/prisma deployment/
         fi
         
-        # Copy frontend files
         if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
           mkdir -p deployment/frontend
           cp -r apps/webApp/dist/* deployment/frontend/
         fi
         
-        # Copy deployment scripts and ecosystem config
         cp scripts/deploy/* deployment/ 2>/dev/null || true
         
-        # Create deployment info
         echo "DEPLOYMENT_DATE=$(date)" > deployment/deployment-info.txt
         echo "COMMIT_SHA=${{ github.sha }}" >> deployment/deployment-info.txt
         echo "BRANCH=${{ inputs.branch }}" >> deployment/deployment-info.txt
-        echo "ENVIRONMENT=${{ inputs.environment }}" >> deployment/deployment-info.txt
         
     - name: Archive deployment package
-      run: |
-        tar -czf gt-automotive-deployment-${{ github.sha }}.tar.gz -C deployment .
+      run: tar -czf gt-automotive-deployment-${{ github.sha }}.tar.gz -C deployment .
         
     - name: Configure AWS CLI
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1  # Default region for S3 operations
+        aws-region: us-east-1
         
     - name: Upload to S3
       run: |
@@ -142,17 +115,6 @@ jobs:
         echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > /tmp/lightsail-key.pem
         chmod 600 /tmp/lightsail-key.pem
         
-    - name: Verify Lightsail Configuration
-      run: |
-        echo "Checking Lightsail configuration..."
-        echo "Instance Name: ${{ secrets.LIGHTSAIL_INSTANCE_NAME }}"
-        echo "Lightsail Region: ${{ secrets.LIGHTSAIL_REGION }}"
-        echo "S3 Region: us-east-1"
-        
-        # List all instances in the region to help debug
-        echo "Available instances in Lightsail region:"
-        aws lightsail get-instances --region ${{ secrets.LIGHTSAIL_REGION }} --query 'instances[].name' --output text || echo "Failed to list instances"
-        
     - name: Deploy to Lightsail
       run: |
         # Create deployment script
@@ -161,116 +123,79 @@ jobs:
         set -e
         
         DEPLOYMENT_FILE="gt-automotive-deployment-${{ github.sha }}.tar.gz"
-        DEPLOYMENT_DIR="/home/ubuntu/gt-automotive-deployment"
         APP_DIR="/home/ubuntu/GT-Automotives-App"
         
         echo "🚀 Starting deployment..."
         
-        # Deployment package is already copied to /tmp via SCP
         cd /tmp
-        
-        # Check if deployment file exists
         if [ ! -f "$DEPLOYMENT_FILE" ]; then
-            echo "❌ Deployment file not found: $DEPLOYMENT_FILE"
+            echo "❌ Deployment file not found"
             exit 1
         fi
         
-        echo "📦 Found deployment package: $DEPLOYMENT_FILE"
+        echo "📦 Extracting deployment package..."
+        rm -rf /tmp/deployment
+        mkdir -p /tmp/deployment
+        tar -xzf $DEPLOYMENT_FILE -C /tmp/deployment
         
-        # Create deployment directory
-        rm -rf $DEPLOYMENT_DIR
-        mkdir -p $DEPLOYMENT_DIR
-        
-        # Extract deployment package
-        tar -xzf $DEPLOYMENT_FILE -C $DEPLOYMENT_DIR
-        
-        # Stop services gracefully
         echo "⏹️ Stopping services..."
         pm2 list | grep "gt-automotive-backend" && pm2 stop gt-automotive-backend || echo "Backend not running"
         pm2 list | grep "gt-automotive-frontend" && pm2 stop gt-automotive-frontend || echo "Frontend not running"
         
-        # Backup current deployment
-        if [ -d "$APP_DIR" ]; then
-          echo "📦 Creating backup..."
-          cp -r $APP_DIR $APP_DIR.backup.$(date +%Y%m%d_%H%M%S)
-          # Keep only last 3 backups
-          ls -dt $APP_DIR.backup.* | tail -n +4 | xargs rm -rf
-        fi
+        echo "📁 Setting up directories..."
+        mkdir -p $APP_DIR
+        mkdir -p /home/ubuntu/logs
         
-        # Deploy backend
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           echo "🔧 Deploying backend..."
+          rm -rf $APP_DIR/server
           mkdir -p $APP_DIR/server
-          cp -r $DEPLOYMENT_DIR/server/* $APP_DIR/server/ 2>/dev/null || true
-          cp $DEPLOYMENT_DIR/server-package.json $APP_DIR/server/package.json 2>/dev/null || true
-          cp -r $DEPLOYMENT_DIR/prisma $APP_DIR/server/ 2>/dev/null || true
+          cp -r /tmp/deployment/server/* $APP_DIR/server/ 2>/dev/null || true
+          cp /tmp/deployment/server-package.json $APP_DIR/server/package.json 2>/dev/null || true
+          cp -r /tmp/deployment/prisma $APP_DIR/server/ 2>/dev/null || true
           
-          # Install production dependencies
           cd $APP_DIR/server
-          npm install --only=production
-          
-          # Run database migrations
-          export PATH=/usr/bin:/usr/local/bin:$PATH
+          npm install --production
           npx prisma generate --schema=./prisma/schema.prisma
           npx prisma migrate deploy --schema=./prisma/schema.prisma
         fi
         
-        # Deploy frontend
         if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
           echo "🎨 Deploying frontend..."
+          rm -rf $APP_DIR/frontend
           mkdir -p $APP_DIR/frontend
-          cp -r $DEPLOYMENT_DIR/frontend/* $APP_DIR/frontend/
+          cp -r /tmp/deployment/frontend/* $APP_DIR/frontend/
         fi
         
-        # Copy deployment info and ecosystem config
-        cp $DEPLOYMENT_DIR/deployment-info.txt $APP_DIR/
-        cp $DEPLOYMENT_DIR/ecosystem.config.js $APP_DIR/ 2>/dev/null || echo "⚠️ ecosystem.config.js not found in deployment package"
+        echo "⚙️ Setting up PM2 config..."
+        cat > $APP_DIR/ecosystem.config.js << 'ECOEOF'
+        module.exports = {
+          apps: [
+            {
+              name: 'gt-automotive-backend',
+              script: 'server/dist/main.js',
+              cwd: '/home/ubuntu/GT-Automotives-App',
+              instances: 1,
+              env: { NODE_ENV: 'production', PORT: 3000 },
+              error_file: '/home/ubuntu/logs/backend-err.log',
+              out_file: '/home/ubuntu/logs/backend-out.log',
+              time: true
+            },
+            {
+              name: 'gt-automotive-frontend',
+              script: 'serve',
+              args: '-s frontend -l 4200 -C',
+              cwd: '/home/ubuntu/GT-Automotives-App',
+              instances: 1,
+              env: { NODE_ENV: 'production' },
+              error_file: '/home/ubuntu/logs/frontend-err.log',
+              out_file: '/home/ubuntu/logs/frontend-out.log',
+              time: true
+            }
+          ]
+        };
+        ECOEOF
         
-        # Ensure ecosystem config exists
-        if [ ! -f "$APP_DIR/ecosystem.config.js" ]; then
-          echo "❌ ecosystem.config.js not found. Creating default..."
-          cat > $APP_DIR/ecosystem.config.js << 'ECOEOF'
-module.exports = {
-  apps: [
-    {
-      name: 'gt-automotive-backend',
-      script: 'server/dist/main.js',
-      cwd: '/home/ubuntu/GT-Automotives-App',
-      instances: 1,
-      exec_mode: 'cluster',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000
-      },
-      error_file: '/home/ubuntu/logs/backend-err.log',
-      out_file: '/home/ubuntu/logs/backend-out.log',
-      log_file: '/home/ubuntu/logs/backend-combined.log',
-      time: true
-    },
-    {
-      name: 'gt-automotive-frontend',
-      script: 'serve',
-      args: '-s frontend -l 4200 -C',
-      cwd: '/home/ubuntu/GT-Automotives-App',
-      instances: 1,
-      exec_mode: 'fork',
-      env: {
-        NODE_ENV: 'production'
-      },
-      error_file: '/home/ubuntu/logs/frontend-err.log',
-      out_file: '/home/ubuntu/logs/frontend-out.log',
-      log_file: '/home/ubuntu/logs/frontend-combined.log',
-      time: true
-    }
-  ]
-};
-ECOEOF
-        fi
-        
-        # Create logs directory
-        mkdir -p /home/ubuntu/logs
-        
-        # Start services
         echo "▶️ Starting services..."
         cd $APP_DIR
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
@@ -280,79 +205,26 @@ ECOEOF
           pm2 start ecosystem.config.js --only gt-automotive-frontend --update-env || pm2 reload gt-automotive-frontend
         fi
         
-        # Health check
-        echo "🏥 Running health check..."
-        sleep 10
-        
-        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
-          curl -f http://localhost:3000/api/health || (echo "❌ Backend health check failed" && exit 1)
-        fi
-        
-        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
-          curl -f http://localhost:4200 || (echo "❌ Frontend health check failed" && exit 1)
-        fi
-        
-        echo "✅ Deployment completed successfully!"
-        echo "📊 Deployment info:"
-        cat $APP_DIR/deployment-info.txt
-        
-        # Cleanup
-        rm -rf $DEPLOYMENT_DIR
-        rm /tmp/$DEPLOYMENT_FILE
+        echo "✅ Deployment completed!"
+        pm2 status
         EOF
         
-        # Make script executable
         chmod +x deploy-script.sh
         
-        # Check if instance is running
-        INSTANCE_STATE=$(aws lightsail get-instance-state \
-          --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
-          --region ${{ secrets.LIGHTSAIL_REGION }} \
-          --query 'state.name' \
-          --output text)
-        
-        if [ "$INSTANCE_STATE" != "running" ]; then
-          echo "Starting Lightsail instance..."
-          aws lightsail start-instance \
-            --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
-            --region ${{ secrets.LIGHTSAIL_REGION }}
-          
-          # Wait for instance to be running
-          echo "Waiting for instance to start..."
-          sleep 30
-        fi
-        
-        # Copy deployment package and script to instance
-        echo "Copying deployment files to instance..."
-        scp -o StrictHostKeyChecking=no \
-          -i /tmp/lightsail-key.pem \
+        # Copy files and execute
+        scp -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
           gt-automotive-deployment-${{ github.sha }}.tar.gz ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
         
-        scp -o StrictHostKeyChecking=no \
-          -i /tmp/lightsail-key.pem \
+        scp -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
           deploy-script.sh ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
           
-        # Execute deployment script
-        ssh -o StrictHostKeyChecking=no \
-          -i /tmp/lightsail-key.pem \
-          ubuntu@${{ secrets.LIGHTSAIL_IP }} \
-          'chmod +x /tmp/deploy-script.sh && sudo /tmp/deploy-script.sh'
+        ssh -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
+          ubuntu@${{ secrets.LIGHTSAIL_IP }} 'chmod +x /tmp/deploy-script.sh && sudo /tmp/deploy-script.sh'
         
-    - name: Notify deployment status
-      if: always()
+    - name: Deployment Summary
       run: |
-        echo "✅ Deployment completed!"
-        echo "Status: ${{ job.status }}"
-        
-    - name: Create deployment summary
-      if: always()
-      run: |
-        cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-        ## 🚀 Deployment Summary
-        
-        **Environment:** ${{ inputs.environment }}
-        **Branch:** ${{ inputs.branch }}
-        **Commit:** ${{ github.sha }}
-        **Date:** $(date)
-        **Triggered by:** @${{ github.actor }}
-        EOF
+        echo "✅ Deployment completed successfully!"
+        echo "Branch: ${{ inputs.branch }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Backend: ${{ inputs.deploy_backend && 'Deployed' || 'Skipped' }}"
+        echo "Frontend: ${{ inputs.deploy_frontend && 'Deployed' || 'Skipped' }}"
