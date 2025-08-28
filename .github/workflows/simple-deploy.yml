@@ -18,6 +18,11 @@ on:
         required: true
         default: true
         type: boolean
+      skip_build:
+        description: 'Skip build and use committed artifacts'
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   deploy:
@@ -30,20 +35,22 @@ jobs:
         ref: ${{ inputs.branch }}
         
     - name: Setup Node.js
+      if: ${{ inputs.skip_build == false }}
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
         
     - name: Install dependencies
+      if: ${{ inputs.skip_build == false }}
       run: yarn install --frozen-lockfile
       
     - name: Build Backend
-      if: inputs.deploy_backend
+      if: ${{ inputs.deploy_backend == true && inputs.skip_build == false }}
       run: yarn nx build server --configuration=production
         
     - name: Build Frontend
-      if: inputs.deploy_frontend
+      if: ${{ inputs.deploy_frontend == true && inputs.skip_build == false }}
       run: yarn nx build webApp --configuration=production
         
     - name: Create deployment package
@@ -132,6 +139,10 @@ jobs:
         mkdir -p /tmp/deployment
         tar -xzf $DEPLOYMENT_FILE -C /tmp/deployment
         
+        # Debug: List contents of deployment package
+        echo "📋 Deployment package contents:"
+        find /tmp/deployment -type f | head -20
+        
         echo "⏹️ Stopping services..."
         pm2 list | grep "gt-automotive-backend" && pm2 stop gt-automotive-backend || echo "Backend not running"
         pm2 list | grep "gt-automotive-frontend" && pm2 stop gt-automotive-frontend || echo "Frontend not running"
@@ -166,9 +177,13 @@ jobs:
           echo "🔧 Deploying backend..."
           rm -rf $APP_DIR/server
           mkdir -p $APP_DIR/server
-          cp -r /tmp/deployment/server/* $APP_DIR/server/ 2>/dev/null || true
-          cp /tmp/deployment/server-package.json $APP_DIR/server/package.json 2>/dev/null || true
-          cp -r /tmp/deployment/prisma $APP_DIR/server/ 2>/dev/null || true
+          cp -r /tmp/deployment/server/* $APP_DIR/server/ 2>/dev/null || echo "No server files found in deployment"
+          cp /tmp/deployment/server-package.json $APP_DIR/server/package.json 2>/dev/null || echo "No server package.json found"
+          cp -r /tmp/deployment/prisma $APP_DIR/server/ 2>/dev/null || echo "No prisma files found"
+          
+          # Debug: Check what was copied
+          echo "📋 Server directory contents:"
+          find $APP_DIR/server -type f | head -10
           
           cd $APP_DIR/server
           npm install --production
