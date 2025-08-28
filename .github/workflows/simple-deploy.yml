@@ -1,0 +1,204 @@
+name: Simple Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+        type: string
+      deploy_backend:
+        description: 'Deploy Backend'
+        required: true
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: 'Deploy Frontend'  
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      
+    - name: Build Backend
+      if: inputs.deploy_backend
+      run: yarn nx build server --configuration=production
+        
+    - name: Build Frontend
+      if: inputs.deploy_frontend
+      run: yarn nx build webApp --configuration=production
+        
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment
+        
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          cp -r server/dist deployment/server
+          cp server/package.json deployment/server-package.json
+          cp -r libs/database/src/lib/prisma deployment/
+        fi
+        
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          mkdir -p deployment/frontend
+          cp -r apps/webApp/dist/* deployment/frontend/
+        fi
+        
+        cp scripts/deploy/* deployment/ 2>/dev/null || true
+        
+        echo "DEPLOYMENT_DATE=$(date)" > deployment/deployment-info.txt
+        echo "COMMIT_SHA=${{ github.sha }}" >> deployment/deployment-info.txt
+        echo "BRANCH=${{ inputs.branch }}" >> deployment/deployment-info.txt
+        
+    - name: Archive deployment package
+      run: |
+        tar -czf gt-automotive-deployment-${{ github.sha }}.tar.gz -C deployment .
+        
+    - name: Configure AWS CLI
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+        
+    - name: Upload to S3
+      run: |
+        aws s3 cp gt-automotive-deployment-${{ github.sha }}.tar.gz \
+          s3://${{ secrets.DEPLOYMENT_BUCKET }}/ --region us-east-1
+        
+    - name: Setup SSH key
+      run: |
+        echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > /tmp/lightsail-key.pem
+        chmod 600 /tmp/lightsail-key.pem
+        
+    - name: Deploy to Lightsail
+      run: |
+        # Create simple deployment script
+        cat > deploy-script.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        DEPLOYMENT_FILE="gt-automotive-deployment-${{ github.sha }}.tar.gz"
+        APP_DIR="/home/ubuntu/GT-Automotives-App"
+        
+        echo "🚀 Starting deployment..."
+        
+        cd /tmp
+        if [ ! -f "$DEPLOYMENT_FILE" ]; then
+            echo "❌ Deployment file not found"
+            exit 1
+        fi
+        
+        echo "📦 Extracting deployment package..."
+        rm -rf /tmp/deployment
+        mkdir -p /tmp/deployment
+        tar -xzf $DEPLOYMENT_FILE -C /tmp/deployment
+        
+        echo "⏹️ Stopping services..."
+        pm2 list | grep "gt-automotive-backend" && pm2 stop gt-automotive-backend || echo "Backend not running"
+        pm2 list | grep "gt-automotive-frontend" && pm2 stop gt-automotive-frontend || echo "Frontend not running"
+        
+        echo "📁 Setting up directories..."
+        mkdir -p $APP_DIR
+        mkdir -p /home/ubuntu/logs
+        
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          echo "🔧 Deploying backend..."
+          rm -rf $APP_DIR/server
+          mkdir -p $APP_DIR/server
+          cp -r /tmp/deployment/server/* $APP_DIR/server/ 2>/dev/null || true
+          cp /tmp/deployment/server-package.json $APP_DIR/server/package.json 2>/dev/null || true
+          cp -r /tmp/deployment/prisma $APP_DIR/server/ 2>/dev/null || true
+          
+          cd $APP_DIR/server
+          npm install --only=production
+          export PATH=/usr/bin:/usr/local/bin:$PATH
+          npx prisma generate --schema=./prisma/schema.prisma
+          npx prisma migrate deploy --schema=./prisma/schema.prisma
+        fi
+        
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          echo "🎨 Deploying frontend..."
+          rm -rf $APP_DIR/frontend
+          mkdir -p $APP_DIR/frontend
+          cp -r /tmp/deployment/frontend/* $APP_DIR/frontend/
+        fi
+        
+        echo "⚙️ Setting up PM2 config..."
+        cat > $APP_DIR/ecosystem.config.js << 'ECOEOF'
+        module.exports = {
+          apps: [
+            {
+              name: 'gt-automotive-backend',
+              script: 'server/dist/main.js',
+              cwd: '/home/ubuntu/GT-Automotives-App',
+              instances: 1,
+              env: { NODE_ENV: 'production', PORT: 3000 },
+              error_file: '/home/ubuntu/logs/backend-err.log',
+              out_file: '/home/ubuntu/logs/backend-out.log',
+              time: true
+            },
+            {
+              name: 'gt-automotive-frontend',
+              script: 'serve',
+              args: '-s frontend -l 4200 -C',
+              cwd: '/home/ubuntu/GT-Automotives-App',
+              instances: 1,
+              env: { NODE_ENV: 'production' },
+              error_file: '/home/ubuntu/logs/frontend-err.log',
+              out_file: '/home/ubuntu/logs/frontend-out.log',
+              time: true
+            }
+          ]
+        };
+        ECOEOF
+        
+        echo "▶️ Starting services..."
+        cd $APP_DIR
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          pm2 start ecosystem.config.js --only gt-automotive-backend --update-env || pm2 reload gt-automotive-backend
+        fi
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          pm2 start ecosystem.config.js --only gt-automotive-frontend --update-env || pm2 reload gt-automotive-frontend
+        fi
+        
+        echo "✅ Deployment completed!"
+        pm2 status
+        EOF
+        
+        chmod +x deploy-script.sh
+        
+        # Copy files and execute
+        scp -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
+          gt-automotive-deployment-${{ github.sha }}.tar.gz ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
+        
+        scp -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
+          deploy-script.sh ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
+          
+        ssh -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
+          ubuntu@${{ secrets.LIGHTSAIL_IP }} 'chmod +x /tmp/deploy-script.sh && sudo /tmp/deploy-script.sh'
+        
+    - name: Deployment Summary
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "Branch: ${{ inputs.branch }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Backend: ${{ inputs.deploy_backend && 'Deployed' || 'Skipped' }}"
+        echo "Frontend: ${{ inputs.deploy_frontend && 'Deployed' || 'Skipped' }}"
