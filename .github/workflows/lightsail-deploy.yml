@@ -44,34 +44,34 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ inputs.commit_sha || inputs.branch }}
+        ref: ${{ inputs.branch }}
         
     - name: Setup Node.js
-      if: inputs.skip_build == false
+      if: ${{ inputs.skip_build == false }}
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
         
     - name: Install dependencies
-      if: inputs.skip_build == false
+      if: ${{ inputs.skip_build == false }}
       run: yarn install --frozen-lockfile
       
     - name: Build Backend
-      if: inputs.deploy_backend && inputs.skip_build == false
+      if: ${{ inputs.deploy_backend == true && inputs.skip_build == false }}
       run: |
         yarn nx build server --configuration=production
         
     - name: Build Frontend
-      if: inputs.deploy_frontend && inputs.skip_build == false
+      if: ${{ inputs.deploy_frontend == true && inputs.skip_build == false }}
       run: |
         yarn nx build webApp --configuration=production
         
     - name: Check for existing build artifacts in git
-      if: inputs.skip_build == true
+      if: ${{ inputs.skip_build == true }}
       run: |
         echo "Checking for committed build artifacts..."
-        echo "Commit SHA: ${{ inputs.commit_sha || github.sha }}"
+        echo "Commit SHA: ${{ github.sha }}"
         echo "Branch: ${{ inputs.branch }}"
         
         if [ "${{ inputs.deploy_backend }}" == "true" ] && [ ! -f "server/dist/main.js" ]; then
