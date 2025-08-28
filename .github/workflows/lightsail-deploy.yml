@@ -39,7 +39,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     
     steps:
     - name: Checkout code
@@ -342,13 +341,8 @@ ECOEOF
     - name: Notify deployment status
       if: always()
       run: |
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Deployment to ${{ inputs.environment }} completed successfully!"
-          echo "🌐 Frontend: https://${{ secrets.FRONTEND_DOMAIN }}"
-          echo "🔧 Backend API: https://${{ secrets.BACKEND_DOMAIN }}/api"
-        else
-          echo "❌ Deployment failed. Check the logs above for details."
-        fi
+        echo "✅ Deployment completed!"
+        echo "Status: ${{ job.status }}"
         
     - name: Create deployment summary
       if: always()
@@ -359,18 +353,6 @@ ECOEOF
         **Environment:** ${{ inputs.environment }}
         **Branch:** ${{ inputs.branch }}
         **Commit:** ${{ github.sha }}
-        **Status:** ${{ job.status }}
-        
-        ### Services Deployed
-        - **Backend:** ${{ inputs.deploy_backend == 'true' && '✅ Deployed' || '⏭️ Skipped' }}
-        - **Frontend:** ${{ inputs.deploy_frontend == 'true' && '✅ Deployed' || '⏭️ Skipped' }}
-        
-        ### URLs
-        - **Frontend:** https://${{ secrets.FRONTEND_DOMAIN }}
-        - **Backend API:** https://${{ secrets.BACKEND_DOMAIN }}/api
-        - **Health Check:** https://${{ secrets.BACKEND_DOMAIN }}/api/health
-        
-        ### Deployment Info
-        - **Date:** $(date)
-        - **Triggered by:** @${{ github.actor }}
+        **Date:** $(date)
+        **Triggered by:** @${{ github.actor }}
         EOF
