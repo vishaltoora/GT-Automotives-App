@@ -143,6 +143,16 @@ jobs:
         echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > /tmp/lightsail-key.pem
         chmod 600 /tmp/lightsail-key.pem
         
+    - name: Verify Lightsail Configuration
+      run: |
+        echo "Checking Lightsail configuration..."
+        echo "Instance Name: ${{ secrets.LIGHTSAIL_INSTANCE_NAME }}"
+        echo "Region: ${{ secrets.AWS_REGION }}"
+        
+        # List all instances in the region to help debug
+        echo "Available instances in region:"
+        aws lightsail get-instances --region ${{ secrets.AWS_REGION }} --query 'instances[].name' --output text || echo "Failed to list instances"
+        
     - name: Deploy to Lightsail
       run: |
         # Create deployment script
@@ -244,13 +254,15 @@ jobs:
         # Check if instance is running
         INSTANCE_STATE=$(aws lightsail get-instance-state \
           --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
+          --region ${{ secrets.AWS_REGION }} \
           --query 'state.name' \
           --output text)
         
         if [ "$INSTANCE_STATE" != "running" ]; then
           echo "Starting Lightsail instance..."
           aws lightsail start-instance \
-            --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }}
+            --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
+            --region ${{ secrets.AWS_REGION }}
           
           # Wait for instance to be running
           echo "Waiting for instance to start..."

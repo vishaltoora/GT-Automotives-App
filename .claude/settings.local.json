@@ -71,7 +71,8 @@
       "Bash(aws configure:*)",
       "Bash(brew install:*)",
       "Bash(brew list:*)",
-      "Read(/usr/local/Cellar/awscli/2.28.19/libexec/bin/**)"
+      "Read(/usr/local/Cellar/awscli/2.28.19/libexec/bin/**)",
+      "Bash(aws lightsail get-instances:*)"
     ],
     "deny": [],
     "ask": []
