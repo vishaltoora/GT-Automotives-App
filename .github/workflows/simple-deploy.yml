@@ -176,14 +176,34 @@ jobs:
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           echo "🔧 Deploying backend..."
           rm -rf $APP_DIR/server
-          mkdir -p $APP_DIR/server
-          cp -r /tmp/deployment/server/* $APP_DIR/server/ 2>/dev/null || echo "No server files found in deployment"
-          cp /tmp/deployment/server-package.json $APP_DIR/server/package.json 2>/dev/null || echo "No server package.json found"
-          cp -r /tmp/deployment/prisma $APP_DIR/server/ 2>/dev/null || echo "No prisma files found"
+          mkdir -p $APP_DIR/server/dist
+          
+          # Copy server dist files
+          if [ -d "/tmp/deployment/server" ]; then
+            cp -r /tmp/deployment/server/* $APP_DIR/server/dist/ 2>/dev/null || echo "Failed to copy server dist files"
+          else
+            echo "❌ No server directory in deployment package"
+          fi
+          
+          # Copy package.json
+          if [ -f "/tmp/deployment/server-package.json" ]; then
+            cp /tmp/deployment/server-package.json $APP_DIR/server/package.json
+          else
+            echo "❌ No server-package.json found"
+          fi
+          
+          # Copy prisma files
+          if [ -d "/tmp/deployment/prisma" ]; then
+            cp -r /tmp/deployment/prisma $APP_DIR/server/
+          else
+            echo "❌ No prisma directory found"
+          fi
           
           # Debug: Check what was copied
           echo "📋 Server directory contents:"
           find $APP_DIR/server -type f | head -10
+          echo "📋 Checking for main.js specifically:"
+          ls -la $APP_DIR/server/dist/main.js 2>/dev/null || echo "❌ main.js not found"
           
           cd $APP_DIR/server
           npm install --production
