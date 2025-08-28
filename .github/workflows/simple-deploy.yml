@@ -52,7 +52,28 @@ jobs:
         
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           cp -r server/dist deployment/server
-          cp server/package.json deployment/server-package.json
+          
+          # Create production package.json with necessary dependencies
+          cat > deployment/server-package.json << 'EOF'
+        {
+          "name": "gt-automotive-server",
+          "version": "1.0.0",
+          "main": "dist/main.js",
+          "scripts": {
+            "start": "node dist/main.js"
+          },
+          "dependencies": {
+            "@nestjs/common": "^10.0.0",
+            "@nestjs/core": "^10.0.0",
+            "@nestjs/platform-express": "^10.0.0",
+            "@prisma/client": "^5.0.0",
+            "prisma": "^5.0.0",
+            "reflect-metadata": "^0.1.13",
+            "rxjs": "^7.8.1"
+          }
+        }
+        EOF
+          
           cp -r libs/database/src/lib/prisma deployment/
         fi
         
@@ -128,8 +149,7 @@ jobs:
           cp -r /tmp/deployment/prisma $APP_DIR/server/ 2>/dev/null || true
           
           cd $APP_DIR/server
-          npm install --only=production
-          export PATH=/usr/bin:/usr/local/bin:$PATH
+          npm install --production
           npx prisma generate --schema=./prisma/schema.prisma
           npx prisma migrate deploy --schema=./prisma/schema.prisma
         fi
