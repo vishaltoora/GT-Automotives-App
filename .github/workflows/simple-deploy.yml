@@ -199,6 +199,15 @@ jobs:
           echo "PostgreSQL already installed"
         fi
         
+        echo "📦 Setting up Node.js and Yarn..."
+        # Install Yarn if not already installed
+        if ! command -v yarn &> /dev/null; then
+          echo "Installing Yarn..."
+          npm install -g yarn
+        else
+          echo "Yarn already installed: $(yarn --version)"
+        fi
+        
         # Set up database and user
         echo "Setting up database and user..."
         sudo -u postgres psql -c "SELECT 1 FROM pg_database WHERE datname = 'gtautomotives_prod';" | grep -q 1 || sudo -u postgres createdb gtautomotives_prod
@@ -216,21 +225,16 @@ jobs:
           ls -la /tmp/deployment/ 2>/dev/null || echo "❌ No deployment directory"
           echo "Server files in deployment:"
           ls -la /tmp/deployment/server/ 2>/dev/null || echo "❌ No server in deployment"
-          rm -rf $APP_DIR/server
-          mkdir -p $APP_DIR/server/dist
           
-          # Copy server dist files
+          # Clean and create server directory
+          rm -rf $APP_DIR/server
+          mkdir -p $APP_DIR/server
+          
+          # Copy server files directly (not in dist subdirectory)
           if [ -d "/tmp/deployment/server" ]; then
-            cp -r /tmp/deployment/server/* $APP_DIR/server/dist/ 2>/dev/null || echo "Failed to copy server dist files"
+            cp -r /tmp/deployment/server/* $APP_DIR/server/ 2>/dev/null || echo "Failed to copy server files"
           else
             echo "❌ No server directory in deployment package"
-          fi
-          
-          # Copy package.json
-          if [ -f "/tmp/deployment/server-package.json" ]; then
-            cp /tmp/deployment/server-package.json $APP_DIR/server/package.json
-          else
-            echo "❌ No server-package.json found"
           fi
           
           # Copy prisma files
@@ -240,21 +244,61 @@ jobs:
             echo "❌ No prisma directory found"
           fi
           
+          # Create comprehensive package.json with all dependencies
+          echo "📝 Creating comprehensive package.json..."
+          cat > $APP_DIR/server/package.json << 'PKGEOF'
+{
+  "name": "gt-automotive-server",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
+    "@nestjs/jwt": "^10.0.0",
+    "@nestjs/passport": "^10.0.0",
+    "@nestjs/serve-static": "^4.0.0",
+    "@prisma/client": "^5.0.0",
+    "prisma": "^5.0.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.1",
+    "passport": "^0.6.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.1",
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jwks-rsa": "^3.0.0",
+    "express-jwt": "^8.0.0",
+    "svix": "^1.0.0"
+  }
+}
+PKGEOF
+          
           # Debug: Check what was copied
           echo "📋 Server directory contents:"
           find $APP_DIR/server -type f | head -10
           echo "📋 Checking for main.js specifically:"
-          ls -la $APP_DIR/server/dist/main.js 2>/dev/null || echo "❌ main.js not found"
+          ls -la $APP_DIR/server/main.js 2>/dev/null || echo "❌ main.js not found"
           
+          # Fix permissions and install with yarn
+          chown -R ubuntu:ubuntu $APP_DIR/server
           cd $APP_DIR/server
-          npm install --production
+          sudo -u ubuntu yarn install --production
           
           # Set up environment variables for Prisma
           export NODE_ENV=production
           export DATABASE_URL="postgresql://gtautomotives:Vishal1234@localhost:5432/gtautomotives_prod"
           
-          npx prisma generate --schema=./prisma/schema.prisma
-          npx prisma migrate deploy --schema=./prisma/schema.prisma
+          sudo -u ubuntu npx prisma generate --schema=./prisma/schema.prisma
+          sudo -u ubuntu npx prisma migrate deploy --schema=./prisma/schema.prisma
         fi
         
         if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
@@ -297,9 +341,10 @@ jobs:
           apps: [
             {
               name: 'gt-automotive-backend',
-              script: '/home/ubuntu/GT-Automotives-App/server/dist/main.js',
+              script: '/home/ubuntu/GT-Automotives-App/server/main.js',
               cwd: '/home/ubuntu/GT-Automotives-App',
               instances: 1,
+              exec_mode: 'fork',
               env_file: '/home/ubuntu/GT-Automotives-App/.env',
               error_file: '/home/ubuntu/logs/backend-err.log',
               out_file: '/home/ubuntu/logs/backend-out.log',
@@ -308,9 +353,10 @@ jobs:
             {
               name: 'gt-automotive-frontend',
               script: 'serve',
-              args: '-s frontend -l 4200 -C',
+              args: '-s frontend -l 4200',
               cwd: '/home/ubuntu/GT-Automotives-App',
               instances: 1,
+              exec_mode: 'fork',
               env: { NODE_ENV: 'production' },
               error_file: '/home/ubuntu/logs/frontend-err.log',
               out_file: '/home/ubuntu/logs/frontend-out.log',
