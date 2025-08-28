@@ -136,7 +136,7 @@ jobs:
     - name: Upload to S3
       run: |
         aws s3 cp gt-automotive-deployment-${{ github.sha }}.tar.gz \
-          s3://${{ secrets.DEPLOYMENT_BUCKET }}/deployments/
+          s3://${{ secrets.DEPLOYMENT_BUCKET }}/
         
     - name: Deploy to Lightsail
       run: |
@@ -153,7 +153,7 @@ jobs:
         
         # Download deployment package
         cd /tmp
-        aws s3 cp s3://${{ secrets.DEPLOYMENT_BUCKET }}/deployments/$DEPLOYMENT_FILE .
+        aws s3 cp s3://${{ secrets.DEPLOYMENT_BUCKET }}/$DEPLOYMENT_FILE .
         
         # Create deployment directory
         rm -rf $DEPLOYMENT_DIR

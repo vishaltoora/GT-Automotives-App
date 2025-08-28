@@ -65,7 +65,8 @@
       "Bash(./scripts/update-docs.sh:*)",
       "Bash(yarn docs:update:*)",
       "Bash(yarn prisma migrate dev:*)",
-      "Bash(openssl rand:*)"
+      "Bash(openssl rand:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
