@@ -175,6 +175,11 @@ jobs:
         
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           echo "🔧 Deploying backend..."
+          echo "🔍 DEBUG: Initial deployment package inspection:"
+          echo "Contents of /tmp/deployment:"
+          ls -la /tmp/deployment/ 2>/dev/null || echo "❌ No deployment directory"
+          echo "Server files in deployment:"
+          ls -la /tmp/deployment/server/ 2>/dev/null || echo "❌ No server in deployment"
           rm -rf $APP_DIR/server
           mkdir -p $APP_DIR/server/dist
           
@@ -244,12 +249,19 @@ jobs:
         FRONTEND_URL=http://localhost:4200
         ENVEOF
         
+        # Debug: Final check before PM2 setup
+        echo "🔍 FINAL DEBUG - Checking complete server structure:"
+        find $APP_DIR -name "main.js" -type f 2>/dev/null || echo "❌ No main.js found anywhere"
+        echo "📁 Complete server directory tree:"
+        ls -la $APP_DIR/server/ 2>/dev/null || echo "❌ No server directory"
+        ls -la $APP_DIR/server/dist/ 2>/dev/null || echo "❌ No server/dist directory"
+        
         cat > $APP_DIR/ecosystem.config.js << 'ECOEOF'
         module.exports = {
           apps: [
             {
               name: 'gt-automotive-backend',
-              script: 'server/dist/main.js',
+              script: '/home/ubuntu/GT-Automotives-App/server/dist/main.js',
               cwd: '/home/ubuntu/GT-Automotives-App',
               instances: 1,
               env_file: '/home/ubuntu/GT-Automotives-App/.env',
