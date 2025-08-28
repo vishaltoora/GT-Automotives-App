@@ -138,6 +138,11 @@ jobs:
         aws s3 cp gt-automotive-deployment-${{ github.sha }}.tar.gz \
           s3://${{ secrets.DEPLOYMENT_BUCKET }}/
         
+    - name: Setup SSH key
+      run: |
+        echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > /tmp/lightsail-key.pem
+        chmod 600 /tmp/lightsail-key.pem
+        
     - name: Deploy to Lightsail
       run: |
         # Create deployment script
@@ -179,9 +184,9 @@ jobs:
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           echo "🔧 Deploying backend..."
           mkdir -p $APP_DIR/server
-          cp -r $DEPLOYMENT_DIR/dist $APP_DIR/server/
-          cp $DEPLOYMENT_DIR/package.json $APP_DIR/server/
-          cp -r $DEPLOYMENT_DIR/prisma $APP_DIR/server/
+          cp -r $DEPLOYMENT_DIR/server/* $APP_DIR/server/ 2>/dev/null || true
+          cp $DEPLOYMENT_DIR/server-package.json $APP_DIR/server/package.json 2>/dev/null || true
+          cp -r $DEPLOYMENT_DIR/prisma $APP_DIR/server/ 2>/dev/null || true
           
           # Install production dependencies
           cd $APP_DIR/server
@@ -236,14 +241,21 @@ jobs:
         # Make script executable
         chmod +x deploy-script.sh
         
-        # Execute deployment on Lightsail instance
-        aws lightsail put-instance-state \
+        # Check if instance is running
+        INSTANCE_STATE=$(aws lightsail get-instance-state \
           --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }} \
-          --state running
+          --query 'state.name' \
+          --output text)
+        
+        if [ "$INSTANCE_STATE" != "running" ]; then
+          echo "Starting Lightsail instance..."
+          aws lightsail start-instance \
+            --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }}
           
-        # Wait for instance to be running
-        aws lightsail wait instance-running \
-          --instance-name ${{ secrets.LIGHTSAIL_INSTANCE_NAME }}
+          # Wait for instance to be running
+          echo "Waiting for instance to start..."
+          sleep 30
+        fi
         
         # Copy and execute deployment script
         scp -o StrictHostKeyChecking=no \
@@ -254,11 +266,6 @@ jobs:
           -i /tmp/lightsail-key.pem \
           ubuntu@${{ secrets.LIGHTSAIL_IP }} \
           'chmod +x /tmp/deploy-script.sh && sudo /tmp/deploy-script.sh'
-        
-    - name: Setup SSH key
-      run: |
-        echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > /tmp/lightsail-key.pem
-        chmod 600 /tmp/lightsail-key.pem
         
     - name: Notify deployment status
       if: always()
