@@ -3,10 +3,10 @@ name: Simple Deploy
 on:
   workflow_dispatch:
     inputs:
-      branch:
-        description: 'Branch to deploy'
+      build_commit:
+        description: 'Build to deploy (commit SHA or "latest" for most recent)'
         required: true
-        default: 'main'
+        default: 'latest'
         type: string
       deploy_backend:
         description: 'Deploy Backend'
@@ -18,40 +18,76 @@ on:
         required: true
         default: true
         type: boolean
-      skip_build:
-        description: 'Skip build and use committed artifacts'
-        required: true
-        default: true
-        type: boolean
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: Resolve build commit
+      id: resolve_commit
+      run: |
+        if [ "${{ inputs.build_commit }}" = "latest" ]; then
+          COMMIT_SHA="${{ github.sha }}"
+          echo "Using latest commit from main branch: $COMMIT_SHA"
+        else
+          COMMIT_SHA="${{ inputs.build_commit }}"
+          echo "Using specified commit: $COMMIT_SHA"
+        fi
+        echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+        echo "📦 Build to deploy: $COMMIT_SHA"
+        
+    - name: Checkout specific build
       uses: actions/checkout@v4
       with:
-        ref: ${{ inputs.branch }}
+        ref: ${{ steps.resolve_commit.outputs.commit_sha }}
         
-    - name: Setup Node.js
-      if: ${{ inputs.skip_build == false }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'yarn'
+    - name: Validate build artifacts
+      run: |
+        echo "🔍 Validating build artifacts for commit ${{ steps.resolve_commit.outputs.commit_sha }}"
         
-    - name: Install dependencies
-      if: ${{ inputs.skip_build == false }}
-      run: yarn install --frozen-lockfile
-      
-    - name: Build Backend
-      if: ${{ inputs.deploy_backend == true && inputs.skip_build == false }}
-      run: yarn nx build server --configuration=production
+        MISSING_ARTIFACTS=""
         
-    - name: Build Frontend
-      if: ${{ inputs.deploy_frontend == true && inputs.skip_build == false }}
-      run: yarn nx build webApp --configuration=production
+        if [ "${{ inputs.deploy_backend }}" == "true" ]; then
+          if [ ! -f "server/dist/main.js" ]; then
+            echo "❌ Backend build artifact missing: server/dist/main.js"
+            MISSING_ARTIFACTS="backend "
+          else
+            echo "✅ Backend build artifact found: server/dist/main.js"
+          fi
+        fi
+        
+        if [ "${{ inputs.deploy_frontend }}" == "true" ]; then
+          if [ ! -f "apps/webApp/dist/index.html" ]; then
+            echo "❌ Frontend build artifact missing: apps/webApp/dist/index.html"
+            MISSING_ARTIFACTS="${MISSING_ARTIFACTS}frontend"
+          else
+            echo "✅ Frontend build artifact found: apps/webApp/dist/index.html"
+          fi
+        fi
+        
+        if [ -n "$MISSING_ARTIFACTS" ]; then
+          echo ""
+          echo "❌ Build artifacts missing for: $MISSING_ARTIFACTS"
+          echo "💡 Make sure to build and commit artifacts before deploying:"
+          echo "   yarn nx build server --configuration=production"
+          echo "   yarn nx build webApp --configuration=production"
+          echo "   git add server/dist/ apps/webApp/dist/"
+          echo "   git commit -m 'build: add production build artifacts'"
+          exit 1
+        fi
+        
+        echo "✅ All required build artifacts found!"
+        
+    - name: Display build information
+      run: |
+        echo "🏗️ Build Information:"
+        echo "Commit SHA: ${{ steps.resolve_commit.outputs.commit_sha }}"
+        echo "Backend: ${{ inputs.deploy_backend == true && '✅ Will deploy' || '⏭️ Skip' }}"
+        echo "Frontend: ${{ inputs.deploy_frontend == true && '✅ Will deploy' || '⏭️ Skip' }}"
+        echo ""
+        echo "📅 Commit details:"
+        git log --oneline -1 ${{ steps.resolve_commit.outputs.commit_sha }}
         
     - name: Create deployment package
       run: |
@@ -92,12 +128,12 @@ jobs:
         cp scripts/deploy/* deployment/ 2>/dev/null || true
         
         echo "DEPLOYMENT_DATE=$(date)" > deployment/deployment-info.txt
-        echo "COMMIT_SHA=${{ github.sha }}" >> deployment/deployment-info.txt
-        echo "BRANCH=${{ inputs.branch }}" >> deployment/deployment-info.txt
+        echo "COMMIT_SHA=${{ steps.resolve_commit.outputs.commit_sha }}" >> deployment/deployment-info.txt
+        echo "BUILD_TYPE=pre-built-artifacts" >> deployment/deployment-info.txt
         
     - name: Archive deployment package
       run: |
-        tar -czf gt-automotive-deployment-${{ github.sha }}.tar.gz -C deployment .
+        tar -czf gt-automotive-deployment-${{ steps.resolve_commit.outputs.commit_sha }}.tar.gz -C deployment .
         
     - name: Configure AWS CLI
       uses: aws-actions/configure-aws-credentials@v4
@@ -108,7 +144,7 @@ jobs:
         
     - name: Upload to S3
       run: |
-        aws s3 cp gt-automotive-deployment-${{ github.sha }}.tar.gz \
+        aws s3 cp gt-automotive-deployment-${{ steps.resolve_commit.outputs.commit_sha }}.tar.gz \
           s3://${{ secrets.DEPLOYMENT_BUCKET }}/ --region us-east-1
         
     - name: Setup SSH key
@@ -123,7 +159,7 @@ jobs:
         #!/bin/bash
         set -e
         
-        DEPLOYMENT_FILE="gt-automotive-deployment-${{ github.sha }}.tar.gz"
+        DEPLOYMENT_FILE="gt-automotive-deployment-${{ steps.resolve_commit.outputs.commit_sha }}.tar.gz"
         APP_DIR="/home/ubuntu/GT-Automotives-App"
         
         echo "🚀 Starting deployment..."
@@ -301,7 +337,7 @@ jobs:
         
         # Copy files and execute
         scp -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
-          gt-automotive-deployment-${{ github.sha }}.tar.gz ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
+          gt-automotive-deployment-${{ steps.resolve_commit.outputs.commit_sha }}.tar.gz ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
         
         scp -o StrictHostKeyChecking=no -i /tmp/lightsail-key.pem \
           deploy-script.sh ubuntu@${{ secrets.LIGHTSAIL_IP }}:/tmp/
@@ -312,7 +348,9 @@ jobs:
     - name: Deployment Summary
       run: |
         echo "✅ Deployment completed successfully!"
-        echo "Branch: ${{ inputs.branch }}"
-        echo "Commit: ${{ github.sha }}"
+        echo "Build: ${{ steps.resolve_commit.outputs.commit_sha }}"
         echo "Backend: ${{ inputs.deploy_backend && 'Deployed' || 'Skipped' }}"
         echo "Frontend: ${{ inputs.deploy_frontend && 'Deployed' || 'Skipped' }}"
+        echo ""
+        echo "🏗️ Build details:"
+        git log --oneline -1 ${{ steps.resolve_commit.outputs.commit_sha }}
