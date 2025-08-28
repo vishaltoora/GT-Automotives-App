@@ -150,6 +150,11 @@ jobs:
           
           cd $APP_DIR/server
           npm install --production
+          
+          # Set up environment variables for Prisma
+          export NODE_ENV=production
+          export DATABASE_URL="postgresql://gtautomotives:Vishal1234@localhost:5432/gtautomotives_prod"
+          
           npx prisma generate --schema=./prisma/schema.prisma
           npx prisma migrate deploy --schema=./prisma/schema.prisma
         fi
@@ -161,7 +166,27 @@ jobs:
           cp -r /tmp/deployment/frontend/* $APP_DIR/frontend/
         fi
         
-        echo "⚙️ Setting up PM2 config..."
+        echo "⚙️ Setting up environment and PM2 config..."
+        
+        # Create .env file for the application
+        cat > $APP_DIR/.env << 'ENVEOF'
+        NODE_ENV=production
+        PORT=3000
+        DATABASE_URL="postgresql://gtautomotives:Vishal1234@localhost:5432/gtautomotives_prod"
+        
+        # Clerk Configuration (add your production keys here)
+        CLERK_SECRET_KEY=sk_test_your_key_here
+        CLERK_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+        CLERK_JWKS_URL=https://clean-dove-53.clerk.accounts.dev/.well-known/jwks.json
+        
+        # JWT Configuration
+        JWT_SECRET=your-very-strong-production-jwt-secret-minimum-32-characters
+        
+        # CORS
+        CORS_ORIGIN=http://localhost:4200
+        FRONTEND_URL=http://localhost:4200
+        ENVEOF
+        
         cat > $APP_DIR/ecosystem.config.js << 'ECOEOF'
         module.exports = {
           apps: [
@@ -170,7 +195,7 @@ jobs:
               script: 'server/dist/main.js',
               cwd: '/home/ubuntu/GT-Automotives-App',
               instances: 1,
-              env: { NODE_ENV: 'production', PORT: 3000 },
+              env_file: '/home/ubuntu/GT-Automotives-App/.env',
               error_file: '/home/ubuntu/logs/backend-err.log',
               out_file: '/home/ubuntu/logs/backend-out.log',
               time: true
