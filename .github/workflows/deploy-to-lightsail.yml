@@ -211,8 +211,9 @@ jobs:
           npm install --only=production
           
           # Run database migrations
-          npx prisma generate
-          npx prisma migrate deploy
+          export PATH=/usr/bin:/usr/local/bin:$PATH
+          npx prisma generate --schema=./prisma/schema.prisma
+          npx prisma migrate deploy --schema=./prisma/schema.prisma
         fi
         
         # Deploy frontend
