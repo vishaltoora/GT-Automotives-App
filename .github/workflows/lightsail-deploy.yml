@@ -146,6 +146,28 @@ jobs:
         mkdir -p $APP_DIR
         mkdir -p /home/ubuntu/logs
         
+        echo "🗄️ Setting up PostgreSQL..."
+        # Install PostgreSQL if not already installed
+        if ! command -v psql &> /dev/null; then
+          echo "Installing PostgreSQL..."
+          apt update
+          apt install -y postgresql postgresql-contrib
+          systemctl start postgresql
+          systemctl enable postgresql
+        else
+          echo "PostgreSQL already installed"
+        fi
+        
+        # Set up database and user
+        echo "Setting up database and user..."
+        sudo -u postgres psql -c "SELECT 1 FROM pg_database WHERE datname = 'gtautomotives_prod';" | grep -q 1 || sudo -u postgres createdb gtautomotives_prod
+        sudo -u postgres psql -c "SELECT 1 FROM pg_roles WHERE rolname = 'gtautomotives';" | grep -q 1 || sudo -u postgres createuser --superuser gtautomotives
+        sudo -u postgres psql -c "ALTER USER gtautomotives PASSWORD 'Vishal1234';"
+        
+        # Test database connection
+        echo "Testing database connection..."
+        PGPASSWORD=Vishal1234 psql -h localhost -U gtautomotives -d gtautomotives_prod -c "SELECT version();" || echo "Database connection test failed, but continuing..."
+        
         if [ "${{ inputs.deploy_backend }}" == "true" ]; then
           echo "🔧 Deploying backend..."
           rm -rf $APP_DIR/server
