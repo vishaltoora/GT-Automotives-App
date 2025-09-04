@@ -22,6 +22,7 @@ import {
   Stack,
   Tooltip,
   Alert,
+  Avatar,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -33,6 +34,7 @@ import {
   Engineering as StaffIcon,
   Block as BlockIcon,
   CheckCircle as ActiveIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
@@ -147,17 +149,28 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const getRoleColor = (role: string): 'error' | 'warning' | 'info' | 'default' => {
+  const getRoleColor = (role: string): 'primary' | 'warning' | 'default' => {
     switch (role.toUpperCase()) {
       case 'ADMIN':
-        return 'error';
+        return 'primary';
       case 'STAFF':
         return 'warning';
-      case 'CUSTOMER':
-        return 'info';
       default:
         return 'default';
     }
+  };
+
+  const getAvatarInitials = (firstName: string, lastName: string): string => {
+    return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+  };
+
+  const getAvatarColor = (name: string): string => {
+    const colors = [
+      '#1976d2', '#388e3c', '#f57c00', '#d32f2f', '#7b1fa2', 
+      '#00796b', '#c2185b', '#5d4037', '#616161', '#e64a19'
+    ];
+    const charCode = name.charCodeAt(0) + name.charCodeAt(name.length - 1);
+    return colors[charCode % colors.length];
   };
 
   const filteredUsers = users.filter((user) => {
@@ -224,7 +237,6 @@ const UserManagement: React.FC = () => {
               <MenuItem value="">All</MenuItem>
               <MenuItem value="ADMIN">Admin</MenuItem>
               <MenuItem value="STAFF">Staff</MenuItem>
-              <MenuItem value="CUSTOMER">Customer</MenuItem>
             </Select>
           </FormControl>
 
@@ -264,23 +276,48 @@ const UserManagement: React.FC = () => {
               {paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-                    {user.firstName} {user.lastName}
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          fontSize: '0.875rem',
+                          bgcolor: getAvatarColor(user.firstName + user.lastName)
+                        }}
+                      >
+                        {getAvatarInitials(user.firstName, user.lastName)}
+                      </Avatar>
+                      <Typography variant="body2">
+                        {user.firstName} {user.lastName}
+                      </Typography>
+                    </Stack>
                   </TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                      <Typography variant="body2">
+                        {user.email}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
                   <TableCell>
                     <Chip
                       icon={getRoleIcon(user.role.name)}
                       label={user.role.name}
+                      variant="outlined"
                       color={getRoleColor(user.role.name)}
                       size="small"
+                      sx={{ minWidth: 80 }}
                     />
                   </TableCell>
                   <TableCell>
                     <Chip
                       icon={user.isActive ? <ActiveIcon /> : <BlockIcon />}
                       label={user.isActive ? 'Active' : 'Inactive'}
+                      variant="outlined"
                       color={user.isActive ? 'success' : 'default'}
                       size="small"
+                      sx={{ minWidth: 80 }}
                     />
                   </TableCell>
                   <TableCell>

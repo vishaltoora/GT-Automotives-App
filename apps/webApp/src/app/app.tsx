@@ -55,6 +55,10 @@ import InvoiceForm from './pages/invoices/InvoiceForm';
 import InvoiceDetails from './pages/invoices/InvoiceDetails';
 import CashReport from './pages/invoices/CashReport';
 
+// Quote Pages
+import QuoteList from './pages/quotations/QuotationList';
+import QuotationDetails from './pages/quotations/QuotationDetails';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -126,6 +130,8 @@ export function App() {
           <Route path="invoices/new" element={<InvoiceForm />} />
           <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="invoices/cash-report" element={<CashReport />} />
+          <Route path="quotations" element={<QuoteList />} />
+          <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="appointments" element={<div>Appointments</div>} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
@@ -160,6 +166,8 @@ export function App() {
           <Route path="invoices/new" element={<InvoiceForm />} />
           <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="invoices/cash-report" element={<CashReport />} />
+          <Route path="quotations" element={<QuoteList />} />
+          <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="reports" element={<div>Financial Reports</div>} />
           <Route path="analytics" element={<div>Analytics</div>} />

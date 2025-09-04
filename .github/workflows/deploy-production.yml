@@ -213,19 +213,21 @@ jobs:
             
       - name: Invalidate CDN cache
         run: |
-          # Get distribution name associated with bucket
-          DISTRIBUTION=$(aws lightsail get-distributions \
-            --query "distributions[?origin.name=='${{ env.BUCKET_NAME }}'].name" \
-            --output text)
+          # Try to invalidate using the known distribution name first
+          echo "Attempting to invalidate CDN cache..."
           
-          if [ -n "$DISTRIBUTION" ]; then
-            echo "Invalidating CDN distribution: $DISTRIBUTION"
-            aws lightsail reset-distribution-cache \
-              --distribution-name $DISTRIBUTION \
-              --paths "/*"
+          # Try with the known distribution name from env
+          if aws lightsail reset-distribution-cache \
+              --distribution-name gt-automotives-distribution \
+              --paths "/*" 2>/dev/null; then
+            echo "✅ CDN cache invalidated successfully using gt-automotives-distribution"
           else
-            echo "No CDN distribution found for bucket"
+            echo "⚠️  Could not invalidate CDN cache automatically"
+            echo "💡 Please manually invalidate the CDN cache in AWS Lightsail Console"
+            echo "   Distribution: gt-automotives-distribution"
+            echo "   Paths: /*"
           fi
+        continue-on-error: true
           
   notify:
     name: Deployment Notification

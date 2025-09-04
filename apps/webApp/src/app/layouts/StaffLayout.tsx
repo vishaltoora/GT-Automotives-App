@@ -31,7 +31,8 @@ import {
   Logout,
   Menu as MenuIcon,
   DirectionsCar,
-  AccountCircle
+  AccountCircle,
+  Description
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useClerk } from '@clerk/clerk-react';
@@ -69,6 +70,7 @@ export function StaffLayout() {
     { text: 'Vehicles', icon: <DirectionsCar />, path: '/staff/vehicles' },
     { text: 'Inventory', icon: <Inventory />, path: '/staff/inventory' },
     { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
+    { text: 'Quotations', icon: <Description />, path: '/staff/quotations' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
     { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
     { text: 'Settings', icon: <Settings />, path: '/staff/settings' },

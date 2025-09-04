@@ -80,11 +80,8 @@ fi
 # Step 4: Get CDN Distribution (if exists)
 echo -e "${YELLOW}🔍 Checking for CDN distribution...${NC}"
 
-# Try to get distribution associated with the bucket
-DISTRIBUTION_EXISTS=$(aws lightsail get-distributions \
-    --region ${AWS_REGION} \
-    --query "distributions[?origin.name=='${BUCKET_NAME}'].name" \
-    --output text)
+# Try to use the known distribution name directly
+DISTRIBUTION_EXISTS="gt-automotives-distribution"
 
 if [ -n "$DISTRIBUTION_EXISTS" ]; then
     DISTRIBUTION_NAME=$DISTRIBUTION_EXISTS

@@ -40,14 +40,19 @@ import {
   Settings,
   Speed,
   LocalShipping,
+  Description,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
+import QuotationDialog from '../../components/quotations/QuotationDialog';
+import { useAuth } from '../../hooks/useAuth';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
 
   // Mock data for demonstration
   const stats = {
@@ -89,7 +94,7 @@ export function AdminDashboard() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary.main }}>
-              Welcome back, Admin
+              Welcome back, {user?.firstName || 'Admin'}
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Here's what's happening with your business today
@@ -321,7 +326,7 @@ export function AdminDashboard() {
       {/* Charts and Activity Section */}
       <Grid container spacing={3} sx={{ mt: 3 }}>
         {/* Quick Actions */}
-        <Grid item size={{ xs: 12, lg: 9 }}>
+        <Grid size={{ xs: 12, lg: 9 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -371,8 +376,29 @@ export function AdminDashboard() {
               </Paper>
               
               <Paper
+                onClick={() => setQuotationDialogOpen(true)}
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.primary.lighter,
+                  },
+                }}
+              >
+                <Description sx={{ fontSize: 32, color: colors.primary.lighter, mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                  New Quotation
+                </Typography>
+              </Paper>
+              
+              <Paper
                 component={Link}
-                to="/customers/new"
+                to="/admin/customers"
                 sx={{
                   p: 2,
                   textAlign: 'center',
@@ -389,13 +415,13 @@ export function AdminDashboard() {
               >
                 <People sx={{ fontSize: 32, color: colors.primary.main, mb: 1 }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                  Add Customer
+                  Customers
                 </Typography>
               </Paper>
               
               <Paper
                 component={Link}
-                to="/inventory/new"
+                to="/admin/inventory"
                 sx={{
                   p: 2,
                   textAlign: 'center',
@@ -410,9 +436,9 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <TireRepair sx={{ fontSize: 32, color: colors.semantic.success, mb: 1 }} />
+                <Inventory sx={{ fontSize: 32, color: colors.semantic.success, mb: 1 }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                  Add Tire
+                  Inventory
                 </Typography>
               </Paper>
               
@@ -441,7 +467,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/vehicles/new"
+                to="/admin/vehicles"
                 sx={{
                   p: 2,
                   textAlign: 'center',
@@ -458,7 +484,7 @@ export function AdminDashboard() {
               >
                 <DirectionsCar sx={{ fontSize: 32, color: colors.semantic.warning, mb: 1 }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                  Add Vehicle
+                  Vehicles
                 </Typography>
               </Paper>
 
@@ -489,75 +515,109 @@ export function AdminDashboard() {
             <Divider sx={{ my: 3 }} />
 
             <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: 2 }}>
-              System Health
+              Quick Navigation
             </Typography>
             
-            <Stack spacing={2}>
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>Database Performance</Typography>
-                  <Typography variant="body2" sx={{ color: colors.semantic.success, fontWeight: 600 }}>98%</Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={98} 
-                  sx={{ 
-                    height: 6, 
-                    borderRadius: 3,
-                    backgroundColor: colors.neutral[200],
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: colors.semantic.success,
-                      borderRadius: 3,
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(3, 1fr)', 
+              gap: 2 
+            }}>
+              <Paper
+                component={Link}
+                to="/admin/inventory"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.primary.main}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.primary.main,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
                     },
-                  }}
-                />
-              </Box>
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <Inventory sx={{ fontSize: 28, color: colors.primary.main, mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.primary.main }}>
+                  Inventory
+                </Typography>
+              </Paper>
               
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>Storage Usage</Typography>
-                  <Typography variant="body2" sx={{ color: colors.semantic.warning, fontWeight: 600 }}>62%</Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={62} 
-                  sx={{ 
-                    height: 6, 
-                    borderRadius: 3,
-                    backgroundColor: colors.neutral[200],
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: colors.semantic.warning,
-                      borderRadius: 3,
+              <Paper
+                component={Link}
+                to="/admin/invoices"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.secondary.main}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.secondary.main,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
                     },
-                  }}
-                />
-              </Box>
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <Receipt sx={{ fontSize: 28, color: colors.secondary.main, mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.secondary.main }}>
+                  Invoices
+                </Typography>
+              </Paper>
               
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>API Response Time</Typography>
-                  <Typography variant="body2" sx={{ color: colors.semantic.success, fontWeight: 600 }}>89ms</Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={89} 
-                  sx={{ 
-                    height: 6, 
-                    borderRadius: 3,
-                    backgroundColor: colors.neutral[200],
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: colors.semantic.info,
-                      borderRadius: 3,
+              <Paper
+                component={Link}
+                to="/admin/quotations"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.semantic.info}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.semantic.info,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
                     },
-                  }}
-                />
-              </Box>
-            </Stack>
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <Description sx={{ fontSize: 28, color: colors.semantic.info, mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.info }}>
+                  Quotations
+                </Typography>
+              </Paper>
+            </Box>
           </Paper>
         </Grid>
 
         {/* Recent Activity */}
-        <Grid item size={{ xs: 12, lg: 3 }}>
+        <Grid size={{ xs: 12, lg: 3 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -618,7 +678,7 @@ export function AdminDashboard() {
 
       {/* Business Insights */}
       <Grid container spacing={3} sx={{ mt: 3 }}>
-        <Grid item size={12}>
+        <Grid size={12}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -789,6 +849,16 @@ export function AdminDashboard() {
         open={invoiceDialogOpen}
         onClose={() => setInvoiceDialogOpen(false)}
         onSuccess={handleInvoiceSuccess}
+      />
+
+      {/* Quotation Dialog */}
+      <QuotationDialog
+        open={quotationDialogOpen}
+        onClose={() => setQuotationDialogOpen(false)}
+        onSuccess={() => {
+          setQuotationDialogOpen(false);
+          // Optionally navigate to quotations list or show success message
+        }}
       />
     </Box>
   );

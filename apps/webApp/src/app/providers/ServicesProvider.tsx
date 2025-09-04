@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useAuth as useMockAuth } from './MockClerkProvider';
-import { setClerkTokenGetter } from '../services/invoice.service';
+import { setClerkTokenGetter as setInvoiceTokenGetter } from '../services/invoice.service';
+import { setClerkTokenGetter as setQuotationTokenGetter } from '../services/quotation.service';
 
 // Check if Clerk is configured
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -11,9 +12,10 @@ export const ServicesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { getToken } = useAuth();
 
   useEffect(() => {
-    // Set the token getter for invoice service
+    // Set the token getter for invoice and quotation services
     if (getToken) {
-      setClerkTokenGetter(getToken);
+      setInvoiceTokenGetter(getToken);
+      setQuotationTokenGetter(getToken);
     }
   }, [getToken]);
 

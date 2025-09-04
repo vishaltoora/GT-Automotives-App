@@ -86,20 +86,21 @@ model Vehicle {
 }
 
 model Tire {
-  id           String        @id @default(cuid())
-  brand        String
-  size         String
-  type         TireType
-  condition    TireCondition
-  quantity     Int           @default(0)
-  price        Decimal       @db.Decimal(10, 2)
-  cost         Decimal?      @db.Decimal(10, 2)
-  location     String?
-  minStock     Int           @default(5)
-  imageUrl     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  invoiceItems InvoiceItem[]
+  id            String          @id @default(cuid())
+  brand         String
+  size          String
+  type          TireType
+  condition     TireCondition
+  quantity      Int             @default(0)
+  price         Decimal         @db.Decimal(10, 2)
+  cost          Decimal?        @db.Decimal(10, 2)
+  location      String?
+  minStock      Int             @default(5)
+  imageUrl      String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  invoiceItems  InvoiceItem[]
+  quotationItems QuotationItem[]
 
   @@index([brand, size])
 }
@@ -144,6 +145,53 @@ model InvoiceItem {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   invoice     Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tire        Tire?           @relation(fields: [tireId], references: [id])
+}
+
+model Quotation {
+  id               String           @id @default(cuid())
+  quotationNumber  String           @unique @default(cuid())
+  customerName     String
+  businessName     String?
+  phone            String?
+  email            String?
+  address          String?
+  vehicleMake      String?
+  vehicleModel     String?
+  vehicleYear      Int?
+  subtotal         Decimal          @db.Decimal(10, 2)
+  gstRate          Decimal?         @db.Decimal(5, 4)
+  gstAmount        Decimal?         @db.Decimal(10, 2)
+  pstRate          Decimal?         @db.Decimal(5, 4)
+  pstAmount        Decimal?         @db.Decimal(10, 2)
+  taxRate          Decimal          @db.Decimal(5, 4)
+  taxAmount        Decimal          @db.Decimal(10, 2)
+  total            Decimal          @db.Decimal(10, 2)
+  status           QuotationStatus  @default(DRAFT)
+  validUntil       DateTime?
+  notes            String?
+  createdBy        String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  convertedToInvoiceId String?      @unique
+  items            QuotationItem[]
+
+  @@index([status])
+  @@index([customerName])
+}
+
+model QuotationItem {
+  id          String          @id @default(cuid())
+  quotationId String
+  tireId      String?
+  itemType    InvoiceItemType
+  description String
+  quantity    Int
+  unitPrice   Decimal         @db.Decimal(10, 2)
+  total       Decimal         @db.Decimal(10, 2)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  quotation   Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   tire        Tire?           @relation(fields: [tireId], references: [id])
 }
 
@@ -237,4 +285,13 @@ enum AppointmentStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
 }

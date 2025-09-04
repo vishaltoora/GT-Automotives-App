@@ -78,7 +78,11 @@
       "Bash(yarn prisma migrate:*)",
       "Bash(yarn prisma db push:*)",
       "Bash(yarn start:*)",
-      "Bash(yarn:*)"
+      "Bash(yarn:*)",
+      "Bash(aws lightsail get-buckets:*)",
+      "WebFetch(domain:gt-automotives-backend.z6qb54dz7z94j.ca-central-1.cs.amazonlightsail.com)",
+      "WebFetch(domain:d305hdjz2ut85m.cloudfront.net)",
+      "Bash(gh run list:*)"
     ],
     "deny": [],
     "ask": []

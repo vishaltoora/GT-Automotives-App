@@ -105,9 +105,10 @@ const ActionsMenu: React.FC<ActionsMenuProps> = ({
           }
         }}
       >
-        {visibleActions.map((action, index) => (
-          <React.Fragment key={action.id}>
+        {visibleActions.flatMap((action, index) => {
+          const menuItem = (
             <MenuItem
+              key={action.id}
               onClick={() => handleActionClick(action)}
               disabled={action.disabled}
               sx={{
@@ -133,11 +134,16 @@ const ActionsMenu: React.FC<ActionsMenuProps> = ({
                 }}
               />
             </MenuItem>
-            {action.dividerAfter && index < visibleActions.length - 1 && (
-              <Divider sx={{ my: 0.5 }} />
-            )}
-          </React.Fragment>
-        ))}
+          );
+          
+          const items = [menuItem];
+          
+          if (action.dividerAfter && index < visibleActions.length - 1) {
+            items.push(<Divider key={`${action.id}-divider`} sx={{ my: 0.5 }} />);
+          }
+          
+          return items;
+        })}
       </Menu>
     </>
   );
