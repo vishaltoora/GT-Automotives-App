@@ -18,7 +18,7 @@ RUN yarn install --frozen-lockfile --network-timeout 100000
 RUN yarn nx build server --prod
 
 # Generate Prisma client
-RUN cd libs/database && npx prisma generate
+RUN cd libs/database && npx prisma generate --schema=src/lib/prisma/schema.prisma
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
