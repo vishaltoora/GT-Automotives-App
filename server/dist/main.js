@@ -32,6 +32,7 @@ const tires_module_1 = __webpack_require__(35);
 const customers_module_1 = __webpack_require__(43);
 const vehicles_module_1 = __webpack_require__(51);
 const invoices_module_1 = __webpack_require__(57);
+const quotations_module_1 = __webpack_require__(63);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 let AppModule = class AppModule {
@@ -50,6 +51,7 @@ exports.AppModule = AppModule = tslib_1.__decorate([
             customers_module_1.CustomersModule,
             vehicles_module_1.VehiclesModule,
             invoices_module_1.InvoicesModule,
+            quotations_module_1.QuotationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [
@@ -233,7 +235,7 @@ let AuthService = class AuthService {
             try {
                 const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
                 if (clerkSecretKey) {
-                    const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 63, 23));
+                    const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 69, 23));
                     clerkUser = await clerkClient.users.getUser(clerkUserId);
                 }
                 else {
@@ -376,7 +378,14 @@ let UserRepository = class UserRepository {
     }
     async findAll(filters) {
         return this.prisma.user.findMany({
-            where: filters,
+            where: {
+                ...filters,
+                role: {
+                    name: {
+                        not: 'CUSTOMER' // Exclude CUSTOMER role users from user management
+                    }
+                }
+            },
             include: {
                 role: true,
             },
@@ -445,7 +454,14 @@ let UserRepository = class UserRepository {
     }
     async findAllWithRoles(filters) {
         return this.prisma.user.findMany({
-            where: filters,
+            where: {
+                ...filters,
+                role: {
+                    name: {
+                        not: 'CUSTOMER' // Exclude CUSTOMER role users from user management
+                    }
+                }
+            },
             include: {
                 role: {
                     include: {
@@ -1258,7 +1274,7 @@ let UsersService = class UsersService {
         const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
         if (clerkSecretKey) {
             try {
-                const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 63, 23));
+                const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 69, 23));
                 const clerkUser = await clerkClient.users.createUser({
                     emailAddress: [data.email],
                     username: data.username,
@@ -4357,6 +4373,703 @@ tslib_1.__decorate([
 
 /***/ }),
 /* 63 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuotationsModule = void 0;
+const tslib_1 = __webpack_require__(4);
+const common_1 = __webpack_require__(1);
+const quotations_service_1 = __webpack_require__(64);
+const quotations_controller_1 = __webpack_require__(66);
+const quotation_repository_1 = __webpack_require__(65);
+const database_1 = __webpack_require__(13);
+let QuotationsModule = class QuotationsModule {
+};
+exports.QuotationsModule = QuotationsModule;
+exports.QuotationsModule = QuotationsModule = tslib_1.__decorate([
+    (0, common_1.Module)({
+        controllers: [quotations_controller_1.QuotationsController],
+        providers: [quotations_service_1.QuotationsService, quotation_repository_1.QuotationRepository, database_1.PrismaService],
+        exports: [quotations_service_1.QuotationsService],
+    })
+], QuotationsModule);
+
+
+/***/ }),
+/* 64 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuotationsService = void 0;
+const tslib_1 = __webpack_require__(4);
+const common_1 = __webpack_require__(1);
+const quotation_repository_1 = __webpack_require__(65);
+const database_1 = __webpack_require__(13);
+let QuotationsService = class QuotationsService {
+    constructor(quotationRepository, prisma) {
+        this.quotationRepository = quotationRepository;
+        this.prisma = prisma;
+    }
+    async create(createQuoteDto, userId) {
+        console.log('Service: Starting quotation creation...');
+        console.log('Service: Received data:', JSON.stringify(createQuoteDto, null, 2));
+        try {
+            const { items, ...quoteData } = createQuoteDto;
+            // Generate quotation number
+            const quotationNumber = `Q${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+            console.log('Service: Generated quotation number:', quotationNumber);
+            // Calculate totals
+            let subtotal = 0;
+            const processedItems = items.map(item => {
+                const total = item.quantity * item.unitPrice;
+                subtotal += total;
+                return {
+                    ...item,
+                    total,
+                };
+            });
+            console.log('Service: Processed items count:', processedItems.length);
+            // Calculate taxes
+            const gstRate = quoteData.gstRate ?? 0.05; // Default 5% GST
+            const pstRate = quoteData.pstRate ?? 0.07; // Default 7% PST
+            const gstAmount = subtotal * gstRate;
+            const pstAmount = subtotal * pstRate;
+            const taxRate = gstRate + pstRate;
+            const taxAmount = gstAmount + pstAmount;
+            const total = subtotal + taxAmount;
+            console.log('Service: Calculated totals - subtotal:', subtotal, 'total:', total);
+            // Set valid until date if not provided (30 days from now)
+            const validUntil = quoteData.validUntil
+                ? new Date(quoteData.validUntil)
+                : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+            console.log('Service: About to call repository create...');
+            const result = await this.quotationRepository.create({
+                ...quoteData,
+                quotationNumber,
+                subtotal,
+                gstRate,
+                gstAmount,
+                pstRate,
+                pstAmount,
+                taxRate,
+                taxAmount,
+                total,
+                validUntil,
+                status: quoteData.status || 'DRAFT',
+                createdBy: userId,
+                items: {
+                    create: processedItems,
+                },
+            });
+            console.log('Service: Successfully created quotation:', result.id);
+            return result;
+        }
+        catch (error) {
+            console.error('Service: Error creating quotation:', error);
+            throw error;
+        }
+    }
+    async findAll() {
+        return this.quotationRepository.findAll();
+    }
+    async findOne(id) {
+        const quotation = await this.quotationRepository.findOne(id);
+        if (!quotation) {
+            throw new common_1.NotFoundException(`Quotation with ID ${id} not found`);
+        }
+        return quotation;
+    }
+    async update(id, updateQuoteDto) {
+        const existingQuotation = await this.findOne(id);
+        const { items, ...quoteData } = updateQuoteDto;
+        // If items are being updated, recalculate totals
+        if (items) {
+            // Delete existing items
+            await this.quotationRepository.deleteItems(id);
+            // Calculate new totals
+            let subtotal = 0;
+            const processedItems = items.map(item => {
+                const total = item.quantity * item.unitPrice;
+                subtotal += total;
+                return {
+                    ...item,
+                    quotationId: id,
+                    total,
+                };
+            });
+            // Calculate taxes
+            const gstRate = quoteData.gstRate ?? existingQuotation.gstRate ?? 0.05;
+            const pstRate = quoteData.pstRate ?? existingQuotation.pstRate ?? 0.07;
+            const gstAmount = subtotal * Number(gstRate);
+            const pstAmount = subtotal * Number(pstRate);
+            const taxRate = Number(gstRate) + Number(pstRate);
+            const taxAmount = gstAmount + pstAmount;
+            const total = subtotal + taxAmount;
+            // Create new items
+            await this.quotationRepository.createItems(processedItems);
+            // Update quotation with new totals
+            return this.quotationRepository.update(id, {
+                ...quoteData,
+                subtotal,
+                gstRate,
+                gstAmount,
+                pstRate,
+                pstAmount,
+                taxRate,
+                taxAmount,
+                total,
+            });
+        }
+        // If no items update, just update the quotation data
+        return this.quotationRepository.update(id, quoteData);
+    }
+    async remove(id) {
+        await this.findOne(id); // Check if exists
+        await this.quotationRepository.delete(id);
+    }
+    async search(params) {
+        return this.quotationRepository.search(params);
+    }
+    async convertToInvoice(quotationId, customerId, vehicleId) {
+        const quotation = await this.findOne(quotationId);
+        if (quotation.status === 'CONVERTED') {
+            throw new Error('Quotation has already been converted to an invoice');
+        }
+        // Create invoice from quotation
+        const invoice = await this.prisma.invoice.create({
+            data: {
+                customerId,
+                vehicleId,
+                subtotal: quotation.subtotal,
+                taxRate: quotation.taxRate,
+                taxAmount: quotation.taxAmount,
+                gstRate: quotation.gstRate,
+                gstAmount: quotation.gstAmount,
+                pstRate: quotation.pstRate,
+                pstAmount: quotation.pstAmount,
+                total: quotation.total,
+                status: 'PENDING',
+                notes: quotation.notes,
+                createdBy: quotation.createdBy,
+                items: {
+                    create: quotation.items.map(item => ({
+                        tireId: item.tireId,
+                        itemType: item.itemType,
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        total: item.total,
+                    })),
+                },
+            },
+            include: {
+                customer: true,
+                vehicle: true,
+                items: {
+                    include: {
+                        tire: true,
+                    },
+                },
+            },
+        });
+        // Update quotation status
+        await this.quotationRepository.convertToInvoice(quotationId, invoice.id);
+        return invoice;
+    }
+};
+exports.QuotationsService = QuotationsService;
+exports.QuotationsService = QuotationsService = tslib_1.__decorate([
+    (0, common_1.Injectable)(),
+    tslib_1.__metadata("design:paramtypes", [typeof (_a = typeof quotation_repository_1.QuotationRepository !== "undefined" && quotation_repository_1.QuotationRepository) === "function" ? _a : Object, typeof (_b = typeof database_1.PrismaService !== "undefined" && database_1.PrismaService) === "function" ? _b : Object])
+], QuotationsService);
+
+
+/***/ }),
+/* 65 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuotationRepository = void 0;
+const tslib_1 = __webpack_require__(4);
+const common_1 = __webpack_require__(1);
+const database_1 = __webpack_require__(13);
+let QuotationRepository = class QuotationRepository {
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    async create(data) {
+        return this.prisma.quotation.create({
+            data,
+            include: {
+                items: {
+                    include: {
+                        tire: true,
+                    },
+                },
+            },
+        });
+    }
+    async findAll() {
+        return this.prisma.quotation.findMany({
+            include: {
+                items: {
+                    include: {
+                        tire: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+    }
+    async findOne(id) {
+        return this.prisma.quotation.findUnique({
+            where: { id },
+            include: {
+                items: {
+                    include: {
+                        tire: true,
+                    },
+                },
+            },
+        });
+    }
+    async findByNumber(quotationNumber) {
+        return this.prisma.quotation.findUnique({
+            where: { quotationNumber },
+            include: {
+                items: {
+                    include: {
+                        tire: true,
+                    },
+                },
+            },
+        });
+    }
+    async update(id, data) {
+        return this.prisma.quotation.update({
+            where: { id },
+            data,
+            include: {
+                items: {
+                    include: {
+                        tire: true,
+                    },
+                },
+            },
+        });
+    }
+    async delete(id) {
+        return this.prisma.quotation.delete({
+            where: { id },
+        });
+    }
+    async deleteItems(quotationId) {
+        await this.prisma.quotationItem.deleteMany({
+            where: { quotationId },
+        });
+    }
+    async createItems(items) {
+        await this.prisma.quotationItem.createMany({
+            data: items,
+        });
+    }
+    async search(params) {
+        const where = {};
+        if (params.customerName) {
+            where.OR = [
+                {
+                    customerName: {
+                        contains: params.customerName,
+                        mode: 'insensitive',
+                    },
+                },
+                {
+                    businessName: {
+                        contains: params.customerName,
+                        mode: 'insensitive',
+                    },
+                },
+            ];
+        }
+        if (params.quotationNumber) {
+            where.quotationNumber = {
+                contains: params.quotationNumber,
+                mode: 'insensitive',
+            };
+        }
+        if (params.status) {
+            where.status = params.status;
+        }
+        if (params.startDate || params.endDate) {
+            where.createdAt = {};
+            if (params.startDate) {
+                where.createdAt.gte = new Date(params.startDate);
+            }
+            if (params.endDate) {
+                where.createdAt.lte = new Date(params.endDate);
+            }
+        }
+        return this.prisma.quotation.findMany({
+            where,
+            include: {
+                items: {
+                    include: {
+                        tire: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+    }
+    async convertToInvoice(quotationId, invoiceId) {
+        return this.prisma.quotation.update({
+            where: { id: quotationId },
+            data: {
+                status: 'CONVERTED',
+                convertedToInvoiceId: invoiceId,
+            },
+        });
+    }
+};
+exports.QuotationRepository = QuotationRepository;
+exports.QuotationRepository = QuotationRepository = tslib_1.__decorate([
+    (0, common_1.Injectable)(),
+    tslib_1.__metadata("design:paramtypes", [typeof (_a = typeof database_1.PrismaService !== "undefined" && database_1.PrismaService) === "function" ? _a : Object])
+], QuotationRepository);
+
+
+/***/ }),
+/* 66 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuotationsController = void 0;
+const tslib_1 = __webpack_require__(4);
+const common_1 = __webpack_require__(1);
+const quotations_service_1 = __webpack_require__(64);
+const create_quotation_dto_1 = __webpack_require__(67);
+const update_quotation_dto_1 = __webpack_require__(68);
+const jwt_auth_guard_1 = __webpack_require__(22);
+const role_guard_1 = __webpack_require__(27);
+const roles_decorator_1 = __webpack_require__(28);
+let QuotationsController = class QuotationsController {
+    constructor(quotationsService) {
+        this.quotationsService = quotationsService;
+    }
+    create(createQuoteDto, req) {
+        const userId = req.user?.sub || req.user?.id || 'system';
+        console.log('Creating quotation with userId:', userId, 'user object:', req.user);
+        return this.quotationsService.create(createQuoteDto, userId);
+    }
+    findAll() {
+        return this.quotationsService.findAll();
+    }
+    search(customerName, quotationNumber, status, startDate, endDate) {
+        return this.quotationsService.search({
+            customerName,
+            quotationNumber,
+            status,
+            startDate,
+            endDate,
+        });
+    }
+    findOne(id) {
+        return this.quotationsService.findOne(id);
+    }
+    update(id, updateQuoteDto) {
+        return this.quotationsService.update(id, updateQuoteDto);
+    }
+    remove(id) {
+        return this.quotationsService.remove(id);
+    }
+    convertToInvoice(id, body) {
+        return this.quotationsService.convertToInvoice(id, body.customerId, body.vehicleId);
+    }
+};
+exports.QuotationsController = QuotationsController;
+tslib_1.__decorate([
+    (0, common_1.Post)(),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    tslib_1.__param(0, (0, common_1.Body)()),
+    tslib_1.__param(1, (0, common_1.Request)()),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof create_quotation_dto_1.CreateQuoteDto !== "undefined" && create_quotation_dto_1.CreateQuoteDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:returntype", void 0)
+], QuotationsController.prototype, "create", null);
+tslib_1.__decorate([
+    (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", []),
+    tslib_1.__metadata("design:returntype", void 0)
+], QuotationsController.prototype, "findAll", null);
+tslib_1.__decorate([
+    (0, common_1.Get)('search'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    tslib_1.__param(0, (0, common_1.Query)('customerName')),
+    tslib_1.__param(1, (0, common_1.Query)('quotationNumber')),
+    tslib_1.__param(2, (0, common_1.Query)('status')),
+    tslib_1.__param(3, (0, common_1.Query)('startDate')),
+    tslib_1.__param(4, (0, common_1.Query)('endDate')),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [String, String, String, String, String]),
+    tslib_1.__metadata("design:returntype", void 0)
+], QuotationsController.prototype, "search", null);
+tslib_1.__decorate([
+    (0, common_1.Get)(':id'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    tslib_1.__param(0, (0, common_1.Param)('id')),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [String]),
+    tslib_1.__metadata("design:returntype", void 0)
+], QuotationsController.prototype, "findOne", null);
+tslib_1.__decorate([
+    (0, common_1.Patch)(':id'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    tslib_1.__param(0, (0, common_1.Param)('id')),
+    tslib_1.__param(1, (0, common_1.Body)()),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_c = typeof update_quotation_dto_1.UpdateQuoteDto !== "undefined" && update_quotation_dto_1.UpdateQuoteDto) === "function" ? _c : Object]),
+    tslib_1.__metadata("design:returntype", void 0)
+], QuotationsController.prototype, "update", null);
+tslib_1.__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    tslib_1.__param(0, (0, common_1.Param)('id')),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [String]),
+    tslib_1.__metadata("design:returntype", void 0)
+], QuotationsController.prototype, "remove", null);
+tslib_1.__decorate([
+    (0, common_1.Post)(':id/convert'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    tslib_1.__param(0, (0, common_1.Param)('id')),
+    tslib_1.__param(1, (0, common_1.Body)()),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [String, Object]),
+    tslib_1.__metadata("design:returntype", void 0)
+], QuotationsController.prototype, "convertToInvoice", null);
+exports.QuotationsController = QuotationsController = tslib_1.__decorate([
+    (0, common_1.Controller)('api/quotations'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, role_guard_1.RoleGuard),
+    tslib_1.__metadata("design:paramtypes", [typeof (_a = typeof quotations_service_1.QuotationsService !== "undefined" && quotations_service_1.QuotationsService) === "function" ? _a : Object])
+], QuotationsController);
+
+
+/***/ }),
+/* 67 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CreateQuoteDto = exports.CreateQuoteItemDto = void 0;
+const tslib_1 = __webpack_require__(4);
+const class_validator_1 = __webpack_require__(48);
+const class_transformer_1 = __webpack_require__(42);
+const client_1 = __webpack_require__(16);
+class CreateQuoteItemDto {
+}
+exports.CreateQuoteItemDto = CreateQuoteItemDto;
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteItemDto.prototype, "tireId", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsEnum)(client_1.InvoiceItemType),
+    tslib_1.__metadata("design:type", typeof (_a = typeof client_1.InvoiceItemType !== "undefined" && client_1.InvoiceItemType) === "function" ? _a : Object)
+], CreateQuoteItemDto.prototype, "itemType", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteItemDto.prototype, "description", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], CreateQuoteItemDto.prototype, "quantity", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], CreateQuoteItemDto.prototype, "unitPrice", void 0);
+class CreateQuoteDto {
+}
+exports.CreateQuoteDto = CreateQuoteDto;
+tslib_1.__decorate([
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "customerName", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "businessName", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "phone", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "email", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "address", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "vehicleMake", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "vehicleModel", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], CreateQuoteDto.prototype, "vehicleYear", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => CreateQuoteItemDto),
+    tslib_1.__metadata("design:type", Array)
+], CreateQuoteDto.prototype, "items", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], CreateQuoteDto.prototype, "gstRate", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], CreateQuoteDto.prototype, "pstRate", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "notes", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.QuotationStatus),
+    tslib_1.__metadata("design:type", typeof (_b = typeof client_1.QuotationStatus !== "undefined" && client_1.QuotationStatus) === "function" ? _b : Object)
+], CreateQuoteDto.prototype, "status", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateQuoteDto.prototype, "validUntil", void 0);
+
+
+/***/ }),
+/* 68 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UpdateQuoteDto = void 0;
+const tslib_1 = __webpack_require__(4);
+const class_validator_1 = __webpack_require__(48);
+const class_transformer_1 = __webpack_require__(42);
+const client_1 = __webpack_require__(16);
+const create_quotation_dto_1 = __webpack_require__(67);
+class UpdateQuoteDto {
+}
+exports.UpdateQuoteDto = UpdateQuoteDto;
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "customerName", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "businessName", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "phone", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "email", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "address", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "vehicleMake", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "vehicleModel", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], UpdateQuoteDto.prototype, "vehicleYear", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => create_quotation_dto_1.CreateQuoteItemDto),
+    tslib_1.__metadata("design:type", Array)
+], UpdateQuoteDto.prototype, "items", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], UpdateQuoteDto.prototype, "gstRate", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], UpdateQuoteDto.prototype, "pstRate", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "notes", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.QuotationStatus),
+    tslib_1.__metadata("design:type", typeof (_a = typeof client_1.QuotationStatus !== "undefined" && client_1.QuotationStatus) === "function" ? _a : Object)
+], UpdateQuoteDto.prototype, "status", void 0);
+tslib_1.__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateQuoteDto.prototype, "validUntil", void 0);
+
+
+/***/ }),
+/* 69 */
 /***/ ((module) => {
 
 module.exports = require("@clerk/clerk-sdk-node");
@@ -4483,3 +5196,4 @@ bootstrap();
 
 /******/ })()
 ;
+//# sourceMappingURL=main.js.map

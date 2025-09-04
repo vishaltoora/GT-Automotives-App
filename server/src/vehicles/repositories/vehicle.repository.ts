@@ -19,11 +19,7 @@ export class VehicleRepository extends BaseRepository<
   async findAllWithDetails() {
     return this.prisma.vehicle.findMany({
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         _count: {
           select: {
             invoices: true,
@@ -58,11 +54,7 @@ export class VehicleRepository extends BaseRepository<
     return this.prisma.vehicle.findUnique({
       where: { id },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         invoices: {
           take: 10,
           orderBy: {
@@ -86,11 +78,7 @@ export class VehicleRepository extends BaseRepository<
     return this.prisma.vehicle.findUnique({
       where: { vin },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
       },
     });
   }
@@ -106,11 +94,7 @@ export class VehicleRepository extends BaseRepository<
         ],
       },
       include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
+        customer: true,
         _count: {
           select: {
             invoices: true,

@@ -15,7 +15,14 @@ export class UserRepository {
     isActive?: boolean;
   }): Promise<UserWithRole[]> {
     return this.prisma.user.findMany({
-      where: filters,
+      where: {
+        ...filters,
+        role: {
+          name: {
+            not: 'CUSTOMER' // Exclude CUSTOMER role users from user management
+          }
+        }
+      },
       include: {
         role: true,
       },
@@ -100,7 +107,14 @@ export class UserRepository {
     isActive?: boolean;
   }): Promise<UserWithRole[]> {
     return this.prisma.user.findMany({
-      where: filters,
+      where: {
+        ...filters,
+        role: {
+          name: {
+            not: 'CUSTOMER' // Exclude CUSTOMER role users from user management
+          }
+        }
+      },
       include: {
         role: {
           include: {
