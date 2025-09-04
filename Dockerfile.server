@@ -2,7 +2,7 @@
 # Designed for Nx monorepo structure
 
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
 
 # Copy package files
@@ -15,7 +15,7 @@ COPY libs/shared/package.json ./libs/shared/
 RUN yarn install --frozen-lockfile --network-timeout 100000
 
 # Stage 2: Builder
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy dependencies from previous stage
@@ -32,7 +32,7 @@ RUN yarn nx build server --prod
 RUN cd libs/database && npx prisma generate
 
 # Stage 3: Runner
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Install dumb-init for proper signal handling
