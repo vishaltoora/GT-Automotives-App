@@ -120,6 +120,7 @@ server/src/
 - **Authentication**: Clerk integration with branded UI
 - **Customer Management**: Enhanced with business name support
 - **Invoice System**: Complete with printing and PDF support
+- **Quotation System**: Full quote creation, management, and conversion to invoices
 - **Tire Inventory**: Full management with visual indicators
 - **Admin Dashboard**: Comprehensive with quick actions
 - **Staff Dashboard**: Operational interface
@@ -194,11 +195,21 @@ server/src/
 - ✅ **Staff Logout Issues**: Fixed with proper Clerk integration
 - ✅ **Module Export Issues**: Fixed ESM/CommonJS compatibility
 - ✅ **Customer Data Duplication**: Prevented with better validation
+- ✅ **Quotation Creation Error**: Fixed variable name mismatch in QuotationsService
 
 ### Current Known Issues
 - 🔍 **No major blocking issues currently identified**
 - 📱 **Mobile Experience**: Some responsive improvements planned
 - 🔔 **Notifications**: Real-time notifications not yet implemented
+
+### Recently Resolved Issues (September 4, 2025)
+- ✅ **Admin Layout Issues**: Fixed full-height drawer and transparent app bar positioning
+- ✅ **Quotation System Errors**: Resolved "Failed to load quotations" and update failures
+- ✅ **Dashboard Navigation**: Fixed broken quick navigation links
+- ✅ **Date Format Validation**: Fixed ISO-8601 DateTime format for validUntil field
+- ✅ **TypeScript Interface Consistency**: Fixed Quotation → Quote type references
+- ✅ **Three-dot Menu Implementation**: Modern popover menu for quotation actions
+- ✅ **Numeric Conversion Issues**: Fixed form data type handling in quotation forms
 
 ## 📈 Next Development Priorities
 
@@ -310,8 +321,8 @@ yarn dev
 
 ---
 
-**Last Updated**: August 27, 2025  
-**Version**: 2.0  
-**Branch**: user-management  
+**Last Updated**: September 4, 2025  
+**Version**: 2.1  
+**Branch**: main  
 **Status**: Active Development  
 **Next Milestone**: Appointment Scheduling System

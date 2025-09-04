@@ -74,6 +74,7 @@ import { Grid } from '@mui/material';
 - ✅ **Login Redirect Loop:** Fixed role-based routing logic
 - ✅ **Public Page Flash:** Eliminated brief content visibility during authentication
 - ✅ **Loading Screen Visual:** Replaced blur effect with solid professional background
+- ✅ **Quotation Creation Error:** Fixed variable name mismatch in QuotationsService (quotationData → quoteData)
 
 ## Authentication Files (August 20, 2025)
 - **Created:** `server/src/auth/strategies/clerk-jwt.strategy.ts` - Clerk JWT verification
@@ -83,6 +84,23 @@ import { Grid } from '@mui/material';
 - **Modified:** `apps/webApp/src/app/guards/RoleGuard.tsx` - Case-insensitive roles
 - **Modified:** `libs/database/src/lib/prisma/seed.ts` - Added Vishal as admin
 - **Created:** `scripts/update-vishal-clerk-id.ts` - Clerk ID update script
+
+### Quotation System Errors (September 2025)
+**Problem:** "Failed to create quote" error when creating quotations
+**Root Cause:** Variable name mismatch in `server/src/quotations/quotations.service.ts` line 51
+**Solution:** Fixed variable reference from `quotationData.validUntil` to `quoteData.validUntil`
+```typescript
+// Before (line 51)
+const validUntil = quoteData.validUntil 
+  ? new Date(quotationData.validUntil)  // ❌ quotationData is undefined
+  : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+// After
+const validUntil = quoteData.validUntil 
+  ? new Date(quoteData.validUntil)  // ✅ correct variable name
+  : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+```
+
 ## Build Issues (August 2025)
 
 ### TypeScript Compilation Errors
