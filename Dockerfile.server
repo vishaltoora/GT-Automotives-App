@@ -1,29 +1,18 @@
 # Multi-stage Dockerfile for GT Automotive Backend
-# Designed for Nx monorepo structure
+# Simplified for Nx monorepo
 
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
+# Stage 1: Builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
 COPY package.json yarn.lock ./
-COPY server/package.json ./server/
-COPY libs/database/package.json ./libs/database/
-COPY libs/shared/package.json ./libs/shared/
 
-# Install all dependencies
-RUN yarn install --frozen-lockfile --network-timeout 100000
-
-# Stage 2: Builder
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-# Copy dependencies from previous stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/server/node_modules ./server/node_modules
-
-# Copy source code
+# Copy all source code
 COPY . .
+
+# Install dependencies
+RUN yarn install --frozen-lockfile --network-timeout 100000
 
 # Build the server
 RUN yarn nx build server --prod
