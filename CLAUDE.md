@@ -17,6 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[UI Components](.claude/docs/ui-components.md)** - Component documentation and usage guidelines
 - **[Business Rules](.claude/docs/business-rules.md)** - Requirements and domain logic
 - **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
+- **[Lightsail Deployment Plan](.claude/docs/lightsail-deployment-plan.md)** - AWS Lightsail deployment architecture and CI/CD setup
 - **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions
 - **[Completed Work](.claude/docs/completed-work.md)** - Detailed log of implemented features
 

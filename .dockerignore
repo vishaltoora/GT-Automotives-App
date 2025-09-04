@@ -1,0 +1,76 @@
+# Dependencies
+node_modules
+**/node_modules
+npm-debug.log
+yarn-error.log
+.yarn
+
+# Build outputs
+dist
+**/dist
+build
+**/build
+.next
+out
+
+# Development files
+.git
+.gitignore
+.github
+*.md
+README.md
+CHANGELOG.md
+LICENSE
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Environment files (we'll pass these as build args)
+.env
+.env.*
+!.env.example
+
+# Test files
+**/*.spec.ts
+**/*.spec.tsx
+**/*.test.ts
+**/*.test.tsx
+coverage
+.nyc_output
+jest.config.js
+
+# Documentation
+docs
+*.md
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.log
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Nx cache
+.nx
+nx-cloud.env
+
+# Frontend specific (when building backend)
+apps/webApp/dist
+apps/webApp/node_modules
+
+# Scripts (not needed in container)
+scripts
+*.sh
+
+# Docker files themselves
+Dockerfile*
+docker-compose*
+.dockerignore
