@@ -18,20 +18,18 @@ RUN yarn db:generate
 WORKDIR /app/server
 
 # Create a lenient tsconfig for Docker build
-RUN cat > tsconfig.docker.json << 'EOF'
-{
-  "extends": "./tsconfig.app.json",
-  "compilerOptions": {
-    "noEmitOnError": false,
-    "skipLibCheck": true,
-    "strict": false,
-    "noImplicitAny": false,
-    "noImplicitReturns": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
-  }
-}
-EOF
+RUN echo '{\
+  "extends": "./tsconfig.app.json",\
+  "compilerOptions": {\
+    "noEmitOnError": false,\
+    "skipLibCheck": true,\
+    "strict": false,\
+    "noImplicitAny": false,\
+    "noImplicitReturns": false,\
+    "noUnusedLocals": false,\
+    "noUnusedParameters": false\
+  }\
+}' > tsconfig.docker.json
 
 # Build with lenient settings
 RUN npx tsc -p tsconfig.docker.json --outDir dist || echo "Build completed with warnings"
