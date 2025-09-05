@@ -33,6 +33,7 @@ const customers_module_1 = __webpack_require__(43);
 const vehicles_module_1 = __webpack_require__(51);
 const invoices_module_1 = __webpack_require__(57);
 const quotations_module_1 = __webpack_require__(63);
+const health_module_1 = __webpack_require__(69);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 let AppModule = class AppModule {
@@ -52,6 +53,7 @@ exports.AppModule = AppModule = tslib_1.__decorate([
             vehicles_module_1.VehiclesModule,
             invoices_module_1.InvoicesModule,
             quotations_module_1.QuotationsModule,
+            health_module_1.HealthModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [
@@ -235,7 +237,7 @@ let AuthService = class AuthService {
             try {
                 const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
                 if (clerkSecretKey) {
-                    const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 69, 23));
+                    const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 72, 23));
                     clerkUser = await clerkClient.users.getUser(clerkUserId);
                 }
                 else {
@@ -1274,7 +1276,7 @@ let UsersService = class UsersService {
         const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
         if (clerkSecretKey) {
             try {
-                const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 69, 23));
+                const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 72, 23));
                 const clerkUser = await clerkClient.users.createUser({
                     emailAddress: [data.email],
                     username: data.username,
@@ -3212,11 +3214,7 @@ let VehicleRepository = class VehicleRepository extends base_repository_1.BaseRe
     async findAllWithDetails() {
         return this.prisma.vehicle.findMany({
             include: {
-                customer: {
-                    include: {
-                        user: true,
-                    },
-                },
+                customer: true,
                 _count: {
                     select: {
                         invoices: true,
@@ -3249,11 +3247,7 @@ let VehicleRepository = class VehicleRepository extends base_repository_1.BaseRe
         return this.prisma.vehicle.findUnique({
             where: { id },
             include: {
-                customer: {
-                    include: {
-                        user: true,
-                    },
-                },
+                customer: true,
                 invoices: {
                     take: 10,
                     orderBy: {
@@ -3276,11 +3270,7 @@ let VehicleRepository = class VehicleRepository extends base_repository_1.BaseRe
         return this.prisma.vehicle.findUnique({
             where: { vin },
             include: {
-                customer: {
-                    include: {
-                        user: true,
-                    },
-                },
+                customer: true,
             },
         });
     }
@@ -3295,11 +3285,7 @@ let VehicleRepository = class VehicleRepository extends base_repository_1.BaseRe
                 ],
             },
             include: {
-                customer: {
-                    include: {
-                        user: true,
-                    },
-                },
+                customer: true,
                 _count: {
                     select: {
                         invoices: true,
@@ -5070,6 +5056,125 @@ tslib_1.__decorate([
 
 /***/ }),
 /* 69 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HealthModule = void 0;
+const tslib_1 = __webpack_require__(4);
+const common_1 = __webpack_require__(1);
+const health_controller_1 = __webpack_require__(70);
+const health_service_1 = __webpack_require__(71);
+const database_1 = __webpack_require__(13);
+let HealthModule = class HealthModule {
+};
+exports.HealthModule = HealthModule;
+exports.HealthModule = HealthModule = tslib_1.__decorate([
+    (0, common_1.Module)({
+        imports: [database_1.DatabaseModule],
+        controllers: [health_controller_1.HealthController],
+        providers: [health_service_1.HealthService],
+        exports: [health_service_1.HealthService],
+    })
+], HealthModule);
+
+
+/***/ }),
+/* 70 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HealthController = void 0;
+const tslib_1 = __webpack_require__(4);
+const common_1 = __webpack_require__(1);
+const health_service_1 = __webpack_require__(71);
+let HealthController = class HealthController {
+    constructor(healthService) {
+        this.healthService = healthService;
+    }
+    async check() {
+        return await this.healthService.check();
+    }
+    async checkDetailed() {
+        return await this.healthService.checkDetailed();
+    }
+};
+exports.HealthController = HealthController;
+tslib_1.__decorate([
+    (0, common_1.Get)(),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", []),
+    tslib_1.__metadata("design:returntype", Promise)
+], HealthController.prototype, "check", null);
+tslib_1.__decorate([
+    (0, common_1.Get)('detailed'),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", []),
+    tslib_1.__metadata("design:returntype", Promise)
+], HealthController.prototype, "checkDetailed", null);
+exports.HealthController = HealthController = tslib_1.__decorate([
+    (0, common_1.Controller)('health'),
+    tslib_1.__metadata("design:paramtypes", [typeof (_a = typeof health_service_1.HealthService !== "undefined" && health_service_1.HealthService) === "function" ? _a : Object])
+], HealthController);
+
+
+/***/ }),
+/* 71 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HealthService = void 0;
+const tslib_1 = __webpack_require__(4);
+const common_1 = __webpack_require__(1);
+const database_1 = __webpack_require__(13);
+let HealthService = class HealthService {
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    async check() {
+        return {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            environment: process.env.NODE_ENV || 'development',
+        };
+    }
+    async checkDetailed() {
+        const basicHealth = await this.check();
+        // Check database connectivity
+        let databaseStatus = 'unknown';
+        try {
+            await this.prisma.$queryRaw `SELECT 1`;
+            databaseStatus = 'connected';
+        }
+        catch (error) {
+            databaseStatus = 'disconnected';
+        }
+        return {
+            ...basicHealth,
+            database: databaseStatus,
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+                unit: 'MB',
+            },
+            version: process.env.APP_VERSION || '1.0.0',
+        };
+    }
+};
+exports.HealthService = HealthService;
+exports.HealthService = HealthService = tslib_1.__decorate([
+    (0, common_1.Injectable)(),
+    tslib_1.__metadata("design:paramtypes", [typeof (_a = typeof database_1.PrismaService !== "undefined" && database_1.PrismaService) === "function" ? _a : Object])
+], HealthService);
+
+
+/***/ }),
+/* 72 */
 /***/ ((module) => {
 
 module.exports = require("@clerk/clerk-sdk-node");
@@ -5196,4 +5301,3 @@ bootstrap();
 
 /******/ })()
 ;
-//# sourceMappingURL=main.js.map
