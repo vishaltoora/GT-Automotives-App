@@ -1,17 +1,40 @@
-  FROM node:18-alpine AS builder
-  WORKDIR /app
-  COPY package.json yarn.lock nx.json tsconfig*.json ./
-  COPY .eslintrc.json ./
-  COPY libs ./libs
-  COPY apps/server ./apps/server
-  RUN yarn install --frozen-lockfile
-  RUN yarn nx build server --prod
+FROM node:18-alpine AS builder
+WORKDIR /app
 
-  FROM node:18-alpine
-  WORKDIR /app
-  COPY --from=builder /app/dist/apps/server ./
-  COPY --from=builder /app/node_modules ./node_modules
-  COPY --from=builder /app/libs/database/src/lib/prisma ./prisma
-  RUN npx prisma generate
-  EXPOSE 3000
-  CMD ["node", "main.js"]
+# Copy package files
+COPY package.json yarn.lock nx.json tsconfig*.json ./
+
+# Copy source code
+COPY libs ./libs
+COPY server ./server
+
+# Install dependencies and build
+RUN yarn install --frozen-lockfile
+RUN yarn nx build server --prod
+
+# Runtime stage
+FROM node:18-alpine
+WORKDIR /app
+
+# Copy built application
+COPY --from=builder /app/dist/server ./
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy and generate Prisma client
+COPY --from=builder /app/libs/database/src/lib/prisma ./prisma
+RUN npx prisma generate
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S backend -u 1001
+USER backend
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Start application
+CMD ["node", "main.js"]
