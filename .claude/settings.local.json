@@ -103,7 +103,8 @@
       "Bash(az storage account keys list:*)",
       "Bash(az cdn profile create:*)",
       "Bash(az cdn profile:*)",
-      "Bash(az storage account show:*)"
+      "Bash(az storage account show:*)",
+      "Bash(az container show:*)"
     ],
     "deny": [],
     "ask": []
