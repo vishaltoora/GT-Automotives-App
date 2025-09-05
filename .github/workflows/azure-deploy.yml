@@ -354,42 +354,56 @@ jobs:
     if: always() && needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success'
     
     steps:
+      - name: Login to Azure for testing
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Test backend endpoints
         run: |
           echo "Testing backend health endpoint..."
           
-          # Try to get backend URL from container
-          if command -v az &> /dev/null; then
-            BACKEND_URL=$(az container show \
-              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --name ${{ env.BACKEND_CONTAINER_NAME }} \
-              --query ipAddress.fqdn -o tsv 2>/dev/null || echo "")
-            
-            if [ -n "$BACKEND_URL" ]; then
-              BACKEND_FULL_URL="http://$BACKEND_URL:3000"
-            else
-              BACKEND_FULL_URL="${{ secrets.VITE_API_URL || 'http://gt-backend.eastus.azurecontainer.io:3000' }}"
-            fi
+          # Get backend URL from deployed container
+          BACKEND_FQDN=$(az container show \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.BACKEND_CONTAINER_NAME }} \
+            --query ipAddress.fqdn -o tsv 2>/dev/null || echo "")
+          
+          if [ -n "$BACKEND_FQDN" ]; then
+            BACKEND_FULL_URL="http://$BACKEND_FQDN:3000"
+          elif [ -n "${{ secrets.VITE_API_URL }}" ]; then
+            BACKEND_FULL_URL="${{ secrets.VITE_API_URL }}"
           else
-            BACKEND_FULL_URL="${{ secrets.VITE_API_URL || 'http://gt-backend.eastus.azurecontainer.io:3000' }}"
+            BACKEND_FULL_URL="http://gt-backend.eastus.azurecontainer.io:3000"
           fi
           
           echo "Testing backend at: $BACKEND_FULL_URL"
           
-          # Test health endpoint
-          if curl -f "$BACKEND_FULL_URL/api/health"; then
-            echo "✅ Backend health check passed"
-          else
-            echo "❌ Backend health check failed"
-            exit 1
-          fi
+          # Wait for container to be fully ready
+          echo "Waiting for backend to be ready..."
+          sleep 30
           
-          # Test API root
-          if curl -f "$BACKEND_FULL_URL/api"; then
-            echo "✅ API root accessible"
-          else
-            echo "⚠️ API root check failed (may be expected)"
-          fi
+          # Test health endpoint with retry
+          for i in {1..5}; do
+            echo "Health check attempt $i/5..."
+            if curl -f --connect-timeout 10 --max-time 30 "$BACKEND_FULL_URL/health" 2>/dev/null; then
+              echo "✅ Backend health check passed"
+              break
+            elif curl -f --connect-timeout 10 --max-time 30 "$BACKEND_FULL_URL/api/health" 2>/dev/null; then
+              echo "✅ Backend API health check passed"
+              break
+            else
+              if [ $i -eq 5 ]; then
+                echo "❌ Backend health check failed after 5 attempts"
+                echo "Trying to get container logs..."
+                az container logs --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.BACKEND_CONTAINER_NAME }} || true
+                exit 1
+              else
+                echo "⏳ Waiting 30s before retry..."
+                sleep 30
+              fi
+            fi
+          done
 
       - name: Test frontend accessibility
         run: |
