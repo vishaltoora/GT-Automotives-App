@@ -116,17 +116,25 @@ jobs:
 
       - name: Delete existing container (if exists)
         run: |
-          az container delete \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.BACKEND_CONTAINER_NAME }} \
-            --yes || true
+          echo "Checking for existing container..."
+          if az container show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.BACKEND_CONTAINER_NAME }} 2>/dev/null; then
+            echo "Container exists, deleting..."
+            az container delete \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --name ${{ env.BACKEND_CONTAINER_NAME }} \
+              --yes 2>/dev/null || echo "Delete completed or container not found"
+          else
+            echo "No existing container found"
+          fi
 
       - name: Create new backend container
         run: |
-          # Wait a moment for the delete to complete
+          # Wait a moment for any previous delete operation to complete
+          echo "Waiting for delete operation to complete..."
           sleep 30
           
           # Create container instance with latest image
+          echo "Creating new container instance..."
           az container create \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.BACKEND_CONTAINER_NAME }} \
@@ -150,6 +158,8 @@ jobs:
               PORT=3000 \
               CORS_ORIGIN="${{ secrets.FRONTEND_URL }}" \
             --restart-policy OnFailure
+          
+          echo "Container creation completed"
 
       - name: Wait for container to start
         run: |
