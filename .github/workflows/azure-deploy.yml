@@ -133,13 +133,16 @@ jobs:
           EOF
           fi
 
-          # Build and push to ACR
-          az acr build \
-            --registry ${{ env.AZURE_CONTAINER_REGISTRY }} \
-            --image gt-backend:${{ github.sha }} \
-            --image gt-backend:latest \
-            --file Dockerfile.backend \
-            .
+          # Build locally using Docker
+          docker build -f Dockerfile.backend -t gt-backend:${{ github.sha }} -t gt-backend:latest .
+          
+          # Tag for ACR
+          docker tag gt-backend:latest ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:latest
+          docker tag gt-backend:${{ github.sha }} ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:${{ github.sha }}
+          
+          # Push to ACR
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:latest
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:${{ github.sha }}
 
       - name: Output backend image info
         run: |
