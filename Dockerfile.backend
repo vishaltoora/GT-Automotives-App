@@ -47,5 +47,35 @@ USER backend
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["node", "server/dist/main.js"]
+# Health check to ensure container is working
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "
+    const http = require('http');
+    const options = {
+      hostname: 'localhost',
+      port: 3000,
+      path: '/',
+      method: 'GET',
+      timeout: 5000
+    };
+    const req = http.request(options, (res) => {
+      process.exit(res.statusCode === 200 || res.statusCode === 401 ? 0 : 1);
+    });
+    req.on('error', () => process.exit(1));
+    req.on('timeout', () => process.exit(1));
+    req.end();
+  " || exit 1
+
+# Start the application with better error handling and environment validation
+CMD ["sh", "-c", "\
+  echo 'Starting GT Automotive Backend...' && \
+  echo 'Node version:' && node --version && \
+  echo 'Environment: NODE_ENV='$NODE_ENV && \
+  echo 'Port: PORT='$PORT && \
+  echo 'Database URL configured:' && \
+  if [ -n \"$DATABASE_URL\" ]; then echo 'DATABASE_URL is set'; else echo 'ERROR: DATABASE_URL is not set'; fi && \
+  if [ -n \"$CLERK_SECRET_KEY\" ] && [ \"$CLERK_SECRET_KEY\" != \"sk_live_YOUR_ACTUAL_CLERK_SECRET_KEY_HERE\" ]; then echo 'CLERK_SECRET_KEY is configured'; else echo 'ERROR: CLERK_SECRET_KEY is not properly configured'; fi && \
+  if [ -n \"$JWT_SECRET\" ] && [ \"$JWT_SECRET\" != \"GENERATE_WITH_OPENSSL_RAND_BASE64_32\" ]; then echo 'JWT_SECRET is configured'; else echo 'ERROR: JWT_SECRET is not properly configured'; fi && \
+  echo 'Starting server...' && \
+  node server/dist/main.js || (echo 'Server failed to start - check environment variables and database connection' && exit 1) \
+"]
