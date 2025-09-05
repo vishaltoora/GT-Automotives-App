@@ -242,28 +242,18 @@ async function main() {
     });
     console.log('✅ Created staff user:', staffUser.email);
 
-    // Demo Customer
-    const customerUser = await prisma.user.upsert({
-      where: { email: 'customer@example.com' },
+    // Create demo customer (customers are now independent entities)
+    await prisma.customer.upsert({
+      where: { id: 'demo-customer-1' },
       update: {},
       create: {
-        clerkId: 'demo_customer_clerk_id',
-        email: 'customer@example.com',
+        id: 'demo-customer-1',
         firstName: 'John',
         lastName: 'Doe',
-        roleId: customerRole.id,
-        isActive: true,
-      },
-    });
-
-    // Create customer profile for demo customer
-    await prisma.customer.upsert({
-      where: { userId: customerUser.id },
-      update: {},
-      create: {
-        userId: customerUser.id,
+        email: 'john.doe@example.com',
         phone: '+1234567890',
-        address: '123 Main St, City, State 12345',
+        address: '123 Main St, Prince George, BC V2L 1A1',
+        businessName: null,
       },
     });
 
