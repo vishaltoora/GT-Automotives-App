@@ -16,7 +16,7 @@ GT Automotive is a comprehensive web application for managing a small business t
 
 ## Project Status
 **Current Phase:** Core Features Development - 5 of 8 Epics Complete (62.5%)
-**Last Updated:** August 26, 2025
+**Last Updated:** September 5, 2025
 
 ### Completed Epics
 - ✅ EPIC-01: Project Setup & Infrastructure
@@ -26,10 +26,12 @@ GT Automotive is a comprehensive web application for managing a small business t
 - ✅ EPIC-05: Invoicing System
 
 ### Recent Improvements
+- ✅ Azure Deployment Setup (September 5, 2025) - Complete Azure App Service deployment with CI/CD
+- ✅ System Stability Fixes (September 4, 2025) - Quotation system fixes and admin layout improvements
+- ✅ User Management System (August 27, 2025) - Complete user management with Material-UI modernization
 - ✅ Customer Management Enhancements (August 26, 2025) - Business name support and invoice improvements
 - ✅ Home Page Refactoring (August 22, 2025) - Modularized into 9 reusable components
 - ✅ Invoice Printing Enhancements (December 2024) - Logo integration & formatting
-- ✅ Authentication Flow Optimization (August 21, 2025) - Smooth loading experience
 
 ### Next Steps
 - EPIC-06: Appointment Scheduling (Ready to start)

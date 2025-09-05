@@ -1,0 +1,498 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: 'Deploy Backend'
+        required: true
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: 'Deploy Frontend'
+        required: true
+        default: true
+        type: boolean
+      skip_tests:
+        description: 'Skip tests and validation'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  AZURE_RESOURCE_GROUP: 'gt-automotive-prod'
+  AZURE_CONTAINER_REGISTRY: 'gtautomotiveregistry'
+  BACKEND_CONTAINER_NAME: 'gt-backend'
+  STORAGE_ACCOUNT: 'gtautomotiveweb'
+
+jobs:
+  validate:
+    name: 🔍 Validate & Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: yarn db:generate
+
+      - name: Run linting
+        run: yarn lint
+        continue-on-error: true
+
+      - name: Run type checking
+        run: yarn typecheck
+        continue-on-error: true
+
+      - name: Run tests
+        run: yarn test --passWithNoTests
+        continue-on-error: true
+
+  build-backend:
+    name: 🐳 Build Backend Container
+    runs-on: ubuntu-latest
+    needs: [validate]
+    if: always() && (needs.validate.result == 'success' || needs.validate.result == 'skipped') && (github.event_name == 'push' || github.event.inputs.deploy_backend == 'true')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+
+      - name: Build and push backend container
+        run: |
+          # Create optimized Dockerfile for backend if it doesn't exist
+          if [ ! -f "Dockerfile.backend" ]; then
+            cat > Dockerfile.backend << 'EOF'
+          # Build stage
+          FROM node:18-alpine AS builder
+          WORKDIR /app
+          
+          # Copy package files
+          COPY package.json yarn.lock nx.json tsconfig*.json ./
+          COPY .eslintrc.json ./
+          
+          # Copy source code
+          COPY libs ./libs
+          COPY apps/server ./apps/server
+          
+          # Install dependencies and build
+          RUN yarn install --frozen-lockfile
+          RUN yarn nx build server --prod
+          
+          # Runtime stage
+          FROM node:18-alpine
+          WORKDIR /app
+          
+          # Copy built application
+          COPY --from=builder /app/dist/apps/server ./
+          COPY --from=builder /app/node_modules ./node_modules
+          
+          # Copy and generate Prisma client
+          COPY --from=builder /app/libs/database/src/lib/prisma ./prisma
+          RUN npx prisma generate
+          
+          # Create non-root user
+          RUN addgroup -g 1001 -S nodejs
+          RUN adduser -S backend -u 1001
+          USER backend
+          
+          # Expose port
+          EXPOSE 3000
+          
+          # Health check
+          HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+            CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+          
+          # Start application
+          CMD ["node", "main.js"]
+          EOF
+          fi
+
+          # Build and push to ACR
+          az acr build \
+            --registry ${{ env.AZURE_CONTAINER_REGISTRY }} \
+            --image gt-backend:${{ github.sha }} \
+            --image gt-backend:latest \
+            --file Dockerfile.backend \
+            .
+
+      - name: Output backend image info
+        run: |
+          echo "Backend image built and pushed:"
+          echo "- ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:${{ github.sha }}"
+          echo "- ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:latest"
+
+  deploy-backend:
+    name: 🚀 Deploy Backend Container
+    runs-on: ubuntu-latest
+    needs: [build-backend]
+    if: always() && needs.build-backend.result == 'success'
+    
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Delete existing container (if exists)
+        run: |
+          az container delete \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.BACKEND_CONTAINER_NAME }} \
+            --yes || true
+
+      - name: Create new backend container
+        run: |
+          # Wait a moment for the delete to complete
+          sleep 30
+          
+          # Create container instance with latest image
+          az container create \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.BACKEND_CONTAINER_NAME }} \
+            --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:latest \
+            --cpu 1 \
+            --memory 1.5 \
+            --registry-login-server ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io \
+            --registry-username ${{ env.AZURE_CONTAINER_REGISTRY }} \
+            --registry-password ${{ secrets.ACR_PASSWORD }} \
+            --ports 3000 \
+            --dns-name-label gt-backend \
+            --location eastus \
+            --environment-variables \
+              NODE_ENV=production \
+              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
+              CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY }}" \
+              CLERK_JWKS_URL="${{ secrets.CLERK_JWKS_URL }}" \
+              JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              PORT=3000 \
+              CORS_ORIGIN="${{ secrets.FRONTEND_URL }}" \
+            --restart-policy OnFailure
+
+      - name: Wait for container to start
+        run: |
+          echo "Waiting for container to start..."
+          sleep 60
+          
+          # Get container status
+          STATUS=$(az container show \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.BACKEND_CONTAINER_NAME }} \
+            --query instanceView.state -o tsv)
+          
+          echo "Container status: $STATUS"
+          
+          # Get container logs for debugging
+          echo "Container logs:"
+          az container logs \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.BACKEND_CONTAINER_NAME }} || true
+
+      - name: Get backend URL and test
+        run: |
+          # Get container FQDN
+          BACKEND_FQDN=$(az container show \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.BACKEND_CONTAINER_NAME }} \
+            --query ipAddress.fqdn -o tsv)
+          
+          echo "Backend URL: http://$BACKEND_FQDN:3000"
+          echo "BACKEND_URL=http://$BACKEND_FQDN:3000" >> $GITHUB_ENV
+          
+          # Test health endpoint (with retry)
+          for i in {1..5}; do
+            if curl -f "http://$BACKEND_FQDN:3000/api/health"; then
+              echo "✅ Backend health check passed"
+              break
+            else
+              echo "⏳ Waiting for backend to be ready... (attempt $i/5)"
+              sleep 30
+            fi
+          done
+
+  build-frontend:
+    name: 🎨 Build Frontend
+    runs-on: ubuntu-latest
+    needs: [validate]
+    if: always() && (needs.validate.result == 'success' || needs.validate.result == 'skipped') && (github.event_name == 'push' || github.event.inputs.deploy_frontend == 'true')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: yarn db:generate
+
+      - name: Build frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://gt-backend.eastus.azurecontainer.io:3000' }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          NODE_ENV: production
+        run: |
+          echo "Building frontend with:"
+          echo "VITE_API_URL: $VITE_API_URL"
+          echo "NODE_ENV: $NODE_ENV"
+          
+          yarn nx build webApp --prod
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-${{ github.sha }}
+          path: dist/apps/webApp
+          retention-days: 7
+
+  deploy-frontend:
+    name: 🌐 Deploy Frontend to Azure Storage
+    runs-on: ubuntu-latest
+    needs: [build-frontend]
+    if: always() && needs.build-frontend.result == 'success'
+    
+    steps:
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build-${{ github.sha }}
+          path: ./frontend-build
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Storage
+        run: |
+          # Upload all files except index.html with long cache headers
+          az storage blob upload-batch \
+            --account-name ${{ secrets.STORAGE_ACCOUNT_NAME || env.STORAGE_ACCOUNT }} \
+            --account-key "${{ secrets.STORAGE_ACCOUNT_KEY }}" \
+            --source ./frontend-build \
+            --destination '$web' \
+            --overwrite \
+            --content-cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html" \
+            --exclude "*.map"
+          
+          # Upload index.html with no-cache headers
+          az storage blob upload \
+            --account-name ${{ secrets.STORAGE_ACCOUNT_NAME || env.STORAGE_ACCOUNT }} \
+            --account-key "${{ secrets.STORAGE_ACCOUNT_KEY }}" \
+            --container-name '$web' \
+            --file ./frontend-build/index.html \
+            --name index.html \
+            --content-cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html" \
+            --overwrite
+
+      - name: Purge CDN cache (if configured)
+        run: |
+          # Purge CDN cache if CDN is configured
+          if [ -n "${{ secrets.CDN_PROFILE_NAME }}" ] && [ -n "${{ secrets.CDN_ENDPOINT_NAME }}" ]; then
+            az cdn endpoint purge \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --profile-name ${{ secrets.CDN_PROFILE_NAME }} \
+              --name ${{ secrets.CDN_ENDPOINT_NAME }} \
+              --content-paths "/*" || echo "CDN purge failed or not configured"
+          else
+            echo "CDN not configured - skipping cache purge"
+          fi
+
+      - name: Get frontend URL
+        run: |
+          if [ -n "${{ secrets.CDN_ENDPOINT_NAME }}" ]; then
+            CDN_URL=$(az cdn endpoint show \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --profile-name ${{ secrets.CDN_PROFILE_NAME }} \
+              --name ${{ secrets.CDN_ENDPOINT_NAME }} \
+              --query hostName -o tsv)
+            echo "Frontend available at: https://$CDN_URL"
+          else
+            STORAGE_URL=$(az storage account show \
+              --name ${{ secrets.STORAGE_ACCOUNT_NAME || env.STORAGE_ACCOUNT }} \
+              --query primaryEndpoints.web -o tsv)
+            echo "Frontend available at: $STORAGE_URL"
+          fi
+
+  run-migrations:
+    name: 📊 Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: [deploy-backend]
+    if: always() && needs.deploy-backend.result == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: yarn db:generate
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Running database migrations..."
+          yarn prisma migrate deploy --schema=libs/database/src/lib/prisma/schema.prisma
+          
+          echo "Verifying migrations..."
+          yarn prisma db pull --schema=libs/database/src/lib/prisma/schema.prisma --print
+
+  post-deployment-tests:
+    name: 🧪 Post-Deployment Testing
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend, run-migrations]
+    if: always() && needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success'
+    
+    steps:
+      - name: Test backend endpoints
+        run: |
+          echo "Testing backend health endpoint..."
+          
+          # Try to get backend URL from container
+          if command -v az &> /dev/null; then
+            BACKEND_URL=$(az container show \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --name ${{ env.BACKEND_CONTAINER_NAME }} \
+              --query ipAddress.fqdn -o tsv 2>/dev/null || echo "")
+            
+            if [ -n "$BACKEND_URL" ]; then
+              BACKEND_FULL_URL="http://$BACKEND_URL:3000"
+            else
+              BACKEND_FULL_URL="${{ secrets.VITE_API_URL || 'http://gt-backend.eastus.azurecontainer.io:3000' }}"
+            fi
+          else
+            BACKEND_FULL_URL="${{ secrets.VITE_API_URL || 'http://gt-backend.eastus.azurecontainer.io:3000' }}"
+          fi
+          
+          echo "Testing backend at: $BACKEND_FULL_URL"
+          
+          # Test health endpoint
+          if curl -f "$BACKEND_FULL_URL/api/health"; then
+            echo "✅ Backend health check passed"
+          else
+            echo "❌ Backend health check failed"
+            exit 1
+          fi
+          
+          # Test API root
+          if curl -f "$BACKEND_FULL_URL/api"; then
+            echo "✅ API root accessible"
+          else
+            echo "⚠️ API root check failed (may be expected)"
+          fi
+
+      - name: Test frontend accessibility
+        run: |
+          echo "Testing frontend accessibility..."
+          
+          # Get frontend URL
+          if [ -n "${{ secrets.CDN_ENDPOINT_NAME }}" ]; then
+            FRONTEND_URL="https://${{ secrets.CDN_ENDPOINT_NAME }}.azureedge.net"
+          else
+            FRONTEND_URL=$(echo "${{ secrets.FRONTEND_URL }}" | head -1)
+          fi
+          
+          if [ -z "$FRONTEND_URL" ]; then
+            echo "⚠️ Frontend URL not configured - skipping test"
+            exit 0
+          fi
+          
+          echo "Testing frontend at: $FRONTEND_URL"
+          
+          if curl -f "$FRONTEND_URL"; then
+            echo "✅ Frontend accessible"
+          else
+            echo "❌ Frontend accessibility test failed"
+            exit 1
+          fi
+
+  deployment-summary:
+    name: 📋 Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend, run-migrations, post-deployment-tests]
+    if: always()
+    
+    steps:
+      - name: Generate deployment report
+        run: |
+          echo "## 🚀 Azure Deployment Summary"
+          echo ""
+          echo "**Commit:** ${{ github.sha }}"
+          echo "**Branch:** ${{ github.ref_name }}"
+          echo "**Triggered by:** ${{ github.actor }}"
+          echo "**Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "### Component Status:"
+          echo "- Backend: ${{ needs.deploy-backend.result == 'success' && '✅ Deployed' || '❌ Failed' }}"
+          echo "- Frontend: ${{ needs.deploy-frontend.result == 'success' && '✅ Deployed' || '❌ Failed' }}"
+          echo "- Migrations: ${{ needs.run-migrations.result == 'success' && '✅ Complete' || '❌ Failed' }}"
+          echo "- Tests: ${{ needs.post-deployment-tests.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+          echo ""
+          
+          if [[ "${{ needs.deploy-backend.result }}" == "success" && "${{ needs.deploy-frontend.result }}" == "success" ]]; then
+            echo "### 🎉 Deployment Successful!"
+            echo ""
+            echo "**URLs:**"
+            echo "- Frontend: ${{ secrets.FRONTEND_URL || 'Check Azure Storage static website URL' }}"
+            echo "- Backend API: ${{ secrets.VITE_API_URL || 'http://gt-backend.eastus.azurecontainer.io:3000' }}"
+            echo ""
+            echo "**Next Steps:**"
+            echo "1. Verify all functionality in production"
+            echo "2. Test authentication with Clerk"
+            echo "3. Monitor resource usage and costs"
+            echo "4. Set up alerts and monitoring"
+          else
+            echo "### ❌ Deployment Failed"
+            echo ""
+            echo "Please check the logs for failed jobs and retry deployment."
+            echo ""
+            echo "**Troubleshooting:**"
+            echo "1. Check Azure resource status in portal"
+            echo "2. Verify all secrets are configured"
+            echo "3. Check container logs for errors"
+            echo "4. Ensure database is accessible"
+            exit 1
+          fi

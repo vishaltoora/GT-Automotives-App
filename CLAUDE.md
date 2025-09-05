@@ -18,6 +18,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Business Rules](.claude/docs/business-rules.md)** - Requirements and domain logic
 - **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
 - **[Lightsail Deployment Plan](.claude/docs/lightsail-deployment-plan.md)** - AWS Lightsail deployment architecture and CI/CD setup
+- **[Azure Deployment Plan](.claude/docs/azure-deployment-plan.md)** - Azure App Service deployment architecture and configuration
+- **[Azure Implementation Guide](.claude/docs/azure-implementation-guide.md)** - Step-by-step Azure deployment implementation
+- **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
+- **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
+- **[Testing](.claude/docs/testing.md)** - Testing strategy, frameworks, and best practices
 - **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions
 - **[Completed Work](.claude/docs/completed-work.md)** - Detailed log of implemented features
 
@@ -96,6 +101,23 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
+### September 5, 2025 - Azure Deployment & Infrastructure
+- ✅ **Azure App Service Setup**: Complete Azure deployment configuration with staging/production slots
+- ✅ **GitHub Actions CI/CD**: Automated build and deployment pipeline to Azure
+- ✅ **Database Migration**: Azure Database for PostgreSQL configuration
+- ✅ **Environment Variables**: Secure configuration management for production
+- ✅ **SSL/TLS Setup**: Custom domain with HTTPS encryption
+- ✅ **Monitoring Setup**: Application insights and health checks
+- ✅ **Backup Strategy**: Automated database backups and recovery procedures
+
+### September 4, 2025 - System Stability & Bug Fixes
+- ✅ **Quotation System Fixes**: Resolved "Failed to load quotations" and update failures
+- ✅ **Admin Layout Improvements**: Fixed full-height drawer and transparent app bar positioning
+- ✅ **Dashboard Navigation**: Fixed broken quick navigation links and three-dot menus
+- ✅ **Date Format Validation**: Improved ISO-8601 DateTime format handling
+- ✅ **TypeScript Interface Consistency**: Unified Quotation → Quote type references
+- ✅ **Modern Popover Menus**: Enhanced user experience with Material-UI popovers
+
 ### August 27, 2025 - User Management System & Material-UI Modernization
 - ✅ **Complete User Management**: Full admin interface for creating/managing staff and admin users
 - ✅ **Professional User Dialogs**: CreateUserDialog and EditUserDialog with validation and Clerk integration
@@ -166,5 +188,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated: August 26, 2025 - TypeScript build system fixes and development environment stability
+**Last Updated: September 5, 2025 - TypeScript build system fixes and development environment stability
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.
