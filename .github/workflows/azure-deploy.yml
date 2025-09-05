@@ -252,18 +252,29 @@ jobs:
 
       - name: Deploy to Azure Storage
         run: |
-          # Upload all files except index.html with long cache headers
+          # First, upload all files with default cache headers
           az storage blob upload-batch \
             --account-name ${{ secrets.STORAGE_ACCOUNT_NAME || env.STORAGE_ACCOUNT }} \
             --account-key "${{ secrets.STORAGE_ACCOUNT_KEY }}" \
             --source ./frontend-build \
             --destination '$web' \
-            --overwrite \
-            --content-cache-control "public, max-age=31536000, immutable" \
-            --exclude "index.html" \
-            --exclude "*.map"
+            --overwrite
           
-          # Upload index.html with no-cache headers
+          # Then upload static assets with long cache headers (everything except index.html)
+          find ./frontend-build -type f -name "*.js" -o -name "*.css" -o -name "*.svg" -o -name "*.png" -o -name "*.ico" -o -name "*.woff*" | while read file; do
+            relative_path=$(echo "$file" | sed 's|^\./frontend-build/||')
+            echo "Uploading static asset: $relative_path"
+            az storage blob upload \
+              --account-name ${{ secrets.STORAGE_ACCOUNT_NAME || env.STORAGE_ACCOUNT }} \
+              --account-key "${{ secrets.STORAGE_ACCOUNT_KEY }}" \
+              --container-name '$web' \
+              --file "$file" \
+              --name "$relative_path" \
+              --content-cache-control "public, max-age=31536000, immutable" \
+              --overwrite || echo "Failed to upload $relative_path"
+          done
+          
+          # Finally, upload index.html with no-cache headers
           az storage blob upload \
             --account-name ${{ secrets.STORAGE_ACCOUNT_NAME || env.STORAGE_ACCOUNT }} \
             --account-key "${{ secrets.STORAGE_ACCOUNT_KEY }}" \
