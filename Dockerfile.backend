@@ -1,47 +1,35 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Copy package files
-COPY package.json yarn.lock nx.json tsconfig*.json ./
+# Copy package files first for better layer caching
+COPY package.json yarn.lock ./
 
-# Copy source code
-COPY libs ./libs
-COPY server ./server
+# Install all dependencies
+RUN yarn install --frozen-lockfile --production=false
 
-# Install dependencies and build
-RUN yarn install --frozen-lockfile
+# Copy all source code
+COPY . .
 
 # Generate Prisma client
 RUN yarn db:generate
 
-# Build server (skip cache and use verbose output)
-RUN echo "Building server..." && \
-    yarn nx reset && \
-    yarn nx build server --skip-nx-cache --verbose
+# Build the server using TypeScript directly (avoid Nx complexity)
+WORKDIR /app/server
+RUN npx tsc -p tsconfig.app.json --outDir dist
 
-# Runtime stage
-FROM node:20-alpine
+# Go back to app root
 WORKDIR /app
 
-# Copy built application
-COPY --from=builder /app/dist/server ./
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy and generate Prisma client
-COPY --from=builder /app/libs/database/src/lib/prisma ./prisma
-RUN npx prisma generate
-
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S backend -u 1001
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S backend -u 1001 && \
+    chown -R backend:nodejs /app
+
 USER backend
 
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
-
-# Start application
-CMD ["node", "main.js"]
+# Start the application
+CMD ["node", "server/dist/main.js"]
