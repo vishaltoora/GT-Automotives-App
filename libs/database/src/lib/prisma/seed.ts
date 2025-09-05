@@ -191,6 +191,29 @@ async function main() {
 
   console.log('✅ Assigned permissions to roles');
 
+  // Create production admin user
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Creating production admin user...');
+    
+    // Vishal Toora - Production Admin User
+    const productionAdmin = await prisma.user.upsert({
+      where: { email: 'vishal.alawalpuria@gmail.com' },
+      update: {
+        roleId: adminRole.id,
+        isActive: true,
+      },
+      create: {
+        clerkId: 'placeholder_clerk_id_for_vishal', // Will be updated when Clerk account is created
+        email: 'vishal.alawalpuria@gmail.com',
+        firstName: 'Vishal',
+        lastName: 'Toora',
+        roleId: adminRole.id,
+        isActive: true,
+      },
+    });
+    console.log('✅ Created production admin user:', productionAdmin.email);
+  }
+
   // Create demo users (only in development)
   if (process.env.NODE_ENV === 'development') {
     console.log('Creating demo users...');
