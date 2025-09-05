@@ -131,6 +131,7 @@ jobs:
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.BACKEND_CONTAINER_NAME }} \
             --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/gt-backend:latest \
+            --os-type Linux \
             --cpu 1 \
             --memory 1.5 \
             --registry-login-server ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io \
