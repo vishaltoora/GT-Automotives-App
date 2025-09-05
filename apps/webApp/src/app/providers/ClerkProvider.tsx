@@ -2,8 +2,9 @@ import React from 'react';
 import { ClerkProvider as ClerkProviderBase } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { MockClerkProvider } from './MockClerkProvider';
+import { getEnvVar } from '../utils/env';
 
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
 
 interface ClerkProviderProps {
   children: React.ReactNode;

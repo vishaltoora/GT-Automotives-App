@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getEnvVar } from '../utils/env';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = getEnvVar('VITE_API_URL', 'http://localhost:3000');
 
 export interface Customer {
   id: string;

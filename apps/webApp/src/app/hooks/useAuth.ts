@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useUser as useClerkUser, useAuth as useClerkAuthHook, useClerk } from '@clerk/clerk-react';
 import { useUser as useMockUser, useAuth as useMockAuth } from '../providers/MockClerkProvider';
+import { getEnvVar } from '../utils/env';
 
 // Conditionally use Clerk or Mock hooks based on environment
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
 const useUser = publishableKey ? useClerkUser : useMockUser;
 const useClerkAuth = publishableKey ? useClerkAuthHook : useMockAuth;
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = getEnvVar('VITE_API_URL', 'http://localhost:3000');
 
 interface UserRole {
   id: number;

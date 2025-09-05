@@ -1,9 +1,10 @@
 import { useAuth as useClerkAuthHook } from '@clerk/clerk-react';
 import { useAuth as useMockAuth } from '../providers/MockClerkProvider';
+import { getEnvVar } from './env';
 
 // Get current auth token for API requests
 export async function getAuthToken(): Promise<string | null> {
-  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
   
   if (publishableKey) {
     // Use Clerk in production

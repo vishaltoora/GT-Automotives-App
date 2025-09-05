@@ -7,9 +7,10 @@ import { useAuth } from '../../hooks/useAuth';
 import gtLogo from '../../images-and-logos/logo.png';
 import { SignIn as MockSignIn } from '../../providers/MockClerkProvider';
 import { colors } from '../../theme/colors';
+import { getEnvVar } from '../../utils/env';
 
 // Conditionally use Clerk or Mock SignIn based on environment
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
 const SignIn = publishableKey ? ClerkSignIn : MockSignIn;
 
 export function Login() {

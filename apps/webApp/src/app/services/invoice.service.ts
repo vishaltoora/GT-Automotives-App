@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
+import { getEnvVar } from '../utils/env';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = getEnvVar('VITE_API_URL', 'http://localhost:3000');
 
 // Helper to get fresh token from Clerk
 let getClerkToken: (() => Promise<string | null>) | null = null;

@@ -8,6 +8,7 @@ import {
   IStockAdjustment,
   ITireImage,
 } from '@gt-automotive/shared-interfaces';
+import { getEnvVar } from '../utils/env';
 
 // Type declaration for Clerk global
 declare global {
@@ -20,7 +21,7 @@ declare global {
   }
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = getEnvVar('VITE_API_URL', 'http://localhost:3000');
 
 // Create axios instance with common configuration
 const apiClient = axios.create({

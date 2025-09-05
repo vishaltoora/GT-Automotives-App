@@ -23,10 +23,10 @@ on:
 
 env:
   NODE_VERSION: '20'
-  AZURE_RESOURCE_GROUP: 'gt-automotive-prod'
-  AZURE_CONTAINER_REGISTRY: 'gtautomotiveregistry'
+  AZURE_RESOURCE_GROUP: 'gt-automotives-prod'
+  AZURE_CONTAINER_REGISTRY: 'gtautomotivesregistry'
   BACKEND_CONTAINER_NAME: 'gt-backend'
-  STORAGE_ACCOUNT: 'gtautomotiveweb'
+  STORAGE_ACCOUNT: 'gtautomotiveweb3007b23f'
 
 jobs:
   validate:
