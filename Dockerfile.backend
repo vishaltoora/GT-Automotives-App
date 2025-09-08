@@ -49,22 +49,7 @@ EXPOSE 3000
 
 # Health check to ensure container is working
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "
-    const http = require('http');
-    const options = {
-      hostname: 'localhost',
-      port: 3000,
-      path: '/',
-      method: 'GET',
-      timeout: 5000
-    };
-    const req = http.request(options, (res) => {
-      process.exit(res.statusCode === 200 || res.statusCode === 401 ? 0 : 1);
-    });
-    req.on('error', () => process.exit(1));
-    req.on('timeout', () => process.exit(1));
-    req.end();
-  " || exit 1
+  CMD node -e "const http = require('http'); const req = http.request({hostname: 'localhost', port: 3000, path: '/', method: 'GET', timeout: 5000}, (res) => process.exit(res.statusCode === 200 || res.statusCode === 401 ? 0 : 1)); req.on('error', () => process.exit(1)); req.on('timeout', () => process.exit(1)); req.end();" || exit 1
 
 # Start the application with better error handling and environment validation
 CMD ["sh", "-c", "\
