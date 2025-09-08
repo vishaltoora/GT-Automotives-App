@@ -20,6 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Lightsail Deployment Plan](.claude/docs/lightsail-deployment-plan.md)** - AWS Lightsail deployment architecture and CI/CD setup
 - **[Azure Deployment Plan](.claude/docs/azure-deployment-plan.md)** - Azure App Service deployment architecture and configuration
 - **[Azure Implementation Guide](.claude/docs/azure-implementation-guide.md)** - Step-by-step Azure deployment implementation
+- **[Cloudflare Setup](.claude/docs/cloudflare-setup.md)** - HTTPS/SSL configuration with Cloudflare CDN
+- **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
 - **[Testing](.claude/docs/testing.md)** - Testing strategy, frameworks, and best practices
@@ -47,10 +49,12 @@ yarn dev
 ```
 
 ## 📊 Current Status
+- **Production URL:** https://gt-automotives.com ✅
+- **Backend API:** http://gt-backend.eastus.azurecontainer.io:3000
 - **Progress:** 5 of 8 Epics Complete (62.5%)
 - **Next:** EPIC-06 - Appointment Scheduling
-- **Frontend:** http://localhost:4200
-- **Backend:** http://localhost:3000/api
+- **Dev Frontend:** http://localhost:4200
+- **Dev Backend:** http://localhost:3000/api
 - **Admin User:** vishal.alawalpuria@gmail.com
 
 ## 🔑 Key Information
@@ -73,6 +77,7 @@ yarn db:studio     # Open Prisma Studio
 yarn nx reset      # Clear Nx cache
 yarn lint          # Run linting
 yarn test          # Run tests
+./deploy-frontend.sh  # Deploy to production
 ```
 
 ## 📚 Additional Resources
@@ -101,14 +106,20 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
-### September 5, 2025 - Azure Deployment & Infrastructure
-- ✅ **Azure App Service Setup**: Complete Azure deployment configuration with staging/production slots
-- ✅ **GitHub Actions CI/CD**: Automated build and deployment pipeline to Azure
-- ✅ **Database Migration**: Azure Database for PostgreSQL configuration
-- ✅ **Environment Variables**: Secure configuration management for production
-- ✅ **SSL/TLS Setup**: Custom domain with HTTPS encryption
-- ✅ **Monitoring Setup**: Application insights and health checks
-- ✅ **Backup Strategy**: Automated database backups and recovery procedures
+### September 8, 2025 - Production Deployment & HTTPS Setup
+- ✅ **Cloudflare SSL/CDN**: Complete HTTPS setup with custom domain (gt-automotives.com)
+- ✅ **Azure Container Deployment**: Production backend deployed to Azure Container Instances
+- ✅ **Frontend Deployment**: Static website hosting via Azure Storage with CDN
+- ✅ **DNS Configuration**: Cloudflare DNS management and SSL certificate
+- ✅ **Deployment Automation**: Created deploy-frontend.sh for streamlined deployments
+- ✅ **Documentation Update**: Comprehensive production deployment guides
+
+### September 5, 2025 - Azure Infrastructure Setup
+- ✅ **Azure Resource Setup**: Resource group, database, container registry, and storage
+- ✅ **Database Migration**: Azure PostgreSQL Flexible Server configuration
+- ✅ **Container Registry**: Docker image management for backend deployment
+- ✅ **Environment Configuration**: Production environment variables and secrets
+- ✅ **Monitoring Foundation**: Basic health checks and logging setup
 
 ### September 4, 2025 - System Stability & Bug Fixes
 - ✅ **Quotation System Fixes**: Resolved "Failed to load quotations" and update failures
@@ -188,5 +199,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated: September 5, 2025 - TypeScript build system fixes and development environment stability
+**Last Updated: September 8, 2025 - Production deployment with HTTPS and Cloudflare integration complete
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.
