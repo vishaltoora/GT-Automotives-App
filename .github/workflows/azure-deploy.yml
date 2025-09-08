@@ -166,19 +166,29 @@ jobs:
           echo "Waiting for container to start..."
           sleep 60
           
-          # Get container status
-          STATUS=$(az container show \
+          # Get container status and details
+          echo "=== Container Status ==="
+          az container show \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.BACKEND_CONTAINER_NAME }} \
-            --query instanceView.state -o tsv)
+            --query "{State:instanceView.state, RestartCount:instanceView.restartCount, Events:instanceView.events[0].message}" \
+            -o json || true
           
-          echo "Container status: $STATUS"
-          
-          # Get container logs for debugging
-          echo "Container logs:"
+          # Always try to get container logs, even if container is failing
+          echo ""
+          echo "=== Container Logs ==="
           az container logs \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.BACKEND_CONTAINER_NAME }} || true
+            --name ${{ env.BACKEND_CONTAINER_NAME }} 2>&1 || echo "Unable to retrieve logs - container may be restarting"
+          
+          # Check container events for failures
+          echo ""
+          echo "=== Container Events ==="
+          az container show \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.BACKEND_CONTAINER_NAME }} \
+            --query "instanceView.events[].{time:timeStamp, message:message}" \
+            -o table || true
 
       - name: Get backend URL and test
         run: |
@@ -191,14 +201,39 @@ jobs:
           echo "Backend URL: http://$BACKEND_FQDN:3000"
           echo "BACKEND_URL=http://$BACKEND_FQDN:3000" >> $GITHUB_ENV
           
-          # Test health endpoint (with retry)
+          # Test health endpoint (with retry and better error handling)
           for i in {1..5}; do
-            if curl -f "http://$BACKEND_FQDN:3000/api/health"; then
+            echo "Testing backend health (attempt $i/5)..."
+            
+            # Use curl with verbose error reporting
+            if curl -f --connect-timeout 5 --max-time 10 "http://$BACKEND_FQDN:3000/api/health" 2>&1; then
               echo "✅ Backend health check passed"
               break
             else
-              echo "⏳ Waiting for backend to be ready... (attempt $i/5)"
-              sleep 30
+              CURL_EXIT=$?
+              echo "❌ Health check failed with exit code: $CURL_EXIT"
+              
+              if [ $i -lt 5 ]; then
+                echo "⏳ Waiting 30s before retry..."
+                sleep 30
+                
+                # Get fresh container logs after each failure
+                echo "Checking container logs..."
+                az container logs \
+                  --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                  --name ${{ env.BACKEND_CONTAINER_NAME }} \
+                  --tail 50 2>&1 || echo "Unable to get logs"
+              else
+                echo "❌ Backend health check failed after 5 attempts"
+                
+                # Final attempt to get detailed container info
+                echo "=== Final Container Status ==="
+                az container show \
+                  --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                  --name ${{ env.BACKEND_CONTAINER_NAME }} \
+                  --query instanceView -o json || true
+                exit 1
+              fi
             fi
           done
 
