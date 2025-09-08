@@ -37,7 +37,25 @@ import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
 import { ITireSearchParams } from '@gt-automotive/shared-interfaces';
-import { TireType, TireCondition } from '@prisma/client';
+// Define enums locally to avoid Prisma client browser issues
+const TireType = {
+  ALL_SEASON: 'ALL_SEASON',
+  SUMMER: 'SUMMER',
+  WINTER: 'WINTER',
+  PERFORMANCE: 'PERFORMANCE',
+  OFF_ROAD: 'OFF_ROAD',
+  RUN_FLAT: 'RUN_FLAT',
+} as const;
+
+const TireCondition = {
+  NEW: 'NEW',
+  USED_EXCELLENT: 'USED_EXCELLENT',
+  USED_GOOD: 'USED_GOOD',
+  USED_FAIR: 'USED_FAIR',
+} as const;
+
+type TireType = typeof TireType[keyof typeof TireType];
+type TireCondition = typeof TireCondition[keyof typeof TireCondition];
 import TireCard from '../../components/inventory/TireCard';
 
 type ViewMode = 'grid' | 'list';

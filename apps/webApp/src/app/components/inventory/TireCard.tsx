@@ -22,7 +22,25 @@ import {
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
 import { ITire } from '@gt-automotive/shared-interfaces';
-import { TireType, TireCondition } from '@prisma/client';
+// Define enums locally to avoid Prisma client browser issues
+const TireType = {
+  ALL_SEASON: 'ALL_SEASON',
+  SUMMER: 'SUMMER',
+  WINTER: 'WINTER',
+  PERFORMANCE: 'PERFORMANCE',
+  OFF_ROAD: 'OFF_ROAD',
+  RUN_FLAT: 'RUN_FLAT',
+} as const;
+
+const TireCondition = {
+  NEW: 'NEW',
+  USED_EXCELLENT: 'USED_EXCELLENT',
+  USED_GOOD: 'USED_GOOD',
+  USED_FAIR: 'USED_FAIR',
+} as const;
+
+type TireType = typeof TireType[keyof typeof TireType];
+type TireCondition = typeof TireCondition[keyof typeof TireCondition];
 
 // Helper function to get emoji based on tire type
 const getTireEmoji = (type: TireType): string => {

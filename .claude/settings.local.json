@@ -104,7 +104,18 @@
       "Bash(az cdn profile create:*)",
       "Bash(az cdn profile:*)",
       "Bash(az storage account show:*)",
-      "Bash(az container show:*)"
+      "Bash(az container show:*)",
+      "Bash(for file in apps/webApp/src/app/components/inventory/TireCard.tsx )",
+      "Bash(apps/webApp/src/app/components/inventory/TireFilter.tsx )",
+      "Bash(apps/webApp/src/app/components/inventory/TireDialog.tsx )",
+      "Bash(apps/webApp/src/app/pages/inventory/InventoryDashboard.tsx )",
+      "Bash(apps/webApp/src/app/pages/inventory/TireFormSimple.tsx )",
+      "Bash(apps/webApp/src/app/pages/inventory/TireList.tsx )",
+      "Bash(apps/webApp/src/app/pages/inventory/TireDetails.tsx )",
+      "Bash(apps/webApp/src/app/pages/inventory/TireForm.tsx )",
+      "Bash(apps/webApp/src/app/pages/inventory/TireListSimple.tsx)",
+      "Bash(do)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
