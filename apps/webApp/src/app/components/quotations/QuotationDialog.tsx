@@ -73,8 +73,8 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
       setLoading(true);
       
       // Load tires
-      const tiresData = await TireService.getTires();
-      setTires(tiresData.items);
+      const tiresData = await TireService.getTires({ page: 1, limit: 100 });
+      setTires(tiresData.items || []);
 
       // Load existing quotation if editing
       if (quoteId) {

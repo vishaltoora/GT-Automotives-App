@@ -96,7 +96,7 @@ const InvoiceForm: React.FC = () => {
     try {
       const [customersData, tiresResult] = await Promise.all([
         customerService.getCustomers(),
-        TireService.getTires(),
+        TireService.getTires({ page: 1, limit: 100 }),
       ]);
       setCustomers(customersData);
       setTires(tiresResult.items || []);

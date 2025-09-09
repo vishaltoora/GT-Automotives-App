@@ -57,7 +57,11 @@ export class TireRepository extends BaseRepository<Tire> {
       limit = 20,
     } = params;
 
-    const skip = (page - 1) * limit;
+    // Ensure page and limit are numbers
+    const pageNumber = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNumber = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+
+    const skip = (pageNumber - 1) * limitNumber;
     const where = this.buildWhereClause(filters, search);
 
     const [items, total] = await Promise.all([
@@ -65,7 +69,7 @@ export class TireRepository extends BaseRepository<Tire> {
         where,
         orderBy: { [sortBy]: sortOrder },
         skip,
-        take: limit,
+        take: limitNumber,
       }),
       this.prisma.tire.count({ where }),
     ]);
@@ -80,9 +84,9 @@ export class TireRepository extends BaseRepository<Tire> {
     return {
       items: convertedItems,
       total,
-      page,
-      limit,
-      hasMore: skip + limit < total,
+      page: pageNumber,
+      limit: limitNumber,
+      hasMore: skip + limitNumber < total,
     };
   }
 
