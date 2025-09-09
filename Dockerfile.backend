@@ -18,8 +18,10 @@ RUN yarn db:generate
 # Sync Nx workspace
 RUN npx nx sync || true
 
-# Build the server using Nx (handles all dependencies and produces main.js)
-RUN npx nx build server --skip-nx-cache && \
+# Build the server using Nx with daemon disabled
+ENV NX_DAEMON=false
+RUN npx nx reset && \
+    npx nx build server --skip-nx-cache --verbose && \
     echo "Build completed" && \
     ls -la server/dist/ && \
     echo "Checking main.js exists:" && \
