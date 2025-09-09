@@ -11,6 +11,10 @@ export class AuditRepository {
     action: string;
     entityType?: string;
     entityId?: string;
+    resource?: string;
+    resourceId?: string;
+    oldValue?: any;
+    newValue?: any;
     details?: any;
     ipAddress?: string;
   }): Promise<AuditLog> {
@@ -18,10 +22,10 @@ export class AuditRepository {
       data: {
         userId: data.userId,
         action: data.action,
-        resource: data.entityType || 'unknown',
-        resourceId: data.entityId || '',
-        oldValue: undefined,
-        newValue: data.details || undefined,
+        resource: data.entityType || data.resource || 'unknown',
+        resourceId: data.entityId || data.resourceId || '',
+        oldValue: data.oldValue || undefined,
+        newValue: data.newValue || data.details || undefined,
         ipAddress: data.ipAddress,
       },
     });

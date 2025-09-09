@@ -73,7 +73,6 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
           firstName,
           lastName,
           roleId: role.id,
-          isActive: true,
         });
       } catch (error) {
         // If creation fails, maybe the user was created in parallel
