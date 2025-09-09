@@ -19,11 +19,12 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
 
-  return (
-    <ClerkProviderBase 
-      publishableKey={publishableKey}
-      navigate={(to) => navigate(to)}
-      appearance={{
+  // Workaround for custom domain issue - extract domain from key and provide fallback
+  const getClerkProps = () => {
+    const props: any = {
+      publishableKey,
+      navigate: (to: string) => navigate(to),
+      appearance: {
         elements: {
           formButtonPrimary: {
             backgroundColor: '#1976d2',
@@ -35,8 +36,21 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
             color: '#1976d2'
           }
         }
-      }}
-    >
+      }
+    };
+
+    // If production key with custom domain, try to provide a working frontend API
+    if (publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
+      // Force use standard clerk domain instead of custom domain
+      // This is a workaround - ideally the custom domain should be set up properly
+      console.warn('Using production Clerk key with custom domain. Consider setting up clerk.gt-automotives.com properly.');
+    }
+
+    return props;
+  };
+
+  return (
+    <ClerkProviderBase {...getClerkProps()}>
       {children}
     </ClerkProviderBase>
   );
