@@ -4,3 +4,4 @@ export * from './lib/user.interface';
 export * from './lib/auth.types';
 export * from './lib/auth.interface';
 export * from './lib/tire.interface';
+export * from './lib/tire.dto';

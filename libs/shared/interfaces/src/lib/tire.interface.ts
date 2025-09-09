@@ -1,18 +1,8 @@
-export enum TireType {
-  ALL_SEASON = 'ALL_SEASON',
-  SUMMER = 'SUMMER',
-  WINTER = 'WINTER',
-  PERFORMANCE = 'PERFORMANCE',
-  OFF_ROAD = 'OFF_ROAD',
-  RUN_FLAT = 'RUN_FLAT',
-}
+// Import enums from Prisma generated client to avoid duplicate definitions
+import { TireType, TireCondition } from '@prisma/client';
 
-export enum TireCondition {
-  NEW = 'NEW',
-  USED_EXCELLENT = 'USED_EXCELLENT',
-  USED_GOOD = 'USED_GOOD',
-  USED_FAIR = 'USED_FAIR',
-}
+// Re-export the enums for convenience
+export { TireType, TireCondition };
 
 export interface ITire {
   id: string;

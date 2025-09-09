@@ -257,9 +257,7 @@ let AuthService = class AuthService {
                 email: clerkUser.emailAddresses[0].emailAddress,
                 firstName: clerkUser.firstName || '',
                 lastName: clerkUser.lastName || '',
-                role: {
-                    connect: { id: customerRole.id },
-                },
+                roleId: customerRole.id,
             });
             await this.auditRepository.create({
                 userId: user.id,
@@ -322,9 +320,7 @@ let AuthService = class AuthService {
                 email: data.email,
                 firstName: data.firstName,
                 lastName: data.lastName,
-                role: {
-                    connect: { id: customerRole.id },
-                },
+                roleId: customerRole.id,
             });
             await this.auditRepository.create({
                 userId: user.id,
@@ -618,10 +614,10 @@ let AuditRepository = class AuditRepository {
             data: {
                 userId: data.userId,
                 action: data.action,
-                resource: data.entityType || 'unknown',
-                resourceId: data.entityId || '',
-                oldValue: undefined,
-                newValue: data.details || undefined,
+                resource: data.entityType || data.resource || 'unknown',
+                resourceId: data.entityId || data.resourceId || '',
+                oldValue: data.oldValue || undefined,
+                newValue: data.newValue || data.details || undefined,
                 ipAddress: data.ipAddress,
             },
         });
@@ -985,8 +981,7 @@ let ClerkJwtStrategy = class ClerkJwtStrategy extends (0, passport_1.PassportStr
                     email,
                     firstName,
                     lastName,
-                    role: { connect: { id: role.id } },
-                    isActive: true,
+                    roleId: role.id,
                 });
             }
             catch (error) {
@@ -1640,7 +1635,7 @@ const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
 const current_user_decorator_1 = __webpack_require__(21);
 const public_decorator_1 = __webpack_require__(20);
-const shared_dto_1 = __webpack_require__(40);
+const shared_interfaces_1 = __webpack_require__(40);
 let TiresController = class TiresController {
     constructor(tiresService) {
         this.tiresService = tiresService;
@@ -1650,25 +1645,7 @@ let TiresController = class TiresController {
         const userRole = user?.role?.name;
         // If search parameters are provided, use search method
         if (Object.keys(searchDto).length > 0) {
-            const searchParams = {
-                filters: {
-                    brand: searchDto.brand,
-                    model: searchDto.model,
-                    size: searchDto.size,
-                    type: searchDto.type,
-                    condition: searchDto.condition,
-                    minPrice: searchDto.minPrice,
-                    maxPrice: searchDto.maxPrice,
-                    inStock: searchDto.inStock,
-                    lowStock: searchDto.lowStock,
-                },
-                search: searchDto.search,
-                sortBy: searchDto.sortBy || 'updatedAt',
-                sortOrder: searchDto.sortOrder || 'desc',
-                page: searchDto.page || 1,
-                limit: searchDto.limit || 20,
-            };
-            return this.tiresService.search(searchParams, userRole);
+            return this.tiresService.search(searchDto, userRole);
         }
         // Simple findAll for basic requests
         const filters = {
@@ -1745,7 +1722,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Query)(new common_1.ValidationPipe({ transform: true }))),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_dto_1.TireSearchDto !== "undefined" && shared_dto_1.TireSearchDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_interfaces_1.TireSearchDto !== "undefined" && shared_interfaces_1.TireSearchDto) === "function" ? _b : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_c = typeof Promise !== "undefined" && Promise) === "function" ? _c : Object)
 ], TiresController.prototype, "findAll", null);
 tslib_1.__decorate([
@@ -1790,7 +1767,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Body)()),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_h = typeof shared_dto_1.CreateTireDto !== "undefined" && shared_dto_1.CreateTireDto) === "function" ? _h : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_h = typeof shared_interfaces_1.CreateTireDto !== "undefined" && shared_interfaces_1.CreateTireDto) === "function" ? _h : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
 ], TiresController.prototype, "create", null);
 tslib_1.__decorate([
@@ -1802,7 +1779,7 @@ tslib_1.__decorate([
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__param(2, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_k = typeof shared_dto_1.UpdateTireDto !== "undefined" && shared_dto_1.UpdateTireDto) === "function" ? _k : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_k = typeof shared_interfaces_1.UpdateTireDto !== "undefined" && shared_interfaces_1.UpdateTireDto) === "function" ? _k : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
 ], TiresController.prototype, "update", null);
 tslib_1.__decorate([
@@ -1825,7 +1802,7 @@ tslib_1.__decorate([
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__param(2, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_o = typeof shared_dto_1.StockAdjustmentDto !== "undefined" && shared_dto_1.StockAdjustmentDto) === "function" ? _o : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_o = typeof shared_interfaces_1.StockAdjustmentDto !== "undefined" && shared_interfaces_1.StockAdjustmentDto) === "function" ? _o : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_p = typeof Promise !== "undefined" && Promise) === "function" ? _p : Object)
 ], TiresController.prototype, "adjustStock", null);
 tslib_1.__decorate([
@@ -1895,7 +1872,7 @@ const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
 const tire_repository_1 = __webpack_require__(38);
 const audit_repository_1 = __webpack_require__(18);
-const shared_dto_1 = __webpack_require__(40);
+const shared_interfaces_1 = __webpack_require__(40);
 const library_1 = __webpack_require__(41);
 const class_transformer_1 = __webpack_require__(42);
 let TiresService = class TiresService {
@@ -2048,7 +2025,6 @@ let TiresService = class TiresService {
                 oldQuantity,
                 newQuantity: updatedTire.quantity,
                 brand: updatedTire.brand,
-                model: updatedTire.model,
                 size: updatedTire.size,
             },
         });
@@ -2081,7 +2057,7 @@ let TiresService = class TiresService {
         return tires.map((tire) => this.formatSingleTireResponse(tire, userRole));
     }
     formatSingleTireResponse(tire, userRole) {
-        const response = (0, class_transformer_1.plainToClass)(shared_dto_1.TireResponseDto, {
+        const response = (0, class_transformer_1.plainToClass)(shared_interfaces_1.TireResponseDto, {
             ...tire,
             price: tire.price.toNumber(),
             cost: tire.cost?.toNumber(),
@@ -2189,8 +2165,14 @@ let TireRepository = class TireRepository extends base_repository_1.BaseReposito
             }),
             this.prisma.tire.count({ where }),
         ]);
+        // Convert Prisma Decimal to number for compatibility with TireDto
+        const convertedItems = items.map(tire => ({
+            ...tire,
+            price: parseFloat(tire.price.toString()),
+            cost: tire.cost ? parseFloat(tire.cost.toString()) : undefined,
+        }));
         return {
-            items,
+            items: convertedItems,
             total,
             page,
             limit,
@@ -2436,7 +2418,7 @@ exports.BaseRepository = BaseRepository;
 /* 40 */
 /***/ ((module) => {
 
-module.exports = require("@gt-automotive/shared-dto");
+module.exports = require("@gt-automotive/shared-interfaces");
 
 /***/ }),
 /* 41 */
@@ -2979,7 +2961,7 @@ exports.VehiclesModule = VehiclesModule = tslib_1.__decorate([
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var _a, _b, _c;
+var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VehiclesService = void 0;
 const tslib_1 = __webpack_require__(4);
@@ -2987,11 +2969,13 @@ const common_1 = __webpack_require__(1);
 const vehicle_repository_1 = __webpack_require__(53);
 const customer_repository_1 = __webpack_require__(45);
 const audit_repository_1 = __webpack_require__(18);
+const database_1 = __webpack_require__(13);
 let VehiclesService = class VehiclesService {
-    constructor(vehicleRepository, customerRepository, auditRepository) {
+    constructor(vehicleRepository, customerRepository, auditRepository, prisma) {
         this.vehicleRepository = vehicleRepository;
         this.customerRepository = customerRepository;
         this.auditRepository = auditRepository;
+        this.prisma = prisma;
     }
     async create(createVehicleDto, userId, userRole) {
         // Verify customer exists
@@ -2999,9 +2983,10 @@ let VehiclesService = class VehiclesService {
         if (!customer) {
             throw new common_1.NotFoundException('Customer not found');
         }
-        // Customers can only add vehicles to their own profile
-        if (userRole === 'customer' && customer.userId !== userId) {
-            throw new common_1.ForbiddenException('You can only add vehicles to your own profile');
+        // Customer role validation would require proper customer-user mapping
+        // For now, only staff and admin can create vehicles
+        if (userRole === 'customer') {
+            throw new common_1.ForbiddenException('Customer vehicle creation needs proper customer context implementation');
         }
         // Check for duplicate VIN if provided
         if (createVehicleDto.vin) {
@@ -3023,20 +3008,16 @@ let VehiclesService = class VehiclesService {
         await this.auditRepository.create({
             userId,
             action: 'CREATE_VEHICLE',
-            resource: 'vehicle',
-            resourceId: vehicle.id,
+            entityType: 'vehicle',
+            entityId: vehicle.id,
             newValue: vehicle,
         });
         return this.vehicleRepository.findOneWithDetails(vehicle.id);
     }
     async findAll(userId, userRole) {
-        // Customers can only see their own vehicles
+        // Customer role access requires proper customer-user context mapping
         if (userRole === 'customer') {
-            const customer = await this.customerRepository.findByUserId(userId);
-            if (!customer) {
-                return [];
-            }
-            return this.vehicleRepository.findByCustomer(customer.id);
+            throw new common_1.ForbiddenException('Customer vehicle access needs proper customer context implementation');
         }
         // Staff and admin can see all vehicles
         return this.vehicleRepository.findAllWithDetails();
@@ -3046,9 +3027,9 @@ let VehiclesService = class VehiclesService {
         if (!customer) {
             throw new common_1.NotFoundException('Customer not found');
         }
-        // Customers can only see their own vehicles
-        if (userRole === 'customer' && customer.userId !== userId) {
-            throw new common_1.ForbiddenException('You can only view your own vehicles');
+        // Customer role validation requires proper customer context
+        if (userRole === 'customer') {
+            throw new common_1.ForbiddenException('Customer vehicle access needs proper customer context implementation');
         }
         return this.vehicleRepository.findByCustomer(customerId);
     }
@@ -3057,12 +3038,9 @@ let VehiclesService = class VehiclesService {
         if (!vehicle) {
             throw new common_1.NotFoundException(`Vehicle with ID ${id} not found`);
         }
-        // Customers can only see their own vehicles
+        // Customer role validation requires proper customer context
         if (userRole === 'customer') {
-            const customer = await this.customerRepository.findByUserId(userId);
-            if (!customer || vehicle.customerId !== customer.id) {
-                throw new common_1.ForbiddenException('You can only view your own vehicles');
-            }
+            throw new common_1.ForbiddenException('Customer vehicle access needs proper customer context implementation');
         }
         // Get vehicle statistics
         const stats = await this.vehicleRepository.getVehicleStats(id);
@@ -3072,16 +3050,13 @@ let VehiclesService = class VehiclesService {
         };
     }
     async update(id, updateVehicleDto, userId, userRole) {
-        const vehicle = await this.vehicleRepository.findOne({ id });
+        const vehicle = await this.vehicleRepository.findById(id);
         if (!vehicle) {
             throw new common_1.NotFoundException(`Vehicle with ID ${id} not found`);
         }
-        // Customers can only update their own vehicles
+        // Customer role validation requires proper customer context
         if (userRole === 'customer') {
-            const customer = await this.customerRepository.findByUserId(userId);
-            if (!customer || vehicle.customerId !== customer.id) {
-                throw new common_1.ForbiddenException('You can only update your own vehicles');
-            }
+            throw new common_1.ForbiddenException('Customer vehicle updates need proper customer context implementation');
         }
         // Check for duplicate VIN if updating
         if (updateVehicleDto.vin && updateVehicleDto.vin !== vehicle.vin) {
@@ -3090,7 +3065,7 @@ let VehiclesService = class VehiclesService {
                 throw new common_1.BadRequestException('A vehicle with this VIN already exists');
             }
         }
-        const updatedVehicle = await this.vehicleRepository.update({ id }, {
+        const updatedVehicle = await this.vehicleRepository.update(id, {
             ...(updateVehicleDto.make && { make: updateVehicleDto.make }),
             ...(updateVehicleDto.model && { model: updateVehicleDto.model }),
             ...(updateVehicleDto.year && { year: updateVehicleDto.year }),
@@ -3103,7 +3078,7 @@ let VehiclesService = class VehiclesService {
             await this.auditRepository.create({
                 userId,
                 action: 'UPDATE_VEHICLE',
-                resource: 'vehicle',
+                entityType: 'vehicle',
                 resourceId: id,
                 oldValue: vehicle,
                 newValue: updatedVehicle,
@@ -3112,37 +3087,34 @@ let VehiclesService = class VehiclesService {
         return this.vehicleRepository.findOneWithDetails(id);
     }
     async remove(id, userId, userRole) {
-        const vehicle = await this.vehicleRepository.findOne({ id });
+        const vehicle = await this.vehicleRepository.findById(id);
         if (!vehicle) {
             throw new common_1.NotFoundException(`Vehicle with ID ${id} not found`);
         }
-        // Only admin can delete vehicles, or customers can delete their own
+        // Customer role validation requires proper customer context
         if (userRole === 'customer') {
-            const customer = await this.customerRepository.findByUserId(userId);
-            if (!customer || vehicle.customerId !== customer.id) {
-                throw new common_1.ForbiddenException('You can only delete your own vehicles');
-            }
+            throw new common_1.ForbiddenException('Customer vehicle deletion needs proper customer context implementation');
         }
         else if (userRole !== 'admin') {
             throw new common_1.ForbiddenException('Only administrators can delete vehicles');
         }
         // Check for existing invoices or appointments
-        const hasInvoices = await this.vehicleRepository.prisma.invoice.count({
+        const hasInvoices = await this.prisma.invoice.count({
             where: { vehicleId: id },
         });
-        const hasAppointments = await this.vehicleRepository.prisma.appointment.count({
+        const hasAppointments = await this.prisma.appointment.count({
             where: { vehicleId: id },
         });
         if (hasInvoices > 0 || hasAppointments > 0) {
             throw new common_1.BadRequestException('Cannot delete vehicle with existing service history. Please contact an administrator.');
         }
-        await this.vehicleRepository.delete({ id });
+        await this.vehicleRepository.delete(id);
         // Log the action
         await this.auditRepository.create({
             userId,
             action: 'DELETE_VEHICLE',
-            resource: 'vehicle',
-            resourceId: id,
+            entityType: 'vehicle',
+            entityId: id,
             oldValue: vehicle,
         });
         return { message: 'Vehicle deleted successfully' };
@@ -3151,16 +3123,12 @@ let VehiclesService = class VehiclesService {
         const vehicles = await this.vehicleRepository.search(searchTerm);
         // Filter results for customers
         if (userRole === 'customer') {
-            const customer = await this.customerRepository.findByUserId(userId);
-            if (!customer) {
-                return [];
-            }
-            return vehicles.filter(v => v.customerId === customer.id);
+            throw new common_1.ForbiddenException('Customer vehicle search needs proper customer context implementation');
         }
         return vehicles;
     }
     async updateMileage(id, mileage, userId, userRole) {
-        const vehicle = await this.vehicleRepository.findOne({ id });
+        const vehicle = await this.vehicleRepository.findById(id);
         if (!vehicle) {
             throw new common_1.NotFoundException(`Vehicle with ID ${id} not found`);
         }
@@ -3168,20 +3136,17 @@ let VehiclesService = class VehiclesService {
         if (vehicle.mileage && mileage < vehicle.mileage) {
             throw new common_1.BadRequestException('Mileage cannot be decreased');
         }
-        // Customers can only update their own vehicles
+        // Customer role validation requires proper customer context
         if (userRole === 'customer') {
-            const customer = await this.customerRepository.findByUserId(userId);
-            if (!customer || vehicle.customerId !== customer.id) {
-                throw new common_1.ForbiddenException('You can only update your own vehicles');
-            }
+            throw new common_1.ForbiddenException('Customer vehicle updates need proper customer context implementation');
         }
-        const updatedVehicle = await this.vehicleRepository.update({ id }, { mileage });
+        const updatedVehicle = await this.vehicleRepository.update(id, { mileage });
         // Log the action
         await this.auditRepository.create({
             userId,
             action: 'UPDATE_VEHICLE_MILEAGE',
-            resource: 'vehicle',
-            resourceId: id,
+            entityType: 'vehicle',
+            entityId: id,
             oldValue: { mileage: vehicle.mileage },
             newValue: { mileage },
         });
@@ -3191,7 +3156,7 @@ let VehiclesService = class VehiclesService {
 exports.VehiclesService = VehiclesService;
 exports.VehiclesService = VehiclesService = tslib_1.__decorate([
     (0, common_1.Injectable)(),
-    tslib_1.__metadata("design:paramtypes", [typeof (_a = typeof vehicle_repository_1.VehicleRepository !== "undefined" && vehicle_repository_1.VehicleRepository) === "function" ? _a : Object, typeof (_b = typeof customer_repository_1.CustomerRepository !== "undefined" && customer_repository_1.CustomerRepository) === "function" ? _b : Object, typeof (_c = typeof audit_repository_1.AuditRepository !== "undefined" && audit_repository_1.AuditRepository) === "function" ? _c : Object])
+    tslib_1.__metadata("design:paramtypes", [typeof (_a = typeof vehicle_repository_1.VehicleRepository !== "undefined" && vehicle_repository_1.VehicleRepository) === "function" ? _a : Object, typeof (_b = typeof customer_repository_1.CustomerRepository !== "undefined" && customer_repository_1.CustomerRepository) === "function" ? _b : Object, typeof (_c = typeof audit_repository_1.AuditRepository !== "undefined" && audit_repository_1.AuditRepository) === "function" ? _c : Object, typeof (_d = typeof database_1.PrismaService !== "undefined" && database_1.PrismaService) === "function" ? _d : Object])
 ], VehiclesService);
 
 
@@ -3735,7 +3700,7 @@ let InvoicesService = class InvoicesService {
             userId,
             action: 'UPDATE_INVOICE',
             entityType: 'invoice',
-            resourceId: id,
+            entityId: id,
             oldValue: oldValue,
             newValue: updated,
         });
@@ -3756,7 +3721,7 @@ let InvoicesService = class InvoicesService {
             userId,
             action: 'CANCEL_INVOICE',
             entityType: 'invoice',
-            resourceId: id,
+            entityId: id,
             oldValue: invoice,
         });
     }
@@ -3808,7 +3773,7 @@ let InvoicesService = class InvoicesService {
             userId,
             action: 'MARK_INVOICE_PAID',
             entityType: 'invoice',
-            resourceId: id,
+            entityId: id,
             newValue: { paymentMethod, paidAt: new Date() },
         });
         return updated;
@@ -4520,7 +4485,7 @@ let QuotationsService = class QuotationsService {
         return this.quotationRepository.search(params);
     }
     async convertToInvoice(quotationId, customerId, vehicleId) {
-        const quotation = await this.findOne(quotationId);
+        const quotation = await this.quotationRepository.findOne(quotationId);
         if (quotation.status === 'CONVERTED') {
             throw new Error('Quotation has already been converted to an invoice');
         }
@@ -5301,4 +5266,3 @@ bootstrap();
 
 /******/ })()
 ;
-//# sourceMappingURL=main.js.map

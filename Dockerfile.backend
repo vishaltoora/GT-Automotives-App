@@ -2,14 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files first for better layer caching
-COPY package.json yarn.lock ./
-
-# Install all dependencies
-RUN yarn install --frozen-lockfile --production=false
-
-# Copy all source code
+# Copy all source code (simpler approach)
 COPY . .
+
+# Install dependencies with retry and timeout handling
+RUN yarn install --frozen-lockfile --production=false --network-timeout 100000 || \
+    yarn install --frozen-lockfile --production=false --network-timeout 100000 || \
+    yarn install --frozen-lockfile --production=false --network-timeout 100000
 
 # Generate Prisma client
 RUN yarn db:generate
@@ -31,8 +30,12 @@ RUN echo '{\
   }\
 }' > tsconfig.docker.json
 
-# Build with lenient settings
-RUN npx tsc -p tsconfig.docker.json --outDir dist || echo "Build completed with warnings"
+# Build with lenient settings and verify output
+RUN npx tsc -p tsconfig.docker.json --outDir dist && \
+    echo "TypeScript build completed" && \
+    ls -la dist/ && \
+    echo "Checking main.js exists:" && \
+    ls -la dist/main.js
 
 # Go back to app root
 WORKDIR /app
@@ -62,5 +65,5 @@ CMD ["sh", "-c", "\
   if [ -n \"$CLERK_SECRET_KEY\" ] && [ \"$CLERK_SECRET_KEY\" != \"sk_live_YOUR_ACTUAL_CLERK_SECRET_KEY_HERE\" ]; then echo 'CLERK_SECRET_KEY is configured'; else echo 'ERROR: CLERK_SECRET_KEY is not properly configured'; fi && \
   if [ -n \"$JWT_SECRET\" ] && [ \"$JWT_SECRET\" != \"GENERATE_WITH_OPENSSL_RAND_BASE64_32\" ]; then echo 'JWT_SECRET is configured'; else echo 'ERROR: JWT_SECRET is not properly configured'; fi && \
   echo 'Starting server...' && \
-  node server/dist/main.js || (echo 'Server failed to start - check environment variables and database connection' && exit 1) \
+  cd server && node dist/main.js || (echo 'Server failed to start - check environment variables and database connection' && exit 1) \
 "]

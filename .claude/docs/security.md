@@ -4,11 +4,13 @@ This document outlines the security measures, best practices, and considerations
 
 ## 🔐 Authentication & Authorization
 
-### Clerk Integration
+### Clerk Integration ✅
 - **Provider**: [Clerk](https://clerk.com) - Industry-standard authentication service
+- **Production Status**: ✅ Fully operational on https://gt-automotives.com
 - **JWT Tokens**: Secure token-based authentication with automatic renewal
 - **Session Management**: Secure session handling with proper logout
 - **Multi-factor Authentication**: Available for enhanced security (configurable)
+- **Environment Support**: Working in both development and production
 
 ### User Roles & Access Control
 ```typescript
@@ -143,6 +145,68 @@ DATABASE_URL=postgresql://localhost:5432/gt_automotive
 - **Dependency Scanning**: Regular security audits of npm packages
 - **Static Analysis**: Code analyzed for security vulnerabilities
 - **Manual Testing**: Regular security testing of authentication flows
+
+## 🔒 Production Security Architecture
+
+### HTTPS & SSL Configuration ✅
+- **Custom Domain**: https://gt-automotives.com (SSL enabled)
+- **WWW Support**: https://www.gt-automotives.com (SSL enabled)
+- **SSL Provider**: Cloudflare Universal SSL
+- **SSL Mode**: Flexible (HTTPS to users, HTTP to Azure backend)
+- **Certificate Management**: Automatic renewal via Cloudflare
+- **HSTS**: Configurable for enhanced security
+
+### Network Security
+```
+Internet → [Cloudflare SSL/CDN] → [Azure Storage] → Static Files
+                                → [Azure Container] → Backend API
+                                → [Azure PostgreSQL] → Database
+```
+
+#### Security Layers:
+1. **Cloudflare Protection**:
+   - DDoS protection (automatic)
+   - Bot detection and mitigation
+   - Rate limiting capabilities
+   - Firewall rules (configurable)
+
+2. **Azure Network Security**:
+   - Backend API in Azure Container Instances
+   - Database in Azure PostgreSQL (private by default)
+   - Storage account with public read for static assets only
+   - No direct database access from internet
+
+3. **Application Security**:
+   - Clerk authentication for all protected routes
+   - JWT token validation on backend
+   - Role-based access control
+   - CORS properly configured
+
+### Data Protection in Production
+- **Database Encryption**: Azure PostgreSQL encryption at rest
+- **Connection Encryption**: SSL required for database connections
+- **API Authentication**: All API calls require valid Clerk JWT tokens
+- **Static Assets**: Public but non-sensitive (HTML, CSS, JS, images)
+- **Sensitive Data**: Never stored in frontend, always server-side protected
+
+### Production Environment Variables (Secured)
+```bash
+# Azure Container Environment Variables (not exposed)
+CLERK_SECRET_KEY=sk_live_[production_key]
+DATABASE_URL=[encrypted_postgresql_connection]
+JWT_SECRET=[generated_production_secret]
+CORS_ORIGIN=https://gt-automotives.com
+
+# Frontend Environment Variables (public, non-sensitive)
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_[public_key]
+VITE_API_URL=http://gt-backend.eastus.azurecontainer.io:3000
+```
+
+### Security Monitoring & Alerting
+- **Cloudflare Analytics**: Traffic patterns, threat detection
+- **Azure Monitor**: Container health, database performance
+- **Clerk Dashboard**: Authentication analytics, failed login attempts
+- **Error Tracking**: Application errors logged and monitored
 
 ## 🚀 Deployment Security
 

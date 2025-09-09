@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy the already built server files
+COPY server/dist ./server/dist
+COPY node_modules ./node_modules
+COPY libs ./libs
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV PORT=3000
+
+# Expose port
+EXPOSE 3000
+
+# Start the application
+CMD ["node", "server/dist/main.js"]

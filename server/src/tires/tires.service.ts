@@ -7,18 +7,16 @@ import {
 } from '@nestjs/common';
 import { TireRepository } from './repositories/tire.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
-import { 
-  CreateTireDto, 
-  UpdateTireDto, 
-  StockAdjustmentDto, 
-  TireSearchDto,
-  TireResponseDto,
-  TireSearchResultDto,
-  InventoryReportDto
-} from '@gt-automotive/shared-dto';
 import {
-  ITireFilters,
-  ITireSearchParams,
+  CreateTireDto,
+  UpdateTireDto,
+  TireDto,
+  TireResponseDto,
+  TireFiltersDto,
+  TireSearchDto,
+  TireSearchResultDto,
+  StockAdjustmentDto,
+  InventoryReportDto,
   TireType,
   TireCondition,
 } from '@gt-automotive/shared-interfaces';
@@ -33,7 +31,7 @@ export class TiresService {
   ) {}
 
   async findAll(
-    filters?: ITireFilters,
+    filters?: TireFiltersDto,
     userRole?: string,
   ): Promise<TireResponseDto[]> {
     const tires = await this.tireRepository.findAll(filters);
@@ -49,7 +47,7 @@ export class TiresService {
   }
 
   async search(
-    searchParams: ITireSearchParams,
+    searchParams: TireSearchDto,
     userRole?: string,
   ): Promise<TireSearchResultDto> {
     const result = await this.tireRepository.search(searchParams);

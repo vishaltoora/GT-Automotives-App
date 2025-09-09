@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
-import { Tire, Prisma } from '@prisma/client';
+import { Tire, Prisma, TireType } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
-import { ITireFilters, ITireSearchParams, ITireSearchResult } from '@gt-automotive/shared-interfaces';
+import { TireDto, TireFiltersDto, TireSearchDto, TireSearchResultDto } from '@gt-automotive/shared-interfaces';
 
 @Injectable()
 export class TireRepository extends BaseRepository<Tire> {
@@ -10,7 +10,7 @@ export class TireRepository extends BaseRepository<Tire> {
     super(prisma, 'tire');
   }
 
-  override async findAll(filters?: ITireFilters): Promise<Tire[]> {
+  override async findAll(filters?: TireFiltersDto): Promise<Tire[]> {
     return this.prisma.tire.findMany({
       where: this.buildWhereClause(filters),
       orderBy: { updatedAt: 'desc' },
@@ -47,7 +47,7 @@ export class TireRepository extends BaseRepository<Tire> {
     }
   }
 
-  async search(params: ITireSearchParams): Promise<ITireSearchResult> {
+  async search(params: TireSearchDto): Promise<TireSearchResultDto> {
     const {
       filters,
       search,
@@ -70,8 +70,15 @@ export class TireRepository extends BaseRepository<Tire> {
       this.prisma.tire.count({ where }),
     ]);
 
+    // Convert Prisma Decimal to number for compatibility with TireDto
+    const convertedItems: TireDto[] = items.map(tire => ({
+      ...tire,
+      price: parseFloat(tire.price.toString()),
+      cost: tire.cost ? parseFloat(tire.cost.toString()) : undefined,
+    }));
+
     return {
-      items: items as Tire[],
+      items: convertedItems,
       total,
       page,
       limit,
@@ -238,7 +245,7 @@ export class TireRepository extends BaseRepository<Tire> {
   }
 
   private buildWhereClause(
-    filters?: ITireFilters,
+    filters?: TireFiltersDto,
     search?: string,
   ): Prisma.TireWhereInput {
     const where: Prisma.TireWhereInput = {};

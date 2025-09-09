@@ -27,8 +27,8 @@ import {
   TireResponseDto,
   TireSearchResultDto,
   InventoryReportDto,
-} from '@gt-automotive/shared-dto';
-import { ITireFilters, ITireSearchParams } from '@gt-automotive/shared-interfaces';
+  TireFiltersDto,
+} from '@gt-automotive/shared-interfaces';
 
 @Controller('api/tires')
 export class TiresController {
@@ -45,29 +45,11 @@ export class TiresController {
 
     // If search parameters are provided, use search method
     if (Object.keys(searchDto).length > 0) {
-      const searchParams: ITireSearchParams = {
-        filters: {
-          brand: searchDto.brand,
-          size: searchDto.size,
-          type: searchDto.type,
-          condition: searchDto.condition,
-          minPrice: searchDto.minPrice,
-          maxPrice: searchDto.maxPrice,
-          inStock: searchDto.inStock,
-          lowStock: searchDto.lowStock,
-        },
-        search: searchDto.search,
-        sortBy: searchDto.sortBy || 'updatedAt',
-        sortOrder: searchDto.sortOrder || 'desc',
-        page: searchDto.page || 1,
-        limit: searchDto.limit || 20,
-      };
-
-      return this.tiresService.search(searchParams, userRole);
+      return this.tiresService.search(searchDto, userRole);
     }
 
     // Simple findAll for basic requests
-    const filters: ITireFilters = {
+    const filters: TireFiltersDto = {
       inStock: true, // Only show in-stock items by default for public
     };
 
