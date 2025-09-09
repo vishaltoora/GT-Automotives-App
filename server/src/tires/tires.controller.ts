@@ -19,7 +19,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import {
+import type {
   CreateTireDto,
   UpdateTireDto,
   StockAdjustmentDto,

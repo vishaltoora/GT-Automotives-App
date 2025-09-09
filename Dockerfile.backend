@@ -1,11 +1,13 @@
-FROM node:20-alpine
+# Build stage for GT Automotive backend
+FROM node:20-alpine AS builder
 
+# Set working directory
 WORKDIR /app
 
-# Copy all source code (simpler approach)
+# Copy all files
 COPY . .
 
-# Install dependencies with retry and timeout handling
+# Install dependencies
 RUN yarn install --frozen-lockfile --production=false --network-timeout 100000 || \
     yarn install --frozen-lockfile --production=false --network-timeout 100000 || \
     yarn install --frozen-lockfile --production=false --network-timeout 100000
@@ -13,57 +15,55 @@ RUN yarn install --frozen-lockfile --production=false --network-timeout 100000 |
 # Generate Prisma client
 RUN yarn db:generate
 
-# Build the server using TypeScript with lenient settings (match local environment)
-WORKDIR /app/server
+# Sync Nx workspace
+RUN npx nx sync || true
 
-# Create a lenient tsconfig for Docker build
-RUN echo '{\
-  "extends": "./tsconfig.app.json",\
-  "compilerOptions": {\
-    "noEmitOnError": false,\
-    "skipLibCheck": true,\
-    "strict": false,\
-    "noImplicitAny": false,\
-    "noImplicitReturns": false,\
-    "noUnusedLocals": false,\
-    "noUnusedParameters": false\
-  }\
-}' > tsconfig.docker.json
-
-# Build with lenient settings and verify output
-RUN npx tsc -p tsconfig.docker.json --outDir dist && \
-    echo "TypeScript build completed" && \
-    ls -la dist/ && \
+# Build the server using Nx (handles all dependencies and produces main.js)
+RUN npx nx build server --skip-nx-cache && \
+    echo "Build completed" && \
+    ls -la server/dist/ && \
     echo "Checking main.js exists:" && \
-    ls -la dist/main.js
-
-# Go back to app root
-WORKDIR /app
+    ls -la server/dist/main.js
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S backend -u 1001 && \
     chown -R backend:nodejs /app
 
+# Production stage
+FROM node:20-alpine
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S backend -u 1001
+
+# Copy application files from builder
+COPY --from=builder --chown=backend:nodejs /app/server/dist ./server/dist
+COPY --from=builder --chown=backend:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=backend:nodejs /app/libs ./libs
+COPY --from=builder --chown=backend:nodejs /app/package.json ./package.json
+
+# Switch to non-root user
 USER backend
 
 # Expose port
 EXPOSE 3000
 
-# Health check to ensure container is working
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "const http = require('http'); const req = http.request({hostname: 'localhost', port: 3000, path: '/', method: 'GET', timeout: 5000}, (res) => process.exit(res.statusCode === 200 || res.statusCode === 401 ? 0 : 1)); req.on('error', () => process.exit(1)); req.on('timeout', () => process.exit(1)); req.end();" || exit 1
+# Set NODE_ENV
+ENV NODE_ENV=production
 
-# Start the application with better error handling and environment validation
-CMD ["sh", "-c", "\
-  echo 'Starting GT Automotive Backend...' && \
-  echo 'Node version:' && node --version && \
-  echo 'Environment: NODE_ENV='$NODE_ENV && \
-  echo 'Port: PORT='$PORT && \
-  echo 'Database URL configured:' && \
-  if [ -n \"$DATABASE_URL\" ]; then echo 'DATABASE_URL is set'; else echo 'ERROR: DATABASE_URL is not set'; fi && \
-  if [ -n \"$CLERK_SECRET_KEY\" ] && [ \"$CLERK_SECRET_KEY\" != \"sk_live_YOUR_ACTUAL_CLERK_SECRET_KEY_HERE\" ]; then echo 'CLERK_SECRET_KEY is configured'; else echo 'ERROR: CLERK_SECRET_KEY is not properly configured'; fi && \
-  if [ -n \"$JWT_SECRET\" ] && [ \"$JWT_SECRET\" != \"GENERATE_WITH_OPENSSL_RAND_BASE64_32\" ]; then echo 'JWT_SECRET is configured'; else echo 'ERROR: JWT_SECRET is not properly configured'; fi && \
-  echo 'Starting server...' && \
-  cd server && node dist/main.js || (echo 'Server failed to start - check environment variables and database connection' && exit 1) \
-"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "server/dist/main.js"]

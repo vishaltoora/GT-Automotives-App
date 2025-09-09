@@ -1,0 +1,51 @@
+# Production-ready Dockerfile for GT Automotive backend
+FROM node:20-alpine
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create app directory
+WORKDIR /app
+
+# Copy package.json first for better caching
+COPY package.json ./
+
+# Install only production dependencies
+RUN yarn install --frozen-lockfile --production=true --network-timeout 100000 && \
+    yarn cache clean
+
+# Copy the pre-built server files and required dependencies
+COPY server/dist ./server/dist
+
+# Copy Prisma client (generated during local build)
+COPY node_modules/.prisma ./node_modules/.prisma
+COPY node_modules/@prisma ./node_modules/@prisma
+COPY node_modules/prisma ./node_modules/prisma
+
+# Copy shared libraries
+COPY libs ./libs
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S backend -u 1001 && \
+    chown -R backend:nodejs /app
+
+# Switch to non-root user
+USER backend
+
+# Expose port
+EXPOSE 3000
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})" || exit 1
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "server/dist/main.js"]

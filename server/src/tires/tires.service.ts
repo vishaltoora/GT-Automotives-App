@@ -21,7 +21,6 @@ import {
   TireCondition,
 } from '@gt-automotive/shared-interfaces';
 import { Decimal } from '@prisma/client/runtime/library';
-import { plainToClass } from 'class-transformer';
 
 @Injectable()
 export class TiresService {
@@ -274,19 +273,19 @@ export class TiresService {
   }
 
   private formatSingleTireResponse(tire: any, userRole?: string): TireResponseDto {
-    const response = plainToClass(TireResponseDto, {
+    const response: any = {
       ...tire,
-      price: tire.price.toNumber(),
-      cost: tire.cost?.toNumber(),
+      price: tire.price.toNumber ? tire.price.toNumber() : tire.price,
+      cost: tire.cost?.toNumber ? tire.cost.toNumber() : tire.cost,
       isLowStock: tire.quantity <= tire.minStock,
-    });
+    };
 
     // Hide cost from non-admin users
     if (userRole !== 'ADMIN') {
       delete response.cost;
     }
 
-    return response;
+    return response as TireResponseDto;
   }
 
   // Helper methods for specific searches

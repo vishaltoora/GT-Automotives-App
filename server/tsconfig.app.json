@@ -13,13 +13,10 @@
   "exclude": [],
   "references": [
     {
-      "path": "../libs/shared/dto"
+      "path": "../libs/database/tsconfig.lib.json"
     },
     {
       "path": "../libs/shared/interfaces"
-    },
-    {
-      "path": "../libs/database/tsconfig.lib.json"
     }
   ]
 }
