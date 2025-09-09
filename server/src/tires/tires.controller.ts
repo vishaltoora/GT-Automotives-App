@@ -48,7 +48,6 @@ export class TiresController {
       const searchParams: ITireSearchParams = {
         filters: {
           brand: searchDto.brand,
-          model: searchDto.model,
           size: searchDto.size,
           type: searchDto.type,
           condition: searchDto.condition,

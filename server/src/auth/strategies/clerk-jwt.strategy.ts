@@ -72,7 +72,7 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
           email,
           firstName,
           lastName,
-          role: { connect: { id: role.id } },
+          roleId: role.id,
           isActive: true,
         });
       } catch (error) {

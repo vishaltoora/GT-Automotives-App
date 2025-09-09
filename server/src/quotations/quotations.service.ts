@@ -2,8 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { QuotationRepository } from './repositories/quotation.repository';
 import { CreateQuoteDto } from './dto/create-quotation.dto';
 import { UpdateQuoteDto } from './dto/update-quotation.dto';
-import { Quotation } from '@prisma/client';
+import { Quotation, QuotationItem, Tire } from '@prisma/client';
 import { PrismaService } from '@gt-automotive/database';
+
+type QuotationWithItems = Quotation & {
+  items: (QuotationItem & {
+    tire: Tire;
+  })[];
+};
 
 @Injectable()
 export class QuotationsService {
@@ -163,7 +169,7 @@ export class QuotationsService {
   }
 
   async convertToInvoice(quotationId: string, customerId: string, vehicleId?: string): Promise<any> {
-    const quotation = await this.findOne(quotationId);
+    const quotation = await this.quotationRepository.findOne(quotationId) as QuotationWithItems;
     
     if (quotation.status === 'CONVERTED') {
       throw new Error('Quotation has already been converted to an invoice');

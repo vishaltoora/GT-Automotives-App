@@ -196,7 +196,7 @@ export class InvoicesService {
       userId,
       action: 'UPDATE_INVOICE',
       entityType: 'invoice',
-      resourceId: id,
+      entityId: id,
       oldValue: oldValue as any,
       newValue: updated as any,
     });
@@ -223,7 +223,7 @@ export class InvoicesService {
       userId,
       action: 'CANCEL_INVOICE',
       entityType: 'invoice',
-      resourceId: id,
+      entityId: id,
       oldValue: invoice as any,
     });
   }
@@ -296,7 +296,7 @@ export class InvoicesService {
       userId,
       action: 'MARK_INVOICE_PAID',
       entityType: 'invoice',
-      resourceId: id,
+      entityId: id,
       newValue: { paymentMethod, paidAt: new Date() } as any,
     });
 

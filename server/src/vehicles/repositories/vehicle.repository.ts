@@ -8,9 +8,7 @@ export class VehicleRepository extends BaseRepository<
   Vehicle,
   Prisma.VehicleCreateInput,
   Prisma.VehicleUpdateInput,
-  Prisma.VehicleWhereUniqueInput,
-  Prisma.VehicleWhereInput,
-  Prisma.VehicleOrderByWithRelationInput
+  Prisma.VehicleWhereInput
 > {
   constructor(prisma: PrismaService) {
     super(prisma, 'vehicle');

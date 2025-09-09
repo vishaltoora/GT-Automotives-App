@@ -44,9 +44,7 @@ export class AuthService {
         email: clerkUser.emailAddresses[0].emailAddress,
         firstName: clerkUser.firstName || '',
         lastName: clerkUser.lastName || '',
-        role: {
-          connect: { id: customerRole.id },
-        },
+        roleId: customerRole.id,
       });
       
       await this.auditRepository.create({
@@ -132,9 +130,7 @@ export class AuthService {
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: {
-          connect: { id: customerRole.id },
-        },
+        roleId: customerRole.id,
       });
       
       await this.auditRepository.create({

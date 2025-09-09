@@ -232,7 +232,6 @@ export class TiresService {
         oldQuantity,
         newQuantity: updatedTire.quantity,
         brand: updatedTire.brand,
-        model: updatedTire.model,
         size: updatedTire.size,
       },
     });

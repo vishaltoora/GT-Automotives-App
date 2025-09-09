@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
-import { Tire, Prisma, TireType } from '@prisma/client';
+import { Tire, Prisma } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
 import { ITireFilters, ITireSearchParams, ITireSearchResult } from '@gt-automotive/shared-interfaces';
 
@@ -23,20 +23,20 @@ export class TireRepository extends BaseRepository<Tire> {
     });
   }
 
-  async create(data: Prisma.TireCreateInput): Promise<Tire> {
+  override async create(data: Prisma.TireCreateInput): Promise<Tire> {
     return this.prisma.tire.create({
       data,
     });
   }
 
-  async update(id: string, data: Prisma.TireUpdateInput): Promise<Tire> {
+  override async update(id: string, data: Prisma.TireUpdateInput): Promise<Tire> {
     return this.prisma.tire.update({
       where: { id },
       data,
     });
   }
 
-  async delete(id: string): Promise<boolean> {
+  override async delete(id: string): Promise<boolean> {
     try {
       await this.prisma.tire.delete({
         where: { id },
@@ -71,7 +71,7 @@ export class TireRepository extends BaseRepository<Tire> {
     ]);
 
     return {
-      items,
+      items: items as Tire[],
       total,
       page,
       limit,
