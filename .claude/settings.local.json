@@ -140,7 +140,8 @@
       "Bash(pg_isready:*)",
       "Bash(./docker-test.sh:*)",
       "Bash(git rev-parse:*)",
-      "Bash(az acr list:*)"
+      "Bash(az acr list:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

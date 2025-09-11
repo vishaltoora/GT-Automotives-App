@@ -1,0 +1,109 @@
+name: Deploy Frontend to Azure Web App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile --ignore-engines
+
+    - name: Generate Prisma Client
+      run: |
+        yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
+
+    - name: Build frontend
+      run: |
+        cd apps/webApp
+        yarn build
+      env:
+        VITE_API_URL: http://gt-backend.eastus.azurecontainer.io:3000
+        VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
+
+    - name: Create deployment package
+      run: |
+        cd apps/webApp/dist
+        
+        # Create simple Node.js server for Azure Web App
+        cat > server.js << 'EOF'
+        const express = require('express');
+        const path = require('path');
+        const app = express();
+        const PORT = process.env.PORT || 8080;
+
+        // Serve static files
+        app.use(express.static(__dirname));
+
+        // Handle client-side routing (SPA)
+        app.get('*', (req, res) => {
+          res.sendFile(path.join(__dirname, 'index.html'));
+        });
+
+        app.listen(PORT, () => {
+          console.log(`Server running on port ${PORT}`);
+        });
+        EOF
+
+        # Create package.json for Azure Web App
+        cat > package.json << 'EOF'
+        {
+          "name": "gt-automotives-frontend",
+          "version": "1.0.0",
+          "scripts": {
+            "start": "node server.js"
+          },
+          "dependencies": {
+            "express": "^4.18.2"
+          }
+        }
+        EOF
+
+        # Create deployment zip
+        zip -r ../../../frontend-deploy.zip .
+        
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Web App
+      run: |
+        az webapp deploy \
+          --resource-group gt-automotives-prod \
+          --name gt-automotives-frontend \
+          --src-path frontend-deploy.zip \
+          --type zip
+
+    - name: Restart Azure Web App
+      run: |
+        az webapp restart \
+          --resource-group gt-automotives-prod \
+          --name gt-automotives-frontend
+
+    - name: Verify deployment
+      run: |
+        echo "Frontend deployed successfully!"
+        echo "URL: https://gt-automotives-frontend.azurewebsites.net"
+        
+        # Wait for restart to complete
+        sleep 30
+        
+        # Test if site is responding
+        curl -f -s https://gt-automotives-frontend.azurewebsites.net/ > /dev/null && echo "✅ Site is responding" || echo "❌ Site not responding"

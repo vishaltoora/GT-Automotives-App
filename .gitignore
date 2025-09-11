@@ -57,3 +57,6 @@ azure-credentials.json
 .azure-credentials.txt
 *.credentials.json
 *.credentials.txt
+
+# Production environment files with secrets
+.env.production

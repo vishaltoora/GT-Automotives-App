@@ -1,5 +1,6 @@
-// Import enums from Prisma generated client to avoid duplicate definitions
-import { TireType, TireCondition } from '@prisma/client';
+// Import enums from local definitions for CI/CD compatibility
+// Avoids Prisma client dependency during build in CI environments
+import { TireType, TireCondition } from './tire.types';
 
 // Simple DTO interfaces without validation decorators (validation handled in backend)
 export interface TireDto {

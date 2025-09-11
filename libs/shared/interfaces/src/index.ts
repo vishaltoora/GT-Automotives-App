@@ -5,3 +5,4 @@ export * from './lib/auth.types';
 export * from './lib/auth.interface';
 export * from './lib/tire.interface';
 export * from './lib/tire.dto';
+export * from './lib/tire.types';
