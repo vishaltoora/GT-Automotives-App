@@ -39,12 +39,12 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       }
     };
 
-    // For production key with custom domain - handle SSL certificate issue
+    // For production key with custom domain - use proper configuration
     if (publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
-      // Use production key but bypass custom domain SSL issues temporarily
-      props.domain = 'clean-dove-53.clerk.accounts.dev'; // Use the working test domain
+      // Use custom domain now that DNS and SSL are configured
+      props.domain = 'clerk.gt-automotives.com';
       props.isSatellite = false;
-      console.log('Using production key with working domain to bypass SSL issues');
+      console.log('Using production Clerk custom domain: clerk.gt-automotives.com');
     }
 
     return props;
