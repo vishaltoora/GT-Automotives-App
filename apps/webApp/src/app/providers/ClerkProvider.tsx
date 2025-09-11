@@ -19,7 +19,7 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
 
-  // Workaround for custom domain issue - extract domain from key and provide fallback
+  // Configuration for production Clerk with custom domain
   const getClerkProps = () => {
     const props: any = {
       publishableKey,
@@ -39,11 +39,14 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       }
     };
 
-    // If production key with custom domain, try to provide a working frontend API
+    // For production key with custom domain, force use of standard Clerk domain
     if (publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
-      // Force use standard clerk domain instead of custom domain
-      // This is a workaround - ideally the custom domain should be set up properly
-      console.warn('Using production Clerk key with custom domain. Consider setting up clerk.gt-automotives.com properly.');
+      // Override Clerk's domain detection to prevent loading JS from custom domain
+      // Custom domain should only be used for API calls, not JS files
+      props.clerkJSUrl = 'https://clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js';
+      props.domain = 'clerk.accounts.dev';
+      props.isSatellite = false;
+      console.log('Fixed Clerk custom domain - using standard domain for JS loading');
     }
 
     return props;
