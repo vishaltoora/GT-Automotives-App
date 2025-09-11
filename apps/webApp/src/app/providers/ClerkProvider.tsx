@@ -4,6 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { MockClerkProvider } from './MockClerkProvider';
 import { getEnvVar } from '../utils/env';
 
+// Force Clerk to load JS from standard domain for custom domain setup
+if (typeof window !== 'undefined') {
+  (window as any).CLERK_JS_URL = 'https://clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js';
+}
+
 const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
 
 interface ClerkProviderProps {
@@ -39,12 +44,17 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       }
     };
 
-    // For production key with custom domain - use proper configuration
+    // For production key with custom domain - fix JS loading issue
     if (publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
-      // Use custom domain now that DNS and SSL are configured
-      props.domain = 'clerk.gt-automotives.com';
-      props.isSatellite = false;
-      console.log('Using production Clerk custom domain: clerk.gt-automotives.com');
+      // Force use of standard Clerk domain for JS loading to avoid SSL errors
+      // Custom domain should only handle API calls, not CDN assets
+      Object.assign(props, {
+        domain: 'clerk.gt-automotives.com',
+        clerkJSUrl: 'https://clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js',
+        allowedOrigins: ['https://clerk.accounts.dev'],
+        isSatellite: false
+      });
+      console.log('Fixed: JS from clerk.accounts.dev, API from clerk.gt-automotives.com');
     }
 
     return props;
