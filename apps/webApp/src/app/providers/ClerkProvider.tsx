@@ -39,14 +39,14 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       }
     };
 
-    // For production key with custom domain, force use of standard Clerk domain
+    // For production key with custom domain, configure mixed domain usage
     if (publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
-      // Override Clerk's domain detection to prevent loading JS from custom domain
-      // Custom domain should only be used for API calls, not JS files
+      // Load JS from standard domain but use custom domain for API calls
       props.clerkJSUrl = 'https://clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js';
-      props.domain = 'clerk.accounts.dev';
+      props.frontendApi = 'clerk.gt-automotives.com';
+      props.domain = 'clerk.gt-automotives.com';
       props.isSatellite = false;
-      console.log('Fixed Clerk custom domain - using standard domain for JS loading');
+      console.log('Configured Clerk: JS from clerk.accounts.dev, API from clerk.gt-automotives.com');
     }
 
     return props;
