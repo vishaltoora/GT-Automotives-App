@@ -34,7 +34,7 @@ jobs:
         yarn build:web
       env:
         VITE_API_URL: http://gt-backend.eastus.azurecontainer.io:3000
-        VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
+        VITE_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlYW4tZG92ZS01My5jbGVyay5hY2NvdW50cy5kZXYk
 
     - name: Create deployment package
       run: |
