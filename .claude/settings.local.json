@@ -141,7 +141,9 @@
       "Bash(./docker-test.sh:*)",
       "Bash(git rev-parse:*)",
       "Bash(az acr list:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(az container restart:*)",
+      "Bash(az container:*)"
     ],
     "deny": [],
     "ask": []
