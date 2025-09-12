@@ -143,7 +143,8 @@
       "Bash(az acr list:*)",
       "Bash(git rm:*)",
       "Bash(az container restart:*)",
-      "Bash(az container:*)"
+      "Bash(az container:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

@@ -4,10 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MockClerkProvider } from './MockClerkProvider';
 import { getEnvVar } from '../utils/env';
 
-// Force Clerk to load JS from standard domain for custom domain setup
-if (typeof window !== 'undefined') {
-  (window as any).CLERK_JS_URL = 'https://clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js';
-}
+// Custom domain setup - let Clerk handle JS loading automatically
 
 const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
 
@@ -44,12 +41,12 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       }
     };
 
-    // For production key - use working domain while custom domain SSL is provisioning
+    // For production key with verified custom domain
     if (publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
-      // Temporarily use clean-dove-53.clerk.accounts.dev until custom SSL is ready
-      props.domain = 'clean-dove-53.clerk.accounts.dev';
+      // DNS verified - use custom domain with SSL certificates
+      props.domain = 'clerk.gt-automotives.com';
       props.isSatellite = false;
-      console.log('Temporarily using working domain while custom SSL provisions');
+      console.log('Using verified custom domain: clerk.gt-automotives.com');
     }
 
     return props;
