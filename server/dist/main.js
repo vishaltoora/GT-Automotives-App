@@ -28,12 +28,12 @@ const app_controller_1 = __webpack_require__(6);
 const app_service_1 = __webpack_require__(7);
 const auth_module_1 = __webpack_require__(8);
 const users_module_1 = __webpack_require__(31);
-const tires_module_1 = __webpack_require__(35);
-const customers_module_1 = __webpack_require__(41);
-const vehicles_module_1 = __webpack_require__(49);
-const invoices_module_1 = __webpack_require__(55);
-const quotations_module_1 = __webpack_require__(62);
-const health_module_1 = __webpack_require__(68);
+const tires_module_1 = __webpack_require__(34);
+const customers_module_1 = __webpack_require__(40);
+const vehicles_module_1 = __webpack_require__(48);
+const invoices_module_1 = __webpack_require__(54);
+const quotations_module_1 = __webpack_require__(61);
+const health_module_1 = __webpack_require__(67);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 let AppModule = class AppModule {
@@ -237,7 +237,7 @@ let AuthService = class AuthService {
             try {
                 const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
                 if (clerkSecretKey) {
-                    const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                    const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 70, 23));
                     clerkUser = await clerkClient.users.getUser(clerkUserId);
                 }
                 else {
@@ -1169,7 +1169,7 @@ exports.UsersModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
 const users_service_1 = __webpack_require__(32);
-const users_controller_1 = __webpack_require__(34);
+const users_controller_1 = __webpack_require__(33);
 const user_repository_1 = __webpack_require__(12);
 const role_repository_1 = __webpack_require__(17);
 const audit_repository_1 = __webpack_require__(18);
@@ -1206,7 +1206,6 @@ const config_1 = __webpack_require__(5);
 const user_repository_1 = __webpack_require__(12);
 const role_repository_1 = __webpack_require__(17);
 const audit_repository_1 = __webpack_require__(18);
-const bcrypt = tslib_1.__importStar(__webpack_require__(33));
 let UsersService = class UsersService {
     constructor(userRepository, roleRepository, auditRepository, configService) {
         this.userRepository = userRepository;
@@ -1236,9 +1235,9 @@ let UsersService = class UsersService {
         if (!role) {
             throw new common_1.NotFoundException('Role not found');
         }
-        const hashedPassword = data.password
-            ? await bcrypt.hash(data.password, 10)
-            : undefined;
+        // const hashedPassword = data.password 
+        //   ? await bcrypt.hash(data.password, 10)
+        //   : undefined;
         const user = await this.userRepository.create({
             clerkId: '', // Will need proper Clerk ID if using Clerk
             email: data.email,
@@ -1271,7 +1270,7 @@ let UsersService = class UsersService {
         const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
         if (clerkSecretKey) {
             try {
-                const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 70, 23));
                 const clerkUser = await clerkClient.users.createUser({
                     emailAddress: [data.email],
                     username: data.username,
@@ -1406,12 +1405,6 @@ exports.UsersService = UsersService = tslib_1.__decorate([
 
 /***/ }),
 /* 33 */
-/***/ ((module) => {
-
-module.exports = require("bcryptjs");
-
-/***/ }),
-/* 34 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -1593,7 +1586,7 @@ exports.UsersController = UsersController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 35 */
+/* 34 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -1601,9 +1594,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TiresModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const tires_controller_1 = __webpack_require__(36);
-const tires_service_1 = __webpack_require__(37);
-const tire_repository_1 = __webpack_require__(38);
+const tires_controller_1 = __webpack_require__(35);
+const tires_service_1 = __webpack_require__(36);
+const tire_repository_1 = __webpack_require__(37);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
 let TiresModule = class TiresModule {
@@ -1620,7 +1613,7 @@ exports.TiresModule = TiresModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 36 */
+/* 35 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -1629,7 +1622,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TiresController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const tires_service_1 = __webpack_require__(37);
+const tires_service_1 = __webpack_require__(36);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -1860,7 +1853,7 @@ exports.TiresController = TiresController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 37 */
+/* 36 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -1869,9 +1862,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TiresService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const tire_repository_1 = __webpack_require__(38);
+const tire_repository_1 = __webpack_require__(37);
 const audit_repository_1 = __webpack_require__(18);
-const library_1 = __webpack_require__(40);
+const library_1 = __webpack_require__(39);
 let TiresService = class TiresService {
     constructor(tireRepository, auditRepository) {
         this.tireRepository = tireRepository;
@@ -2101,7 +2094,7 @@ exports.TiresService = TiresService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 38 */
+/* 37 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2111,7 +2104,7 @@ exports.TireRepository = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
 const database_1 = __webpack_require__(13);
-const base_repository_1 = __webpack_require__(39);
+const base_repository_1 = __webpack_require__(38);
 let TireRepository = class TireRepository extends base_repository_1.BaseRepository {
     constructor(prisma) {
         super(prisma, 'tire');
@@ -2374,7 +2367,7 @@ exports.TireRepository = TireRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 39 */
+/* 38 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -2415,13 +2408,13 @@ exports.BaseRepository = BaseRepository;
 
 
 /***/ }),
-/* 40 */
+/* 39 */
 /***/ ((module) => {
 
 module.exports = require("@prisma/client/runtime/library");
 
 /***/ }),
-/* 41 */
+/* 40 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2429,9 +2422,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CustomersModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const customers_service_1 = __webpack_require__(42);
-const customers_controller_1 = __webpack_require__(44);
-const customer_repository_1 = __webpack_require__(43);
+const customers_service_1 = __webpack_require__(41);
+const customers_controller_1 = __webpack_require__(43);
+const customer_repository_1 = __webpack_require__(42);
 const user_repository_1 = __webpack_require__(12);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
@@ -2454,7 +2447,7 @@ exports.CustomersModule = CustomersModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 42 */
+/* 41 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2463,7 +2456,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CustomersService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const customer_repository_1 = __webpack_require__(43);
+const customer_repository_1 = __webpack_require__(42);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
 let CustomersService = class CustomersService {
@@ -2588,7 +2581,7 @@ exports.CustomersService = CustomersService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 43 */
+/* 42 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2598,7 +2591,7 @@ exports.CustomerRepository = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
 const database_1 = __webpack_require__(13);
-const base_repository_1 = __webpack_require__(39);
+const base_repository_1 = __webpack_require__(38);
 let CustomerRepository = class CustomerRepository extends base_repository_1.BaseRepository {
     constructor(prisma) {
         super(prisma, 'customer');
@@ -2740,7 +2733,7 @@ exports.CustomerRepository = CustomerRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 44 */
+/* 43 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2749,9 +2742,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CustomersController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const customers_service_1 = __webpack_require__(42);
-const create_customer_dto_1 = __webpack_require__(45);
-const update_customer_dto_1 = __webpack_require__(47);
+const customers_service_1 = __webpack_require__(41);
+const create_customer_dto_1 = __webpack_require__(44);
+const update_customer_dto_1 = __webpack_require__(46);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -2842,14 +2835,14 @@ exports.CustomersController = CustomersController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 45 */
+/* 44 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CreateCustomerDto = void 0;
 const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(46);
+const class_validator_1 = __webpack_require__(45);
 class CreateCustomerDto {
 }
 exports.CreateCustomerDto = CreateCustomerDto;
@@ -2886,33 +2879,33 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 46 */
+/* 45 */
 /***/ ((module) => {
 
 module.exports = require("class-validator");
 
 /***/ }),
-/* 47 */
+/* 46 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UpdateCustomerDto = void 0;
-const mapped_types_1 = __webpack_require__(48);
-const create_customer_dto_1 = __webpack_require__(45);
+const mapped_types_1 = __webpack_require__(47);
+const create_customer_dto_1 = __webpack_require__(44);
 class UpdateCustomerDto extends (0, mapped_types_1.PartialType)(create_customer_dto_1.CreateCustomerDto) {
 }
 exports.UpdateCustomerDto = UpdateCustomerDto;
 
 
 /***/ }),
-/* 48 */
+/* 47 */
 /***/ ((module) => {
 
 module.exports = require("@nestjs/mapped-types");
 
 /***/ }),
-/* 49 */
+/* 48 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2920,10 +2913,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VehiclesModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const vehicles_service_1 = __webpack_require__(50);
-const vehicles_controller_1 = __webpack_require__(52);
-const vehicle_repository_1 = __webpack_require__(51);
-const customer_repository_1 = __webpack_require__(43);
+const vehicles_service_1 = __webpack_require__(49);
+const vehicles_controller_1 = __webpack_require__(51);
+const vehicle_repository_1 = __webpack_require__(50);
+const customer_repository_1 = __webpack_require__(42);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
 let VehiclesModule = class VehiclesModule {
@@ -2945,7 +2938,7 @@ exports.VehiclesModule = VehiclesModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 50 */
+/* 49 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2954,8 +2947,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VehiclesService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const vehicle_repository_1 = __webpack_require__(51);
-const customer_repository_1 = __webpack_require__(43);
+const vehicle_repository_1 = __webpack_require__(50);
+const customer_repository_1 = __webpack_require__(42);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
 let VehiclesService = class VehiclesService {
@@ -3149,7 +3142,7 @@ exports.VehiclesService = VehiclesService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 51 */
+/* 50 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3159,7 +3152,7 @@ exports.VehicleRepository = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
 const database_1 = __webpack_require__(13);
-const base_repository_1 = __webpack_require__(39);
+const base_repository_1 = __webpack_require__(38);
 let VehicleRepository = class VehicleRepository extends base_repository_1.BaseRepository {
     constructor(prisma) {
         super(prisma, 'vehicle');
@@ -3304,7 +3297,7 @@ exports.VehicleRepository = VehicleRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 52 */
+/* 51 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3313,10 +3306,12 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VehiclesController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const vehicles_service_1 = __webpack_require__(50);
-const create_vehicle_dto_1 = __webpack_require__(53);
-const update_vehicle_dto_1 = __webpack_require__(54);
+const vehicles_service_1 = __webpack_require__(49);
+const create_vehicle_dto_1 = __webpack_require__(52);
+const update_vehicle_dto_1 = __webpack_require__(53);
 const jwt_auth_guard_1 = __webpack_require__(22);
+// import { RoleGuard } from '../auth/guards/role.guard';
+// import { Roles } from '../auth/decorators/roles.decorator';
 const current_user_decorator_1 = __webpack_require__(21);
 let VehiclesController = class VehiclesController {
     constructor(vehiclesService) {
@@ -3421,14 +3416,14 @@ exports.VehiclesController = VehiclesController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 53 */
+/* 52 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CreateVehicleDto = void 0;
 const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(46);
+const class_validator_1 = __webpack_require__(45);
 class CreateVehicleDto {
 }
 exports.CreateVehicleDto = CreateVehicleDto;
@@ -3472,21 +3467,21 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 54 */
+/* 53 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UpdateVehicleDto = void 0;
-const mapped_types_1 = __webpack_require__(48);
-const create_vehicle_dto_1 = __webpack_require__(53);
+const mapped_types_1 = __webpack_require__(47);
+const create_vehicle_dto_1 = __webpack_require__(52);
 class UpdateVehicleDto extends (0, mapped_types_1.PartialType)((0, mapped_types_1.OmitType)(create_vehicle_dto_1.CreateVehicleDto, ['customerId'])) {
 }
 exports.UpdateVehicleDto = UpdateVehicleDto;
 
 
 /***/ }),
-/* 55 */
+/* 54 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3494,11 +3489,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InvoicesModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const invoices_service_1 = __webpack_require__(56);
-const invoices_controller_1 = __webpack_require__(58);
-const invoice_repository_1 = __webpack_require__(57);
+const invoices_service_1 = __webpack_require__(55);
+const invoices_controller_1 = __webpack_require__(57);
+const invoice_repository_1 = __webpack_require__(56);
 const audit_repository_1 = __webpack_require__(18);
-const customer_repository_1 = __webpack_require__(43);
+const customer_repository_1 = __webpack_require__(42);
 const database_1 = __webpack_require__(13);
 let InvoicesModule = class InvoicesModule {
 };
@@ -3519,7 +3514,7 @@ exports.InvoicesModule = InvoicesModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 56 */
+/* 55 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3528,9 +3523,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InvoicesService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const invoice_repository_1 = __webpack_require__(57);
+const invoice_repository_1 = __webpack_require__(56);
 const audit_repository_1 = __webpack_require__(18);
-const customer_repository_1 = __webpack_require__(43);
+const customer_repository_1 = __webpack_require__(42);
 let InvoicesService = class InvoicesService {
     constructor(invoiceRepository, auditRepository, customerRepository) {
         this.invoiceRepository = invoiceRepository;
@@ -3775,7 +3770,7 @@ exports.InvoicesService = InvoicesService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 57 */
+/* 56 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3784,7 +3779,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InvoiceRepository = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const base_repository_1 = __webpack_require__(39);
+const base_repository_1 = __webpack_require__(38);
 const database_1 = __webpack_require__(13);
 let InvoiceRepository = class InvoiceRepository extends base_repository_1.BaseRepository {
     constructor(prisma) {
@@ -3999,7 +3994,7 @@ exports.InvoiceRepository = InvoiceRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 58 */
+/* 57 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4008,9 +4003,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InvoicesController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const invoices_service_1 = __webpack_require__(56);
-const create_invoice_dto_1 = __webpack_require__(59);
-const update_invoice_dto_1 = __webpack_require__(61);
+const invoices_service_1 = __webpack_require__(55);
+const create_invoice_dto_1 = __webpack_require__(58);
+const update_invoice_dto_1 = __webpack_require__(60);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -4151,7 +4146,7 @@ exports.InvoicesController = InvoicesController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 59 */
+/* 58 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4159,8 +4154,8 @@ var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CreateInvoiceDto = exports.CreateCustomerDto = exports.CreateInvoiceItemDto = void 0;
 const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(46);
-const class_transformer_1 = __webpack_require__(60);
+const class_validator_1 = __webpack_require__(45);
+const class_transformer_1 = __webpack_require__(59);
 const client_1 = __webpack_require__(16);
 class CreateInvoiceItemDto {
 }
@@ -4275,13 +4270,13 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 60 */
+/* 59 */
 /***/ ((module) => {
 
 module.exports = require("class-transformer");
 
 /***/ }),
-/* 61 */
+/* 60 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4289,7 +4284,7 @@ var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UpdateInvoiceDto = void 0;
 const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(46);
+const class_validator_1 = __webpack_require__(45);
 const client_1 = __webpack_require__(16);
 class UpdateInvoiceDto {
 }
@@ -4317,7 +4312,7 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 62 */
+/* 61 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4325,9 +4320,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotations_service_1 = __webpack_require__(63);
-const quotations_controller_1 = __webpack_require__(65);
-const quotation_repository_1 = __webpack_require__(64);
+const quotations_service_1 = __webpack_require__(62);
+const quotations_controller_1 = __webpack_require__(64);
+const quotation_repository_1 = __webpack_require__(63);
 const database_1 = __webpack_require__(13);
 let QuotationsModule = class QuotationsModule {
 };
@@ -4342,7 +4337,7 @@ exports.QuotationsModule = QuotationsModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 63 */
+/* 62 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4351,7 +4346,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotation_repository_1 = __webpack_require__(64);
+const quotation_repository_1 = __webpack_require__(63);
 const database_1 = __webpack_require__(13);
 let QuotationsService = class QuotationsService {
     constructor(quotationRepository, prisma) {
@@ -4533,7 +4528,7 @@ exports.QuotationsService = QuotationsService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 64 */
+/* 63 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4693,7 +4688,7 @@ exports.QuotationRepository = QuotationRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 65 */
+/* 64 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4702,9 +4697,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotations_service_1 = __webpack_require__(63);
-const create_quotation_dto_1 = __webpack_require__(66);
-const update_quotation_dto_1 = __webpack_require__(67);
+const quotations_service_1 = __webpack_require__(62);
+const create_quotation_dto_1 = __webpack_require__(65);
+const update_quotation_dto_1 = __webpack_require__(66);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -4813,7 +4808,7 @@ exports.QuotationsController = QuotationsController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 66 */
+/* 65 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4821,8 +4816,8 @@ var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CreateQuoteDto = exports.CreateQuoteItemDto = void 0;
 const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(46);
-const class_transformer_1 = __webpack_require__(60);
+const class_validator_1 = __webpack_require__(45);
+const class_transformer_1 = __webpack_require__(59);
 const client_1 = __webpack_require__(16);
 class CreateQuoteItemDto {
 }
@@ -4924,7 +4919,7 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 67 */
+/* 66 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4932,10 +4927,10 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UpdateQuoteDto = void 0;
 const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(46);
-const class_transformer_1 = __webpack_require__(60);
+const class_validator_1 = __webpack_require__(45);
+const class_transformer_1 = __webpack_require__(59);
 const client_1 = __webpack_require__(16);
-const create_quotation_dto_1 = __webpack_require__(66);
+const create_quotation_dto_1 = __webpack_require__(65);
 class UpdateQuoteDto {
 }
 exports.UpdateQuoteDto = UpdateQuoteDto;
@@ -5014,7 +5009,7 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 68 */
+/* 67 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5022,8 +5017,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HealthModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const health_controller_1 = __webpack_require__(69);
-const health_service_1 = __webpack_require__(70);
+const health_controller_1 = __webpack_require__(68);
+const health_service_1 = __webpack_require__(69);
 const database_1 = __webpack_require__(13);
 let HealthModule = class HealthModule {
 };
@@ -5039,7 +5034,7 @@ exports.HealthModule = HealthModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 69 */
+/* 68 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5048,7 +5043,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HealthController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const health_service_1 = __webpack_require__(70);
+const health_service_1 = __webpack_require__(69);
 const public_decorator_1 = __webpack_require__(20);
 let HealthController = class HealthController {
     constructor(healthService) {
@@ -5083,7 +5078,7 @@ exports.HealthController = HealthController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 70 */
+/* 69 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5136,7 +5131,7 @@ exports.HealthService = HealthService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 71 */
+/* 70 */
 /***/ ((module) => {
 
 module.exports = require("@clerk/clerk-sdk-node");

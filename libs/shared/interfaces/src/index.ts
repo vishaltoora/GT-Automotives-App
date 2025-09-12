@@ -3,6 +3,5 @@ export * from './lib/permissions.config';
 export * from './lib/user.interface';
 export * from './lib/auth.types';
 export * from './lib/auth.interface';
-export * from './lib/tire.interface';
-export * from './lib/tire.dto';
-export * from './lib/tire.types';
+export * from './lib/dtos/tire.dto';
+export * from './lib/dtos/vehicle.dto';

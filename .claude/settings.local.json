@@ -159,7 +159,9 @@
       "Bash(WEBSITE_NODE_DEFAULT_VERSION=~20 )",
       "Bash(PRE_BUILD_SCRIPT_PATH=\"yarn install --frozen-lockfile --ignore-engines\" )",
       "Bash(BUILD_SCRIPT_PATH=\"yarn build:server\" )",
-      "Bash(az webapp config set:*)"
+      "Bash(az webapp config set:*)",
+      "Bash(az webapp log tail:*)",
+      "Bash(az webapp restart:*)"
     ],
     "deny": [],
     "ask": []

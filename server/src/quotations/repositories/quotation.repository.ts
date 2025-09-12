@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
-import { Quotation, QuotationItem, Prisma } from '@prisma/client';
+import { Quotation, Prisma } from '@prisma/client';
 
 @Injectable()
 export class QuotationRepository {

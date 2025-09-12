@@ -54,9 +54,9 @@ export class UsersService {
       throw new NotFoundException('Role not found');
     }
 
-    const hashedPassword = data.password 
-      ? await bcrypt.hash(data.password, 10)
-      : undefined;
+    // const hashedPassword = data.password 
+    //   ? await bcrypt.hash(data.password, 10)
+    //   : undefined;
 
     const user = await this.userRepository.create({
       clerkId: '', // Will need proper Clerk ID if using Clerk

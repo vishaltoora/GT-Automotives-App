@@ -11,15 +11,11 @@ import {
   CreateTireDto,
   UpdateTireDto,
   TireDto,
-  TireResponseDto,
   TireFiltersDto,
   TireSearchDto,
   TireSearchResultDto,
-  StockAdjustmentDto,
-  InventoryReportDto,
-  TireType,
-  TireCondition,
 } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()

@@ -3,20 +3,20 @@ import { IsString, IsOptional, IsNotEmpty, IsInt, Min, Max } from 'class-validat
 export class CreateVehicleDto {
   @IsString()
   @IsNotEmpty()
-  customerId: string;
+  customerId!: string;
 
   @IsString()
   @IsNotEmpty()
-  make: string;
+  make!: string;
 
   @IsString()
   @IsNotEmpty()
-  model: string;
+  model!: string;
 
   @IsInt()
   @Min(1900)
   @Max(new Date().getFullYear() + 1)
-  year: number;
+  year!: number;
 
   @IsString()
   @IsOptional()
