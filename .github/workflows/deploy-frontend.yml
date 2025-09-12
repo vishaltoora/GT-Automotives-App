@@ -40,36 +40,91 @@ jobs:
       run: |
         cd apps/webApp/dist
         
-        # Create simple Node.js server for Azure Web App
+        # Create Node.js server with API proxy functionality
         cat > server.js << 'EOF'
         const express = require('express');
+        const { createProxyMiddleware } = require('http-proxy-middleware');
         const path = require('path');
         const app = express();
         const PORT = process.env.PORT || 8080;
 
-        // Serve static files
+        // Backend configuration
+        const BACKEND_URL = 'http://gt-backend.eastus.azurecontainer.io:3000';
+
+        // CORS middleware for API routes
+        app.use('/api', (req, res, next) => {
+          res.header('Access-Control-Allow-Origin', 'https://gt-automotives.com');
+          res.header('Access-Control-Allow-Credentials', 'true');
+          res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+          res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+          
+          if (req.method === 'OPTIONS') {
+            res.sendStatus(200);
+          } else {
+            next();
+          }
+        });
+
+        // API Proxy - Forward all /api requests to backend
+        app.use('/api', createProxyMiddleware({
+          target: BACKEND_URL,
+          changeOrigin: true,
+          secure: false,
+          timeout: 30000,
+          logLevel: 'info',
+          onError: (err, req, res) => {
+            console.error('Proxy error:', err.message);
+            res.status(500).json({ 
+              error: 'Backend service unavailable',
+              message: err.message 
+            });
+          },
+          onProxyReq: (proxyReq, req, res) => {
+            console.log(`Proxying: ${req.method} ${req.url} -> ${BACKEND_URL}${req.url}`);
+          }
+        }));
+
+        // Health check endpoint
+        app.get('/health', (req, res) => {
+          res.json({ 
+            status: 'healthy', 
+            service: 'gt-automotive-web-app',
+            backend: BACKEND_URL,
+            timestamp: new Date().toISOString()
+          });
+        });
+
+        // Serve static files (React app)
         app.use(express.static(__dirname));
 
-        // Handle client-side routing (SPA)
+        // Handle client-side routing (SPA) - Must be last
         app.get('*', (req, res) => {
           res.sendFile(path.join(__dirname, 'index.html'));
         });
 
         app.listen(PORT, () => {
-          console.log(`Server running on port ${PORT}`);
+          console.log(`🚀 GT Automotive Web App running on port ${PORT}`);
+          console.log(`📡 Proxying API requests to: ${BACKEND_URL}`);
+          console.log(`🌐 Frontend: https://gt-automotives.com`);
+          console.log(`🔗 API: https://gt-automotives.com/api`);
         });
         EOF
 
-        # Create package.json for Azure Web App
+        # Create package.json for Azure Web App with proxy dependencies
         cat > package.json << 'EOF'
         {
           "name": "gt-automotives-frontend",
           "version": "1.0.0",
+          "description": "GT Automotive Web App with API Proxy",
           "scripts": {
             "start": "node server.js"
           },
           "dependencies": {
-            "express": "^4.18.2"
+            "express": "^4.18.2",
+            "http-proxy-middleware": "^2.0.6"
+          },
+          "engines": {
+            "node": ">=18"
           }
         }
         EOF
