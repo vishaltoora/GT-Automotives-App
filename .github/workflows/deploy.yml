@@ -107,6 +107,25 @@ jobs:
         
         cd ..
 
+    - name: Configure App Service settings
+      run: |
+        echo "⚙️ Configuring App Service settings..."
+        
+        # Configure Node.js runtime and startup
+        az webapp config appsettings set \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.BACKEND_APP_NAME }} \
+          --settings \
+            WEBSITE_NODE_DEFAULT_VERSION="~20" \
+            SCM_DO_BUILD_DURING_DEPLOYMENT="true" \
+            WEBSITE_RUN_FROM_PACKAGE="1"
+        
+        # Set startup command
+        az webapp config set \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.BACKEND_APP_NAME }} \
+          --startup-file "node main.js"
+
     - name: Deploy backend to App Service
       run: |
         echo "🚀 Deploying backend build: ${{ github.event.inputs.build_number }}"
