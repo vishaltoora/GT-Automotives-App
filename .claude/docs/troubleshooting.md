@@ -65,7 +65,60 @@ import { Grid } from '@mui/material';
 }
 ```
 
+### Mixed Content Security Errors (September 2025)
+**Problem:** Mixed Content errors blocking API calls in production
+```
+Mixed Content: The page at 'https://gt-automotives.com/' was loaded over HTTPS, 
+but requested an insecure XMLHttpRequest endpoint 
+'http://gt-backend.eastus.azurecontainer.io:3000/api/auth/me'. 
+This request has been blocked; the content must be served over HTTPS.
+```
+
+**Root Cause:** HTTPS frontend trying to call HTTP backend - browsers block this for security
+
+**Solution:** Implemented Web App reverse proxy
+1. **Frontend Configuration**: Updated `VITE_API_URL` to use `https://gt-automotives.com/api`
+2. **Reverse Proxy**: Web App serves both static files and proxies `/api` requests to backend
+3. **GitHub Actions Update**: Modified deployment to create Express server with `http-proxy-middleware`
+4. **Result**: All API calls now use HTTPS, eliminating Mixed Content errors
+
+**Implementation Files:**
+- `.github/workflows/deploy-frontend.yml` - Creates reverse proxy server during deployment
+- `apps/webApp/.env.production` - Uses HTTPS API URL
+- Reverse proxy handles CORS, error handling, and logging
+
+**Verification:**
+```bash
+# Test health endpoint
+curl https://gt-automotives.com/health
+
+# Should return:
+{
+  "status": "healthy",
+  "service": "gt-automotive-web-app",
+  "backend": "http://gt-backend.eastus.azurecontainer.io:3000",
+  "timestamp": "2025-09-12T16:37:38.024Z"
+}
+```
+
+### Authentication Page Reloads During Login
+**Problem:** Login page reloads quickly after entering credentials
+**Root Cause:** Clerk routing strategy conflict - `path` cannot be used with `routing="hash"`
+**Solution:** Changed from hash routing to virtual routing in `Login.tsx`:
+```typescript
+// Before
+<SignIn routing="hash" path="/sign-in" />
+
+// After  
+<SignIn routing="virtual" signUpUrl={undefined} />
+```
+
 ## Current Issues Resolved ✅
+- ✅ **Mixed Content Security Errors:** Fixed HTTPS/HTTP blocking with reverse proxy implementation (September 12, 2025)
+- ✅ **Reverse Proxy Implementation:** Web App now proxies API calls to backend via HTTPS
+- ✅ **Authentication Page Reloads:** Fixed Clerk routing from hash to virtual routing
+- ✅ **Production API Configuration:** Updated GitHub Actions to use HTTPS API URLs
+- ✅ **SSL Termination:** Proper SSL termination at Web App level with internal HTTP communication
 - ✅ **Invoice Creation Error:** Fixed missing `/api` prefix in controller routes
 - ✅ **Authentication 401/403 Errors:** Proper Clerk JWT token handling
 - ✅ **MUI Grid Import Errors:** Fixed Grid2 import issues, now using standard Grid with modern syntax

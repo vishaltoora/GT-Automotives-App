@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview
 - **[Project Overview](.claude/docs/project-overview.md)** - Application summary, status, and roadmap
 - **[Authentication](.claude/docs/authentication.md)** - Clerk setup, user roles, and permissions
-- **[Clerk Custom Domain Setup](.claude/docs/clerk-custom-domain-setup.md)** - Complete guide for Clerk custom domain configuration ⭐ NEW
-- **[Authentication Troubleshooting](.claude/docs/authentication-troubleshooting.md)** - Complete guide for resolving authentication issues ⭐ NEW
+- **[Clerk Custom Domain Setup](.claude/docs/clerk-custom-domain-setup.md)** - Complete guide for Clerk custom domain configuration
+- **[Authentication Troubleshooting](.claude/docs/authentication-troubleshooting.md)** - Complete guide for resolving authentication issues
+- **[Reverse Proxy Implementation](.claude/docs/reverse-proxy-implementation.md)** - Web App reverse proxy setup and Mixed Content resolution ⭐ NEW
 - **[User Management](.claude/docs/user-management.md)** - Complete user management system documentation
 - **[API Documentation](.claude/docs/api-documentation.md)** - Comprehensive REST API reference
 - **[Grid Modernization](.claude/docs/grid-modernization.md)** - Material-UI Grid updates and best practices
@@ -49,11 +50,12 @@ yarn dev
 ```
 
 ## 📊 Current Status
-- **Production URL:** https://gt-automotives.com ✅ (HTTPS + Custom Auth Domain)
+- **Production URL:** https://gt-automotives.com ✅ (HTTPS + Custom Auth Domain + Reverse Proxy)
 - **Production WWW:** https://www.gt-automotives.com ✅
-- **Backend API:** http://gt-backend.eastus.azurecontainer.io:3000 ✅
-- **Frontend Hosting:** Azure Web App (gt-automotives-frontend.azurewebsites.net) ✅
+- **Backend API:** https://gt-automotives.com/api ✅ (Reverse Proxy to Internal HTTP)
+- **Frontend Hosting:** Azure Web App with integrated reverse proxy ✅
 - **Authentication:** Clerk Custom Domain (clerk.gt-automotives.com) ✅
+- **Security:** Mixed Content errors resolved ✅
 - **Progress:** 6 of 8 Epics Complete (75%)
 - **Next:** EPIC-06 - Appointment Scheduling
 - **Dev Frontend:** http://localhost:4200 (with Clerk Auth)
@@ -110,6 +112,16 @@ yarn test          # Run tests
 ---
 
 ## 🔄 Recent Updates
+
+### September 12, 2025 - Mixed Content Resolution & Reverse Proxy Implementation ✅
+- ✅ **Mixed Content Errors Resolved**: Fixed HTTPS/HTTP blocking that prevented API communication
+- ✅ **Web App Reverse Proxy**: Implemented Express.js proxy using http-proxy-middleware
+- ✅ **GitHub Actions Update**: Modified deployment to create integrated proxy server
+- ✅ **Frontend Configuration**: Updated API URL to use https://gt-automotives.com/api
+- ✅ **Authentication Flow Fixed**: Resolved Clerk routing issues causing page reloads
+- ✅ **SSL Termination**: Proper HTTPS for all external requests, internal HTTP communication
+- ✅ **Security Architecture**: Complete HTTPS endpoint coverage eliminating browser security errors
+- ✅ **Documentation**: Created comprehensive reverse proxy implementation guide
 
 ### September 11, 2025 - Production Deployment Complete with Custom Auth Domain ✅
 - ✅ **Azure Web App Deployment**: Migrated from Azure Storage to Web App Service for better reliability
@@ -225,5 +237,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated: September 11, 2025 - Complete production system with full Clerk custom domain authentication operational**
+**Last Updated: September 12, 2025 - Complete production system with reverse proxy architecture - all Mixed Content security issues resolved**
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.

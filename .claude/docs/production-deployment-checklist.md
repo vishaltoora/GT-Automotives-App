@@ -3,12 +3,12 @@
 ## Overview
 This checklist ensures all necessary steps are completed for deploying GT Automotive to production.
 
-**Production URL:** https://gt-automotives.com ✅ (HTTPS + Custom Auth Domain)  
+**Production URL:** https://gt-automotives.com ✅ (HTTPS + Custom Auth Domain + Reverse Proxy)  
 **Production WWW:** https://www.gt-automotives.com ✅  
-**Backend API:** http://gt-backend.eastus.azurecontainer.io:3000 ✅  
-**Frontend Hosting:** https://gt-automotives-frontend.azurewebsites.net ✅  
+**Backend API:** https://gt-automotives.com/api ✅ (Reverse Proxy to Internal HTTP)  
+**Frontend Hosting:** Azure Web App Service with integrated reverse proxy ✅  
 **Authentication:** https://clerk.gt-automotives.com ✅ (Custom Domain Verified)  
-**Last Deployment:** September 11, 2025 (Complete Production System)
+**Last Deployment:** September 12, 2025 (Mixed Content Errors Resolved)
 
 ---
 
@@ -26,8 +26,9 @@ This checklist ensures all necessary steps are completed for deploying GT Automo
 - [x] Authentication properly configured
 - [x] API endpoints secured with proper roles
 - [x] Sensitive data removed from codebase
-- [ ] Production secrets stored securely in Azure
-- [x] HTTPS enabled via Cloudflare
+- [x] Production secrets stored securely in GitHub Actions
+- [x] HTTPS enabled for all endpoints via reverse proxy
+- [x] Mixed Content errors resolved with HTTPS API calls
 - [x] Public registration disabled
 
 ### Testing
@@ -104,13 +105,14 @@ CORS_ORIGIN=https://gt-automotives.com
 ### Functional Testing
 - [x] Homepage loads correctly at https://gt-automotives.com
 - [x] WWW redirect working at https://www.gt-automotives.com
-- [x] Login functionality works
+- [x] Login functionality works without page reloads
 - [x] Admin dashboard accessible
 - [x] Staff dashboard accessible
 - [x] Customer portal accessible
-- [x] API health check passes
+- [x] API health check passes via reverse proxy
 - [x] Database connection verified
-- [x] Clerk authentication working in production
+- [x] Clerk authentication working in production with custom domain
+- [x] Mixed Content errors resolved - all API calls use HTTPS
 - [x] Invoice generation and printing works
 
 ### Performance Checks
@@ -165,10 +167,10 @@ CORS_ORIGIN=https://gt-automotives.com
 
 ## Known Issues & Workarounds
 
-### Issue 1: API Port 3000 via Cloudflare
-**Status:** Open  
-**Workaround:** Direct API access at http://gt-backend.eastus.azurecontainer.io:3000  
-**Solution:** Implement Azure Application Gateway or upgrade to Cloudflare Spectrum
+### Issue 1: Mixed Content Errors
+**Status:** ✅ Resolved (September 12, 2025)  
+**Solution:** Implemented Web App reverse proxy to serve API on HTTPS domain  
+**Implementation:** All API calls now use https://gt-automotives.com/api
 
 ### Issue 2: Clerk Production Keys
 **Status:** ✅ Resolved (September 9, 2025)  
@@ -250,6 +252,6 @@ curl http://gt-backend.eastus.azurecontainer.io:3000/api/health
 
 ---
 
-**Last Updated:** September 8, 2025  
-**Next Review:** September 15, 2025  
-**Status:** Production Active with Minor Issues
+**Last Updated:** September 12, 2025  
+**Next Review:** September 19, 2025  
+**Status:** Production Active - All Major Security Issues Resolved

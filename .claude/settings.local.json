@@ -148,7 +148,18 @@
       "Bash(./.claude/scripts/git-workflows.sh status)",
       "Bash(./.claude/scripts/git-workflows.sh quick-commit:*)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require\" yarn db:seed)",
-      "Bash(./.claude/scripts/setup-application-gateway.sh:*)"
+      "Bash(./.claude/scripts/setup-application-gateway.sh:*)",
+      "Bash(az acr login:*)",
+      "Bash(az appservice plan list:*)",
+      "Bash(az webapp create:*)",
+      "Bash(zip:*)",
+      "Bash(az webapp deploy:*)",
+      "Bash(az webapp config appsettings set:*)",
+      "Bash(SCM_DO_BUILD_DURING_DEPLOYMENT=true )",
+      "Bash(WEBSITE_NODE_DEFAULT_VERSION=~20 )",
+      "Bash(PRE_BUILD_SCRIPT_PATH=\"yarn install --frozen-lockfile --ignore-engines\" )",
+      "Bash(BUILD_SCRIPT_PATH=\"yarn build:server\" )",
+      "Bash(az webapp config set:*)"
     ],
     "deny": [],
     "ask": []
