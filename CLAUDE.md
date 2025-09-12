@@ -100,6 +100,12 @@ yarn test          # Run tests
 4. Follow repository pattern for database operations
 5. Log all admin actions for audit trail
 
+## 🤖 Specialized Agents & Workflows
+- **DTO Manager** (`.claude/agents/dto-manager.md`) - Creates and manages DTOs with class-validator
+- **Enhanced Git Workflows** (`.claude/scripts/git-workflows-enhanced.sh`) - Build-validated git operations  
+- **Integration Workflows** (`.claude/workflows/dto-git-integration.md`) - Combined DTO + Git workflows
+- **Commands**: `/dto create|update|validate|fix-imports` - DTO management commands
+
 ## ⚠️ Critical Rules
 - Customers see ONLY their own data
 - Staff cannot modify prices
