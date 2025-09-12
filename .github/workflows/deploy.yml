@@ -125,7 +125,7 @@ jobs:
         az webapp config set \
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --name ${{ env.BACKEND_APP_NAME }} \
-          --startup-file "npm start"
+          --startup-file "node main.js"
 
     - name: Deploy backend to App Service
       run: |
