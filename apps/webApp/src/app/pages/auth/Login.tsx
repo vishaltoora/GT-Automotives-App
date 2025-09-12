@@ -159,10 +159,8 @@ export function Login() {
               }}
             >
               <SignIn
-                routing="hash"
-                path="/login"
+                routing="virtual"
                 signUpUrl={undefined}
-                afterSignInUrl="/login"
                 appearance={{
                   elements: {
                     rootBox: {

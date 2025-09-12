@@ -24,6 +24,8 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       publishableKey,
       // Remove navigate prop to let Clerk handle its own navigation
       // This prevents unwanted page reloads during authentication
+      afterSignInUrl: '/login', // Redirect here after sign in for role-based routing
+      afterSignUpUrl: '/login',
       appearance: {
         elements: {
           formButtonPrimary: {
