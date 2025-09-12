@@ -5,9 +5,8 @@ import {
   ITireUpdateInput,
   ITireSearchParams,
   ITireSearchResult,
-  IStockAdjustment,
   ITireImage,
-} from '@gt-automotive/shared-interfaces';
+} from '@gt-automotive/shared-dto';
 import { getEnvVar } from '../utils/env';
 
 // Type declaration for Clerk global
@@ -111,14 +110,7 @@ export class TireService {
       queryParams.append('limit', params.limit.toString());
     }
     
-    // Add filters
-    if (params.filters) {
-      Object.entries(params.filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          queryParams.append(`filters[${key}]`, value.toString());
-        }
-      });
-    }
+    // Add filters (removed - not supported in DTO)
     
     const response: AxiosResponse<ITireSearchResult> = await apiClient.get(
       `/tires?${queryParams.toString()}`
@@ -237,14 +229,7 @@ export class TireService {
   static async exportTires(params: ITireSearchParams = {}): Promise<Blob> {
     const queryParams = new URLSearchParams();
     
-    // Add filters for export
-    if (params.filters) {
-      Object.entries(params.filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          queryParams.append(`filters[${key}]`, value.toString());
-        }
-      });
-    }
+    // Add filters for export (removed - not supported in DTO)
     
     const response = await apiClient.get(`/tires/export?${queryParams.toString()}`, {
       responseType: 'blob',

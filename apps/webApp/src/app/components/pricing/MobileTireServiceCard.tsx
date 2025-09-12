@@ -58,7 +58,7 @@ export const MobileTireServiceCard: React.FC<MobileTireServiceCardProps> = ({
               justifyContent: 'center',
             }}
           >
-            {React.cloneElement(icon as React.ReactElement, { sx: { color: iconColor } })}
+            <Box sx={{ color: iconColor }}>{icon}</Box>
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>

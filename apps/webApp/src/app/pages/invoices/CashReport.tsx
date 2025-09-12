@@ -109,7 +109,7 @@ const CashReport: React.FC = () => {
         ) : report ? (
           <>
             <Grid container spacing={3} sx={{ mt: 2 }}>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <Card>
                   <CardContent>
                     <Typography color="text.secondary" gutterBottom>
@@ -119,7 +119,7 @@ const CashReport: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <Card>
                   <CardContent>
                     <Typography color="text.secondary" gutterBottom>

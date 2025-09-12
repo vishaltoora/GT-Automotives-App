@@ -29,7 +29,6 @@ import {
   Visibility as ViewIcon,
   Print as PrintIcon,
   Search as SearchIcon,
-  Payment as PaymentIcon,
   Cancel as CancelIcon,
   Assessment as ReportIcon,
   Edit as EditIcon,
@@ -123,9 +122,9 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
 
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
-  const { user, role } = useAuth();
+  const { role } = useAuth();
   const { confirm } = useConfirmation();
-  const { showApiError, showValidationError, showNetworkError } = useErrorHelpers();
+  const { showApiError } = useErrorHelpers();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useState({
@@ -172,17 +171,6 @@ const InvoiceList: React.FC = () => {
     invoiceService.printInvoice(invoice);
   };
 
-  const handleMarkAsPaid = async (invoice: Invoice) => {
-    try {
-      const paymentMethod = prompt('Enter payment method (CASH, CREDIT_CARD, DEBIT_CARD, CHECK, E_TRANSFER, FINANCING):');
-      if (paymentMethod) {
-        await invoiceService.markInvoiceAsPaid(invoice.id, paymentMethod as any);
-        loadInvoices();
-      }
-    } catch (error) {
-      showApiError(error, 'Failed to mark invoice as paid');
-    }
-  };
 
   const handleCancel = async (invoice: Invoice) => {
     const confirmed = await confirm({

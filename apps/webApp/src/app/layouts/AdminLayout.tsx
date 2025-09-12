@@ -15,9 +15,6 @@ import {
   ListItemText,
   IconButton,
   Divider,
-  useTheme,
-  useMediaQuery,
-  Avatar,
   Chip
 } from '@mui/material';
 import {
@@ -48,9 +45,6 @@ export function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -130,12 +124,12 @@ export function AdminLayout() {
           if (item.divider) {
             return <Divider key={index} sx={{ my: 1, borderColor: colors.neutral[200] }} />;
           }
-          const active = isActive(item.path);
+          const active = item.path ? isActive(item.path) : false;
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton 
                 component={Link} 
-                to={item.path}
+                to={item.path!}
                 sx={{
                   borderRadius: 1.5,
                   mx: 0.5,
@@ -329,7 +323,7 @@ export function AdminLayout() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Chip
                 icon={<AccountCircle />}
-                label={`${user?.firstName || 'Admin'}`}
+                label={`${user?.firstName || user?.email || 'Admin'}`}
                 variant="outlined"
                 sx={{ 
                   display: { xs: 'none', sm: 'flex' },

@@ -16,7 +16,6 @@ import TuneIcon from '@mui/icons-material/Tune';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { ServicesHero, ServicesGrid, StatsSection, ServiceData } from '../../components/services';
-import { CTASection } from '../../components/public';
 
 export const Services: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');

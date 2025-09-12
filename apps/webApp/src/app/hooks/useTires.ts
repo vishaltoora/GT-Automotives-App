@@ -2,12 +2,11 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { useCallback } from 'react';
 import TireService from '../services/tire.service';
 import {
-  ITire,
-  ITireCreateInput,
-  ITireUpdateInput,
-  ITireSearchParams,
-  ITireSearchResult,
-} from '@gt-automotive/shared-interfaces';
+  TireResponseDto as ITire,
+  CreateTireDto as ITireCreateInput,
+  UpdateTireDto as ITireUpdateInput,
+  TireSearchDto as ITireSearchParams,
+} from '@gt-automotive/shared-dto';
 
 // Query Keys
 export const TIRE_QUERY_KEYS = {
@@ -245,7 +244,6 @@ export function useUploadTireImage() {
       if (tire) {
         const updatedTire = {
           ...tire,
-          images: [...(tire.images || []), newImage.url],
           imageUrl: tire.imageUrl || newImage.url,
         };
         queryClient.setQueryData(TIRE_QUERY_KEYS.detail(tireId), updatedTire);
@@ -268,11 +266,9 @@ export function useDeleteTireImage() {
       // Update tire in cache to remove deleted image
       const tire = queryClient.getQueryData<ITire>(TIRE_QUERY_KEYS.detail(tireId));
       if (tire) {
-        const updatedImages = (tire.images || []).filter(url => !url.includes(imageId));
         const updatedTire = {
           ...tire,
-          images: updatedImages,
-          imageUrl: tire.imageUrl?.includes(imageId) ? updatedImages[0] : tire.imageUrl,
+          imageUrl: tire.imageUrl?.includes(imageId) ? undefined : tire.imageUrl,
         };
         queryClient.setQueryData(TIRE_QUERY_KEYS.detail(tireId), updatedTire);
       }

@@ -1,4 +1,4 @@
-export class UserContextDto {
+export class AuthUserContextDto {
   id!: string;
   email!: string;
   firstName?: string;

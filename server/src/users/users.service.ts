@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserRepository } from './repositories/user.repository';
 import { RoleRepository } from '../roles/repositories/role.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
-import * as bcrypt from 'bcryptjs';
+// import * as bcrypt from 'bcryptjs'; // Currently unused
 
 @Injectable()
 export class UsersService {

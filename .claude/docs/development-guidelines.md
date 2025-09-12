@@ -21,6 +21,18 @@ GET    /api/reports/financial // Admin only
 - Use Grid2 size property syntax: `<Grid size={{ xs: 12, md: 6 }}>` instead of `<Grid xs={12} md={6}>`
 - Never use browser dialogs (`window.alert`, `window.confirm`) - use custom dialog system
 
+## DTO Best Practices (Updated September 2025)
+- **Use DTOs for all data transfer** - No interfaces for API contracts
+- **Import enums from @prisma/client** - Never create custom enums that duplicate Prisma
+- **Use `undefined` for optional fields** - Not `null` (convert in repository layer)
+- **Apply class-validator decorators** - Comprehensive validation on all fields
+- **Organize by domain** - Group related DTOs in `libs/shared/dto/src/lib/domain/`
+- **Create separate CRUD DTOs** - `CreateEntityDto`, `UpdateEntityDto`, `EntityResponseDto`
+- **Use definite assignment assertions** - Required fields: `field!: type`
+- **Enable experimental decorators** - In tsconfig.json for class-validator support
+- **Test DTO validation** - Unit tests for all validation rules
+- **Convert systematically** - When migrating from interfaces to DTOs
+
 ## Using the Theme System
 ```javascript
 // Import theme colors in components

@@ -37,7 +37,6 @@ import {
   Email as EmailIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
 import { useError } from '../../app/contexts/ErrorContext';
 import { useConfirmation } from '../../app/contexts/ConfirmationContext';
 import CreateUserDialog from '../../components/users/CreateUserDialog';
@@ -59,7 +58,6 @@ interface User {
 
 const UserManagement: React.FC = () => {
   const { getToken } = useAuth();
-  const navigate = useNavigate();
   const { showError, showInfo } = useError();
   const { confirm } = useConfirmation();
 

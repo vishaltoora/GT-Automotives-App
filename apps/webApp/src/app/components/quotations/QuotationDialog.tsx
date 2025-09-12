@@ -8,10 +8,9 @@ import {
   Box,
   Typography,
   CircularProgress,
-  Alert,
   IconButton,
 } from '@mui/material';
-import { Save as SaveIcon, Print as PrintIcon, Close as CloseIcon, RequestQuote as QuoteIcon } from '@mui/icons-material';
+import { Print as PrintIcon, Close as CloseIcon, RequestQuote as QuoteIcon } from '@mui/icons-material';
 import { quotationService, QuoteItem } from '../../services/quotation.service';
 import { TireService } from '../../services/tire.service';
 import QuotationFormContent from './QuotationFormContent';
@@ -99,7 +98,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
         setItems(quotation.items);
       }
     } catch (error) {
-      showError('Failed to load data', error);
+      showError('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -185,9 +184,9 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
 
       let savedQuotation;
       if (quoteId) {
-        savedQuotation = await quotationService.updateQuote(quoteId, quoteData);
+        savedQuotation = await quotationService.updateQuote(quoteId, { ...quoteData, status: quoteData.status as any });
       } else {
-        savedQuotation = await quotationService.createQuote(quoteData);
+        savedQuotation = await quotationService.createQuote({ ...quoteData, status: quoteData.status as any });
       }
 
       // Print the quotation if requested, but don't let print failures affect the save operation
@@ -206,7 +205,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
       }
       onClose();
     } catch (error) {
-      showError(`Failed to ${quoteId ? 'update' : 'create'} quote`, error);
+      showError(`Failed to ${quoteId ? 'update' : 'create'} quote`);
     } finally {
       setSaving(false);
     }

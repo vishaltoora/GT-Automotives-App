@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -46,7 +46,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams, ITire } from '@gt-automotive/shared-interfaces';
+import { ITireSearchParams, ITire } from '@gt-automotive/shared-dto';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',
@@ -105,7 +105,7 @@ export function TireListSimple({
   const [sortBy, setSortBy] = useState<SortOption>('updatedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(embedded ? 6 : 12);
+  const [pageSize] = useState(embedded ? 6 : 12);
   
   // Dialog states
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
@@ -173,10 +173,6 @@ export function TireListSimple({
   };
 
 
-  const handleClearFilters = () => {
-    setSearchQuery('');
-    setPage(1);
-  };
 
   const handleSortChange = (newSortBy: SortOption) => {
     if (newSortBy === sortBy) {
@@ -455,7 +451,7 @@ export function TireListSimple({
               {isAdmin && (
                 <IconButton 
                   onClick={handleExport} 
-                  disabled={exportMutation.isLoading}
+                  disabled={exportMutation.isPending}
                   title="Export to CSV"
                 >
                   <DownloadIcon />

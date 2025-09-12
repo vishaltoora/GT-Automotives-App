@@ -59,11 +59,11 @@ import { useTire, useDeleteTire } from '../../hooks/useTires';
 import StockAdjustmentDialog from '../../components/inventory/StockAdjustmentDialog';
 
 const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
 const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
 const formatDate = (date: Date | string): string => {
@@ -95,10 +95,10 @@ export function TireDetails() {
       <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
         <Skeleton variant="rectangular" height={300} sx={{ mb: 3 }} />
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Skeleton variant="rectangular" height={400} />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Skeleton variant="rectangular" height={200} sx={{ mb: 2 }} />
             <Skeleton variant="rectangular" height={150} />
           </Grid>
@@ -128,7 +128,7 @@ export function TireDetails() {
   const isOutOfStock = tire.quantity === 0;
   const placeholderImage = `https://via.placeholder.com/400x300/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' - ' + tire.size)}`;
   const primaryImage = tire.imageUrl || placeholderImage;
-  const allImages = tire.images || [primaryImage];
+  const allImages = [primaryImage];
 
   const handleEdit = () => {
     navigate(`/inventory/${tire.id}/edit`);
@@ -255,7 +255,7 @@ export function TireDetails() {
 
       <Grid container spacing={3}>
         {/* Main Content */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           {/* Images */}
           <Card sx={{ mb: 3 }}>
             <CardMedia
@@ -314,7 +314,7 @@ export function TireDetails() {
               </Typography>
               
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" color="text.secondary">
                       Brand
@@ -334,7 +334,7 @@ export function TireDetails() {
                   </Box>
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" color="text.secondary">
                       Type
@@ -388,7 +388,7 @@ export function TireDetails() {
         </Grid>
 
         {/* Sidebar */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           {/* Price & Stock */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
@@ -545,7 +545,7 @@ export function TireDetails() {
         <DialogContent>
           <Grid container spacing={2}>
             {allImages.map((image, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
                 <img
                   src={image}
                   alt={`${tire.brand} ${index + 1}`}

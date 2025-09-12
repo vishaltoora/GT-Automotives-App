@@ -72,7 +72,7 @@ export const useError = (): ErrorContextType => {
 
 // Helper functions for common error scenarios
 export const useErrorHelpers = () => {
-  const { showError, showWarning, showInfo } = useError();
+  const { showError, showInfo } = useError();
 
   return {
     // API Error handling

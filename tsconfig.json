@@ -16,13 +16,7 @@
       "path": "./libs/shared/dto"
     },
     {
-      "path": "./libs/shared/dto"
-    },
-    {
       "path": "./libs/shared/validation"
-    },
-    {
-      "path": "./libs/shared/interfaces"
     },
     {
       "path": "./libs/database"

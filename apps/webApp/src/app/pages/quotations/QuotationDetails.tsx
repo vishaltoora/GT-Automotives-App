@@ -28,14 +28,14 @@ import {
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../services/quotation.service';
 import { useAuth } from '../../hooks/useAuth';
-import { useError } from '../../contexts/ErrorContext';
+import { useErrorHelpers } from '../../contexts/ErrorContext';
 import QuotationDialog from '../../components/quotations/QuotationDialog';
 
 const QuotationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { showError } = useError();
+  const { showApiError } = useErrorHelpers();
   
   const [quotation, setQuotation] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ const QuotationDetails: React.FC = () => {
       const data = await quotationService.getQuote(id!);
       setQuotation(data);
     } catch (error) {
-      showError('Failed to load quotation', error);
+      showApiError(error, 'Failed to load quotation');
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ const QuotationDetails: React.FC = () => {
       await quotationService.updateQuote(quotation.id, { status: newStatus });
       loadQuotation();
     } catch (error) {
-      showError('Failed to update status', error);
+      showApiError(error, 'Failed to update status');
     }
   };
 
@@ -253,7 +253,7 @@ const QuotationDetails: React.FC = () => {
             <Chip
               label={quotation.status}
               color={getStatusColor(quotation.status)}
-              size="large"
+              size="medium"
             />
           </Grid>
         </Grid>
@@ -367,7 +367,7 @@ const QuotationDetails: React.FC = () => {
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
         onSuccess={loadQuotation}
-        quotationId={quotation.id}
+        quoteId={quotation.id}
       />
     </Box>
   );

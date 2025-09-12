@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Container, Typography, Button, Stack } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { ArrowForward as ArrowForwardIcon, Phone as PhoneIcon } from '@mui/icons-material';
+import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 
 interface CTASectionProps {

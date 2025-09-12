@@ -68,6 +68,6 @@ describe('App', () => {
         <App />
       </BrowserRouter>
     );
-    expect(container.firstChild).toBeTruthy();
+    expect(container.firstElementChild).toBeTruthy();
   });
 });

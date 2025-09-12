@@ -6,7 +6,6 @@ import {
   Card, 
   CardContent, 
   Button,
-  LinearProgress,
   Chip,
   IconButton,
   Paper,
@@ -14,14 +13,12 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
-  Avatar,
   Divider,
-  Stack,
 } from '@mui/material';
 import { 
   People, 
   AttachMoney, 
-  TrendingUp, 
+ 
   Inventory,
   SupervisorAccount,
   Analytics,
@@ -37,7 +34,6 @@ import {
   Refresh,
   Add,
   TireRepair,
-  Settings,
   Speed,
   LocalShipping,
   Description,

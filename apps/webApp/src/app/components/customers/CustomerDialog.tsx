@@ -293,7 +293,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           sx={{
             background: colors.gradients.primary,
             '&:hover': {
-              background: colors.gradients.primaryHover,
+              background: colors.gradients.primary,
             }
           }}
         >

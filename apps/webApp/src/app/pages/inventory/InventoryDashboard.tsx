@@ -18,7 +18,6 @@ import {
   Avatar,
   Divider,
   LinearProgress,
-  useTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -37,7 +36,7 @@ import {
   useInvalidateTireQueries 
 } from '../../hooks/useTires';
 import { useAuth } from '../../hooks/useAuth';
-import { TireType } from '@gt-automotive/shared-interfaces';
+import { TireType } from '@prisma/client';
 import TireListSimple from './TireListSimple';
 
 const formatTireType = (type: TireType): string => {
@@ -53,7 +52,6 @@ const formatCurrency = (amount: number): string => {
 
 export function InventoryDashboard() {
   const navigate = useNavigate();
-  const theme = useTheme();
   const { isAdmin, isStaff } = useAuth();
 
   const [showRecentTires, setShowRecentTires] = useState(true);
@@ -186,7 +184,7 @@ export function InventoryDashboard() {
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Total Items"
             value={totalItems.toLocaleString()}
@@ -197,7 +195,7 @@ export function InventoryDashboard() {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Inventory Value"
             value={formatCurrency(totalValue)}
@@ -209,7 +207,7 @@ export function InventoryDashboard() {
         </Grid>
         
         {isAdmin && (
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard
               title="Gross Margin"
               value={`${grossMargin.toFixed(1)}%`}
@@ -221,7 +219,7 @@ export function InventoryDashboard() {
           </Grid>
         )}
         
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Low Stock Items"
             value={lowStockTires.length}
@@ -236,7 +234,7 @@ export function InventoryDashboard() {
       <Grid container spacing={3}>
         {/* Low Stock Alert */}
         {lowStockTires.length > 0 && (
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Alert 
               severity="warning" 
               action={
@@ -265,7 +263,7 @@ export function InventoryDashboard() {
 
         {/* Inventory by Type */}
         {inventoryReport?.byType && (
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -306,7 +304,7 @@ export function InventoryDashboard() {
 
         {/* Inventory by Brand */}
         {inventoryReport?.byBrand && (
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -349,7 +347,7 @@ export function InventoryDashboard() {
 
         {/* Low Stock Items List */}
         {lowStockTires.length > 0 && (
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -410,7 +408,7 @@ export function InventoryDashboard() {
         )}
 
         {/* Recent Tire Activity or Quick Inventory View */}
-        <Grid item xs={12} md={(lowStockTires.length > 0 ? 6 : 12) as 6 | 12}>
+        <Grid size={(lowStockTires.length > 0 ? { xs: 12, md: 6 } : { xs: 12 })}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

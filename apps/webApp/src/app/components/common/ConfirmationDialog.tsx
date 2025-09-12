@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,7 +16,6 @@ import {
   CheckCircle as SuccessIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { colors } from '../../theme/colors';
 
 export interface ConfirmationDialogProps {
   open: boolean;
@@ -62,7 +61,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   confirmButtonColor = severity === 'error' ? 'error' : 'primary',
   showCancelButton = true,
 }) => {
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
   const SeverityIcon = severityConfig[severity].icon;
   const iconColor = severityConfig[severity].color;
 

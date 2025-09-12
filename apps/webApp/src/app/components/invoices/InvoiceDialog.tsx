@@ -43,7 +43,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { role } = useAuth();
+  const { } = useAuth();
   const [customers, setCustomers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [tires, setTires] = useState<any[]>([]);

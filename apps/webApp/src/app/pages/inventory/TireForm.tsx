@@ -34,7 +34,7 @@ import { LoadingButton } from '@mui/lab';
 import {
   ITireCreateInput,
   ITireUpdateInput,
-} from '@gt-automotive/shared-interfaces';
+} from '@gt-automotive/shared-dto';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',
@@ -111,7 +111,6 @@ export function TireForm() {
   const isEditing = Boolean(id && id !== 'new');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [sizeQuery, setSizeQuery] = useState('');
-  const [isDraft, setIsDraft] = useState(false);
 
   // Data fetching
   const { data: tire, isLoading: tireLoading } = useTire(id || '', isEditing);
@@ -129,8 +128,8 @@ export function TireForm() {
     initialValues: {
       brand: '',
       size: '',
-      type: TireType.ALL_SEASON,
-      condition: TireCondition.NEW,
+      type: TireType.ALL_SEASON as TireType,
+      condition: TireCondition.NEW as TireCondition,
       quantity: 0,
       price: 0,
       cost: isAdmin ? 0 : undefined,
@@ -140,7 +139,7 @@ export function TireForm() {
       notes: '',
     },
     validationSchema,
-    onSubmit: async (values: typeof formik.initialValues) => {
+    onSubmit: async (values) => {
       try {
         const submitData = {
           ...values,
@@ -196,9 +195,8 @@ export function TireForm() {
   };
 
   const handleSaveDraft = async () => {
-    setIsDraft(true);
     // In a real app, you might save to localStorage or draft endpoint
-    // For now, just mark as draft and save normally
+    // For now, just save normally
     formik.handleSubmit();
   };
 
@@ -238,7 +236,7 @@ export function TireForm() {
       <form onSubmit={formik.handleSubmit}>
         <Grid container spacing={3}>
           {/* Basic Information */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -247,7 +245,7 @@ export function TireForm() {
                 
                 <Grid container spacing={2}>
                   {/* Brand */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Autocomplete
                       options={brands}
                       value={formik.values.brand}
@@ -266,7 +264,7 @@ export function TireForm() {
 
 
                   {/* Size */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Autocomplete
                       options={sizeSuggestions}
                       value={formik.values.size}
@@ -286,7 +284,7 @@ export function TireForm() {
                   </Grid>
 
                   {/* Type */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>Type *</InputLabel>
                       <Select
@@ -306,7 +304,7 @@ export function TireForm() {
                   </Grid>
 
                   {/* Condition */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>Condition *</InputLabel>
                       <Select
@@ -326,7 +324,7 @@ export function TireForm() {
                   </Grid>
 
                   {/* Location */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       label="Storage Location"
@@ -348,7 +346,7 @@ export function TireForm() {
 
                 <Grid container spacing={2}>
                   {/* Quantity */}
-                  <Grid item xs={12} sm={4}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       label="Quantity *"
@@ -363,7 +361,7 @@ export function TireForm() {
                   </Grid>
 
                   {/* Min Stock */}
-                  <Grid item xs={12} sm={4}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       label="Minimum Stock Level"
@@ -378,7 +376,7 @@ export function TireForm() {
                   </Grid>
 
                   {/* Price */}
-                  <Grid item xs={12} sm={4}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       label="Selling Price *"
@@ -397,7 +395,7 @@ export function TireForm() {
 
                   {/* Cost (Admin only) */}
                   {isAdmin && (
-                    <Grid item xs={12} sm={4}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
                       <TextField
                         fullWidth
                         label="Cost"
@@ -436,12 +434,12 @@ export function TireForm() {
           </Grid>
 
           {/* Images */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card>
               <CardContent>
                 <TireImageUpload
                   tireId={isEditing ? id : undefined}
-                  existingImages={tire?.images || []}
+                  existingImages={[]}
                   primaryImageUrl={tire?.imageUrl}
                   onImagesChange={(images) => {
                     // Handle image changes

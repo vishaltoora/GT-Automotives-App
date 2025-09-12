@@ -10,12 +10,14 @@ import { AuditRepository } from '../audit/repositories/audit.repository';
 import {
   CreateTireDto,
   UpdateTireDto,
-  TireDto,
   TireFiltersDto,
   TireSearchDto,
   TireSearchResultDto,
-} from '@gt-automotive/shared-interfaces';
-import { TireType, TireCondition } from '@prisma/client';
+  TireResponseDto,
+  StockAdjustmentDto,
+  InventoryReportDto,
+} from '@gt-automotive/shared-dto';
+import { TireType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()

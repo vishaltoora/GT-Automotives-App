@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,10 +17,10 @@ import {
   Box,
 } from '@mui/material';
 import { 
-  ITire, 
-  ITireCreateInput, 
-  ITireUpdateInput
-} from '@gt-automotive/shared-interfaces';
+  TireDto, 
+  CreateTireDto, 
+  UpdateTireDto
+} from '@gt-automotive/shared-dto';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',
@@ -58,7 +58,7 @@ declare global {
 interface TireDialogProps {
   open: boolean;
   onClose: () => void;
-  tire?: ITire | null;
+  tire?: TireDto | null;
   onSuccess?: () => void;
 }
 
@@ -80,7 +80,7 @@ const TIRE_CONDITIONS = [
 
 export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) {
   const queryClient = useQueryClient();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  useAuth();
   const isEditMode = !!tire;
 
   // Function to ensure we have a valid auth token
@@ -105,7 +105,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     return token;
   };
 
-  const [formData, setFormData] = useState<ITireCreateInput>({
+  const [formData, setFormData] = useState<CreateTireDto>({
     brand: '',
     size: '',
     type: TireType.ALL_SEASON,
@@ -119,7 +119,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     imageUrl: '',
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof ITireCreateInput, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CreateTireDto, string>>>({});
 
   useEffect(() => {
     if (tire) {
@@ -133,7 +133,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
         cost: tire.cost || 0,
         minStock: tire.minStock,
         location: tire.location || '',
-        notes: tire.notes || '',
+        notes: '',
         imageUrl: tire.imageUrl || '',
       });
     } else {
@@ -155,7 +155,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   }, [tire]);
 
   const createMutation = useMutation({
-    mutationFn: async (data: ITireCreateInput) => {
+    mutationFn: async (data: CreateTireDto) => {
       // Ensure we have a valid token before making the request
       await ensureValidToken();
       return TireService.createTire(data);
@@ -171,7 +171,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: ITireUpdateInput) => {
+    mutationFn: async (data: UpdateTireDto) => {
       // Ensure we have a valid token before making the request
       await ensureValidToken();
       return TireService.updateTire(tire!.id, data);
@@ -188,14 +188,14 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   });
 
   const handleSubmit = () => {
-    const newErrors: Partial<Record<keyof ITireCreateInput, string>> = {};
+    const newErrors: Partial<Record<keyof CreateTireDto, string>> = {};
 
     if (!formData.brand.trim()) newErrors.brand = 'Brand is required';
     if (!formData.size.trim()) newErrors.size = 'Size is required';
     if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
     if (formData.quantity < 0) newErrors.quantity = 'Quantity cannot be negative';
     if (formData.cost && formData.cost < 0) newErrors.cost = 'Cost cannot be negative';
-    if (formData.minStock < 0) newErrors.minStock = 'Minimum stock cannot be negative';
+    if (formData.minStock != null && formData.minStock < 0) newErrors.minStock = 'Minimum stock cannot be negative';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -226,13 +226,13 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     }
 
     if (isEditMode) {
-      updateMutation.mutate(cleanedData as ITireUpdateInput);
+      updateMutation.mutate(cleanedData as UpdateTireDto);
     } else {
       createMutation.mutate(cleanedData);
     }
   };
 
-  const handleChange = (field: keyof ITireCreateInput, value: any) => {
+  const handleChange = (field: keyof CreateTireDto, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));

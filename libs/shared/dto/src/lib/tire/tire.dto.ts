@@ -11,9 +11,10 @@ import {
   MaxLength,
   IsBoolean,
   IsInt,
+  IsDateString,
 } from 'class-validator';
 import { Exclude, Type } from 'class-transformer';
-import { TireType, TireCondition } from '@gt-automotive/shared-interfaces';
+import { TireType, TireCondition } from '@prisma/client';
 
 export class CreateTireDto {
   @IsString()
@@ -138,6 +139,25 @@ export class StockAdjustmentDto {
   reason: string;
 }
 
+// Alternative DTO for different stock adjustment patterns
+export class StockAdjustmentWithIdDto {
+  @IsString()
+  tireId: string;
+
+  @IsInt()
+  quantityChange: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reason?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
 export class TireSearchDto {
   @IsOptional()
   @IsString()
@@ -228,6 +248,94 @@ export class TireResponseDto {
   }
 }
 
+// Simple DTO for basic tire data (used in some legacy contexts)
+export class TireDto {
+  @IsString()
+  id: string;
+
+  @IsString()
+  brand: string;
+
+  @IsString()
+  size: string;
+
+  @IsEnum(TireType)
+  type: TireType;
+
+  @IsEnum(TireCondition)
+  condition: TireCondition;
+
+  @IsNumber()
+  @IsPositive()
+  price: number;
+
+  @IsOptional()
+  @IsNumber()
+  cost?: number;
+
+  @IsNumber()
+  @Min(0)
+  quantity: number;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsNumber()
+  @Min(0)
+  minStock: number;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Filter DTO that matches the legacy interface
+export class TireFiltersDto {
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @IsOptional()
+  @IsString()
+  size?: string;
+
+  @IsOptional()
+  @IsEnum(TireType)
+  type?: TireType;
+
+  @IsOptional()
+  @IsEnum(TireCondition)
+  condition?: TireCondition;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  minPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  maxPrice?: number;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  inStock?: boolean;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  lowStock?: boolean;
+}
+
 export class TireSearchResultDto {
   items: TireResponseDto[];
   total: number;
@@ -244,3 +352,35 @@ export class InventoryReportDto {
   byBrand: Record<string, number>;
   byType: Record<TireType, number>;
 }
+
+// Additional DTOs to match legacy interface requirements
+export class TireImageDto {
+  @IsString()
+  id!: string;
+
+  @IsString()
+  tireId!: string;
+
+  @IsUrl()
+  url!: string;
+
+  @IsString()
+  @IsOptional()
+  filename?: string;
+
+  @IsString()
+  @IsOptional()
+  alt?: string;
+
+  @IsDateString()
+  createdAt!: Date;
+}
+
+// Legacy aliases for backward compatibility
+export type ITire = TireResponseDto;
+export type ITireCreateInput = CreateTireDto;
+export type ITireUpdateInput = UpdateTireDto;
+export type ITireSearchParams = TireSearchDto;
+export type ITireSearchResult = TireSearchResultDto;
+export type IStockAdjustment = StockAdjustmentDto;
+export type ITireImage = TireImageDto;

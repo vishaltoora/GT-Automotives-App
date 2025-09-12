@@ -278,7 +278,7 @@ export function TireImageUpload({
           </Typography>
           <Grid container spacing={2}>
             {existingImages.map((imageUrl, index) => (
-              <Grid item xs={6} sm={4} md={3} key={imageUrl}>
+              <Grid size={{ xs: 6, sm: 4, md: 3 }} key={imageUrl}>
                 <Card>
                   <CardMedia
                     component="img"
@@ -330,7 +330,7 @@ export function TireImageUpload({
           </Typography>
           <Grid container spacing={2}>
             {selectedFiles.map((imageFile) => (
-              <Grid item xs={6} sm={4} md={3} key={imageFile.id}>
+              <Grid size={{ xs: 6, sm: 4, md: 3 }} key={imageFile.id}>
                 <Card>
                   <CardMedia
                     component="img"

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -33,10 +33,10 @@ import {
   Download as DownloadIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams } from '@gt-automotive/shared-interfaces';
+import { ITireSearchParams } from '@gt-automotive/shared-dto';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',
@@ -59,7 +59,7 @@ type TireCondition = typeof TireCondition[keyof typeof TireCondition];
 import TireCard from '../../components/inventory/TireCard';
 
 type ViewMode = 'grid' | 'list';
-type SortOption = 'brand' | 'model' | 'size' | 'price' | 'quantity' | 'updatedAt';
+type SortOption = 'brand' | 'size' | 'price' | 'quantity' | 'updatedAt';
 
 interface TireListProps {
   variant?: 'full' | 'compact';
@@ -68,11 +68,11 @@ interface TireListProps {
 }
 
 const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
 const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
 export function TireList({ 
@@ -124,10 +124,6 @@ export function TireList({
   };
 
 
-  const handleClearFilters = () => {
-    setSearchQuery('');
-    setPage(1);
-  };
 
   const handleSortChange = (newSortBy: SortOption) => {
     if (newSortBy === sortBy) {
@@ -244,12 +240,6 @@ export function TireList({
       field: 'brand',
       headerName: 'Brand',
       width: 120,
-      sortable: true,
-    },
-    {
-      field: 'model',
-      headerName: 'Model',
-      width: 150,
       sortable: true,
     },
     {
@@ -441,7 +431,7 @@ export function TireList({
               {isAdmin && (
                 <IconButton 
                   onClick={handleExport} 
-                  disabled={exportMutation.isLoading}
+                  disabled={exportMutation.isPending}
                   title="Export to CSV"
                 >
                   <DownloadIcon />
@@ -495,10 +485,11 @@ export function TireList({
             pagination
             paginationMode="server"
             rowCount={totalCount}
-            page={page - 1}
-            pageSize={pageSize}
-            onPageChange={(newPage) => setPage(newPage + 1)}
-            onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+            paginationModel={{ page: page - 1, pageSize }}
+            onPaginationModelChange={(model) => {
+              setPage(model.page + 1);
+              setPageSize(model.pageSize);
+            }}
             pageSizeOptions={[10, 25, 50, 100]}
             autoHeight
             disableRowSelectionOnClick

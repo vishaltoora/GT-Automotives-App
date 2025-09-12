@@ -15,7 +15,6 @@ import {
   TextField,
   Grid,
   IconButton,
-  Tooltip,
   Chip,
   InputAdornment,
   Menu,
@@ -37,13 +36,13 @@ import { quotationService, Quote } from '../../services/quotation.service';
 import QuoteDialog from '../../components/quotations/QuotationDialog';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
-import { useError } from '../../contexts/ErrorContext';
+import { useErrorHelpers } from '../../contexts/ErrorContext';
 
 const QuoteList: React.FC = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { confirmDelete } = useConfirmationHelpers();
-  const { showError } = useError();
+  const { showApiError } = useErrorHelpers();
   
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +64,7 @@ const QuoteList: React.FC = () => {
       const data = await quotationService.getQuotes();
       setQuotes(data);
     } catch (error) {
-      showError('Failed to load quotations', error);
+      showApiError(error, 'Failed to load quotations');
     } finally {
       setLoading(false);
     }
@@ -81,7 +80,7 @@ const QuoteList: React.FC = () => {
         });
         setQuotes(data);
       } catch (error) {
-        showError('Search failed', error);
+        showApiError(error, 'Search failed');
       } finally {
         setLoading(false);
       }
@@ -107,7 +106,7 @@ const QuoteList: React.FC = () => {
         await quotationService.deleteQuote(quotation.id);
         loadQuotations();
       } catch (error) {
-        showError('Failed to delete quotation', error);
+        showApiError(error, 'Failed to delete quotation');
       }
     }
   };
@@ -118,7 +117,7 @@ const QuoteList: React.FC = () => {
       const fullQuotation = await quotationService.getQuote(quotation.id);
       quotationService.printQuote(fullQuotation);
     } catch (error) {
-      showError('Failed to print quotation', error);
+      showApiError(error, 'Failed to print quotation');
     }
   };
 

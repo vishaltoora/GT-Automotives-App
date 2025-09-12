@@ -11,16 +11,19 @@ Specialized agent for creating, updating, and managing Data Transfer Objects (DT
 ## Core Responsibilities
 
 ### 1. DTO Creation and Management
-- Create DTOs in `libs/shared/interfaces/src/lib/dtos/`
-- Use Prisma enums as source of truth
-- Apply appropriate class-validator decorators
-- Follow consistent naming conventions
+- Create DTOs in `libs/shared/dto/src/lib/` (consolidated location)
+- Use Prisma enums as source of truth - import from `@prisma/client`
+- Apply appropriate class-validator decorators with proper TypeScript configuration
+- Follow consistent naming conventions and domain organization
+- Use `undefined` instead of `null` for optional properties
+- Group DTOs by domain (auth/, customer/, vehicle/, tire/, etc.)
 
 ### 2. Index File Management
-- Automatically update `libs/shared/interfaces/src/index.ts`
-- Export new DTOs properly
-- Remove exports for deleted DTOs
-- Maintain clean export structure
+- Automatically update `libs/shared/dto/src/index.ts`
+- Export DTOs by domain from each subdirectory index
+- Remove exports for deleted DTOs and deprecated interfaces
+- Maintain clean barrel export structure
+- Create legacy type aliases during migration for backward compatibility
 
 ### 3. Type Safety and Validation
 - Use Prisma-generated enums (`@prisma/client`)
@@ -83,13 +86,27 @@ export class UpdateEntityDto {
 
 ### File Organization
 ```
-libs/shared/interfaces/src/lib/dtos/
-├── user.dto.ts
-├── customer.dto.ts
-├── vehicle.dto.ts
-├── tire.dto.ts
-├── invoice.dto.ts
-└── quotation.dto.ts
+libs/shared/dto/src/lib/
+├── auth/
+│   ├── auth.dto.ts
+│   ├── user.dto.ts
+│   └── index.ts
+├── customer/
+│   ├── customer.dto.ts
+│   └── index.ts
+├── vehicle/
+│   ├── vehicle.dto.ts
+│   └── index.ts
+├── tire/
+│   ├── tire.dto.ts
+│   └── index.ts
+├── invoice/
+│   ├── invoice.dto.ts
+│   └── index.ts
+├── quotation/
+│   ├── quotation.dto.ts
+│   └── index.ts
+└── index.ts (exports all domains)
 ```
 
 ## Usage Examples
@@ -203,20 +220,251 @@ yarn build:web
 yarn typecheck
 ```
 
-## Learning from Session
+## DTO Consolidation Best Practices (Based on Session Learnings)
 
-### Key Insights
-1. **Prisma enums as source of truth** prevents type mismatches
-2. **Experimental decorators** are required for class-validator
-3. **Definite assignment assertions** (`!`) solve initialization errors
-4. **Systematic approach** to fixing build errors is more effective
-5. **Local testing** before committing prevents CI/CD failures
+### 1. Migration Strategy
+- **Convert interfaces to DTOs**: All data transfer should use class-validator DTOs
+- **Create legacy aliases**: Maintain backward compatibility during migration
+- **Update imports systematically**: Frontend and backend simultaneously
+- **Delete old interfaces**: After migration is complete and tested
+- **Run typecheck frequently**: Catch issues early in migration process
 
-### Process Improvements
-1. Always create DTOs with proper validation first
-2. Update index files immediately after DTO creation
-3. Test builds locally before committing
-4. Fix all TypeScript errors systematically
-5. Use consistent patterns across all DTOs
+### 2. Common DTO Patterns
+```typescript
+// CreateDto: Required fields for creation
+export class CreateTireDto {
+  @IsString()
+  @MinLength(1)
+  brand!: string;
 
-This agent should proactively suggest DTO creation when detecting interface usage and automatically maintain the shared library structure.
+  @IsEnum(TireType)
+  type!: TireType;
+
+  @IsString()
+  size!: string;
+
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  price!: number;
+}
+
+// UpdateDto: All optional fields for partial updates
+export class UpdateTireDto {
+  @IsString()
+  @IsOptional()
+  @MinLength(1)
+  brand?: string;
+
+  @IsEnum(TireType)
+  @IsOptional()
+  type?: TireType;
+
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  @IsOptional()
+  price?: number;
+}
+
+// ResponseDto: API response with role-based exclusions
+export class TireResponseDto {
+  id!: string;
+  brand!: string;
+  type!: TireType;
+  size!: string;
+  price!: number;
+  // Exclude sensitive fields based on user role
+  createdAt!: Date;
+  updatedAt!: Date;
+}
+
+// SearchDto: Query parameters with validation
+export class TireSearchDto {
+  @IsEnum(TireType)
+  @IsOptional()
+  type?: TireType;
+
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @IsNumber()
+  @Type(() => Number)
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  limit?: number = 20;
+
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  @IsOptional()
+  offset?: number = 0;
+}
+```
+
+### 3. Validation Decorator Standards
+- **String fields**: `@IsString()` + length constraints (`@MinLength`, `@MaxLength`)
+- **Numbers**: `@IsNumber()` + `@Type(() => Number)` + range validation (`@Min`, `@Max`)
+- **Enums**: `@IsEnum(PrismaEnum)` - always use Prisma-generated enums
+- **Optional fields**: `@IsOptional()` + base validation
+- **URLs**: `@IsUrl()` for image URLs and external links
+- **Email**: `@IsEmail()` for email validation
+- **UUIDs**: `@IsUUID()` for ID fields
+- **Arrays**: `@IsArray()` + `@ValidateNested()` for complex arrays
+
+### 4. Type Compatibility Patterns
+```typescript
+// Handle Prisma Decimal to number conversion
+export class PriceDto {
+  @IsNumber()
+  @Type(() => Number)
+  price!: number; // Convert from Prisma Decimal in repository
+}
+
+// Convert null to undefined for DTO compatibility
+export class CustomerDto {
+  @IsString()
+  @IsOptional()
+  email?: string; // Repository converts null → undefined
+
+  @IsString()
+  @IsOptional()
+  phone?: string; // Repository converts null → undefined
+}
+
+// Transform complex types
+export class DateRangeDto {
+  @IsDateString()
+  @Transform(({ value }) => new Date(value).toISOString())
+  startDate!: string;
+
+  @IsDateString()
+  @Transform(({ value }) => new Date(value).toISOString())
+  endDate!: string;
+}
+```
+
+### 5. Common Migration Issues and Solutions
+
+#### Issue: "Cannot use import statement outside a module"
+**Solution**: Update tsconfig.json for proper module support
+```json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "module": "ESNext",
+    "moduleResolution": "node"
+  }
+}
+```
+
+#### Issue: "Property has no initializer"
+**Solution**: Use definite assignment assertions for required fields
+```typescript
+// Wrong
+export class TireDto {
+  brand: string; // Error: Property 'brand' has no initializer
+}
+
+// Correct
+export class TireDto {
+  @IsString()
+  brand!: string; // Definite assignment assertion
+}
+```
+
+#### Issue: "Enum not found"
+**Solution**: Import enums from @prisma/client, not custom interfaces
+```typescript
+// Wrong
+import { TireType } from '../interfaces/tire.types';
+
+// Correct
+import { TireType } from '@prisma/client';
+```
+
+### 6. Testing and Validation Workflow
+```bash
+# 1. Create/update DTOs
+/dto create product
+/dto update tire --add-field warranty:number?
+
+# 2. Validate DTO structure
+/dto validate
+
+# 3. Test builds incrementally
+yarn nx build @gt-automotive/shared-dto
+yarn build:server
+yarn build:web
+
+# 4. Run type checking
+yarn typecheck
+
+# 5. Test runtime validation
+yarn test:dto
+```
+
+### 7. Performance Considerations
+- **Lazy loading**: Import DTOs only when needed
+- **Tree shaking**: Use barrel exports for better bundling
+- **Validation caching**: Cache validation results for repeated operations
+- **Selective validation**: Skip validation in trusted internal operations
+
+### 8. Integration with Repositories
+```typescript
+// Repository pattern with DTO conversion
+export class TireRepository {
+  async create(createTireDto: CreateTireDto): Promise<TireResponseDto> {
+    // Validate input DTO
+    await validateDto(createTireDto);
+    
+    // Create entity
+    const tire = await this.prisma.tire.create({
+      data: {
+        ...createTireDto,
+        // Handle type conversions
+        price: new Decimal(createTireDto.price)
+      }
+    });
+    
+    // Convert to response DTO
+    return {
+      ...tire,
+      price: tire.price.toNumber(), // Decimal → number
+      email: tire.email ?? undefined // null → undefined
+    };
+  }
+}
+```
+
+### 9. Quality Assurance Checklist
+- ✅ All DTOs have proper class-validator decorators
+- ✅ TypeScript compilation succeeds without errors
+- ✅ Prisma enums used consistently (no custom enums)
+- ✅ Optional properties use `undefined` not `null`
+- ✅ Index files export all DTOs properly
+- ✅ Legacy interfaces removed after migration
+- ✅ Build succeeds for shared library, server, and frontend
+- ✅ Runtime validation works as expected
+
+### 10. Troubleshooting Common Issues
+
+**Build fails with decorator errors**
+- Check experimentalDecorators in tsconfig.json
+- Verify class-validator imports
+- Ensure proper TypeScript version compatibility
+
+**Enum validation fails**
+- Confirm enum imported from @prisma/client
+- Check Prisma schema matches DTO enum usage
+- Verify enum values are correctly typed
+
+**Null vs undefined issues**
+- Use `@IsOptional()` for optional fields
+- Convert null to undefined in repositories
+- Handle missing fields gracefully in DTOs
+
+This comprehensive approach ensures reliable DTO consolidation while maintaining type safety and performance across the entire application.

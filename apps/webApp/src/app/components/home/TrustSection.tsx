@@ -197,7 +197,7 @@ function TrustFeatureCard({ feature }: { feature: TrustFeature }) {
           color: 'white',
         }}
       >
-        {React.cloneElement(feature.icon, { sx: { fontSize: 24 } })}
+        {feature.icon}
       </Box>
       <Typography
         variant="h4"

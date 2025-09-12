@@ -33,7 +33,6 @@ import {
   ShoppingCart as ShoppingCartIcon,
   Payment as PaymentIcon,
   AttachMoney as AttachMoneyIcon,
-  Description as DescriptionIcon,
   Inventory as InventoryIcon,
   Build as BuildIcon,
 } from '@mui/icons-material';

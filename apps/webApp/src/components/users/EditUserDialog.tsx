@@ -56,11 +56,11 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
     roleId: '',
   });
 
-  const [availableRoles, setAvailableRoles] = useState<Array<{ id: string; name: string }>>([
+  const availableRoles = [
     { id: '1', name: 'ADMIN' },
     { id: '2', name: 'STAFF' },
     { id: '3', name: 'CUSTOMER' },
-  ]);
+  ];
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);

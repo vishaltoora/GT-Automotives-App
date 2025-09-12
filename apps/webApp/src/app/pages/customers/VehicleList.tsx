@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -31,7 +31,6 @@ import {
   Build as BuildIcon,
   Person as PersonIcon,
   Visibility as ViewIcon,
-  LocalGasStation as GasIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { vehicleService, Vehicle } from '../../services/vehicle.service';

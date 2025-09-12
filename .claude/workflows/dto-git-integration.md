@@ -9,16 +9,29 @@ This document outlines integrated workflows combining the DTO Manager agent with
 - Always validate builds locally before committing
 - Use incremental validation (typecheck → shared lib → server → frontend)
 - Catch TypeScript errors early in the development cycle
+- Test DTO validation at each step
 
 ### 2. Systematic Error Resolution
 - Address compilation errors in dependency order
 - Fix shared library issues first, then dependent projects
 - Test each fix incrementally
+- Use definite assignment assertions (`field!: type`) for required properties
 
-### 3. DTO Management Best Practices
-- Use Prisma enums as single source of truth
-- Apply class-validator decorators consistently
-- Maintain proper tsconfig settings for decorators
+### 3. DTO Consolidation Best Practices
+- **Single Source of Truth**: Use Prisma enums exclusively, never create custom duplicates
+- **Validation Decorators**: Apply class-validator decorators to all fields
+- **Type Safety**: Use `undefined` for optional fields, convert `null` in repository layer
+- **Domain Organization**: Group DTOs by business domain in separate folders
+- **Migration Strategy**: Create legacy type aliases during interface-to-DTO migration
+- **Build Configuration**: Enable experimentalDecorators in tsconfig.json
+- **Systematic Testing**: Validate DTOs at unit and integration levels
+
+### 4. Common Migration Patterns
+- Convert interfaces to DTOs with proper validation decorators
+- Import enums from @prisma/client not custom interface files
+- Use `@Type(() => Number)` for numeric transformations
+- Apply `@IsOptional()` with base validation for optional fields
+- Create separate Create/Update/Response DTOs for different operations
 
 ## Integrated Workflows
 
@@ -40,43 +53,69 @@ This document outlines integrated workflows combining the DTO Manager agent with
 .claude/scripts/git-workflows-enhanced.sh build-doctor
 ```
 
-### Workflow 2: Major DTO Refactoring (Like Our Session)
+### Workflow 2: Major DTO Refactoring (Based on Our Session)
 ```bash
 # 1. Analyze current state
 /dto list --missing
 .claude/scripts/git-workflows-enhanced.sh status
 
 # 2. Create feature branch with validation
-.claude/scripts/git-workflows-enhanced.sh feature-safe "refactor/dto-system" "refactor: migrate to DTO system with class-validator" full
+.claude/scripts/git-workflows-enhanced.sh feature-safe "refactor/dto-consolidation" "refactor: consolidate interfaces to DTOs with validation" full
 
-# 3. Generate DTOs from Prisma schema
-/dto generate-from-schema
+# 3. Generate DTOs from Prisma schema with validation
+/dto generate-from-schema --include-validation --domain-structure
 
-# 4. Update all imports
-/dto fix-imports --dry-run
-/dto fix-imports
+# 4. Convert specific interfaces systematically
+/dto convert-interface Tire --domain tire --validation-preset comprehensive
+/dto convert-interface Customer --domain customer --validation-preset standard
+/dto convert-interface Vehicle --domain vehicle --validation-preset comprehensive
 
-# 5. Validate changes
-/dto validate --fix
+# 5. Update all imports with dry-run first
+/dto fix-imports --dry-run --show-changes
+/dto fix-imports --confirm
 
-# 6. Test builds incrementally
-.claude/scripts/git-workflows-enhanced.sh validate-build full
+# 6. Enable experimental decorators in tsconfig files
+/dto fix-tsconfig --enable-decorators --all-projects
 
-# 7. Safe commit with validation
-.claude/scripts/git-workflows-enhanced.sh quick-commit "fix: resolve TypeScript compilation errors
+# 7. Validate changes incrementally
+/dto validate --fix --comprehensive
+yarn nx build @gt-automotive/shared-dto
 
-🔧 Restructured to use Prisma enums as source of truth:
-- Created DTOs in shared library with class-validator decorators
-- Removed custom tire.types.ts in favor of Prisma enums
-- Added experimentalDecorators support
+# 8. Test builds in dependency order
+.claude/scripts/git-workflows-enhanced.sh validate-build shared-lib
+.claude/scripts/git-workflows-enhanced.sh validate-build server  
+.claude/scripts/git-workflows-enhanced.sh validate-build frontend
 
-✅ Fixed all TypeScript errors:
-- Removed unused imports
-- Fixed enum type mismatches  
-- Added definite assignment assertions
-- Updated tsconfig for decorators
+# 9. Comprehensive commit with detailed changes
+.claude/scripts/git-workflows-enhanced.sh quick-commit "refactor: consolidate interfaces to DTOs with class-validator
 
-✅ Verified builds working locally"
+🚀 DTO Consolidation Complete:
+- Migrated all interfaces to DTOs in libs/shared/dto/
+- Organized DTOs by domain (tire/, customer/, vehicle/, etc.)
+- Applied comprehensive class-validator decorators
+
+🔧 Prisma Integration:
+- Import all enums from @prisma/client (TireType, TireCondition, etc.)
+- Removed custom enum definitions in interfaces
+- Use Prisma enums as single source of truth
+
+✅ TypeScript Fixes:
+- Added definite assignment assertions (field!: type)
+- Enabled experimentalDecorators in all tsconfig files
+- Fixed enum import paths across all components
+- Converted null to undefined for optional fields
+
+🧪 Validation Enhancements:
+- Added @IsString, @IsEnum, @IsNumber decorators
+- Applied @Type(() => Number) for numeric transformations
+- Used @IsOptional for optional fields with base validation
+- Created separate Create/Update/Response DTOs
+
+✅ Build Verification:
+- Shared library builds successfully
+- Server compilation passes with new DTOs
+- Frontend builds without TypeScript errors
+- All enum references resolved correctly"
 ```
 
 ### Workflow 3: Quick DTO Updates

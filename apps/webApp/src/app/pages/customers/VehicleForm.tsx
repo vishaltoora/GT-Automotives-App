@@ -35,7 +35,7 @@ const vehicleMakes = [
 export function VehicleForm() {
   const navigate = useNavigate();
   const { id, customerId: urlCustomerId } = useParams();
-  const { role, user } = useAuth();
+  const { role } = useAuth();
   const isEdit = !!id;
 
   const [loading, setLoading] = useState(false);
@@ -164,10 +164,10 @@ export function VehicleForm() {
       <Card>
         <CardContent>
           <form onSubmit={handleSubmit}>
-            <Grid item container spacing={3}>
+            <Grid container spacing={3}>
               {/* Only show customer selection for staff/admin or when adding new vehicle */}
               {(role !== 'customer' || !isEdit) && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormControl fullWidth required>
                     <InputLabel>Customer</InputLabel>
                     <Select
@@ -186,7 +186,7 @@ export function VehicleForm() {
                 </Grid>
               )}
 
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <Autocomplete
                   freeSolo
                   options={vehicleMakes}
@@ -204,7 +204,7 @@ export function VehicleForm() {
                 />
               </Grid>
 
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField
                   fullWidth
                   required
@@ -215,7 +215,7 @@ export function VehicleForm() {
                 />
               </Grid>
 
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <FormControl fullWidth required>
                   <InputLabel>Year</InputLabel>
                   <Select
@@ -233,7 +233,7 @@ export function VehicleForm() {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
                   label="VIN"
@@ -245,7 +245,7 @@ export function VehicleForm() {
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
                   label="License Plate"
@@ -256,7 +256,7 @@ export function VehicleForm() {
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
                   type="number"
@@ -270,7 +270,7 @@ export function VehicleForm() {
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Box display="flex" gap={2} justifyContent="flex-end">
                   <Button
                     variant="outlined"

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
@@ -24,9 +23,6 @@ import {
   CardContent,
   Chip,
   Alert,
-  Stepper,
-  Step,
-  StepLabel,
   Tooltip,
   InputAdornment,
 } from '@mui/material';
@@ -41,7 +37,6 @@ import {
   ShoppingCart as ShoppingCartIcon,
   Payment as PaymentIcon,
   AttachMoney as AttachMoneyIcon,
-  Description as DescriptionIcon,
   Inventory as InventoryIcon,
   Build as BuildIcon,
 } from '@mui/icons-material';

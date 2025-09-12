@@ -19,7 +19,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Alert,
   Tooltip,
   InputAdornment,
   Typography,
@@ -34,7 +33,16 @@ import {
   Inventory as InventoryIcon,
   Build as BuildIcon,
 } from '@mui/icons-material';
-import { QuotationItem } from '../../services/quotation.service';
+// Define QuotationItem type locally to avoid import issues
+type QuotationItem = {
+  id?: string;
+  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER';
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  tireId?: string;
+  total?: number;
+};
 import { colors } from '../../theme/colors';
 
 interface QuotationFormContentProps {
@@ -79,9 +87,6 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   onTireSelect,
 }) => {
 
-  const formatTireType = (type: string) => {
-    return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * Number(item.unitPrice)), 0);

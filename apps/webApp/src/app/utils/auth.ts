@@ -1,5 +1,3 @@
-import { useAuth as useClerkAuthHook } from '@clerk/clerk-react';
-import { useAuth as useMockAuth } from '../providers/MockClerkProvider';
 import { getEnvVar } from './env';
 
 // Get current auth token for API requests

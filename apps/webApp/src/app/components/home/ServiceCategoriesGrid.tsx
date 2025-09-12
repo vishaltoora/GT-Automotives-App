@@ -6,7 +6,6 @@ import {
   Settings as SettingsIcon,
   Shield as ShieldIcon,
   Speed as SpeedIcon,
-  TireRepair as TireIcon,
   LocalShipping as TruckIcon,
 } from '@mui/icons-material';
 import {
@@ -137,7 +136,7 @@ function ServiceCategoryCard({ service }: { service: ServiceCategory }) {
           color: service.color,
         }}
       >
-        {React.cloneElement(service.icon, { sx: { fontSize: 28 } })}
+        {service.icon}
       </Box>
       <Typography 
         variant="body1" 

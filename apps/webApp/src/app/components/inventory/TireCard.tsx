@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Card,
   CardContent,
@@ -12,7 +11,6 @@ import {
   Stack,
   Tooltip,
   useTheme,
-  alpha,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -21,7 +19,7 @@ import {
   Visibility as ViewIcon,
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
-import { ITire } from '@gt-automotive/shared-interfaces';
+import { TireResponseDto as ITire } from '@gt-automotive/shared-dto';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',

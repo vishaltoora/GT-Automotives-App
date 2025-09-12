@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -29,7 +29,7 @@ import {
 import {
   ITireCreateInput,
   ITireUpdateInput,
-} from '@gt-automotive/shared-interfaces';
+} from '@gt-automotive/shared-dto';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',
@@ -77,8 +77,8 @@ export function TireFormSimple() {
   const [formData, setFormData] = useState({
     brand: '',
     size: '',
-    type: TireType.ALL_SEASON,
-    condition: TireCondition.NEW,
+    type: TireType.ALL_SEASON as TireType,
+    condition: TireCondition.NEW as TireCondition,
     quantity: 0,
     price: 0,
     cost: isAdmin ? 0 : undefined,
@@ -103,8 +103,8 @@ export function TireFormSimple() {
       setFormData({
         brand: tire.brand || '',
         size: tire.size || '',
-        type: tire.type || TireType.ALL_SEASON,
-        condition: tire.condition || TireCondition.NEW,
+        type: (tire.type as TireType) || TireType.ALL_SEASON,
+        condition: (tire.condition as TireCondition) || TireCondition.NEW,
         quantity: tire.quantity || 0,
         price: tire.price || 0,
         cost: tire.cost || 0,
@@ -120,7 +120,6 @@ export function TireFormSimple() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.brand.trim()) newErrors.brand = 'Brand is required';
-    if (!formData.model.trim()) newErrors.model = 'Model is required';
     if (!formData.size.trim()) newErrors.size = 'Size is required';
     if (formData.quantity < 0) newErrors.quantity = 'Quantity cannot be negative';
     if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
@@ -217,7 +216,7 @@ export function TireFormSimple() {
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           {/* Basic Information */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -226,7 +225,7 @@ export function TireFormSimple() {
                 
                 <Grid container spacing={2}>
                   {/* Brand */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       label="Brand *"
@@ -237,20 +236,9 @@ export function TireFormSimple() {
                     />
                   </Grid>
 
-                  {/* Model */}
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Model *"
-                      value={formData.model}
-                      onChange={(e) => handleChange('model', e.target.value)}
-                      error={!!errors.model}
-                      helperText={errors.model}
-                    />
-                  </Grid>
 
                   {/* Size */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       label="Size *"
@@ -263,7 +251,7 @@ export function TireFormSimple() {
                   </Grid>
 
                   {/* Type */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>Type *</InputLabel>
                       <Select
@@ -281,7 +269,7 @@ export function TireFormSimple() {
                   </Grid>
 
                   {/* Condition */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>Condition *</InputLabel>
                       <Select
@@ -299,7 +287,7 @@ export function TireFormSimple() {
                   </Grid>
 
                   {/* Location */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       label="Storage Location"
@@ -318,7 +306,7 @@ export function TireFormSimple() {
 
                 <Grid container spacing={2}>
                   {/* Quantity */}
-                  <Grid item xs={12} sm={4}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       label="Quantity *"
@@ -332,7 +320,7 @@ export function TireFormSimple() {
                   </Grid>
 
                   {/* Min Stock */}
-                  <Grid item xs={12} sm={4}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       label="Minimum Stock Level"
@@ -344,7 +332,7 @@ export function TireFormSimple() {
                   </Grid>
 
                   {/* Price */}
-                  <Grid item xs={12} sm={4}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       label="Selling Price *"
@@ -362,7 +350,7 @@ export function TireFormSimple() {
 
                   {/* Cost (Admin only) */}
                   {isAdmin && (
-                    <Grid item xs={12} sm={4}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
                       <TextField
                         fullWidth
                         label="Cost"
@@ -397,7 +385,7 @@ export function TireFormSimple() {
           </Grid>
 
           {/* Preview */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -405,7 +393,7 @@ export function TireFormSimple() {
                 </Typography>
                 <Stack spacing={1}>
                   <Typography variant="subtitle1">
-                    {formData.brand} {formData.model}
+                    {formData.brand} - {formData.size}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {formData.size}

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
-import { Tire, Prisma, TireType, TireCondition } from '@prisma/client';
+import { Tire, Prisma, TireType } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
-import { TireDto, TireFiltersDto, TireSearchDto, TireSearchResultDto } from '@gt-automotive/shared-interfaces';
+import { TireDto, TireFiltersDto, TireSearchDto, TireSearchResultDto } from '@gt-automotive/shared-dto';
 
 @Injectable()
 export class TireRepository extends BaseRepository<Tire> {
@@ -49,20 +49,22 @@ export class TireRepository extends BaseRepository<Tire> {
 
   async search(params: TireSearchDto): Promise<TireSearchResultDto> {
     const {
-      filters,
       search,
       sortBy = 'updatedAt',
       sortOrder = 'desc',
       page = 1,
       limit = 20,
+      ...filterParams
     } = params;
+    
+    // Use the filter params directly from TireSearchDto which extends TireFiltersDto
 
     // Ensure page and limit are numbers
     const pageNumber = typeof page === 'string' ? parseInt(page, 10) : page;
     const limitNumber = typeof limit === 'string' ? parseInt(limit, 10) : limit;
 
     const skip = (pageNumber - 1) * limitNumber;
-    const where = this.buildWhereClause(filters, search);
+    const where = this.buildWhereClause(filterParams, search);
 
     const [items, total] = await Promise.all([
       this.prisma.tire.findMany({
@@ -74,11 +76,13 @@ export class TireRepository extends BaseRepository<Tire> {
       this.prisma.tire.count({ where }),
     ]);
 
-    // Convert Prisma Decimal to number for compatibility with TireDto
+    // Convert Prisma Decimal to number and handle null/undefined for compatibility with TireDto
     const convertedItems: TireDto[] = items.map(tire => ({
       ...tire,
       price: parseFloat(tire.price.toString()),
       cost: tire.cost ? parseFloat(tire.cost.toString()) : undefined,
+      location: tire.location || undefined, // Convert null to undefined
+      imageUrl: tire.imageUrl || undefined, // Convert null to undefined
     }));
 
     return {

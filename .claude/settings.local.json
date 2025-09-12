@@ -162,7 +162,12 @@
       "Bash(az webapp config set:*)",
       "Bash(az webapp log tail:*)",
       "Bash(az webapp restart:*)",
-      "Bash(./.claude/scripts/git-workflows-enhanced.sh:*)"
+      "Bash(./.claude/scripts/git-workflows-enhanced.sh:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(for:*)",
+      "Bash(do echo \"Fixing $file\")",
+      "Bash(npm run lint:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

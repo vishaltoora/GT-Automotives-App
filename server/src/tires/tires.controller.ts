@@ -19,7 +19,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import type {
+import {
   CreateTireDto,
   UpdateTireDto,
   StockAdjustmentDto,
@@ -28,7 +28,7 @@ import type {
   TireSearchResultDto,
   InventoryReportDto,
   TireFiltersDto,
-} from '@gt-automotive/shared-interfaces';
+} from '@gt-automotive/shared-dto';
 
 @Controller('api/tires')
 export class TiresController {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -25,7 +25,7 @@ import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
-import { ITireFilters } from '@gt-automotive/shared-interfaces';
+import { TireFiltersDto } from '@gt-automotive/shared-dto';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',
@@ -48,8 +48,8 @@ type TireCondition = typeof TireCondition[keyof typeof TireCondition];
 import { useTireBrands, useTireSizeSuggestions } from '../../hooks/useTires';
 
 interface TireFilterProps {
-  filters: ITireFilters;
-  onChange: (filters: ITireFilters) => void;
+  filters: TireFiltersDto;
+  onChange: (filters: TireFiltersDto) => void;
   onClear: () => void;
   isCompact?: boolean;
 }
@@ -84,7 +84,7 @@ export function TireFilter({ filters, onChange, onClear, isCompact = false }: Ti
     ]);
   }, [filters.minPrice, filters.maxPrice]);
 
-  const handleFilterChange = (key: keyof ITireFilters, value: any) => {
+  const handleFilterChange = (key: keyof TireFiltersDto, value: any) => {
     onChange({
       ...filters,
       [key]: value,
@@ -129,14 +129,6 @@ export function TireFilter({ filters, onChange, onClear, isCompact = false }: Ti
         />
       </FormControl>
 
-      {/* Model Search */}
-      <TextField
-        fullWidth
-        label="Model"
-        placeholder="Enter tire model"
-        value={filters.model || ''}
-        onChange={(e) => handleFilterChange('model', e.target.value || undefined)}
-      />
 
       {/* Size Search with Suggestions */}
       <FormControl fullWidth>

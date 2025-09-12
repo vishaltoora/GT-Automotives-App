@@ -77,7 +77,7 @@ export const FeatureHighlight: React.FC<FeatureHighlightProps> = ({
         {/* Features Grid */}
         <Grid container spacing={{ xs: 3, md: 4 }}>
           {features.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={gridColumns} key={index}>
+            <Grid size={{ xs: 12, sm: 6, md: gridColumns }} key={index}>
               <Stack
                 spacing={2}
                 sx={{

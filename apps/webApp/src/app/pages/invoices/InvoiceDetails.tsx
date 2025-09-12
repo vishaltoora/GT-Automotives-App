@@ -22,7 +22,6 @@ import {
   Print as PrintIcon,
   Payment as PaymentIcon,
   Cancel as CancelIcon,
-  Email as EmailIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { useAuth } from '../../hooks/useAuth';
@@ -31,7 +30,7 @@ import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, role } = useAuth();
+  const { role, isStaff, isAdmin } = useAuth();
   const { confirmCancel } = useConfirmationHelpers();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,9 +95,6 @@ const InvoiceDetails: React.FC = () => {
     }).format(amount);
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
-  };
 
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString();
@@ -121,7 +117,7 @@ const InvoiceDetails: React.FC = () => {
     }
   };
 
-  const canManageInvoice = user?.role === 'STAFF' || user?.role === 'ADMIN';
+  const canManageInvoice = isStaff || isAdmin;
 
   if (loading) {
     return (
@@ -208,7 +204,7 @@ const InvoiceDetails: React.FC = () => {
             <Chip
               label={invoice.status}
               color={getStatusColor(invoice.status)}
-              size="large"
+              size="medium"
               sx={{ mb: 1 }}
             />
             {invoice.paymentMethod && (

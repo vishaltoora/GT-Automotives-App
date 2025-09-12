@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useAuth } from '@clerk/clerk-react';
 import { getEnvVar } from '../utils/env';
 
 const API_URL = getEnvVar('VITE_API_URL', 'http://localhost:3000');
