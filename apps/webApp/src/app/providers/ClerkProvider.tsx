@@ -1,6 +1,5 @@
 import React from 'react';
 import { ClerkProvider as ClerkProviderBase } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
 import { MockClerkProvider } from './MockClerkProvider';
 import { getEnvVar } from '../utils/env';
 
@@ -13,8 +12,6 @@ interface ClerkProviderProps {
 }
 
 export function ClerkProvider({ children }: ClerkProviderProps) {
-  const navigate = useNavigate();
-  
   // In development without Clerk keys, use mock provider
   if (!publishableKey) {
     console.warn('Clerk Publishable Key not found. Running in development mode without authentication.');
@@ -25,7 +22,8 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
   const getClerkProps = () => {
     const props: any = {
       publishableKey,
-      navigate: (to: string) => navigate(to),
+      // Remove navigate prop to let Clerk handle its own navigation
+      // This prevents unwanted page reloads during authentication
       appearance: {
         elements: {
           formButtonPrimary: {
