@@ -1,0 +1,96 @@
+{
+  "repository": {
+    "owner": "vishaltoora",
+    "name": "GT-Automotives-App",
+    "mainBranch": "main",
+    "protectedBranches": ["main", "production"],
+    "defaultRemote": "origin"
+  },
+  "workflows": {
+    "autoDeployOnMerge": true,
+    "requirePRApproval": false,
+    "runTestsBeforeMerge": true,
+    "deleteFeatureBranchAfterMerge": true,
+    "squashMergeByDefault": false
+  },
+  "commitConvention": {
+    "enabled": true,
+    "types": {
+      "feat": "New feature",
+      "fix": "Bug fix",
+      "docs": "Documentation changes",
+      "style": "Code style changes",
+      "refactor": "Code refactoring",
+      "test": "Test changes",
+      "chore": "Maintenance tasks",
+      "perf": "Performance improvements",
+      "build": "Build system changes",
+      "ci": "CI/CD changes",
+      "revert": "Revert previous commit"
+    },
+    "scopes": [
+      "frontend",
+      "backend",
+      "shared",
+      "database",
+      "auth",
+      "ui",
+      "api",
+      "deployment"
+    ]
+  },
+  "prTemplate": {
+    "enabled": true,
+    "sections": [
+      "## Summary",
+      "## Changes",
+      "## Testing",
+      "## Screenshots (if applicable)",
+      "## Checklist",
+      "- [ ] Code follows project style guidelines",
+      "- [ ] Tests have been added/updated",
+      "- [ ] Documentation has been updated",
+      "- [ ] No console errors or warnings",
+      "- [ ] Changes are backwards compatible"
+    ]
+  },
+  "deployment": {
+    "production": {
+      "branch": "main",
+      "url": "https://gt-automotives.com",
+      "autoDeployEnabled": true,
+      "provider": "github-actions"
+    },
+    "staging": {
+      "branch": "staging",
+      "url": "https://staging.gt-automotives.com",
+      "autoDeployEnabled": false
+    }
+  },
+  "hooks": {
+    "preCommit": {
+      "enabled": true,
+      "commands": [
+        "yarn lint",
+        "yarn typecheck"
+      ]
+    },
+    "preMerge": {
+      "enabled": true,
+      "commands": [
+        "yarn test",
+        "yarn build"
+      ]
+    }
+  },
+  "aliases": {
+    "qc": "quick-commit",
+    "feat": "feature",
+    "sc": "smart-commit",
+    "pr": "pr",
+    "merge": "merge-main",
+    "hf": "hotfix",
+    "gs": "status",
+    "rel": "release"
+  }
+}

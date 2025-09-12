@@ -144,7 +144,9 @@
       "Bash(git rm:*)",
       "Bash(az container restart:*)",
       "Bash(az container:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(./.claude/scripts/git-workflows.sh status)",
+      "Bash(./.claude/scripts/git-workflows.sh quick-commit:*)"
     ],
     "deny": [],
     "ask": []

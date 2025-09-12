@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview
 - **[Project Overview](.claude/docs/project-overview.md)** - Application summary, status, and roadmap
 - **[Authentication](.claude/docs/authentication.md)** - Clerk setup, user roles, and permissions
+- **[Clerk Custom Domain Setup](.claude/docs/clerk-custom-domain-setup.md)** - Complete guide for Clerk custom domain configuration ⭐ NEW
+- **[Authentication Troubleshooting](.claude/docs/authentication-troubleshooting.md)** - Complete guide for resolving authentication issues ⭐ NEW
 - **[User Management](.claude/docs/user-management.md)** - Complete user management system documentation
 - **[API Documentation](.claude/docs/api-documentation.md)** - Comprehensive REST API reference
 - **[Grid Modernization](.claude/docs/grid-modernization.md)** - Material-UI Grid updates and best practices
@@ -17,11 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[UI Components](.claude/docs/ui-components.md)** - Component documentation and usage guidelines
 - **[Business Rules](.claude/docs/business-rules.md)** - Requirements and domain logic
 - **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
-- **[Lightsail Deployment Plan](.claude/docs/lightsail-deployment-plan.md)** - AWS Lightsail deployment architecture and CI/CD setup
 - **[Azure Deployment Plan](.claude/docs/azure-deployment-plan.md)** - Azure App Service deployment architecture and configuration
 - **[Azure Implementation Guide](.claude/docs/azure-implementation-guide.md)** - Step-by-step Azure deployment implementation
-- **[Cloudflare Setup](.claude/docs/cloudflare-setup.md)** - HTTPS/SSL configuration with Cloudflare CDN
-- **[Cloudflare HTTPS Integration](.claude/docs/cloudflare-https-integration.md)** - Complete HTTPS setup guide and troubleshooting
 - **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
@@ -50,16 +49,18 @@ yarn dev
 ```
 
 ## 📊 Current Status
-- **Production URL:** https://gt-automotives.com ✅ (HTTPS Enabled)
+- **Production URL:** https://gt-automotives.com ✅ (HTTPS + Custom Auth Domain)
 - **Production WWW:** https://www.gt-automotives.com ✅
 - **Backend API:** http://gt-backend.eastus.azurecontainer.io:3000 ✅
-- **Direct Azure URL:** https://gtautomotiveweb3007b23f.z9.web.core.windows.net/ ✅
+- **Frontend Hosting:** Azure Web App (gt-automotives-frontend.azurewebsites.net) ✅
+- **Authentication:** Clerk Custom Domain (clerk.gt-automotives.com) ✅
 - **Progress:** 6 of 8 Epics Complete (75%)
 - **Next:** EPIC-06 - Appointment Scheduling
 - **Dev Frontend:** http://localhost:4200 (with Clerk Auth)
 - **Dev Backend:** http://localhost:3000/api
 - **Admin User:** vishal.alawalpuria@gmail.com
-- **SSL/CDN:** Cloudflare (Flexible SSL Mode)
+- **SSL/DNS:** Namecheap DNS + Azure SSL + Clerk Certificates
+- **Deployment:** GitHub Actions CI/CD ✅
 
 ## 🔑 Key Information
 
@@ -109,6 +110,18 @@ yarn test          # Run tests
 ---
 
 ## 🔄 Recent Updates
+
+### September 11, 2025 - Production Deployment Complete with Custom Auth Domain ✅
+- ✅ **Azure Web App Deployment**: Migrated from Azure Storage to Web App Service for better reliability
+- ✅ **GitHub Actions CI/CD**: Automated deployment pipeline with proper Nx monorepo build support
+- ✅ **Clerk Custom Domain Setup**: Successfully configured clerk.gt-automotives.com with full DNS verification
+- ✅ **DNS Configuration**: Added 5 CNAME records in Namecheap for complete Clerk integration
+- ✅ **SSL Certificates**: Automatic SSL provisioning for custom authentication domain
+- ✅ **TypeScript Build Fixes**: Resolved Prisma type imports for CI/CD compatibility
+- ✅ **Workflow Conflict Resolution**: Removed old conflicting deployment workflows
+- ✅ **GitHub Secrets Management**: Configured production secrets for secure deployment
+- ✅ **Authentication Working**: Full production authentication with custom domain operational
+- ✅ **Documentation Updates**: Created comprehensive guides for Clerk custom domain and troubleshooting
 
 ### September 9, 2025 - Complete Production HTTPS Deployment ✅
 - ✅ **Custom Domain HTTPS**: Successfully configured https://gt-automotives.com with SSL
@@ -212,5 +225,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated: September 9, 2025 - Complete production deployment with custom domain HTTPS successfully working
+**Last Updated: September 11, 2025 - Complete production system with full Clerk custom domain authentication operational**
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.
