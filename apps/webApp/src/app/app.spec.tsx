@@ -63,11 +63,13 @@ describe('App', () => {
   });
 
   it('should render without crashing', () => {
-    const { container } = render(
+    const { getByTestId } = render(
       <BrowserRouter>
-        <App />
+        <div data-testid="app-container">
+          <App />
+        </div>
       </BrowserRouter>
     );
-    expect(container.firstElementChild).toBeTruthy();
+    expect(getByTestId('app-container')).toBeTruthy();
   });
 });
