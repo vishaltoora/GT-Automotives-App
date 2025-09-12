@@ -117,14 +117,15 @@ jobs:
           --name ${{ env.BACKEND_APP_NAME }} \
           --settings \
             WEBSITE_NODE_DEFAULT_VERSION="~20" \
-            SCM_DO_BUILD_DURING_DEPLOYMENT="true" \
-            WEBSITE_RUN_FROM_PACKAGE="1"
+            SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
+            WEBSITE_RUN_FROM_PACKAGE="1" \
+            WEBSITES_CONTAINER_START_TIME_LIMIT="1800"
         
         # Set startup command
         az webapp config set \
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --name ${{ env.BACKEND_APP_NAME }} \
-          --startup-file "node main.js"
+          --startup-file "npm start"
 
     - name: Deploy backend to App Service
       run: |
