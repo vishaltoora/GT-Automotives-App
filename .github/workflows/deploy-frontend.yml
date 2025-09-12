@@ -33,7 +33,7 @@ jobs:
       run: |
         yarn build:web
       env:
-        VITE_API_URL: http://gt-backend.eastus.azurecontainer.io:3000
+        VITE_API_URL: https://gt-automotives.com/api
         VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
 
     - name: Create deployment package
