@@ -146,7 +146,8 @@
       "Bash(az container:*)",
       "Bash(timeout:*)",
       "Bash(./.claude/scripts/git-workflows.sh status)",
-      "Bash(./.claude/scripts/git-workflows.sh quick-commit:*)"
+      "Bash(./.claude/scripts/git-workflows.sh quick-commit:*)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require\" yarn db:seed)"
     ],
     "deny": [],
     "ask": []

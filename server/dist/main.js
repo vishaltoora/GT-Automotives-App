@@ -5049,6 +5049,7 @@ exports.HealthController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
 const health_service_1 = __webpack_require__(70);
+const public_decorator_1 = __webpack_require__(20);
 let HealthController = class HealthController {
     constructor(healthService) {
         this.healthService = healthService;
@@ -5062,12 +5063,14 @@ let HealthController = class HealthController {
 };
 exports.HealthController = HealthController;
 tslib_1.__decorate([
+    (0, public_decorator_1.Public)(),
     (0, common_1.Get)(),
     tslib_1.__metadata("design:type", Function),
     tslib_1.__metadata("design:paramtypes", []),
     tslib_1.__metadata("design:returntype", Promise)
 ], HealthController.prototype, "check", null);
 tslib_1.__decorate([
+    (0, public_decorator_1.Public)(),
     (0, common_1.Get)('detailed'),
     tslib_1.__metadata("design:type", Function),
     tslib_1.__metadata("design:paramtypes", []),
@@ -5260,3 +5263,4 @@ bootstrap();
 
 /******/ })()
 ;
+//# sourceMappingURL=main.js.map
