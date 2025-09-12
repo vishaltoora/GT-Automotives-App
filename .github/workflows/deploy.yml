@@ -1,0 +1,277 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number to deploy (e.g., build-20241212-143052-abc1234)'
+        required: true
+        type: string
+      deploy_frontend:
+        description: 'Deploy Frontend'
+        required: true
+        default: true
+        type: boolean
+      deploy_backend:
+        description: 'Deploy Backend'
+        required: true
+        default: true
+        type: boolean
+      run_migrations:
+        description: 'Run database migrations'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  RESOURCE_GROUP: gt-automotives-prod
+  FRONTEND_APP_NAME: gt-automotives-frontend
+  BACKEND_APP_NAME: gt-automotives-backend
+
+jobs:
+  validate-build:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend-artifact: ${{ steps.validate.outputs.frontend-artifact }}
+      backend-artifact: ${{ steps.validate.outputs.backend-artifact }}
+      build-valid: ${{ steps.validate.outputs.build-valid }}
+    
+    steps:
+    - name: Validate build number format
+      id: validate
+      run: |
+        BUILD_NUMBER="${{ github.event.inputs.build_number }}"
+        
+        # Validate format: build-YYYYMMDD-HHMMSS-shortsha
+        if [[ $BUILD_NUMBER =~ ^build-[0-9]{8}-[0-9]{6}-[a-f0-9]{7}$ ]]; then
+          echo "✅ Build number format is valid: $BUILD_NUMBER"
+          echo "build-valid=true" >> $GITHUB_OUTPUT
+          echo "frontend-artifact=frontend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "backend-artifact=backend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Invalid build number format: $BUILD_NUMBER"
+          echo "Expected format: build-YYYYMMDD-HHMMSS-shortsha"
+          echo "Example: build-20241212-143052-abc1234"
+          echo "build-valid=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Check artifact availability
+      run: |
+        echo "🔍 Checking if artifacts exist for build: ${{ github.event.inputs.build_number }}"
+        echo "Will look for:"
+        echo "- Frontend: ${{ steps.validate.outputs.frontend-artifact }}"
+        echo "- Backend: ${{ steps.validate.outputs.backend-artifact }}"
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: validate-build
+    if: github.event.inputs.deploy_backend == 'true'
+    
+    steps:
+    - name: Download backend artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ needs.validate-build.outputs.backend-artifact }}
+        path: ./backend-deploy
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Run database migrations
+      if: github.event.inputs.run_migrations == 'true'
+      run: |
+        echo "🗄️ Running database migrations..."
+        
+        # Extract and prepare migration files
+        cd backend-deploy
+        unzip -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
+        
+        # Install Prisma CLI temporarily
+        npm install -g prisma
+        
+        # Run migrations
+        export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+        
+        if [ -f "prisma/schema.prisma" ]; then
+          echo "📋 Found Prisma schema, running migrations..."
+          prisma migrate deploy --schema=prisma/schema.prisma
+          echo "✅ Migrations completed successfully"
+        else
+          echo "⚠️ No Prisma schema found, skipping migrations"
+        fi
+        
+        cd ..
+
+    - name: Deploy backend to App Service
+      run: |
+        echo "🚀 Deploying backend build: ${{ github.event.inputs.build_number }}"
+        
+        cd backend-deploy
+        
+        # Deploy to Azure App Service
+        az webapp deploy \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.BACKEND_APP_NAME }} \
+          --src-path ${{ needs.validate-build.outputs.backend-artifact }}.zip \
+          --type zip
+        
+        echo "✅ Backend deployment completed"
+
+    - name: Restart backend App Service
+      run: |
+        echo "🔄 Restarting backend App Service..."
+        az webapp restart \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.BACKEND_APP_NAME }}
+        
+        echo "✅ Backend restarted successfully"
+
+    - name: Verify backend deployment
+      run: |
+        echo "🔍 Verifying backend deployment..."
+        
+        # Wait for restart to complete
+        sleep 30
+        
+        # Test health endpoint
+        BACKEND_URL="https://${{ env.BACKEND_APP_NAME }}.azurewebsites.net"
+        
+        echo "Testing: $BACKEND_URL/health"
+        
+        for i in {1..5}; do
+          if curl -f -s "$BACKEND_URL/health" > /dev/null; then
+            echo "✅ Backend is responding (attempt $i)"
+            break
+          else
+            echo "⏳ Backend not ready, waiting... (attempt $i/5)"
+            sleep 15
+          fi
+        done
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: [validate-build, deploy-backend]
+    if: always() && github.event.inputs.deploy_frontend == 'true' && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    
+    steps:
+    - name: Download frontend artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ needs.validate-build.outputs.frontend-artifact }}
+        path: ./frontend-deploy
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy frontend to App Service
+      run: |
+        echo "🌐 Deploying frontend build: ${{ github.event.inputs.build_number }}"
+        
+        cd frontend-deploy
+        
+        # Deploy to Azure App Service
+        az webapp deploy \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.FRONTEND_APP_NAME }} \
+          --src-path ${{ needs.validate-build.outputs.frontend-artifact }}.zip \
+          --type zip
+        
+        echo "✅ Frontend deployment completed"
+
+    - name: Restart frontend App Service
+      run: |
+        echo "🔄 Restarting frontend App Service..."
+        az webapp restart \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.FRONTEND_APP_NAME }}
+        
+        echo "✅ Frontend restarted successfully"
+
+    - name: Verify frontend deployment
+      run: |
+        echo "🔍 Verifying frontend deployment..."
+        
+        # Wait for restart to complete
+        sleep 30
+        
+        # Test main site
+        FRONTEND_URL="https://gt-automotives.com"
+        
+        echo "Testing: $FRONTEND_URL/health"
+        
+        for i in {1..5}; do
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL/health" || echo "000")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Frontend is responding (attempt $i)"
+            break
+          else
+            echo "⏳ Frontend not ready (HTTP $HTTP_CODE), waiting... (attempt $i/5)"
+            sleep 15
+          fi
+        done
+
+  deployment-summary:
+    runs-on: ubuntu-latest
+    needs: [validate-build, deploy-backend, deploy-frontend]
+    if: always()
+    
+    steps:
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Build Number:** \`${{ github.event.inputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployment Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Backend status
+        if [ "${{ github.event.inputs.deploy_backend }}" = "true" ]; then
+          if [ "${{ needs.deploy-backend.result }}" = "success" ]; then
+            echo "✅ **Backend:** Deployed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Backend:** Deployment failed" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "⏭️ **Backend:** Skipped" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Frontend status
+        if [ "${{ github.event.inputs.deploy_frontend }}" = "true" ]; then
+          if [ "${{ needs.deploy-frontend.result }}" = "success" ]; then
+            echo "✅ **Frontend:** Deployed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Frontend:** Deployment failed" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "⏭️ **Frontend:** Skipped" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Migration status
+        if [ "${{ github.event.inputs.run_migrations }}" = "true" ]; then
+          echo "✅ **Database:** Migrations executed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⏭️ **Database:** Migrations skipped" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Production URLs" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend:** https://gt-automotives.com" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend:** https://gt-automotives-backend.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend Health:** https://gt-automotives-backend.azurewebsites.net/health" >> $GITHUB_STEP_SUMMARY
+
+    - name: Notify deployment completion
+      run: |
+        if [ "${{ needs.deploy-backend.result }}" = "success" ] && [ "${{ needs.deploy-frontend.result }}" = "success" ]; then
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 Site: https://gt-automotives.com"
+          echo "🏗️ Build: ${{ github.event.inputs.build_number }}"
+        else
+          echo "⚠️ Deployment completed with some issues"
+          echo "Check the logs above for details"
+        fi
