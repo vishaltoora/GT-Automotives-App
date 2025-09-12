@@ -188,11 +188,11 @@ jobs:
       run: |
         echo "📦 Creating backend deployment package..."
         
-        # Create deployment directory
-        mkdir -p backend-deploy
+        # Create deployment directory matching Azure's expected structure
+        mkdir -p backend-deploy/server/dist
         
-        # Copy built server files
-        cp -r server/dist/* backend-deploy/
+        # Copy built server files to Azure's expected location
+        cp -r server/dist/* backend-deploy/server/dist/
         
         # Create minimal production package.json for Azure App Service
         cat > backend-deploy/package.json << 'EOF'
@@ -200,9 +200,9 @@ jobs:
           "name": "gt-automotives-backend",
           "version": "${{ steps.build-info.outputs.build-number }}",
           "description": "GT Automotive Backend API",
-          "main": "main.js",
+          "main": "server/dist/main.js",
           "scripts": {
-            "start": "node main.js"
+            "start": "node server/dist/main.js"
           },
           "engines": {
             "node": ">=20"
@@ -214,22 +214,19 @@ jobs:
         echo "🔧 Generating Prisma client for deployment..."
         cd backend-deploy
         
-        # Copy Prisma schema
+        # Copy Prisma schema to root for generation
         mkdir -p prisma
         cp ../libs/database/src/lib/prisma/schema.prisma prisma/
+        cp -r ../libs/database/src/lib/prisma/migrations prisma/ 2>/dev/null || echo "No migrations directory found"
         
         # Install minimal dependencies needed for Prisma generation
-        npm init -y > /dev/null 2>&1
         npm install --production --no-package-lock @prisma/client prisma > /dev/null 2>&1
         
-        # Generate Prisma client
+        # Generate Prisma client (this will create node_modules/.prisma/client)
         npx prisma generate --schema=./prisma/schema.prisma
         
-        # Clean up npm files to reduce package size
-        rm -rf package-lock.json
-        
-        # Copy migrations for runtime
-        cp -r ../libs/database/src/lib/prisma/migrations prisma/ 2>/dev/null || echo "No migrations directory found"
+        # Clean up package-lock.json to reduce package size
+        rm -f package-lock.json
         
         cd ..
         
