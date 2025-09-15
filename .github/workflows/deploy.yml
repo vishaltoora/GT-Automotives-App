@@ -373,6 +373,10 @@ jobs:
       run: |
         echo "🔍 Verifying container deployment..."
         
+        # Check container status before testing
+        echo "🔍 Checking container status..."
+        az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "{state: instanceView.state, restartCount: instanceView.restartCount, events: instanceView.events}" --output table || true
+        
         # Wait for container to start
         sleep 60
         
@@ -381,6 +385,10 @@ jobs:
         echo "Testing: $CONTAINER_URL/health"
         
         for i in {1..10}; do
+          # Check container status on each attempt
+          echo "📊 Container status (attempt $i):"
+          az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "instanceView.state" --output tsv || echo "Status check failed"
+          
           if curl -f -s "$CONTAINER_URL/health" > /dev/null; then
             echo "✅ Container backend is responding (attempt $i)"
             
@@ -391,13 +399,24 @@ jobs:
             break
           else
             echo "⏳ Container not ready, waiting... (attempt $i/10)"
+            
+            # Show container logs if it's failing
+            if [ $i -eq 5 ]; then
+              echo "🔍 Mid-deployment container logs:"
+              az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} || echo "Could not retrieve logs"
+            fi
+            
             sleep 30
           fi
         done
         
-        # Check container logs for any issues
-        echo "📋 Container logs (last 20 lines):"
-        az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --tail 20
+        # Always check container logs for debugging
+        echo "📋 Final container logs:"
+        az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} || echo "Could not retrieve container logs"
+        
+        # Show container events for debugging
+        echo "📋 Container events:"
+        az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "instanceView.events[*].[message,timeStamp]" --output table || echo "Could not retrieve container events"
 
   deploy-frontend:
     runs-on: ubuntu-latest
