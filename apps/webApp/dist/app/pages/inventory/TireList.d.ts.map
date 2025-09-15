@@ -1,1 +1,0 @@
-{"version":3,"file":"TireList.d.ts","sourceRoot":"","sources":["../../../../src/app/pages/inventory/TireList.tsx"],"names":[],"mappings":"AA+DA,UAAU,aAAa;IACrB,OAAO,CAAC,EAAE,MAAM,GAAG,SAAS,CAAC;IAC7B,WAAW,CAAC,EAAE,OAAO,CAAC;IACtB,QAAQ,CAAC,EAAE,OAAO,CAAC;CACpB;AAUD,wBAAgB,QAAQ,CAAC,EACvB,OAAgB,EAChB,WAAkB,EAClB,QAAgB,EACjB,EAAE,aAAa,2CA8df;AAED,eAAe,QAAQ,CAAC"}

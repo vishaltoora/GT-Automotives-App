@@ -5,20 +5,31 @@ import { getEnvVar } from '../utils/env';
 
 // Custom domain setup - let Clerk handle JS loading automatically
 
-// Direct debugging - check if import.meta.env is available and what's in it
-console.log('🔍 Debugging Clerk Environment Variables:');
-
-// Direct access without getEnvVar to see what's happening
-// @ts-ignore
-const directKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-console.log('📋 Direct access to VITE_CLERK_PUBLISHABLE_KEY:', directKey || 'UNDEFINED');
-
-// @ts-ignore
-console.log('📋 All import.meta.env:', import.meta.env);
-
-// Try the getEnvVar function
+// Get the publishable key using our env utility
 const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
-console.log('📋 getEnvVar result:', publishableKey || 'NOT_FOUND');
+
+// Debug logging in browser only
+if (typeof window !== 'undefined') {
+  console.log('🔍 Clerk Environment Debug:');
+  console.log('📋 publishableKey from getEnvVar:', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND');
+  
+  // Try direct eval access for debugging
+  try {
+    const directKey = eval(`
+      (function() {
+        try {
+          if (typeof import !== 'undefined' && import.meta && import.meta.env) {
+            return import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+          }
+        } catch (e) {}
+        return undefined;
+      })()
+    `);
+    console.log('📋 Direct eval access to key:', directKey ? `${directKey.substring(0, 20)}...` : 'UNDEFINED');
+  } catch (e) {
+    console.log('⚠️ Could not access import.meta.env directly');
+  }
+}
 
 interface ClerkProviderProps {
   children: React.ReactNode;
