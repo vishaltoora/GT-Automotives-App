@@ -37,8 +37,9 @@ COPY <<'EOF' ./package.json
 }
 EOF
 
-# Install dependencies and generate Prisma client
+# Install dependencies and generate Prisma client with proper WASM binaries  
 RUN npm install --production && \
+    npm install prisma@latest && \
     npx prisma generate --schema=./prisma/schema.prisma
 
 # Create proper node_modules structure for shared libraries (critical fix)

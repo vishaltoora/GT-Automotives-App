@@ -125,8 +125,9 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 # Copy deployment package (contains all necessary files)
 COPY . ./
 
-# Install dependencies and generate Prisma client
+# Install dependencies and generate Prisma client with proper WASM binaries
 RUN npm install --production && \
+    npm install prisma@latest && \
     npx prisma generate --schema=./prisma/schema.prisma
 
 # Create proper node_modules structure for shared libraries (critical architectural fix)

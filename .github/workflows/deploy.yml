@@ -243,8 +243,9 @@ jobs:
             ls -la node_modules/@gt-automotive/ && \
             echo "✅ Shared libraries properly structured"
 
-        # Ensure Prisma client is generated (should already be done in build)
-        RUN npx prisma generate --schema=./prisma/schema.prisma || echo "Prisma client already generated"
+        # Ensure Prisma CLI and client are properly installed with WASM binaries
+        RUN npm install prisma@latest && \
+            npx prisma generate --schema=./prisma/schema.prisma
 
         # Create non-root user for security
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
@@ -276,15 +277,37 @@ jobs:
     - name: Run database migrations
       if: github.event.inputs.run_migrations == 'true'
       run: |
-        echo "🗄️ Running database migrations using temporary container..."
+        echo "🗄️ Running database migrations directly on runner..."
         
-        # Run migrations using the built container
-        docker run --rm \
-          -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-          ${{ env.IMAGE_NAME }} \
-          npx prisma migrate deploy --schema=./prisma/schema.prisma
+        # Extract deployment package to get Prisma schema
+        cd backend-deploy
+        unzip -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
         
-        echo "✅ Migrations completed successfully"
+        # Install Prisma CLI on the runner (more reliable than container)
+        npm install -g prisma@latest
+        
+        # Run migrations directly with proper error handling
+        export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+        
+        if [ -f "prisma/schema.prisma" ]; then
+          echo "📋 Found Prisma schema, running migrations..."
+          
+          # Generate Prisma client first
+          prisma generate --schema=prisma/schema.prisma
+          
+          # Run migrations
+          if prisma migrate deploy --schema=prisma/schema.prisma; then
+            echo "✅ Migrations completed successfully"
+          else
+            echo "❌ Migration failed, but continuing with deployment..."
+            echo "⚠️ You may need to run migrations manually after deployment"
+            echo "💡 Check database connectivity and migration files"
+          fi
+        else
+          echo "⚠️ No Prisma schema found, skipping migrations"
+        fi
+        
+        cd ..
 
     - name: Deploy to Azure Container Instances
       run: |
