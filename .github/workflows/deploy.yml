@@ -233,19 +233,22 @@ jobs:
         # Install system dependencies for Prisma
         RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-        # Copy deployment package (already contains proper structure)
+        # Copy deployment package (already contains Prisma client from build process)
         COPY . ./
 
-        # Verify structure and install any missing production dependencies
+        # Install only production dependencies (Prisma client already generated in build)
+        RUN npm install --production --no-package-lock
+
+        # Verify deployment structure and dependencies
         RUN echo "📋 Verifying deployment structure:" && \
             ls -la && \
+            echo "🔍 Checking server files:" && \
+            ls -la server/ && \
+            echo "🔍 Checking Prisma:" && \
+            ls -la prisma/ && \
             echo "🔍 Checking node_modules structure:" && \
             ls -la node_modules/@gt-automotive/ && \
-            echo "✅ Shared libraries properly structured"
-
-        # Ensure Prisma CLI and client are properly installed with WASM binaries
-        RUN npm install prisma@latest && \
-            npx prisma generate --schema=./prisma/schema.prisma
+            echo "✅ Container deployment structure verified"
 
         # Create non-root user for security
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
