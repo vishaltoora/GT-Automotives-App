@@ -9,16 +9,11 @@ export function getEnvVar(key: string, defaultValue: string = ''): string {
     return process.env[key] || defaultValue;
   }
   
-  // In browser with Vite - use eval to avoid Jest parsing import.meta
-  try {
-    // @ts-ignore - Vite's import.meta.env
-    const viteEnv = eval('typeof import !== "undefined" && import.meta && import.meta.env');
-    if (viteEnv) {
-      // @ts-ignore
-      return viteEnv[key] || defaultValue;
-    }
-  } catch (e) {
-    // import.meta not available in test environment
+  // In browser with Vite - direct access to import.meta.env
+  // @ts-ignore - Vite's import.meta.env
+  if (import.meta && import.meta.env) {
+    // @ts-ignore
+    return import.meta.env[key] || defaultValue;
   }
   
   // Fallback

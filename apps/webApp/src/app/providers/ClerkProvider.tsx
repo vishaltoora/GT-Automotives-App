@@ -5,7 +5,20 @@ import { getEnvVar } from '../utils/env';
 
 // Custom domain setup - let Clerk handle JS loading automatically
 
+// Direct debugging - check if import.meta.env is available and what's in it
+console.log('🔍 Debugging Clerk Environment Variables:');
+
+// Direct access without getEnvVar to see what's happening
+// @ts-ignore
+const directKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+console.log('📋 Direct access to VITE_CLERK_PUBLISHABLE_KEY:', directKey || 'UNDEFINED');
+
+// @ts-ignore
+console.log('📋 All import.meta.env:', import.meta.env);
+
+// Try the getEnvVar function
 const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
+console.log('📋 getEnvVar result:', publishableKey || 'NOT_FOUND');
 
 interface ClerkProviderProps {
   children: React.ReactNode;
