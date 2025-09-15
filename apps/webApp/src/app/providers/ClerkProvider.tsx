@@ -12,6 +12,14 @@ interface ClerkProviderProps {
 }
 
 export function ClerkProvider({ children }: ClerkProviderProps) {
+  // Debug logging for production troubleshooting
+  if (typeof window !== 'undefined') {
+    console.log('🔍 Clerk Environment Debug:', {
+      publishableKey: publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND',
+      nodeEnv: typeof process !== 'undefined' ? process.env.NODE_ENV : 'unknown'
+    });
+  }
+
   // In development without Clerk keys, use mock provider
   if (!publishableKey) {
     console.warn('Clerk Publishable Key not found. Running in development mode without authentication.');

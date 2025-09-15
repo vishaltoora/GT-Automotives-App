@@ -64,8 +64,9 @@ jobs:
         echo "🌐 Building frontend..."
         yarn build:web
       env:
-        VITE_API_URL: https://gt-automotives.com
+        VITE_API_URL: https://gt-automotives.com/api
         VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
+        NODE_ENV: production
 
     - name: Build backend with container fixes
       run: |
