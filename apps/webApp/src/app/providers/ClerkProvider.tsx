@@ -5,30 +5,13 @@ import { getEnvVar } from '../utils/env';
 
 // Custom domain setup - let Clerk handle JS loading automatically
 
-// Get the publishable key using our env utility
-const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
+// TEMPORARY: Hardcode the key to test - THIS WILL BE FIXED
+const publishableKey = 'pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA';
 
 // Debug logging in browser only
 if (typeof window !== 'undefined') {
-  console.log('🔍 Clerk Environment Debug:');
-  console.log('📋 publishableKey from getEnvVar:', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND');
-  
-  // Try direct eval access for debugging
-  try {
-    const directKey = eval(`
-      (function() {
-        try {
-          if (typeof import !== 'undefined' && import.meta && import.meta.env) {
-            return import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-          }
-        } catch (e) {}
-        return undefined;
-      })()
-    `);
-    console.log('📋 Direct eval access to key:', directKey ? `${directKey.substring(0, 20)}...` : 'UNDEFINED');
-  } catch (e) {
-    console.log('⚠️ Could not access import.meta.env directly');
-  }
+  console.log('🔍 Clerk Environment Debug - HARDCODED KEY TEST:');
+  console.log('📋 publishableKey (hardcoded):', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND');
 }
 
 interface ClerkProviderProps {
