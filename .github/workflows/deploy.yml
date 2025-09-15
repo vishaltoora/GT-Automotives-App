@@ -287,8 +287,9 @@ jobs:
         rm -f build-info.json || true  # Remove any existing build-info.json
         unzip -o -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
         
-        # Install Prisma CLI on the runner (more reliable than container)
+        # Install Prisma CLI and client dependencies on the runner
         npm install -g prisma@latest
+        npm install @prisma/client@latest
         
         # Run migrations directly with proper error handling
         export DATABASE_URL="${{ secrets.DATABASE_URL }}"
@@ -296,16 +297,39 @@ jobs:
         if [ -f "prisma/schema.prisma" ]; then
           echo "📋 Found Prisma schema, running migrations..."
           
-          # Generate Prisma client first
-          prisma generate --schema=prisma/schema.prisma
+          # Create a minimal package.json for proper Prisma client generation
+          cat > package.json << 'EOF'
+        {
+          "name": "migration-temp",
+          "version": "1.0.0",
+          "dependencies": {
+            "@prisma/client": "latest",
+            "prisma": "latest"
+          }
+        }
+        EOF
+          
+          # Install dependencies locally for proper Prisma client generation
+          npm install --no-package-lock
+          
+          # Generate Prisma client with proper binary resolution
+          echo "🔧 Generating Prisma client for migrations..."
+          npx prisma generate --schema=prisma/schema.prisma
           
           # Run migrations
-          if prisma migrate deploy --schema=prisma/schema.prisma; then
+          echo "🚀 Running database migrations..."
+          if npx prisma migrate deploy --schema=prisma/schema.prisma; then
             echo "✅ Migrations completed successfully"
           else
             echo "❌ Migration failed, but continuing with deployment..."
             echo "⚠️ You may need to run migrations manually after deployment"
             echo "💡 Check database connectivity and migration files"
+            
+            # Show more detailed error information
+            echo "🔍 Database URL format check:"
+            echo "Database URL starts with: ${DATABASE_URL:0:20}..."
+            echo "🔍 Prisma client status:"
+            ls -la node_modules/@prisma/client/ 2>/dev/null || echo "Prisma client not found"
           fi
         else
           echo "⚠️ No Prisma schema found, skipping migrations"
