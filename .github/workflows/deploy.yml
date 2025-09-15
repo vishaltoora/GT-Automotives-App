@@ -282,9 +282,10 @@ jobs:
       run: |
         echo "🗄️ Running database migrations directly on runner..."
         
-        # Extract deployment package to get Prisma schema
+        # Clean and extract deployment package to get Prisma schema
         cd backend-deploy
-        unzip -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
+        rm -f build-info.json || true  # Remove any existing build-info.json
+        unzip -o -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
         
         # Install Prisma CLI on the runner (more reliable than container)
         npm install -g prisma@latest

@@ -190,7 +190,8 @@
       "Bash(./azure-deploy.sh)",
       "Bash(gt-backend:fixed)",
       "Bash(gt-backend:fixed-v2)",
-      "Bash(gt-backend:fixed-v3)"
+      "Bash(gt-backend:fixed-v3)",
+      "Bash(gh run watch:*)"
     ],
     "deny": [],
     "ask": []
