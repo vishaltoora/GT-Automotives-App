@@ -4,13 +4,16 @@ import { MockClerkProvider } from './MockClerkProvider';
 
 // Custom domain setup - let Clerk handle JS loading automatically
 
-// TEMPORARY: Hardcode the key to test - THIS WILL BE FIXED
-const publishableKey = 'pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA';
+// Direct import.meta.env access - Vite will replace this at build time
+// @ts-ignore
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 
 // Debug logging in browser only
 if (typeof window !== 'undefined') {
-  console.log('🔍 Clerk Environment Debug - HARDCODED KEY TEST:');
-  console.log('📋 publishableKey (hardcoded):', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND');
+  console.log('🔍 Clerk Environment Debug - DIRECT import.meta.env:');
+  console.log('📋 publishableKey (direct):', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND');
+  // @ts-ignore
+  console.log('📋 Raw import.meta.env.VITE_CLERK_PUBLISHABLE_KEY:', import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'UNDEFINED');
 }
 
 interface ClerkProviderProps {
