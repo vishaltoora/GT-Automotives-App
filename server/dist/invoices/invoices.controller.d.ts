@@ -9,8 +9,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        customerId: string;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -30,8 +30,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        customerId: string;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -51,8 +51,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        customerId: string;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -73,8 +73,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        customerId: string;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -94,8 +94,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        customerId: string;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -115,8 +115,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        customerId: string;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -136,8 +136,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        customerId: string;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;

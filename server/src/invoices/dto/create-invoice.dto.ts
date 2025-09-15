@@ -1,6 +1,20 @@
 import { IsString, IsOptional, IsNumber, IsArray, ValidateNested, IsEnum, Min, IsEmail } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaymentMethod, InvoiceItemType } from '@prisma/client';
+// Local enum definitions to avoid Prisma client dependency issues
+export enum PaymentMethod {
+  CASH = 'CASH',
+  CREDIT_CARD = 'CREDIT_CARD',
+  DEBIT_CARD = 'DEBIT_CARD',
+  CHECK = 'CHECK',
+  E_TRANSFER = 'E_TRANSFER',
+}
+
+export enum InvoiceItemType {
+  TIRE = 'TIRE',
+  SERVICE = 'SERVICE',
+  PART = 'PART',
+  OTHER = 'OTHER',
+}
 
 export class CreateInvoiceItemDto {
   @IsOptional()

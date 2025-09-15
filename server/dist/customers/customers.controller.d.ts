@@ -6,11 +6,11 @@ export declare class CustomersController {
     constructor(customersService: CustomersService);
     create(createCustomerDto: CreateCustomerDto, user: any): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
-        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -25,8 +25,8 @@ export declare class CustomersController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             model: string;
+            customerId: string;
             make: string;
             year: number;
             vin: string | null;
@@ -35,11 +35,11 @@ export declare class CustomersController {
         }[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
-        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -54,8 +54,8 @@ export declare class CustomersController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             model: string;
+            customerId: string;
             make: string;
             year: number;
             vin: string | null;
@@ -64,11 +64,11 @@ export declare class CustomersController {
         }[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
-        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -85,8 +85,8 @@ export declare class CustomersController {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                customerId: string;
                 model: string;
+                customerId: string;
                 make: string;
                 year: number;
                 vin: string | null;
@@ -108,36 +108,36 @@ export declare class CustomersController {
             reminderSent: boolean;
         })[];
         invoices: ({
+            items: {
+                id: string;
+                quantity: number;
+                createdAt: Date;
+                updatedAt: Date;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
+                description: string;
+                unitPrice: import(".prisma/client/runtime/library").Decimal;
+                total: import(".prisma/client/runtime/library").Decimal;
+                invoiceId: string;
+                tireId: string | null;
+            }[];
             vehicle: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                customerId: string;
                 model: string;
+                customerId: string;
                 make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
                 mileage: number | null;
             } | null;
-            items: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                description: string;
-                quantity: number;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                unitPrice: import(".prisma/client/runtime/library").Decimal;
-                total: import(".prisma/client/runtime/library").Decimal;
-                invoiceId: string;
-                tireId: string | null;
-            }[];
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             total: import(".prisma/client/runtime/library").Decimal;
+            customerId: string;
             status: import("@prisma/client").$Enums.InvoiceStatus;
             invoiceNumber: string;
             vehicleId: string | null;
@@ -157,8 +157,8 @@ export declare class CustomersController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             model: string;
+            customerId: string;
             make: string;
             year: number;
             vin: string | null;
@@ -166,11 +166,11 @@ export declare class CustomersController {
             mileage: number | null;
         }[];
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
-        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -180,8 +180,8 @@ export declare class CustomersController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             model: string;
+            customerId: string;
             make: string;
             year: number;
             vin: string | null;
@@ -190,11 +190,11 @@ export declare class CustomersController {
         }[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
-        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;

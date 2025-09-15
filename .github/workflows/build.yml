@@ -67,9 +67,9 @@ jobs:
         VITE_API_URL: https://gt-automotives.com
         VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
 
-    - name: Build backend
+    - name: Build backend with container fixes
       run: |
-        echo "🖥️ Building backend..."
+        echo "🖥️ Building backend with container deployment fixes..."
         yarn build:server
 
     - name: Create frontend deployment package
@@ -184,25 +184,42 @@ jobs:
         zip -r ../../../${{ steps.build-info.outputs.frontend-artifact }}.zip .
         cd ../../..
 
-    - name: Create backend deployment package
+    - name: Create backend deployment package with container fixes
       run: |
-        echo "📦 Creating backend deployment package..."
+        echo "📦 Creating backend deployment package with container fixes..."
         
-        # Create deployment directory matching Azure's expected structure
-        mkdir -p backend-deploy/server/dist
+        # Clean up any previous builds
+        rm -rf backend-deploy
         
-        # Copy built server files to Azure's expected location
-        cp -r server/dist/* backend-deploy/server/dist/
+        # Create deployment directory structure matching container architecture
+        mkdir -p backend-deploy/server
+        mkdir -p backend-deploy/prisma
         
-        # Create minimal production package.json for Azure App Service
+        # Copy built server files (webpack has externalized critical dependencies)
+        cp -r server/dist/* backend-deploy/server/
+        
+        # Copy Prisma schema and migrations
+        cp libs/database/src/lib/prisma/schema.prisma backend-deploy/prisma/
+        cp -r libs/database/src/lib/prisma/migrations backend-deploy/prisma/ 2>/dev/null || echo "No migrations directory found"
+        
+        # Copy shared libraries temporarily for proper node_modules structure
+        mkdir -p backend-deploy/shared-dto-temp
+        cp -r libs/shared/dto/dist/* backend-deploy/shared-dto-temp/
+        cp libs/shared/dto/package.json backend-deploy/shared-dto-package.json
+        
+        # Create production package.json with webpack externalized dependencies
         cat > backend-deploy/package.json << 'EOF'
         {
           "name": "gt-automotives-backend",
           "version": "${{ steps.build-info.outputs.build-number }}",
-          "description": "GT Automotive Backend API",
-          "main": "server/dist/main.js",
+          "description": "GT Automotive Backend API with Container Fixes",
+          "main": "server/main.js",
           "scripts": {
-            "start": "node server/dist/main.js"
+            "start": "node server/main.js"
+          },
+          "dependencies": {
+            "@prisma/client": "^5.0.0",
+            "prisma": "^5.0.0"
           },
           "engines": {
             "node": ">=20"
@@ -210,34 +227,39 @@ jobs:
         }
         EOF
         
-        # Generate Prisma client in the deployment package
-        echo "🔧 Generating Prisma client for deployment..."
+        # Generate Prisma client in deployment package
+        echo "🔧 Generating Prisma client with container-ready structure..."
         cd backend-deploy
         
-        # Copy Prisma schema to root for generation
-        mkdir -p prisma
-        cp ../libs/database/src/lib/prisma/schema.prisma prisma/
-        cp -r ../libs/database/src/lib/prisma/migrations prisma/ 2>/dev/null || echo "No migrations directory found"
-        
-        # Install minimal dependencies needed for Prisma generation
-        npm install --production --no-package-lock @prisma/client prisma > /dev/null 2>&1
-        
-        # Generate Prisma client (this will create node_modules/.prisma/client)
+        # Install dependencies and generate Prisma client
+        npm install --production --no-package-lock
         npx prisma generate --schema=./prisma/schema.prisma
         
-        # Clean up package-lock.json to reduce package size
+        # Create proper node_modules structure for shared libraries (matching container architecture)
+        echo "🔗 Setting up shared library node_modules structure..."
+        mkdir -p ./node_modules/@gt-automotive/shared-dto/dist/
+        cp -r ./shared-dto-temp/* ./node_modules/@gt-automotive/shared-dto/dist/
+        cp ./shared-dto-package.json ./node_modules/@gt-automotive/shared-dto/package.json
+        
+        # Clean up temporary files
+        rm -rf ./shared-dto-temp ./shared-dto-package.json
         rm -f package-lock.json
         
         cd ..
         
-        # Create build info file
+        # Create build info with container architecture notes
         cat > backend-deploy/build-info.json << 'EOF'
         {
           "buildNumber": "${{ steps.build-info.outputs.build-number }}",
           "commitSha": "${{ github.sha }}",
           "buildDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
           "branch": "${{ github.ref_name }}",
-          "workflow": "${{ github.workflow }}"
+          "workflow": "${{ github.workflow }}",
+          "containerFixes": {
+            "webpackExternals": "Applied for Prisma and shared-dto",
+            "nodeModulesStructure": "Manual creation for shared libraries",
+            "prismaGeneration": "Container-ready with proper externals"
+          }
         }
         EOF
         

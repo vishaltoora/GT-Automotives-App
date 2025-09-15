@@ -1,6 +1,20 @@
 import { IsString, IsOptional, IsNumber, IsArray, ValidateNested, IsEnum, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { InvoiceItemType, QuotationStatus } from '@prisma/client';
+// Local enum definitions to avoid Prisma client dependency issues
+export enum InvoiceItemType {
+  TIRE = 'TIRE',
+  SERVICE = 'SERVICE',
+  PART = 'PART',
+  OTHER = 'OTHER',
+}
+
+export enum QuotationStatus {
+  DRAFT = 'DRAFT',
+  SENT = 'SENT',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+}
 
 export class CreateQuoteItemDto {
   @IsOptional()

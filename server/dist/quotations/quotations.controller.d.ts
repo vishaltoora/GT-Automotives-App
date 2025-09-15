@@ -6,10 +6,10 @@ export declare class QuotationsController {
     constructor(quotationsService: QuotationsService);
     create(createQuoteDto: CreateQuoteDto, req: any): Promise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -24,19 +24,19 @@ export declare class QuotationsController {
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        quotationNumber: string;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
         validUntil: Date | null;
+        quotationNumber: string;
         convertedToInvoiceId: string | null;
     }>;
     findAll(): Promise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -51,19 +51,19 @@ export declare class QuotationsController {
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        quotationNumber: string;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
         validUntil: Date | null;
+        quotationNumber: string;
         convertedToInvoiceId: string | null;
     }[]>;
     search(customerName?: string, quotationNumber?: string, status?: string, startDate?: string, endDate?: string): Promise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -78,19 +78,19 @@ export declare class QuotationsController {
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        quotationNumber: string;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
         validUntil: Date | null;
+        quotationNumber: string;
         convertedToInvoiceId: string | null;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -105,19 +105,19 @@ export declare class QuotationsController {
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        quotationNumber: string;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
         validUntil: Date | null;
+        quotationNumber: string;
         convertedToInvoiceId: string | null;
     }>;
     update(id: string, updateQuoteDto: UpdateQuoteDto): Promise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -132,11 +132,11 @@ export declare class QuotationsController {
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        quotationNumber: string;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
         validUntil: Date | null;
+        quotationNumber: string;
         convertedToInvoiceId: string | null;
     }>;
     remove(id: string): Promise<void>;

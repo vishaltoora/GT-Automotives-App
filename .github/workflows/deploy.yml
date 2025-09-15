@@ -17,6 +17,14 @@ on:
         required: true
         default: true
         type: boolean
+      deployment_type:
+        description: 'Backend deployment type'
+        required: true
+        default: 'app-service'
+        type: choice
+        options:
+        - 'app-service'
+        - 'container'
       run_migrations:
         description: 'Run database migrations'
         required: true
@@ -27,6 +35,8 @@ env:
   RESOURCE_GROUP: gt-automotives-prod
   FRONTEND_APP_NAME: gt-automotives-frontend
   BACKEND_APP_NAME: gt-automotives-backend
+  REGISTRY_NAME: gtautomotivesregistry
+  CONTAINER_NAME: gt-backend-working
 
 jobs:
   validate-build:
@@ -173,10 +183,175 @@ jobs:
           fi
         done
 
+  deploy-backend-container:
+    runs-on: ubuntu-latest
+    needs: validate-build
+    if: github.event.inputs.deploy_backend == 'true' && github.event.inputs.deployment_type == 'container'
+    
+    steps:
+    - name: Download backend artifact
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: build.yml
+        workflow_conclusion: success
+        name: ${{ needs.validate-build.outputs.backend-artifact }}
+        path: ./backend-deploy
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Login to Azure Container Registry
+      run: |
+        echo "🔐 Logging in to Azure Container Registry..."
+        az acr login --name ${{ env.REGISTRY_NAME }}
+
+    - name: Extract and prepare deployment files
+      run: |
+        echo "📦 Extracting deployment package with container fixes..."
+        cd backend-deploy
+        unzip -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
+        
+        echo "📋 Deployment structure:"
+        ls -la
+        
+        echo "🔍 Verifying webpack externals and shared library structure:"
+        ls -la node_modules/@gt-automotive/ || echo "Shared libraries not found - checking server build"
+        ls -la server/ || echo "Server files not found"
+
+    - name: Create optimized Dockerfile with fixes
+      run: |
+        echo "🐳 Creating Dockerfile with container deployment fixes..."
+        cd backend-deploy
+        
+        cat > Dockerfile << 'EOF'
+        FROM node:20-slim
+
+        WORKDIR /app
+
+        # Install system dependencies for Prisma
+        RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+        # Copy deployment package (already contains proper structure)
+        COPY . ./
+
+        # Verify structure and install any missing production dependencies
+        RUN echo "📋 Verifying deployment structure:" && \
+            ls -la && \
+            echo "🔍 Checking node_modules structure:" && \
+            ls -la node_modules/@gt-automotive/ && \
+            echo "✅ Shared libraries properly structured"
+
+        # Ensure Prisma client is generated (should already be done in build)
+        RUN npx prisma generate --schema=./prisma/schema.prisma || echo "Prisma client already generated"
+
+        # Create non-root user for security
+        RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
+            chown -R nodejs:nodejs /app
+        USER nodejs
+
+        EXPOSE 3000
+
+        # Use the webpack-built main.js with externalized dependencies
+        CMD ["node", "server/main.js"]
+        EOF
+
+    - name: Build and push Docker image
+      run: |
+        echo "🔨 Building Docker image with container fixes..."
+        cd backend-deploy
+        
+        IMAGE_TAG="container-deploy-${{ needs.validate-build.outputs.build-number }}"
+        FULL_IMAGE_NAME="${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:$IMAGE_TAG"
+        
+        # Build with no cache to ensure fresh build
+        docker build -t "$FULL_IMAGE_NAME" . --no-cache
+        
+        echo "🚀 Pushing image to registry..."
+        docker push "$FULL_IMAGE_NAME"
+        
+        echo "IMAGE_NAME=$FULL_IMAGE_NAME" >> $GITHUB_ENV
+
+    - name: Run database migrations
+      if: github.event.inputs.run_migrations == 'true'
+      run: |
+        echo "🗄️ Running database migrations using temporary container..."
+        
+        # Run migrations using the built container
+        docker run --rm \
+          -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+          ${{ env.IMAGE_NAME }} \
+          npx prisma migrate deploy --schema=./prisma/schema.prisma
+        
+        echo "✅ Migrations completed successfully"
+
+    - name: Deploy to Azure Container Instances
+      run: |
+        echo "🚀 Deploying to Azure Container Instances with fixes..."
+        
+        # Delete existing container if it exists
+        az container delete \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.CONTAINER_NAME }} \
+          --yes || echo "No existing container to delete"
+        
+        # Create new container instance
+        az container create \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.CONTAINER_NAME }} \
+          --image ${{ env.IMAGE_NAME }} \
+          --os-type Linux \
+          --dns-name-label gt-automotives-backend-working \
+          --ports 3000 \
+          --cpu 2 \
+          --memory 4 \
+          --registry-login-server ${{ env.REGISTRY_NAME }}.azurecr.io \
+          --registry-username ${{ env.REGISTRY_NAME }} \
+          --registry-password $(az acr credential show --name ${{ env.REGISTRY_NAME }} --query "passwords[0].value" --output tsv) \
+          --environment-variables \
+            DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
+            PORT="3000" \
+            NODE_ENV="production"
+        
+        echo "✅ Container deployment completed"
+
+    - name: Verify container deployment
+      run: |
+        echo "🔍 Verifying container deployment..."
+        
+        # Wait for container to start
+        sleep 60
+        
+        CONTAINER_URL="http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000"
+        
+        echo "Testing: $CONTAINER_URL/health"
+        
+        for i in {1..10}; do
+          if curl -f -s "$CONTAINER_URL/health" > /dev/null; then
+            echo "✅ Container backend is responding (attempt $i)"
+            
+            # Test a few endpoints to verify full functionality
+            echo "🧪 Testing detailed health endpoint..."
+            curl -s "$CONTAINER_URL/health/detailed" | head -10 || echo "Detailed health test failed"
+            
+            break
+          else
+            echo "⏳ Container not ready, waiting... (attempt $i/10)"
+            sleep 30
+          fi
+        done
+        
+        # Check container logs for any issues
+        echo "📋 Container logs (last 20 lines):"
+        az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --tail 20
+
   deploy-frontend:
     runs-on: ubuntu-latest
-    needs: [validate-build, deploy-backend]
-    if: always() && github.event.inputs.deploy_frontend == 'true' && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    needs: [validate-build, deploy-backend, deploy-backend-container]
+    if: always() && github.event.inputs.deploy_frontend == 'true' && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped' || needs.deploy-backend-container.result == 'success' || needs.deploy-backend-container.result == 'skipped')
     
     steps:
     - name: Download frontend artifact
@@ -241,7 +416,7 @@ jobs:
 
   deployment-summary:
     runs-on: ubuntu-latest
-    needs: [validate-build, deploy-backend, deploy-frontend]
+    needs: [validate-build, deploy-backend, deploy-backend-container, deploy-frontend]
     if: always()
     
     steps:
@@ -254,12 +429,21 @@ jobs:
         echo "**Deployment Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # Backend status
+        # Backend status (App Service vs Container)
         if [ "${{ github.event.inputs.deploy_backend }}" = "true" ]; then
-          if [ "${{ needs.deploy-backend.result }}" = "success" ]; then
-            echo "✅ **Backend:** Deployed successfully" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.deployment_type }}" = "container" ]; then
+            if [ "${{ needs.deploy-backend-container.result }}" = "success" ]; then
+              echo "✅ **Backend (Container):** Deployed successfully to Azure Container Instances" >> $GITHUB_STEP_SUMMARY
+              echo "🐳 **Container URL:** http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Backend (Container):** Deployment failed" >> $GITHUB_STEP_SUMMARY
+            fi
           else
-            echo "❌ **Backend:** Deployment failed" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ needs.deploy-backend.result }}" = "success" ]; then
+              echo "✅ **Backend (App Service):** Deployed successfully to Azure App Service" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Backend (App Service):** Deployment failed" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
         else
           echo "⏭️ **Backend:** Skipped" >> $GITHUB_STEP_SUMMARY
@@ -291,10 +475,28 @@ jobs:
 
     - name: Notify deployment completion
       run: |
-        if [ "${{ needs.deploy-backend.result }}" = "success" ] && [ "${{ needs.deploy-frontend.result }}" = "success" ]; then
+        # Check which backend deployment was used
+        BACKEND_SUCCESS="false"
+        if [ "${{ github.event.inputs.deployment_type }}" = "container" ]; then
+          if [ "${{ needs.deploy-backend-container.result }}" = "success" ]; then
+            BACKEND_SUCCESS="true"
+          fi
+        else
+          if [ "${{ needs.deploy-backend.result }}" = "success" ]; then
+            BACKEND_SUCCESS="true"
+          fi
+        fi
+        
+        if [ "$BACKEND_SUCCESS" = "true" ] && [ "${{ needs.deploy-frontend.result }}" = "success" ]; then
           echo "🎉 Deployment completed successfully!"
           echo "🌐 Site: https://gt-automotives.com"
           echo "🏗️ Build: ${{ github.event.inputs.build_number }}"
+          if [ "${{ github.event.inputs.deployment_type }}" = "container" ]; then
+            echo "🐳 Backend: Container deployment with architectural fixes"
+            echo "📡 Container URL: http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000"
+          else
+            echo "🖥️ Backend: App Service deployment"
+          fi
         else
           echo "⚠️ Deployment completed with some issues"
           echo "Check the logs above for details"

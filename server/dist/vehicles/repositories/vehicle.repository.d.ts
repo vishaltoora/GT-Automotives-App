@@ -10,11 +10,11 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         };
         customer: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            createdAt: Date;
-            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -23,8 +23,8 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         model: string;
+        customerId: string;
         make: string;
         year: number;
         vin: string | null;
@@ -40,8 +40,8 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         model: string;
+        customerId: string;
         make: string;
         year: number;
         vin: string | null;
@@ -51,11 +51,11 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
     findOneWithDetails(id: string): Promise<({
         customer: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            createdAt: Date;
-            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -77,11 +77,11 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         invoices: ({
             items: {
                 id: string;
+                quantity: number;
                 createdAt: Date;
                 updatedAt: Date;
-                description: string;
-                quantity: number;
                 itemType: import("@prisma/client").$Enums.InvoiceItemType;
+                description: string;
                 unitPrice: Prisma.Decimal;
                 total: Prisma.Decimal;
                 invoiceId: string;
@@ -91,8 +91,8 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             total: Prisma.Decimal;
+            customerId: string;
             status: import("@prisma/client").$Enums.InvoiceStatus;
             invoiceNumber: string;
             vehicleId: string | null;
@@ -112,8 +112,8 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         model: string;
+        customerId: string;
         make: string;
         year: number;
         vin: string | null;
@@ -123,11 +123,11 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
     findByVin(vin: string): Promise<({
         customer: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            createdAt: Date;
-            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -136,8 +136,8 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         model: string;
+        customerId: string;
         make: string;
         year: number;
         vin: string | null;
@@ -151,11 +151,11 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         };
         customer: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            createdAt: Date;
-            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -164,8 +164,8 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         model: string;
+        customerId: string;
         make: string;
         year: number;
         vin: string | null;

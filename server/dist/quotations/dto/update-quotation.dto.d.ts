@@ -1,5 +1,4 @@
-import { QuotationStatus } from '@prisma/client';
-import { CreateQuoteItemDto } from './create-quotation.dto';
+import { CreateQuoteItemDto, QuotationStatus } from './create-quotation.dto';
 export declare class UpdateQuoteDto {
     customerName?: string;
     businessName?: string;

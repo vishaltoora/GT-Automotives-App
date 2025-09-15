@@ -12,13 +12,13 @@ export declare class AuthService {
     constructor(userRepository: UserRepository, roleRepository: RoleRepository, auditRepository: AuditRepository, jwtService: JwtService, configService: ConfigService);
     validateClerkUser(clerkUserId: string): Promise<({
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        createdAt: Date;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -34,13 +34,13 @@ export declare class AuthService {
     }): Promise<void>;
     validateToken(token: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        createdAt: Date;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -62,8 +62,8 @@ export declare class AuthService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            displayName: string;
             description: string | null;
+            displayName: string;
         };
         isActive: boolean;
     }>;

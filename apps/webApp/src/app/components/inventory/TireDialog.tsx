@@ -108,8 +108,8 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   const [formData, setFormData] = useState<CreateTireDto>({
     brand: '',
     size: '',
-    type: TireType.ALL_SEASON,
-    condition: TireCondition.NEW,
+    type: TireType.ALL_SEASON as any,
+    condition: TireCondition.NEW as any,
     quantity: 0,
     price: 0,
     cost: 0,
@@ -140,8 +140,8 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
       setFormData({
         brand: '',
         size: '',
-        type: TireType.ALL_SEASON,
-        condition: TireCondition.NEW,
+        type: TireType.ALL_SEASON as any,
+        condition: TireCondition.NEW as any,
         quantity: 0,
         price: 0,
         cost: 0,

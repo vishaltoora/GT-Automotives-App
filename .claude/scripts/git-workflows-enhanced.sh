@@ -58,9 +58,9 @@ get_current_branch() {
     git rev-parse --abbrev-ref HEAD
 }
 
-# Enhanced build validation (learned from TS compilation issues)
+# Enhanced build validation (learned from TS compilation + container deployment issues)
 validate_build() {
-    local build_type="$1"  # "quick" | "full" | "typecheck"
+    local build_type="$1"  # "quick" | "full" | "typecheck" | "container"
     
     print_build "Running build validation ($build_type)..."
     
@@ -90,10 +90,25 @@ validate_build() {
                 return 1
             fi
             
-            # Test server build
-            print_test "Building backend server..."
+            # Test server build with container fixes
+            print_test "Building backend server with container architecture..."
             if yarn build:server > /dev/null 2>&1; then
-                print_success "Backend build successful"
+                print_success "Backend build successful (webpack externals applied)"
+                
+                # Verify webpack externals are working
+                if [ -f "server/dist/main.js" ]; then
+                    if grep -q "@prisma/client.*require" server/dist/main.js 2>/dev/null; then
+                        print_success "✓ Prisma client externalized correctly"
+                    else
+                        print_warning "⚠ Prisma client may not be externalized"
+                    fi
+                    
+                    if grep -q "@gt-automotive/shared-dto.*require" server/dist/main.js 2>/dev/null; then
+                        print_success "✓ Shared DTO externalized correctly"  
+                    else
+                        print_warning "⚠ Shared DTO may not be externalized"
+                    fi
+                fi
             else
                 print_error "Backend build failed!"
                 return 1
@@ -106,6 +121,39 @@ validate_build() {
                 return 0
             else
                 print_error "Frontend build failed!"
+                return 1
+            fi
+            ;;
+        "container")
+            # Container-ready build validation
+            print_test "Running container deployment validation..."
+            
+            # Build shared libraries
+            print_test "Building shared DTO library for container..."
+            if yarn nx build @gt-automotive/shared-dto > /dev/null 2>&1; then
+                print_success "Shared DTO library built successfully"
+            else
+                print_error "Shared DTO library build failed!"
+                return 1
+            fi
+            
+            # Build server with container optimizations
+            print_test "Building server with container fixes..."
+            if yarn build:server > /dev/null 2>&1; then
+                print_success "Server built with webpack externals"
+                
+                # Validate container-ready structure
+                if [ -f "server/dist/main.js" ] && [ -d "libs/shared/dto/dist" ]; then
+                    print_success "✓ Container deployment structure ready"
+                    print_info "  - Webpack externalized dependencies"
+                    print_info "  - Shared libraries available for manual node_modules setup"
+                    print_info "  - Prisma schema ready for generation"
+                else
+                    print_error "Container deployment structure incomplete"
+                    return 1
+                fi
+            else
+                print_error "Server build failed!"
                 return 1
             fi
             ;;
@@ -383,14 +431,19 @@ pre_push_validation() {
     fi
 }
 
-# Build troubleshooting helper
+# Build troubleshooting helper (enhanced with container deployment knowledge)
 build_doctor() {
-    print_info "Running build diagnostics..."
+    print_info "Running build diagnostics with container deployment checks..."
     
     # Check Node version
     print_test "Checking Node.js version..."
     node_version=$(node --version)
     print_info "Node version: $node_version"
+    if [[ "$node_version" == v20* ]]; then
+        print_success "✓ Node 20.x (container compatible)"
+    else
+        print_warning "⚠ Recommend Node 20.x for container deployment"
+    fi
     
     # Check Yarn version
     print_test "Checking Yarn version..."
@@ -413,12 +466,32 @@ build_doctor() {
         print_warning "experimentalDecorators may be missing in shared lib"
     fi
     
+    # Check webpack configuration for container deployment
+    print_test "Checking webpack externals configuration..."
+    if [ -f "server/webpack.config.js" ]; then
+        if grep -q "@prisma/client.*commonjs" server/webpack.config.js && grep -q "@gt-automotive/shared-dto.*commonjs" server/webpack.config.js; then
+            print_success "✓ Webpack externals configured for container deployment"
+        else
+            print_warning "⚠ Webpack externals may not be configured - check server/webpack.config.js"
+        fi
+    else
+        print_error "❌ Webpack config missing - server/webpack.config.js not found"
+    fi
+    
     # Check Prisma client generation
     print_test "Checking Prisma client..."
     if [ -d "node_modules/@prisma/client" ]; then
         print_success "Prisma client found"
     else
         print_warning "Prisma client missing - run 'yarn db:generate'"
+    fi
+    
+    # Check shared DTO build artifacts
+    print_test "Checking shared DTO build artifacts..."
+    if [ -d "libs/shared/dto/dist" ]; then
+        print_success "✓ Shared DTO dist folder found (needed for container node_modules setup)"
+    else
+        print_warning "⚠ Shared DTO dist missing - run 'yarn nx build @gt-automotive/shared-dto'"
     fi
     
     # Run specific build tests
@@ -431,9 +504,31 @@ build_doctor() {
         print_error "  ❌ Shared interfaces build failed"
     fi
     
-    echo "Server build:"
+    echo "Shared DTO (critical for container deployment):"
+    if yarn nx build @gt-automotive/shared-dto > /dev/null 2>&1; then
+        print_success "  ✅ Shared DTO build OK"
+    else
+        print_error "  ❌ Shared DTO build failed (will break container deployment)"
+    fi
+    
+    echo "Server build (with container fixes):"
     if yarn build:server > /dev/null 2>&1; then
         print_success "  ✅ Server build OK"
+        
+        # Verify externalization worked
+        if [ -f "server/dist/main.js" ]; then
+            if grep -q "require.*@prisma/client" server/dist/main.js 2>/dev/null; then
+                print_success "    ✓ Prisma client externalized"
+            else
+                print_warning "    ⚠ Prisma client may not be externalized"
+            fi
+            
+            if grep -q "require.*@gt-automotive/shared-dto" server/dist/main.js 2>/dev/null; then
+                print_success "    ✓ Shared DTO externalized"
+            else
+                print_warning "    ⚠ Shared DTO may not be externalized"
+            fi
+        fi
     else
         print_error "  ❌ Server build failed"
     fi
@@ -443,6 +538,15 @@ build_doctor() {
         print_success "  ✅ Frontend build OK"
     else
         print_error "  ❌ Frontend build failed"
+    fi
+    
+    echo ""
+    print_info "Container Deployment Readiness:"
+    if [ -f "server/webpack.config.js" ] && [ -d "libs/shared/dto/dist" ] && [ -f "server/dist/main.js" ]; then
+        print_success "✅ Ready for container deployment"
+        print_info "  Run: validate-build container"
+    else
+        print_warning "⚠ Not ready for container deployment - check above issues"
     fi
 }
 
@@ -523,17 +627,24 @@ main() {
             echo "  quick-commit \"message\" [skip-build] - Quick commit with build validation"
             echo "  smart-commit [\"message\"]           - Analyze changes and smart commit"
             echo "  feature-safe \"branch\" \"message\"    - Create feature branch with validation"
-            echo "  validate-build [quick|full|typecheck] - Run build validation"
+            echo "  validate-build [quick|full|typecheck|container] - Run build validation"
             echo "  pre-push                            - Pre-push validation hook"
-            echo "  build-doctor                        - Diagnose build issues"
+            echo "  build-doctor                        - Diagnose build issues (with container checks)"
             echo "  status                              - Enhanced repository status"
             echo "  help                                - Show this help"
+            echo ""
+            echo "Build validation levels:"
+            echo "  quick     - TypeScript compilation only"
+            echo "  full      - Complete build with webpack externals verification"
+            echo "  typecheck - Type checking without building"
+            echo "  container - Container deployment readiness (externals + shared libs)"
             echo ""
             echo "Examples:"
             echo "  ./git-workflows.sh quick-commit \"fix: resolve DTO compilation errors\""
             echo "  ./git-workflows.sh smart-commit"
             echo "  ./git-workflows.sh feature-safe \"feature/user-dto\" \"feat: add user DTO with validation\""
-            echo "  ./git-workflows.sh validate-build full"
+            echo "  ./git-workflows.sh validate-build container"
+            echo "  ./git-workflows.sh build-doctor  # Now includes container deployment checks"
             ;;
         *)
             print_error "Unknown command: $1"

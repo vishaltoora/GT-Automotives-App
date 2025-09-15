@@ -4161,27 +4161,13 @@ exports.InvoicesController = InvoicesController = tslib_1.__decorate([
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
+var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateInvoiceDto = exports.CreateCustomerDto = exports.CreateInvoiceItemDto = exports.InvoiceItemType = exports.PaymentMethod = void 0;
+exports.CreateInvoiceDto = exports.CreateCustomerDto = exports.CreateInvoiceItemDto = void 0;
 const tslib_1 = __webpack_require__(4);
 const class_validator_1 = __webpack_require__(46);
 const class_transformer_1 = __webpack_require__(60);
-// Local enum definitions to avoid Prisma client dependency issues
-var PaymentMethod;
-(function (PaymentMethod) {
-    PaymentMethod["CASH"] = "CASH";
-    PaymentMethod["CREDIT_CARD"] = "CREDIT_CARD";
-    PaymentMethod["DEBIT_CARD"] = "DEBIT_CARD";
-    PaymentMethod["CHECK"] = "CHECK";
-    PaymentMethod["E_TRANSFER"] = "E_TRANSFER";
-})(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
-var InvoiceItemType;
-(function (InvoiceItemType) {
-    InvoiceItemType["TIRE"] = "TIRE";
-    InvoiceItemType["SERVICE"] = "SERVICE";
-    InvoiceItemType["PART"] = "PART";
-    InvoiceItemType["OTHER"] = "OTHER";
-})(InvoiceItemType || (exports.InvoiceItemType = InvoiceItemType = {}));
+const client_1 = __webpack_require__(16);
 class CreateInvoiceItemDto {
 }
 exports.CreateInvoiceItemDto = CreateInvoiceItemDto;
@@ -4191,8 +4177,8 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:type", String)
 ], CreateInvoiceItemDto.prototype, "tireId", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(InvoiceItemType),
-    tslib_1.__metadata("design:type", String)
+    (0, class_validator_1.IsEnum)(client_1.InvoiceItemType),
+    tslib_1.__metadata("design:type", typeof (_a = typeof client_1.InvoiceItemType !== "undefined" && client_1.InvoiceItemType) === "function" ? _a : Object)
 ], CreateInvoiceItemDto.prototype, "itemType", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsString)(),
@@ -4284,8 +4270,8 @@ tslib_1.__decorate([
 ], CreateInvoiceDto.prototype, "pstRate", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(PaymentMethod),
-    tslib_1.__metadata("design:type", String)
+    (0, class_validator_1.IsEnum)(client_1.PaymentMethod),
+    tslib_1.__metadata("design:type", typeof (_b = typeof client_1.PaymentMethod !== "undefined" && client_1.PaymentMethod) === "function" ? _b : Object)
 ], CreateInvoiceDto.prototype, "paymentMethod", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
@@ -4305,39 +4291,24 @@ module.exports = require("class-transformer");
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
+var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UpdateInvoiceDto = exports.PaymentMethod = exports.InvoiceStatus = void 0;
+exports.UpdateInvoiceDto = void 0;
 const tslib_1 = __webpack_require__(4);
 const class_validator_1 = __webpack_require__(46);
-// Local enum definitions to avoid Prisma client dependency issues
-var InvoiceStatus;
-(function (InvoiceStatus) {
-    InvoiceStatus["DRAFT"] = "DRAFT";
-    InvoiceStatus["PENDING"] = "PENDING";
-    InvoiceStatus["PAID"] = "PAID";
-    InvoiceStatus["CANCELLED"] = "CANCELLED";
-    InvoiceStatus["REFUNDED"] = "REFUNDED";
-})(InvoiceStatus || (exports.InvoiceStatus = InvoiceStatus = {}));
-var PaymentMethod;
-(function (PaymentMethod) {
-    PaymentMethod["CASH"] = "CASH";
-    PaymentMethod["CREDIT_CARD"] = "CREDIT_CARD";
-    PaymentMethod["DEBIT_CARD"] = "DEBIT_CARD";
-    PaymentMethod["CHECK"] = "CHECK";
-    PaymentMethod["E_TRANSFER"] = "E_TRANSFER";
-})(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
+const client_1 = __webpack_require__(16);
 class UpdateInvoiceDto {
 }
 exports.UpdateInvoiceDto = UpdateInvoiceDto;
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(InvoiceStatus),
-    tslib_1.__metadata("design:type", String)
+    (0, class_validator_1.IsEnum)(client_1.InvoiceStatus),
+    tslib_1.__metadata("design:type", typeof (_a = typeof client_1.InvoiceStatus !== "undefined" && client_1.InvoiceStatus) === "function" ? _a : Object)
 ], UpdateInvoiceDto.prototype, "status", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(PaymentMethod),
-    tslib_1.__metadata("design:type", String)
+    (0, class_validator_1.IsEnum)(client_1.PaymentMethod),
+    tslib_1.__metadata("design:type", typeof (_b = typeof client_1.PaymentMethod !== "undefined" && client_1.PaymentMethod) === "function" ? _b : Object)
 ], UpdateInvoiceDto.prototype, "paymentMethod", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
@@ -4852,27 +4823,13 @@ exports.QuotationsController = QuotationsController = tslib_1.__decorate([
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
+var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateQuoteDto = exports.CreateQuoteItemDto = exports.QuotationStatus = exports.InvoiceItemType = void 0;
+exports.CreateQuoteDto = exports.CreateQuoteItemDto = void 0;
 const tslib_1 = __webpack_require__(4);
 const class_validator_1 = __webpack_require__(46);
 const class_transformer_1 = __webpack_require__(60);
-// Local enum definitions to avoid Prisma client dependency issues
-var InvoiceItemType;
-(function (InvoiceItemType) {
-    InvoiceItemType["TIRE"] = "TIRE";
-    InvoiceItemType["SERVICE"] = "SERVICE";
-    InvoiceItemType["PART"] = "PART";
-    InvoiceItemType["OTHER"] = "OTHER";
-})(InvoiceItemType || (exports.InvoiceItemType = InvoiceItemType = {}));
-var QuotationStatus;
-(function (QuotationStatus) {
-    QuotationStatus["DRAFT"] = "DRAFT";
-    QuotationStatus["SENT"] = "SENT";
-    QuotationStatus["ACCEPTED"] = "ACCEPTED";
-    QuotationStatus["REJECTED"] = "REJECTED";
-    QuotationStatus["EXPIRED"] = "EXPIRED";
-})(QuotationStatus || (exports.QuotationStatus = QuotationStatus = {}));
+const client_1 = __webpack_require__(16);
 class CreateQuoteItemDto {
 }
 exports.CreateQuoteItemDto = CreateQuoteItemDto;
@@ -4882,8 +4839,8 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:type", String)
 ], CreateQuoteItemDto.prototype, "tireId", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(InvoiceItemType),
-    tslib_1.__metadata("design:type", String)
+    (0, class_validator_1.IsEnum)(client_1.InvoiceItemType),
+    tslib_1.__metadata("design:type", typeof (_a = typeof client_1.InvoiceItemType !== "undefined" && client_1.InvoiceItemType) === "function" ? _a : Object)
 ], CreateQuoteItemDto.prototype, "itemType", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsString)(),
@@ -4962,8 +4919,8 @@ tslib_1.__decorate([
 ], CreateQuoteDto.prototype, "notes", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(QuotationStatus),
-    tslib_1.__metadata("design:type", String)
+    (0, class_validator_1.IsEnum)(client_1.QuotationStatus),
+    tslib_1.__metadata("design:type", typeof (_b = typeof client_1.QuotationStatus !== "undefined" && client_1.QuotationStatus) === "function" ? _b : Object)
 ], CreateQuoteDto.prototype, "status", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
@@ -4983,6 +4940,7 @@ exports.UpdateQuoteDto = void 0;
 const tslib_1 = __webpack_require__(4);
 const class_validator_1 = __webpack_require__(46);
 const class_transformer_1 = __webpack_require__(60);
+const client_1 = __webpack_require__(16);
 const create_quotation_dto_1 = __webpack_require__(66);
 class UpdateQuoteDto {
 }
@@ -5051,8 +5009,8 @@ tslib_1.__decorate([
 ], UpdateQuoteDto.prototype, "notes", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(create_quotation_dto_1.QuotationStatus),
-    tslib_1.__metadata("design:type", typeof (_a = typeof create_quotation_dto_1.QuotationStatus !== "undefined" && create_quotation_dto_1.QuotationStatus) === "function" ? _a : Object)
+    (0, class_validator_1.IsEnum)(client_1.QuotationStatus),
+    tslib_1.__metadata("design:type", typeof (_a = typeof client_1.QuotationStatus !== "undefined" && client_1.QuotationStatus) === "function" ? _a : Object)
 ], UpdateQuoteDto.prototype, "status", void 0);
 tslib_1.__decorate([
     (0, class_validator_1.IsOptional)(),

@@ -1,4 +1,16 @@
-import { InvoiceItemType, QuotationStatus } from '@prisma/client';
+export declare enum InvoiceItemType {
+    TIRE = "TIRE",
+    SERVICE = "SERVICE",
+    PART = "PART",
+    OTHER = "OTHER"
+}
+export declare enum QuotationStatus {
+    DRAFT = "DRAFT",
+    SENT = "SENT",
+    ACCEPTED = "ACCEPTED",
+    REJECTED = "REJECTED",
+    EXPIRED = "EXPIRED"
+}
 export declare class CreateQuoteItemDto {
     tireId?: string;
     itemType: InvoiceItemType;

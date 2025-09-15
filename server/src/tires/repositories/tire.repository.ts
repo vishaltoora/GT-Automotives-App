@@ -83,6 +83,8 @@ export class TireRepository extends BaseRepository<Tire> {
       cost: tire.cost ? parseFloat(tire.cost.toString()) : undefined,
       location: tire.location || undefined, // Convert null to undefined
       imageUrl: tire.imageUrl || undefined, // Convert null to undefined
+      type: tire.type as any, // Convert Prisma enum to DTO enum
+      condition: tire.condition as any, // Convert Prisma enum to DTO enum
     }));
 
     return {

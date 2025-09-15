@@ -1,7 +1,6 @@
 import { IsString, IsOptional, IsEnum, IsDateString, IsNumber, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { QuotationStatus } from '@prisma/client';
-import { CreateQuoteItemDto } from './create-quotation.dto';
+import { CreateQuoteItemDto, QuotationStatus } from './create-quotation.dto';
 
 export class UpdateQuoteDto {
   @IsOptional()

@@ -22,6 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
 - **[Azure Deployment Plan](.claude/docs/azure-deployment-plan.md)** - Azure App Service deployment architecture and configuration
 - **[Azure Implementation Guide](.claude/docs/azure-implementation-guide.md)** - Step-by-step Azure deployment implementation
+- **[Backend Container Deployment Config](.claude/docs/backend-container-deployment-config.md)** - Complete Docker containerization guide with architectural fixes ⭐ NEW
 - **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
@@ -118,6 +119,16 @@ yarn test          # Run tests
 ---
 
 ## 🔄 Recent Updates
+
+### September 15, 2025 - Backend Container Architecture Resolution & Azure Deployment ✅
+- ✅ **Architecture Analysis**: Identified webpack bundling anti-pattern causing Prisma client failures
+- ✅ **Webpack Externals Fix**: Configured externals for @prisma/client, .prisma/client, and @gt-automotive/shared-dto
+- ✅ **Shared Library Resolution**: Fixed node_modules structure for monorepo shared libraries
+- ✅ **Docker Optimization**: Switched from Alpine to node:20-slim for better Node.js compatibility
+- ✅ **Container Deployment**: Successfully deployed to Azure Container Instances (gt-automotives-backend-working.canadacentral.azurecontainer.io:3000)
+- ✅ **Health Verification**: Full API functionality confirmed with health endpoints responding correctly
+- ✅ **Production Stability**: Resolved all CrashLoopBackOff issues and container initialization failures
+- ✅ **Comprehensive Documentation**: Created complete backend container deployment configuration guide
 
 ### September 12, 2025 - Mixed Content Resolution & Reverse Proxy Implementation ✅
 - ✅ **Mixed Content Errors Resolved**: Fixed HTTPS/HTTP blocking that prevented API communication

@@ -37,8 +37,8 @@ export declare class AuthController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            displayName: string;
             description: string | null;
+            displayName: string;
         };
         isActive: boolean;
     }>;

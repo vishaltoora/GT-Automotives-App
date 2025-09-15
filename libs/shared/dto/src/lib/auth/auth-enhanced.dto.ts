@@ -129,6 +129,44 @@ export class ClerkUserDto {
 }
 
 // Legacy Interface DTOs for backward compatibility
+// Define classes in dependency order to avoid circular references
+
+export class IPermissionDto {
+  @IsNumber()
+  id!: number;
+
+  @IsString()
+  name!: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  resource!: string;
+
+  @IsString()
+  action!: string;
+}
+
+export class IRoleDto {
+  @IsNumber()
+  id!: number;
+
+  @IsString()
+  name!: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ValidateNested({ each: true })
+  @Type(() => IPermissionDto)
+  @IsArray()
+  @IsOptional()
+  permissions?: IPermissionDto[];
+}
+
 export class IUserDto {
   @IsString()
   id!: string;
@@ -157,40 +195,38 @@ export class IUserDto {
   updatedAt!: Date;
 }
 
-export class IRoleDto {
-  @IsNumber()
-  id!: number;
-
-  @IsString()
-  name!: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ValidateNested({ each: true })
-  @Type(() => IPermissionDto)
-  @IsArray()
-  @IsOptional()
-  permissions?: IPermissionDto[];
-}
-
-export class IPermissionDto {
-  @IsNumber()
-  id!: number;
-
-  @IsString()
-  name!: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
+// Support DTOs - defined first to avoid circular dependencies
+export class PermissionReferenceDto {
   @IsString()
   resource!: string;
 
   @IsString()
   action!: string;
+}
+
+export class EmailAddressDto {
+  @IsString()
+  id!: string;
+
+  @IsEmail()
+  emailAddress!: string;
+}
+
+export class LoginUserDto {
+  @IsString()
+  id!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  firstName!: string;
+
+  @IsString()
+  lastName!: string;
+
+  @IsString()
+  role!: string;
 }
 
 export class IAuthContextDto {
@@ -269,38 +305,4 @@ export class ITokenPayloadDto {
   @IsNumber()
   @IsOptional()
   exp?: number;
-}
-
-// Support DTOs
-export class PermissionReferenceDto {
-  @IsString()
-  resource!: string;
-
-  @IsString()
-  action!: string;
-}
-
-export class EmailAddressDto {
-  @IsString()
-  id!: string;
-
-  @IsEmail()
-  emailAddress!: string;
-}
-
-export class LoginUserDto {
-  @IsString()
-  id!: string;
-
-  @IsEmail()
-  email!: string;
-
-  @IsString()
-  firstName!: string;
-
-  @IsString()
-  lastName!: string;
-
-  @IsString()
-  role!: string;
 }
