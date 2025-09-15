@@ -42,6 +42,7 @@ jobs:
   validate-build:
     runs-on: ubuntu-latest
     outputs:
+      build-number: ${{ steps.validate.outputs.build-number }}
       frontend-artifact: ${{ steps.validate.outputs.frontend-artifact }}
       backend-artifact: ${{ steps.validate.outputs.backend-artifact }}
       build-valid: ${{ steps.validate.outputs.build-valid }}
@@ -56,6 +57,7 @@ jobs:
         if [[ $BUILD_NUMBER =~ ^build-[0-9]{8}-[0-9]{6}-[a-f0-9]{7}$ ]]; then
           echo "✅ Build number format is valid: $BUILD_NUMBER"
           echo "build-valid=true" >> $GITHUB_OUTPUT
+          echo "build-number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "frontend-artifact=frontend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "backend-artifact=backend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
         else
@@ -239,16 +241,22 @@ jobs:
         # Install only production dependencies (Prisma client already generated in build)
         RUN npm install --production --no-package-lock
 
-        # Verify deployment structure and dependencies
+        # Verify deployment structure and dependencies with error checking
         RUN echo "📋 Verifying deployment structure:" && \
             ls -la && \
             echo "🔍 Checking server files:" && \
             ls -la server/ && \
+            if [ ! -f "server/main.js" ]; then echo "❌ ERROR: server/main.js not found!"; exit 1; fi && \
             echo "🔍 Checking Prisma:" && \
             ls -la prisma/ && \
+            if [ ! -f "prisma/schema.prisma" ]; then echo "❌ ERROR: prisma/schema.prisma not found!"; exit 1; fi && \
             echo "🔍 Checking node_modules structure:" && \
             ls -la node_modules/@gt-automotive/ && \
             echo "✅ Container deployment structure verified"
+
+        # Add a simple health check script for debugging
+        RUN echo '#!/bin/bash\necho "Starting GT Automotive Backend..."\necho "Node version: $(node --version)"\necho "Available files:"\nls -la\necho "Starting application..."\nexec node server/main.js' > /app/start.sh && \
+            chmod +x /app/start.sh
 
         # Create non-root user for security
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
@@ -257,8 +265,8 @@ jobs:
 
         EXPOSE 3000
 
-        # Use the webpack-built main.js with externalized dependencies
-        CMD ["node", "server/main.js"]
+        # Use the debug startup script for better error visibility
+        CMD ["/app/start.sh"]
         EOF
 
     - name: Build and push Docker image
@@ -268,6 +276,10 @@ jobs:
         
         IMAGE_TAG="container-deploy-${{ needs.validate-build.outputs.build-number }}"
         FULL_IMAGE_NAME="${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:$IMAGE_TAG"
+        
+        echo "🏷️ Building image: $FULL_IMAGE_NAME"
+        echo "📋 Build number from input: ${{ needs.validate-build.outputs.build-number }}"
+        echo "📋 Complete tag: $IMAGE_TAG"
         
         # Build with no cache to ensure fresh build
         docker build -t "$FULL_IMAGE_NAME" . --no-cache
