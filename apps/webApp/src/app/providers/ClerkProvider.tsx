@@ -1,7 +1,6 @@
 import React from 'react';
 import { ClerkProvider as ClerkProviderBase } from '@clerk/clerk-react';
 import { MockClerkProvider } from './MockClerkProvider';
-import { getEnvVar } from '../utils/env';
 
 // Custom domain setup - let Clerk handle JS loading automatically
 
