@@ -12,6 +12,9 @@ const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 if (typeof window !== 'undefined') {
   console.log('🔍 Clerk Environment Debug - DIRECT import.meta.env:');
   console.log('📋 publishableKey (direct):', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND');
+  console.log('📋 publishableKey type:', typeof publishableKey);
+  console.log('📋 publishableKey length:', publishableKey?.length);
+  console.log('📋 publishableKey truthy check:', !!publishableKey);
   // @ts-ignore
   console.log('📋 Raw import.meta.env.VITE_CLERK_PUBLISHABLE_KEY:', import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'UNDEFINED');
 }
@@ -27,6 +30,11 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       publishableKey: publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND',
       nodeEnv: typeof process !== 'undefined' ? process.env.NODE_ENV : 'unknown'
     });
+    
+    console.log('🔍 ClerkProvider Decision Logic:');
+    console.log('📋 publishableKey value:', publishableKey);
+    console.log('📋 !publishableKey check:', !publishableKey);
+    console.log('📋 Will use MockClerkProvider?', !publishableKey);
   }
 
   // In development without Clerk keys, use mock provider
@@ -34,6 +42,8 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
     console.warn('Clerk Publishable Key not found. Running in development mode without authentication.');
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
+  
+  console.log('✅ Using real ClerkProvider with key:', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NONE');
 
   // Configuration for production Clerk with custom domain
   const getClerkProps = () => {
