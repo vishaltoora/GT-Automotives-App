@@ -87,7 +87,7 @@ jobs:
         const PORT = process.env.PORT || 8080;
 
         // Backend configuration - Using working container deployment
-        const BACKEND_URL = 'http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000';
+        const BACKEND_URL = 'http://gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000';
 
         // CORS middleware for API routes
         app.use('/api', (req, res, next) => {
