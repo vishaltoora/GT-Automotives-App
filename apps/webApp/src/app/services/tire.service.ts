@@ -7,7 +7,6 @@ import {
   ITireSearchResult,
   ITireImage,
 } from '@gt-automotive/shared-dto';
-import { getEnvVar } from '../utils/env';
 
 // Type declaration for Clerk global
 declare global {
