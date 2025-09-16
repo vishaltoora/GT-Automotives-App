@@ -93,7 +93,7 @@ export function useAuth() {
           localStorage.setItem('authToken', token);
           
           // First check if user exists in our database
-          const response = await axios.get(`${API_URL}/auth/me`, {
+          const response = await axios.get(`${API_URL}/api/auth/me`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
