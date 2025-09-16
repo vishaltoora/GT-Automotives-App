@@ -194,7 +194,10 @@
       "Bash(gh run watch:*)",
       "Bash(gh workflow run:*)",
       "Bash(VITE_API_URL=https://gt-automotives.com/api VITE_CLERK_PUBLISHABLE_KEY=pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA NODE_ENV=production yarn build:web)",
-      "Bash(nx test:*)"
+      "Bash(nx test:*)",
+      "Bash(./scripts/deploy-frontend.sh:*)",
+      "WebFetch(domain:gt-automotives-backend-working.canadacentral.azurecontainer.io)",
+      "Bash(./deploy-backend-container.sh:*)"
     ],
     "deny": [],
     "ask": []

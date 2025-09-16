@@ -23,30 +23,44 @@ export function Login() {
   const { isAuthenticated, role, user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Only redirect if authenticated AND has a synced user with role
-    // And we're not in a loading state
-    if (!isLoading && isAuthenticated && user && role) {
-      // Get the page they were trying to access, if any
-      const from = location.state?.from?.pathname || null;
+    // Debug: Log authentication state
+    console.log('🔍 Login Debug State:');
+    console.log('  - isLoading:', isLoading);
+    console.log('  - isAuthenticated:', isAuthenticated);
+    console.log('  - user:', user ? { id: user.id, email: user.email, role: user.role } : null);
+    console.log('  - role:', role);
+    console.log('  - clerkUser present:', !!user);
 
-      // Determine where to redirect based on role
-      let redirectPath = '/';
-      switch (role) {
-        case 'admin':
-          redirectPath = from?.startsWith('/admin') ? from : '/admin/dashboard';
-          break;
-        case 'staff':
-          redirectPath = from?.startsWith('/staff') ? from : '/staff/dashboard';
-          break;
-        case 'customer':
-          redirectPath = from?.startsWith('/customer')
-            ? from
-            : '/customer/dashboard';
-          break;
+    // Add a small delay to avoid redirect loops during authentication state changes
+    const timeoutId = setTimeout(() => {
+      // Only redirect if authenticated AND has a synced user with role
+      // And we're not in a loading state
+      if (!isLoading && isAuthenticated && user && role) {
+        // Get the page they were trying to access, if any
+        const from = location.state?.from?.pathname || null;
+
+        // Determine where to redirect based on role
+        let redirectPath = '/';
+        switch (role) {
+          case 'admin':
+            redirectPath = from?.startsWith('/admin') ? from : '/admin/dashboard';
+            break;
+          case 'staff':
+            redirectPath = from?.startsWith('/staff') ? from : '/staff/dashboard';
+            break;
+          case 'customer':
+            redirectPath = from?.startsWith('/customer')
+              ? from
+              : '/customer/dashboard';
+            break;
+        }
+
+        console.log('Login: Redirecting to', redirectPath);
+        navigate(redirectPath, { replace: true });
       }
+    }, 100); // Small delay to prevent redirect loops
 
-      navigate(redirectPath, { replace: true });
-    }
+    return () => clearTimeout(timeoutId);
   }, [isAuthenticated, role, user, navigate, location, isLoading]);
 
   // Show loading screen immediately when authenticated (even before user data is synced)

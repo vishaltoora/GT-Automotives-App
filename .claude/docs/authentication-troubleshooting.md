@@ -149,7 +149,47 @@ if (typeof window !== 'undefined') {
 **Solution:**
 Ensure `VITE_CLERK_PUBLISHABLE_KEY` is set in production environment
 
-### 8. Custom Domain Not Working
+### 8. Environment Variable Access Issues
+
+#### Error: Authentication appears to work but session doesn't persist
+**Symptom:**
+- Login form appears and accepts credentials
+- User gets redirected to home page instead of role-based dashboard
+- Console shows `isSignedIn: false` and `publishableKey: 'NONE'` in useAuth hook
+- Authentication works in ClerkProvider but fails in useAuth hook
+
+**Root Cause:**
+The `useAuth` hook and `ClerkProvider` use different methods to access environment variables:
+- `ClerkProvider` uses direct `import.meta.env.VITE_CLERK_PUBLISHABLE_KEY` ✅
+- `useAuth` hook uses `getEnvVar('VITE_CLERK_PUBLISHABLE_KEY')` which may fail ❌
+
+**Debugging Steps:**
+1. Check browser console for authentication state logs:
+   ```
+   🔍 useAuth Debug - Clerk State: {publishableKey: 'NONE'} ← Problem
+   ```
+2. Verify ClerkProvider logs show proper key:
+   ```
+   ✅ Using real ClerkProvider with key: pk_test_Y2xlYW4tZG92...
+   ```
+
+**Solution:**
+Ensure consistent environment variable access across all authentication components:
+
+```typescript
+// In useAuth hook - Use direct import.meta.env access
+// @ts-ignore
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+
+// NOT: const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
+```
+
+**Prevention:**
+- Always use direct `import.meta.env` access for Vite environment variables
+- Test authentication flow end-to-end after any environment variable changes
+- Add debug logging to verify environment variables are properly loaded
+
+### 9. Custom Domain Not Working
 
 #### Error: Custom domain configured but not working
 **Symptom:** DNS verified but still getting errors

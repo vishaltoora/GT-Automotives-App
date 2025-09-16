@@ -49,10 +49,11 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
   const getClerkProps = () => {
     const props: any = {
       publishableKey,
-      // Remove navigate prop to let Clerk handle its own navigation
-      // This prevents unwanted page reloads during authentication
-      afterSignInUrl: '/login', // Redirect here after sign in for role-based routing
-      afterSignUpUrl: '/login',
+      // Use the new Clerk redirect props instead of deprecated ones
+      // Let the Login component handle navigation based on role
+      fallbackRedirectUrl: '/', // Default fallback, Login component will handle the actual routing
+      signInFallbackRedirectUrl: '/',
+      signUpFallbackRedirectUrl: '/',
       appearance: {
         elements: {
           formButtonPrimary: {

@@ -21,6 +21,28 @@ GET    /api/reports/financial // Admin only
 - Use Grid2 size property syntax: `<Grid size={{ xs: 12, md: 6 }}>` instead of `<Grid xs={12} md={6}>`
 - Never use browser dialogs (`window.alert`, `window.confirm`) - use custom dialog system
 
+## Environment Variable Access (Critical)
+⚠️ **Always use direct `import.meta.env` access for Vite environment variables**
+
+```typescript
+// ✅ CORRECT - Direct access (works reliably)
+// @ts-ignore
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+
+// ❌ AVOID - Utility function may fail
+const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
+```
+
+**Why this matters:**
+- The `getEnvVar()` utility uses complex eval-based logic that can fail
+- Inconsistent environment variable access causes authentication failures
+- Direct `import.meta.env` access is guaranteed to work with Vite
+
+**Common Issues:**
+- Authentication appears to work but session doesn't persist
+- `useAuth` hook falls back to mock providers unintentionally
+- Console shows `publishableKey: 'NONE'` despite key being set
+
 ## DTO Best Practices (Updated September 2025)
 - **Use DTOs for all data transfer** - No interfaces for API contracts
 - **Import enums from @prisma/client** - Never create custom enums that duplicate Prisma

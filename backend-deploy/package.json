@@ -1,0 +1,16 @@
+{
+  "name": "gt-automotives-backend",
+  "version": "container-deploy",
+  "description": "GT Automotive Backend API with Container Architecture Fixes",
+  "main": "server/main.js",
+  "scripts": {
+    "start": "node server/main.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.0.0",
+    "prisma": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useUser as useClerkUser, useAuth as useClerkAuthHook, useClerk } from '@clerk/clerk-react';
 import { useUser as useMockUser, useAuth as useMockAuth } from '../providers/MockClerkProvider';
-import { getEnvVar } from '../utils/env';
-
 // Conditionally use Clerk or Mock hooks based on environment
-const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
+// Use direct import.meta.env access like ClerkProvider for consistency
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const useUser = publishableKey ? useClerkUser : useMockUser;
 const useClerkAuth = publishableKey ? useClerkAuthHook : useMockAuth;
-
-const API_URL = getEnvVar('VITE_API_URL', 'http://localhost:3000');
 
 interface UserRole {
   id: number;
@@ -38,6 +39,15 @@ export function useAuth() {
   const isDevelopment = false; // Set to false to enable Clerk authentication
 
   useEffect(() => {
+    // Debug Clerk state
+    console.log('🔍 useAuth Debug - Clerk State:', {
+      isLoaded,
+      isSignedIn,
+      clerkUser: clerkUser ? { id: clerkUser.id, email: clerkUser.primaryEmailAddress?.emailAddress } : null,
+      isDevelopment,
+      publishableKey: publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NONE'
+    });
+
     const syncUser = async () => {
       // Development mode with mock data
       if (isDevelopment) {

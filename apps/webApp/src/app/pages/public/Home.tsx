@@ -1,5 +1,7 @@
 import { Schedule as ScheduleIcon } from '@mui/icons-material';
 import { Container } from '@mui/material';
+import { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CTASection } from '../../components/public';
 import {
   ContactSection,
@@ -12,8 +14,42 @@ import {
   TireBrandsSection,
   TrustSection,
 } from '../../components/home';
+import { useAuth } from '../../hooks/useAuth';
 
 export function Home() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, role, user, isLoading } = useAuth();
+
+  useEffect(() => {
+    // Debug: Log authentication state from Home component
+    console.log('🏠 Home Debug State:');
+    console.log('  - isLoading:', isLoading);
+    console.log('  - isAuthenticated:', isAuthenticated);
+    console.log('  - user:', user ? { id: user.id, email: user.email, role: user.role } : null);
+    console.log('  - role:', role);
+    console.log('  - currentPath:', location.pathname);
+
+    console.log('🏠 Home component rendered - Current URL:', window.location.href);
+
+    // Redirect authenticated users to their dashboard
+    if (!isLoading && isAuthenticated && user && role) {
+      let redirectPath = '/';
+      switch (role) {
+        case 'admin':
+          redirectPath = '/admin/dashboard';
+          break;
+        case 'staff':
+          redirectPath = '/staff/dashboard';
+          break;
+        case 'customer':
+          redirectPath = '/customer/dashboard';
+          break;
+      }
+      console.log('Home: Redirecting authenticated user to', redirectPath);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, role, user, navigate, isLoading]);
   return (
     <>
       {/* Hero Section */}

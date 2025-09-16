@@ -30,8 +30,9 @@
 - **Email:** vishal.alawalpuria@gmail.com
 - **Clerk ID:** user_31JM1BAB2lrW82JVPgrbBekTx5H
 - **Role:** Admin (full system access)
-- **Database ID:** cmekadftv003xvbokv2ioi7op
-- **Status:** Active and ready for login
+- **Database ID:** cm1g1a2b3c4d5e6f7g8h9i0j1
+- **Status:** ✅ Active and ready for login
+- **Login Flow:** Login → Loading → Redirect to `/admin/dashboard`
 
 ## Development Mode (Without Clerk)
 
@@ -77,3 +78,48 @@ To run without Clerk authentication:
 - **Audit Capabilities**: View all system activities and changes
 
 **See `/docs/ROLE_PERMISSIONS.md` for complete permissions matrix**
+
+## Troubleshooting Authentication Issues
+
+### Common Issue: Login Loop or Redirect to Home Instead of Dashboard
+
+**Symptoms:**
+- Login form appears and accepts credentials
+- After login, redirected to home page instead of role-specific dashboard
+- Console shows `isSignedIn: false` despite successful Clerk authentication
+
+**Root Cause:**
+Environment variable access inconsistency between `ClerkProvider` and `useAuth` hook.
+
+**Quick Fix:**
+Ensure `useAuth` hook uses direct environment variable access:
+```typescript
+// In apps/webApp/src/app/hooks/useAuth.ts
+// @ts-ignore
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+```
+
+**Debug Steps:**
+1. Check browser console for these logs:
+   - `🔍 useAuth Debug - Clerk State:` should show proper publishableKey
+   - `isSignedIn: true` after successful login
+   - User data should be populated with admin role
+
+2. If publishableKey shows as 'NONE', the environment variable isn't being accessed properly
+
+**Complete Troubleshooting Guide:** See `authentication-troubleshooting.md`
+
+## Technical Implementation Notes
+
+### Environment Variable Access
+- **ClerkProvider**: Uses direct `import.meta.env.VITE_CLERK_PUBLISHABLE_KEY`
+- **useAuth Hook**: Must use same direct access for consistency
+- **Avoid**: Using `getEnvVar()` utility which may fail in certain environments
+
+### Authentication Flow Debugging
+The application includes comprehensive debug logging:
+- Login component logs authentication attempts
+- Home component logs redirect decisions
+- useAuth hook logs Clerk state changes
+
+Enable debug mode by checking browser console during authentication flow.
