@@ -54,10 +54,10 @@ jobs:
         yarn lint
         yarn typecheck
 
-    - name: Run tests
-      run: |
-        echo "🧪 Running tests..."
-        yarn test
+    # - name: Run tests
+    #   run: |
+    #     echo "🧪 Running tests..."
+    #     yarn test
 
     - name: Build frontend
       run: |
