@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { getEnvVar } from '../utils/env';
 
-const API_URL = getEnvVar('VITE_API_URL', 'http://localhost:3000');
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface Vehicle {
   id: string;
