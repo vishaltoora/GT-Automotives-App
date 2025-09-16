@@ -1,0 +1,28 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install system dependencies for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Copy all deployment files
+COPY . ./
+
+# Install dependencies only (skip Prisma generation since it's externalized)
+RUN npm install --production --no-package-lock
+
+# Create proper node_modules structure for shared libraries
+RUN mkdir -p ./node_modules/@gt-automotive/shared-dto/dist/ && \
+    cp -r ./shared-dto-temp/* ./node_modules/@gt-automotive/shared-dto/dist/ && \
+    cp ./shared-dto-package.json ./node_modules/@gt-automotive/shared-dto/package.json && \
+    rm -rf ./shared-dto-temp ./shared-dto-package.json
+
+# Create non-root user for security
+RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
+    chown -R nodejs:nodejs /app
+USER nodejs
+
+EXPOSE 3000
+
+# Use webpack-built main.js with externalized dependencies
+CMD ["node", "server/main.js"]

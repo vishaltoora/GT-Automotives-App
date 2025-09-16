@@ -237,7 +237,12 @@ let AuthService = class AuthService {
             try {
                 const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
                 if (clerkSecretKey) {
-                    const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                    // Create configured Clerk client with secret key
+                    const clerkClient = createClerkClient({
+                        secretKey: clerkSecretKey,
+                        apiUrl: this.configService.get('CLERK_API_URL') || 'https://api.clerk.com'
+                    });
                     clerkUser = await clerkClient.users.getUser(clerkUserId);
                 }
                 else {
@@ -248,7 +253,7 @@ let AuthService = class AuthService {
                 console.warn('Clerk client not available:', error);
                 return null;
             }
-            const customerRole = await this.roleRepository.findByName('customer');
+            const customerRole = await this.roleRepository.findByName('CUSTOMER');
             if (!customerRole) {
                 throw new Error('Customer role not found in database');
             }
@@ -296,7 +301,7 @@ let AuthService = class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
-            role: user.role?.name || 'customer',
+            role: user.role?.name || 'CUSTOMER',
         };
         return this.jwtService.sign(payload);
     }
@@ -310,7 +315,7 @@ let AuthService = class AuthService {
                 throw new common_1.ConflictException('Email already registered with different account');
             }
             // Get customer role
-            const customerRole = await this.roleRepository.findByName('customer');
+            const customerRole = await this.roleRepository.findByName('CUSTOMER');
             if (!customerRole) {
                 throw new Error('Customer role not found in database');
             }
@@ -347,7 +352,7 @@ let AuthService = class AuthService {
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
-            role: user.role || { name: 'customer' },
+            role: user.role || { name: 'CUSTOMER' },
             isActive: user.isActive,
         };
     }
@@ -1271,7 +1276,12 @@ let UsersService = class UsersService {
         const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
         if (clerkSecretKey) {
             try {
-                const { clerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                // Create configured Clerk client with secret key
+                const clerkClient = createClerkClient({
+                    secretKey: clerkSecretKey,
+                    apiUrl: this.configService.get('CLERK_API_URL') || 'https://api.clerk.com'
+                });
                 const clerkUser = await clerkClient.users.createUser({
                     emailAddress: [data.email],
                     username: data.username,
@@ -2979,7 +2989,7 @@ let VehiclesService = class VehiclesService {
         }
         // Customer role validation would require proper customer-user mapping
         // For now, only staff and admin can create vehicles
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle creation needs proper customer context implementation');
         }
         // Check for duplicate VIN if provided
@@ -3010,7 +3020,7 @@ let VehiclesService = class VehiclesService {
     }
     async findAll(userId, userRole) {
         // Customer role access requires proper customer-user context mapping
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle access needs proper customer context implementation');
         }
         // Staff and admin can see all vehicles
@@ -3022,7 +3032,7 @@ let VehiclesService = class VehiclesService {
             throw new common_1.NotFoundException('Customer not found');
         }
         // Customer role validation requires proper customer context
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle access needs proper customer context implementation');
         }
         return this.vehicleRepository.findByCustomer(customerId);
@@ -3033,7 +3043,7 @@ let VehiclesService = class VehiclesService {
             throw new common_1.NotFoundException(`Vehicle with ID ${id} not found`);
         }
         // Customer role validation requires proper customer context
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle access needs proper customer context implementation');
         }
         // Get vehicle statistics
@@ -3049,7 +3059,7 @@ let VehiclesService = class VehiclesService {
             throw new common_1.NotFoundException(`Vehicle with ID ${id} not found`);
         }
         // Customer role validation requires proper customer context
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle updates need proper customer context implementation');
         }
         // Check for duplicate VIN if updating
@@ -3068,7 +3078,7 @@ let VehiclesService = class VehiclesService {
             ...(updateVehicleDto.mileage !== undefined && { mileage: updateVehicleDto.mileage }),
         });
         // Log the action if not a self-update
-        if (userRole !== 'customer') {
+        if (userRole !== 'CUSTOMER') {
             await this.auditRepository.create({
                 userId,
                 action: 'UPDATE_VEHICLE',
@@ -3086,10 +3096,10 @@ let VehiclesService = class VehiclesService {
             throw new common_1.NotFoundException(`Vehicle with ID ${id} not found`);
         }
         // Customer role validation requires proper customer context
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle deletion needs proper customer context implementation');
         }
-        else if (userRole !== 'admin') {
+        else if (userRole !== 'ADMIN') {
             throw new common_1.ForbiddenException('Only administrators can delete vehicles');
         }
         // Check for existing invoices or appointments
@@ -3116,7 +3126,7 @@ let VehiclesService = class VehiclesService {
     async search(searchTerm, userId, userRole) {
         const vehicles = await this.vehicleRepository.search(searchTerm);
         // Filter results for customers
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle search needs proper customer context implementation');
         }
         return vehicles;
@@ -3131,7 +3141,7 @@ let VehiclesService = class VehiclesService {
             throw new common_1.BadRequestException('Mileage cannot be decreased');
         }
         // Customer role validation requires proper customer context
-        if (userRole === 'customer') {
+        if (userRole === 'CUSTOMER') {
             throw new common_1.ForbiddenException('Customer vehicle updates need proper customer context implementation');
         }
         const updatedVehicle = await this.vehicleRepository.update(id, { mileage });
