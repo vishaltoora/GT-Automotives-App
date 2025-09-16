@@ -1,4 +1,9 @@
 import axios from 'axios';
+import {
+  CreateInvoiceEnhancedDto,
+  CreateCustomerDtoForInvoice
+} from '@gt-automotive/shared-dto';
+import { PaymentMethod, InvoiceItemType } from '@prisma/client';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -14,7 +19,7 @@ export interface InvoiceItem {
   id?: string;
   tireId?: string;
   tire?: any;
-  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER';
+  itemType: InvoiceItemType;
   description: string;
   quantity: number;
   unitPrice: number;
@@ -38,7 +43,7 @@ export interface Invoice {
   pstAmount?: number;
   total: number;
   status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
-  paymentMethod?: 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CHECK' | 'E_TRANSFER' | 'FINANCING';
+  paymentMethod?: PaymentMethod;
   notes?: string;
   createdBy: string;
   createdAt: string;
@@ -46,19 +51,12 @@ export interface Invoice {
   paidAt?: string;
 }
 
-export interface CreateInvoiceDto {
-  customerId: string;
-  vehicleId?: string;
-  items: Omit<InvoiceItem, 'id' | 'total'>[];
-  taxRate?: number;
-  paymentMethod?: Invoice['paymentMethod'];
-  notes?: string;
-  status?: Invoice['status'];
-}
+// Using shared DTO from the library
+export type CreateInvoiceDto = CreateInvoiceEnhancedDto;
 
 export interface UpdateInvoiceDto {
   status?: Invoice['status'];
-  paymentMethod?: Invoice['paymentMethod'];
+  paymentMethod?: PaymentMethod;
   notes?: string;
   paidAt?: string;
 }

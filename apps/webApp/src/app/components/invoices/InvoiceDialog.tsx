@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { invoiceService, InvoiceItem } from '../../services/invoice.service';
+import { InvoiceItemType } from '@prisma/client';
 import { customerService } from '../../services/customer.service';
 import { vehicleService } from '../../services/vehicle.service';
 import TireService from '../../services/tire.service';
@@ -71,7 +72,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [newItem, setNewItem] = useState<InvoiceItem>({
-    itemType: 'SERVICE',
+    itemType: InvoiceItemType.SERVICE,
     description: '',
     quantity: 1,
     unitPrice: 0,
@@ -115,7 +116,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     });
     setItems([]);
     setNewItem({
-      itemType: 'SERVICE',
+      itemType: InvoiceItemType.SERVICE,
       description: '',
       quantity: 1,
       unitPrice: 0,
@@ -270,7 +271,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     if (newItem.description && newItem.unitPrice > 0) {
       setItems([...items, { ...newItem, total: newItem.quantity * newItem.unitPrice }]);
       setNewItem({
-        itemType: 'SERVICE',
+        itemType: InvoiceItemType.SERVICE,
         description: '',
         quantity: 1,
         unitPrice: 0,
@@ -288,7 +289,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setNewItem({
         ...newItem,
         tireId: tire.id,
-        itemType: 'TIRE',
+        itemType: InvoiceItemType.TIRE,
         description: `${tire.brand} ${formatTireType(tire.type)} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
       });
