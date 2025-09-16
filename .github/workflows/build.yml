@@ -87,7 +87,7 @@ jobs:
         const PORT = process.env.PORT || 8080;
 
         // Backend configuration - Using working container deployment
-        const BACKEND_URL = 'http://20.175.174.55:3000';
+        const BACKEND_URL = 'http://4.204.162.5:3000';
 
         // CORS middleware for API routes
         app.use('/api', (req, res, next) => {
