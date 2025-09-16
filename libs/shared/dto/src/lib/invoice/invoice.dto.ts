@@ -1,266 +1,136 @@
-import { 
-  IsString, 
-  IsNumber, 
-  IsOptional, 
-  IsUUID, 
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsUUID,
   IsDateString,
   ValidateNested,
   IsArray,
   Min,
-  IsPositive
+  IsPositive,
+  IsEnum,
+  IsEmail
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaymentMethod, InvoiceItemType } from '../common/enums.dto';
 
-// Invoice DTOs
-export class InvoiceDto {
-  @IsUUID()
-  id!: string;
-
-  @IsString()
-  invoiceNumber!: string;
-
-  @IsUUID()
-  customerId!: string;
-
-  @IsUUID()
-  @IsOptional()
-  vehicleId?: string;
-
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  subtotal!: number;
-
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  taxRate!: number;
-
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  taxAmount!: number;
-
-  @IsNumber()
-  @IsPositive()
-  @Type(() => Number)
-  total!: number;
-
-  @IsString()
-  status!: string;
-
-  @IsString()
-  @IsOptional()
-  paymentMethod?: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @IsUUID()
-  createdBy!: string;
-
-  @IsDateString()
-  createdAt!: Date;
-
-  @IsDateString()
-  updatedAt!: Date;
-
-  @IsDateString()
-  @IsOptional()
-  paidAt?: Date;
-}
-
-export class CreateInvoiceDto {
-  @IsUUID()
-  customerId!: string;
-
-  @IsUUID()
-  @IsOptional()
-  vehicleId?: string;
-
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  taxRate!: number;
-
-  @IsString()
-  @IsOptional()
-  paymentMethod?: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @IsUUID()
-  createdBy!: string;
-}
-
-export class UpdateInvoiceDto {
-  @IsString()
-  @IsOptional()
-  status?: string;
-
-  @IsString()
-  @IsOptional()
-  paymentMethod?: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @IsDateString()
-  @IsOptional()
-  paidAt?: Date;
-}
-
-// Invoice Item DTOs
-export class InvoiceItemDto {
-  @IsUUID()
-  id!: string;
-
-  @IsUUID()
-  invoiceId!: string;
-
-  @ValidateNested()
-  @Type(() => InvoiceDto)
-  @IsOptional()
-  invoice?: InvoiceDto;
-
-  @IsUUID()
-  @IsOptional()
-  tireId?: string;
-
-  @ValidateNested()
-  @Type(() => TireReferenceDto)
-  @IsOptional()
-  tire?: TireReferenceDto;
-
-  @IsString()
-  itemType!: string;
-
-  @IsString()
-  description!: string;
-
-  @IsNumber()
-  @IsPositive()
-  @Type(() => Number)
-  quantity!: number;
-
-  @IsNumber()
-  @IsPositive()
-  @Type(() => Number)
-  unitPrice!: number;
-
-  @IsNumber()
-  @IsPositive()
-  @Type(() => Number)
-  total!: number;
-
-  @IsDateString()
-  createdAt!: Date;
-
-  @IsDateString()
-  updatedAt!: Date;
-}
-
-export class CreateInvoiceItemDto {
-  @IsUUID()
-  @IsOptional()
-  tireId?: string;
-
-  @IsString()
-  itemType!: string;
-
-  @IsString()
-  description!: string;
-
-  @IsNumber()
-  @IsPositive()
-  @Type(() => Number)
-  quantity!: number;
-
-  @IsNumber()
-  @IsPositive()
-  @Type(() => Number)
-  unitPrice!: number;
-}
-
-export class UpdateInvoiceItemDto {
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsNumber()
-  @IsPositive()
-  @IsOptional()
-  @Type(() => Number)
-  quantity?: number;
-
-  @IsNumber()
-  @IsPositive()
-  @IsOptional()
-  @Type(() => Number)
-  unitPrice?: number;
-}
-
-// Reference DTOs to avoid circular dependencies
-export class CustomerReferenceDto {
-  @IsUUID()
-  id!: string;
-
+// CreateCustomerDto for inline customer creation (defined first to avoid circular dependency)
+export class CreateCustomerDtoForInvoice {
   @IsString()
   firstName!: string;
 
   @IsString()
   lastName!: string;
 
-  @IsString()
   @IsOptional()
-  email?: string;
+  @IsString()
+  businessName?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 }
 
-export class VehicleReferenceDto {
-  @IsUUID()
-  id!: string;
+// Enhanced Invoice DTOs with proper validation
+
+export class CreateInvoiceEnhancedDto {
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateCustomerDtoForInvoice)
+  customerData?: CreateCustomerDtoForInvoice;
+
+  @IsOptional()
+  @IsString()
+  vehicleId?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateInvoiceItemEnhancedDto)
+  items!: CreateInvoiceItemEnhancedDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  taxRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  gstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pstRate?: number;
+
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// Enhanced Invoice Item DTOs with proper validation
+
+export class CreateInvoiceItemEnhancedDto {
+  @IsOptional()
+  @IsString()
+  tireId?: string;
+
+  @IsEnum(InvoiceItemType)
+  itemType!: InvoiceItemType;
 
   @IsString()
-  make!: string;
-
-  @IsString()
-  model!: string;
+  description!: string;
 
   @IsNumber()
+  @Min(1)
   @Type(() => Number)
-  year!: number;
+  quantity!: number;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  unitPrice!: number;
+}
+
+// Enhanced Update DTOs with proper validation
+export class UpdateInvoiceItemEnhancedDto {
+  @IsOptional()
+  @IsEnum(InvoiceItemType)
+  itemType?: InvoiceItemType;
 
   @IsString()
   @IsOptional()
-  licensePlate?: string;
-}
-
-export class TireReferenceDto {
-  @IsUUID()
-  id!: string;
-
-  @IsString()
-  brand!: string;
-
-  @IsString()
-  size!: string;
-
-  @IsString()
-  type!: string;
-
-  @IsString()
-  condition!: string;
+  description?: string;
 
   @IsNumber()
-  @IsPositive()
+  @Min(1)
+  @IsOptional()
   @Type(() => Number)
-  price!: number;
+  quantity?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  unitPrice?: number;
 }
+

@@ -24,7 +24,14 @@ export class AuthService {
       try {
         const clerkSecretKey = this.configService.get<string>('CLERK_SECRET_KEY');
         if (clerkSecretKey) {
-          const { clerkClient } = await import('@clerk/clerk-sdk-node');
+          const { createClerkClient } = await import('@clerk/clerk-sdk-node');
+
+          // Create configured Clerk client with secret key
+          const clerkClient = createClerkClient({
+            secretKey: clerkSecretKey,
+            apiUrl: this.configService.get<string>('CLERK_API_URL') || 'https://api.clerk.com'
+          });
+
           clerkUser = await clerkClient.users.getUser(clerkUserId);
         } else {
           throw new Error('Clerk not configured');
@@ -34,7 +41,7 @@ export class AuthService {
         return null;
       }
       
-      const customerRole = await this.roleRepository.findByName('customer');
+      const customerRole = await this.roleRepository.findByName('CUSTOMER');
       if (!customerRole) {
         throw new Error('Customer role not found in database');
       }
@@ -96,7 +103,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role?.name || 'customer',
+      role: user.role?.name || 'CUSTOMER',
     };
     
     return this.jwtService.sign(payload);
@@ -119,7 +126,7 @@ export class AuthService {
       }
       
       // Get customer role
-      const customerRole = await this.roleRepository.findByName('customer');
+      const customerRole = await this.roleRepository.findByName('CUSTOMER');
       if (!customerRole) {
         throw new Error('Customer role not found in database');
       }
@@ -158,7 +165,7 @@ export class AuthService {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role || { name: 'customer' },
+      role: user.role || { name: 'CUSTOMER' },
       isActive: user.isActive,
     };
   }

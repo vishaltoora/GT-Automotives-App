@@ -105,8 +105,14 @@ export class UsersService {
     const clerkSecretKey = this.configService.get<string>('CLERK_SECRET_KEY');
     if (clerkSecretKey) {
       try {
-        const { clerkClient } = await import('@clerk/clerk-sdk-node');
-        
+        const { createClerkClient } = await import('@clerk/clerk-sdk-node');
+
+        // Create configured Clerk client with secret key
+        const clerkClient = createClerkClient({
+          secretKey: clerkSecretKey,
+          apiUrl: this.configService.get<string>('CLERK_API_URL') || 'https://api.clerk.com'
+        });
+
         const clerkUser = await clerkClient.users.createUser({
           emailAddress: [data.email],
           username: data.username,
@@ -114,16 +120,16 @@ export class UsersService {
           lastName: data.lastName,
           password: data.password,
         });
-        
+
         clerkUserId = clerkUser.id;
-        
+
         // Set metadata for role
         await clerkClient.users.updateUserMetadata(clerkUserId, {
           publicMetadata: {
             role: data.roleName,
           },
         });
-        
+
       } catch (clerkError: any) {
         console.error('Failed to create user in Clerk:', clerkError);
         throw new InternalServerErrorException(
