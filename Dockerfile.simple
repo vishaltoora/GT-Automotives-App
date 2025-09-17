@@ -10,8 +10,8 @@ COPY backend-deploy/server/ ./
 COPY backend-deploy/prisma/ ./prisma/
 
 # Copy shared libraries temporarily
-COPY libs/shared/dto/dist/ ./shared-dto-temp/
-COPY libs/shared/dto/package.json ./shared-dto-package.json
+COPY libs/shared-dto/dist/ ./shared-dto-temp/
+COPY libs/shared-dto/package.json ./shared-dto-package.json
 
 # Install dependencies and generate Prisma client
 RUN npm install --production && \

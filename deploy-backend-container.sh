@@ -90,8 +90,8 @@ cp -r libs/database/src/lib/prisma/migrations backend-deploy/prisma/ 2>/dev/null
 
 # Copy shared libraries for manual node_modules structure creation
 mkdir -p backend-deploy/shared-dto-temp
-cp -r libs/shared/dto/dist/* backend-deploy/shared-dto-temp/
-cp libs/shared/dto/package.json backend-deploy/shared-dto-package.json
+cp -r libs/shared-dto/dist/* backend-deploy/shared-dto-temp/
+cp libs/shared-dto/package.json backend-deploy/shared-dto-package.json
 
 # Create production package.json with webpack externalized dependencies
 cat > backend-deploy/package.json << 'EOF'
