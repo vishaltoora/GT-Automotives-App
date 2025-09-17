@@ -251,26 +251,36 @@ jobs:
         echo "📋 Shared library temp files:"
         ls -la shared-dto-temp/ 2>/dev/null || echo "No shared-dto-temp directory"
 
-    - name: Create optimized Dockerfile with fixes
+    - name: Create exact copy of working Dockerfile.simple
       run: |
-        echo "🐳 Creating Dockerfile aligned with working direct deployment..."
+        echo "🐳 Creating exact copy of Dockerfile.simple that works..."
         cd backend-deploy
 
-        # First, reorganize the file structure to match working deployment
-        echo "📁 Reorganizing file structure..."
-        if [ -d "server" ]; then
-          # Move server contents to root level (matching Dockerfile.simple)
-          cp -r server/* ./
-          rm -rf server
+        # Create the EXACT directory structure expected by Dockerfile.simple
+        echo "📁 Creating directory structure to match Dockerfile.simple expectations..."
+
+        # Create backend-deploy/server structure if needed
+        if [ ! -d "server" ]; then
+          mkdir -p server
+          # Move all current files to server/ directory
+          find . -maxdepth 1 -type f -not -name ".*" -exec mv {} server/ \;
+          # Move any subdirectories that aren't server or prisma
+          find . -maxdepth 1 -type d -not -name "." -not -name "server" -not -name "prisma" -exec mv {} server/ \;
         fi
 
-        # Ensure we have the shared libraries ready
-        if [ -d "../libs/shared/dto/dist" ]; then
+        # Ensure prisma directory exists at root level
+        if [ ! -d "prisma" ] && [ -d "server/prisma" ]; then
+          mv server/prisma ./prisma
+        fi
+
+        # Ensure shared libraries are at root level for Dockerfile access
+        if [ ! -d "shared-dto-temp" ] && [ -d "../libs/shared/dto/dist" ]; then
           mkdir -p shared-dto-temp
-          cp -r ../libs/shared/dto/dist/* shared-dto-temp/
-          cp ../libs/shared/dto/package.json shared-dto-package.json
+          cp -r ../libs/shared/dto/dist/* shared-dto-temp/ 2>/dev/null || echo "No shared library dist files"
+          cp ../libs/shared/dto/package.json shared-dto-package.json 2>/dev/null || echo "No shared library package.json"
         fi
 
+        # Copy the EXACT Dockerfile.simple content
         cat > Dockerfile << 'EOF'
         FROM node:20-slim
 
@@ -279,31 +289,41 @@ jobs:
         # Install system dependencies for Prisma
         RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-        # Copy all files to container
-        COPY . ./
+        # Copy built server files (EXACT copy from Dockerfile.simple)
+        COPY server/ ./
+        COPY prisma/ ./prisma/
+
+        # Copy shared libraries temporarily (using already prepared shared libraries)
+        COPY shared-dto-temp/ ./shared-dto-temp/
+        COPY shared-dto-package.json ./shared-dto-package.json
 
         # Install dependencies and generate Prisma client
         RUN npm install --production && \
             npx prisma generate --schema=./prisma/schema.prisma
 
-        # Create proper node_modules structure for shared libraries (critical fix from working deployment)
-        RUN if [ -d "./shared-dto-temp" ]; then \
-              mkdir -p ./node_modules/@gt-automotive/shared-dto/dist/ && \
-              cp -r ./shared-dto-temp/* ./node_modules/@gt-automotive/shared-dto/dist/ && \
-              cp ./shared-dto-package.json ./node_modules/@gt-automotive/shared-dto/package.json && \
-              rm -rf ./shared-dto-temp ./shared-dto-package.json; \
-            fi
+        # Create proper node_modules structure after npm install (EXACT copy from Dockerfile.simple)
+        RUN mkdir -p ./node_modules/@gt-automotive/shared-dto/dist/ && \
+            cp -r ./shared-dto-temp/* ./node_modules/@gt-automotive/shared-dto/dist/ && \
+            cp ./shared-dto-package.json ./node_modules/@gt-automotive/shared-dto/package.json && \
+            rm -rf ./shared-dto-temp ./shared-dto-package.json
 
-        # Create non-root user for security
+        # Create non-root user (EXACT copy from Dockerfile.simple)
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
             chown -R nodejs:nodejs /app
         USER nodejs
 
         EXPOSE 3000
 
-        # Use direct node command matching Dockerfile.simple (working deployment)
         CMD ["node", "main.js"]
         EOF
+
+        echo "📋 Verifying final structure matches Dockerfile.simple expectations:"
+        echo "Directory structure:"
+        ls -la
+        echo "Server directory:"
+        ls -la server/ 2>/dev/null || echo "No server directory"
+        echo "Prisma directory:"
+        ls -la prisma/ 2>/dev/null || echo "No prisma directory"
 
     - name: Build and push Docker image
       run: |
