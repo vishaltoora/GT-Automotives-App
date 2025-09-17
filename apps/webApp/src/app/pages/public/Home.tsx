@@ -22,15 +22,6 @@ export function Home() {
   const { isAuthenticated, role, user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Debug: Log authentication state from Home component
-    console.log('🏠 Home Debug State:');
-    console.log('  - isLoading:', isLoading);
-    console.log('  - isAuthenticated:', isAuthenticated);
-    console.log('  - user:', user ? { id: user.id, email: user.email, role: user.role } : null);
-    console.log('  - role:', role);
-    console.log('  - currentPath:', location.pathname);
-
-    console.log('🏠 Home component rendered - Current URL:', window.location.href);
 
     // Redirect authenticated users to their dashboard
     if (!isLoading && isAuthenticated && user && role) {
@@ -46,7 +37,6 @@ export function Home() {
           redirectPath = '/customer/dashboard';
           break;
       }
-      console.log('Home: Redirecting authenticated user to', redirectPath);
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, role, user, navigate, isLoading]);

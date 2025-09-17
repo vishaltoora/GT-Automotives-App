@@ -39,14 +39,6 @@ export function useAuth() {
   const isDevelopment = false; // Set to false to enable Clerk authentication
 
   useEffect(() => {
-    // Debug Clerk state
-    console.log('🔍 useAuth Debug - Clerk State:', {
-      isLoaded,
-      isSignedIn,
-      clerkUser: clerkUser ? { id: clerkUser.id, email: clerkUser.primaryEmailAddress?.emailAddress } : null,
-      isDevelopment,
-      publishableKey: publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NONE'
-    });
 
     const syncUser = async () => {
       // Development mode with mock data
@@ -84,7 +76,6 @@ export function useAuth() {
           if (!token) {
             // User is signed in with Clerk but no token yet
             // This happens on first sign-in before backend sync
-            console.log('Waiting for Clerk token...');
             setLoading(false);
             return;
           }
@@ -100,12 +91,16 @@ export function useAuth() {
           });
           setAppUser(response.data);
         } catch (error: any) {
-          console.error('Failed to sync user:', error);
+          if (import.meta.env.DEV) {
+            console.error('Failed to sync user:', error);
+          }
           
           // For now, set a default customer user to prevent redirect loops
           // The proper sync should happen via Clerk webhook
           if (error.response?.status === 404 || error.response?.status === 401) {
-            console.log('User not found in database. Checking for pre-seeded user...');
+            if (import.meta.env.DEV) {
+              console.log('User not found in database. Checking for pre-seeded user...');
+            }
             
             // Check if this is Vishal's account
             const userEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
@@ -154,7 +149,9 @@ export function useAuth() {
       localStorage.removeItem('authToken');
       setAppUser(null);
     } catch (error) {
-      console.error('Error during logout:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error during logout:', error);
+      }
     }
   };
 

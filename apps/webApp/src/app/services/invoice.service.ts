@@ -69,7 +69,9 @@ class InvoiceService {
           return freshToken;
         }
       } catch (error) {
-        console.error('Failed to get fresh Clerk token:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to get fresh Clerk token:', error);
+        }
       }
     }
     // Fallback to localStorage

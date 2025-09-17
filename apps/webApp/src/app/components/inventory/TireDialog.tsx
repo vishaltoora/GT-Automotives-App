@@ -166,7 +166,9 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
       onClose();
     },
     onError: (error: any) => {
-      console.error('Create tire failed:', error?.response?.data?.message || error.message);
+      if (import.meta.env.DEV) {
+        console.error('Create tire failed:', error?.response?.data?.message || error.message);
+      }
     },
   });
 
@@ -183,7 +185,9 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
       onClose();
     },
     onError: (error: any) => {
-      console.error('Update tire failed:', error?.response?.data?.message || error.message);
+      if (import.meta.env.DEV) {
+        console.error('Update tire failed:', error?.response?.data?.message || error.message);
+      }
     },
   });
 

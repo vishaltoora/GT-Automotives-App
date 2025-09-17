@@ -242,14 +242,6 @@ const InvoiceForm: React.FC = () => {
         invoiceData.vehicleId = formData.vehicleId;
       }
 
-      // Debug logs
-      console.log('Debug - customerId:', customerId);
-      console.log('Debug - isNewCustomer:', isNewCustomer);
-      console.log('Debug - customerForm:', customerForm);
-      console.log('Debug - formData.customerId:', formData.customerId);
-      console.log('Debug - items before mapping:', items);
-      console.log('Sending invoice data:', invoiceData);
-      console.log('Invoice items detail:', invoiceData.items);
 
       // Validate that we have customer information
       if (!invoiceData.customerId && !invoiceData.customerData) {
@@ -261,10 +253,14 @@ const InvoiceForm: React.FC = () => {
       const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
       navigate(`${basePath}/invoices/${invoice.id}`);
     } catch (error: any) {
-      console.error('Error creating invoice:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error creating invoice:', error);
+        if (error.response?.data) {
+          console.error('Error details:', error.response.data);
+          console.error('Error message array:', error.response.data.message);
+        }
+      }
       if (error.response?.data) {
-        console.error('Error details:', error.response.data);
-        console.error('Error message array:', error.response.data.message);
         const errorMessage = Array.isArray(error.response.data.message) 
           ? error.response.data.message.join(', ')
           : error.response.data.message || 'Unknown error';

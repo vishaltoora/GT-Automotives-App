@@ -15,7 +15,9 @@ export async function getAuthToken(): Promise<string | null> {
         return await clerkInstance.session.getToken();
       }
     } catch (error) {
-      console.error('Error getting Clerk token:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error getting Clerk token:', error);
+      }
     }
   }
   
@@ -47,7 +49,9 @@ export function setupAxiosInterceptors() {
     (error: any) => {
       if (error.response?.status === 401) {
         // Handle unauthorized access
-        console.warn('Unauthorized access - token may be expired');
+        if (import.meta.env.DEV) {
+          console.warn('Unauthorized access - token may be expired');
+        }
         // Could trigger logout or token refresh here
       }
       return Promise.reject(error);

@@ -95,7 +95,9 @@ class QuoteService {
           return freshToken;
         }
       } catch (error) {
-        console.error('Failed to get fresh Clerk token:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to get fresh Clerk token:', error);
+        }
       }
     }
     // Fallback to localStorage
@@ -415,7 +417,9 @@ class QuoteService {
         try {
           printWindow.print();
         } catch (error) {
-          console.warn('Print dialog failed:', error);
+          if (import.meta.env.DEV) {
+            console.warn('Print dialog failed:', error);
+          }
           // Close the window if print failed
           printWindow.close();
           // Try alternative method
@@ -423,7 +427,9 @@ class QuoteService {
         }
       }, 500);
     } catch (error) {
-      console.error('Failed to open print window:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to open print window:', error);
+      }
       // Fallback to blob method
       this.printUsingBlob(quote);
     }
@@ -452,12 +458,16 @@ class QuoteService {
           try {
             printWindow.print();
           } catch (error) {
-            console.warn('Print dialog failed:', error);
+            if (import.meta.env.DEV) {
+              console.warn('Print dialog failed:', error);
+            }
           }
         }, 500);
       };
     } catch (error) {
-      console.error('Alternative print method failed:', error);
+      if (import.meta.env.DEV) {
+        console.error('Alternative print method failed:', error);
+      }
       throw error;
     }
   }

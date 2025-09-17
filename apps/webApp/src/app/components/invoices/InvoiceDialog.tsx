@@ -165,7 +165,6 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
     try {
       setLoading(true);
-      console.log('Creating invoice - customerId:', customerId, 'isNewCustomer:', isNewCustomer);
       
       const invoiceData: any = {
         items: items.map(({ itemType, description, quantity, unitPrice, tireId }) => {
@@ -223,12 +222,13 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       }
 
 
-      console.log('Invoice data being sent:', invoiceData);
       const invoice = await invoiceService.createInvoice(invoiceData);
       onSuccess(invoice);
       onClose();
     } catch (error: any) {
-      console.error('Error creating invoice:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error creating invoice:', error);
+      }
       
       if (error.response?.data) {
         const errorMessage = Array.isArray(error.response.data.message) 

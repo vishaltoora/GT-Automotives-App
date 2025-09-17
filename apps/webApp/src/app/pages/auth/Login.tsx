@@ -13,9 +13,6 @@ import { colors } from '../../theme/colors';
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 const SignIn = publishableKey ? ClerkSignIn : MockSignIn;
 
-console.log('🔍 Login Page Debug:');
-console.log('📋 publishableKey in Login:', publishableKey ? `${publishableKey.substring(0, 20)}...` : 'NOT_FOUND');
-console.log('📋 Using component:', publishableKey ? 'ClerkSignIn' : 'MockSignIn');
 
 export function Login() {
   const navigate = useNavigate();
@@ -23,13 +20,6 @@ export function Login() {
   const { isAuthenticated, role, user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Debug: Log authentication state
-    console.log('🔍 Login Debug State:');
-    console.log('  - isLoading:', isLoading);
-    console.log('  - isAuthenticated:', isAuthenticated);
-    console.log('  - user:', user ? { id: user.id, email: user.email, role: user.role } : null);
-    console.log('  - role:', role);
-    console.log('  - clerkUser present:', !!user);
 
     // Add a small delay to avoid redirect loops during authentication state changes
     const timeoutId = setTimeout(() => {
@@ -55,7 +45,6 @@ export function Login() {
             break;
         }
 
-        console.log('Login: Redirecting to', redirectPath);
         navigate(redirectPath, { replace: true });
       }
     }, 100); // Small delay to prevent redirect loops
