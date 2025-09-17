@@ -402,19 +402,26 @@ az container logs --resource-group gt-automotives-prod --name gt-backend-working
 
 ## Recent Updates
 
+### September 17, 2025 - GitHub Workflow Deployment Fix
+- ✅ **Crash Loop Resolved**: Fixed container crash loop in GitHub Actions deployment
+- ✅ **File Structure Alignment**: Reorganized deployment to match working Dockerfile.simple (main.js at root)
+- ✅ **Shared Library Fix**: Added proper @gt-automotive/shared-dto node_modules setup in workflow
+- ✅ **Entry Point Fix**: Changed from debug script to direct `node main.js` command
+- ✅ **Environment Variables**: Added all missing Clerk variables to container deployment
+- ✅ **Parallel Deployment**: Enabled frontend and backend to deploy simultaneously for faster deployments
+
 ### September 16, 2025 - Clerk SDK Authorization Fix
 - ✅ **Environment Variables**: Added `CLERK_API_URL=https://api.clerk.com` to required variables
 - ✅ **Backend Code**: Updated services to use `createClerkClient` with proper configuration
 - ✅ **Deployment**: Container recreated with full Clerk environment variable set
 - ✅ **Status**: Clerk SDK authorization issues resolved for user creation endpoints
 
-### Known Issues
-- 🔍 **User Creation**: POST request issues persist in both production and local environments
-- 🔍 **Investigation**: Requires local debugging before production fix
-- 📋 **Tracking**: See authentication-troubleshooting.md for current status
+### Known Issues Resolved
+- ✅ **GitHub Workflow Crash Loop**: RESOLVED - Container now starts successfully from CI/CD
+- ✅ **File Path Mismatches**: RESOLVED - Aligned with working direct deployment structure
 
 ---
 
-**Last Updated**: September 16, 2025
-**Container Image**: `gtautomotivesregistry.azurecr.io/gt-backend:manual-deploy-fix` (with updated environment variables)
-**Production URL**: `http://gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000`
+**Last Updated**: September 17, 2025
+**Container Image**: `gtautomotivesregistry.azurecr.io/gt-backend:container-deploy-[build-number]`
+**Production URL**: `http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000`

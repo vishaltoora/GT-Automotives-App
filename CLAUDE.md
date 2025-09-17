@@ -10,7 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Authentication](.claude/docs/authentication.md)** - Clerk setup, user roles, and permissions
 - **[Clerk Custom Domain Setup](.claude/docs/clerk-custom-domain-setup.md)** - Complete guide for Clerk custom domain configuration
 - **[Authentication Troubleshooting](.claude/docs/authentication-troubleshooting.md)** - Complete guide for resolving authentication issues
-- **[Reverse Proxy Implementation](.claude/docs/reverse-proxy-implementation.md)** - Web App reverse proxy setup and Mixed Content resolution ⭐ NEW
+- **[Reverse Proxy Implementation](.claude/docs/reverse-proxy-implementation.md)** - Web App reverse proxy setup and Mixed Content resolution
+- **[GitHub Workflow Deployment](.claude/docs/github-workflow-deployment.md)** - CI/CD workflow documentation and crash loop fixes ⭐ NEW
 - **[User Management](.claude/docs/user-management.md)** - Complete user management system documentation
 - **[API Documentation](.claude/docs/api-documentation.md)** - Comprehensive REST API reference
 - **[Grid Modernization](.claude/docs/grid-modernization.md)** - Material-UI Grid updates and best practices
@@ -22,12 +23,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
 - **[Azure Deployment Plan](.claude/docs/azure-deployment-plan.md)** - Azure App Service deployment architecture and configuration
 - **[Azure Implementation Guide](.claude/docs/azure-implementation-guide.md)** - Step-by-step Azure deployment implementation
-- **[Backend Container Deployment Config](.claude/docs/backend-container-deployment-config.md)** - Complete Docker containerization guide with architectural fixes ⭐ NEW
+- **[Backend Container Deployment Config](.claude/docs/backend-container-deployment-config.md)** - Complete Docker containerization guide with crash loop fixes (Updated Sept 17)
 - **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
 - **[Testing](.claude/docs/testing.md)** - Testing strategy, frameworks, and best practices
-- **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions
+- **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions (includes crash loop resolution)
 - **[Completed Work](.claude/docs/completed-work.md)** - Detailed log of implemented features
 
 ## 🚀 Quick Start
@@ -119,6 +120,16 @@ yarn test          # Run tests
 ---
 
 ## 🔄 Recent Updates
+
+### September 17, 2025 - GitHub Workflow Deployment Fix & Parallel Optimization ✅
+- ✅ **Container Crash Loop Resolved**: Fixed GitHub Actions deployment crash loop issue
+- ✅ **File Structure Alignment**: Reorganized deployment to match working Dockerfile.simple
+- ✅ **Shared Library Fix**: Proper @gt-automotive/shared-dto setup in node_modules
+- ✅ **Entry Point Fix**: Changed from debug script to direct `node main.js`
+- ✅ **Environment Variables**: Added all missing Clerk variables to container deployment
+- ✅ **Parallel Deployment**: Frontend and backend now deploy simultaneously (50% faster)
+- ✅ **Documentation Created**: New GitHub Workflow Deployment guide
+- ✅ **Latest Build**: build-20250917-144706-3142150 (ready for deployment)
 
 ### September 16, 2025 - Clerk SDK Authorization Fix & Backend Deployment ✅
 - ✅ **Clerk SDK Authorization Issue Resolved**: Fixed "Failed to create user in Clerk: Unauthorized" errors

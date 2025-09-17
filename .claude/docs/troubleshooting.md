@@ -1,5 +1,25 @@
 # Troubleshooting Guide
 
+## Recent Resolutions (September 17, 2025)
+
+### Container Crash Loop in GitHub Workflow ✅ RESOLVED
+**Problem:** Containers deployed via GitHub Actions would crash immediately, but direct deployment worked
+**Root Causes:**
+- File structure mismatch (main.js at `server/main.js` vs root)
+- Missing @gt-automotive/shared-dto in node_modules
+- Incorrect Dockerfile entry point
+- Missing Clerk environment variables
+
+**Solution:**
+1. Reorganized file structure in workflow to match Dockerfile.simple
+2. Added proper shared library setup
+3. Fixed entry point to use `CMD ["node", "main.js"]`
+4. Added all required environment variables to container creation
+
+**Files Updated:**
+- `.github/workflows/deploy.yml`
+- See [GitHub Workflow Deployment](./github-workflow-deployment.md) for details
+
 ## Common Issues & Solutions
 
 ### Blank Pages / Nothing Displayed
