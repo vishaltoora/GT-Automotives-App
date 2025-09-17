@@ -215,7 +215,7 @@ jobs:
       run: |
         echo "📦 Extracting deployment package with container fixes..."
         cd backend-deploy
-        unzip -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
+        unzip -qo ${{ needs.validate-build.outputs.backend-artifact }}.zip
 
         echo "📋 Deployment structure:"
         ls -la
