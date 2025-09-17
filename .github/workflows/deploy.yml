@@ -224,9 +224,24 @@ jobs:
 
     - name: Create optimized Dockerfile with fixes
       run: |
-        echo "🐳 Creating Dockerfile with container deployment fixes..."
+        echo "🐳 Creating Dockerfile aligned with working direct deployment..."
         cd backend-deploy
-        
+
+        # First, reorganize the file structure to match working deployment
+        echo "📁 Reorganizing file structure..."
+        if [ -d "server" ]; then
+          # Move server contents to root level (matching Dockerfile.simple)
+          cp -r server/* ./
+          rm -rf server
+        fi
+
+        # Ensure we have the shared libraries ready
+        if [ -d "../libs/shared/dto/dist" ]; then
+          mkdir -p shared-dto-temp
+          cp -r ../libs/shared/dto/dist/* shared-dto-temp/
+          cp ../libs/shared/dto/package.json shared-dto-package.json
+        fi
+
         cat > Dockerfile << 'EOF'
         FROM node:20-slim
 
@@ -235,28 +250,20 @@ jobs:
         # Install system dependencies for Prisma
         RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-        # Copy deployment package (already contains Prisma client from build process)
+        # Copy all files to container
         COPY . ./
 
-        # Install only production dependencies (Prisma client already generated in build)
-        RUN npm install --production --no-package-lock
+        # Install dependencies and generate Prisma client
+        RUN npm install --production && \
+            npx prisma generate --schema=./prisma/schema.prisma
 
-        # Verify deployment structure and dependencies with error checking
-        RUN echo "📋 Verifying deployment structure:" && \
-            ls -la && \
-            echo "🔍 Checking server files:" && \
-            ls -la server/ && \
-            if [ ! -f "server/main.js" ]; then echo "❌ ERROR: server/main.js not found!"; exit 1; fi && \
-            echo "🔍 Checking Prisma:" && \
-            ls -la prisma/ && \
-            if [ ! -f "prisma/schema.prisma" ]; then echo "❌ ERROR: prisma/schema.prisma not found!"; exit 1; fi && \
-            echo "🔍 Checking node_modules structure:" && \
-            ls -la node_modules/@gt-automotive/ && \
-            echo "✅ Container deployment structure verified"
-
-        # Add a simple health check script for debugging
-        RUN echo '#!/bin/bash\necho "Starting GT Automotive Backend..."\necho "Node version: $(node --version)"\necho "Available files:"\nls -la\necho "Starting application..."\nexec node server/main.js' > /app/start.sh && \
-            chmod +x /app/start.sh
+        # Create proper node_modules structure for shared libraries (critical fix from working deployment)
+        RUN if [ -d "./shared-dto-temp" ]; then \
+              mkdir -p ./node_modules/@gt-automotive/shared-dto/dist/ && \
+              cp -r ./shared-dto-temp/* ./node_modules/@gt-automotive/shared-dto/dist/ && \
+              cp ./shared-dto-package.json ./node_modules/@gt-automotive/shared-dto/package.json && \
+              rm -rf ./shared-dto-temp ./shared-dto-package.json; \
+            fi
 
         # Create non-root user for security
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
@@ -265,8 +272,8 @@ jobs:
 
         EXPOSE 3000
 
-        # Use the debug startup script for better error visibility
-        CMD ["/app/start.sh"]
+        # Use direct node command matching Dockerfile.simple (working deployment)
+        CMD ["node", "main.js"]
         EOF
 
     - name: Build and push Docker image
@@ -359,7 +366,7 @@ jobs:
           --name ${{ env.CONTAINER_NAME }} \
           --yes || echo "No existing container to delete"
         
-        # Create new container instance
+        # Create new container instance with all required environment variables
         az container create \
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --name ${{ env.CONTAINER_NAME }} \
@@ -376,6 +383,10 @@ jobs:
             DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
+            CLERK_API_URL="${{ secrets.CLERK_API_URL }}" \
+            CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY }}" \
+            CLERK_JWKS_URL="${{ secrets.CLERK_JWKS_URL }}" \
+            FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
             PORT="3000" \
             NODE_ENV="production"
         
