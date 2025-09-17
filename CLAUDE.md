@@ -120,14 +120,16 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
-### September 16, 2025 - Authentication Environment Variable Fix ✅
-- ✅ **Environment Variable Consistency Issue Resolved**: Fixed authentication loop caused by inconsistent environment variable access
-- ✅ **useAuth Hook Fix**: Updated to use direct `import.meta.env` access instead of `getEnvVar()` utility
-- ✅ **Authentication Flow Verified**: Login → Loading → Admin Dashboard redirect now works properly
+### September 16, 2025 - Clerk SDK Authorization Fix & Backend Deployment ✅
+- ✅ **Clerk SDK Authorization Issue Resolved**: Fixed "Failed to create user in Clerk: Unauthorized" errors
+- ✅ **Backend Code Updates**: Updated `users.service.ts` and `auth.service.ts` to use `createClerkClient` with proper configuration
+- ✅ **Environment Variables**: Added missing `CLERK_API_URL=https://api.clerk.com` to production backend container
+- ✅ **Container Redeployment**: Recreated Azure Container Instance with complete Clerk environment variable set
+- ✅ **Authentication Flow Verified**: Login → Loading → Admin Dashboard redirect works properly
 - ✅ **Debug Logging Enhanced**: Added comprehensive authentication state logging for future troubleshooting
-- ✅ **Documentation Updated**: Enhanced authentication troubleshooting guide with environment variable best practices
-- ✅ **Root Cause**: `getEnvVar()` utility was failing while `ClerkProvider` used direct access, causing hook to fall back to mock providers
-- ✅ **Prevention**: Added critical guidelines for environment variable access in development guidelines
+- ✅ **Documentation Updated**: Enhanced authentication troubleshooting guide with Clerk SDK best practices
+- ✅ **Root Cause**: Default `clerkClient` import doesn't include authentication configuration - requires explicit client creation
+- ⚠️ **Known Issues**: User creation and POST request issues persist in both production and local environments (requires local debugging)
 
 ### September 15, 2025 - Backend Container Architecture Resolution & Azure Deployment ✅
 - ✅ **Architecture Analysis**: Identified webpack bundling anti-pattern causing Prisma client failures
@@ -263,5 +265,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated: September 12, 2025 - Complete production system with reverse proxy architecture - all Mixed Content security issues resolved**
+**Last Updated: September 16, 2025 - Clerk SDK authorization issues resolved, user creation endpoint debugging pending**
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.

@@ -177,7 +177,11 @@ az container create \
   --environment-variables \
     DATABASE_URL="postgresql://gtadmin:PASSWORD@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require" \
     JWT_SECRET="your-jwt-secret-key-here" \
-    CLERK_SECRET_KEY="your-clerk-secret-key" \
+    CLERK_SECRET_KEY="sk_live_your-clerk-secret-key" \
+    CLERK_API_URL="https://api.clerk.com" \
+    CLERK_PUBLISHABLE_KEY="pk_live_your-publishable-key" \
+    CLERK_JWKS_URL="https://clerk.gt-automotives.com/.well-known/jwks.json" \
+    FRONTEND_URL="https://gt-automotives.com" \
     PORT="3000" \
     NODE_ENV="production"
 ```
@@ -190,7 +194,11 @@ az container create \
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db?sslmode=require` |
 | `JWT_SECRET` | JWT signing secret | `your-secure-jwt-secret` |
-| `CLERK_SECRET_KEY` | Clerk authentication secret | `sk_test_...` |
+| `CLERK_SECRET_KEY` | Clerk authentication secret | `sk_live_...` |
+| `CLERK_API_URL` | Clerk API endpoint | `https://api.clerk.com` |
+| `CLERK_PUBLISHABLE_KEY` | Clerk frontend key | `pk_live_...` |
+| `CLERK_JWKS_URL` | Clerk JWKS endpoint | `https://clerk.gt-automotives.com/.well-known/jwks.json` |
+| `FRONTEND_URL` | Frontend domain for CORS | `https://gt-automotives.com` |
 | `PORT` | Application port | `3000` |
 | `NODE_ENV` | Environment mode | `production` |
 
@@ -257,7 +265,26 @@ Error: Cannot find module '@gt-automotive/shared-dto'
 - Ensure proper node_modules structure creation
 - Verify dist files are copied correctly
 
-#### 3. Container Startup Failures
+#### 3. Clerk SDK Authorization Failures
+
+**Symptoms**:
+```
+Failed to create user in Clerk: Unauthorized
+Error: Request failed with status 401
+```
+
+**Solutions**:
+- Ensure `CLERK_API_URL=https://api.clerk.com` is set in environment variables
+- Update backend code to use `createClerkClient` instead of default `clerkClient`
+- Verify all Clerk environment variables are properly configured:
+  ```env
+  CLERK_SECRET_KEY=sk_live_...
+  CLERK_API_URL=https://api.clerk.com
+  CLERK_PUBLISHABLE_KEY=pk_live_...
+  CLERK_JWKS_URL=https://clerk.gt-automotives.com/.well-known/jwks.json
+  ```
+
+#### 4. Container Startup Failures
 
 **Symptoms**:
 - Container exits immediately
@@ -275,7 +302,7 @@ az container show --resource-group gt-automotives-prod --name gt-backend-working
 docker run -it --entrypoint /bin/sh gt-backend:final-working
 ```
 
-#### 4. Database Connection Issues
+#### 5. Database Connection Issues
 
 **Symptoms**:
 - Connection timeout errors
@@ -373,8 +400,21 @@ az container logs --resource-group gt-automotives-prod --name gt-backend-working
 - [Tech Stack](./tech-stack.md)
 - [Troubleshooting](./troubleshooting.md)
 
+## Recent Updates
+
+### September 16, 2025 - Clerk SDK Authorization Fix
+- ✅ **Environment Variables**: Added `CLERK_API_URL=https://api.clerk.com` to required variables
+- ✅ **Backend Code**: Updated services to use `createClerkClient` with proper configuration
+- ✅ **Deployment**: Container recreated with full Clerk environment variable set
+- ✅ **Status**: Clerk SDK authorization issues resolved for user creation endpoints
+
+### Known Issues
+- 🔍 **User Creation**: POST request issues persist in both production and local environments
+- 🔍 **Investigation**: Requires local debugging before production fix
+- 📋 **Tracking**: See authentication-troubleshooting.md for current status
+
 ---
 
-**Last Updated**: September 15, 2025  
-**Container Image**: `gtautomotivesregistry.azurecr.io/gt-backend:simple-fix-final`  
-**Production URL**: `http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000`
+**Last Updated**: September 16, 2025
+**Container Image**: `gtautomotivesregistry.azurecr.io/gt-backend:manual-deploy-fix` (with updated environment variables)
+**Production URL**: `http://gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000`

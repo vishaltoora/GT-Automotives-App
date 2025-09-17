@@ -189,7 +189,65 @@ const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 - Test authentication flow end-to-end after any environment variable changes
 - Add debug logging to verify environment variables are properly loaded
 
-### 9. Custom Domain Not Working
+### 9. Clerk SDK Authorization Issues (Backend)
+
+#### Error: "Failed to create user in Clerk: Unauthorized"
+**Symptom:**
+- Frontend authentication works properly
+- User creation via `/api/users/admin-staff` endpoint returns 500 Internal Server Error
+- Backend logs show "Failed to create user in Clerk: Unauthorized"
+- Other Clerk-related API calls may also fail with authorization errors
+
+**Root Cause:**
+The Clerk SDK requires proper client configuration with secret key and API URL. Using the default `clerkClient` import doesn't provide proper authentication configuration.
+
+**Debugging Steps:**
+1. Check backend logs for Clerk-related errors:
+   ```
+   Failed to create user in Clerk: Unauthorized
+   ```
+2. Verify environment variables are set:
+   ```bash
+   # In backend container/environment
+   echo $CLERK_SECRET_KEY
+   echo $CLERK_API_URL
+   ```
+
+**Solution:**
+Configure Clerk client properly in backend services:
+
+```typescript
+// WRONG - Using default client
+const { clerkClient } = await import('@clerk/clerk-sdk-node');
+
+// CORRECT - Create configured client
+const { createClerkClient } = await import('@clerk/clerk-sdk-node');
+
+const clerkClient = createClerkClient({
+  secretKey: this.configService.get<string>('CLERK_SECRET_KEY'),
+  apiUrl: this.configService.get<string>('CLERK_API_URL') || 'https://api.clerk.com'
+});
+```
+
+**Required Environment Variables:**
+```env
+CLERK_SECRET_KEY=sk_live_YOUR_SECRET_KEY
+CLERK_API_URL=https://api.clerk.com
+CLERK_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY
+CLERK_JWKS_URL=https://clerk.gt-automotives.com/.well-known/jwks.json
+```
+
+**Files to Update:**
+- `server/src/users/users.service.ts` - User creation methods
+- `server/src/auth/auth.service.ts` - User lookup methods
+
+**Prevention:**
+- Always use `createClerkClient` with explicit configuration
+- Test all Clerk API operations after backend deployment
+- Monitor backend logs for Clerk SDK errors
+- Verify all required environment variables are set in production
+
+### 10. Custom Domain Not Working
 
 #### Error: Custom domain configured but not working
 **Symptom:** DNS verified but still getting errors
@@ -319,7 +377,26 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
 - [Clerk Discord](https://discord.com/invite/b5rXHjAg7A)
 - [GitHub Issues](https://github.com/vishaltoora/GT-Automotives-App/issues)
 
+## Known Issues (Production)
+
+### User Creation Endpoint Issues
+**Status:** 🔍 Under Investigation
+**Affected Endpoints:** `/api/users/admin-staff`, other POST requests
+**Scope:** Both production and local environments
+
+**Current Symptoms:**
+- Clerk SDK authorization has been fixed in production
+- User creation and other POST request issues persist in both environments
+- Requires further investigation in local environment first
+
+**Next Steps:**
+1. Debug user creation issues in local development environment
+2. Identify root cause of POST request failures
+3. Apply fixes to both local and production environments
+4. Update documentation with resolution
+
 ---
 
-**Last Updated:** September 11, 2025
-**Status:** ✅ All authentication issues resolved
+**Last Updated:** September 16, 2025
+**Status:** ✅ Authentication and Clerk SDK configuration resolved
+**Pending:** 🔍 User creation endpoint debugging

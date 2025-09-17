@@ -1,7 +1,6 @@
 import axios from 'axios';
 import {
-  CreateInvoiceEnhancedDto,
-  CreateCustomerDtoForInvoice
+  CreateInvoiceEnhancedDto
 } from '@gt-automotive/shared-dto';
 import { PaymentMethod, InvoiceItemType } from '@prisma/client';
 

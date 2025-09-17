@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PERMISSIONS = exports.RolePermissionsConfigDto = exports.PermissionDefinitionDto = exports.Action = exports.Resource = exports.RoleName = void 0;
+exports.InvoiceItemType = exports.PaymentMethod = exports.PERMISSIONS = exports.RolePermissionsConfigDto = exports.PermissionDefinitionDto = exports.Action = exports.Resource = exports.RoleName = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 // Core Role Enums
@@ -138,3 +138,20 @@ exports.PERMISSIONS = {
         { resource: Resource.SETTINGS, action: Action.UPDATE },
     ],
 };
+// Invoice-related enums
+var PaymentMethod;
+(function (PaymentMethod) {
+    PaymentMethod["CASH"] = "CASH";
+    PaymentMethod["CREDIT_CARD"] = "CREDIT_CARD";
+    PaymentMethod["DEBIT_CARD"] = "DEBIT_CARD";
+    PaymentMethod["CHECK"] = "CHECK";
+    PaymentMethod["E_TRANSFER"] = "E_TRANSFER";
+    PaymentMethod["FINANCING"] = "FINANCING";
+})(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
+var InvoiceItemType;
+(function (InvoiceItemType) {
+    InvoiceItemType["TIRE"] = "TIRE";
+    InvoiceItemType["SERVICE"] = "SERVICE";
+    InvoiceItemType["PART"] = "PART";
+    InvoiceItemType["OTHER"] = "OTHER";
+})(InvoiceItemType || (exports.InvoiceItemType = InvoiceItemType = {}));

@@ -14,4 +14,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CreateCustomerDtoForInvoice = exports.UpdateInvoiceItemEnhancedDto = exports.CreateInvoiceItemEnhancedDto = exports.CreateInvoiceEnhancedDto = void 0;
 __exportStar(require("./invoice-simple.dto"), exports);
+var invoice_dto_1 = require("./invoice.dto");
+Object.defineProperty(exports, "CreateInvoiceEnhancedDto", { enumerable: true, get: function () { return invoice_dto_1.CreateInvoiceEnhancedDto; } });
+Object.defineProperty(exports, "CreateInvoiceItemEnhancedDto", { enumerable: true, get: function () { return invoice_dto_1.CreateInvoiceItemEnhancedDto; } });
+Object.defineProperty(exports, "UpdateInvoiceItemEnhancedDto", { enumerable: true, get: function () { return invoice_dto_1.UpdateInvoiceItemEnhancedDto; } });
+Object.defineProperty(exports, "CreateCustomerDtoForInvoice", { enumerable: true, get: function () { return invoice_dto_1.CreateCustomerDtoForInvoice; } });

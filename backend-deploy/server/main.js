@@ -32,8 +32,8 @@ const tires_module_1 = __webpack_require__(34);
 const customers_module_1 = __webpack_require__(41);
 const vehicles_module_1 = __webpack_require__(49);
 const invoices_module_1 = __webpack_require__(55);
-const quotations_module_1 = __webpack_require__(62);
-const health_module_1 = __webpack_require__(68);
+const quotations_module_1 = __webpack_require__(60);
+const health_module_1 = __webpack_require__(67);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 let AppModule = class AppModule {
@@ -237,7 +237,7 @@ let AuthService = class AuthService {
             try {
                 const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
                 if (clerkSecretKey) {
-                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 70, 23));
                     // Create configured Clerk client with secret key
                     const clerkClient = createClerkClient({
                         secretKey: clerkSecretKey,
@@ -950,8 +950,10 @@ let ClerkJwtStrategy = class ClerkJwtStrategy extends (0, passport_1.PassportStr
         });
         this.userRepository = userRepository;
         this.prismaService = prismaService;
+        this.configService = configService;
     }
     async validate(payload) {
+        console.log('Clerk JWT payload:', JSON.stringify(payload, null, 2));
         // Clerk JWT payload contains 'sub' as the Clerk user ID
         const clerkUserId = payload.sub;
         if (!clerkUserId) {
@@ -960,14 +962,33 @@ let ClerkJwtStrategy = class ClerkJwtStrategy extends (0, passport_1.PassportStr
         // Find user by Clerk ID
         let user = await this.userRepository.findByClerkId(clerkUserId);
         if (!user) {
-            // Auto-create user if they don't exist
-            // This handles the case where Clerk webhook hasn't fired yet
-            const email = payload.email;
-            const firstName = payload.given_name || payload.first_name || 'User';
-            const lastName = payload.family_name || payload.last_name || '';
-            if (!email) {
-                throw new common_1.UnauthorizedException('Invalid token: no email found');
+            // Auto-create user if they don't exist by fetching from Clerk API
+            let clerkUser;
+            try {
+                const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
+                if (clerkSecretKey) {
+                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 70, 23));
+                    const clerkClient = createClerkClient({
+                        secretKey: clerkSecretKey,
+                        apiUrl: this.configService.get('CLERK_API_URL') || 'https://api.clerk.com'
+                    });
+                    clerkUser = await clerkClient.users.getUser(clerkUserId);
+                    console.log('Fetched user from Clerk API:', clerkUser);
+                }
+                else {
+                    throw new common_1.UnauthorizedException('Clerk not configured - missing CLERK_SECRET_KEY');
+                }
             }
+            catch (error) {
+                console.error('Error fetching user from Clerk:', error);
+                throw new common_1.UnauthorizedException('Failed to fetch user details from Clerk');
+            }
+            if (!clerkUser || !clerkUser.emailAddresses || clerkUser.emailAddresses.length === 0) {
+                throw new common_1.UnauthorizedException('User has no email addresses in Clerk');
+            }
+            const email = clerkUser.emailAddresses[0].emailAddress;
+            const firstName = clerkUser.firstName || 'User';
+            const lastName = clerkUser.lastName || '';
             // Determine role based on email
             let roleName = 'CUSTOMER'; // Default to customer role
             if (email === 'vishal.alawalpuria@gmail.com') {
@@ -988,8 +1009,10 @@ let ClerkJwtStrategy = class ClerkJwtStrategy extends (0, passport_1.PassportStr
                     lastName,
                     roleId: role.id,
                 });
+                console.log('Created new user from Clerk data:', user);
             }
             catch (error) {
+                console.error('Error creating user:', error);
                 // If creation fails, maybe the user was created in parallel
                 user = await this.userRepository.findByClerkId(clerkUserId);
                 if (!user) {
@@ -1276,7 +1299,7 @@ let UsersService = class UsersService {
         const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
         if (clerkSecretKey) {
             try {
-                const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 71, 23));
+                const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 70, 23));
                 // Create configured Clerk client with secret key
                 const clerkClient = createClerkClient({
                     secretKey: clerkSecretKey,
@@ -4027,8 +4050,8 @@ exports.InvoicesController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
 const invoices_service_1 = __webpack_require__(56);
-const create_invoice_dto_1 = __webpack_require__(59);
-const update_invoice_dto_1 = __webpack_require__(61);
+const shared_dto_1 = __webpack_require__(40);
+const update_invoice_dto_1 = __webpack_require__(59);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -4081,7 +4104,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Body)()),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof create_invoice_dto_1.CreateInvoiceDto !== "undefined" && create_invoice_dto_1.CreateInvoiceDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_dto_1.CreateInvoiceEnhancedDto !== "undefined" && shared_dto_1.CreateInvoiceEnhancedDto) === "function" ? _b : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], InvoicesController.prototype, "create", null);
 tslib_1.__decorate([
@@ -4174,150 +4197,6 @@ exports.InvoicesController = InvoicesController = tslib_1.__decorate([
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateInvoiceDto = exports.CreateCustomerDto = exports.CreateInvoiceItemDto = exports.InvoiceItemType = exports.PaymentMethod = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(46);
-const class_transformer_1 = __webpack_require__(60);
-// Local enum definitions to avoid Prisma client dependency issues
-var PaymentMethod;
-(function (PaymentMethod) {
-    PaymentMethod["CASH"] = "CASH";
-    PaymentMethod["CREDIT_CARD"] = "CREDIT_CARD";
-    PaymentMethod["DEBIT_CARD"] = "DEBIT_CARD";
-    PaymentMethod["CHECK"] = "CHECK";
-    PaymentMethod["E_TRANSFER"] = "E_TRANSFER";
-})(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
-var InvoiceItemType;
-(function (InvoiceItemType) {
-    InvoiceItemType["TIRE"] = "TIRE";
-    InvoiceItemType["SERVICE"] = "SERVICE";
-    InvoiceItemType["PART"] = "PART";
-    InvoiceItemType["OTHER"] = "OTHER";
-})(InvoiceItemType || (exports.InvoiceItemType = InvoiceItemType = {}));
-class CreateInvoiceItemDto {
-}
-exports.CreateInvoiceItemDto = CreateInvoiceItemDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "tireId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(InvoiceItemType),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "itemType", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "description", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(1),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceItemDto.prototype, "quantity", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceItemDto.prototype, "unitPrice", void 0);
-class CreateCustomerDto {
-}
-exports.CreateCustomerDto = CreateCustomerDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "firstName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "lastName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "businessName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "address", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "phone", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEmail)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "email", void 0);
-class CreateInvoiceDto {
-}
-exports.CreateInvoiceDto = CreateInvoiceDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "customerId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.ValidateNested)(),
-    (0, class_transformer_1.Type)(() => CreateCustomerDto),
-    tslib_1.__metadata("design:type", CreateCustomerDto)
-], CreateInvoiceDto.prototype, "customerData", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "vehicleId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => CreateInvoiceItemDto),
-    tslib_1.__metadata("design:type", Array)
-], CreateInvoiceDto.prototype, "items", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceDto.prototype, "taxRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceDto.prototype, "gstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceDto.prototype, "pstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(PaymentMethod),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "paymentMethod", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "notes", void 0);
-
-
-/***/ }),
-/* 60 */
-/***/ ((module) => {
-
-module.exports = require("class-transformer");
-
-/***/ }),
-/* 61 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UpdateInvoiceDto = exports.PaymentMethod = exports.InvoiceStatus = void 0;
 const tslib_1 = __webpack_require__(4);
 const class_validator_1 = __webpack_require__(46);
@@ -4364,7 +4243,7 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 62 */
+/* 60 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4372,9 +4251,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotations_service_1 = __webpack_require__(63);
-const quotations_controller_1 = __webpack_require__(65);
-const quotation_repository_1 = __webpack_require__(64);
+const quotations_service_1 = __webpack_require__(61);
+const quotations_controller_1 = __webpack_require__(63);
+const quotation_repository_1 = __webpack_require__(62);
 const database_1 = __webpack_require__(13);
 let QuotationsModule = class QuotationsModule {
 };
@@ -4389,7 +4268,7 @@ exports.QuotationsModule = QuotationsModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 63 */
+/* 61 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4398,7 +4277,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotation_repository_1 = __webpack_require__(64);
+const quotation_repository_1 = __webpack_require__(62);
 const database_1 = __webpack_require__(13);
 let QuotationsService = class QuotationsService {
     constructor(quotationRepository, prisma) {
@@ -4580,7 +4459,7 @@ exports.QuotationsService = QuotationsService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 64 */
+/* 62 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4740,7 +4619,7 @@ exports.QuotationRepository = QuotationRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 65 */
+/* 63 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4749,9 +4628,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotations_service_1 = __webpack_require__(63);
-const create_quotation_dto_1 = __webpack_require__(66);
-const update_quotation_dto_1 = __webpack_require__(67);
+const quotations_service_1 = __webpack_require__(61);
+const create_quotation_dto_1 = __webpack_require__(64);
+const update_quotation_dto_1 = __webpack_require__(66);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -4860,7 +4739,7 @@ exports.QuotationsController = QuotationsController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 66 */
+/* 64 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4868,7 +4747,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CreateQuoteDto = exports.CreateQuoteItemDto = exports.QuotationStatus = exports.InvoiceItemType = void 0;
 const tslib_1 = __webpack_require__(4);
 const class_validator_1 = __webpack_require__(46);
-const class_transformer_1 = __webpack_require__(60);
+const class_transformer_1 = __webpack_require__(65);
 // Local enum definitions to avoid Prisma client dependency issues
 var InvoiceItemType;
 (function (InvoiceItemType) {
@@ -4985,7 +4864,13 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 67 */
+/* 65 */
+/***/ ((module) => {
+
+module.exports = require("class-transformer");
+
+/***/ }),
+/* 66 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4994,8 +4879,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UpdateQuoteDto = void 0;
 const tslib_1 = __webpack_require__(4);
 const class_validator_1 = __webpack_require__(46);
-const class_transformer_1 = __webpack_require__(60);
-const create_quotation_dto_1 = __webpack_require__(66);
+const class_transformer_1 = __webpack_require__(65);
+const create_quotation_dto_1 = __webpack_require__(64);
 class UpdateQuoteDto {
 }
 exports.UpdateQuoteDto = UpdateQuoteDto;
@@ -5074,7 +4959,7 @@ tslib_1.__decorate([
 
 
 /***/ }),
-/* 68 */
+/* 67 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5082,8 +4967,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HealthModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const health_controller_1 = __webpack_require__(69);
-const health_service_1 = __webpack_require__(70);
+const health_controller_1 = __webpack_require__(68);
+const health_service_1 = __webpack_require__(69);
 const database_1 = __webpack_require__(13);
 let HealthModule = class HealthModule {
 };
@@ -5099,7 +4984,7 @@ exports.HealthModule = HealthModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 69 */
+/* 68 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5108,7 +4993,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HealthController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const health_service_1 = __webpack_require__(70);
+const health_service_1 = __webpack_require__(69);
 const public_decorator_1 = __webpack_require__(20);
 let HealthController = class HealthController {
     constructor(healthService) {
@@ -5143,7 +5028,7 @@ exports.HealthController = HealthController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 70 */
+/* 69 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5196,7 +5081,7 @@ exports.HealthService = HealthService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 71 */
+/* 70 */
 /***/ ((module) => {
 
 module.exports = require("@clerk/clerk-sdk-node");

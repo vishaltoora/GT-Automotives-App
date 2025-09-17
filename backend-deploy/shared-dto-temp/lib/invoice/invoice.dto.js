@@ -9,391 +9,177 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TireReferenceDto = exports.VehicleReferenceDto = exports.CustomerReferenceDto = exports.UpdateInvoiceItemDto = exports.CreateInvoiceItemDto = exports.InvoiceItemDto = exports.UpdateInvoiceDto = exports.CreateInvoiceDto = exports.InvoiceDto = void 0;
+exports.UpdateInvoiceItemEnhancedDto = exports.CreateInvoiceItemEnhancedDto = exports.CreateInvoiceEnhancedDto = exports.CreateCustomerDtoForInvoice = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
-// Invoice DTOs
-class InvoiceDto {
-    id;
-    invoiceNumber;
-    customerId;
-    vehicleId;
-    subtotal;
-    taxRate;
-    taxAmount;
-    total;
-    status;
-    paymentMethod;
-    notes;
-    createdBy;
-    createdAt;
-    updatedAt;
-    paidAt;
-}
-exports.InvoiceDto = InvoiceDto;
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "id", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "invoiceNumber", void 0);
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "customerId", void 0);
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "vehicleId", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], InvoiceDto.prototype, "subtotal", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], InvoiceDto.prototype, "taxRate", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], InvoiceDto.prototype, "taxAmount", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], InvoiceDto.prototype, "total", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "status", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "paymentMethod", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "notes", void 0);
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], InvoiceDto.prototype, "createdBy", void 0);
-__decorate([
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", Date)
-], InvoiceDto.prototype, "createdAt", void 0);
-__decorate([
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", Date)
-], InvoiceDto.prototype, "updatedAt", void 0);
-__decorate([
-    (0, class_validator_1.IsDateString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Date)
-], InvoiceDto.prototype, "paidAt", void 0);
-class CreateInvoiceDto {
-    customerId;
-    vehicleId;
-    taxRate;
-    paymentMethod;
-    notes;
-    createdBy;
-}
-exports.CreateInvoiceDto = CreateInvoiceDto;
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], CreateInvoiceDto.prototype, "customerId", void 0);
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateInvoiceDto.prototype, "vehicleId", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], CreateInvoiceDto.prototype, "taxRate", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateInvoiceDto.prototype, "paymentMethod", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateInvoiceDto.prototype, "notes", void 0);
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], CreateInvoiceDto.prototype, "createdBy", void 0);
-class UpdateInvoiceDto {
-    status;
-    paymentMethod;
-    notes;
-    paidAt;
-}
-exports.UpdateInvoiceDto = UpdateInvoiceDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], UpdateInvoiceDto.prototype, "status", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], UpdateInvoiceDto.prototype, "paymentMethod", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], UpdateInvoiceDto.prototype, "notes", void 0);
-__decorate([
-    (0, class_validator_1.IsDateString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Date)
-], UpdateInvoiceDto.prototype, "paidAt", void 0);
-// Invoice Item DTOs
-class InvoiceItemDto {
-    id;
-    invoiceId;
-    invoice;
-    tireId;
-    tire;
-    itemType;
-    description;
-    quantity;
-    unitPrice;
-    total;
-    createdAt;
-    updatedAt;
-}
-exports.InvoiceItemDto = InvoiceItemDto;
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], InvoiceItemDto.prototype, "id", void 0);
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], InvoiceItemDto.prototype, "invoiceId", void 0);
-__decorate([
-    (0, class_validator_1.ValidateNested)(),
-    (0, class_transformer_1.Type)(() => InvoiceDto),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", InvoiceDto)
-], InvoiceItemDto.prototype, "invoice", void 0);
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], InvoiceItemDto.prototype, "tireId", void 0);
-__decorate([
-    (0, class_validator_1.ValidateNested)(),
-    (0, class_transformer_1.Type)(() => TireReferenceDto),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", TireReferenceDto)
-], InvoiceItemDto.prototype, "tire", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], InvoiceItemDto.prototype, "itemType", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], InvoiceItemDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], InvoiceItemDto.prototype, "quantity", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], InvoiceItemDto.prototype, "unitPrice", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], InvoiceItemDto.prototype, "total", void 0);
-__decorate([
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", Date)
-], InvoiceItemDto.prototype, "createdAt", void 0);
-__decorate([
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", Date)
-], InvoiceItemDto.prototype, "updatedAt", void 0);
-class CreateInvoiceItemDto {
-    tireId;
-    itemType;
-    description;
-    quantity;
-    unitPrice;
-}
-exports.CreateInvoiceItemDto = CreateInvoiceItemDto;
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "tireId", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "itemType", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], CreateInvoiceItemDto.prototype, "quantity", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], CreateInvoiceItemDto.prototype, "unitPrice", void 0);
-class UpdateInvoiceItemDto {
-    description;
-    quantity;
-    unitPrice;
-}
-exports.UpdateInvoiceItemDto = UpdateInvoiceItemDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], UpdateInvoiceItemDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], UpdateInvoiceItemDto.prototype, "quantity", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], UpdateInvoiceItemDto.prototype, "unitPrice", void 0);
-// Reference DTOs to avoid circular dependencies
-class CustomerReferenceDto {
-    id;
+const enums_dto_1 = require("../common/enums.dto");
+// CreateCustomerDto for inline customer creation (defined first to avoid circular dependency)
+class CreateCustomerDtoForInvoice {
     firstName;
     lastName;
-    email;
+    businessName;
+    address;
     phone;
+    email;
 }
-exports.CustomerReferenceDto = CustomerReferenceDto;
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], CustomerReferenceDto.prototype, "id", void 0);
+exports.CreateCustomerDtoForInvoice = CreateCustomerDtoForInvoice;
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CustomerReferenceDto.prototype, "firstName", void 0);
+], CreateCustomerDtoForInvoice.prototype, "firstName", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CustomerReferenceDto.prototype, "lastName", void 0);
+], CreateCustomerDtoForInvoice.prototype, "lastName", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CustomerReferenceDto.prototype, "email", void 0);
-__decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CustomerReferenceDto.prototype, "phone", void 0);
-class VehicleReferenceDto {
-    id;
-    make;
-    model;
-    year;
-    licensePlate;
+], CreateCustomerDtoForInvoice.prototype, "businessName", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCustomerDtoForInvoice.prototype, "address", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCustomerDtoForInvoice.prototype, "phone", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], CreateCustomerDtoForInvoice.prototype, "email", void 0);
+// Enhanced Invoice DTOs with proper validation
+class CreateInvoiceEnhancedDto {
+    customerId;
+    customerData;
+    vehicleId;
+    items;
+    taxRate;
+    gstRate;
+    pstRate;
+    paymentMethod;
+    notes;
 }
-exports.VehicleReferenceDto = VehicleReferenceDto;
+exports.CreateInvoiceEnhancedDto = CreateInvoiceEnhancedDto;
 __decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], VehicleReferenceDto.prototype, "id", void 0);
-__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], VehicleReferenceDto.prototype, "make", void 0);
+], CreateInvoiceEnhancedDto.prototype, "customerId", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => CreateCustomerDtoForInvoice),
+    __metadata("design:type", CreateCustomerDtoForInvoice)
+], CreateInvoiceEnhancedDto.prototype, "customerData", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], VehicleReferenceDto.prototype, "model", void 0);
+], CreateInvoiceEnhancedDto.prototype, "vehicleId", void 0);
 __decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => CreateInvoiceItemEnhancedDto),
+    __metadata("design:type", Array)
+], CreateInvoiceEnhancedDto.prototype, "items", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
-], VehicleReferenceDto.prototype, "year", void 0);
+], CreateInvoiceEnhancedDto.prototype, "taxRate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateInvoiceEnhancedDto.prototype, "gstRate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateInvoiceEnhancedDto.prototype, "pstRate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(enums_dto_1.PaymentMethod),
+    __metadata("design:type", String)
+], CreateInvoiceEnhancedDto.prototype, "paymentMethod", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateInvoiceEnhancedDto.prototype, "notes", void 0);
+// Enhanced Invoice Item DTOs with proper validation
+class CreateInvoiceItemEnhancedDto {
+    tireId;
+    itemType;
+    description;
+    quantity;
+    unitPrice;
+}
+exports.CreateInvoiceItemEnhancedDto = CreateInvoiceItemEnhancedDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateInvoiceItemEnhancedDto.prototype, "tireId", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(enums_dto_1.InvoiceItemType),
+    __metadata("design:type", String)
+], CreateInvoiceItemEnhancedDto.prototype, "itemType", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateInvoiceItemEnhancedDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateInvoiceItemEnhancedDto.prototype, "quantity", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateInvoiceItemEnhancedDto.prototype, "unitPrice", void 0);
+// Enhanced Update DTOs with proper validation
+class UpdateInvoiceItemEnhancedDto {
+    itemType;
+    description;
+    quantity;
+    unitPrice;
+}
+exports.UpdateInvoiceItemEnhancedDto = UpdateInvoiceItemEnhancedDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(enums_dto_1.InvoiceItemType),
+    __metadata("design:type", String)
+], UpdateInvoiceItemEnhancedDto.prototype, "itemType", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], VehicleReferenceDto.prototype, "licensePlate", void 0);
-class TireReferenceDto {
-    id;
-    brand;
-    size;
-    type;
-    condition;
-    price;
-}
-exports.TireReferenceDto = TireReferenceDto;
-__decorate([
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], TireReferenceDto.prototype, "id", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], TireReferenceDto.prototype, "brand", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], TireReferenceDto.prototype, "size", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], TireReferenceDto.prototype, "type", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], TireReferenceDto.prototype, "condition", void 0);
+], UpdateInvoiceItemEnhancedDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsPositive)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
-], TireReferenceDto.prototype, "price", void 0);
+], UpdateInvoiceItemEnhancedDto.prototype, "quantity", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateInvoiceItemEnhancedDto.prototype, "unitPrice", void 0);

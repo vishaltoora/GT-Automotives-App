@@ -1,5 +1,36 @@
 # Completed Work Log
 
+## September 16, 2025 Updates
+
+### Clerk SDK Authorization Fix & Backend Environment Configuration ✅
+**Resolved Authentication Infrastructure Issues:**
+- **Clerk SDK Authorization:** Fixed "Failed to create user in Clerk: Unauthorized" errors in production
+  - Updated `users.service.ts` to use `createClerkClient` with explicit secret key and API URL configuration
+  - Updated `auth.service.ts` to use same pattern for consistent Clerk client configuration
+  - Replaced default `clerkClient` import pattern with properly configured client creation
+- **Environment Variables:** Added missing `CLERK_API_URL=https://api.clerk.com` to production backend container
+  - Recreated Azure Container Instance with complete Clerk environment variable set
+  - Verified all required Clerk environment variables are properly configured
+- **Backend Code Updates:** Consistent Clerk client configuration across all services
+  - Explicit configuration with secretKey and apiUrl parameters
+  - Proper error handling and logging for Clerk API operations
+- **Documentation Updates:** Enhanced authentication troubleshooting guide with Clerk SDK best practices
+  - Added section 9: "Clerk SDK Authorization Issues (Backend)" with comprehensive troubleshooting
+  - Updated backend container deployment configuration with new environment variables
+  - Added prevention strategies and debugging steps
+
+### Technical Implementation Details:
+- **File Updates:**
+  - `server/src/users/users.service.ts`: Replaced default clerkClient with createClerkClient configuration
+  - `server/src/auth/auth.service.ts`: Applied same Clerk client configuration pattern
+  - `.claude/docs/authentication-troubleshooting.md`: Added Clerk SDK section with solutions
+  - `.claude/docs/backend-container-deployment-config.md`: Updated environment variables and troubleshooting
+- **Azure Container Configuration:**
+  - Container: `gt-automotives-backend-api-fixes`
+  - Image: `gtautomotivesregistry.azurecr.io/gt-backend:manual-deploy-fix`
+  - Added environment variables: `CLERK_API_URL`, `CLERK_PUBLISHABLE_KEY`, `CLERK_JWKS_URL`, `FRONTEND_URL`
+- **Status:** ✅ Clerk SDK authorization resolved, ⚠️ User creation endpoint issues remain for local debugging
+
 ## September 4, 2025 Updates
 
 ### Admin Layout Improvements & Quotation System Fixes ✅

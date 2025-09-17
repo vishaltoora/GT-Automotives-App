@@ -25,7 +25,7 @@ export class VehiclesService {
 
     // Customer role validation would require proper customer-user mapping
     // For now, only staff and admin can create vehicles
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle creation needs proper customer context implementation');
     }
 
@@ -61,7 +61,7 @@ export class VehiclesService {
 
   async findAll(userId: string, userRole: string) {
     // Customer role access requires proper customer-user context mapping
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle access needs proper customer context implementation');
     }
 
@@ -77,7 +77,7 @@ export class VehiclesService {
     }
 
     // Customer role validation requires proper customer context
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle access needs proper customer context implementation');
     }
 
@@ -92,7 +92,7 @@ export class VehiclesService {
     }
 
     // Customer role validation requires proper customer context
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle access needs proper customer context implementation');
     }
 
@@ -113,7 +113,7 @@ export class VehiclesService {
     }
 
     // Customer role validation requires proper customer context
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle updates need proper customer context implementation');
     }
 
@@ -138,7 +138,7 @@ export class VehiclesService {
     );
 
     // Log the action if not a self-update
-    if (userRole !== 'customer') {
+    if (userRole !== 'CUSTOMER') {
       await this.auditRepository.create({
         userId,
         action: 'UPDATE_VEHICLE',
@@ -160,9 +160,9 @@ export class VehiclesService {
     }
 
     // Customer role validation requires proper customer context
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle deletion needs proper customer context implementation');
-    } else if (userRole !== 'admin') {
+    } else if (userRole !== 'ADMIN') {
       throw new ForbiddenException('Only administrators can delete vehicles');
     }
 
@@ -199,7 +199,7 @@ export class VehiclesService {
     const vehicles = await this.vehicleRepository.search(searchTerm);
 
     // Filter results for customers
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle search needs proper customer context implementation');
     }
 
@@ -219,7 +219,7 @@ export class VehiclesService {
     }
 
     // Customer role validation requires proper customer context
-    if (userRole === 'customer') {
+    if (userRole === 'CUSTOMER') {
       throw new ForbiddenException('Customer vehicle updates need proper customer context implementation');
     }
 

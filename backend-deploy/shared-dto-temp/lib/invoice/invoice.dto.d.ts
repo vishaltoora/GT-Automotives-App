@@ -1,79 +1,33 @@
-export declare class InvoiceDto {
-    id: string;
-    invoiceNumber: string;
-    customerId: string;
+import { PaymentMethod, InvoiceItemType } from '../common/enums.dto';
+export declare class CreateCustomerDtoForInvoice {
+    firstName: string;
+    lastName: string;
+    businessName?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+}
+export declare class CreateInvoiceEnhancedDto {
+    customerId?: string;
+    customerData?: CreateCustomerDtoForInvoice;
     vehicleId?: string;
-    subtotal: number;
-    taxRate: number;
-    taxAmount: number;
-    total: number;
-    status: string;
-    paymentMethod?: string;
+    items: CreateInvoiceItemEnhancedDto[];
+    taxRate?: number;
+    gstRate?: number;
+    pstRate?: number;
+    paymentMethod?: PaymentMethod;
     notes?: string;
-    createdBy: string;
-    createdAt: Date;
-    updatedAt: Date;
-    paidAt?: Date;
 }
-export declare class CreateInvoiceDto {
-    customerId: string;
-    vehicleId?: string;
-    taxRate: number;
-    paymentMethod?: string;
-    notes?: string;
-    createdBy: string;
-}
-export declare class UpdateInvoiceDto {
-    status?: string;
-    paymentMethod?: string;
-    notes?: string;
-    paidAt?: Date;
-}
-export declare class InvoiceItemDto {
-    id: string;
-    invoiceId: string;
-    invoice?: InvoiceDto;
+export declare class CreateInvoiceItemEnhancedDto {
     tireId?: string;
-    tire?: TireReferenceDto;
-    itemType: string;
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    total: number;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export declare class CreateInvoiceItemDto {
-    tireId?: string;
-    itemType: string;
+    itemType: InvoiceItemType;
     description: string;
     quantity: number;
     unitPrice: number;
 }
-export declare class UpdateInvoiceItemDto {
+export declare class UpdateInvoiceItemEnhancedDto {
+    itemType?: InvoiceItemType;
     description?: string;
     quantity?: number;
     unitPrice?: number;
-}
-export declare class CustomerReferenceDto {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone?: string;
-}
-export declare class VehicleReferenceDto {
-    id: string;
-    make: string;
-    model: string;
-    year: number;
-    licensePlate?: string;
-}
-export declare class TireReferenceDto {
-    id: string;
-    brand: string;
-    size: string;
-    type: string;
-    condition: string;
-    price: number;
 }
