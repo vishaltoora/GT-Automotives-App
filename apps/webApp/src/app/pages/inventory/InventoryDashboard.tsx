@@ -36,7 +36,7 @@ import {
   useInvalidateTireQueries 
 } from '../../hooks/useTires';
 import { useAuth } from '../../hooks/useAuth';
-import { TireType } from '@prisma/client';
+import { TireType } from '@gt-automotive/shared-interfaces';
 import TireListSimple from './TireListSimple';
 
 const formatTireType = (type: TireType): string => {
