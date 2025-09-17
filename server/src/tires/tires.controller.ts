@@ -19,12 +19,12 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import { CreateTireDto } from './dto/create-tire.dto';
-import { UpdateTireDto } from './dto/update-tire.dto';
-import { StockAdjustmentDto } from './dto/stock-adjustment.dto';
-import { TireSearchDto } from './dto/tire-search.dto';
-import { TireResponseDto } from './dto/tire-response.dto';
-import { TireSearchResultDto } from './dto/tire-search-result.dto';
+import { CreateTireDto } from '@gt-automotive/shared-dto';
+import { UpdateTireDto } from '@gt-automotive/shared-dto';
+import { StockAdjustmentDto } from '@gt-automotive/shared-dto';
+import { TireSearchDto } from '@gt-automotive/shared-dto';
+import { TireResponseDto } from '@gt-automotive/shared-dto';
+import { TireSearchResultDto } from '@gt-automotive/shared-dto';
 
 @Controller('api/tires')
 export class TiresController {

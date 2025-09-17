@@ -169,7 +169,7 @@ export function StockAdjustmentDialog({
             <Typography variant="h4" color="primary">
               {tire.quantity} units
             </Typography>
-            {tire.quantity <= tire.minStock && (
+            {tire.quantity <= (tire.minStock || 5) && (
               <Chip 
                 label="Low Stock" 
                 color="warning" 
@@ -280,14 +280,14 @@ export function StockAdjustmentDialog({
                   </Typography>
                   <Typography 
                     variant="h6" 
-                    color={newQuantity <= tire.minStock ? 'warning.main' : 'primary.main'}
+                    color={newQuantity <= (tire.minStock || 5) ? 'warning.main' : 'primary.main'}
                   >
                     {newQuantity}
                   </Typography>
                 </Box>
               </Stack>
               
-              {newQuantity <= tire.minStock && (
+              {newQuantity <= (tire.minStock || 5) && (
                 <Alert severity="warning" sx={{ mt: 1 }}>
                   {newQuantity === 0 
                     ? 'This will result in zero stock!'

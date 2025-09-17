@@ -317,8 +317,8 @@ export function TireListSimple({
               </TableCell>
               <TableCell>
                 <Typography 
-                  color={tire.quantity <= tire.minStock ? 'error' : 'inherit'}
-                  fontWeight={tire.quantity <= tire.minStock ? 'bold' : 'normal'}
+                  color={tire.quantity <= (tire.minStock || 5) ? 'error' : 'inherit'}
+                  fontWeight={tire.quantity <= (tire.minStock || 5) ? 'bold' : 'normal'}
                 >
                   {tire.quantity}
                 </Typography>

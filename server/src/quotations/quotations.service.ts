@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { QuotationRepository } from './repositories/quotation.repository';
-import { CreateQuoteDto } from './dto/create-quotation.dto';
-import { UpdateQuoteDto } from './dto/update-quotation.dto';
+import { CreateQuoteDto } from '@gt-automotive/shared-dto';
+import { UpdateQuoteDto } from '@gt-automotive/shared-dto';
 import { Quotation, QuotationItem, Tire } from '@prisma/client';
 import { PrismaService } from '@gt-automotive/database';
 
@@ -21,9 +21,20 @@ export class QuotationsService {
   async create(createQuoteDto: CreateQuoteDto, userId: string): Promise<Quotation> {
     console.log('Service: Starting quotation creation...');
     console.log('Service: Received data:', JSON.stringify(createQuoteDto, null, 2));
-    
+
     try {
       const { items, ...quoteData } = createQuoteDto;
+
+      // Get customer information
+      const customer = await this.prisma.customer.findUnique({
+        where: { id: createQuoteDto.customerId }
+      });
+
+      if (!customer) {
+        throw new Error(`Customer not found: ${createQuoteDto.customerId}`);
+      }
+
+      const customerName = `${customer.firstName} ${customer.lastName}`.trim();
 
       // Generate quotation number
       const quotationNumber = `Q${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
@@ -62,6 +73,11 @@ export class QuotationsService {
       const result = await this.quotationRepository.create({
         ...quoteData,
         quotationNumber,
+        customerName,
+        businessName: customer.businessName,
+        phone: customer.phone,
+        email: customer.email,
+        address: customer.address,
         subtotal,
         gstRate,
         gstAmount,

@@ -10,7 +10,11 @@ module.exports = {
   externals: {
     '@prisma/client': 'commonjs @prisma/client',
     '.prisma/client': 'commonjs .prisma/client',
-    '@gt-automotive/shared-dto': 'commonjs @gt-automotive/shared-dto',
+  },
+  resolve: {
+    alias: {
+      '@gt-automotive/shared-dto': join(__dirname, '../libs/shared-dto/src/index.ts'),
+    },
   },
   plugins: [
     new NxAppWebpackPlugin({

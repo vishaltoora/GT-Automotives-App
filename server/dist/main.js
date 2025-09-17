@@ -29,11 +29,11 @@ const app_service_1 = __webpack_require__(7);
 const auth_module_1 = __webpack_require__(8);
 const users_module_1 = __webpack_require__(31);
 const tires_module_1 = __webpack_require__(34);
-const customers_module_1 = __webpack_require__(46);
-const vehicles_module_1 = __webpack_require__(52);
-const invoices_module_1 = __webpack_require__(58);
-const quotations_module_1 = __webpack_require__(65);
-const health_module_1 = __webpack_require__(71);
+const customers_module_1 = __webpack_require__(47);
+const vehicles_module_1 = __webpack_require__(51);
+const invoices_module_1 = __webpack_require__(55);
+const quotations_module_1 = __webpack_require__(59);
+const health_module_1 = __webpack_require__(63);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 let AppModule = class AppModule {
@@ -237,7 +237,7 @@ let AuthService = class AuthService {
             try {
                 const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
                 if (clerkSecretKey) {
-                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 74, 23));
+                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 66, 23));
                     // Create configured Clerk client with secret key
                     const clerkClient = createClerkClient({
                         secretKey: clerkSecretKey,
@@ -967,7 +967,7 @@ let ClerkJwtStrategy = class ClerkJwtStrategy extends (0, passport_1.PassportStr
             try {
                 const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
                 if (clerkSecretKey) {
-                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 74, 23));
+                    const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 66, 23));
                     const clerkClient = createClerkClient({
                         secretKey: clerkSecretKey,
                         apiUrl: this.configService.get('CLERK_API_URL') || 'https://api.clerk.com'
@@ -1299,7 +1299,7 @@ let UsersService = class UsersService {
         const clerkSecretKey = this.configService.get('CLERK_SECRET_KEY');
         if (clerkSecretKey) {
             try {
-                const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 74, 23));
+                const { createClerkClient } = await Promise.resolve(/* import() */).then(__webpack_require__.t.bind(__webpack_require__, 66, 23));
                 // Create configured Clerk client with secret key
                 const clerkClient = createClerkClient({
                     secretKey: clerkSecretKey,
@@ -1662,10 +1662,10 @@ const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
 const current_user_decorator_1 = __webpack_require__(21);
 const public_decorator_1 = __webpack_require__(20);
-const create_tire_dto_1 = __webpack_require__(40);
-const update_tire_dto_1 = __webpack_require__(42);
-const stock_adjustment_dto_1 = __webpack_require__(44);
-const tire_search_dto_1 = __webpack_require__(45);
+const shared_dto_1 = __webpack_require__(40);
+const shared_dto_2 = __webpack_require__(40);
+const shared_dto_3 = __webpack_require__(40);
+const shared_dto_4 = __webpack_require__(40);
 let TiresController = class TiresController {
     constructor(tiresService) {
         this.tiresService = tiresService;
@@ -1752,7 +1752,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Query)(new common_1.ValidationPipe({ transform: true }))),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof tire_search_dto_1.TireSearchDto !== "undefined" && tire_search_dto_1.TireSearchDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_dto_4.TireSearchDto !== "undefined" && shared_dto_4.TireSearchDto) === "function" ? _b : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_c = typeof Promise !== "undefined" && Promise) === "function" ? _c : Object)
 ], TiresController.prototype, "findAll", null);
 tslib_1.__decorate([
@@ -1797,7 +1797,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Body)()),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_h = typeof create_tire_dto_1.CreateTireDto !== "undefined" && create_tire_dto_1.CreateTireDto) === "function" ? _h : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_h = typeof shared_dto_1.CreateTireDto !== "undefined" && shared_dto_1.CreateTireDto) === "function" ? _h : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
 ], TiresController.prototype, "create", null);
 tslib_1.__decorate([
@@ -1809,7 +1809,7 @@ tslib_1.__decorate([
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__param(2, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_k = typeof update_tire_dto_1.UpdateTireDto !== "undefined" && update_tire_dto_1.UpdateTireDto) === "function" ? _k : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_k = typeof shared_dto_2.UpdateTireDto !== "undefined" && shared_dto_2.UpdateTireDto) === "function" ? _k : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
 ], TiresController.prototype, "update", null);
 tslib_1.__decorate([
@@ -1832,7 +1832,7 @@ tslib_1.__decorate([
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__param(2, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_o = typeof stock_adjustment_dto_1.StockAdjustmentDto !== "undefined" && stock_adjustment_dto_1.StockAdjustmentDto) === "function" ? _o : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_o = typeof shared_dto_3.StockAdjustmentDto !== "undefined" && shared_dto_3.StockAdjustmentDto) === "function" ? _o : Object, Object]),
     tslib_1.__metadata("design:returntype", typeof (_p = typeof Promise !== "undefined" && Promise) === "function" ? _p : Object)
 ], TiresController.prototype, "adjustStock", null);
 tslib_1.__decorate([
@@ -2462,9 +2462,24 @@ module.exports = require("@prisma/client/runtime/library");
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateTireDto = exports.TireCondition = exports.TireType = void 0;
 const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
+// Export all DTOs
+tslib_1.__exportStar(__webpack_require__(41), exports);
+tslib_1.__exportStar(__webpack_require__(45), exports);
+tslib_1.__exportStar(__webpack_require__(46), exports);
+// Export decorators for direct use if needed
+tslib_1.__exportStar(__webpack_require__(42), exports);
+
+
+/***/ }),
+/* 41 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TireSearchResultDto = exports.TireFiltersDto = exports.TireSearchDto = exports.StockAdjustmentDto = exports.TireResponseDto = exports.UpdateTireDto = exports.CreateTireDto = exports.AdjustmentType = exports.TireCondition = exports.TireType = void 0;
+const tslib_1 = __webpack_require__(4);
+const decorators_1 = __webpack_require__(42);
 var TireType;
 (function (TireType) {
     TireType["ALL_SEASON"] = "ALL_SEASON";
@@ -2480,57 +2495,384 @@ var TireCondition;
     TireCondition["USED_GOOD"] = "USED_GOOD";
     TireCondition["USED_FAIR"] = "USED_FAIR";
 })(TireCondition || (exports.TireCondition = TireCondition = {}));
+var AdjustmentType;
+(function (AdjustmentType) {
+    AdjustmentType["ADD"] = "add";
+    AdjustmentType["REMOVE"] = "remove";
+    AdjustmentType["SET"] = "set";
+})(AdjustmentType || (exports.AdjustmentType = AdjustmentType = {}));
 class CreateTireDto {
 }
 exports.CreateTireDto = CreateTireDto;
 tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
+    (0, decorators_1.IsString)(),
     tslib_1.__metadata("design:type", String)
 ], CreateTireDto.prototype, "brand", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
+    (0, decorators_1.IsString)(),
     tslib_1.__metadata("design:type", String)
 ], CreateTireDto.prototype, "size", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(TireType),
+    (0, decorators_1.IsEnum)(TireType),
     tslib_1.__metadata("design:type", String)
 ], CreateTireDto.prototype, "type", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(TireCondition),
+    (0, decorators_1.IsEnum)(TireCondition),
     tslib_1.__metadata("design:type", String)
 ], CreateTireDto.prototype, "condition", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
     tslib_1.__metadata("design:type", Number)
 ], CreateTireDto.prototype, "price", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
     tslib_1.__metadata("design:type", Number)
 ], CreateTireDto.prototype, "cost", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
     tslib_1.__metadata("design:type", Number)
 ], CreateTireDto.prototype, "quantity", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
     tslib_1.__metadata("design:type", String)
 ], CreateTireDto.prototype, "description", void 0);
 tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
     tslib_1.__metadata("design:type", String)
 ], CreateTireDto.prototype, "imageUrl", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], CreateTireDto.prototype, "minStock", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateTireDto.prototype, "location", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateTireDto.prototype, "notes", void 0);
+class UpdateTireDto {
+}
+exports.UpdateTireDto = UpdateTireDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "brand", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "size", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEnum)(TireType),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "type", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEnum)(TireCondition),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "condition", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], UpdateTireDto.prototype, "price", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], UpdateTireDto.prototype, "cost", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], UpdateTireDto.prototype, "quantity", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "description", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "imageUrl", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], UpdateTireDto.prototype, "minStock", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "location", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateTireDto.prototype, "notes", void 0);
+class TireResponseDto {
+}
+exports.TireResponseDto = TireResponseDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "id", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "brand", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "size", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsEnum)(TireType),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "type", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsEnum)(TireCondition),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "condition", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireResponseDto.prototype, "price", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireResponseDto.prototype, "cost", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireResponseDto.prototype, "quantity", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "description", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "imageUrl", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsBoolean)(),
+    tslib_1.__metadata("design:type", Boolean)
+], TireResponseDto.prototype, "inStock", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "createdAt", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "updatedAt", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "createdBy", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireResponseDto.prototype, "minStock", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "location", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireResponseDto.prototype, "notes", void 0);
+class StockAdjustmentDto {
+}
+exports.StockAdjustmentDto = StockAdjustmentDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], StockAdjustmentDto.prototype, "quantity", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsEnum)(AdjustmentType),
+    tslib_1.__metadata("design:type", String)
+], StockAdjustmentDto.prototype, "type", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], StockAdjustmentDto.prototype, "reason", void 0);
+// Search and Filter DTOs
+class TireSearchDto {
+}
+exports.TireSearchDto = TireSearchDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireSearchDto.prototype, "search", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireSearchDto.prototype, "brand", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireSearchDto.prototype, "size", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEnum)(TireType),
+    tslib_1.__metadata("design:type", String)
+], TireSearchDto.prototype, "type", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEnum)(TireCondition),
+    tslib_1.__metadata("design:type", String)
+], TireSearchDto.prototype, "condition", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchDto.prototype, "minPrice", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchDto.prototype, "maxPrice", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsBoolean)(),
+    tslib_1.__metadata("design:type", Boolean)
+], TireSearchDto.prototype, "inStock", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsBoolean)(),
+    tslib_1.__metadata("design:type", Boolean)
+], TireSearchDto.prototype, "lowStock", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireSearchDto.prototype, "sortBy", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireSearchDto.prototype, "sortOrder", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(1),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchDto.prototype, "page", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(1),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchDto.prototype, "limit", void 0);
+class TireFiltersDto {
+}
+exports.TireFiltersDto = TireFiltersDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireFiltersDto.prototype, "brand", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], TireFiltersDto.prototype, "size", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEnum)(TireType),
+    tslib_1.__metadata("design:type", String)
+], TireFiltersDto.prototype, "type", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEnum)(TireCondition),
+    tslib_1.__metadata("design:type", String)
+], TireFiltersDto.prototype, "condition", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireFiltersDto.prototype, "minPrice", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    (0, decorators_1.Min)(0),
+    tslib_1.__metadata("design:type", Number)
+], TireFiltersDto.prototype, "maxPrice", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsBoolean)(),
+    tslib_1.__metadata("design:type", Boolean)
+], TireFiltersDto.prototype, "inStock", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsBoolean)(),
+    tslib_1.__metadata("design:type", Boolean)
+], TireFiltersDto.prototype, "lowStock", void 0);
+class TireSearchResultDto {
+}
+exports.TireSearchResultDto = TireSearchResultDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsArray)(),
+    (0, decorators_1.ValidateNested)({ each: true }),
+    (0, decorators_1.Type)(() => TireResponseDto),
+    tslib_1.__metadata("design:type", Array)
+], TireSearchResultDto.prototype, "items", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchResultDto.prototype, "total", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchResultDto.prototype, "page", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchResultDto.prototype, "limit", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], TireSearchResultDto.prototype, "totalPages", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsBoolean)(),
+    tslib_1.__metadata("design:type", Boolean)
+], TireSearchResultDto.prototype, "hasMore", void 0);
 
-
-/***/ }),
-/* 41 */
-/***/ ((module) => {
-
-module.exports = require("class-validator");
 
 /***/ }),
 /* 42 */
@@ -2538,52 +2880,104 @@ module.exports = require("class-validator");
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UpdateTireDto = void 0;
-const mapped_types_1 = __webpack_require__(43);
-const create_tire_dto_1 = __webpack_require__(40);
-class UpdateTireDto extends (0, mapped_types_1.PartialType)(create_tire_dto_1.CreateTireDto) {
+exports.IsString = IsString;
+exports.IsNumber = IsNumber;
+exports.IsEnum = IsEnum;
+exports.IsOptional = IsOptional;
+exports.Min = Min;
+exports.IsEmail = IsEmail;
+exports.IsArray = IsArray;
+exports.ValidateNested = ValidateNested;
+exports.IsBoolean = IsBoolean;
+exports.Type = Type;
+// Conditional decorator helper for browser compatibility
+const isBrowser = typeof globalThis !== 'undefined' && typeof globalThis.window !== 'undefined';
+// Re-export class-validator decorators conditionally
+function IsString() {
+    if (isBrowser) {
+        return function (target, propertyKey) {
+            // No-op decorator for browser
+        };
+    }
+    const { IsString: IsStringOriginal } = __webpack_require__(43);
+    return IsStringOriginal();
 }
-exports.UpdateTireDto = UpdateTireDto;
+function IsNumber() {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { IsNumber: IsNumberOriginal } = __webpack_require__(43);
+    return IsNumberOriginal();
+}
+function IsEnum(enumType) {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { IsEnum: IsEnumOriginal } = __webpack_require__(43);
+    return IsEnumOriginal(enumType);
+}
+function IsOptional() {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { IsOptional: IsOptionalOriginal } = __webpack_require__(43);
+    return IsOptionalOriginal();
+}
+function Min(value) {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { Min: MinOriginal } = __webpack_require__(43);
+    return MinOriginal(value);
+}
+function IsEmail() {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { IsEmail: IsEmailOriginal } = __webpack_require__(43);
+    return IsEmailOriginal();
+}
+function IsArray() {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { IsArray: IsArrayOriginal } = __webpack_require__(43);
+    return IsArrayOriginal();
+}
+function ValidateNested(options) {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { ValidateNested: ValidateNestedOriginal } = __webpack_require__(43);
+    return ValidateNestedOriginal(options);
+}
+function IsBoolean() {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { IsBoolean: IsBooleanOriginal } = __webpack_require__(43);
+    return IsBooleanOriginal();
+}
+function Type(typeFunction) {
+    if (isBrowser) {
+        return function (target, propertyKey) { };
+    }
+    const { Type: TypeOriginal } = __webpack_require__(44);
+    return TypeOriginal(typeFunction);
+}
 
 
 /***/ }),
 /* 43 */
 /***/ ((module) => {
 
-module.exports = require("@nestjs/mapped-types");
+module.exports = require("class-validator");
 
 /***/ }),
 /* 44 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((module) => {
 
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.StockAdjustmentDto = exports.AdjustmentType = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
-var AdjustmentType;
-(function (AdjustmentType) {
-    AdjustmentType["INCREASE"] = "INCREASE";
-    AdjustmentType["DECREASE"] = "DECREASE";
-    AdjustmentType["SET"] = "SET";
-})(AdjustmentType || (exports.AdjustmentType = AdjustmentType = {}));
-class StockAdjustmentDto {
-}
-exports.StockAdjustmentDto = StockAdjustmentDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], StockAdjustmentDto.prototype, "quantity", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(AdjustmentType),
-    tslib_1.__metadata("design:type", String)
-], StockAdjustmentDto.prototype, "type", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], StockAdjustmentDto.prototype, "reason", void 0);
-
+module.exports = require("class-transformer");
 
 /***/ }),
 /* 45 */
@@ -2591,34 +2985,116 @@ tslib_1.__decorate([
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TireSearchDto = void 0;
+exports.CustomerResponseDto = exports.UpdateCustomerDto = exports.CreateCustomerDto = void 0;
 const tslib_1 = __webpack_require__(4);
-const mapped_types_1 = __webpack_require__(43);
-const class_validator_1 = __webpack_require__(41);
-const create_tire_dto_1 = __webpack_require__(40);
-class TireSearchDto extends (0, mapped_types_1.PickType)(create_tire_dto_1.CreateTireDto, ['brand', 'size', 'type', 'condition']) {
+const decorators_1 = __webpack_require__(42);
+class CreateCustomerDto {
 }
-exports.TireSearchDto = TireSearchDto;
+exports.CreateCustomerDto = CreateCustomerDto;
 tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], TireSearchDto.prototype, "minPrice", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], TireSearchDto.prototype, "maxPrice", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsBoolean)(),
-    tslib_1.__metadata("design:type", Boolean)
-], TireSearchDto.prototype, "inStock", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, decorators_1.IsString)(),
     tslib_1.__metadata("design:type", String)
-], TireSearchDto.prototype, "search", void 0);
+], CreateCustomerDto.prototype, "firstName", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateCustomerDto.prototype, "lastName", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEmail)(),
+    tslib_1.__metadata("design:type", String)
+], CreateCustomerDto.prototype, "email", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateCustomerDto.prototype, "phone", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateCustomerDto.prototype, "address", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateCustomerDto.prototype, "businessName", void 0);
+class UpdateCustomerDto {
+}
+exports.UpdateCustomerDto = UpdateCustomerDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateCustomerDto.prototype, "firstName", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateCustomerDto.prototype, "lastName", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEmail)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateCustomerDto.prototype, "email", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateCustomerDto.prototype, "phone", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateCustomerDto.prototype, "address", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateCustomerDto.prototype, "businessName", void 0);
+class CustomerResponseDto {
+}
+exports.CustomerResponseDto = CustomerResponseDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "id", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "firstName", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "lastName", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsEmail)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "email", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "phone", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "address", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "businessName", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "createdAt", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CustomerResponseDto.prototype, "updatedAt", void 0);
 
 
 /***/ }),
@@ -2627,12 +3103,145 @@ tslib_1.__decorate([
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.VehicleResponseDto = exports.UpdateVehicleDto = exports.CreateVehicleDto = void 0;
+const tslib_1 = __webpack_require__(4);
+const decorators_1 = __webpack_require__(42);
+class CreateVehicleDto {
+}
+exports.CreateVehicleDto = CreateVehicleDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateVehicleDto.prototype, "make", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateVehicleDto.prototype, "model", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], CreateVehicleDto.prototype, "year", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateVehicleDto.prototype, "vin", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateVehicleDto.prototype, "licensePlate", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateVehicleDto.prototype, "color", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], CreateVehicleDto.prototype, "customerId", void 0);
+class UpdateVehicleDto {
+}
+exports.UpdateVehicleDto = UpdateVehicleDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateVehicleDto.prototype, "make", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateVehicleDto.prototype, "model", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], UpdateVehicleDto.prototype, "year", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateVehicleDto.prototype, "vin", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateVehicleDto.prototype, "licensePlate", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateVehicleDto.prototype, "color", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], UpdateVehicleDto.prototype, "customerId", void 0);
+class VehicleResponseDto {
+}
+exports.VehicleResponseDto = VehicleResponseDto;
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "id", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "make", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "model", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsNumber)(),
+    tslib_1.__metadata("design:type", Number)
+], VehicleResponseDto.prototype, "year", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "vin", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "licensePlate", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "color", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "customerId", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsOptional)(),
+    tslib_1.__metadata("design:type", Object)
+], VehicleResponseDto.prototype, "customer", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "createdAt", void 0);
+tslib_1.__decorate([
+    (0, decorators_1.IsString)(),
+    tslib_1.__metadata("design:type", String)
+], VehicleResponseDto.prototype, "updatedAt", void 0);
+
+
+/***/ }),
+/* 47 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CustomersModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const customers_service_1 = __webpack_require__(47);
-const customers_controller_1 = __webpack_require__(49);
-const customer_repository_1 = __webpack_require__(48);
+const customers_service_1 = __webpack_require__(48);
+const customers_controller_1 = __webpack_require__(50);
+const customer_repository_1 = __webpack_require__(49);
 const user_repository_1 = __webpack_require__(12);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
@@ -2655,7 +3264,7 @@ exports.CustomersModule = CustomersModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 47 */
+/* 48 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2664,7 +3273,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CustomersService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const customer_repository_1 = __webpack_require__(48);
+const customer_repository_1 = __webpack_require__(49);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
 let CustomersService = class CustomersService {
@@ -2789,7 +3398,7 @@ exports.CustomersService = CustomersService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 48 */
+/* 49 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2941,7 +3550,7 @@ exports.CustomerRepository = CustomerRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 49 */
+/* 50 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -2950,9 +3559,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CustomersController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const customers_service_1 = __webpack_require__(47);
-const create_customer_dto_1 = __webpack_require__(50);
-const update_customer_dto_1 = __webpack_require__(51);
+const customers_service_1 = __webpack_require__(48);
+const shared_dto_1 = __webpack_require__(40);
+const shared_dto_2 = __webpack_require__(40);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -2988,7 +3597,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Body)()),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof create_customer_dto_1.CreateCustomerDto !== "undefined" && create_customer_dto_1.CreateCustomerDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_dto_1.CreateCustomerDto !== "undefined" && shared_dto_1.CreateCustomerDto) === "function" ? _b : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], CustomersController.prototype, "create", null);
 tslib_1.__decorate([
@@ -3022,7 +3631,7 @@ tslib_1.__decorate([
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__param(2, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_c = typeof update_customer_dto_1.UpdateCustomerDto !== "undefined" && update_customer_dto_1.UpdateCustomerDto) === "function" ? _c : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_c = typeof shared_dto_2.UpdateCustomerDto !== "undefined" && shared_dto_2.UpdateCustomerDto) === "function" ? _c : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], CustomersController.prototype, "update", null);
 tslib_1.__decorate([
@@ -3043,65 +3652,7 @@ exports.CustomersController = CustomersController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 50 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateCustomerDto = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
-class CreateCustomerDto {
-}
-exports.CreateCustomerDto = CreateCustomerDto;
-tslib_1.__decorate([
-    (0, class_validator_1.ValidateIf)((o) => o.email !== '' && o.email != null),
-    (0, class_validator_1.IsEmail)({}, { message: 'Please enter a valid email address' }),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "email", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "firstName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "lastName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "phone", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "address", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "businessName", void 0);
-
-
-/***/ }),
 /* 51 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UpdateCustomerDto = void 0;
-const mapped_types_1 = __webpack_require__(43);
-const create_customer_dto_1 = __webpack_require__(50);
-class UpdateCustomerDto extends (0, mapped_types_1.PartialType)(create_customer_dto_1.CreateCustomerDto) {
-}
-exports.UpdateCustomerDto = UpdateCustomerDto;
-
-
-/***/ }),
-/* 52 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3109,10 +3660,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VehiclesModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const vehicles_service_1 = __webpack_require__(53);
-const vehicles_controller_1 = __webpack_require__(55);
-const vehicle_repository_1 = __webpack_require__(54);
-const customer_repository_1 = __webpack_require__(48);
+const vehicles_service_1 = __webpack_require__(52);
+const vehicles_controller_1 = __webpack_require__(54);
+const vehicle_repository_1 = __webpack_require__(53);
+const customer_repository_1 = __webpack_require__(49);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
 let VehiclesModule = class VehiclesModule {
@@ -3134,7 +3685,7 @@ exports.VehiclesModule = VehiclesModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 53 */
+/* 52 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3143,8 +3694,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VehiclesService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const vehicle_repository_1 = __webpack_require__(54);
-const customer_repository_1 = __webpack_require__(48);
+const vehicle_repository_1 = __webpack_require__(53);
+const customer_repository_1 = __webpack_require__(49);
 const audit_repository_1 = __webpack_require__(18);
 const database_1 = __webpack_require__(13);
 let VehiclesService = class VehiclesService {
@@ -3338,7 +3889,7 @@ exports.VehiclesService = VehiclesService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 54 */
+/* 53 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3493,7 +4044,7 @@ exports.VehicleRepository = VehicleRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 55 */
+/* 54 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3502,9 +4053,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VehiclesController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const vehicles_service_1 = __webpack_require__(53);
-const create_vehicle_dto_1 = __webpack_require__(56);
-const update_vehicle_dto_1 = __webpack_require__(57);
+const vehicles_service_1 = __webpack_require__(52);
+const shared_dto_1 = __webpack_require__(40);
+const shared_dto_2 = __webpack_require__(40);
 const jwt_auth_guard_1 = __webpack_require__(22);
 // import { RoleGuard } from '../auth/guards/role.guard';
 // import { Roles } from '../auth/decorators/roles.decorator';
@@ -3544,7 +4095,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Body)()),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof create_vehicle_dto_1.CreateVehicleDto !== "undefined" && create_vehicle_dto_1.CreateVehicleDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_dto_1.CreateVehicleDto !== "undefined" && shared_dto_1.CreateVehicleDto) === "function" ? _b : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], VehiclesController.prototype, "create", null);
 tslib_1.__decorate([
@@ -3584,7 +4135,7 @@ tslib_1.__decorate([
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__param(2, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_c = typeof update_vehicle_dto_1.UpdateVehicleDto !== "undefined" && update_vehicle_dto_1.UpdateVehicleDto) === "function" ? _c : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_c = typeof shared_dto_2.UpdateVehicleDto !== "undefined" && shared_dto_2.UpdateVehicleDto) === "function" ? _c : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], VehiclesController.prototype, "update", null);
 tslib_1.__decorate([
@@ -3612,72 +4163,7 @@ exports.VehiclesController = VehiclesController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 56 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateVehicleDto = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
-class CreateVehicleDto {
-}
-exports.CreateVehicleDto = CreateVehicleDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    tslib_1.__metadata("design:type", String)
-], CreateVehicleDto.prototype, "customerId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    tslib_1.__metadata("design:type", String)
-], CreateVehicleDto.prototype, "make", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    tslib_1.__metadata("design:type", String)
-], CreateVehicleDto.prototype, "model", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1900),
-    (0, class_validator_1.Max)(new Date().getFullYear() + 1),
-    tslib_1.__metadata("design:type", Number)
-], CreateVehicleDto.prototype, "year", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    tslib_1.__metadata("design:type", String)
-], CreateVehicleDto.prototype, "vin", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    tslib_1.__metadata("design:type", String)
-], CreateVehicleDto.prototype, "licensePlate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateVehicleDto.prototype, "mileage", void 0);
-
-
-/***/ }),
-/* 57 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UpdateVehicleDto = void 0;
-const mapped_types_1 = __webpack_require__(43);
-const create_vehicle_dto_1 = __webpack_require__(56);
-class UpdateVehicleDto extends (0, mapped_types_1.PartialType)((0, mapped_types_1.OmitType)(create_vehicle_dto_1.CreateVehicleDto, ['customerId'])) {
-}
-exports.UpdateVehicleDto = UpdateVehicleDto;
-
-
-/***/ }),
-/* 58 */
+/* 55 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3685,11 +4171,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InvoicesModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const invoices_service_1 = __webpack_require__(59);
-const invoices_controller_1 = __webpack_require__(61);
-const invoice_repository_1 = __webpack_require__(60);
+const invoices_service_1 = __webpack_require__(56);
+const invoices_controller_1 = __webpack_require__(58);
+const invoice_repository_1 = __webpack_require__(57);
 const audit_repository_1 = __webpack_require__(18);
-const customer_repository_1 = __webpack_require__(48);
+const customer_repository_1 = __webpack_require__(49);
 const database_1 = __webpack_require__(13);
 let InvoicesModule = class InvoicesModule {
 };
@@ -3710,7 +4196,7 @@ exports.InvoicesModule = InvoicesModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 59 */
+/* 56 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3719,9 +4205,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InvoicesService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const invoice_repository_1 = __webpack_require__(60);
+const invoice_repository_1 = __webpack_require__(57);
 const audit_repository_1 = __webpack_require__(18);
-const customer_repository_1 = __webpack_require__(48);
+const customer_repository_1 = __webpack_require__(49);
 let InvoicesService = class InvoicesService {
     constructor(invoiceRepository, auditRepository, customerRepository) {
         this.invoiceRepository = invoiceRepository;
@@ -3966,7 +4452,7 @@ exports.InvoicesService = InvoicesService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 60 */
+/* 57 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4190,7 +4676,7 @@ exports.InvoiceRepository = InvoiceRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 61 */
+/* 58 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4199,9 +4685,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InvoicesController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const invoices_service_1 = __webpack_require__(59);
-const create_invoice_dto_1 = __webpack_require__(62);
-const update_invoice_dto_1 = __webpack_require__(64);
+const invoices_service_1 = __webpack_require__(56);
+const shared_dto_1 = __webpack_require__(40);
+const shared_dto_2 = __webpack_require__(40);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -4254,7 +4740,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Body)()),
     tslib_1.__param(1, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof create_invoice_dto_1.CreateInvoiceDto !== "undefined" && create_invoice_dto_1.CreateInvoiceDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_dto_1.CreateInvoiceDto !== "undefined" && shared_dto_1.CreateInvoiceDto) === "function" ? _b : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], InvoicesController.prototype, "create", null);
 tslib_1.__decorate([
@@ -4310,7 +4796,7 @@ tslib_1.__decorate([
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__param(2, (0, current_user_decorator_1.CurrentUser)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_d = typeof update_invoice_dto_1.UpdateInvoiceDto !== "undefined" && update_invoice_dto_1.UpdateInvoiceDto) === "function" ? _d : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_d = typeof shared_dto_2.UpdateInvoiceDto !== "undefined" && shared_dto_2.UpdateInvoiceDto) === "function" ? _d : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], InvoicesController.prototype, "update", null);
 tslib_1.__decorate([
@@ -4342,202 +4828,7 @@ exports.InvoicesController = InvoicesController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 62 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateInvoiceDto = exports.CreateCustomerDto = exports.CreateInvoiceItemDto = exports.InvoiceItemType = exports.PaymentMethod = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
-const class_transformer_1 = __webpack_require__(63);
-// Local enum definitions to avoid Prisma client dependency issues
-var PaymentMethod;
-(function (PaymentMethod) {
-    PaymentMethod["CASH"] = "CASH";
-    PaymentMethod["CREDIT_CARD"] = "CREDIT_CARD";
-    PaymentMethod["DEBIT_CARD"] = "DEBIT_CARD";
-    PaymentMethod["CHECK"] = "CHECK";
-    PaymentMethod["E_TRANSFER"] = "E_TRANSFER";
-})(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
-var InvoiceItemType;
-(function (InvoiceItemType) {
-    InvoiceItemType["TIRE"] = "TIRE";
-    InvoiceItemType["SERVICE"] = "SERVICE";
-    InvoiceItemType["PART"] = "PART";
-    InvoiceItemType["OTHER"] = "OTHER";
-})(InvoiceItemType || (exports.InvoiceItemType = InvoiceItemType = {}));
-class CreateInvoiceItemDto {
-}
-exports.CreateInvoiceItemDto = CreateInvoiceItemDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "tireId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(InvoiceItemType),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "itemType", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceItemDto.prototype, "description", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(1),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceItemDto.prototype, "quantity", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceItemDto.prototype, "unitPrice", void 0);
-class CreateCustomerDto {
-}
-exports.CreateCustomerDto = CreateCustomerDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "firstName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "lastName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "businessName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "address", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "phone", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEmail)(),
-    tslib_1.__metadata("design:type", String)
-], CreateCustomerDto.prototype, "email", void 0);
-class CreateInvoiceDto {
-}
-exports.CreateInvoiceDto = CreateInvoiceDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "customerId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.ValidateNested)(),
-    (0, class_transformer_1.Type)(() => CreateCustomerDto),
-    tslib_1.__metadata("design:type", CreateCustomerDto)
-], CreateInvoiceDto.prototype, "customerData", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "vehicleId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => CreateInvoiceItemDto),
-    tslib_1.__metadata("design:type", Array)
-], CreateInvoiceDto.prototype, "items", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceDto.prototype, "taxRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceDto.prototype, "gstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    tslib_1.__metadata("design:type", Number)
-], CreateInvoiceDto.prototype, "pstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(PaymentMethod),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "paymentMethod", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateInvoiceDto.prototype, "notes", void 0);
-
-
-/***/ }),
-/* 63 */
-/***/ ((module) => {
-
-module.exports = require("class-transformer");
-
-/***/ }),
-/* 64 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UpdateInvoiceDto = exports.PaymentMethod = exports.InvoiceStatus = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
-// Local enum definitions to avoid Prisma client dependency issues
-var InvoiceStatus;
-(function (InvoiceStatus) {
-    InvoiceStatus["DRAFT"] = "DRAFT";
-    InvoiceStatus["PENDING"] = "PENDING";
-    InvoiceStatus["PAID"] = "PAID";
-    InvoiceStatus["CANCELLED"] = "CANCELLED";
-    InvoiceStatus["REFUNDED"] = "REFUNDED";
-})(InvoiceStatus || (exports.InvoiceStatus = InvoiceStatus = {}));
-var PaymentMethod;
-(function (PaymentMethod) {
-    PaymentMethod["CASH"] = "CASH";
-    PaymentMethod["CREDIT_CARD"] = "CREDIT_CARD";
-    PaymentMethod["DEBIT_CARD"] = "DEBIT_CARD";
-    PaymentMethod["CHECK"] = "CHECK";
-    PaymentMethod["E_TRANSFER"] = "E_TRANSFER";
-})(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
-class UpdateInvoiceDto {
-}
-exports.UpdateInvoiceDto = UpdateInvoiceDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(InvoiceStatus),
-    tslib_1.__metadata("design:type", String)
-], UpdateInvoiceDto.prototype, "status", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(PaymentMethod),
-    tslib_1.__metadata("design:type", String)
-], UpdateInvoiceDto.prototype, "paymentMethod", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateInvoiceDto.prototype, "notes", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateInvoiceDto.prototype, "paidAt", void 0);
-
-
-/***/ }),
-/* 65 */
+/* 59 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4545,9 +4836,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotations_service_1 = __webpack_require__(66);
-const quotations_controller_1 = __webpack_require__(68);
-const quotation_repository_1 = __webpack_require__(67);
+const quotations_service_1 = __webpack_require__(60);
+const quotations_controller_1 = __webpack_require__(62);
+const quotation_repository_1 = __webpack_require__(61);
 const database_1 = __webpack_require__(13);
 let QuotationsModule = class QuotationsModule {
 };
@@ -4562,7 +4853,7 @@ exports.QuotationsModule = QuotationsModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 66 */
+/* 60 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4571,7 +4862,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsService = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotation_repository_1 = __webpack_require__(67);
+const quotation_repository_1 = __webpack_require__(61);
 const database_1 = __webpack_require__(13);
 let QuotationsService = class QuotationsService {
     constructor(quotationRepository, prisma) {
@@ -4753,7 +5044,7 @@ exports.QuotationsService = QuotationsService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 67 */
+/* 61 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4913,7 +5204,7 @@ exports.QuotationRepository = QuotationRepository = tslib_1.__decorate([
 
 
 /***/ }),
-/* 68 */
+/* 62 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -4922,9 +5213,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuotationsController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const quotations_service_1 = __webpack_require__(66);
-const create_quotation_dto_1 = __webpack_require__(69);
-const update_quotation_dto_1 = __webpack_require__(70);
+const quotations_service_1 = __webpack_require__(60);
+const shared_dto_1 = __webpack_require__(40);
+const shared_dto_2 = __webpack_require__(40);
 const jwt_auth_guard_1 = __webpack_require__(22);
 const role_guard_1 = __webpack_require__(27);
 const roles_decorator_1 = __webpack_require__(28);
@@ -4969,7 +5260,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Body)()),
     tslib_1.__param(1, (0, common_1.Request)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof create_quotation_dto_1.CreateQuoteDto !== "undefined" && create_quotation_dto_1.CreateQuoteDto) === "function" ? _b : Object, Object]),
+    tslib_1.__metadata("design:paramtypes", [typeof (_b = typeof shared_dto_1.CreateQuoteDto !== "undefined" && shared_dto_1.CreateQuoteDto) === "function" ? _b : Object, Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], QuotationsController.prototype, "create", null);
 tslib_1.__decorate([
@@ -5005,7 +5296,7 @@ tslib_1.__decorate([
     tslib_1.__param(0, (0, common_1.Param)('id')),
     tslib_1.__param(1, (0, common_1.Body)()),
     tslib_1.__metadata("design:type", Function),
-    tslib_1.__metadata("design:paramtypes", [String, typeof (_c = typeof update_quotation_dto_1.UpdateQuoteDto !== "undefined" && update_quotation_dto_1.UpdateQuoteDto) === "function" ? _c : Object]),
+    tslib_1.__metadata("design:paramtypes", [String, typeof (_c = typeof shared_dto_2.UpdateQuoteDto !== "undefined" && shared_dto_2.UpdateQuoteDto) === "function" ? _c : Object]),
     tslib_1.__metadata("design:returntype", void 0)
 ], QuotationsController.prototype, "update", null);
 tslib_1.__decorate([
@@ -5033,221 +5324,7 @@ exports.QuotationsController = QuotationsController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 69 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CreateQuoteDto = exports.CreateQuoteItemDto = exports.QuotationStatus = exports.InvoiceItemType = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
-const class_transformer_1 = __webpack_require__(63);
-// Local enum definitions to avoid Prisma client dependency issues
-var InvoiceItemType;
-(function (InvoiceItemType) {
-    InvoiceItemType["TIRE"] = "TIRE";
-    InvoiceItemType["SERVICE"] = "SERVICE";
-    InvoiceItemType["PART"] = "PART";
-    InvoiceItemType["OTHER"] = "OTHER";
-})(InvoiceItemType || (exports.InvoiceItemType = InvoiceItemType = {}));
-var QuotationStatus;
-(function (QuotationStatus) {
-    QuotationStatus["DRAFT"] = "DRAFT";
-    QuotationStatus["SENT"] = "SENT";
-    QuotationStatus["ACCEPTED"] = "ACCEPTED";
-    QuotationStatus["REJECTED"] = "REJECTED";
-    QuotationStatus["EXPIRED"] = "EXPIRED";
-})(QuotationStatus || (exports.QuotationStatus = QuotationStatus = {}));
-class CreateQuoteItemDto {
-}
-exports.CreateQuoteItemDto = CreateQuoteItemDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteItemDto.prototype, "tireId", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsEnum)(InvoiceItemType),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteItemDto.prototype, "itemType", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteItemDto.prototype, "description", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], CreateQuoteItemDto.prototype, "quantity", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], CreateQuoteItemDto.prototype, "unitPrice", void 0);
-class CreateQuoteDto {
-}
-exports.CreateQuoteDto = CreateQuoteDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "customerName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "businessName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "phone", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "email", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "address", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "vehicleMake", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "vehicleModel", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], CreateQuoteDto.prototype, "vehicleYear", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => CreateQuoteItemDto),
-    tslib_1.__metadata("design:type", Array)
-], CreateQuoteDto.prototype, "items", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], CreateQuoteDto.prototype, "gstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], CreateQuoteDto.prototype, "pstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "notes", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(QuotationStatus),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "status", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
-    tslib_1.__metadata("design:type", String)
-], CreateQuoteDto.prototype, "validUntil", void 0);
-
-
-/***/ }),
-/* 70 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-var _a;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UpdateQuoteDto = void 0;
-const tslib_1 = __webpack_require__(4);
-const class_validator_1 = __webpack_require__(41);
-const class_transformer_1 = __webpack_require__(63);
-const create_quotation_dto_1 = __webpack_require__(69);
-class UpdateQuoteDto {
-}
-exports.UpdateQuoteDto = UpdateQuoteDto;
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "customerName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "businessName", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "phone", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "email", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "address", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "vehicleMake", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "vehicleModel", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], UpdateQuoteDto.prototype, "vehicleYear", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => create_quotation_dto_1.CreateQuoteItemDto),
-    tslib_1.__metadata("design:type", Array)
-], UpdateQuoteDto.prototype, "items", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], UpdateQuoteDto.prototype, "gstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    tslib_1.__metadata("design:type", Number)
-], UpdateQuoteDto.prototype, "pstRate", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "notes", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(create_quotation_dto_1.QuotationStatus),
-    tslib_1.__metadata("design:type", typeof (_a = typeof create_quotation_dto_1.QuotationStatus !== "undefined" && create_quotation_dto_1.QuotationStatus) === "function" ? _a : Object)
-], UpdateQuoteDto.prototype, "status", void 0);
-tslib_1.__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
-    tslib_1.__metadata("design:type", String)
-], UpdateQuoteDto.prototype, "validUntil", void 0);
-
-
-/***/ }),
-/* 71 */
+/* 63 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5255,8 +5332,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HealthModule = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const health_controller_1 = __webpack_require__(72);
-const health_service_1 = __webpack_require__(73);
+const health_controller_1 = __webpack_require__(64);
+const health_service_1 = __webpack_require__(65);
 const database_1 = __webpack_require__(13);
 let HealthModule = class HealthModule {
 };
@@ -5272,7 +5349,7 @@ exports.HealthModule = HealthModule = tslib_1.__decorate([
 
 
 /***/ }),
-/* 72 */
+/* 64 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5281,7 +5358,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HealthController = void 0;
 const tslib_1 = __webpack_require__(4);
 const common_1 = __webpack_require__(1);
-const health_service_1 = __webpack_require__(73);
+const health_service_1 = __webpack_require__(65);
 const public_decorator_1 = __webpack_require__(20);
 let HealthController = class HealthController {
     constructor(healthService) {
@@ -5316,7 +5393,7 @@ exports.HealthController = HealthController = tslib_1.__decorate([
 
 
 /***/ }),
-/* 73 */
+/* 65 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5369,7 +5446,7 @@ exports.HealthService = HealthService = tslib_1.__decorate([
 
 
 /***/ }),
-/* 74 */
+/* 66 */
 /***/ ((module) => {
 
 module.exports = require("@clerk/clerk-sdk-node");

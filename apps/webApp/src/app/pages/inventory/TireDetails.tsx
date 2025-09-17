@@ -124,7 +124,7 @@ export function TireDetails() {
     );
   }
 
-  const isLowStock = tire.quantity <= tire.minStock;
+  const isLowStock = tire.quantity <= (tire.minStock || 5);
   const isOutOfStock = tire.quantity === 0;
   const placeholderImage = `https://via.placeholder.com/400x300/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' - ' + tire.size)}`;
   const primaryImage = tire.imageUrl || placeholderImage;

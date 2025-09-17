@@ -46,6 +46,7 @@ import { vehicleService } from '../../services/vehicle.service';
 import TireService from '../../services/tire.service';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../hooks/useAuth';
+import { InvoiceItemType } from '@gt-automotive/shared-dto';
 
 const InvoiceForm: React.FC = () => {
   const navigate = useNavigate();
@@ -71,7 +72,7 @@ const InvoiceForm: React.FC = () => {
   });
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [newItem, setNewItem] = useState<InvoiceItem>({
-    itemType: 'SERVICE',
+    itemType: InvoiceItemType.SERVICE,
     description: '',
     quantity: 1,
     unitPrice: 0,
@@ -139,7 +140,7 @@ const InvoiceForm: React.FC = () => {
     if (newItem.description && newItem.unitPrice > 0) {
       setItems([...items, { ...newItem, total: newItem.quantity * newItem.unitPrice }]);
       setNewItem({
-        itemType: 'SERVICE',
+        itemType: InvoiceItemType.SERVICE,
         description: '',
         quantity: 1,
         unitPrice: 0,
@@ -157,7 +158,7 @@ const InvoiceForm: React.FC = () => {
       setNewItem({
         ...newItem,
         tireId: tire.id,
-        itemType: 'TIRE',
+        itemType: InvoiceItemType.TIRE,
         description: `${tire.brand} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
       });

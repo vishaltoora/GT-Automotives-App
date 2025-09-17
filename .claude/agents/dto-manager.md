@@ -157,7 +157,7 @@ libs/shared/dto/src/lib/
 ### 3. DTO Naming
 - Base DTO: `EntityDto` (for response/display)
 - Creation: `CreateEntityDto` (for POST requests)
-- Updates: `UpdateEntityDto` (for PATCH requests)  
+- Updates: `UpdateEntityDto` (for PATCH requests) - **Use mapped types: `implements Partial<CreateEntityDto>`**
 - Search/Filter: `EntityFiltersDto`, `EntitySearchDto`
 - Results: `EntitySearchResultDto`
 
@@ -249,8 +249,8 @@ export class CreateTireDto {
   price!: number;
 }
 
-// UpdateDto: All optional fields for partial updates
-export class UpdateTireDto {
+// UpdateDto: Use mapped types for automatic consistency
+export class UpdateTireDto implements Partial<CreateTireDto> {
   @IsString()
   @IsOptional()
   @MinLength(1)
@@ -450,7 +450,68 @@ export class TireRepository {
 - ✅ Build succeeds for shared library, server, and frontend
 - ✅ Runtime validation works as expected
 
-### 10. Troubleshooting Common Issues
+### 10. Mapped Types for Update DTOs (Critical Best Practice)
+
+**Always use mapped types for Update DTOs to ensure consistency and maintainability:**
+
+```typescript
+// ✅ CORRECT: Use mapped types
+export class UpdateTireDto implements Partial<CreateTireDto> {
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @IsOptional()
+  @IsEnum(TireType)
+  type?: TireType;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price?: number;
+}
+
+// ❌ WRONG: Manual field duplication
+export class UpdateTireDto {
+  @IsOptional()
+  @IsString()
+  brand?: string;
+  // Easy to miss fields or get out of sync
+}
+```
+
+**Benefits of Mapped Types:**
+- **Type Safety**: Changes to CreateDto automatically reflect in UpdateDto
+- **DRY Principle**: Single source of truth for field definitions
+- **Maintainability**: No field duplication or sync issues
+- **IntelliSense**: Better IDE support and autocompletion
+- **Consistency**: Ensures validation rules stay aligned
+
+**Advanced Mapped Type Patterns:**
+```typescript
+// Exclude specific fields from update
+export class UpdateQuoteDto implements Partial<Omit<CreateQuoteDto, 'customerId'>> {
+  // All CreateQuoteDto fields except customerId become optional
+}
+
+// Pick only specific fields for update
+export class UpdateUserProfileDto implements Pick<CreateUserDto, 'firstName' | 'lastName' | 'email'> {
+  // Only firstName, lastName, email can be updated
+}
+
+// Combine patterns for complex scenarios
+export class UpdateInvoiceDto implements Partial<Omit<CreateInvoiceDto, 'customerId' | 'invoiceNumber'>> {
+  // All fields except customerId and invoiceNumber become optional
+}
+```
+
+**When to Use Each Pattern:**
+- `Partial<CreateDto>`: Most update scenarios - all fields optional
+- `Partial<Omit<CreateDto, 'field'>>`: Exclude immutable fields (IDs, timestamps)
+- `Pick<CreateDto, 'field1' | 'field2'>`: Only specific fields updatable
+- Custom mapped types: Complex business logic requirements
+
+### 11. Troubleshooting Common Issues
 
 **Build fails with decorator errors**
 - Check experimentalDecorators in tsconfig.json

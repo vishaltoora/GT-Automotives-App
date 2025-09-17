@@ -17,6 +17,7 @@
 - **Authentication:** Clerk (identity) + Local roles/permissions ✅
 - **API Design:** RESTful with role-based guards
 - **Validation:** Class-validator + Yup schemas ✅
+- **DTOs:** Shared with mapped types (`Partial<CreateDto>`) for consistency ✅
 
 ## Database
 - **Primary:** PostgreSQL + Prisma ORM ✅
@@ -33,7 +34,7 @@
 ## Infrastructure
 - **Monorepo:** Nx workspace ✅
 - **Package Manager:** Yarn ✅
-- **Shared Libraries:** DTOs, validation, interfaces ✅
+- **Shared Libraries:** DTOs with mapped types, validation, interfaces ✅
 - **CI/CD:** GitHub Actions ✅
 - **Development DB:** Docker Compose with PostgreSQL ✅
 

@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { PaymentMethod, InvoiceItemType } from '../../enums';
+import { PaymentMethod } from '../../enums';
+import { CreateInvoiceDto, InvoiceItemType } from '@gt-automotive/shared-dto';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -48,7 +49,7 @@ export interface Invoice {
 }
 
 // Using shared DTO from the library
-export type CreateInvoiceDto = CreateInvoiceEnhancedDto;
+// export type CreateInvoiceDto = CreateInvoiceEnhancedDto;
 
 export interface UpdateInvoiceDto {
   status?: Invoice['status'];

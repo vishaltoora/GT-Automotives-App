@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CustomerRepository } from './repositories/customer.repository';
-import { CreateCustomerDto } from './dto/create-customer.dto';
-import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { CreateCustomerDto } from '@gt-automotive/shared-dto';
+import { UpdateCustomerDto } from '@gt-automotive/shared-dto';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { PrismaService } from '@gt-automotive/database';
 

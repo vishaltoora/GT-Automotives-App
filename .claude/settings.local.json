@@ -218,7 +218,9 @@
       "Bash(nc:*)",
       "Bash(nx sync:*)",
       "Bash(nvm install:*)",
-      "Bash(sudo n:*)"
+      "Bash(sudo n:*)",
+      "Bash(xargs sed:*)",
+      "Bash(nx show project:*)"
     ],
     "deny": [],
     "ask": []

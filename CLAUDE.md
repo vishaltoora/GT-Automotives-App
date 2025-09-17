@@ -121,6 +121,18 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
+### September 17, 2025 - Shared DTO Implementation with Mapped Types ✅
+- ✅ **Shared DTO Library**: Implemented conditional decorators for browser/server compatibility
+- ✅ **Mapped Types for Update DTOs**: Used `implements Partial<CreateDto>` for better maintainability
+- ✅ **TypeScript Path Mappings**: Added proper module resolution for `@gt-automotive/shared-dto`
+- ✅ **Class Validator Integration**: Full validation decorators with browser fallbacks
+- ✅ **Export Consistency**: Fixed duplicate exports and naming conflicts
+- ✅ **Backend Compatibility**: Added missing DTO properties (customerData, itemType, gstRate, etc.)
+- ✅ **Frontend Enum Imports**: Resolved import conflicts with Prisma client enums
+- ✅ **Build System**: Shared library compiles successfully across monorepo
+- ✅ **Type Safety**: Maintained strict TypeScript checking throughout
+- ⚠️ **Critical Learning**: Always use mapped types (`Partial<CreateDto>`) for Update DTOs to ensure consistency and prevent field drift
+
 ### September 17, 2025 - GitHub Workflow Deployment Fix & Parallel Optimization ✅
 - ✅ **Container Crash Loop Resolved**: Fixed GitHub Actions deployment crash loop issue
 - ✅ **File Structure Alignment**: Reorganized deployment to match working Dockerfile.simple

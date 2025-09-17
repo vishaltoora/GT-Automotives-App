@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import { Tire, Prisma, TireType } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
-import { TireSearchDto } from '../dto/tire-search.dto';
-import { TireResponseDto } from '../dto/tire-response.dto';
-import { TireFiltersDto } from '../dto/tire-filters.dto';
-import { TireSearchResultDto } from '../dto/tire-search-result.dto';
+import { TireSearchDto, TireFiltersDto, TireSearchResultDto, TireDto } from '@gt-automotive/shared-dto';
 
 @Injectable()
 export class TireRepository extends BaseRepository<Tire> {
@@ -88,6 +85,10 @@ export class TireRepository extends BaseRepository<Tire> {
       imageUrl: tire.imageUrl || undefined, // Convert null to undefined
       type: tire.type as any, // Convert Prisma enum to DTO enum
       condition: tire.condition as any, // Convert Prisma enum to DTO enum
+      inStock: tire.quantity > 0, // Calculate inStock based on quantity
+      createdBy: 'system', // Default value since Prisma model doesn't have this field
+      createdAt: tire.createdAt.toISOString(),
+      updatedAt: tire.updatedAt.toISOString(),
     }));
 
     return {
@@ -95,6 +96,7 @@ export class TireRepository extends BaseRepository<Tire> {
       total,
       page: pageNumber,
       limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
       hasMore: skip + limitNumber < total,
     };
   }

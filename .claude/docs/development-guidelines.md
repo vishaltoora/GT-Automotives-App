@@ -48,6 +48,40 @@ const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
 - **Import enums from @prisma/client** - Never create custom enums that duplicate Prisma
 - **Use `undefined` for optional fields** - Not `null` (convert in repository layer)
 - **Apply class-validator decorators** - Comprehensive validation on all fields
+- **🔥 CRITICAL: Use mapped types for Update DTOs** - `implements Partial<CreateDto>` for consistency
+
+### Mapped Types for Update DTOs (Best Practice)
+```typescript
+// ✅ CORRECT: Use mapped types
+export class UpdateTireDto implements Partial<CreateTireDto> {
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @IsOptional()
+  @IsEnum(TireType)
+  type?: TireType;
+}
+
+// ❌ WRONG: Manual field duplication - prone to inconsistencies
+export class UpdateTireDto {
+  @IsOptional()
+  @IsString()
+  brand?: string;
+  // Easy to miss fields or get out of sync
+}
+```
+
+**Benefits:**
+- **Type Safety**: Changes to CreateDto automatically reflect in UpdateDto
+- **DRY Principle**: Single source of truth for field definitions
+- **Maintainability**: No field duplication or sync issues
+- **IDE Support**: Better IntelliSense and autocompletion
+
+**Advanced Patterns:**
+- `Partial<CreateDto>`: All fields optional (most common)
+- `Partial<Omit<CreateDto, 'id'>>`: Exclude immutable fields
+- `Pick<CreateDto, 'field1' | 'field2'>`: Only specific fields updatable
 - **Organize by domain** - Group related DTOs in `libs/shared/dto/src/lib/domain/`
 - **Create separate CRUD DTOs** - `CreateEntityDto`, `UpdateEntityDto`, `EntityResponseDto`
 - **Use definite assignment assertions** - Required fields: `field!: type`

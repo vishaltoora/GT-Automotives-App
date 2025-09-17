@@ -16,6 +16,11 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["development"]
+    "customConditions": ["development"],
+    "baseUrl": ".",
+    "paths": {
+      "@gt-automotive/shared-dto": ["libs/shared-dto/src/index.ts"],
+      "@gt-automotive/database": ["libs/database/src/index.ts"]
+    }
   }
 }

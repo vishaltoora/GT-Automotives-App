@@ -207,7 +207,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     
     // Handle cost field - if 0 or empty, remove it (optional field)
     if (!cleanedData.cost || cleanedData.cost <= 0) {
-      delete cleanedData.cost;
+      delete (cleanedData as any).cost;
     }
     
     // Handle imageUrl field - if empty string, remove it (optional field)

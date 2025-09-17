@@ -104,7 +104,7 @@ export function TireCard({
   showActions = true,
 }: TireCardProps) {
   const theme = useTheme();
-  const isLowStock = tire.quantity <= tire.minStock;
+  const isLowStock = tire.quantity <= (tire.minStock || 5);
   const isOutOfStock = tire.quantity === 0;
 
   const placeholderImage = `https://via.placeholder.com/300x200/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' ' + tire.size)}`;
