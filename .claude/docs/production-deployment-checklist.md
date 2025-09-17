@@ -21,6 +21,7 @@ This checklist ensures all necessary steps are completed for deploying GT Automo
 - [x] Clerk production keys updated
 - [x] CORS settings configured for production domain
 - [x] Database migrations up to date
+- [x] Shared DTO library build verification added to CI/CD pipeline
 
 ### Security Review
 - [x] Authentication properly configured
@@ -60,13 +61,16 @@ az storage account create --name gtautomotiveweb3007b23f
 
 ### 2. Backend Deployment ✅
 ```bash
+# Build shared DTO library FIRST (CRITICAL STEP)
+yarn nx build shared-dto
+
 # Build and push Docker image
 docker build -f Dockerfile.backend -t gt-backend:latest .
-docker tag gt-backend:latest gtautomotivesregistry.azurecr.io/gt-backend:latest
-docker push gtautomotivesregistry.azurecr.io/gt-backend:latest
+docker tag gt-backend:latest gtautomotivesregistry.azurecr.io/gt-backend:container-deploy-api-fixes
+docker push gtautomotivesregistry.azurecr.io/gt-backend:container-deploy-api-fixes
 
-# Deploy container instance
-az container create --name gt-backend --image gtautomotivesregistry.azurecr.io/gt-backend:latest
+# Deploy container instance to gt-automotives-backend-api-fixes
+az container create --name gt-backend-api-fixes --image gtautomotivesregistry.azurecr.io/gt-backend:container-deploy-api-fixes
 ```
 
 ### 3. Frontend Deployment ✅
@@ -224,21 +228,21 @@ CORS_ORIGIN=https://gt-automotives.com
 ./deploy-frontend.sh
 
 # Check backend status
-az container show -g gt-automotives-prod -n gt-backend --query instanceView.state
+az container show -g gt-automotives-prod -n gt-backend-api-fixes --query instanceView.state
 
 # View backend logs
-az container logs -g gt-automotives-prod -n gt-backend --tail 50
+az container logs -g gt-automotives-prod -n gt-backend-api-fixes --tail 50
 
 # Restart backend
-az container restart -g gt-automotives-prod -n gt-backend
+az container restart -g gt-automotives-prod -n gt-backend-api-fixes
 
 # Update CORS
-az container update -g gt-automotives-prod -n gt-backend \
+az container update -g gt-automotives-prod -n gt-backend-api-fixes \
   --environment-variables CORS_ORIGIN="https://gt-automotives.com"
 
 # Test endpoints
 curl https://gt-automotives.com
-curl http://gt-backend.eastus.azurecontainer.io:3000/api/health
+curl http://gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000/api/health
 ```
 
 ---
@@ -252,6 +256,8 @@ curl http://gt-backend.eastus.azurecontainer.io:3000/api/health
 
 ---
 
-**Last Updated:** September 12, 2025  
-**Next Review:** September 19, 2025  
-**Status:** Production Active - All Major Security Issues Resolved
+**Last Updated:** September 17, 2025
+**Next Review:** September 24, 2025
+**Status:** Production Active - Shared DTO Deployment Pipeline Resolved
+**Backend Container:** gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000
+**Frontend Build:** build-20250917-194153-534fa05

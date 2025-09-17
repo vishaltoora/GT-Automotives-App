@@ -88,9 +88,9 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY backend-deploy/server/ ./
 COPY backend-deploy/prisma/ ./prisma/
 
-# Copy shared libraries temporarily
-COPY libs/shared/dto/dist/ ./shared-dto-temp/
-COPY libs/shared/dto/package.json ./shared-dto-package.json
+# Copy shared libraries temporarily (CRITICAL: Must use dist/libs/shared-dto path)
+COPY dist/libs/shared-dto/src/ ./shared-dto-temp/
+COPY dist/libs/shared-dto/package.json ./shared-dto-package.json
 
 # Install dependencies and generate Prisma client
 RUN npm install --production && \
@@ -402,13 +402,14 @@ az container logs --resource-group gt-automotives-prod --name gt-backend-working
 
 ## Recent Updates
 
-### September 17, 2025 - GitHub Workflow Deployment Fix
-- ✅ **Crash Loop Resolved**: Fixed container crash loop in GitHub Actions deployment
-- ✅ **File Structure Alignment**: Reorganized deployment to match working Dockerfile.simple (main.js at root)
-- ✅ **Shared Library Fix**: Added proper @gt-automotive/shared-dto node_modules setup in workflow
-- ✅ **Entry Point Fix**: Changed from debug script to direct `node main.js` command
-- ✅ **Environment Variables**: Added all missing Clerk variables to container deployment
-- ✅ **Parallel Deployment**: Enabled frontend and backend to deploy simultaneously for faster deployments
+### September 17, 2025 - Shared DTO Build Path Resolution & Successful Deployment
+- ✅ **Build Path Discovery**: Fixed shared DTO library path - builds to `dist/libs/shared-dto/` NOT `libs/shared-dto/dist/`
+- ✅ **GitHub Actions Fix**: Added explicit `yarn nx build shared-dto` step before backend packaging
+- ✅ **Dockerfile Path Correction**: Updated all deployment configs to use `dist/libs/shared-dto/src/*` for copying
+- ✅ **Container Deployment Success**: New working instance at gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000
+- ✅ **Frontend Deployment**: Successful deployment with build: build-20250917-194153-534fa05
+- ✅ **Full System Operational**: Both frontend and backend working together in production
+- ✅ **Path Standardization**: All deployment configs now use consistent shared DTO build paths
 
 ### September 16, 2025 - Clerk SDK Authorization Fix
 - ✅ **Environment Variables**: Added `CLERK_API_URL=https://api.clerk.com` to required variables
@@ -419,9 +420,14 @@ az container logs --resource-group gt-automotives-prod --name gt-backend-working
 ### Known Issues Resolved
 - ✅ **GitHub Workflow Crash Loop**: RESOLVED - Container now starts successfully from CI/CD
 - ✅ **File Path Mismatches**: RESOLVED - Aligned with working direct deployment structure
+- ✅ **Shared DTO Build Path**: RESOLVED - Library builds to `dist/libs/shared-dto/` and all configs updated
+- ✅ **Missing Build Step**: RESOLVED - Added explicit shared DTO build step in GitHub Actions
+- ✅ **Production Deployment**: RESOLVED - Full system deployed and operational
 
 ---
 
 **Last Updated**: September 17, 2025
 **Container Image**: `gtautomotivesregistry.azurecr.io/gt-backend:container-deploy-[build-number]`
-**Production URL**: `http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000`
+**Production URL**: `http://gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000`
+**Frontend Build**: `build-20250917-194153-534fa05`
+**GitHub Workflow**: Shared DTO build integration complete

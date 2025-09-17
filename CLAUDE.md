@@ -23,7 +23,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Customer Management Enhancements](.claude/docs/customer-management-enhancements.md)** - Recent B2B support and invoice improvements
 - **[Azure Deployment Plan](.claude/docs/azure-deployment-plan.md)** - Azure App Service deployment architecture and configuration
 - **[Azure Implementation Guide](.claude/docs/azure-implementation-guide.md)** - Step-by-step Azure deployment implementation
-- **[Backend Container Deployment Config](.claude/docs/backend-container-deployment-config.md)** - Complete Docker containerization guide with crash loop fixes (Updated Sept 17)
+- **[Backend Container Deployment Config](.claude/docs/backend-container-deployment-config.md)** - Complete Docker containerization guide with shared DTO fixes ⭐ UPDATED
+- **[Shared DTO Deployment Guide](.claude/docs/shared-dto-deployment-guide.md)** - Complete guide for shared DTO library deployment configuration ⭐ NEW
 - **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
@@ -121,6 +122,17 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
+### September 17, 2025 - Shared DTO Deployment Pipeline Resolution ✅
+- ✅ **Build Path Discovery**: Fixed shared DTO library path - builds to `dist/libs/shared-dto/` NOT `libs/shared-dto/dist/`
+- ✅ **GitHub Actions Integration**: Added explicit `yarn nx build shared-dto` step before backend packaging
+- ✅ **Dockerfile Path Correction**: Updated all deployment configs to use `dist/libs/shared-dto/src/*` for copying
+- ✅ **Container Deployment Success**: New working instance at gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000
+- ✅ **Frontend Deployment**: Successful deployment with build: build-20250917-194153-534fa05
+- ✅ **Full System Operational**: Both frontend and backend working together in production
+- ✅ **Path Standardization**: All deployment configs now use consistent shared DTO build paths
+- ✅ **Documentation Created**: Comprehensive shared DTO deployment guide with troubleshooting
+- ⚠️ **Critical Learning**: Nx builds all libraries to `dist/libs/[name]/` - never assume source directory structure
+
 ### September 17, 2025 - Shared DTO Implementation with Mapped Types ✅
 - ✅ **Shared DTO Library**: Implemented conditional decorators for browser/server compatibility
 - ✅ **Mapped Types for Update DTOs**: Used `implements Partial<CreateDto>` for better maintainability
@@ -131,11 +143,6 @@ yarn test          # Run tests
 - ✅ **Frontend Enum Imports**: Resolved import conflicts with Prisma client enums
 - ✅ **Build System**: Shared library compiles successfully across monorepo
 - ✅ **Type Safety**: Maintained strict TypeScript checking throughout
-- ⚠️ **Critical Learning**: Always use mapped types (`Partial<CreateDto>`) for Update DTOs to ensure consistency and prevent field drift
-
-### September 17, 2025 - GitHub Workflow Deployment Fix & Parallel Optimization ✅
-- ✅ **Container Crash Loop Resolved**: Fixed GitHub Actions deployment crash loop issue
-- ✅ **File Structure Alignment**: Reorganized deployment to match working Dockerfile.simple
 - ✅ **Shared Library Fix**: Proper @gt-automotive/shared-dto setup in node_modules
 - ✅ **Entry Point Fix**: Changed from debug script to direct `node main.js`
 - ✅ **Environment Variables**: Added all missing Clerk variables to container deployment
@@ -288,5 +295,5 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated: September 16, 2025 - Clerk SDK authorization issues resolved, user creation endpoint debugging pending**
+**Last Updated: September 17, 2025 - Shared DTO deployment pipeline resolution complete with full system operational**
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.

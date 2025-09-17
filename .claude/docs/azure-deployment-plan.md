@@ -289,9 +289,9 @@ ACR_PASSWORD=$(az acr credential show \
 
 # Create backend container instance (optimized for free tier)
 az container create \
-  --resource-group gt-automotive-prod \
-  --name gt-backend-container \
-  --image gtautomotiveregistry.azurecr.io/gt-backend:latest \
+  --resource-group gt-automotives-prod \
+  --name gt-backend-api-fixes \
+  --image gtautomotivesregistry.azurecr.io/gt-backend:container-deploy-api-fixes \
   --registry-login-server gtautomotiveregistry.azurecr.io \
   --registry-username gtautomotiveregistry \
   --registry-password $ACR_PASSWORD \
@@ -310,8 +310,8 @@ az container create \
 
 # Get backend container IP
 BACKEND_IP=$(az container show \
-  --resource-group gt-automotive-prod \
-  --name gt-backend-container \
+  --resource-group gt-automotives-prod \
+  --name gt-backend-api-fixes \
   --query ipAddress.ip -o tsv)
 
 echo "Backend API URL: http://$BACKEND_IP:3000"
@@ -854,7 +854,10 @@ After deployment, verify:
 
 ---
 
-**Document Status:** Ready for Implementation
-**Last Updated:** January 2025
-**Estimated Implementation Time:** 4 hours
+**Document Status:** Successfully Implemented ✅
+**Last Updated:** September 17, 2025
+**Implementation Completed:** September 2025
 **Monthly Savings vs AWS:** $32-37 (52-58%)
+**Active Production URL:** http://gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000
+**Frontend URL:** https://gt-automotives.com
+**Deployment Method:** GitHub Actions CI/CD with shared DTO build integration
