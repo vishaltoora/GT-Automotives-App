@@ -189,8 +189,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-build
     if: github.event.inputs.deploy_backend == 'true' && github.event.inputs.deployment_type == 'container'
-    
+
     steps:
+    - name: Checkout code for shared libraries
+      uses: actions/checkout@v4
     - name: Download backend artifact
       uses: dawidd6/action-download-artifact@v3
       with:
@@ -214,13 +216,40 @@ jobs:
         echo "📦 Extracting deployment package with container fixes..."
         cd backend-deploy
         unzip -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
-        
+
         echo "📋 Deployment structure:"
         ls -la
-        
+
         echo "🔍 Verifying webpack externals and shared library structure:"
-        ls -la node_modules/@gt-automotive/ || echo "Shared libraries not found - checking server build"
+        ls -la node_modules/@gt-automotive/ || echo "Shared libraries not found - will copy from source"
         ls -la server/ || echo "Server files not found"
+
+        # CRITICAL: Copy shared libraries from source (now we have checkout)
+        echo "📚 Ensuring shared libraries are available from source..."
+        if [ ! -d "shared-dto-temp" ]; then
+          echo "Creating shared library files from checked out source..."
+          mkdir -p shared-dto-temp
+
+          # Copy from checked out source
+          if [ -d "../libs/shared/dto/dist" ]; then
+            echo "Found shared library dist files, copying..."
+            cp -r ../libs/shared/dto/dist/* shared-dto-temp/ 2>/dev/null || echo "No dist files found"
+            cp ../libs/shared/dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
+          else
+            echo "⚠️ WARNING: Shared library dist not found. Building shared library..."
+            cd ..
+            yarn install --ignore-engines --frozen-lockfile
+            yarn nx build @gt-automotive/shared-dto
+            cd backend-deploy
+            cp -r ../libs/shared/dto/dist/* shared-dto-temp/ 2>/dev/null || echo "Build failed"
+            cp ../libs/shared/dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
+          fi
+        fi
+
+        echo "📋 Final deployment structure:"
+        ls -la
+        echo "📋 Shared library temp files:"
+        ls -la shared-dto-temp/ 2>/dev/null || echo "No shared-dto-temp directory"
 
     - name: Create optimized Dockerfile with fixes
       run: |
