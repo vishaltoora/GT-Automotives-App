@@ -231,18 +231,18 @@ jobs:
           mkdir -p shared-dto-temp
 
           # Copy from checked out source (updated path for shared-dto)
-          if [ -d "../libs/shared-dto/dist" ]; then
+          if [ -d "../dist/libs/shared-dto" ]; then
             echo "Found shared library dist files, copying..."
-            cp -r ../libs/shared-dto/dist/* shared-dto-temp/ 2>/dev/null || echo "No dist files found"
-            cp ../libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
+            cp -r ../dist/libs/shared-dto/src/* shared-dto-temp/ 2>/dev/null || echo "No dist files found"
+            cp ../dist/libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
           else
             echo "⚠️ WARNING: Shared library dist not found. Building shared library..."
             cd ..
             yarn install --ignore-engines --frozen-lockfile
             yarn nx build shared-dto
             cd backend-deploy
-            cp -r ../libs/shared-dto/dist/* shared-dto-temp/ 2>/dev/null || echo "Build failed"
-            cp ../libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
+            cp -r ../dist/libs/shared-dto/src/* shared-dto-temp/ 2>/dev/null || echo "Build failed"
+            cp ../dist/libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
           fi
         fi
 
@@ -274,10 +274,10 @@ jobs:
         fi
 
         # Ensure shared libraries are at root level for Dockerfile access
-        if [ ! -d "shared-dto-temp" ] && [ -d "../libs/shared-dto/dist" ]; then
+        if [ ! -d "shared-dto-temp" ] && [ -d "../dist/libs/shared-dto" ]; then
           mkdir -p shared-dto-temp
-          cp -r ../libs/shared-dto/dist/* shared-dto-temp/ 2>/dev/null || echo "No shared library dist files"
-          cp ../libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No shared library package.json"
+          cp -r ../dist/libs/shared-dto/src/* shared-dto-temp/ 2>/dev/null || echo "No shared library dist files"
+          cp ../dist/libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No shared library package.json"
         fi
 
         # Copy the EXACT Dockerfile.simple content
