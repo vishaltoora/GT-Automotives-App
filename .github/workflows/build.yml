@@ -68,6 +68,11 @@ jobs:
         VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
         NODE_ENV: production
 
+    - name: Build shared DTO library
+      run: |
+        echo "📦 Building shared DTO library..."
+        yarn nx build shared-dto
+
     - name: Build backend with container fixes
       run: |
         echo "🖥️ Building backend with container deployment fixes..."
