@@ -30,9 +30,5 @@
     "jest.config.ts"
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
-  "references": [
-    {
-      "path": "../../libs/shared/dto"
-    }
-  ]
+  "references": []
 }

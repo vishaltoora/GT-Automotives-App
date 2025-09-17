@@ -4,9 +4,6 @@
   "include": [],
   "references": [
     {
-      "path": "../libs/shared/dto"
-    },
-    {
       "path": "../libs/database"
     },
     {

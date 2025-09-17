@@ -13,16 +13,7 @@
       "path": "./server"
     },
     {
-      "path": "./libs/shared/dto"
-    },
-    {
-      "path": "./libs/shared/validation"
-    },
-    {
       "path": "./libs/database"
-    },
-    {
-      "path": "./libs/shared"
     }
   ]
 }

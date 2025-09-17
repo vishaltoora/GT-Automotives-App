@@ -79,7 +79,6 @@
     "ts-node": "10.9.1",
     "tslib": "^2.3.0",
     "typescript": "~5.8.2",
-    "verdaccio": "^6.0.5",
     "vite": "^5.4.0",
     "vitest": "^3.0.0",
     "webpack-cli": "^5.1.4"
@@ -133,18 +132,5 @@
   },
   "prisma": {
     "seed": "ts-node libs/database/src/lib/prisma/seed.ts"
-  },
-  "nx": {
-    "includedScripts": [],
-    "targets": {
-      "local-registry": {
-        "executor": "@nx/js:verdaccio",
-        "options": {
-          "port": 4873,
-          "config": ".verdaccio/config.yml",
-          "storage": "tmp/local-registry/storage"
-        }
-      }
-    }
   }
 }
