@@ -216,7 +216,9 @@
       "Bash(DATABASE_URL=\"postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require\" yarn prisma migrate dev --name \"add_quotation_tables\" --schema=libs/database/src/lib/prisma/schema.prisma)",
       "Bash(xargs kill:*)",
       "Bash(nc:*)",
-      "Bash(nx sync:*)"
+      "Bash(nx sync:*)",
+      "Bash(nvm install:*)",
+      "Bash(sudo n:*)"
     ],
     "deny": [],
     "ask": []

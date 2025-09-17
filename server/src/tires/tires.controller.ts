@@ -19,16 +19,12 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import {
-  CreateTireDto,
-  UpdateTireDto,
-  StockAdjustmentDto,
-  TireSearchDto,
-  TireResponseDto,
-  TireSearchResultDto,
-  InventoryReportDto,
-  TireFiltersDto,
-} from '@gt-automotive/shared-dto';
+import { CreateTireDto } from './dto/create-tire.dto';
+import { UpdateTireDto } from './dto/update-tire.dto';
+import { StockAdjustmentDto } from './dto/stock-adjustment.dto';
+import { TireSearchDto } from './dto/tire-search.dto';
+import { TireResponseDto } from './dto/tire-response.dto';
+import { TireSearchResultDto } from './dto/tire-search-result.dto';
 
 @Controller('api/tires')
 export class TiresController {
@@ -40,7 +36,7 @@ export class TiresController {
   async findAll(
     @Query(new ValidationPipe({ transform: true })) searchDto: TireSearchDto,
     @CurrentUser() user?: any,
-  ): Promise<TireResponseDto[] | TireSearchResultDto> {
+  ): Promise<TireSearchResultDto | TireResponseDto[]> {
     const userRole = user?.role?.name;
 
     // If search parameters are provided, use search method
@@ -49,7 +45,7 @@ export class TiresController {
     }
 
     // Simple findAll for basic requests
-    const filters: TireFiltersDto = {
+    const filters: any = {
       inStock: true, // Only show in-stock items by default for public
     };
 
@@ -93,7 +89,7 @@ export class TiresController {
   async findById(
     @Param('id') id: string,
     @CurrentUser() user?: any,
-  ): Promise<TireResponseDto> {
+  ): Promise<any> {
     const userRole = user?.role?.name;
     return this.tiresService.findById(id, userRole);
   }
@@ -180,7 +176,7 @@ export class TiresController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @CurrentUser() user?: any,
-  ): Promise<InventoryReportDto> {
+  ): Promise<any> {
     const filters = {
       startDate,
       endDate,

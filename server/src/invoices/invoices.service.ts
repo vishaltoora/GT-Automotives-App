@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InvoiceRepository } from './repositories/invoice.repository';
-import { CreateInvoiceEnhancedDto } from '@gt-automotive/shared-dto';
+import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { Invoice, InvoiceStatus, PaymentMethod } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
@@ -14,7 +14,7 @@ export class InvoicesService {
     private readonly customerRepository: CustomerRepository,
   ) {}
 
-  async create(createInvoiceDto: CreateInvoiceEnhancedDto, userId: string): Promise<Invoice> {
+  async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
     console.log('Creating invoice with data:', JSON.stringify(createInvoiceDto, null, 2));
     let customerId = createInvoiceDto.customerId;
 

@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceEnhancedDto } from '@gt-automotive/shared-dto';
+import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -26,7 +26,7 @@ export class InvoicesController {
   @Post()
   @UseGuards(RoleGuard)
   @Roles('STAFF', 'ADMIN')
-  create(@Body() createInvoiceDto: CreateInvoiceEnhancedDto, @CurrentUser() user: any) {
+  create(@Body() createInvoiceDto: CreateInvoiceDto, @CurrentUser() user: any) {
     return this.invoicesService.create(createInvoiceDto, user.id);
   }
 
