@@ -1,7 +1,7 @@
 import { Schedule as ScheduleIcon } from '@mui/icons-material';
 import { Container } from '@mui/material';
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { CTASection } from '../../components/public';
 import {
   ContactSection,
@@ -18,7 +18,6 @@ import { useAuth } from '../../hooks/useAuth';
 
 export function Home() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { isAuthenticated, role, user, isLoading } = useAuth();
 
   useEffect(() => {
