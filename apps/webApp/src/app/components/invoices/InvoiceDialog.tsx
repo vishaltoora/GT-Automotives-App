@@ -16,7 +16,7 @@ import {
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { invoiceService, InvoiceItem } from '../../services/invoice.service';
-import { InvoiceItemType } from '@gt-automotive/shared-interfaces';
+import { InvoiceItemType } from '../../../enums';
 import { customerService } from '../../services/customer.service';
 import { vehicleService } from '../../services/vehicle.service';
 import TireService from '../../services/tire.service';

@@ -1,0 +1,14 @@
+export enum TireType {
+  ALL_SEASON = 'ALL_SEASON',
+  SUMMER = 'SUMMER',
+  WINTER = 'WINTER',
+  PERFORMANCE = 'PERFORMANCE',
+  OFF_ROAD = 'OFF_ROAD',
+}
+
+export enum TireCondition {
+  NEW = 'NEW',
+  USED_EXCELLENT = 'USED_EXCELLENT',
+  USED_GOOD = 'USED_GOOD',
+  USED_FAIR = 'USED_FAIR',
+}

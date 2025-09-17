@@ -2,7 +2,7 @@ import axios from 'axios';
 import {
   CreateInvoiceEnhancedDto
 } from '@gt-automotive/shared-dto';
-import { PaymentMethod, InvoiceItemType } from '@gt-automotive/shared-interfaces';
+import { PaymentMethod, InvoiceItemType } from '../../enums';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';

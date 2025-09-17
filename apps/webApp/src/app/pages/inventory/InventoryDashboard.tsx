@@ -36,11 +36,11 @@ import {
   useInvalidateTireQueries 
 } from '../../hooks/useTires';
 import { useAuth } from '../../hooks/useAuth';
-import { TireType } from '@gt-automotive/shared-interfaces';
+import { TireType } from '../../../enums';
 import TireListSimple from './TireListSimple';
 
 const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
 const formatCurrency = (amount: number): string => {
