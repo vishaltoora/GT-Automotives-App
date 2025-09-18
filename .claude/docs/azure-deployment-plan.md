@@ -3,11 +3,10 @@
 
 ## Executive Summary
 
-This plan provides a complete Azure deployment strategy that reduces monthly costs by 50-58% compared to AWS Lightsail while maintaining enterprise-grade reliability and performance.
+This plan provides a complete Azure deployment strategy for enterprise-grade reliability and performance.
 
-**Cost Comparison:**
-- AWS Lightsail: ~$62.50/month
-- **Azure: ~$25-30/month (saves $32-37/month)**
+**Estimated Monthly Cost:**
+- **Azure: ~$25-30/month**
 
 ## Architecture Overview
 
@@ -857,7 +856,7 @@ After deployment, verify:
 **Document Status:** Successfully Implemented ✅
 **Last Updated:** September 17, 2025
 **Implementation Completed:** September 2025
-**Monthly Savings vs AWS:** $32-37 (52-58%)
+**Monthly Total:** ~$25-30
 **Active Production URL:** http://gt-automotives-backend-api-fixes.canadacentral.azurecontainer.io:3000
 **Frontend URL:** https://gt-automotives.com
 **Deployment Method:** GitHub Actions CI/CD with shared DTO build integration

@@ -46,7 +46,7 @@ import { vehicleService } from '../../services/vehicle.service';
 import TireService from '../../services/tire.service';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../hooks/useAuth';
-import { InvoiceItemType } from '@gt-automotive/shared-dto';
+import { InvoiceItemType } from '../../../enums';
 
 const InvoiceForm: React.FC = () => {
   const navigate = useNavigate();

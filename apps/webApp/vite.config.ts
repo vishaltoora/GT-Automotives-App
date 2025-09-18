@@ -32,6 +32,11 @@ export default defineConfig(() => ({
   // worker: {
   //  plugins: [ nxViteTsPaths() ],
   // },
+  resolve: {
+    alias: {
+      '@gt-automotive/shared-dto': '../../dist/libs/shared-dto/src/index.js',
+    },
+  },
   build: {
     outDir: './dist',
     emptyOutDir: true,

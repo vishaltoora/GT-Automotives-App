@@ -2,7 +2,7 @@
 
 ## Complete Setup Guide for GT Automotive App
 **Estimated Time:** 2-3 hours  
-**Monthly Cost:** $11-22 (vs $62.50 on AWS)  
+**Monthly Cost:** $11-22  
 **Architecture:** Container Instance (Backend) + Storage/CDN (Frontend) + Serverless PostgreSQL
 
 ---
@@ -754,7 +754,7 @@ az consumption usage list \
 **Implementation Status:** ✅ Deployed to Production
 **Live URL:** https://gt-automotives.com
 **Implementation Time:** 2-3 hours  
-**Monthly Savings vs AWS:** $43-51 (70-82%)
+**Monthly Total:** $11-22
 
 ---
 

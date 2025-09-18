@@ -46,8 +46,11 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       }
     };
 
-    // For production key with verified custom domain
-    if (publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
+    // Only use custom domain for production builds with production key
+    const isProduction = import.meta.env.PROD;
+    const isProductionKey = publishableKey?.startsWith('pk_live_');
+
+    if (isProduction && isProductionKey && publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
       // DNS verified - use custom domain with SSL certificates
       props.domain = 'clerk.gt-automotives.com';
       props.isSatellite = false;

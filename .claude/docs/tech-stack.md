@@ -40,6 +40,6 @@
 
 ## Services (Planned)
 - **PDF Generation:** PDFKit or jsPDF
-- **Email:** SendGrid or AWS SES
+- **Email:** SendGrid
 - **SMS:** Twilio (optional)
-- **File Storage:** Local or AWS S3
+- **File Storage:** Azure Storage

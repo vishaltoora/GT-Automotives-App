@@ -5,7 +5,46 @@ This guide provides solutions for common authentication issues with Clerk integr
 
 ## Common Issues and Solutions
 
-### 1. DNS Resolution Errors
+### 1. 401 Unauthorized Errors in Development/Production
+
+#### Error: `POST /api/invoices 401 (Unauthorized)`
+**Symptom:** Admin user cannot create invoices, gets 401 errors despite being logged in
+
+**Root Causes:**
+1. **Missing Admin User in Database**: Admin user not seeded with correct Clerk ID
+2. **Development/Production Domain Mismatch**: ClerkProvider using wrong domain configuration
+
+**Solutions:**
+
+**1. Seed Admin User in Database:**
+```bash
+yarn db:seed
+```
+This creates the admin user (`vishal.alawalpuria@gmail.com`) with Clerk ID `user_31JM1BAB2lrW82JVPgrbBekTx5H` and admin role.
+
+**2. Fix ClerkProvider Configuration (Fixed in v1.2.0):**
+The ClerkProvider now properly separates development and production configurations:
+
+```typescript
+// Only use custom domain for production builds with production key
+const isProduction = import.meta.env.PROD;
+const isProductionKey = publishableKey?.startsWith('pk_live_');
+
+if (isProduction && isProductionKey && publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
+  props.domain = 'clerk.gt-automotives.com';
+  props.isSatellite = false;
+}
+```
+
+**Key Changes:**
+- Development (`pk_test_`): Uses default Clerk endpoints
+- Production (`pk_live_`): Uses custom domain `clerk.gt-automotives.com`
+- Prevents domain confusion during token refresh cycles
+
+**Production Token Refresh Issue Fix:**
+This also resolves the "first invoice works, second fails" issue in production by ensuring consistent domain usage throughout the session lifecycle.
+
+### 2. DNS Resolution Errors
 
 #### Error: `net::ERR_NAME_NOT_RESOLVED`
 **Symptom:** Browser cannot resolve `clerk.gt-automotives.com`

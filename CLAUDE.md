@@ -122,6 +122,17 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
+### September 18, 2025 - Development Authentication & Invoice Creation Fix ✅
+- ✅ **Backend Module Resolution**: Fixed shared-dto symlink in node_modules for webpack compatibility
+- ✅ **Admin User Database Seeding**: Resolved 401 unauthorized errors by running `yarn db:seed`
+- ✅ **Clerk Development Configuration**: Fixed ClerkProvider to use correct endpoints for dev vs prod
+- ✅ **Production Token Refresh Fix**: Resolved "first invoice works, second fails" issue in production
+- ✅ **Development Environment**: Both frontend (4200) and backend (3000) now running successfully
+- ✅ **Authentication Flow**: Proper development authentication with test Clerk keys
+- ✅ **Invoice Creation**: Admin user can now create invoices in both development and production
+- ✅ **ClerkProvider Enhancement**: Added proper environment detection (PROD + pk_live_ checks)
+- ✅ **Documentation Updated**: Enhanced authentication troubleshooting with 401 error solutions
+
 ### September 17, 2025 - Shared DTO Deployment Pipeline Resolution ✅
 - ✅ **Build Path Discovery**: Fixed shared DTO library path - builds to `dist/libs/shared-dto/` NOT `libs/shared-dto/dist/`
 - ✅ **GitHub Actions Integration**: Added explicit `yarn nx build shared-dto` step before backend packaging
