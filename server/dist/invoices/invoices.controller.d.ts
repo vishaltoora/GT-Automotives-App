@@ -9,8 +9,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        total: import(".prisma/client/runtime/library").Decimal;
         customerId: string;
+        total: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -19,6 +19,7 @@ export declare class InvoicesController {
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
         notes: string | null;
+        invoiceDate: Date;
         createdBy: string;
         paidAt: Date | null;
         gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -30,8 +31,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        total: import(".prisma/client/runtime/library").Decimal;
         customerId: string;
+        total: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -40,6 +41,7 @@ export declare class InvoicesController {
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
         notes: string | null;
+        invoiceDate: Date;
         createdBy: string;
         paidAt: Date | null;
         gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -51,8 +53,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        total: import(".prisma/client/runtime/library").Decimal;
         customerId: string;
+        total: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -61,6 +63,7 @@ export declare class InvoicesController {
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
         notes: string | null;
+        invoiceDate: Date;
         createdBy: string;
         paidAt: Date | null;
         gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -73,8 +76,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        total: import(".prisma/client/runtime/library").Decimal;
         customerId: string;
+        total: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -83,6 +86,7 @@ export declare class InvoicesController {
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
         notes: string | null;
+        invoiceDate: Date;
         createdBy: string;
         paidAt: Date | null;
         gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -94,8 +98,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        total: import(".prisma/client/runtime/library").Decimal;
         customerId: string;
+        total: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -104,6 +108,7 @@ export declare class InvoicesController {
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
         notes: string | null;
+        invoiceDate: Date;
         createdBy: string;
         paidAt: Date | null;
         gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -115,8 +120,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        total: import(".prisma/client/runtime/library").Decimal;
         customerId: string;
+        total: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -125,6 +130,7 @@ export declare class InvoicesController {
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
         notes: string | null;
+        invoiceDate: Date;
         createdBy: string;
         paidAt: Date | null;
         gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -136,8 +142,8 @@ export declare class InvoicesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        total: import(".prisma/client/runtime/library").Decimal;
         customerId: string;
+        total: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.InvoiceStatus;
         invoiceNumber: string;
         vehicleId: string | null;
@@ -146,6 +152,7 @@ export declare class InvoicesController {
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
         notes: string | null;
+        invoiceDate: Date;
         createdBy: string;
         paidAt: Date | null;
         gstAmount: import(".prisma/client/runtime/library").Decimal | null;

@@ -1,6 +1,49 @@
 # Troubleshooting Guide
 
-## Recent Resolutions (September 17, 2025)
+## Recent Resolutions (September 18, 2025)
+
+### Shared-DTO Module Resolution Failure ✅ RESOLVED
+**Problem:** Backend server crashes with module resolution errors:
+```
+Error: Cannot find module '/path/to/dist/libs/shared-dto'
+TypeError: Reflect.getMetadata is not a function
+```
+**Root Cause:** The newer `NxAppWebpackPlugin` has compatibility issues with shared libraries in monorepo setups
+
+**Solution:** Switch to MyPersn's proven webpack pattern using `composePlugins(withNx())`:
+
+```javascript
+// server/webpack.config.js
+const { composePlugins, withNx } = require('@nx/webpack');
+const path = require('path');
+
+module.exports = composePlugins(withNx(), (config) => {
+  config.output = {
+    ...config.output,
+    path: path.join(__dirname, '../dist/server'),
+    filename: 'main.js',
+  };
+
+  config.externals = {
+    '@prisma/client': 'commonjs @prisma/client',
+    '.prisma/client': 'commonjs .prisma/client',
+    '@gt-automotive/shared-dto': 'commonjs @gt-automotive/shared-dto',
+  };
+
+  return config;
+});
+```
+
+**Steps to fix:**
+1. Replace `NxAppWebpackPlugin` with `composePlugins(withNx())`
+2. Configure proper output path to `../dist/server`
+3. Set externals for shared libraries
+4. Clear Nx cache: `yarn nx reset`
+5. Restart servers: `yarn dev`
+
+**Result:** Stable development servers with working shared-dto integration
+
+## Previous Resolutions (September 17, 2025)
 
 ### Container Crash Loop in GitHub Workflow ✅ RESOLVED
 **Problem:** Containers deployed via GitHub Actions would crash immediately, but direct deployment worked

@@ -6,10 +6,10 @@ export declare class QuotationsController {
     constructor(quotationsService: QuotationsService);
     create(createQuoteDto: CreateQuoteDto, req: any): Promise<{
         id: string;
+        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
-        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -33,10 +33,10 @@ export declare class QuotationsController {
     }>;
     findAll(): Promise<{
         id: string;
+        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
-        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -60,10 +60,10 @@ export declare class QuotationsController {
     }[]>;
     search(customerName?: string, quotationNumber?: string, status?: string, startDate?: string, endDate?: string): Promise<{
         id: string;
+        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
-        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -87,10 +87,10 @@ export declare class QuotationsController {
     }[]>;
     findOne(id: string): Promise<{
         id: string;
+        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
-        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -114,10 +114,10 @@ export declare class QuotationsController {
     }>;
     update(id: string, updateQuoteDto: UpdateQuoteDto): Promise<{
         id: string;
+        email: string | null;
         createdAt: Date;
         updatedAt: Date;
         total: import(".prisma/client/runtime/library").Decimal;
-        email: string | null;
         phone: string | null;
         address: string | null;
         businessName: string | null;

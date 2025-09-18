@@ -221,7 +221,9 @@
       "Bash(sudo n:*)",
       "Bash(xargs sed:*)",
       "Bash(nx show project:*)",
-      "Bash(ln:*)"
+      "Bash(ln:*)",
+      "Read(//Users/vishaltoora/projects/mypersn/**)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

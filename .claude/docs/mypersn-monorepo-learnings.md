@@ -182,6 +182,68 @@ const createValidationDecorator = (decoratorName: string, ...args: any[]) => {
 - Fixed symlink resolution in monorepo
 - Resolved CommonJS/ESM compatibility issues
 
+### 5. Critical Webpack Configuration Fix ⭐ LATEST
+**Problem**: The newer `NxAppWebpackPlugin` caused module resolution failures with shared libraries, leading to:
+```
+Error: Cannot find module '/path/to/dist/libs/shared-dto'
+TypeError: Reflect.getMetadata is not a function
+```
+
+**Solution**: Switch to MyPersn's classic webpack pattern using `composePlugins(withNx())`:
+
+**Before (Broken)**:
+```javascript
+const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
+
+module.exports = {
+  target: 'node',
+  mode: 'production',
+  externals: {
+    '@gt-automotive/shared-dto': 'commonjs @gt-automotive/shared-dto',
+  },
+  plugins: [
+    new NxAppWebpackPlugin({
+      target: 'node',
+      compiler: 'tsc',
+      main: './src/main.ts',
+      // ...config
+    }),
+  ],
+};
+```
+
+**After (Working)**:
+```javascript
+const { composePlugins, withNx } = require('@nx/webpack');
+const path = require('path');
+
+module.exports = composePlugins(withNx(), (config) => {
+  // Set the correct output path
+  config.output = {
+    ...config.output,
+    path: path.join(__dirname, '../dist/server'),
+    filename: 'main.js',
+  };
+
+  // Externalize modules that should not be bundled
+  config.externals = {
+    '@prisma/client': 'commonjs @prisma/client',
+    '.prisma/client': 'commonjs .prisma/client',
+    '@gt-automotive/shared-dto': 'commonjs @gt-automotive/shared-dto',
+  };
+
+  return config;
+});
+```
+
+**Key Insights**:
+- The `composePlugins(withNx())` pattern provides better compatibility with external modules
+- Proper output path configuration prevents file location mismatches
+- MyPersn's approach is more stable for complex monorepo shared library scenarios
+- This pattern eliminates the need for complex symlink management
+
+**Result**: Complete resolution of shared-dto module issues, stable development servers, and proper shared library integration.
+
 ### 5. Utility Functions Implementation ⭐ NEW
 - **StringUtils**: Automotive-focused string manipulation with Canadian phone formatting, postal codes, currency, vehicle identifiers
 - **DateUtils**: Business hours checking, appointment scheduling, service date management, relative time calculations

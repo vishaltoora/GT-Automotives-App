@@ -7,11 +7,11 @@ export declare class VehiclesController {
     create(createVehicleDto: CreateVehicleDto, user: any): Promise<({
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string | null;
             firstName: string;
             lastName: string;
-            email: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -33,11 +33,11 @@ export declare class VehiclesController {
         invoices: ({
             items: {
                 id: string;
-                quantity: number;
                 createdAt: Date;
                 updatedAt: Date;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 description: string;
+                quantity: number;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 unitPrice: import(".prisma/client/runtime/library").Decimal;
                 total: import(".prisma/client/runtime/library").Decimal;
                 invoiceId: string;
@@ -47,8 +47,8 @@ export declare class VehiclesController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            total: import(".prisma/client/runtime/library").Decimal;
             customerId: string;
+            total: import(".prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.InvoiceStatus;
             invoiceNumber: string;
             vehicleId: string | null;
@@ -57,6 +57,7 @@ export declare class VehiclesController {
             taxAmount: import(".prisma/client/runtime/library").Decimal;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             notes: string | null;
+            invoiceDate: Date;
             createdBy: string;
             paidAt: Date | null;
             gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -68,8 +69,8 @@ export declare class VehiclesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        model: string;
         customerId: string;
+        model: string;
         make: string;
         year: number;
         vin: string | null;
@@ -83,11 +84,11 @@ export declare class VehiclesController {
         };
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string | null;
             firstName: string;
             lastName: string;
-            email: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -96,8 +97,8 @@ export declare class VehiclesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        model: string;
         customerId: string;
+        model: string;
         make: string;
         year: number;
         vin: string | null;
@@ -111,11 +112,11 @@ export declare class VehiclesController {
         };
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string | null;
             firstName: string;
             lastName: string;
-            email: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -124,8 +125,8 @@ export declare class VehiclesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        model: string;
         customerId: string;
+        model: string;
         make: string;
         year: number;
         vin: string | null;
@@ -141,8 +142,8 @@ export declare class VehiclesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        model: string;
         customerId: string;
+        model: string;
         make: string;
         year: number;
         vin: string | null;
@@ -162,11 +163,11 @@ export declare class VehiclesController {
         };
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string | null;
             firstName: string;
             lastName: string;
-            email: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -188,11 +189,11 @@ export declare class VehiclesController {
         invoices: ({
             items: {
                 id: string;
-                quantity: number;
                 createdAt: Date;
                 updatedAt: Date;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 description: string;
+                quantity: number;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 unitPrice: import(".prisma/client/runtime/library").Decimal;
                 total: import(".prisma/client/runtime/library").Decimal;
                 invoiceId: string;
@@ -202,8 +203,8 @@ export declare class VehiclesController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            total: import(".prisma/client/runtime/library").Decimal;
             customerId: string;
+            total: import(".prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.InvoiceStatus;
             invoiceNumber: string;
             vehicleId: string | null;
@@ -212,6 +213,7 @@ export declare class VehiclesController {
             taxAmount: import(".prisma/client/runtime/library").Decimal;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             notes: string | null;
+            invoiceDate: Date;
             createdBy: string;
             paidAt: Date | null;
             gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -222,8 +224,8 @@ export declare class VehiclesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        model: string;
         customerId: string;
+        model: string;
         make: string;
         year: number;
         vin: string | null;
@@ -233,11 +235,11 @@ export declare class VehiclesController {
     update(id: string, updateVehicleDto: UpdateVehicleDto, user: any): Promise<({
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string | null;
             firstName: string;
             lastName: string;
-            email: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
             address: string | null;
             businessName: string | null;
@@ -259,11 +261,11 @@ export declare class VehiclesController {
         invoices: ({
             items: {
                 id: string;
-                quantity: number;
                 createdAt: Date;
                 updatedAt: Date;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 description: string;
+                quantity: number;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 unitPrice: import(".prisma/client/runtime/library").Decimal;
                 total: import(".prisma/client/runtime/library").Decimal;
                 invoiceId: string;
@@ -273,8 +275,8 @@ export declare class VehiclesController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            total: import(".prisma/client/runtime/library").Decimal;
             customerId: string;
+            total: import(".prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.InvoiceStatus;
             invoiceNumber: string;
             vehicleId: string | null;
@@ -283,6 +285,7 @@ export declare class VehiclesController {
             taxAmount: import(".prisma/client/runtime/library").Decimal;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             notes: string | null;
+            invoiceDate: Date;
             createdBy: string;
             paidAt: Date | null;
             gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -294,8 +297,8 @@ export declare class VehiclesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        model: string;
         customerId: string;
+        model: string;
         make: string;
         year: number;
         vin: string | null;
@@ -306,8 +309,8 @@ export declare class VehiclesController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        model: string;
         customerId: string;
+        model: string;
         make: string;
         year: number;
         vin: string | null;

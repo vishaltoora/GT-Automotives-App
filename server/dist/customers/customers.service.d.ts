@@ -10,11 +10,11 @@ export declare class CustomersService {
     constructor(customerRepository: CustomerRepository, auditRepository: AuditRepository, prisma: PrismaService);
     create(createCustomerDto: CreateCustomerDto, createdBy: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -29,8 +29,8 @@ export declare class CustomersService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            model: string;
             customerId: string;
+            model: string;
             make: string;
             year: number;
             vin: string | null;
@@ -39,11 +39,11 @@ export declare class CustomersService {
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -60,8 +60,8 @@ export declare class CustomersService {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                model: string;
                 customerId: string;
+                model: string;
                 make: string;
                 year: number;
                 vin: string | null;
@@ -83,36 +83,36 @@ export declare class CustomersService {
             reminderSent: boolean;
         })[];
         invoices: ({
-            items: {
-                id: string;
-                quantity: number;
-                createdAt: Date;
-                updatedAt: Date;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                description: string;
-                unitPrice: import(".prisma/client/runtime/library").Decimal;
-                total: import(".prisma/client/runtime/library").Decimal;
-                invoiceId: string;
-                tireId: string | null;
-            }[];
             vehicle: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                model: string;
                 customerId: string;
+                model: string;
                 make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
                 mileage: number | null;
             } | null;
+            items: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                description: string;
+                quantity: number;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
+                unitPrice: import(".prisma/client/runtime/library").Decimal;
+                total: import(".prisma/client/runtime/library").Decimal;
+                invoiceId: string;
+                tireId: string | null;
+            }[];
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            total: import(".prisma/client/runtime/library").Decimal;
             customerId: string;
+            total: import(".prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.InvoiceStatus;
             invoiceNumber: string;
             vehicleId: string | null;
@@ -121,6 +121,7 @@ export declare class CustomersService {
             taxAmount: import(".prisma/client/runtime/library").Decimal;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             notes: string | null;
+            invoiceDate: Date;
             createdBy: string;
             paidAt: Date | null;
             gstAmount: import(".prisma/client/runtime/library").Decimal | null;
@@ -132,8 +133,8 @@ export declare class CustomersService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            model: string;
             customerId: string;
+            model: string;
             make: string;
             year: number;
             vin: string | null;
@@ -141,11 +142,11 @@ export declare class CustomersService {
             mileage: number | null;
         }[];
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -155,8 +156,8 @@ export declare class CustomersService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            model: string;
             customerId: string;
+            model: string;
             make: string;
             year: number;
             vin: string | null;
@@ -165,11 +166,11 @@ export declare class CustomersService {
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -187,8 +188,8 @@ export declare class CustomersService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            model: string;
             customerId: string;
+            model: string;
             make: string;
             year: number;
             vin: string | null;
@@ -197,11 +198,11 @@ export declare class CustomersService {
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
