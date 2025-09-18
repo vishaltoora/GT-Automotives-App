@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { CreateInvoiceDto } from '@gt-automotive/shared-dto';
 import { UpdateInvoiceDto } from '@gt-automotive/shared-dto';
-import { Invoice, InvoiceStatus, PaymentMethod } from '@prisma/client';
+import { Invoice, InvoiceStatus, PaymentMethod, InvoiceItemType } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
 
@@ -58,6 +58,7 @@ export class InvoicesService {
       subtotal += total;
       return {
         ...item,
+        itemType: item.itemType as InvoiceItemType,
         total,
       };
     });
