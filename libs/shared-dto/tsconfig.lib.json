@@ -1,21 +1,22 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "declaration": true,
     "emitDeclarationOnly": false,
     "composite": false,
     "outDir": "../../dist/out-tsc",
     "types": ["node"],
-    "target": "es2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "lib": ["es2022", "dom"],
+    "target": "es2015",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["es2017", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "useDefineForClassFields": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true
   },
   "include": ["src/**/*"],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]

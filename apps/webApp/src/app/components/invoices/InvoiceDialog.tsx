@@ -37,12 +37,14 @@ interface InvoiceDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (invoice: any) => void;
+  invoice?: any; // For edit mode
 }
 
 export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   open,
   onClose,
   onSuccess,
+  invoice = null,
 }) => {
   const { } = useAuth();
   const [customers, setCustomers] = useState<any[]>([]);
@@ -50,6 +52,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [tires, setTires] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
+  const isEditMode = Boolean(invoice);
   
   const [customerForm, setCustomerForm] = useState({
     firstName: '',
@@ -68,6 +71,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     paymentMethod: '',
     notes: '',
     status: 'PENDING',
+    invoiceDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
   });
   
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -76,19 +80,68 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     description: '',
     quantity: 1,
     unitPrice: 0,
+    discountType: 'amount',
+    discountValue: 0,
+    discountAmount: 0,
   });
 
   const formatTireType = (type: string) => {
     return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  const calculateItemTotal = (item: InvoiceItem) => {
+    const baseTotal = item.quantity * item.unitPrice;
+
+    // For DISCOUNT items (fixed amount), use the negative unitPrice directly
+    if (item.itemType === InvoiceItemType.DISCOUNT) {
+      return {
+        subtotal: baseTotal,
+        discountAmount: 0,
+        total: baseTotal // baseTotal is already negative for DISCOUNT items
+      };
+    }
+
+    // For DISCOUNT_PERCENTAGE items, calculate based on other items
+    if (item.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE) {
+      const otherItemsSubtotal = items
+        .filter(i => i.itemType !== InvoiceItemType.DISCOUNT && i.itemType !== InvoiceItemType.DISCOUNT_PERCENTAGE)
+        .reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
+      const percentageDiscount = (otherItemsSubtotal * item.unitPrice) / 100;
+      return {
+        subtotal: baseTotal,
+        discountAmount: 0,
+        total: -percentageDiscount // Negative value for discount
+      };
+    }
+
+    // For regular items, use the old discount logic (per-item discounts)
+    let discountAmount = 0;
+    if (item.discountValue && item.discountValue > 0) {
+      if (item.discountType === 'percentage') {
+        discountAmount = (baseTotal * item.discountValue) / 100;
+      } else {
+        discountAmount = item.discountValue;
+      }
+    }
+
+    return {
+      subtotal: baseTotal,
+      discountAmount,
+      total: baseTotal - discountAmount
+    };
+  };
+
   useEffect(() => {
     if (open) {
       loadData();
-      // Reset form when dialog opens
-      resetForm();
+      if (isEditMode && invoice) {
+        populateFormForEdit(invoice);
+      } else {
+        // Reset form when dialog opens for create mode
+        resetForm();
+      }
     }
-  }, [open]);
+  }, [open, isEditMode, invoice]);
 
   useEffect(() => {
     if (formData.customerId) {
@@ -113,6 +166,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       paymentMethod: '',
       notes: '',
       status: 'PENDING',
+      invoiceDate: new Date().toISOString().split('T')[0],
     });
     setItems([]);
     setNewItem({
@@ -120,9 +174,59 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       description: '',
       quantity: 1,
       unitPrice: 0,
+      discountType: 'amount',
+      discountValue: 0,
+      discountAmount: 0,
     });
     // Start with new customer mode since no customer is selected
     setIsNewCustomer(true);
+  };
+
+  const populateFormForEdit = (invoiceData: any) => {
+    // Populate customer form (read-only in edit mode)
+    if (invoiceData.customer) {
+      setCustomerForm({
+        firstName: invoiceData.customer.firstName || '',
+        lastName: invoiceData.customer.lastName || '',
+        businessName: invoiceData.customer.businessName || '',
+        address: invoiceData.customer.address || 'Prince George, BC',
+        phone: invoiceData.customer.phone || '',
+        email: invoiceData.customer.email || '',
+      });
+      setIsNewCustomer(false);
+    }
+
+    // Populate form data
+    setFormData({
+      customerId: invoiceData.customer?.id || '',
+      vehicleId: invoiceData.vehicle?.id || '',
+      gstRate: invoiceData.gstRate || 0.05,
+      pstRate: invoiceData.pstRate || 0.07,
+      paymentMethod: invoiceData.paymentMethod || '',
+      notes: invoiceData.notes || '',
+      status: invoiceData.status || 'PENDING',
+      invoiceDate: invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    });
+
+    // Populate items
+    if (invoiceData.items && invoiceData.items.length > 0) {
+      const populatedItems = invoiceData.items.map((item: any) => ({
+        itemType: item.itemType,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        tireId: item.tireId || undefined,
+        discountType: item.discountType || 'amount',
+        discountValue: item.discountValue || 0,
+        discountAmount: item.discountAmount || 0,
+      }));
+      setItems(populatedItems);
+    }
+
+    // Load customer vehicles for vehicle selection
+    if (invoiceData.customer?.id) {
+      loadCustomerVehicles(invoiceData.customer.id);
+    }
   };
 
   const loadData = async () => {
@@ -166,24 +270,46 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     try {
       setLoading(true);
       
+      // Calculate totals - separate regular items from discount items
+      const subtotal = items.reduce((sum, item) => {
+        const itemCalc = calculateItemTotal(item);
+        return sum + itemCalc.total; // Use calculated total (includes negative discounts)
+      }, 0);
+      const gstAmount = (subtotal * formData.gstRate) / 100;
+      const pstAmount = (subtotal * formData.pstRate) / 100;
+      const taxAmount = gstAmount + pstAmount;
+      const total = subtotal + taxAmount;
+
       const invoiceData: any = {
-        items: items.map(({ itemType, description, quantity, unitPrice, tireId }) => {
-          const item: any = {
+        items: items.map((item) => {
+          const { itemType, description, quantity, unitPrice, tireId, discountType, discountValue, discountAmount } = item;
+          const itemData: any = {
             itemType,
             description,
             quantity,
             unitPrice,
           };
           if (tireId) {
-            item.tireId = tireId;
+            itemData.tireId = tireId;
           }
-          return item;
+          // Include discount fields for DISCOUNT/DISCOUNT_PERCENTAGE items or regular items with discounts
+          if (itemType === InvoiceItemType.DISCOUNT || itemType === InvoiceItemType.DISCOUNT_PERCENTAGE || (discountType && discountValue && discountValue > 0)) {
+            itemData.discountType = discountType;
+            itemData.discountValue = discountValue;
+            itemData.discountAmount = discountAmount;
+          }
+          return itemData;
         }),
+        subtotal,
         taxRate: formData.gstRate + formData.pstRate,
+        taxAmount,
+        total,
         gstRate: formData.gstRate,
+        gstAmount,
         pstRate: formData.pstRate,
+        pstAmount,
       };
-      
+
       if (formData.paymentMethod) {
         invoiceData.paymentMethod = formData.paymentMethod;
       }
@@ -193,27 +319,33 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       if (formData.status) {
         invoiceData.status = formData.status;
       }
+      if (formData.invoiceDate) {
+        invoiceData.invoiceDate = formData.invoiceDate;
+      }
 
-      if (customerId) {
-        // When using existing customer, only send customerId
-        invoiceData.customerId = customerId;
-      } else if (isNewCustomer && customerForm.firstName && customerForm.lastName) {
-        // When creating new customer, send customerData
-        invoiceData.customerData = {
-          firstName: customerForm.firstName,
-          lastName: customerForm.lastName,
-        };
-        if (customerForm.phone && customerForm.phone.trim() !== '') {
-          invoiceData.customerData.phone = customerForm.phone.trim();
-        }
-        if (customerForm.businessName) {
-          invoiceData.customerData.businessName = customerForm.businessName;
-        }
-        if (customerForm.address) {
-          invoiceData.customerData.address = customerForm.address;
-        }
-        if (customerForm.email) {
-          invoiceData.customerData.email = customerForm.email;
+      // In edit mode, don't send customer data (customer cannot be changed)
+      if (!isEditMode) {
+        if (customerId) {
+          // When using existing customer, only send customerId
+          invoiceData.customerId = customerId;
+        } else if (isNewCustomer && customerForm.firstName && customerForm.lastName) {
+          // When creating new customer, send customerData
+          invoiceData.customerData = {
+            firstName: customerForm.firstName,
+            lastName: customerForm.lastName,
+          };
+          if (customerForm.phone && customerForm.phone.trim() !== '') {
+            invoiceData.customerData.phone = customerForm.phone.trim();
+          }
+          if (customerForm.businessName) {
+            invoiceData.customerData.businessName = customerForm.businessName;
+          }
+          if (customerForm.address) {
+            invoiceData.customerData.address = customerForm.address;
+          }
+          if (customerForm.email) {
+            invoiceData.customerData.email = customerForm.email;
+          }
         }
       }
 
@@ -222,8 +354,13 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       }
 
 
-      const invoice = await invoiceService.createInvoice(invoiceData);
-      onSuccess(invoice);
+      let result;
+      if (isEditMode && invoice) {
+        result = await invoiceService.updateInvoice(invoice.id, invoiceData);
+      } else {
+        result = await invoiceService.createInvoice(invoiceData);
+      }
+      onSuccess(result);
       onClose();
     } catch (error: any) {
       if (import.meta.env.DEV) {
@@ -236,7 +373,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           : error.response.data.message || 'Unknown error';
         alert(`Error creating invoice: ${errorMessage}`);
       } else {
-        alert('Error creating invoice: ' + error.message);
+        alert(`Error ${isEditMode ? 'updating' : 'creating'} invoice: ` + error.message);
       }
     } finally {
       setLoading(false);
@@ -268,13 +405,40 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   };
 
   const handleAddItem = () => {
-    if (newItem.description && newItem.unitPrice > 0) {
-      setItems([...items, { ...newItem, total: newItem.quantity * newItem.unitPrice }]);
+    if (newItem.description && (
+      newItem.itemType === InvoiceItemType.DISCOUNT ? newItem.unitPrice < 0 :
+      newItem.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE ? newItem.unitPrice > 0 && newItem.unitPrice <= 100 :
+      newItem.unitPrice > 0
+    )) {
+      const calculation = calculateItemTotal(newItem);
+      const itemWithCalculations = {
+        ...newItem,
+        discountAmount: calculation.discountAmount,
+        total: calculation.total
+      };
+
+      // For DISCOUNT items, set the correct properties
+      if (newItem.itemType === InvoiceItemType.DISCOUNT) {
+        itemWithCalculations.discountType = 'amount';
+        itemWithCalculations.discountValue = Math.abs(newItem.unitPrice); // Store positive value
+        itemWithCalculations.discountAmount = Math.abs(newItem.unitPrice); // Store positive value for display
+      }
+
+      // For DISCOUNT_PERCENTAGE items, store the percentage value for calculation
+      if (newItem.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE) {
+        itemWithCalculations.discountValue = newItem.unitPrice; // Store percentage value
+        itemWithCalculations.discountAmount = Math.abs(calculation.total); // Store positive value for display
+        itemWithCalculations.discountType = 'percentage';
+      }
+      setItems([...items, itemWithCalculations]);
       setNewItem({
         itemType: InvoiceItemType.SERVICE,
         description: '',
         quantity: 1,
         unitPrice: 0,
+        discountType: 'amount',
+        discountValue: 0,
+        discountAmount: 0,
       });
     }
   };
@@ -324,10 +488,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           <ReceiptIcon sx={{ fontSize: 28 }} />
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              Create New Invoice
+              {isEditMode ? 'Edit Invoice' : 'Create New Invoice'}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Generate professional invoices for your customers
+              {isEditMode ? 'Update invoice details and items' : 'Generate professional invoices for your customers'}
             </Typography>
           </Box>
         </Box>
@@ -360,6 +524,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           onAddItem={handleAddItem}
           onRemoveItem={handleRemoveItem}
           onTireSelect={handleTireSelect}
+          isEditMode={isEditMode}
         />
       </DialogContent>
 
@@ -405,7 +570,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             }
           }}
         >
-          {loading ? 'Creating...' : 'Create Invoice'}
+          {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Invoice' : 'Create Invoice')}
         </Button>
       </DialogActions>
     </Dialog>

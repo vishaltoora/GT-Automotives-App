@@ -25,6 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Azure Implementation Guide](.claude/docs/azure-implementation-guide.md)** - Step-by-step Azure deployment implementation
 - **[Backend Container Deployment Config](.claude/docs/backend-container-deployment-config.md)** - Complete Docker containerization guide with shared DTO fixes ⭐ UPDATED
 - **[Shared DTO Deployment Guide](.claude/docs/shared-dto-deployment-guide.md)** - Complete guide for shared DTO library deployment configuration ⭐ NEW
+- **[MyPersn Monorepo Learnings](.claude/docs/mypersn-monorepo-learnings.md)** - Architecture patterns and solutions from mypersn project ⭐ NEW
 - **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
@@ -121,6 +122,16 @@ yarn test          # Run tests
 ---
 
 ## 🔄 Recent Updates
+
+### September 18, 2025 - Invoice Date Enhancement & Development Server Fixes ✅
+- ✅ **Invoice Date Feature**: Added date picker to invoice creation and full editing capabilities
+- ✅ **Database Migration**: Added invoiceDate field to Invoice schema with proper defaults
+- ✅ **Edit Dialog Enhancement**: Status and invoice date now side-by-side in edit dialog
+- ✅ **Shared DTO Build Fix**: Resolved missing date-fns and IsDate decorator errors
+- ✅ **Connection Issues Resolved**: Fixed ERR_CONNECTION_REFUSED between frontend and backend
+- ✅ **Unused Files Cleanup**: Removed problematic date-utils.ts causing build failures
+- ✅ **Development Servers**: Both frontend (4200) and backend (3000) running successfully
+- ✅ **Documentation Updated**: Added troubleshooting for shared-dto build errors
 
 ### September 18, 2025 - Development Authentication & Invoice Creation Fix ✅
 - ✅ **Backend Module Resolution**: Fixed shared-dto symlink in node_modules for webpack compatibility

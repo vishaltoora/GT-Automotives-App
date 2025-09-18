@@ -7,3 +7,6 @@ export * from './quotation.dto';
 
 // Export decorators for direct use if needed
 export * from './decorators';
+
+// Export utility functions
+export * from './utils';

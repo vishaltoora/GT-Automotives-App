@@ -20,7 +20,7 @@
     "baseUrl": ".",
     "paths": {
       "@gt-automotive/database": ["libs/database/src/index.ts"],
-      "@gt-automotive/shared-dto": ["dist/libs/shared-dto/src/index.d.ts"]
+      "@gt-automotive/shared-dto": ["libs/shared-dto/src/index.ts"]
     }
   }
 }

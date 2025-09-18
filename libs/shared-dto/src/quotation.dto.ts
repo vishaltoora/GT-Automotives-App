@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type } from './decorators';
+import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type, OmitType } from './decorators';
 
 export enum QuotationStatus {
   DRAFT = 'DRAFT',
@@ -94,57 +94,7 @@ export class CreateQuoteDto {
   validUntil?: string;
 }
 
-export class UpdateQuoteDto implements Partial<Omit<CreateQuoteDto, 'customerId'>> {
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => QuotationItemDto)
-  items?: QuotationItemDto[];
-
-  @IsOptional()
-  @IsNumber()
-  subtotal?: number;
-
-  @IsOptional()
-  @IsNumber()
-  taxRate?: number;
-
-  @IsOptional()
-  @IsNumber()
-  taxAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  gstRate?: number;
-
-  @IsOptional()
-  @IsNumber()
-  gstAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  pstRate?: number;
-
-  @IsOptional()
-  @IsNumber()
-  pstAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  total?: number;
-
-  @IsOptional()
-  @IsEnum(QuotationStatus)
-  status?: QuotationStatus;
-
-  @IsOptional()
-  @IsString()
-  notes?: string;
-
-  @IsOptional()
-  @IsString()
-  validUntil?: string;
-}
+export class UpdateQuoteDto extends OmitType(CreateQuoteDto, ['customerId']) {}
 
 export class QuotationResponseDto {
   @IsString()

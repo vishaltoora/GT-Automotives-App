@@ -21,7 +21,9 @@ export enum InvoiceItemType {
   TIRE = 'TIRE',
   SERVICE = 'SERVICE',
   PART = 'PART',
-  OTHER = 'OTHER'
+  OTHER = 'OTHER',
+  DISCOUNT = 'DISCOUNT',
+  DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE'
 }
 
 export class InvoiceItemDto {
@@ -44,6 +46,18 @@ export class InvoiceItemDto {
 
   @IsNumber()
   unitPrice!: number;
+
+  @IsOptional()
+  @IsString()
+  discountType?: 'amount' | 'percentage';
+
+  @IsOptional()
+  @IsNumber()
+  discountValue?: number;
+
+  @IsOptional()
+  @IsNumber()
+  discountAmount?: number;
 
   @IsOptional()
   @IsNumber()
@@ -105,9 +119,55 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  invoiceDate?: string;
 }
 
-export class UpdateInvoiceDto implements Partial<Omit<CreateInvoiceDto, 'customerId'>> {
+export class UpdateInvoiceDto {
+  @IsOptional()
+  @IsString()
+  vehicleId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InvoiceItemDto)
+  items?: InvoiceItemDto[];
+
+  @IsOptional()
+  @IsNumber()
+  subtotal?: number;
+
+  @IsOptional()
+  @IsNumber()
+  taxRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  taxAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  gstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  gstAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  pstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  pstAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  total?: number;
+
   @IsOptional()
   @IsEnum(InvoiceStatus)
   status?: InvoiceStatus;
@@ -123,6 +183,10 @@ export class UpdateInvoiceDto implements Partial<Omit<CreateInvoiceDto, 'custome
   @IsOptional()
   @IsString()
   paidAt?: string;
+
+  @IsOptional()
+  @IsString()
+  invoiceDate?: string;
 }
 
 export class InvoiceResponseDto {
@@ -201,4 +265,8 @@ export class InvoiceResponseDto {
   @IsOptional()
   @IsString()
   paidAt?: string;
+
+  @IsOptional()
+  @IsString()
+  invoiceDate?: string;
 }

@@ -1,85 +1,166 @@
-// Conditional decorator helper for browser compatibility
-const isBrowser = typeof globalThis !== 'undefined' && typeof (globalThis as any).window !== 'undefined';
+// Dynamic decorators that work in both server and browser environments
+// Uses real validation decorators on server, no-op decorators in browser
 
-// Re-export class-validator decorators conditionally
-export function IsString() {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {
-      // No-op decorator for browser
-    };
-  }
-  const { IsString: IsStringOriginal } = require('class-validator');
-  return IsStringOriginal();
+// Define decorator interfaces to match class-validator
+interface ValidationOptions {
+  message?: string | ((args: any) => string);
+  groups?: string[];
+  always?: boolean;
+  each?: boolean;
 }
 
-export function IsNumber() {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { IsNumber: IsNumberOriginal } = require('class-validator');
-  return IsNumberOriginal();
+
+// No-op decorator factory for browser environment
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const noOpDecorator = () => (_target: unknown, _propertyKey?: string | symbol): void => {
+  // This is intentionally empty for browser compatibility
+};
+
+// Detect if we're running in a browser environment
+const isBrowserEnvironment = () => {
+  return typeof window !== 'undefined';
+};
+
+// Create dynamic decorators that only import class-validator in server environment
+const createValidationDecorator = (decoratorName: string, ...args: any[]) => {
+  return (options?: ValidationOptions): PropertyDecorator => {
+    // If we're in a browser, use no-op decorator
+    if (isBrowserEnvironment()) {
+      return noOpDecorator();
+    }
+
+    // If we're on server, try to use real class-validator decorator
+    try {
+      // Use dynamic import with eval to prevent webpack from trying to bundle this
+      const requireFunc = eval('require');
+      const validatorModule = requireFunc('class-validator');
+      const decorator = validatorModule[decoratorName];
+
+      if (decorator && typeof decorator === 'function') {
+        return args.length > 0 ? decorator(...args, options) : decorator(options);
+      } else {
+        // Fallback to no-op if decorator not found
+        return noOpDecorator();
+      }
+    } catch (error) {
+      // Fallback to no-op if class-validator is not available
+      return noOpDecorator();
+    }
+  };
+};
+
+// Export dynamic validation decorators
+export function IsString(options?: ValidationOptions) {
+  return createValidationDecorator('IsString')(options);
 }
 
-export function IsEnum(enumType: any) {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { IsEnum: IsEnumOriginal } = require('class-validator');
-  return IsEnumOriginal(enumType);
+export function IsNumber(options?: ValidationOptions) {
+  return createValidationDecorator('IsNumber')(options);
 }
 
-export function IsOptional() {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { IsOptional: IsOptionalOriginal } = require('class-validator');
-  return IsOptionalOriginal();
+export function IsEnum(enumType: any, options?: ValidationOptions) {
+  return createValidationDecorator('IsEnum', enumType)(options);
 }
 
-export function Min(value: number) {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { Min: MinOriginal } = require('class-validator');
-  return MinOriginal(value);
+export function IsOptional(options?: ValidationOptions) {
+  return createValidationDecorator('IsOptional')(options);
 }
 
-export function IsEmail() {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { IsEmail: IsEmailOriginal } = require('class-validator');
-  return IsEmailOriginal();
+export function Min(value: number, options?: ValidationOptions) {
+  return createValidationDecorator('Min', value)(options);
 }
 
-export function IsArray() {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { IsArray: IsArrayOriginal } = require('class-validator');
-  return IsArrayOriginal();
+export function IsEmail(options?: ValidationOptions) {
+  return createValidationDecorator('IsEmail')(options);
 }
 
-export function ValidateNested(options?: any) {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { ValidateNested: ValidateNestedOriginal } = require('class-validator');
-  return ValidateNestedOriginal(options);
+export function IsArray(options?: ValidationOptions) {
+  return createValidationDecorator('IsArray')(options);
 }
 
-export function IsBoolean() {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
-  }
-  const { IsBoolean: IsBooleanOriginal } = require('class-validator');
-  return IsBooleanOriginal();
+export function ValidateNested(options?: ValidationOptions) {
+  return createValidationDecorator('ValidateNested')(options);
 }
 
-export function Type(typeFunction: () => any) {
-  if (isBrowser) {
-    return function (target: any, propertyKey: string) {};
+export function IsBoolean(options?: ValidationOptions) {
+  return createValidationDecorator('IsBoolean')(options);
+}
+
+export function IsDate(options?: ValidationOptions) {
+  return createValidationDecorator('IsDate')(options);
+}
+
+// Class-transformer Type decorator
+export function Type(typeFunction: () => any): PropertyDecorator {
+  // If we're in a browser, use no-op decorator
+  if (isBrowserEnvironment()) {
+    return noOpDecorator();
   }
-  const { Type: TypeOriginal } = require('class-transformer');
-  return TypeOriginal(typeFunction);
+
+  // If we're on server, try to use real class-transformer decorator
+  try {
+    // Use dynamic import with eval to prevent webpack from trying to bundle this
+    const requireFunc = eval('require');
+    const transformerModule = requireFunc('class-transformer');
+    const decorator = transformerModule.Type;
+
+    if (decorator && typeof decorator === 'function') {
+      return decorator(typeFunction);
+    } else {
+      // Fallback to no-op if decorator not found
+      return noOpDecorator();
+    }
+  } catch (error) {
+    // Fallback to no-op if class-transformer is not available
+    return noOpDecorator();
+  }
+}
+
+// Add NestJS mapped-types support
+export function PartialType<T>(classRef: new () => T): new () => Partial<T> {
+  // If we're in a browser, return a basic partial type
+  if (isBrowserEnvironment()) {
+    return class extends (classRef as any) {} as any;
+  }
+
+  // If we're on server, try to use real NestJS mapped-types
+  try {
+    const requireFunc = eval('require');
+    const mappedTypesModule = requireFunc('@nestjs/mapped-types');
+    const partialType = mappedTypesModule.PartialType;
+
+    if (partialType && typeof partialType === 'function') {
+      return partialType(classRef);
+    } else {
+      // Fallback to basic implementation
+      return class extends (classRef as any) {} as any;
+    }
+  } catch (error) {
+    // Fallback to basic implementation if @nestjs/mapped-types is not available
+    return class extends (classRef as any) {} as any;
+  }
+}
+
+export function OmitType<T, K extends keyof T>(classRef: new () => T, keys: readonly K[]): new () => Omit<T, K> {
+  // If we're in a browser, return a basic implementation
+  if (isBrowserEnvironment()) {
+    return class extends (classRef as any) {} as any;
+  }
+
+  // If we're on server, try to use real NestJS mapped-types
+  try {
+    const requireFunc = eval('require');
+    const mappedTypesModule = requireFunc('@nestjs/mapped-types');
+    const omitType = mappedTypesModule.OmitType;
+
+    if (omitType && typeof omitType === 'function') {
+      return omitType(classRef, keys);
+    } else {
+      // Fallback to basic implementation
+      return class extends (classRef as any) {} as any;
+    }
+  } catch (error) {
+    // Fallback to basic implementation if @nestjs/mapped-types is not available
+    return class extends (classRef as any) {} as any;
+  }
 }

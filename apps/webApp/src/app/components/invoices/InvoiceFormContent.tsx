@@ -61,6 +61,7 @@ interface InvoiceFormContentProps {
     paymentMethod: string;
     notes: string;
     status: string;
+    invoiceDate: string;
   };
   setFormData: (data: any) => void;
   items: InvoiceItem[];
@@ -71,6 +72,7 @@ interface InvoiceFormContentProps {
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   onTireSelect: (tireId: string) => void;
+  isEditMode?: boolean;
 }
 
 const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
@@ -90,6 +92,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   onAddItem,
   onRemoveItem,
   onTireSelect,
+  isEditMode = false,
 }) => {
 
   const formatTireType = (type: string) => {
@@ -97,7 +100,21 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   };
 
   const calculateTotals = () => {
-    const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    // Calculate subtotal including discount items (which have negative values)
+    const subtotal = items.reduce((sum, item) => {
+      let itemTotal = item.quantity * item.unitPrice;
+
+      // For DISCOUNT_PERCENTAGE items, calculate based on other items
+      if (item.itemType === 'DISCOUNT_PERCENTAGE' && item.unitPrice) {
+        const otherItemsSubtotal = items
+          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
+          .reduce((s, i) => s + (i.quantity * i.unitPrice), 0);
+        itemTotal = -(otherItemsSubtotal * item.unitPrice) / 100;
+      }
+
+      return sum + itemTotal;
+    }, 0);
+
     const gstAmount = subtotal * formData.gstRate;
     const pstAmount = subtotal * formData.pstRate;
     const totalTax = gstAmount + pstAmount;
@@ -146,6 +163,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                   {/* Customer Search */}
                   <Autocomplete
                     freeSolo
+                    disabled={isEditMode}
                     options={customers}
                     getOptionLabel={(option) => {
                       if (typeof option === 'string') return option;
@@ -158,8 +176,8 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
                         const phone = (option.phone || '').toLowerCase();
                         const email = (option.email || '').toLowerCase();
-                        return fullName.includes(searchValue) || 
-                               phone.includes(searchValue) || 
+                        return fullName.includes(searchValue) ||
+                               phone.includes(searchValue) ||
                                email.includes(searchValue);
                       });
                     }}
@@ -204,6 +222,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         size="small"
                         label="First Name"
                         value={customerForm.firstName}
+                        disabled={isEditMode}
                         onChange={(e) => {
                           setCustomerForm({ ...customerForm, firstName: e.target.value });
                           // If user types in the name field and there's no customer selected, mark as new customer
@@ -223,6 +242,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         size="small"
                         label="Last Name"
                         value={customerForm.lastName}
+                        disabled={isEditMode}
                         onChange={(e) => {
                           setCustomerForm({ ...customerForm, lastName: e.target.value });
                           // If user types in the name field and there's no customer selected, mark as new customer
@@ -239,6 +259,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         size="small"
                         label="Business Name"
                         value={customerForm.businessName}
+                        disabled={isEditMode}
                         onChange={(e) => setCustomerForm({ ...customerForm, businessName: e.target.value })}
                         placeholder="Optional"
                       />
@@ -249,6 +270,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         size="small"
                         label="Address"
                         value={customerForm.address}
+                        disabled={isEditMode}
                         onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })}
                         placeholder="Street address, city, province, postal code"
                       />
@@ -259,6 +281,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         size="small"
                         label="Phone Number"
                         value={customerForm.phone}
+                        disabled={isEditMode}
                         onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
                         placeholder="(250) 555-0123 (Optional)"
                       />
@@ -270,6 +293,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         label="Email"
                         type="email"
                         value={customerForm.email}
+                        disabled={isEditMode}
                         onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
                         placeholder="customer@email.com"
                       />
@@ -324,20 +348,41 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 </Box>
 
                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      label="Status"
-                    >
-                      <MenuItem value="DRAFT">📝 Draft</MenuItem>
-                      <MenuItem value="PENDING">⏳ Pending</MenuItem>
-                      <MenuItem value="PAID">✅ Paid</MenuItem>
-                      <MenuItem value="CANCELLED">❌ Cancelled</MenuItem>
-                      <MenuItem value="REFUNDED">↩️ Refunded</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <FormControl fullWidth>
+                        <InputLabel>Status</InputLabel>
+                        <Select
+                          value={formData.status}
+                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                          label="Status"
+                        >
+                          <MenuItem value="DRAFT">📝 Draft</MenuItem>
+                          <MenuItem value="PENDING">⏳ Pending</MenuItem>
+                          <MenuItem value="PAID">✅ Paid</MenuItem>
+                          <MenuItem value="CANCELLED">❌ Cancelled</MenuItem>
+                          <MenuItem value="REFUNDED">↩️ Refunded</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        type="date"
+                        label="Invoice Date"
+                        value={formData.invoiceDate}
+                        onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
+                        InputLabelProps={{
+                          shrink: true,
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': { borderColor: colors.primary.light }
+                          }
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
 
                   <FormControl fullWidth>
                     <InputLabel>Payment Method</InputLabel>
@@ -428,6 +473,18 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       </MenuItem>
                       <MenuItem value="PART">Part</MenuItem>
                       <MenuItem value="OTHER">Other</MenuItem>
+                      <MenuItem value="DISCOUNT">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AttachMoneyIcon fontSize="small" sx={{ color: 'red' }} />
+                          $ Discount
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="DISCOUNT_PERCENTAGE">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AttachMoneyIcon fontSize="small" sx={{ color: 'red' }} />
+                          % Discount
+                        </Box>
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -465,7 +522,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       label="Description"
                       value={newItem.description}
                       onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                      placeholder="Enter item description"
+                      placeholder={
+                        newItem.itemType === 'DISCOUNT' || newItem.itemType === 'DISCOUNT_PERCENTAGE'
+                          ? 'e.g., Holiday discount, Loyalty discount...'
+                          : 'Enter item description'
+                      }
                     />
                   </Grid>
                 )}
@@ -487,15 +548,39 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     fullWidth
                     size="small"
                     type="number"
-                    label="Unit Price"
-                    value={newItem.unitPrice}
-                    onChange={(e) => setNewItem({ ...newItem, unitPrice: parseFloat(e.target.value) || 0 })}
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    label={newItem.itemType === 'DISCOUNT' ? 'Discount Amount' : newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 'Discount Percentage' : 'Unit Price'}
+                    value={newItem.itemType === 'DISCOUNT' ? Math.abs(newItem.unitPrice) : newItem.unitPrice}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      // For discount amount items, automatically make the value negative
+                      // For percentage items, keep it positive (we'll handle the negative in calculation)
+                      let finalValue = value;
+                      if (newItem.itemType === 'DISCOUNT' && value > 0) {
+                        finalValue = -value;
+                      }
+                      setNewItem({ ...newItem, unitPrice: finalValue });
                     }}
-                    inputProps={{ min: 0, step: 0.01 }}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">
+                        {newItem.itemType === 'DISCOUNT' ? '-$' : newItem.itemType === 'DISCOUNT_PERCENTAGE' ? '' : '$'}
+                      </InputAdornment>,
+                      endAdornment: newItem.itemType === 'DISCOUNT_PERCENTAGE' ? <InputAdornment position="end">%</InputAdornment> : undefined,
+                    }}
+                    inputProps={{
+                      min: newItem.itemType === 'DISCOUNT' ? undefined : 0,
+                      max: newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 100 : undefined,
+                      step: newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 0.1 : 0.01
+                    }}
+                    placeholder={
+                      newItem.itemType === 'DISCOUNT'
+                        ? 'Enter positive amount'
+                        : newItem.itemType === 'DISCOUNT_PERCENTAGE'
+                          ? 'Enter percentage (0-100)'
+                          : undefined
+                    }
                   />
                 </Grid>
+
 
                 <Grid size={{ xs: 12, md: 2 }}>
                   <Button
@@ -503,7 +588,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={onAddItem}
-                    disabled={!newItem.description || newItem.unitPrice <= 0}
+                    disabled={!newItem.description || (
+                      newItem.itemType === 'DISCOUNT' ? newItem.unitPrice === 0 :
+                      newItem.itemType === 'DISCOUNT_PERCENTAGE' ? newItem.unitPrice <= 0 || newItem.unitPrice > 100 :
+                      newItem.unitPrice <= 0
+                    )}
                     sx={{
                       background: colors.primary.main,
                       color: 'white',
@@ -536,6 +625,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 600 }}>Qty</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>Discount</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 600 }}>Action</TableCell>
                     </TableRow>
@@ -550,11 +640,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         }}
                       >
                         <TableCell>
-                          <Chip 
-                            label={item.itemType} 
+                          <Chip
+                            label={item.itemType}
                             size="small"
-                            sx={{ 
-                              background: item.itemType === 'TIRE' ? colors.tire?.new || colors.primary.main : colors.service?.maintenance || colors.secondary.main,
+                            sx={{
+                              background: item.itemType === 'TIRE'
+                                ? colors.tire?.new || colors.primary.main
+                                : item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE'
+                                  ? '#f44336'
+                                  : colors.service?.maintenance || colors.secondary.main,
                               color: 'white'
                             }}
                           />
@@ -562,8 +656,18 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         <TableCell>{item.description}</TableCell>
                         <TableCell align="center">{item.quantity}</TableCell>
                         <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>
-                          {formatCurrency(item.quantity * item.unitPrice)}
+                        <TableCell align="right">
+                          {item.discountValue && item.discountValue > 0 ? (
+                            item.discountType === 'percentage'
+                              ? `${item.discountValue}% (${formatCurrency(item.discountAmount || 0)})`
+                              : formatCurrency(item.discountAmount || 0)
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell align="right" sx={{
+                          fontWeight: 600,
+                          color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : 'inherit'
+                        }}>
+                          {formatCurrency(item.total || (item.quantity * item.unitPrice))}
                         </TableCell>
                         <TableCell align="center">
                           <Tooltip title="Remove item">

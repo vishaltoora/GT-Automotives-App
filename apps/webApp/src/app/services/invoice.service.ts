@@ -20,6 +20,9 @@ export interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
+  discountType?: 'amount' | 'percentage';
+  discountValue?: number;
+  discountAmount?: number;
   total?: number;
 }
 

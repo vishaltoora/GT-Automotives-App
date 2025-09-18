@@ -206,6 +206,54 @@ import { TireType, TireCondition } from '@prisma/client';
 }
 ```
 
+### Shared DTO Build Errors (September 2025)
+**Problem:** Backend server failing to start with shared-dto compilation errors
+```
+Cannot find module 'date-fns' or its corresponding type declarations
+Module '"../decorators"' has no exported member 'IsDate'
+```
+
+**Root Cause:**
+- Unused date-utils.ts file importing non-existent date-fns dependency
+- Missing IsDate decorator export in decorators.ts
+
+**Solution:**
+1. **Remove unused date-utils.ts file:**
+   ```bash
+   rm libs/shared-dto/src/utils/date-utils.ts
+   ```
+
+2. **Remove date-utils export from index.ts:**
+   ```typescript
+   // libs/shared-dto/src/utils/index.ts
+   export * from './string-utils';
+   // Remove: export * from './date-utils';
+   export * from './file-utils';
+   export * from './decorator-utils';
+   ```
+
+3. **Add missing IsDate decorator to decorators.ts:**
+   ```typescript
+   // libs/shared-dto/src/decorators.ts
+   export function IsDate(options?: ValidationOptions) {
+     return createValidationDecorator('IsDate')(options);
+   }
+   ```
+
+**Result:** Backend server starts successfully without build errors
+
+### Frontend-Backend Connection Refused
+**Problem:** Frontend getting ERR_CONNECTION_REFUSED when trying to connect to backend at localhost:3000
+**Symptoms:**
+- Console errors: `POST http://localhost:3000/api/auth/sync net::ERR_CONNECTION_REFUSED`
+- Backend appears to be running but frontend can't connect
+
+**Solution:** Ensure backend is actually running and listening on port 3000
+1. Check for build errors preventing backend startup
+2. Fix any shared-dto compilation issues (see above)
+3. Restart backend with `yarn dev:server`
+4. Verify backend is running: `curl http://localhost:3000/health`
+
 
 ## Build Issues (August 2025)
 
