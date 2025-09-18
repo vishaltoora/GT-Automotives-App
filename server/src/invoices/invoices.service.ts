@@ -3,6 +3,7 @@ import { InvoiceRepository } from './repositories/invoice.repository';
 import { CreateInvoiceDto } from '@gt-automotive/shared-dto';
 import { UpdateInvoiceDto } from '@gt-automotive/shared-dto';
 import { Invoice, InvoiceStatus, PaymentMethod, InvoiceItemType } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
 
@@ -59,7 +60,8 @@ export class InvoicesService {
       return {
         ...item,
         itemType: item.itemType as InvoiceItemType,
-        total,
+        total: new Decimal(total),
+        unitPrice: new Decimal(item.unitPrice),
       };
     });
 
@@ -103,14 +105,14 @@ export class InvoicesService {
         invoiceNumber,
         customer: { connect: { id: customerId } },
         vehicle: createInvoiceDto.vehicleId ? { connect: { id: createInvoiceDto.vehicleId } } : undefined,
-        subtotal,
-        taxRate,
-        taxAmount,
-        ...(gstRate !== undefined && { gstRate }),
-        ...(gstAmount !== undefined && { gstAmount }),
-        ...(pstRate !== undefined && { pstRate }),
-        ...(pstAmount !== undefined && { pstAmount }),
-        total,
+        subtotal: new Decimal(subtotal),
+        taxRate: new Decimal(taxRate),
+        taxAmount: new Decimal(taxAmount),
+        ...(gstRate !== undefined && { gstRate: new Decimal(gstRate) }),
+        ...(gstAmount !== undefined && { gstAmount: new Decimal(gstAmount) }),
+        ...(pstRate !== undefined && { pstRate: new Decimal(pstRate) }),
+        ...(pstAmount !== undefined && { pstAmount: new Decimal(pstAmount) }),
+        total: new Decimal(total),
         status: createInvoiceDto.paymentMethod ? 'PAID' : 'PENDING',
         paymentMethod: createInvoiceDto.paymentMethod,
         notes: createInvoiceDto.notes,

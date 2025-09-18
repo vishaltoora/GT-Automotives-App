@@ -282,7 +282,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
       const invoiceData: any = {
         items: items.map((item) => {
-          const { itemType, description, quantity, unitPrice, tireId, discountType, discountValue, discountAmount } = item;
+          const { itemType, description, quantity, unitPrice, tireId } = item;
           const itemData: any = {
             itemType,
             description,
@@ -291,12 +291,6 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           };
           if (tireId) {
             itemData.tireId = tireId;
-          }
-          // Include discount fields for DISCOUNT/DISCOUNT_PERCENTAGE items or regular items with discounts
-          if (itemType === InvoiceItemType.DISCOUNT || itemType === InvoiceItemType.DISCOUNT_PERCENTAGE || (discountType && discountValue && discountValue > 0)) {
-            itemData.discountType = discountType;
-            itemData.discountValue = discountValue;
-            itemData.discountAmount = discountAmount;
           }
           return itemData;
         }),
