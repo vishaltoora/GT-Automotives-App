@@ -1,0 +1,88 @@
+name: Add Karan Bhutta to Production
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  add-user:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: |
+          npm install @prisma/client
+          npx prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
+          
+      - name: Add Karan Bhutta to database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cat > add-karan-user.js << 'SCRIPT'
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+          
+          async function main() {
+            try {
+              // Check if user exists
+              const existing = await prisma.user.findUnique({
+                where: { clerkId: 'user_32w66zyabEerX6K6PRKINuThpxX' }
+              });
+          
+              if (existing) {
+                console.log('✅ User already exists:', existing.email);
+                return;
+              }
+          
+              // Get or create STAFF role
+              let role = await prisma.role.findUnique({
+                where: { name: 'STAFF' }
+              });
+          
+              if (!role) {
+                role = await prisma.role.create({
+                  data: { 
+                    name: 'STAFF', 
+                    description: 'Staff member with operational access' 
+                  }
+                });
+                console.log('Created STAFF role');
+              }
+          
+              // Create user
+              const user = await prisma.user.create({
+                data: {
+                  clerkId: 'user_32w66zyabEerX6K6PRKINuThpxX',
+                  email: 'karanbhutta722@gmail.com',
+                  firstName: 'Karan',
+                  lastName: 'Bhutta',
+                  roleId: role.id,
+                  isActive: true
+                }
+              });
+          
+              console.log('✅ Successfully created user:');
+              console.log('   Name:', user.firstName, user.lastName);
+              console.log('   Email:', user.email);
+              console.log('   Role: STAFF');
+              console.log('   Clerk ID:', user.clerkId);
+              console.log('   Database ID:', user.id);
+            } catch (error) {
+              console.error('❌ Error:', error.message);
+              process.exit(1);
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+          
+          main();
+          SCRIPT
+          
+          node add-karan-user.js
