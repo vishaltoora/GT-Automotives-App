@@ -90,6 +90,15 @@ dist/apps/server/main.js
 dist/server/main.js
 ```
 
+### Migration Schema Paths
+```bash
+# ❌ Wrong (artifact extraction)
+unzip backend-artifact.zip && prisma migrate deploy --schema=prisma/schema.prisma
+
+# ✅ Correct (source-based)
+prisma migrate deploy --schema=libs/database/src/lib/prisma/schema.prisma
+```
+
 ## 🚀 Deployment Workflow Evolution
 
 ### Before: Complex Artifact Approach
@@ -114,7 +123,8 @@ dist/server/main.js
 4. **Solution Research**: Analyzed working MyPersn pattern
 5. **Implementation**: Replaced complex setup with source-based build
 6. **Command Fixes**: Corrected Nx build syntax and paths
-7. **Resolution**: Container startup and validation both working
+7. **Migration Fix**: Updated database migrations to use source schema directly
+8. **Resolution**: Complete source-based deployment pipeline working
 
 ## 🎯 Future Container Deployment Guidelines
 
@@ -139,4 +149,83 @@ dist/server/main.js
 
 ---
 
+## 🎉 Final Resolution Summary
+
+The complete solution involved three critical fixes:
+
+1. **Container Architecture**: Switched from artifact-based to source-based Docker builds (mypersn pattern)
+2. **Build Commands**: Fixed Nx command syntax (`npx nx run server:build:production`)
+3. **Database Migrations**: Updated to use source schema path instead of artifact extraction
+
+**Result**: Production validation errors resolved, container deployment stability achieved, and automatic container cleanup implemented.
+
+---
+
 **Key Takeaway**: Sometimes the "simple" approach (copy source, build in container) is more reliable than complex pre-built artifact management, especially in monorepo environments with shared libraries.
+
+## 🔧 Additional Critical Fix: Container Host Binding
+
+### Issue Discovery (Sept 22, 2025)
+After implementing the MyPersn pattern, containers still showed "Running" status but were not accessible (connection refused). Container logs showed "None" despite successful startup.
+
+### Root Cause: Localhost vs 0.0.0.0 Binding
+
+**Problem**: Our application was binding to localhost/127.0.0.1, which is not accessible from outside the container.
+
+**Our Configuration (Broken)**:
+```typescript
+const port = process.env.PORT || 3000;
+await app.listen(port); // Binds to localhost by default
+```
+
+**MyPersn Configuration (Working)**:
+```typescript
+const port = process.env.PORT || 3333;
+const host = process.env.HOST || '0.0.0.0';
+await app.listen(port, host); // Explicitly binds to all interfaces
+```
+
+### The Fix
+```typescript
+// server/src/main.ts
+const port = process.env.PORT || 3000;
+const host = process.env.HOST || '0.0.0.0';  // ← Critical addition
+await app.listen(port, host);
+Logger.log(`🚀 Application is running on: http://${host}:${port}`);
+```
+
+### Container Networking Principle
+> **"In containerized environments, services must bind to 0.0.0.0 to accept external connections"**
+
+- `localhost/127.0.0.1`: Only accessible from within the container
+- `0.0.0.0`: Accessible from outside the container (required for Azure Container Instances)
+
+This explains why locally built applications worked (accessed via localhost) but containers failed despite successful startup.
+
+### Additional Critical Fixes Discovered (Sept 22, 2025)
+
+#### 1. Redundant reflect-metadata Flag
+**Problem**: Container CMD used `-r reflect-metadata/register` flag alongside importing reflect-metadata in main.ts
+```dockerfile
+# Problematic approach
+CMD ["node", "-r", "reflect-metadata/register", "dist/server/main.js"]
+```
+
+**Solution**: Remove redundant flag since reflect-metadata is already imported in source
+```dockerfile
+# Fixed approach (MyPersn pattern)
+CMD ["node", "dist/server/main.js"]
+```
+
+#### 2. Missing HOST Environment Variable
+**Problem**: Container environment missing `HOST=0.0.0.0` variable, causing application to bind to localhost by default
+
+**Solution**: Add HOST environment variable to deployment workflow
+```yaml
+--environment-variables \
+  HOST="0.0.0.0" \
+  PORT="3000" \
+  # ... other variables
+```
+
+These fixes together should resolve the "logs showing None" issue and enable proper container startup with external accessibility.

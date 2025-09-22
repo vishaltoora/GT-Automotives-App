@@ -368,6 +368,7 @@ jobs:
             CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY }}" \
             CLERK_JWKS_URL="${{ secrets.CLERK_JWKS_URL }}" \
             FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
+            HOST="0.0.0.0" \
             PORT="3000" \
             NODE_ENV="production"
         
