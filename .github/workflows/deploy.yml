@@ -36,7 +36,7 @@ env:
   FRONTEND_APP_NAME: gt-automotives-frontend
   BACKEND_APP_NAME: gt-automotives-backend
   REGISTRY_NAME: gtautomotivesregistry
-  CONTAINER_NAME: gt-backend-working
+  CONTAINER_NAME: gt-automotives-backend-prod
 
 jobs:
   validate-build:
@@ -408,12 +408,23 @@ jobs:
     - name: Deploy to Azure Container Instances
       run: |
         echo "🚀 Deploying to Azure Container Instances with fixes..."
-        
-        # Delete existing container if it exists
-        az container delete \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --name ${{ env.CONTAINER_NAME }} \
-          --yes || echo "No existing container to delete"
+
+        # Clean up ALL existing backend containers to prevent accumulation
+        echo "🧹 Cleaning up old backend containers..."
+        BACKEND_CONTAINERS=$(az container list --resource-group ${{ env.RESOURCE_GROUP }} --query "[?contains(name, 'backend') || contains(name, 'gt-backend')].name" --output tsv 2>/dev/null || echo "")
+
+        if [ ! -z "$BACKEND_CONTAINERS" ]; then
+          echo "Found existing backend containers: $BACKEND_CONTAINERS"
+          for container in $BACKEND_CONTAINERS; do
+            echo "🗑️ Deleting container: $container"
+            az container delete \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --name "$container" \
+              --yes || echo "Failed to delete $container"
+          done
+        else
+          echo "No existing backend containers found"
+        fi
         
         # Create new container instance with all required environment variables
         az container create \
@@ -421,7 +432,7 @@ jobs:
           --name ${{ env.CONTAINER_NAME }} \
           --image ${{ env.IMAGE_NAME }} \
           --os-type Linux \
-          --dns-name-label gt-automotives-backend-working \
+          --dns-name-label gt-automotives-backend-prod \
           --ports 3000 \
           --cpu 2 \
           --memory 4 \
@@ -452,7 +463,7 @@ jobs:
         # Wait for container to start
         sleep 60
         
-        CONTAINER_URL="http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000"
+        CONTAINER_URL="http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000"
         
         echo "Testing: $CONTAINER_URL/health"
         
@@ -576,7 +587,7 @@ jobs:
           if [ "${{ github.event.inputs.deployment_type }}" = "container" ]; then
             if [ "${{ needs.deploy-backend-container.result }}" = "success" ]; then
               echo "✅ **Backend (Container):** Deployed successfully to Azure Container Instances" >> $GITHUB_STEP_SUMMARY
-              echo "🐳 **Container URL:** http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
+              echo "🐳 **Container URL:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ **Backend (Container):** Deployment failed" >> $GITHUB_STEP_SUMMARY
             fi
@@ -613,8 +624,8 @@ jobs:
         echo "### 🌐 Production URLs" >> $GITHUB_STEP_SUMMARY
         echo "- **Frontend:** https://gt-automotives.com" >> $GITHUB_STEP_SUMMARY
         if [ "${{ github.event.inputs.deployment_type }}" = "container" ]; then
-          echo "- **Backend (Container):** http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend Health:** http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000/health" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend (Container):** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend Health:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000/health" >> $GITHUB_STEP_SUMMARY
         else
           echo "- **Backend (App Service):** https://gt-automotives-backend.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Backend Health:** https://gt-automotives-backend.azurewebsites.net/health" >> $GITHUB_STEP_SUMMARY
@@ -640,7 +651,7 @@ jobs:
           echo "🏗️ Build: ${{ github.event.inputs.build_number }}"
           if [ "${{ github.event.inputs.deployment_type }}" = "container" ]; then
             echo "🐳 Backend: Container deployment with architectural fixes"
-            echo "📡 Container URL: http://gt-automotives-backend-working.canadacentral.azurecontainer.io:3000"
+            echo "📡 Container URL: http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000"
           else
             echo "🖥️ Backend: App Service deployment"
           fi

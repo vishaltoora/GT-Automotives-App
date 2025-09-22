@@ -227,7 +227,10 @@
       "Bash(CLERK_API_URL=\"https://api.clerk.com\" )",
       "Bash(BUILD_NUMBER=\"build-20250922-083944-a5df948\")",
       "WebFetch(domain:52.139.11.229)",
-      "WebFetch(domain:gt-backend-working.canadacentral.azurecontainer.io)"
+      "WebFetch(domain:gt-backend-working.canadacentral.azurecontainer.io)",
+      "Bash(gh issue create:*)",
+      "WebFetch(domain:4.248.244.174)",
+      "WebFetch(domain:52.237.59.182)"
     ],
     "deny": [],
     "ask": []
