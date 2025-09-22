@@ -191,15 +191,14 @@ jobs:
     if: github.event.inputs.deploy_backend == 'true' && github.event.inputs.deployment_type == 'container'
 
     steps:
-    - name: Checkout code for shared libraries
+    - name: Checkout source code
       uses: actions/checkout@v4
-    - name: Download backend artifact
-      uses: dawidd6/action-download-artifact@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        workflow: build.yml
-        workflow_conclusion: success
-        name: ${{ needs.validate-build.outputs.backend-artifact }}
-        path: ./backend-deploy
+        node-version: '20'
+        cache: 'yarn'
 
     - name: Login to Azure
       uses: azure/login@v1
@@ -211,128 +210,56 @@ jobs:
         echo "🔐 Logging in to Azure Container Registry..."
         az acr login --name ${{ env.REGISTRY_NAME }}
 
-    - name: Extract and prepare deployment files
+    - name: Create simplified Dockerfile (mypersn approach)
       run: |
-        echo "📦 Extracting deployment package with container fixes..."
-        cd backend-deploy
-        unzip -qo ${{ needs.validate-build.outputs.backend-artifact }}.zip
+        echo "🐳 Creating simplified Dockerfile based on mypersn approach..."
 
-        echo "📋 Deployment structure:"
-        ls -la
-
-        echo "🔍 Verifying webpack externals and shared library structure:"
-        ls -la node_modules/@gt-automotive/ || echo "Shared libraries not found - will copy from source"
-        ls -la server/ || echo "Server files not found"
-
-        # CRITICAL: Copy shared libraries from source (now we have checkout)
-        echo "📚 Ensuring shared libraries are available from source..."
-        if [ ! -d "shared-dto-temp" ]; then
-          echo "Creating shared library files from checked out source..."
-          mkdir -p shared-dto-temp
-
-          # Copy from checked out source (updated path for shared-dto)
-          if [ -d "../dist/libs/shared-dto" ]; then
-            echo "Found shared library dist files, copying..."
-            cp -r ../dist/libs/shared-dto/src/* shared-dto-temp/ 2>/dev/null || echo "No dist files found"
-            cp ../dist/libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
-          else
-            echo "⚠️ WARNING: Shared library dist not found. Building shared library..."
-            cd ..
-            yarn install --ignore-engines --frozen-lockfile
-            yarn nx build shared-dto
-            cd backend-deploy
-            cp -r ../dist/libs/shared-dto/src/* shared-dto-temp/ 2>/dev/null || echo "Build failed"
-            cp ../dist/libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No package.json found"
-          fi
-        fi
-
-        echo "📋 Final deployment structure:"
-        ls -la
-        echo "📋 Shared library temp files:"
-        ls -la shared-dto-temp/ 2>/dev/null || echo "No shared-dto-temp directory"
-
-    - name: Create exact copy of working Dockerfile.simple
-      run: |
-        echo "🐳 Creating exact copy of Dockerfile.simple that works..."
-        cd backend-deploy
-
-        # Create the EXACT directory structure expected by Dockerfile.simple
-        echo "📁 Creating directory structure to match Dockerfile.simple expectations..."
-
-        # Create backend-deploy/server structure if needed
-        if [ ! -d "server" ]; then
-          mkdir -p server
-          # Move all current files to server/ directory
-          find . -maxdepth 1 -type f -not -name ".*" -exec mv {} server/ \;
-          # Move any subdirectories that aren't server or prisma
-          find . -maxdepth 1 -type d -not -name "." -not -name "server" -not -name "prisma" -exec mv {} server/ \;
-        fi
-
-        # Ensure prisma directory exists at root level
-        if [ ! -d "prisma" ] && [ -d "server/prisma" ]; then
-          mv server/prisma ./prisma
-        fi
-
-        # Ensure shared libraries are at root level for Dockerfile access
-        if [ ! -d "shared-dto-temp" ] && [ -d "../dist/libs/shared-dto" ]; then
-          mkdir -p shared-dto-temp
-          cp -r ../dist/libs/shared-dto/src/* shared-dto-temp/ 2>/dev/null || echo "No shared library dist files"
-          cp ../dist/libs/shared-dto/package.json shared-dto-package.json 2>/dev/null || echo "No shared library package.json"
-        fi
-
-        # Copy the EXACT Dockerfile.simple content
+        # Create Dockerfile that copies source and builds inside container (like mypersn)
         cat > Dockerfile << 'EOF'
-        FROM node:20-slim
+        FROM node:20
 
         WORKDIR /app
+
+        # Copy source code (like mypersn)
+        COPY . .
 
         # Install system dependencies for Prisma
         RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-        # Copy built server files (EXACT copy from Dockerfile.simple)
-        COPY server/ ./
-        COPY prisma/ ./prisma/
+        # Install dependencies
+        RUN yarn install --frozen-lockfile --ignore-engines --network-timeout 1000000
 
-        # Copy shared libraries temporarily (using already prepared shared libraries)
-        COPY shared-dto-temp/ ./shared-dto-temp/
-        COPY shared-dto-package.json ./shared-dto-package.json
+        # Generate Prisma client
+        RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 
-        # Install dependencies and generate Prisma client
-        RUN npm install --production && \
-            npx prisma generate --schema=./prisma/schema.prisma
+        # Build shared libraries first (Nx dependency order)
+        RUN yarn nx build shared-dto
 
-        # Create proper node_modules structure after npm install (EXACT copy from Dockerfile.simple)
-        RUN mkdir -p ./node_modules/@gt-automotive/shared-dto/dist/ && \
-            cp -r ./shared-dto-temp/* ./node_modules/@gt-automotive/shared-dto/dist/ && \
-            cp ./shared-dto-package.json ./node_modules/@gt-automotive/shared-dto/package.json && \
-            rm -rf ./shared-dto-temp ./shared-dto-package.json
+        # Build server (Nx will handle shared library resolution automatically)
+        RUN yarn nx build server --prod
 
-        # Create non-root user (EXACT copy from Dockerfile.simple)
+        # Create non-root user
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
             chown -R nodejs:nodejs /app
+
         USER nodejs
 
         EXPOSE 3000
 
-        CMD ["node", "main.js"]
+        # Run the built server (Nx puts it in dist/apps/server)
+        CMD ["node", "dist/apps/server/main.js"]
         EOF
 
-        echo "📋 Verifying final structure matches Dockerfile.simple expectations:"
-        echo "Directory structure:"
-        ls -la
-        echo "Server directory:"
-        ls -la server/ 2>/dev/null || echo "No server directory"
-        echo "Prisma directory:"
-        ls -la prisma/ 2>/dev/null || echo "No prisma directory"
+        echo "🐳 Dockerfile created successfully using mypersn approach"
+        cat Dockerfile
 
     - name: Build and push Docker image
       run: |
-        echo "🔨 Building Docker image with container fixes..."
-        cd backend-deploy
-        
+        echo "🔨 Building Docker image with mypersn approach..."
+
         IMAGE_TAG="container-deploy-${{ needs.validate-build.outputs.build-number }}"
         FULL_IMAGE_NAME="${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:$IMAGE_TAG"
-        
+
         echo "🏷️ Building image: $FULL_IMAGE_NAME"
         echo "📋 Build number from input: ${{ needs.validate-build.outputs.build-number }}"
         echo "📋 Complete tag: $IMAGE_TAG"
