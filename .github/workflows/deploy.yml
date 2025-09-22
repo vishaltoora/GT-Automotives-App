@@ -236,7 +236,7 @@ jobs:
         RUN yarn nx build shared-dto
 
         # Build server (Nx will handle shared library resolution automatically)
-        RUN yarn nx build server --prod
+        RUN npx nx run server:build:production
 
         # Create non-root user
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
@@ -246,8 +246,8 @@ jobs:
 
         EXPOSE 3000
 
-        # Run the built server (Nx puts it in dist/apps/server)
-        CMD ["node", "dist/apps/server/main.js"]
+        # Run the built server (our Nx config puts it in dist/server)
+        CMD ["node", "dist/server/main.js"]
         EOF
 
         echo "🐳 Dockerfile created successfully using mypersn approach"
