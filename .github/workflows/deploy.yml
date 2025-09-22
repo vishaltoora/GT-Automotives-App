@@ -246,8 +246,8 @@ jobs:
 
         EXPOSE 3000
 
-        # Run the built server (our Nx config puts it in dist/server)
-        CMD ["node", "dist/server/main.js"]
+        # Run the built server with reflect-metadata (required for NestJS decorators)
+        CMD ["node", "-r", "reflect-metadata/register", "dist/server/main.js"]
         EOF
 
         echo "🐳 Dockerfile created successfully using mypersn approach"
