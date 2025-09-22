@@ -20,11 +20,7 @@ RUN yarn nx build shared-dto
 # Build server (Nx will handle shared library resolution automatically)
 RUN npx nx run server:build:production
 
-# Create non-root user
-RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
-    chown -R nodejs:nodejs /app
-
-USER nodejs
+# Run as root (following MyPersn pattern)
 
 EXPOSE 3000
 
