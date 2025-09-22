@@ -7,6 +7,7 @@ import {
   Shield as ShieldIcon,
   Speed as SpeedIcon,
   LocalShipping as TruckIcon,
+  AutoAwesome as DetailIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -34,6 +35,7 @@ export function ServiceCategoriesGrid() {
     { icon: <SpeedIcon />, name: 'Brake Service', color: colors.service.repair },
     { icon: <ClockIcon />, name: 'AC & Heating', color: colors.semantic.info },
     { icon: <ShieldIcon />, name: 'Diagnostics', color: colors.service.inspection },
+    { icon: <DetailIcon />, name: 'Car Detailing', color: colors.secondary.dark },
   ];
 
   return (

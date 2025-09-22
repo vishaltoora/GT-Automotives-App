@@ -1,5 +1,5 @@
 import React from 'react';
-import { PricingHero, MobileTireServiceSection, PromotionsSection } from '../../components/pricing';
+import { PricingHero, MobileTireServiceSection } from '../../components/pricing';
 import { CTASection } from '../../components/public';
 
 export const Pricing: React.FC = () => {
@@ -7,8 +7,7 @@ export const Pricing: React.FC = () => {
     <>
       <PricingHero />
       <MobileTireServiceSection />
-      <PromotionsSection />
-      <CTASection 
+      <CTASection
         title="Ready to Save on Your Auto Service?"
         description="Contact us today for a personalized quote or to learn more about our service packages."
         primaryAction={{

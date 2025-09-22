@@ -2,7 +2,7 @@ const { composePlugins, withNx } = require('@nx/webpack');
 const path = require('path');
 
 module.exports = composePlugins(withNx(), (config) => {
-  // Set the correct output path
+  // Set the correct output path for Nx
   config.output = {
     ...config.output,
     path: path.join(__dirname, '../dist/server'),

@@ -117,6 +117,7 @@ model Invoice {
   status        InvoiceStatus
   paymentMethod PaymentMethod?
   notes         String?
+  invoiceDate   DateTime       @default(now())
   createdBy     String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -276,6 +277,8 @@ enum InvoiceItemType {
   SERVICE
   PART
   OTHER
+  DISCOUNT
+  DISCOUNT_PERCENTAGE
 }
 
 enum AppointmentStatus {

@@ -29,6 +29,12 @@ const teamMembers = [
     phone: '(250) 986-9794',
     color: colors.semantic.warning,
   },
+  {
+    name: 'Mandeep',
+    role: 'Car Detailing',
+    phone: '(250) 331-1025',
+    color: colors.semantic.info,
+  },
 ];
 
 export const ContactTeam: React.FC = () => {
@@ -57,7 +63,7 @@ export const ContactTeam: React.FC = () => {
 
       <Grid container spacing={3}>
         {teamMembers.map((member, index) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }} key={index}>
             <Paper
               elevation={0}
               sx={{
@@ -102,6 +108,7 @@ export const ContactTeam: React.FC = () => {
                 sx={{
                   borderColor: member.color,
                   color: member.color,
+                  fontSize: '0.75rem',
                   '&:hover': {
                     borderColor: member.color,
                     backgroundColor: member.color + '10',

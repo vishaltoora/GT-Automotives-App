@@ -15,6 +15,7 @@ interface ServiceCardProps {
   actionLabel?: string;
   actionPath?: string;
   highlighted?: boolean;
+  emergency?: boolean;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -28,6 +29,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   actionLabel = 'Learn More',
   actionPath = '/services',
   highlighted = false,
+  emergency = false,
 }) => {
   const getCategoryColor = () => {
     switch (category) {
@@ -54,38 +56,76 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        overflow: 'hidden',
+        overflow: 'visible',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         border: highlighted ? `2px solid ${categoryColor}` : '1px solid rgba(0,0,0,0.08)',
-        borderRadius: 2,
+        borderRadius: 3,
+        background: highlighted
+          ? `linear-gradient(135deg, ${categoryColor}08 0%, ${categoryColor}03 100%)`
+          : 'white',
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
-          borderColor: highlighted ? categoryColor : 'rgba(0,0,0,0.12)',
+          transform: 'translateY(-8px)',
+          boxShadow: highlighted
+            ? `0 24px 48px ${categoryColor}30`
+            : '0 24px 48px rgba(0,0,0,0.15)',
+          borderColor: categoryColor,
+          '& .service-icon-box': {
+            transform: 'scale(1.1) rotate(5deg)',
+          },
         },
       }}
     >
-      {highlighted && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            backgroundColor: categoryColor,
-            color: 'white',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 1,
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-            zIndex: 1,
-          }}
-        >
-          Popular
-        </Box>
-      )}
+      {/* Badges */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 2,
+        }}
+      >
+        {highlighted && (
+          <Box
+            sx={{
+              backgroundColor: categoryColor,
+              color: 'white',
+              px: 2,
+              py: 0.75,
+              borderRadius: 20,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              boxShadow: `0 4px 12px ${categoryColor}40`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+            }}
+          >
+            ⭐ Popular
+          </Box>
+        )}
+        {emergency && (
+          <Box
+            sx={{
+              backgroundColor: colors.semantic.error,
+              color: 'white',
+              px: 2,
+              py: 0.75,
+              borderRadius: 20,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              boxShadow: `0 4px 12px ${colors.semantic.error}40`,
+            }}
+          >
+            24/7
+          </Box>
+        )}
+      </Stack>
 
       <CardContent sx={{ 
         flex: 1, 
@@ -97,16 +137,26 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         {/* Icon */}
         {icon && (
           <Box
+            className="service-icon-box"
             sx={{
-              width: 60,
-              height: 60,
-              borderRadius: 2,
-              backgroundColor: `${categoryColor}15`,
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${categoryColor}20 0%, ${categoryColor}10 100%)`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              mb: 2,
+              mb: 3,
               color: categoryColor,
+              position: 'relative',
+              transition: 'transform 0.3s ease',
+              '&:after': {
+                content: '""',
+                position: 'absolute',
+                inset: -4,
+                borderRadius: '50%',
+                border: `2px solid ${categoryColor}15`,
+              },
             }}
           >
             {icon}
@@ -117,9 +167,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         <Typography
           variant="h5"
           sx={{
-            fontWeight: 600,
-            mb: 1,
+            fontWeight: 700,
+            mb: 2,
             color: colors.text.primary,
+            lineHeight: 1.3,
           }}
         >
           {title}
@@ -167,30 +218,51 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
         {/* Features */}
         {features.length > 0 && (
-          <Stack spacing={1} sx={{ mb: 3 }}>
+          <Stack spacing={1.5} sx={{ mb: 3 }}>
             {features.map((feature, index) => (
               <Box
                 key={index}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1,
+                  gap: 1.5,
+                  padding: '8px 12px',
+                  backgroundColor: colors.neutral[50],
+                  borderRadius: 2,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: `${categoryColor}08`,
+                    transform: 'translateX(4px)',
+                  },
                 }}
               >
                 <Box
                   sx={{
-                    width: 6,
-                    height: 6,
+                    width: 20,
+                    height: 20,
                     borderRadius: '50%',
-                    backgroundColor: categoryColor,
+                    backgroundColor: `${categoryColor}15`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     flexShrink: 0,
                   }}
-                />
+                >
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: categoryColor,
+                    }}
+                  />
+                </Box>
                 <Typography
                   variant="body2"
                   sx={{
                     color: colors.text.secondary,
-                    fontSize: '0.875rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 500,
                   }}
                 >
                   {feature}
@@ -207,17 +279,22 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         <Button
           component={Link}
           to={actionPath}
-          variant="text"
+          variant="contained"
+          fullWidth
           endIcon={<ArrowForwardIcon />}
           sx={{
             mt: 2,
-            color: categoryColor,
+            backgroundColor: categoryColor,
+            color: 'white',
             fontWeight: 600,
-            justifyContent: 'flex-start',
-            px: 0,
+            py: 1.5,
+            borderRadius: 2,
+            textTransform: 'none',
+            fontSize: '1rem',
+            boxShadow: `0 4px 12px ${categoryColor}30`,
             '&:hover': {
-              backgroundColor: 'transparent',
-              color: colors.primary.dark,
+              backgroundColor: colors.primary.dark,
+              boxShadow: `0 6px 20px ${categoryColor}40`,
               '& .MuiButton-endIcon': {
                 transform: 'translateX(4px)',
               },

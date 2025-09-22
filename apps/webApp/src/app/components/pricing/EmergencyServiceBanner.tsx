@@ -56,12 +56,14 @@ export const EmergencyServiceBanner: React.FC = () => {
                 {emergencyRates.map((rate, index) => (
                   <Grid size={{ xs: 12, sm: 4 }} key={index}>
                     <Stack spacing={0.5}>
-                      <Typography variant="caption" sx={{ color: pricingColors.text.light }}>
+                      <Typography variant="caption" sx={{ color: pricingColors.text.light, fontWeight: 500 }}>
                         {rate.label}
                       </Typography>
-                      <Typography variant="h5" sx={{ 
-                        fontWeight: 700, 
-                        color: rate.label === 'Distance' ? pricingColors.text.primary : pricingColors.secondary 
+                      <Typography variant="h3" sx={{
+                        fontWeight: 800,
+                        color: rate.label === 'Distance' ? pricingColors.text.primary : pricingColors.secondary,
+                        fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                        textShadow: rate.label !== 'Distance' ? `0 2px 4px ${pricingColors.secondary}20` : 'none',
                       }}>
                         {rate.value}
                       </Typography>

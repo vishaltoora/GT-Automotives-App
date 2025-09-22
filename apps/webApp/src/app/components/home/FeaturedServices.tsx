@@ -3,6 +3,7 @@ import {
   CheckCircle as CheckIcon,
   Settings as SettingsIcon,
   LocalShipping as TruckIcon,
+  AutoAwesome as DetailIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -54,6 +55,14 @@ export function FeaturedServices() {
       color: colors.semantic.success,
       features: ['Oil changes', 'Tire rotation', 'Multi-point inspection'],
       image: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    },
+    {
+      title: 'Car Detailing',
+      description: 'Professional detailing to keep your car looking showroom new',
+      icon: <DetailIcon sx={{ fontSize: 48 }} />,
+      color: colors.secondary.dark,
+      features: ['Interior cleaning', 'Paint protection', 'Ceramic coating'],
+      image: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
     },
   ];
 
@@ -113,9 +122,9 @@ function ServiceCards({ services }: { services: Service[] }) {
         <Box
           key={index}
           sx={{
-            width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' },
-            minWidth: { xs: '100%', sm: '280px', md: '320px' },
-            maxWidth: { xs: '100%', sm: '400px', md: '380px' },
+            width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' },
+            minWidth: { xs: '100%', sm: '280px', md: '280px' },
+            maxWidth: { xs: '100%', sm: '400px', md: '320px' },
           }}
         >
           <Zoom in timeout={1000 + index * 200}>

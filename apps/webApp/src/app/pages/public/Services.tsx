@@ -15,6 +15,7 @@ import CarRepairIcon from '@mui/icons-material/CarRepair';
 import TuneIcon from '@mui/icons-material/Tune';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { ServicesHero, ServicesGrid, StatsSection, ServiceData } from '../../components/services';
 
 export const Services: React.FC = () => {
@@ -35,14 +36,15 @@ export const Services: React.FC = () => {
       icon: 'truck',
       category: 'tires',
       emergency: true,
+      popular: true,
       features: ['24/7 availability', 'On-site service', 'Emergency repair', 'Jump starts included'],
     },
     {
-      title: 'Wheel Alignment',
-      description: 'Precision 3D wheel alignment to improve handling and extend tire life.',
+      title: 'Wheel Balancing',
+      description: 'Professional wheel balancing to eliminate vibrations and ensure smooth driving.',
       icon: 'tune',
       category: 'tires',
-      features: ['3D alignment', 'Printout report', 'Steering adjustment', 'Suspension check'],
+      features: ['Computer balancing', 'Weight adjustment', 'Vibration elimination', 'Tire wear prevention'],
     },
     {
       title: 'Oil Change Service',
@@ -89,11 +91,11 @@ export const Services: React.FC = () => {
     },
     {
       title: 'Emergency Roadside',
-      description: '24/7 emergency assistance including towing, jump starts, and lockout service.',
+      description: '24/7 emergency assistance including jump starts, flat tire repair, and lockout service.',
       icon: 'warning',
       category: 'emergency',
       emergency: true,
-      features: ['24/7 availability', 'Fast response', 'Towing available', 'Mobile repairs'],
+      features: ['24/7 availability', 'Fast response', 'Flat tire repair', 'Mobile repairs'],
     },
     {
       title: 'Suspension & Steering',
@@ -108,6 +110,14 @@ export const Services: React.FC = () => {
       icon: 'check',
       category: 'maintenance',
       features: ['150+ point check', 'Written report', 'Photos included', 'Expert advice'],
+    },
+    {
+      title: 'Car Detailing',
+      description: 'Professional interior and exterior detailing services to keep your vehicle looking pristine.',
+      icon: 'detail',
+      category: 'maintenance',
+      popular: true,
+      features: ['Interior shampooing', 'Exterior polishing', 'Paint protection', 'Ceramic coating'],
     },
   ];
 
@@ -134,6 +144,7 @@ export const Services: React.FC = () => {
       case 'repair': return <CarRepairIcon sx={{ fontSize: 24 }} />;
       case 'check': return <CheckCircleIcon sx={{ fontSize: 24 }} />;
       case 'filter': return <FilterListIcon sx={{ fontSize: 20 }} />;
+      case 'detail': return <AutoAwesomeIcon sx={{ fontSize: 24 }} />;
       default: return <BuildIcon sx={{ fontSize: 24 }} />;
     }
   };

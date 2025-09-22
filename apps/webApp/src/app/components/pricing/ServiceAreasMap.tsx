@@ -20,37 +20,37 @@ const serviceAreas = [
   {
     title: 'North & Northeast',
     areas: [
-      'Hart Highway (to Salmon Valley)',
-      'Chief Lake Road Area',
+      'Hart Highway (to Austin Road)',
       'North Nechako',
       'Cranbrook Hill',
+      'College Heights',
     ],
   },
   {
     title: 'South & Southwest',
     areas: [
       'Pineview',
-      'Buckhorn',
-      'West Lake',
-      'Blackwater',
+      'Airport Area',
+      'Industrial Area',
+      'Spruceland',
     ],
   },
   {
     title: 'East & Southeast',
     areas: [
-      'Upper Fraser',
-      'Tabor Lake',
-      'Red Rock',
-      'Mud River',
+      'Blackburn',
+      'Heritage',
+      'Charella Gardens',
+      'Downtown Core',
     ],
   },
   {
     title: 'West & Northwest',
     areas: [
-      'Miworth',
-      'Beaverly',
-      'North Kelly',
-      'West Austin',
+      'Westwood',
+      'Foothills',
+      'Crescents',
+      'Lakewood',
     ],
   },
 ];
@@ -79,13 +79,13 @@ export const ServiceAreasMap: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CheckCircleIcon sx={{ color: pricingColors.accent, fontSize: 20 }} />
               <Typography variant="body1">
-                <strong>Free service</strong> within 20km radius of city center
+                <strong>Free service</strong> within 10km radius of city center
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CheckCircleIcon sx={{ color: pricingColors.accent, fontSize: 20 }} />
               <Typography variant="body1">
-                <strong>$2 per km</strong> for distances beyond 20km
+                <strong>$2 per km</strong> for distances beyond 10km
               </Typography>
             </Box>
           </Stack>
@@ -106,10 +106,10 @@ export const ServiceAreasMap: React.FC = () => {
         </Grid>
       </Grid>
       
-      {/* Areas Covered Within 20km */}
+      {/* Areas Covered Within 10km */}
       <Box sx={{ mt: 4, pt: 3, borderTop: `1px solid ${pricingColors.primary}20` }}>
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: pricingColors.text.primary }}>
-          Areas Covered Within 20km (Free Service Zone)
+          Areas Covered Within 10km (Free Service Zone)
         </Typography>
         <Grid container spacing={2}>
           {serviceAreas.map((area, index) => (

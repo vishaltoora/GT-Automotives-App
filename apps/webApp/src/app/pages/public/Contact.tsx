@@ -3,7 +3,7 @@ import { Container, Grid, Box, Paper, Typography, Stack } from '@mui/material';
 import VehicleIcon from '@mui/icons-material/DirectionsCar';
 import BuildIcon from '@mui/icons-material/Build';
 import ShippingIcon from '@mui/icons-material/LocalShipping';
-import CalendarIcon from '@mui/icons-material/CalendarMonth';
+import CarWashIcon from '@mui/icons-material/LocalCarWash';
 import CheckIcon from '@mui/icons-material/CheckCircle';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { ContactHero, QuickContactBar, ContactForm, ContactTeam } from '../../components/contact';
@@ -120,6 +120,13 @@ export const Contact: React.FC = () => {
           </Grid>
         </Grid>
       </Container>
+
+      {/* Contact Team Section */}
+      <Box sx={{ py: { xs: 6, md: 8 } }}>
+        <Container maxWidth="lg">
+          <ContactTeam />
+        </Container>
+      </Box>
 
       {/* Service Categories Section */}
       <Box sx={{ backgroundColor: colors.neutral[50], py: { xs: 6, md: 8 } }}>
@@ -291,7 +298,7 @@ export const Contact: React.FC = () => {
                     width: 60,
                     height: 60,
                     borderRadius: '50%',
-                    backgroundColor: colors.semantic.success + '15',
+                    backgroundColor: colors.semantic.info + '15',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -299,24 +306,17 @@ export const Contact: React.FC = () => {
                     mb: 2,
                   }}
                 >
-                  <CalendarIcon sx={{ fontSize: 30, color: colors.semantic.success }} />
+                  <CarWashIcon sx={{ fontSize: 30, color: colors.semantic.info }} />
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                  Appointments
+                  Car Detailing
                 </Typography>
                 <Typography variant="body2" sx={{ color: colors.text.secondary }}>
-                  Schedule service at your convenience
+                  Professional interior & exterior detailing services
                 </Typography>
               </Paper>
             </Grid>
           </Grid>
-        </Container>
-      </Box>
-
-      {/* Contact Team Section */}
-      <Box sx={{ py: { xs: 6, md: 8 } }}>
-        <Container maxWidth="lg">
-          <ContactTeam />
         </Container>
       </Box>
     </>

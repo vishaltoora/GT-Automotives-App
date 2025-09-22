@@ -35,9 +35,16 @@ export const ServicesGrid: React.FC<ServicesGridProps> = ({
   onCategoryChange,
   getIcon,
 }) => {
-  const filteredServices = selectedCategory === 'all' 
-    ? services 
-    : services.filter(s => s.category === selectedCategory || (selectedCategory === 'emergency' && s.emergency));
+  // Sort services: popular first, then by title
+  const sortedServices = [...services].sort((a, b) => {
+    if (a.popular && !b.popular) return -1;
+    if (!a.popular && b.popular) return 1;
+    return a.title.localeCompare(b.title);
+  });
+
+  const filteredServices = selectedCategory === 'all'
+    ? sortedServices
+    : sortedServices.filter(s => s.category === selectedCategory || (selectedCategory === 'emergency' && s.emergency));
 
   return (
     <Box sx={{ py: { xs: 6, md: 10 } }}>
@@ -99,28 +106,105 @@ export const ServicesGrid: React.FC<ServicesGridProps> = ({
           </Tabs>
         </Box>
 
-        {/* Service Cards - 3 per row */}
-        <Box sx={{ 
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
-          },
-          gap: 2,
-        }}>
-          {filteredServices.map((service, index) => (
-            <ServiceCard
-              key={index}
-              title={service.title}
-              description={service.description}
-              icon={getIcon(service.icon)}
-              features={service.features}
-              category={service.category as 'tire' | 'maintenance' | 'repair' | 'inspection'}
-              highlighted={service.popular}
-            />
-          ))}
-        </Box>
+        {/* Popular Services Section */}
+        {selectedCategory === 'all' && filteredServices.filter(s => s.popular).length > 0 && (
+          <>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: serviceColors.text.primary,
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                '&:before': {
+                  content: '""',
+                  display: 'inline-block',
+                  width: 4,
+                  height: 24,
+                  backgroundColor: serviceColors.secondary,
+                  mr: 2,
+                },
+              }}
+            >
+              Most Popular Services
+            </Typography>
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(4, 1fr)',
+              },
+              gap: 3,
+              mb: 6,
+            }}>
+              {filteredServices.filter(s => s.popular).map((service, index) => (
+                <ServiceCard
+                  key={index}
+                  title={service.title}
+                  description={service.description}
+                  icon={getIcon(service.icon)}
+                  features={service.features}
+                  category={service.category as 'tire' | 'maintenance' | 'repair' | 'inspection'}
+                  highlighted={service.popular}
+                  emergency={service.emergency}
+                />
+              ))}
+            </Box>
+          </>
+        )}
+
+        {/* All Other Services */}
+        {((selectedCategory === 'all' && filteredServices.filter(s => !s.popular).length > 0) || selectedCategory !== 'all') && (
+          <>
+            {selectedCategory === 'all' && (
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 600,
+                  color: serviceColors.text.primary,
+                  mb: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  '&:before': {
+                    content: '""',
+                    display: 'inline-block',
+                    width: 4,
+                    height: 24,
+                    backgroundColor: serviceColors.text.secondary,
+                    mr: 2,
+                  },
+                }}
+              >
+                All Services
+              </Typography>
+            )}
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+              },
+              gap: 3,
+            }}>
+              {(selectedCategory === 'all' ? filteredServices.filter(s => !s.popular) : filteredServices).map((service, index) => (
+                <ServiceCard
+                  key={index}
+                  title={service.title}
+                  description={service.description}
+                  icon={getIcon(service.icon)}
+                  features={service.features}
+                  category={service.category as 'tire' | 'maintenance' | 'repair' | 'inspection'}
+                  highlighted={service.popular}
+                  emergency={service.emergency}
+                />
+              ))}
+            </Box>
+          </>
+        )}
       </Container>
     </Box>
   );
