@@ -210,24 +210,41 @@ jobs:
         echo "🔐 Logging in to Azure Container Registry..."
         az acr login --name ${{ env.REGISTRY_NAME }}
 
-    - name: Create simplified Dockerfile (mypersn approach)
+    - name: Create optimized Dockerfile with caching
       run: |
-        echo "🐳 Creating simplified Dockerfile based on mypersn approach..."
+        echo "🐳 Creating optimized Dockerfile with multi-stage build and caching..."
 
-        # Create Dockerfile that copies source and builds inside container (like mypersn)
+        # Create optimized Dockerfile with better layer caching
         cat > Dockerfile << 'EOF'
-        FROM node:20
+        # Multi-stage build for faster builds and smaller images
+        FROM node:20-slim as builder
 
         WORKDIR /app
 
-        # Copy source code (like mypersn)
+        # Install system dependencies for Prisma and build tools
+        RUN apt-get update && apt-get install -y \
+            openssl \
+            python3 \
+            make \
+            g++ \
+            && rm -rf /var/lib/apt/lists/*
+
+        # Copy package files first for better caching
+        COPY package.json yarn.lock ./
+        COPY nx.json ./
+        COPY tsconfig*.json ./
+
+        # Copy package.json files from workspace projects
+        COPY apps/webApp/package.json ./apps/webApp/package.json
+        COPY server/package.json ./server/package.json
+        COPY libs/database/package.json ./libs/database/package.json
+        COPY libs/shared-dto/package.json ./libs/shared-dto/package.json
+
+        # Install dependencies (cached if package files haven't changed)
+        RUN yarn install --frozen-lockfile --ignore-engines --network-timeout 1000000 --cache-folder /tmp/yarn-cache
+
+        # Copy source code
         COPY . .
-
-        # Install system dependencies for Prisma
-        RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-
-        # Install dependencies
-        RUN yarn install --frozen-lockfile --ignore-engines --network-timeout 1000000
 
         # Generate Prisma client
         RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
@@ -238,6 +255,19 @@ jobs:
         # Build server (Nx will handle shared library resolution automatically)
         RUN npx nx run server:build:production
 
+        # Production stage
+        FROM node:20-slim as production
+
+        WORKDIR /app
+
+        # Install only runtime dependencies
+        RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+        # Copy built application from builder stage
+        COPY --from=builder /app/dist ./dist
+        COPY --from=builder /app/node_modules ./node_modules
+        COPY --from=builder /app/package.json ./package.json
+
         # Create non-root user
         RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
             chown -R nodejs:nodejs /app
@@ -246,16 +276,17 @@ jobs:
 
         EXPOSE 3000
 
-        # Run the built server (reflect-metadata already imported in main.ts)
+        # Run the built server
         CMD ["node", "dist/server/main.js"]
         EOF
 
-        echo "🐳 Dockerfile created successfully using mypersn approach"
+        echo "🐳 Optimized Dockerfile created successfully"
         cat Dockerfile
 
     - name: Build and push Docker image
+      timeout-minutes: 20
       run: |
-        echo "🔨 Building Docker image with mypersn approach..."
+        echo "🔨 Building optimized Docker image with multi-stage build..."
 
         IMAGE_TAG="container-deploy-${{ needs.validate-build.outputs.build-number }}"
         FULL_IMAGE_NAME="${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:$IMAGE_TAG"
@@ -263,13 +294,23 @@ jobs:
         echo "🏷️ Building image: $FULL_IMAGE_NAME"
         echo "📋 Build number from input: ${{ needs.validate-build.outputs.build-number }}"
         echo "📋 Complete tag: $IMAGE_TAG"
-        
-        # Build with no cache to ensure fresh build
-        docker build -t "$FULL_IMAGE_NAME" . --no-cache
-        
+
+        # Build with BuildKit for better performance and caching
+        export DOCKER_BUILDKIT=1
+
+        # Build the image with timeout protection
+        echo "🔨 Starting Docker build (timeout: 20 minutes)..."
+        docker build \
+          --target production \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          --progress=plain \
+          -t "$FULL_IMAGE_NAME" \
+          .
+
+        echo "✅ Docker build completed successfully"
         echo "🚀 Pushing image to registry..."
         docker push "$FULL_IMAGE_NAME"
-        
+
         echo "IMAGE_NAME=$FULL_IMAGE_NAME" >> $GITHUB_ENV
 
     - name: Run database migrations
