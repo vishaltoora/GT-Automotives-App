@@ -275,23 +275,19 @@ jobs:
     - name: Run database migrations
       if: github.event.inputs.run_migrations == 'true'
       run: |
-        echo "🗄️ Running database migrations directly on runner..."
-        
-        # Clean and extract deployment package to get Prisma schema
-        cd backend-deploy
-        rm -f build-info.json || true  # Remove any existing build-info.json
-        unzip -o -q ${{ needs.validate-build.outputs.backend-artifact }}.zip
-        
+        echo "🗄️ Running database migrations using source code..."
+
         # Install Prisma CLI and client dependencies on the runner
         npm install -g prisma@latest
         npm install @prisma/client@latest
-        
-        # Run migrations directly with proper error handling
+
+        # Use Prisma schema directly from source code (mypersn approach)
         export DATABASE_URL="${{ secrets.DATABASE_URL }}"
-        
-        if [ -f "prisma/schema.prisma" ]; then
-          echo "📋 Found Prisma schema, running migrations..."
-          
+        SCHEMA_PATH="libs/database/src/lib/prisma/schema.prisma"
+
+        if [ -f "$SCHEMA_PATH" ]; then
+          echo "📋 Found Prisma schema at $SCHEMA_PATH, running migrations..."
+
           # Create a minimal package.json for proper Prisma client generation
           cat > package.json << 'EOF'
         {
@@ -303,23 +299,23 @@ jobs:
           }
         }
         EOF
-          
+
           # Install dependencies locally for proper Prisma client generation
           npm install --no-package-lock
-          
+
           # Generate Prisma client with proper binary resolution
           echo "🔧 Generating Prisma client for migrations..."
-          npx prisma generate --schema=prisma/schema.prisma
-          
+          npx prisma generate --schema="$SCHEMA_PATH"
+
           # Run migrations
           echo "🚀 Running database migrations..."
-          if npx prisma migrate deploy --schema=prisma/schema.prisma; then
+          if npx prisma migrate deploy --schema="$SCHEMA_PATH"; then
             echo "✅ Migrations completed successfully"
           else
             echo "❌ Migration failed, but continuing with deployment..."
             echo "⚠️ You may need to run migrations manually after deployment"
             echo "💡 Check database connectivity and migration files"
-            
+
             # Show more detailed error information
             echo "🔍 Database URL format check:"
             echo "Database URL starts with: ${DATABASE_URL:0:20}..."
@@ -327,10 +323,8 @@ jobs:
             ls -la node_modules/@prisma/client/ 2>/dev/null || echo "Prisma client not found"
           fi
         else
-          echo "⚠️ No Prisma schema found, skipping migrations"
+          echo "⚠️ No Prisma schema found at $SCHEMA_PATH, skipping migrations"
         fi
-        
-        cd ..
 
     - name: Deploy to Azure Container Instances
       run: |
