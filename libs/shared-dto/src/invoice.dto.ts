@@ -45,7 +45,7 @@ export class InvoiceItemDto {
   quantity!: number;
 
   @IsNumber()
-  unitPrice!: number;
+  unitPrice!: number; // Can be negative for DISCOUNT items
 
   @IsOptional()
   @IsString()
