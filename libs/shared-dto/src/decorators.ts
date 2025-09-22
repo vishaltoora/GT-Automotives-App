@@ -90,6 +90,14 @@ export function IsDate(options?: ValidationOptions) {
   return createValidationDecorator('IsDate')(options);
 }
 
+export function ValidateIf(condition: (object: any) => boolean, options?: ValidationOptions) {
+  return createValidationDecorator('ValidateIf', condition)(options);
+}
+
+export function IsPositive(options?: ValidationOptions) {
+  return createValidationDecorator('IsPositive')(options);
+}
+
 // Class-transformer Type decorator
 export function Type(typeFunction: () => any): PropertyDecorator {
   // If we're in a browser, use no-op decorator

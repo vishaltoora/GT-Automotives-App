@@ -42,7 +42,7 @@ print_success "Prerequisites validated"
 
 # Build shared DTO library (critical for container deployment)
 print_info "Building shared DTO library..."
-if yarn nx build @gt-automotive/shared-dto; then
+if yarn nx build shared-dto; then
     print_success "Shared DTO library built successfully"
 else
     print_error "Failed to build shared DTO library"

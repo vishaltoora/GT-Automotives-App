@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type } from './decorators';
+import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type, ValidateIf, IsPositive } from './decorators';
 
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
@@ -45,6 +45,8 @@ export class InvoiceItemDto {
   quantity!: number;
 
   @IsNumber()
+  @ValidateIf((o) => o.itemType !== 'DISCOUNT' && o.itemType !== 'DISCOUNT_PERCENTAGE')
+  @IsPositive({ message: 'Unit price must be positive for non-discount items' })
   unitPrice!: number; // Can be negative for DISCOUNT items
 
   @IsOptional()
