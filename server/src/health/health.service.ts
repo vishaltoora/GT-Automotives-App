@@ -16,19 +16,17 @@ export class HealthService {
 
   async checkDetailed() {
     const basicHealth = await this.check();
-    
-    // Check database connectivity
-    let databaseStatus = 'unknown';
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      databaseStatus = 'connected';
-    } catch (error) {
-      databaseStatus = 'disconnected';
-    }
+
+    // Check database connectivity using PrismaService health check
+    const databaseHealth = await this.prisma.healthCheck();
 
     return {
       ...basicHealth,
-      database: databaseStatus,
+      database: {
+        status: databaseHealth.status,
+        connected: databaseHealth.connected,
+        error: databaseHealth.error,
+      },
       memory: {
         used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
         total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
