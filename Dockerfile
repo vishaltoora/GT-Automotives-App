@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/dist/libs /app/libs
 COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app/package.json /app/package.json
 
