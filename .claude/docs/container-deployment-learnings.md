@@ -229,3 +229,106 @@ CMD ["node", "dist/server/main.js"]
 ```
 
 These fixes together should resolve the "logs showing None" issue and enable proper container startup with external accessibility.
+
+## 🚨 Critical Discovery: Project Structure vs Build Output Paths (Sept 23, 2025)
+
+### Issue: "Cannot find module '/app/dist/server/main.js'"
+
+After successfully implementing the MyPersn pattern and fixing host binding, we encountered a new error showing that the build was completing successfully but the container CMD path was incorrect.
+
+### Root Cause: Project Structure Differences
+
+**MyPersn Project Structure**:
+```
+mypersn/
+├── apps/server/      # Server in apps/ directory
+├── apps/webapp/      # Frontend in apps/ directory
+└── dist/apps/server/ # Build output reflects apps/ structure
+```
+
+**GT Automotives Structure**:
+```
+gt-automotives-app/
+├── server/           # Server as root-level project
+├── apps/webApp/      # Frontend in apps/ directory
+└── server/dist/      # Build output in project root
+```
+
+### The Critical Difference
+
+**MyPersn Dockerfile CMD (Correct for their structure)**:
+```dockerfile
+CMD ["node", "./dist/apps/server/main.js"]
+```
+
+**Our Previous CMD (Incorrect - copied MyPersn path)**:
+```dockerfile
+CMD ["node", "dist/server/main.js"]  # Wrong - this path doesn't exist
+```
+
+**Our Correct CMD (Based on actual build output)**:
+```dockerfile
+CMD ["node", "server/dist/main.js"]  # Correct - actual build location
+```
+
+### Build System Investigation
+
+The build command `npx nx run server:build:production` outputs to:
+- **Expected** (copied from MyPersn): `dist/server/main.js`
+- **Actual** (our project): `server/dist/main.js`
+
+This is because Nx builds to `{projectRoot}/dist/` not `dist/{projectName}/`.
+
+### Debug Commands That Revealed the Truth
+
+```dockerfile
+# Debug commands in container build
+RUN echo "Build completed, checking output..." && \
+    echo "Global dist structure:" && ls -la dist/ && \
+    echo "Server dist structure:" && ls -la server/dist/ && \
+    echo "Server main.js exists:" && ls -la server/dist/main.js
+```
+
+**Build Logs Showed**:
+- ✅ Build successful: "webpack compiled successfully"
+- ✅ Global dist/ exists with shared-dto files
+- ❌ No dist/server/ directory
+- ✅ server/dist/main.js exists and is correct target
+
+### Project Structure Impact on Docker Patterns
+
+**Key Learning**: You cannot blindly copy Docker patterns between projects with different structures. Always verify:
+
+1. **Build Output Location**: Where does `nx run [project]:build` actually place files?
+2. **Project Root**: Is your target project in `apps/` or at workspace root?
+3. **Path Verification**: Test the exact path that will exist in the container
+
+### Verification Command
+```bash
+# Local verification of build output location
+rm -rf dist/ server/dist/ && yarn nx run server:build:production --skip-nx-cache
+find . -name "main.js" -path "*/dist/*" -ls | grep -v node_modules
+```
+
+This will show the exact path where your build outputs the main.js file.
+
+### Project Structure Documentation Pattern
+
+When documenting container deployment patterns, always include:
+
+1. **Source Project Structure**: Where files are organized in source
+2. **Build Output Structure**: Where build system places compiled files
+3. **Container CMD Path**: Exact path for Docker CMD based on build output
+4. **Verification Steps**: How to confirm the correct path
+
+**Example Template**:
+```markdown
+## Project: [Name]
+- **Structure**: server/ at root level
+- **Build Command**: npx nx run server:build:production
+- **Output Path**: server/dist/main.js
+- **Docker CMD**: ["node", "server/dist/main.js"]
+- **Verified**: ✅ 2025-09-23
+```
+
+This prevents future path confusion when adapting patterns between different project structures.

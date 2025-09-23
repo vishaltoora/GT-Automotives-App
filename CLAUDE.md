@@ -124,6 +124,18 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
+### September 23, 2025 - MyPersn Pattern Implementation & Docker CMD Path Fix ✅
+- ✅ **Docker Build Issue Resolved**: Fixed "target stage 'production' could not be found" error
+- ✅ **MyPersn Single-Stage Pattern**: Converted from multi-stage to proven MyPersn container approach
+- ✅ **GitHub Workflow Fix**: Removed `--target production` flag from Docker build command
+- ✅ **Critical Path Discovery**: Found server build outputs to `server/dist/main.js` not `dist/server/main.js`
+- ✅ **Container CMD Correction**: Fixed Dockerfile CMD path to use actual build output location
+- ✅ **Project Structure Analysis**: Documented difference between MyPersn (`apps/server/`) vs GT Automotives (`server/`) structure
+- ✅ **Build Process Verification**: Added debug logging to verify container build output and file locations
+- ✅ **Documentation Enhancement**: Updated container deployment learnings with project structure patterns
+- ✅ **MyPersn Pattern Research**: Analyzed webpack configuration and build patterns for container compatibility
+- ⚠️ **Key Learning**: Cannot blindly copy Docker patterns between projects - must verify actual build output paths
+
 ### September 18, 2025 - Invoice Date Enhancement & Development Server Fixes ✅
 - ✅ **Invoice Date Feature**: Added date picker to invoice creation and full editing capabilities
 - ✅ **Database Migration**: Added invoiceDate field to Invoice schema with proper defaults
