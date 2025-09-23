@@ -16,21 +16,8 @@ RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 # Build shared libraries first (Nx dependency order)
 RUN yarn nx build shared-dto
 
-# Build server (MyPersn pattern - direct Nx build with error handling)
-RUN echo "Starting server build..." && \
-    npx nx run server:build:production || (echo "Build failed! Let's check what happened:" && \
-    echo "Nx cache status:" && npx nx show projects && \
-    echo "Current directory contents:" && ls -la && \
-    echo "Server directory:" && ls -la server/ && \
-    echo "Build attempt details:" && \
-    npx nx run server:build:production --verbose && \
-    exit 1)
-
-# Debug: Verify build output exists and find actual location
-RUN echo "Build completed, checking output..." && \
-    echo "Global dist structure:" && ls -la dist/ && \
-    echo "Server dist structure:" && ls -la server/dist/ && \
-    echo "Server main.js exists:" && ls -la server/dist/main.js
+# Build server (MyPersn pattern - direct Nx build)
+RUN npx nx run server:build:production
 
 # Create non-root user for security
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
