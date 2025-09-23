@@ -210,78 +210,19 @@ jobs:
         echo "🔐 Logging in to Azure Container Registry..."
         az acr login --name ${{ env.REGISTRY_NAME }}
 
-    - name: Create optimized Dockerfile with caching
+    - name: Verify hybrid MyPersn Dockerfile
       run: |
-        echo "🐳 Creating optimized Dockerfile with multi-stage build and caching..."
+        echo "🐳 Using committed hybrid MyPersn Dockerfile for reliable container deployment..."
 
-        # Create optimized Dockerfile with better layer caching
-        cat > Dockerfile << 'EOF'
-        # Multi-stage build for faster builds and smaller images
-        FROM node:20-slim as builder
-
-        WORKDIR /app
-
-        # Install system dependencies for Prisma and build tools
-        RUN apt-get update && apt-get install -y \
-            openssl \
-            python3 \
-            make \
-            g++ \
-            && rm -rf /var/lib/apt/lists/*
-
-        # Copy package files first for better caching
-        COPY package.json yarn.lock ./
-        COPY nx.json ./
-        COPY tsconfig*.json ./
-
-        # Copy package.json files from workspace projects
-        COPY apps/webApp/package.json ./apps/webApp/package.json
-        COPY server/package.json ./server/package.json
-        COPY libs/database/package.json ./libs/database/package.json
-        COPY libs/shared-dto/package.json ./libs/shared-dto/package.json
-
-        # Install dependencies (cached if package files haven't changed)
-        RUN yarn install --frozen-lockfile --ignore-engines --network-timeout 1000000 --cache-folder /tmp/yarn-cache
-
-        # Copy source code
-        COPY . .
-
-        # Generate Prisma client
-        RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
-
-        # Build shared libraries first (Nx dependency order)
-        RUN yarn nx build shared-dto
-
-        # Build server (Nx will handle shared library resolution automatically)
-        RUN npx nx run server:build:production
-
-        # Production stage
-        FROM node:20-slim as production
-
-        WORKDIR /app
-
-        # Install only runtime dependencies
-        RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-
-        # Copy built application from builder stage
-        COPY --from=builder /app/dist ./dist
-        COPY --from=builder /app/node_modules ./node_modules
-        COPY --from=builder /app/package.json ./package.json
-
-        # Create non-root user
-        RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
-            chown -R nodejs:nodejs /app
-
-        USER nodejs
-
-        EXPOSE 3000
-
-        # Run the built server
-        CMD ["node", "dist/server/main.js"]
-        EOF
-
-        echo "🐳 Optimized Dockerfile created successfully"
-        cat Dockerfile
+        # Verify our Dockerfile exists and show it for transparency
+        if [ -f "Dockerfile" ]; then
+          echo "✅ Found committed Dockerfile (hybrid MyPersn pattern)"
+          echo "📋 Dockerfile contents:"
+          cat Dockerfile
+        else
+          echo "❌ Dockerfile not found! This is required for deployment."
+          exit 1
+        fi
 
     - name: Build and push Docker image
       timeout-minutes: 20
