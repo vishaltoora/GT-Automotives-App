@@ -2,7 +2,7 @@
 # Combines MyPersn source-based approach with optimized container features
 
 # Multi-stage build for optimization
-FROM node:20 as builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ RUN yarn nx build shared-dto
 RUN npx nx run server:build:production
 
 # Production stage
-FROM node:20-slim
+FROM node:20-slim AS production
 
 WORKDIR /app
 
