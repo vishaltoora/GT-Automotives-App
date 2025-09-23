@@ -19,6 +19,9 @@ RUN yarn nx build shared-dto
 # Build server (MyPersn pattern - direct Nx build)
 RUN npx nx run server:build:production
 
+# Debug: Verify build output exists
+RUN ls -la dist/ && ls -la dist/server/ && echo "Build files:" && find dist -name "*.js" | head -10
+
 # Create non-root user for security
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
     chown -R nodejs:nodejs /app
