@@ -239,10 +239,9 @@ jobs:
         # Build with BuildKit for better performance and caching
         export DOCKER_BUILDKIT=1
 
-        # Build the image with timeout protection
+        # Build the image with timeout protection (MyPersn single-stage pattern)
         echo "🔨 Starting Docker build (timeout: 20 minutes)..."
         docker build \
-          --target production \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --progress=plain \
           -t "$FULL_IMAGE_NAME" \
