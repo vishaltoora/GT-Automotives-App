@@ -332,3 +332,306 @@ When documenting container deployment patterns, always include:
 ```
 
 This prevents future path confusion when adapting patterns between different project structures.
+
+## 🎯 Critical Discovery: GitHub Workflow vs Local Build Differences (Sept 23, 2025)
+
+### Issue: Working Local Container vs Failing GitHub Workflow Container
+
+After successfully fixing the application crash on database connection errors and implementing proper resilience, we discovered that containers built through GitHub Actions would crash with ExitCode 1 while identically configured containers built locally would work perfectly.
+
+### Root Cause: Dockerfile Path Mismatch in Repository
+
+**Problem**: The committed Dockerfile in the repository had an incorrect CMD path that differed from the working local container build method.
+
+**Repository Dockerfile (Incorrect)**:
+```dockerfile
+# File: Dockerfile
+CMD ["node", "server/dist/main.js"]  # ❌ This path was wrong
+```
+
+**Working Local Build Method**:
+Used a different build script pattern that created the correct structure:
+```dockerfile
+# Local deployment script pattern
+CMD ["node", "dist/server/main.js"]  # ✅ This path was correct
+```
+
+### Path Analysis Through Docker History
+
+**Working Local Image**:
+```bash
+docker history gt-backend:symlink-fix
+# Shows: CMD ["node" "dist/server/main.js"]
+```
+
+**Failed GitHub Workflow Image**:
+```bash
+# Built from repository Dockerfile
+# Used: CMD ["node", "server/dist/main.js"]
+```
+
+### Container Structure Verification
+
+**Working Local Container Structure**:
+```
+/app/
+├── dist/
+│   ├── libs/           # Shared libraries
+│   └── server/
+│       └── main.js     # ✅ Correct target
+├── libs/               # Source libraries
+├── node_modules/       # Dependencies
+└── package.json
+```
+
+**GitHub Workflow Expected Structure**:
+```
+/app/
+├── server/
+│   └── dist/
+│       └── main.js     # ❌ Path doesn't exist
+```
+
+### Build System Path Differences
+
+The issue occurred because:
+
+1. **Nx Build Output**: `npx nx run server:build:production` outputs to `dist/server/main.js`
+2. **Repository Dockerfile**: Expected `server/dist/main.js` (wrong)
+3. **Local Build Script**: Used correct `dist/server/main.js` path
+
+### Environment Variable Issues Discovered
+
+Beyond the path issue, the GitHub workflow was also setting incorrect Clerk environment variables:
+
+**GitHub Workflow Environment (Incorrect)**:
+```yaml
+CLERK_PUBLISHABLE_KEY: pk_test_...                                          # Test key
+CLERK_SECRET_KEY: sk_live_...                                               # Live key
+```
+
+**Production Environment (Correct)**:
+```yaml
+CLERK_PUBLISHABLE_KEY: pk_live_...                                          # Live key
+CLERK_SECRET_KEY: sk_live_...                                               # Live key
+```
+
+The test/live key mismatch was causing authentication failures during container startup.
+
+### Resolution Process
+
+1. **Path Investigation**: Compared working local vs failing GitHub images
+2. **Structure Analysis**: Verified actual build output locations
+3. **Environment Audit**: Checked for mismatched Clerk credentials
+4. **Local Verification**: Built working image locally with production environment variables
+5. **Registry Push**: Tagged and pushed working local build to replace failing workflow build
+6. **Container Recreation**: Deleted failing container and created new one with working image
+
+### Container Deployment Results
+
+**Failed GitHub Workflow Container**:
+- Image: `gtautomotivesregistry.azurecr.io/gt-backend:container-deploy-build-20250923-191419-f93d4be`
+- Status: CrashLoopBackOff (6 restart attempts)
+- Exit Code: 1
+- Logs: "None" (no startup logs)
+
+**Working Local Build Container**:
+- Image: `gtautomotivesregistry.azurecr.io/gt-backend:build-20250923-135217-f93d4be`
+- Status: Running (0 restart count)
+- Health: ✅ Responding successfully
+- Memory: 23MB used / 25MB total
+
+### Critical Lessons for CI/CD Consistency
+
+**Do's**:
+- ✅ **Test locally first**: Always build and test container images locally before pushing
+- ✅ **Path verification**: Verify build output paths match Dockerfile CMD paths
+- ✅ **Environment parity**: Ensure GitHub secrets match actual production requirements
+- ✅ **Incremental testing**: Test with production environment variables locally
+- ✅ **Image comparison**: Compare successful local vs failing CI builds
+
+**Don'ts**:
+- ❌ **Assume CI=Local**: Don't assume GitHub workflow builds identical to local builds
+- ❌ **Skip local testing**: Don't deploy directly from CI without local verification
+- ❌ **Ignore path differences**: Don't copy Dockerfile patterns without path verification
+- ❌ **Mix environment keys**: Don't mix test/live credentials in production
+
+### Future Workflow Improvements Needed
+
+1. **Dockerfile Correction**: Fix repository Dockerfile CMD path to match actual build output
+2. **Environment Variables**: Update GitHub secrets to use correct production Clerk keys
+3. **Pre-deployment Testing**: Add local container test step before GitHub workflow deployment
+4. **Path Validation**: Add build step to verify main.js exists at expected CMD path
+5. **Environment Validation**: Verify all environment variables are correct for production use
+
+### Long-term CI/CD Pattern
+
+For future container deployments:
+
+1. **Local Build & Test**: Always build and test containers locally first
+2. **Path Verification**: Confirm Dockerfile CMD matches actual build output
+3. **Environment Audit**: Verify all environment variables are production-ready
+4. **Incremental Deployment**: Push working local builds as fallback for CI issues
+5. **Monitoring Setup**: Implement proper health checks and restart count monitoring
+
+This approach ensures that CI/CD pipelines produce the same results as local development environments.
+
+## 🔧 Local Development Server Management & Webpack Fix Resolution (Sept 23, 2025)
+
+### Issue: Local Development Server Startup Failures After Container Deployment Success
+
+After successfully resolving container deployment issues and implementing the MyPersn pattern, we encountered local development server startup failures. This highlighted a critical distinction between container deployment (which works) and local development webpack configuration (which needed fixing).
+
+### Root Cause: Webpack Configuration Incompatibility with Nx
+
+**Problem**: Local development server failed with `Error: Could not find /Users/vishaltoora/projects/gt-automotives-app/dist/server/main.js`
+
+**Original Problematic Webpack Config**:
+```javascript
+// server/webpack.config.js (broken)
+const { composePlugins, withNx } = require('@nx/webpack');
+
+module.exports = composePlugins(withNx(), (config) => {
+  config.output.path = path.join(__dirname, '../dist/server');
+  config.output.filename = 'main.js';
+  return config;
+});
+```
+
+**Issues with Original Approach**:
+- Overriding Nx's internal webpack configuration caused execution context failures
+- `composePlugins(withNx())` pattern didn't work properly for server applications
+- Manual output path configuration conflicted with Nx's build system
+
+### Resolution: Official NxAppWebpackPlugin Pattern
+
+**Fixed Webpack Configuration** (following Nx documentation):
+```javascript
+// server/webpack.config.js (working)
+const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
+const { join } = require('path');
+
+module.exports = {
+  output: {
+    path: join(__dirname, '../dist/server'),
+  },
+  devtool: 'source-map',
+  plugins: [
+    new NxAppWebpackPlugin({
+      target: 'node',
+      compiler: 'tsc',
+      main: './src/main.ts',
+      tsConfig: './tsconfig.app.json',
+      assets: ['./src/assets'],
+      optimization: false,
+      outputHashing: 'none',
+      generatePackageJson: true,
+    }),
+  ],
+};
+```
+
+### Key Discoveries and Learning Process
+
+**1. MyPersn Reference Analysis**
+- User suggested examining MyPersn project webpack configuration for monorepo patterns
+- MyPersn used simpler configuration without output path overrides
+- Initial attempts to copy MyPersn pattern didn't resolve the core issue
+
+**2. Critical User Guidance: "Check Nx Documentation"**
+- User's suggestion to "check nx documentaion for webpack configuration" was the breakthrough
+- Official Nx documentation revealed `NxAppWebpackPlugin` as the correct approach for server applications
+- This pattern respects Nx's execution context and build system
+
+**3. Webpack Build vs Execution Context**
+- Webpack successfully compiled but didn't generate output files
+- Error: `TypeError: Cannot read properties of undefined (reading 'data')` indicated missing Nx context
+- Direct webpack execution lacked the execution context that Nx provides
+
+### Development Server Management Best Practices
+
+**Server Restart Process**:
+```bash
+# Clean restart of both frontend and backend
+yarn dev  # Runs both webApp and server in parallel via Nx
+```
+
+**Expected Output for Successful Startup**:
+```
+✅ Frontend (Vite): http://localhost:4200 (ready in ~296ms)
+✅ Backend (NestJS): http://localhost:3000 (all modules initialized)
+```
+
+**Health Check Verification**:
+```bash
+curl http://localhost:3000/health
+# Should return: {"status":"ok","timestamp":"...","uptime":...}
+```
+
+### Container vs Local Development Architecture
+
+**Container Deployment (Production)**:
+- Uses source-based Docker builds (MyPersn pattern)
+- Builds inside container with proper Nx context
+- CMD: `["node", "dist/server/main.js"]`
+- Status: ✅ Working perfectly
+
+**Local Development**:
+- Uses webpack-dev-server with hot reload
+- Requires proper Nx webpack plugin configuration
+- Output: `dist/server/main.js` for Nx node executor
+- Status: ✅ Fixed with NxAppWebpackPlugin
+
+### Critical Learning: Technology-Specific Documentation Priority
+
+**Pattern Recognition**:
+1. **User Guidance**: Look at similar working projects (MyPersn) for patterns
+2. **Official Documentation**: When patterns don't work, consult framework-specific docs (Nx)
+3. **Root Cause Analysis**: Distinguish between build success and execution context failures
+
+**Key Takeaway**: When adapting patterns between projects, always verify compatibility with the specific framework's official configuration approach. Community patterns may not always align with the latest official recommendations.
+
+### Verification Commands for Future Reference
+
+**Check Build Output Location**:
+```bash
+# Verify where Nx actually builds the server application
+rm -rf dist/ server/dist/ && yarn nx run server:build:production --skip-nx-cache
+find . -name "main.js" -path "*/dist/*" -ls | grep -v node_modules
+```
+
+**Test Local Development Servers**:
+```bash
+# Start both servers
+yarn dev
+
+# Verify frontend
+curl -s http://localhost:4200 | head -n 5
+
+# Verify backend health
+curl -s http://localhost:3000/health | jq
+```
+
+**Webpack Configuration Validation**:
+```bash
+# Test webpack config directly (should NOT be needed in normal development)
+cd server && npx webpack-cli build --node-env=development
+ls -la ../dist/server/  # Should show main.js if config is correct
+```
+
+### Future Development Server Troubleshooting
+
+**If Local Servers Fail to Start**:
+1. Check webpack configuration follows NxAppWebpackPlugin pattern
+2. Clear Nx cache: `yarn nx reset`
+3. Verify TypeScript compilation: `yarn nx run server:build`
+4. Check for port conflicts: `lsof -i :3000 -i :4200`
+5. Restart with fresh yarn dev
+
+**If Container Deployment Fails**:
+1. Verify production build works locally first
+2. Check Dockerfile CMD path matches actual build output
+3. Ensure environment variables are production-ready
+4. Test with local Docker build before CI/CD deployment
+
+This resolution demonstrates the importance of following framework-specific official documentation when community patterns or cross-project adaptations don't work as expected.

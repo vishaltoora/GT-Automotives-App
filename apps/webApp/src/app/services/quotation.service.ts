@@ -1,4 +1,5 @@
 import axios from 'axios';
+import gtLogoImage from '../images-and-logos/logo.png';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -184,7 +185,7 @@ class QuoteService {
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
 
     // GT Logo - using actual logo.png
-    const gtLogo = `<img src="/src/app/images-and-logos/logo.png" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
 
     return `
       <!DOCTYPE html>

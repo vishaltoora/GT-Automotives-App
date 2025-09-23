@@ -224,10 +224,44 @@ jobs:
           exit 1
         fi
 
+    - name: Verify build paths before Docker build
+      run: |
+        echo "🔍 Verifying build paths and Dockerfile consistency..."
+
+        # Build locally to verify paths
+        echo "🔨 Running local build to verify output paths..."
+        yarn install --frozen-lockfile --ignore-engines
+        yarn nx build shared-dto
+        npx nx run server:build:production
+
+        # Check actual build output location
+        echo "📋 Checking build output location..."
+        if [ -f "dist/server/main.js" ]; then
+          echo "✅ Found main.js at dist/server/main.js (Dockerfile CMD path correct)"
+        else
+          echo "❌ main.js not found at dist/server/main.js"
+          echo "🔍 Searching for main.js in build output..."
+          find . -name "main.js" -path "*/dist/*" -ls | grep -v node_modules || echo "No main.js found in any dist directory"
+          exit 1
+        fi
+
+        # Verify Dockerfile CMD matches actual build output
+        DOCKERFILE_CMD=$(grep "CMD.*main.js" Dockerfile | head -1)
+        echo "📋 Dockerfile CMD: $DOCKERFILE_CMD"
+
+        if echo "$DOCKERFILE_CMD" | grep -q "dist/server/main.js"; then
+          echo "✅ Dockerfile CMD path matches build output"
+        else
+          echo "❌ Dockerfile CMD path does NOT match build output"
+          echo "Expected: dist/server/main.js"
+          echo "Found in Dockerfile: $DOCKERFILE_CMD"
+          exit 1
+        fi
+
     - name: Build and push Docker image
       timeout-minutes: 20
       run: |
-        echo "🔨 Building optimized Docker image with multi-stage build..."
+        echo "🔨 Building optimized Docker image with verified paths..."
 
         IMAGE_TAG="container-deploy-${{ needs.validate-build.outputs.build-number }}"
         FULL_IMAGE_NAME="${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:$IMAGE_TAG"
@@ -248,6 +282,17 @@ jobs:
           .
 
         echo "✅ Docker build completed successfully"
+
+        # Verify the built image has the correct file at the expected path
+        echo "🔍 Verifying built image structure..."
+        docker run --rm "$FULL_IMAGE_NAME" ls -la /app/dist/server/main.js || {
+          echo "❌ Built image does not have main.js at expected path"
+          echo "🔍 Container structure:"
+          docker run --rm "$FULL_IMAGE_NAME" find /app -name "main.js" -ls
+          exit 1
+        }
+        echo "✅ Built image verified - main.js exists at correct path"
+
         echo "🚀 Pushing image to registry..."
         docker push "$FULL_IMAGE_NAME"
 
@@ -329,6 +374,7 @@ jobs:
         fi
         
         # Create new container instance with all required environment variables
+        # Fixed environment variables to use correct production Clerk keys (live/live instead of test/live)
         az container create \
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --name ${{ env.CONTAINER_NAME }} \
@@ -344,9 +390,9 @@ jobs:
           --environment-variables \
             DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-            CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
+            CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY_LIVE }}" \
             CLERK_API_URL="${{ secrets.CLERK_API_URL }}" \
-            CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY }}" \
+            CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY_LIVE }}" \
             CLERK_JWKS_URL="${{ secrets.CLERK_JWKS_URL }}" \
             FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
             HOST="0.0.0.0" \

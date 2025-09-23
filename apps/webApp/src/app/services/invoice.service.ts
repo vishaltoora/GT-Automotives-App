@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { PaymentMethod } from '../../enums';
 import { CreateInvoiceDto, InvoiceItemType } from '@gt-automotive/shared-dto';
+import gtLogoImage from '../images-and-logos/logo.png';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -182,7 +183,7 @@ class InvoiceService {
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
 
     // GT Logo - using actual logo.png
-    const gtLogo = `<img src="/src/app/images-and-logos/logo.png" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
 
     return `
       <!DOCTYPE html>
@@ -409,7 +410,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
 
     // GT Logo - using actual logo.png
-    const gtLogo = `<img src="/src/app/images-and-logos/logo.png" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
 
     return `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: #333; padding: 10px; max-width: 800px; margin: 0 auto;">
