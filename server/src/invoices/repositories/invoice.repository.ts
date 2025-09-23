@@ -224,7 +224,7 @@ export class InvoiceRepository extends BaseRepository<
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    
+
     const lastInvoice = await this.prisma.invoice.findFirst({
       where: {
         invoiceNumber: {
@@ -243,5 +243,47 @@ export class InvoiceRepository extends BaseRepository<
     }
 
     return `INV-${year}${month}-${String(sequence).padStart(4, '0')}`;
+  }
+
+  override async delete(id: string): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      // Get invoice with items to restore tire inventory
+      const invoice = await tx.invoice.findUnique({
+        where: { id },
+        include: {
+          items: true,
+        },
+      });
+
+      if (!invoice) {
+        return false;
+      }
+
+      // Restore tire inventory for tire items
+      for (const item of invoice.items) {
+        if (item.itemType === 'TIRE' && item.tireId) {
+          await tx.tire.update({
+            where: { id: item.tireId },
+            data: {
+              quantity: {
+                increment: item.quantity,
+              },
+            },
+          });
+        }
+      }
+
+      // Delete invoice items first (due to foreign key constraints)
+      await tx.invoiceItem.deleteMany({
+        where: { invoiceId: id },
+      });
+
+      // Delete the invoice
+      await tx.invoice.delete({
+        where: { id },
+      });
+
+      return true;
+    });
   }
 }

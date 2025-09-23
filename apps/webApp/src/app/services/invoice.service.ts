@@ -128,10 +128,19 @@ class InvoiceService {
     return response.data;
   }
 
-  async cancelInvoice(id: string): Promise<void> {
-    await axios.delete(`${API_URL}/api/invoices/${id}`, {
-      headers: await this.getHeaders(),
-    });
+  async deleteInvoice(id: string): Promise<void> {
+    console.log('InvoiceService.deleteInvoice called with ID:', id);
+    console.log('Making DELETE request to:', `${API_URL}/api/invoices/${id}`);
+
+    try {
+      const response = await axios.delete(`${API_URL}/api/invoices/${id}`, {
+        headers: await this.getHeaders(),
+      });
+      console.log('Delete request successful, response:', response);
+    } catch (error) {
+      console.error('Delete request failed:', error);
+      throw error;
+    }
   }
 
   async searchInvoices(params: {

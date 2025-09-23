@@ -17,5 +17,6 @@ export declare class InvoiceRepository extends BaseRepository<Invoice, Prisma.In
         status?: InvoiceStatus;
     }): Promise<Invoice[]>;
     generateInvoiceNumber(): Promise<string>;
+    delete(id: string): Promise<boolean>;
 }
 //# sourceMappingURL=invoice.repository.d.ts.map

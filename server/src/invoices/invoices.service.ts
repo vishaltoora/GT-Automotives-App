@@ -209,22 +209,23 @@ export class InvoicesService {
 
   async remove(id: string, userId: string): Promise<void> {
     const invoice = await this.invoiceRepository.findById(id);
-    
+
     if (!invoice) {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
 
-    // Only allow cancellation, not deletion
+    // Cannot delete paid invoices
     if (invoice.status === 'PAID') {
-      throw new BadRequestException('Cannot cancel a paid invoice');
+      throw new BadRequestException('Cannot delete a paid invoice');
     }
 
-    await this.invoiceRepository.updateStatus(id, 'CANCELLED');
+    // Actually delete the invoice and its items
+    await this.invoiceRepository.delete(id);
 
-    // Log the cancellation
+    // Log the deletion
     await this.auditRepository.create({
       userId,
-      action: 'CANCEL_INVOICE',
+      action: 'DELETE_INVOICE',
       entityType: 'invoice',
       entityId: id,
       oldValue: invoice as any,

@@ -22,9 +22,9 @@ import {
   Visibility as ViewIcon,
   Print as PrintIcon,
   Search as SearchIcon,
-  Cancel as CancelIcon,
   Assessment as ReportIcon,
   Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { useAuth } from '../../hooks/useAuth';
@@ -85,22 +85,29 @@ const InvoiceList: React.FC = () => {
   };
 
 
-  const handleCancel = async (invoice: Invoice) => {
+  const handleDelete = async (invoice: Invoice) => {
+    console.log('Delete button clicked for invoice:', invoice.id, 'by user role:', role);
+
     const confirmed = await confirm({
-      title: 'Cancel Invoice',
-      message: `Are you sure you want to cancel invoice ${invoice.invoiceNumber}? This action cannot be undone.`,
-      confirmText: 'Cancel Invoice',
+      title: 'Delete Invoice',
+      message: `Are you sure you want to permanently delete invoice ${invoice.invoiceNumber}? This action cannot be undone and will restore tire inventory.`,
+      confirmText: 'Delete Invoice',
       cancelText: 'Keep Invoice',
       severity: 'error',
       confirmButtonColor: 'error',
     });
-    
+
+    console.log('Confirmation result:', confirmed);
+
     if (confirmed) {
       try {
-        await invoiceService.cancelInvoice(invoice.id);
+        console.log('Calling invoiceService.deleteInvoice with ID:', invoice.id);
+        await invoiceService.deleteInvoice(invoice.id);
+        console.log('Delete API call completed successfully');
         loadInvoices();
       } catch (error) {
-        showApiError(error, 'Failed to cancel invoice');
+        console.error('Delete API call failed:', error);
+        showApiError(error, 'Failed to delete invoice');
       }
     }
   };
@@ -154,6 +161,7 @@ const InvoiceList: React.FC = () => {
   const canCreateInvoice = role === 'staff' || role === 'admin';
   const canManageInvoice = role === 'staff' || role === 'admin';
   const canViewReports = role === 'staff' || role === 'admin';
+  const canDeleteInvoice = role === 'admin';
 
   const getInvoiceActions = (invoice: Invoice): ActionItem[] => {
     const actions: ActionItem[] = [
@@ -183,11 +191,11 @@ const InvoiceList: React.FC = () => {
         color: 'primary',
       },
       {
-        id: 'cancel',
-        label: 'Cancel Invoice',
-        icon: <CancelIcon />,
-        onClick: () => handleCancel(invoice),
-        show: canManageInvoice && invoice.status === 'PENDING',
+        id: 'delete',
+        label: 'Delete Invoice',
+        icon: <DeleteIcon />,
+        onClick: () => handleDelete(invoice),
+        show: canDeleteInvoice && invoice.status !== 'PAID',
         color: 'error',
         dividerAfter: true,
       },

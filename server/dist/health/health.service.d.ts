@@ -9,7 +9,11 @@ export declare class HealthService {
         environment: string;
     }>;
     checkDetailed(): Promise<{
-        database: string;
+        database: {
+            status: string;
+            connected: boolean;
+            error: string | undefined;
+        };
         memory: {
             used: number;
             total: number;

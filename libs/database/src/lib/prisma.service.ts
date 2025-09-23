@@ -14,7 +14,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       this.logger.log('✅ Database connected successfully');
     } catch (error) {
       this.isConnected = false;
-      this.logger.error('❌ Failed to connect to database during startup:', error.message);
+      this.logger.error('❌ Failed to connect to database during startup:', (error as Error).message);
       this.logger.warn('⚠️ Application will continue without database connection');
       this.logger.warn('🔄 Database operations will fail until connection is restored');
       // Don't throw - allow app to start without database
@@ -27,13 +27,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         await this.$disconnect();
         this.logger.log('✅ Database disconnected successfully');
       } catch (error) {
-        this.logger.error('❌ Error disconnecting from database:', error.message);
+        this.logger.error('❌ Error disconnecting from database:', (error as Error).message);
       }
     }
   }
 
   // Override database operations to check connection
-  async $connect() {
+  override async $connect() {
     try {
       await super.$connect();
       this.isConnected = true;
@@ -54,7 +54,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         return {
           status: 'error',
           connected: false,
-          error: error.message
+          error: (error as Error).message
         };
       }
     }

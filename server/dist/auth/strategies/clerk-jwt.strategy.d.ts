@@ -21,8 +21,8 @@ export declare class ClerkJwtStrategy extends ClerkJwtStrategy_base {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            displayName: string;
             description: string | null;
+            displayName: string;
         };
         isActive: true;
     }>;

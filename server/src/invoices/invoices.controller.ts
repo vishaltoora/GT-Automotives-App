@@ -82,6 +82,7 @@ export class InvoicesController {
     @Body() updateInvoiceDto: UpdateInvoiceDto,
     @CurrentUser() user: any,
   ) {
+    console.log(`Controller: PATCH /api/invoices/${id} called by user:`, user?.id, 'with role:', user?.role, 'data:', updateInvoiceDto);
     return this.invoicesService.update(id, updateInvoiceDto, user.id);
   }
 

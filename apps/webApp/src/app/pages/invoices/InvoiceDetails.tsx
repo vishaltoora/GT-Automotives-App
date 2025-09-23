@@ -80,10 +80,10 @@ const InvoiceDetails: React.FC = () => {
     const confirmed = await confirmCancel(`invoice ${invoice.invoiceNumber}`);
     if (confirmed) {
       try {
-        await invoiceService.cancelInvoice(invoice.id);
+        await invoiceService.deleteInvoice(invoice.id);
         loadInvoice();
       } catch (error) {
-        console.error('Error cancelling invoice:', error);
+        console.error('Error deleting invoice:', error);
       }
     }
   };

@@ -230,7 +230,12 @@
       "WebFetch(domain:gt-backend-working.canadacentral.azurecontainer.io)",
       "Bash(gh issue create:*)",
       "WebFetch(domain:4.248.244.174)",
-      "WebFetch(domain:52.237.59.182)"
+      "WebFetch(domain:52.237.59.182)",
+      "Bash(gh run cancel:*)",
+      "WebFetch(domain:gt-automotives-backend-prod.canadacentral.azurecontainer.io)",
+      "Bash(DATABASE_URL=\"postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require\" NODE_ENV=production PORT=3000 HOST=0.0.0.0 node dist/server/main.js)",
+      "Bash(HOST=0.0.0.0 PORT=3001 node -e \"console.log(''HOST:'', process.env.HOST); console.log(''PORT:'', process.env.PORT)\")",
+      "Bash(gt-backend:local)"
     ],
     "deny": [],
     "ask": []
