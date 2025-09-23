@@ -26,9 +26,11 @@ RUN echo "Starting server build..." && \
     npx nx run server:build:production --verbose && \
     exit 1)
 
-# Debug: Verify build output exists
+# Debug: Verify build output exists and find actual location
 RUN echo "Build completed, checking output..." && \
-    ls -la dist/ && ls -la dist/server/ && echo "Build files:" && find dist -name "*.js" | head -10
+    echo "Global dist structure:" && ls -la dist/ && \
+    echo "Server dist structure:" && ls -la server/dist/ && \
+    echo "Server main.js exists:" && ls -la server/dist/main.js
 
 # Create non-root user for security
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \
@@ -43,5 +45,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Run the application (MyPersn pattern - direct execution)
-CMD ["node", "dist/server/main.js"]
+# Run the application (correct path - server/dist/main.js)
+CMD ["node", "server/dist/main.js"]
