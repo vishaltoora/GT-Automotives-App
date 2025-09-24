@@ -201,8 +201,8 @@ jobs:
         mkdir -p backend-deploy/server
         mkdir -p backend-deploy/prisma
         
-        # Copy built server files (webpack has externalized critical dependencies)
-        cp -r server/dist/* backend-deploy/server/
+        # Copy built server files (webpack outputs to dist/server, not server/dist)
+        cp -r dist/server/* backend-deploy/server/
         
         # Copy Prisma schema and migrations
         cp libs/database/src/lib/prisma/schema.prisma backend-deploy/prisma/

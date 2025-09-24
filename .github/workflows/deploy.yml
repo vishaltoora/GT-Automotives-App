@@ -234,10 +234,10 @@ jobs:
         yarn nx build shared-dto
         npx nx run server:build:production
 
-        # Check actual build output location
+        # Check actual build output location (webpack outputs to dist/server/main.js)
         echo "📋 Checking build output location..."
         if [ -f "dist/server/main.js" ]; then
-          echo "✅ Found main.js at dist/server/main.js (Dockerfile CMD path correct)"
+          echo "✅ Found main.js at dist/server/main.js (correct webpack output path)"
         else
           echo "❌ main.js not found at dist/server/main.js"
           echo "🔍 Searching for main.js in build output..."
