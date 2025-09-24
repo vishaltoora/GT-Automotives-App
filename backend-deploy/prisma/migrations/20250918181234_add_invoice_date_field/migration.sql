@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "public"."Invoice" ADD COLUMN     "invoiceDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

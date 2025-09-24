@@ -24,8 +24,8 @@ export declare class JwtStrategy extends JwtStrategy_base {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            description: string | null;
             displayName: string;
+            description: string | null;
         };
         firstName: string | null;
         lastName: string | null;

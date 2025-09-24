@@ -1,16 +1,59 @@
 # Troubleshooting Guide
 
-## Recent Resolutions (September 18, 2025)
+## Recent Resolutions (September 23, 2025)
 
-### Shared-DTO Module Resolution Failure ✅ RESOLVED
+### Local Development Server Startup Failures ✅ RESOLVED
+**Problem:** Local development server fails with path errors:
+```
+Error: Could not find /Users/vishaltoora/projects/gt-automotives-app/dist/server/main.js. Make sure your build succeeded.
+TypeError: Cannot read properties of undefined (reading 'data')
+```
+**Root Cause:** Webpack configuration incompatibility with Nx execution context
+
+**Solution:** Use official `NxAppWebpackPlugin` pattern from Nx documentation:
+
+```javascript
+// server/webpack.config.js (LATEST WORKING VERSION)
+const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
+const { join } = require('path');
+
+module.exports = {
+  output: {
+    path: join(__dirname, '../dist/server'),
+  },
+  devtool: 'source-map',
+  plugins: [
+    new NxAppWebpackPlugin({
+      target: 'node',
+      compiler: 'tsc',
+      main: './src/main.ts',
+      tsConfig: './tsconfig.app.json',
+      assets: ['./src/assets'],
+      optimization: false,
+      outputHashing: 'none',
+      generatePackageJson: true,
+    }),
+  ],
+};
+```
+
+**Verification:**
+```bash
+yarn dev  # Should start both frontend (4200) and backend (3000)
+curl http://localhost:3000/health  # Should return health status
+```
+
+## Historical Issues (September 18, 2025)
+
+### Shared-DTO Module Resolution Failure ✅ SUPERSEDED
 **Problem:** Backend server crashes with module resolution errors:
 ```
 Error: Cannot find module '/path/to/dist/libs/shared-dto'
 TypeError: Reflect.getMetadata is not a function
 ```
-**Root Cause:** The newer `NxAppWebpackPlugin` has compatibility issues with shared libraries in monorepo setups
+**Root Cause:** Previous webpack configuration approach had issues
 
-**Solution:** Switch to MyPersn's proven webpack pattern using `composePlugins(withNx())`:
+**Previous Solution (Now Superseded):** MyPersn pattern using `composePlugins(withNx())`:
 
 ```javascript
 // server/webpack.config.js

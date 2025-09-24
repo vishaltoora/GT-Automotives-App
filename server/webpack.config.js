@@ -1,31 +1,22 @@
-const { composePlugins, withNx } = require('@nx/webpack');
-const path = require('node:path');
+const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
+const { join } = require('path');
 
-// Nx plugins for webpack - MyPersn Pattern
-module.exports = composePlugins(withNx(), (config) => {
-  // Note: This was added by an Nx migration. Webpack builds are required to have a corresponding Webpack config file.
-  // See: https://nx.dev/recipes/webpack/webpack-config-setup
-
-  // Enable inline source maps for debugging
-  config.devtool = 'inline-source-map';
-
-  config.output = {
-    ...config.output,
-    devtoolModuleFilenameTemplate: (info) => {
-      const relativePath = path.relative(process.cwd(), info.absoluteResourcePath);
-      return `webpack:///${relativePath}`;
-    },
-  };
-
-  // Ensure source maps are included
-  config.module = config.module || {};
-  config.module.rules = config.module.rules || [];
-
-  // Only externalize Prisma (not shared-dto - let webpack bundle it)
-  config.externals = {
-    '@prisma/client': 'commonjs @prisma/client',
-    '.prisma/client': 'commonjs .prisma/client',
-  };
-
-  return config;
-});
+// Nx-recommended webpack configuration for server applications
+module.exports = {
+  output: {
+    path: join(__dirname, '../dist/server'),
+  },
+  devtool: 'source-map',
+  plugins: [
+    new NxAppWebpackPlugin({
+      target: 'node',
+      compiler: 'tsc',
+      main: './src/main.ts',
+      tsConfig: './tsconfig.app.json',
+      assets: ['./src/assets'],
+      optimization: false,
+      outputHashing: 'none',
+      generatePackageJson: true,
+    }),
+  ],
+};

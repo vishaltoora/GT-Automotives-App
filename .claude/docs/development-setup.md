@@ -66,8 +66,8 @@ yarn db:seed
 
 ### Development
 ```bash
-# Start both frontend and backend
-yarn dev
+# Start both frontend and backend (RECOMMENDED)
+yarn dev           # Frontend: http://localhost:4200, Backend: http://localhost:3000
 
 # Or start individually:
 yarn dev:web       # Frontend on http://localhost:4200
@@ -77,7 +77,43 @@ yarn dev:server    # Backend on http://localhost:3000
 yarn db:migrate    # Run migrations
 yarn db:seed       # Seed test data
 yarn db:studio     # Open Prisma Studio
+
+# Health check
+curl http://localhost:3000/health  # Verify backend is running
 ```
+
+### Development Troubleshooting (Updated Sept 23, 2025)
+If `yarn dev` fails with path errors, ensure the webpack configuration is correct:
+
+```javascript
+// server/webpack.config.js (CURRENT WORKING VERSION)
+const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
+const { join } = require('path');
+
+module.exports = {
+  output: {
+    path: join(__dirname, '../dist/server'),
+  },
+  devtool: 'source-map',
+  plugins: [
+    new NxAppWebpackPlugin({
+      target: 'node',
+      compiler: 'tsc',
+      main: './src/main.ts',
+      tsConfig: './tsconfig.app.json',
+      assets: ['./src/assets'],
+      optimization: false,
+      outputHashing: 'none',
+      generatePackageJson: true,
+    }),
+  ],
+};
+```
+
+**Common Issues & Solutions:**
+- **Error**: `Cannot find /dist/server/main.js` → Use `NxAppWebpackPlugin` (not `composePlugins`)
+- **Error**: `TypeError: undefined reading 'data'` → Missing Nx execution context
+- **Solution**: Clear cache with `yarn nx reset` and restart `yarn dev`
 
 ### Production
 ```bash

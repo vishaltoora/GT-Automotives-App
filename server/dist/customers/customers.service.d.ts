@@ -10,11 +10,11 @@ export declare class CustomersService {
     constructor(customerRepository: CustomerRepository, auditRepository: AuditRepository, prisma: PrismaService);
     create(createCustomerDto: CreateCustomerDto, createdBy: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -27,11 +27,11 @@ export declare class CustomersService {
         };
         vehicles: {
             id: string;
-            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            make: string;
+            customerId: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -39,11 +39,11 @@ export declare class CustomersService {
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -58,11 +58,11 @@ export declare class CustomersService {
         appointments: ({
             vehicle: {
                 id: string;
-                customerId: string;
                 createdAt: Date;
                 updatedAt: Date;
-                make: string;
+                customerId: string;
                 model: string;
+                make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
@@ -70,13 +70,13 @@ export declare class CustomersService {
             } | null;
         } & {
             id: string;
-            customerId: string;
-            vehicleId: string | null;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
-            notes: string | null;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             scheduledDate: Date;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            vehicleId: string | null;
+            notes: string | null;
             scheduledTime: string;
             duration: number;
             serviceType: string;
@@ -85,11 +85,11 @@ export declare class CustomersService {
         invoices: ({
             vehicle: {
                 id: string;
-                customerId: string;
                 createdAt: Date;
                 updatedAt: Date;
-                make: string;
+                customerId: string;
                 model: string;
+                make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
@@ -97,32 +97,32 @@ export declare class CustomersService {
             } | null;
             items: {
                 id: string;
-                total: import(".prisma/client/runtime/library").Decimal;
                 createdAt: Date;
                 updatedAt: Date;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 description: string;
                 quantity: number;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 unitPrice: import(".prisma/client/runtime/library").Decimal;
-                tireId: string | null;
+                total: import(".prisma/client/runtime/library").Decimal;
                 invoiceId: string;
+                tireId: string | null;
             }[];
         } & {
             id: string;
-            invoiceNumber: string;
+            createdAt: Date;
+            updatedAt: Date;
             customerId: string;
+            total: import(".prisma/client/runtime/library").Decimal;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
             vehicleId: string | null;
             subtotal: import(".prisma/client/runtime/library").Decimal;
             taxRate: import(".prisma/client/runtime/library").Decimal;
             taxAmount: import(".prisma/client/runtime/library").Decimal;
-            total: import(".prisma/client/runtime/library").Decimal;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             notes: string | null;
             invoiceDate: Date;
             createdBy: string;
-            createdAt: Date;
-            updatedAt: Date;
             paidAt: Date | null;
             gstAmount: import(".prisma/client/runtime/library").Decimal | null;
             gstRate: import(".prisma/client/runtime/library").Decimal | null;
@@ -131,22 +131,22 @@ export declare class CustomersService {
         })[];
         vehicles: {
             id: string;
-            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            make: string;
+            customerId: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
         }[];
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -154,11 +154,11 @@ export declare class CustomersService {
     update(id: string, updateCustomerDto: UpdateCustomerDto, userId: string, userRole: string): Promise<{
         vehicles: {
             id: string;
-            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            make: string;
+            customerId: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -166,11 +166,11 @@ export declare class CustomersService {
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
@@ -186,11 +186,11 @@ export declare class CustomersService {
         };
         vehicles: {
             id: string;
-            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            make: string;
+            customerId: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -198,11 +198,11 @@ export declare class CustomersService {
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string | null;
         firstName: string;
         lastName: string;
-        email: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         phone: string | null;
         address: string | null;
         businessName: string | null;
