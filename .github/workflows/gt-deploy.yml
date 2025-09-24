@@ -74,7 +74,7 @@ jobs:
       - name: Download Build Artifacts
         uses: dawidd6/action-download-artifact@v9
         with:
-          workflow: gt-build.yml
+          workflow: GT-Automotive-Build
           run_number: ${{ github.event.inputs.buildNumber }}
           if_no_artifact_found: fail
           path: ./artifacts
