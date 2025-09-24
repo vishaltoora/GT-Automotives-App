@@ -73,11 +73,6 @@ jobs:
         echo "📦 Building shared DTO library..."
         yarn nx build shared-dto
 
-    - name: Build backend with container fixes
-      run: |
-        echo "🖥️ Building backend with container deployment fixes..."
-        yarn build:server
-
     - name: Create frontend deployment package
       run: |
         echo "📦 Creating frontend deployment package..."
@@ -190,18 +185,21 @@ jobs:
         zip -r ../../../${{ steps.build-info.outputs.frontend-artifact }}.zip .
         cd ../../..
 
-    - name: Create backend deployment package with container fixes
+    - name: Build and package backend with container fixes
       run: |
+        echo "🖥️ Building backend with container deployment fixes..."
+        yarn build:server
+
         echo "📦 Creating backend deployment package with container fixes..."
-        
+
         # Clean up any previous builds
         rm -rf backend-deploy
-        
+
         # Create deployment directory structure matching container architecture
         mkdir -p backend-deploy/server
         mkdir -p backend-deploy/prisma
-        
-        # Copy built server files (webpack outputs to dist/server, not server/dist)
+
+        # Copy built server files (webpack outputs to dist/server/, verified to exist)
         cp -r dist/server/* backend-deploy/server/
         
         # Copy Prisma schema and migrations
