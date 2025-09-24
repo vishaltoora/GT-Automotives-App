@@ -185,92 +185,24 @@ jobs:
         zip -r ../../../${{ steps.build-info.outputs.frontend-artifact }}.zip .
         cd ../../..
 
-    - name: Build and package backend with container fixes
+    - name: Prepare source for MyPersn pattern container build
       run: |
-        echo "🖥️ Building backend with container deployment fixes..."
-        yarn build:server
+        echo "🖥️ Preparing source for MyPersn pattern container build..."
+        echo "📦 Using source-based Docker build (no complex artifact packaging needed)"
 
-        echo "📦 Creating backend deployment package with container fixes..."
-
-        # Clean up any previous builds
-        rm -rf backend-deploy
-
-        # Create deployment directory structure matching container architecture
-        mkdir -p backend-deploy/server
-        mkdir -p backend-deploy/prisma
-
-        # Copy built server files (webpack outputs to dist/server/ - verified path)
-        cp -r dist/server/* backend-deploy/server/
-        
-        # Copy Prisma schema and migrations
-        cp libs/database/src/lib/prisma/schema.prisma backend-deploy/prisma/
-        cp -r libs/database/src/lib/prisma/migrations backend-deploy/prisma/ 2>/dev/null || echo "No migrations directory found"
-        
-        # Copy shared libraries temporarily for proper node_modules structure
-        mkdir -p backend-deploy/shared-dto-temp
-        cp -r dist/libs/shared-dto/src/* backend-deploy/shared-dto-temp/
-        cp dist/libs/shared-dto/package.json backend-deploy/shared-dto-package.json
-        
-        # Create production package.json with webpack externalized dependencies
-        cat > backend-deploy/package.json << 'EOF'
-        {
-          "name": "gt-automotives-backend",
-          "version": "${{ steps.build-info.outputs.build-number }}",
-          "description": "GT Automotive Backend API with Container Fixes",
-          "main": "server/main.js",
-          "scripts": {
-            "start": "node server/main.js"
-          },
-          "dependencies": {
-            "@prisma/client": "^5.0.0",
-            "prisma": "^5.0.0"
-          },
-          "engines": {
-            "node": ">=20"
-          }
-        }
-        EOF
-        
-        # Generate Prisma client in deployment package
-        echo "🔧 Generating Prisma client with container-ready structure..."
-        cd backend-deploy
-        
-        # Install dependencies and generate Prisma client
-        npm install --production --no-package-lock
-        npx prisma generate --schema=./prisma/schema.prisma
-        
-        # Create proper node_modules structure for shared libraries (matching container architecture)
-        echo "🔗 Setting up shared library node_modules structure..."
-        mkdir -p ./node_modules/@gt-automotive/shared-dto/dist/
-        cp -r ./shared-dto-temp/* ./node_modules/@gt-automotive/shared-dto/dist/
-        cp ./shared-dto-package.json ./node_modules/@gt-automotive/shared-dto/package.json
-        
-        # Clean up temporary files
-        rm -rf ./shared-dto-temp ./shared-dto-package.json
-        rm -f package-lock.json
-        
-        cd ..
-        
-        # Create build info with container architecture notes
-        cat > backend-deploy/build-info.json << 'EOF'
+        # Create simple build info for tracking
+        cat > build-info.json << 'EOF'
         {
           "buildNumber": "${{ steps.build-info.outputs.build-number }}",
           "commitSha": "${{ github.sha }}",
           "buildDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
           "branch": "${{ github.ref_name }}",
           "workflow": "${{ github.workflow }}",
-          "containerFixes": {
-            "webpackExternals": "Applied for Prisma and shared-dto",
-            "nodeModulesStructure": "Manual creation for shared libraries",
-            "prismaGeneration": "Container-ready with proper externals"
-          }
+          "containerPattern": "MyPersn source-based build with Nx native dependency resolution"
         }
         EOF
-        
-        # Create deployment zip
-        cd backend-deploy
-        zip -r ../${{ steps.build-info.outputs.backend-artifact }}.zip .
-        cd ..
+
+        echo "✅ Source ready for container build with MyPersn pattern"
 
     - name: Upload frontend artifact
       uses: actions/upload-artifact@v4
@@ -279,11 +211,11 @@ jobs:
         path: ${{ steps.build-info.outputs.frontend-artifact }}.zip
         retention-days: 30
 
-    - name: Upload backend artifact
+    - name: Upload build info artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.build-info.outputs.backend-artifact }}
-        path: ${{ steps.build-info.outputs.backend-artifact }}.zip
+        path: build-info.json
         retention-days: 30
 
     - name: Create deployment summary
@@ -296,7 +228,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📦 Artifacts Created" >> $GITHUB_STEP_SUMMARY
         echo "- **Frontend:** \`${{ steps.build-info.outputs.frontend-artifact }}.zip\`" >> $GITHUB_STEP_SUMMARY
-        echo "- **Backend:** \`${{ steps.build-info.outputs.backend-artifact }}.zip\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend:** Source prepared for MyPersn container build" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
         echo "To deploy this build, go to **Actions** → **Deploy to Production** and enter:" >> $GITHUB_STEP_SUMMARY
@@ -307,4 +239,4 @@ jobs:
         echo "✅ Build completed successfully!"
         echo "🏗️ Build Number: ${{ steps.build-info.outputs.build-number }}"
         echo "📦 Frontend Artifact: ${{ steps.build-info.outputs.frontend-artifact }}.zip"
-        echo "📦 Backend Artifact: ${{ steps.build-info.outputs.backend-artifact }}.zip"
+        echo "📦 Backend: Source prepared for MyPersn container build"

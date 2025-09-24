@@ -294,12 +294,30 @@ nx run-many --target=build --all --parallel
 
 **Symptoms**: Builds using outdated files, changes not reflected
 
-**Solution**:
+**Root Causes**:
+- Stale computation cache
+- Incorrect cache inputs configuration
+- Changes to external dependencies not detected
+
+**Solutions**:
 ```bash
 nx reset                   # Clear Nx cache
 rm -rf dist/              # Clear build outputs
 yarn build                # Clean rebuild
+
+# Debug cache issues
+nx build server --verbose  # Show detailed cache information
+nx show cache             # Display cache status
+
+# Temporarily bypass cache
+nx build server --skip-nx-cache
 ```
+
+**Cache Debugging Tips**:
+- Check if inputs are properly configured in `nx.json`
+- Verify that side effects are properly handled
+- Use `--verbose` flag to understand cache behavior
+- Review cache location with `nx show cache`
 
 ### TypeScript Path Mapping Issues
 
@@ -317,48 +335,341 @@ yarn build                # Clean rebuild
 }
 ```
 
-### Webpack Externals Not Working
+### Webpack and Build Issues
 
-**Symptoms**: Large bundle sizes, Prisma/shared-dto bundled incorrectly
+**Webpack Externals Not Working**
 
-**Verify**: Check webpack.config.js externals configuration and that dependencies are properly externalized.
+*Symptoms*: Large bundle sizes, Prisma/shared-dto bundled incorrectly
 
-## Best Practices
+*Solutions*:
+- Check webpack.config.js externals configuration
+- Verify dependencies are properly externalized
+- Use Nx webpack plugin generators to reconfigure: `nx g @nx/webpack:configuration`
 
-### 1. Build Order Dependencies
+**Webpack Plugin Migration Issues**
+
+*Symptoms*: Build failures after Nx updates
+
+*Solutions*:
+```bash
+# Convert to latest Nx webpack plugin format
+nx g @nx/webpack:convert-to-inferred --project=server
+
+# Update webpack plugin configuration
+nx g @nx/webpack:convert-config-to-webpack-plugin --project=server
+```
+
+**Development Server Issues**
+
+*Symptoms*: Hot reload not working, server not starting
+
+*Solutions*:
+```bash
+# Use proper dev-server executor
+nx serve server --executor=@nx/webpack:dev-server
+
+# Check project.json for proper dev-server configuration
+nx show project server
+
+# Reset and restart development server
+nx reset && nx serve server
+```
+
+## Nx Core Concepts and Best Practices
+
+### 1. Task Caching and Performance
+
+**Computation Caching**
+- Nx provides a "sophisticated and battle-tested computation caching system that ensures code is never rebuilt twice"
+- Caching "drastically speeds up your task execution times" and "saves you money on CI/CD costs"
+- Cacheable operations must be "side effect free" - identical inputs always produce identical outputs
+
+**Cache Configuration**:
+```json
+// nx.json
+{
+  "targetDefaults": {
+    "build": { "cache": true },
+    "test": { "cache": true },
+    "lint": { "cache": true }
+  }
+}
+```
+
+**Cache Management**:
+```bash
+# Clear all caches
+nx reset
+
+# Show cache status
+nx show cache
+
+# Skip cache for specific command
+nx build server --skip-nx-cache
+```
+
+### 2. Affected Commands for CI/CD Optimization
+
+**Core Concept**: Run tasks only on projects impacted by code changes
+
+```bash
+# Build only affected projects
+nx affected -t build
+
+# Test only affected projects
+nx affected -t test
+
+# Lint only affected projects
+nx affected -t lint
+
+# Visualize affected projects
+nx graph --affected
+```
+
+**Best Practices**:
+- Set base SHA to the "latest successful commit" on the main branch
+- Configure CI to use appropriate base and head commit references
+- Pair affected commands with remote caching for maximum efficiency
+
+### 3. Project Organization Patterns
+
+**Library Types** (Recommended by Nx):
+- **Feature libraries**: Business logic and features
+- **UI libraries**: Reusable components
+- **Data-access libraries**: API calls and state management
+- **Utility libraries**: Pure functions and helpers
+
+**Code Ownership**:
+- Use CODEOWNERS files for shared code
+- Implement module boundary rules
+- Clear project boundaries for better maintainability
+
+### 4. Build Order Dependencies
 Always build in dependency order:
 1. `shared-dto` (no dependencies)
 2. `database` (may depend on shared-dto)
 3. `server` (depends on both)
 4. `webApp` (depends on shared-dto)
 
-### 2. Container Deployment
+### 5. Dependency Graph and Project Management
+
+**Dependency Visualization**:
+```bash
+# Visual dependency graph
+nx graph
+
+# Show specific project dependencies
+nx show project server
+
+# List all projects
+nx show projects
+```
+
+**Project Structure Considerations**:
+- Project granularity impacts build speed, code boundaries, and developer experience
+- Enable seamless code sharing and atomic changes
+- Maintain consistent development practices across projects
+
+### 6. Container Deployment
 - Use single-stage Dockerfile with pre-built artifacts
 - Generate Prisma client in container environment
 - Manually create node_modules structure for externalized dependencies
 
-### 3. Development Efficiency
+### 7. Development Efficiency
+
+**Performance Optimization**:
 - Use `nx affected` commands when working on large changes
 - Keep Nx cache enabled for faster builds
 - Use `--skip-nx-cache` flag when troubleshooting cache issues
+- Configure remote caching with `npx nx@latest connect` for team cache sharing
 
-### 4. Shared Libraries
+**Task Execution Patterns**:
+```bash
+# Parallel execution for maximum speed
+nx run-many --target=build --all --parallel
+
+# Run specific targets in sequence
+nx run-many --target=build --projects=shared-dto,server
+
+# Use affected for incremental changes
+nx affected:build --base=main
+```
+
+### 8. Shared Libraries and Code Organization
+
+**Shared Library Best Practices**:
 - Always version shared libraries properly
 - Build shared libraries before dependent projects
 - Test shared library changes across all consuming projects
+- Follow Nx library categorization (feature, ui, data-access, utility)
+
+**Code Sharing Patterns**:
+- Enable atomic changes across multiple projects
+- Use TypeScript path mapping for clean imports
+- Maintain clear module boundaries
+- Implement proper dependency injection patterns
+
+## Advanced Nx Features
+
+### 1. Cache Optimization
+
+**Input Configuration**:
+- Configure what's included in cache hash (files, environment variables)
+- Specify output folders where task-generated files are stored
+- Can be configured globally in `nx.json` or per-project
+
+**Remote Caching Benefits**:
+- Share cache between different CI runs
+- Reduce computational overhead across team
+- Minimize unnecessary task executions in distributed environments
+
+### 2. Plugin System
+
+**Automatic Configuration**:
+- Nx plugins automatically infer tasks and configure caching based on configuration files
+- Example: Adding `@nx/vite` automatically detects and configures Vite task caching
+- Plugins provide opinionated defaults while allowing customization
+
+### 3. CI/CD Integration
+
+**GitHub Actions Optimization**:
+```yaml
+# Optimized CI workflow using affected commands
+- name: Build affected projects
+  run: nx affected -t build --base=${{ github.event.before }}
+
+- name: Test affected projects
+  run: nx affected -t test --base=${{ github.event.before }}
+```
+
+**Webpack-Specific CI/CD Patterns**:
+```bash
+# Build specific projects with webpack
+nx build server --configuration=production
+
+# Use affected commands with webpack builds
+nx affected -t build --configuration=production
+
+# Webpack-specific development server
+nx serve server  # Uses dev-server executor
+
+# SSR development server
+nx serve server --executor=@nx/webpack:ssr-dev-server
+```
+
+**Webpack Configuration Management**:
+```bash
+# Add webpack configuration to existing project
+nx g @nx/webpack:configuration --project=server
+
+# Convert existing webpack project to Nx plugin
+nx g @nx/webpack:convert-config-to-webpack-plugin --project=server
+
+# Migrate to inferred configuration
+nx g @nx/webpack:convert-to-inferred --project=server
+```
+
+**Configuration for Dependency Updates**:
+```json
+{
+  "pluginsConfig": {
+    "@nx/js": {
+      "projectsAffectedByDependencyUpdates": "auto"
+    }
+  }
+}
+```
 
 ## Production Checklist
 
+### Build Verification
 - [ ] All projects build successfully (`yarn build`)
 - [ ] Type checking passes (`yarn typecheck`)
 - [ ] Linting passes (`yarn lint`)
 - [ ] Tests pass (`yarn test`)
-- [ ] Prisma client generated (`yarn prisma generate`)
+- [ ] Affected commands work correctly (`nx affected:build`)
+
+### Cache and Performance
+- [ ] Cache configuration verified in `nx.json`
+- [ ] Remote caching connected if using Nx Cloud
+- [ ] Dependency graph validated (`nx graph`)
 - [ ] Build outputs verified at expected paths
+
+### Deployment
+- [ ] Prisma client generated (`yarn prisma generate`)
 - [ ] Container deployment tested locally
 - [ ] Environment variables configured
 - [ ] Database migrations applied
+- [ ] CI/CD pipeline uses affected commands for optimization
+
+## Advanced Troubleshooting
+
+### Affected Commands Not Working
+
+**Symptoms**: Affected commands building/testing too many or too few projects
+
+**Solutions**:
+```bash
+# Check affected graph
+nx graph --affected
+
+# Verify base/head configuration
+nx affected:build --base=origin/main --head=HEAD
+
+# Check .nxignore for excluded files
+cat .nxignore
+```
+
+### Dependency Graph Issues
+
+**Symptoms**: Circular dependencies, incorrect build order
+
+**Solutions**:
+```bash
+# Visualize dependency graph
+nx graph
+
+# Check specific project dependencies
+nx show project server --with-deps
+
+# Identify circular dependencies
+nx graph --focus=server
+```
+
+### Performance Optimization
+
+**Slow Builds**:
+- Enable remote caching: `npx nx@latest connect`
+- Use affected commands: `nx affected:build`
+- Optimize webpack externals configuration
+- Check for unnecessary file inclusions in cache inputs
+
+**Memory Issues**:
+```bash
+# Increase Node.js memory limit
+NODE_OPTIONS="--max-old-space-size=4096" nx build server
+
+# Use parallel execution carefully
+nx run-many --target=build --all --parallel=2
+```
+
+### Plugin and Configuration Issues
+
+**Plugin Compatibility**:
+- Check Nx version compatibility with webpack plugin version
+- Use `nx migrate` for updating plugins consistently
+- Verify plugin configuration in `nx.json`
+
+**Configuration Conflicts**:
+- Check for conflicting executors in `project.json`
+- Verify path mappings in `tsconfig.base.json`
+- Ensure webpack externals align with package.json dependencies
 
 ---
+
+**Last Updated**: September 24, 2025
+**Status**: Comprehensive Nx documentation based on official docs
+**Coverage**: Core concepts, webpack integration, caching, affected commands, troubleshooting
+**Source**: Official Nx documentation (nx.dev) + GT Automotive specific patterns
 
 This reference guide should be updated as the Nx configuration evolves and new patterns emerge during development and deployment.

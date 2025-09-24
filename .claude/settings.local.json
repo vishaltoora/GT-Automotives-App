@@ -236,7 +236,9 @@
       "Bash(DATABASE_URL=\"postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require\" NODE_ENV=production PORT=3000 HOST=0.0.0.0 node dist/server/main.js)",
       "Bash(HOST=0.0.0.0 PORT=3001 node -e \"console.log(''HOST:'', process.env.HOST); console.log(''PORT:'', process.env.PORT)\")",
       "Bash(gt-backend:local)",
-      "WebFetch(domain:clerk.com)"
+      "WebFetch(domain:clerk.com)",
+      "WebFetch(domain:nx.dev)",
+      "WebFetch(domain:docs.nestjs.com)"
     ],
     "deny": [],
     "ask": []
