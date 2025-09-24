@@ -87,6 +87,7 @@ jobs:
           --ports 3000 \
           --cpu 1 \
           --memory 2 \
+          --os-type Linux \
           --environment-variables \
             NODE_ENV=production \
             HOST=0.0.0.0 \
