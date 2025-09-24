@@ -192,6 +192,13 @@ jobs:
 
         echo "📦 Creating backend deployment package with container fixes..."
 
+        # Debug: Check where build files actually ended up
+        echo "🔍 Debugging build output locations..."
+        find . -name "main.js" -path "*/dist/*" | grep -v node_modules || echo "No main.js found in any dist directory"
+        ls -la dist/ 2>/dev/null || echo "No dist directory found"
+        ls -la server/ 2>/dev/null || echo "No server directory found"
+        pwd
+
         # Clean up any previous builds
         rm -rf backend-deploy
 
@@ -199,8 +206,16 @@ jobs:
         mkdir -p backend-deploy/server
         mkdir -p backend-deploy/prisma
 
-        # Copy built server files (webpack outputs to dist/server/, verified to exist)
-        cp -r dist/server/* backend-deploy/server/
+        # Copy built server files - find the correct location dynamically
+        SERVER_MAIN_JS=$(find . -name "main.js" -path "*/dist/*" | grep -v node_modules | head -1)
+        if [ -n "$SERVER_MAIN_JS" ]; then
+          SERVER_DIST_DIR=$(dirname "$SERVER_MAIN_JS")
+          echo "✅ Found server build at: $SERVER_DIST_DIR"
+          cp -r "$SERVER_DIST_DIR"/* backend-deploy/server/
+        else
+          echo "❌ Could not find server main.js file"
+          exit 1
+        fi
         
         # Copy Prisma schema and migrations
         cp libs/database/src/lib/prisma/schema.prisma backend-deploy/prisma/
