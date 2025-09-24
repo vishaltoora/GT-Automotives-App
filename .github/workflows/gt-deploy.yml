@@ -182,11 +182,21 @@ jobs:
         run: |
           echo "🌐 Deploying frontend from pre-built artifact..."
 
+          # Find the frontend zip file
+          FRONTEND_ZIP=$(find ./artifacts -name "frontend-*.zip" -type f | head -1)
+
+          if [ -z "$FRONTEND_ZIP" ]; then
+            echo "❌ Frontend artifact ZIP file not found!"
+            exit 1
+          fi
+
+          echo "📦 Found frontend artifact: $FRONTEND_ZIP"
+
           # Deploy to Azure App Service using pre-built artifact
           az webapp deploy \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --name ${{ env.FRONTEND_APP_NAME }} \
-            --src-path ./artifacts/${{ steps.validate.outputs.frontend-artifact }}/${{ steps.validate.outputs.frontend-artifact }}.zip \
+            --src-path "$FRONTEND_ZIP" \
             --type zip
 
           echo "✅ Frontend deployment completed"
