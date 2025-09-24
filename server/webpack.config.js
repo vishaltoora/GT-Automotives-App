@@ -7,10 +7,11 @@ module.exports = {
     path: join(__dirname, '../dist/server'),
   },
   devtool: 'source-map',
-  // Critical: Webpack externals for Prisma in containers (from container deployment learnings)
+  // Critical: Webpack externals for Prisma and shared-dto in containers (from container deployment learnings)
   externals: {
     '@prisma/client': 'commonjs @prisma/client',
-    '.prisma/client': 'commonjs .prisma/client'
+    '.prisma/client': 'commonjs .prisma/client',
+    '@gt-automotive/shared-dto': 'commonjs @gt-automotive/shared-dto'
   },
   plugins: [
     new NxAppWebpackPlugin({
