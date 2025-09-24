@@ -13,7 +13,7 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
     private prismaService: PrismaService,
     private configService: ConfigService,
   ) {
-    const jwksUrl = configService.get<string>('CLERK_JWKS_URL', 'https://clean-dove-53.clerk.accounts.dev/.well-known/jwks.json');
+    const jwksUrl = configService.get<string>('CLERK_JWKS_URL', 'https://clerk.gt-automotives.com/.well-known/jwks.json');
     
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

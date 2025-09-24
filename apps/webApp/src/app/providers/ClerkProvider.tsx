@@ -54,6 +54,8 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       // DNS verified - use custom domain with SSL certificates
       props.domain = 'clerk.gt-automotives.com';
       props.isSatellite = false;
+      // Critical for cross-device authentication - prevents subdomain cookie leaking
+      props.authorizedParties = ['https://gt-automotives.com', 'https://www.gt-automotives.com'];
     }
 
     return props;
