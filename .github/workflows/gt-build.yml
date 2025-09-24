@@ -23,7 +23,7 @@ jobs:
       docker-image: ${{ steps.build-info.outputs.docker-image }}
 
     steps:
-      - uses: AutoModality/action-clean@v1
+      # Temporarily removed AutoModality/action-clean@v1 due to Docker Hub 401 errors
 
       - uses: actions/checkout@v4
 
