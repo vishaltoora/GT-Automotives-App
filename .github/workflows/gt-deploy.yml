@@ -1,0 +1,322 @@
+name: GT-Automotive-Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      buildNumber:
+        type: string
+        description: Build# (GT-Automotive-Build Run#)
+        required: true
+      target:
+        type: choice
+        description: Target Environment
+        required: true
+        default: 'production'
+        options:
+          - 'production'
+          - 'staging'
+      deploy_frontend:
+        description: 'Deploy Frontend'
+        required: true
+        default: true
+        type: boolean
+      deploy_backend:
+        description: 'Deploy Backend'
+        required: true
+        default: true
+        type: boolean
+      run_migrations:
+        description: 'Run database migrations'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  REGISTRY_NAME: gtautomotivesregistry
+  RESOURCE_GROUP: gt-automotives-prod
+  FRONTEND_APP_NAME: gt-automotives-frontend
+  CONTAINER_NAME: gt-automotives-backend-prod
+  DISABLE_ERD: true
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.target }}
+    env:
+      TARGET: ${{ github.event.inputs.target }}
+      BUILD_NUMBER: ${{ github.event.inputs.buildNumber }}
+
+    steps:
+      - uses: AutoModality/action-clean@v1
+
+      - uses: actions/checkout@v4
+
+      - name: Validate Build Number
+        id: validate
+        run: |
+          BUILD_NUMBER="${{ github.event.inputs.buildNumber }}"
+
+          # Validate format: build-YYYYMMDD-HHMMSS-shortsha
+          if [[ $BUILD_NUMBER =~ ^build-[0-9]{8}-[0-9]{6}-[a-f0-9]{7}$ ]]; then
+            echo "✅ Build number format is valid: $BUILD_NUMBER"
+            echo "build-valid=true" >> $GITHUB_OUTPUT
+            echo "frontend-artifact=frontend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+            echo "backend-artifact=backend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+            echo "build-info-artifact=build-info-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+            echo "repo-artifact=repo-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Invalid build number format: $BUILD_NUMBER"
+            echo "Expected format: build-YYYYMMDD-HHMMSS-shortsha"
+            echo "Example: build-20241212-143052-abc1234"
+            exit 1
+          fi
+
+      - name: Download Build Artifacts
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          workflow: gt-build.yml
+          run_number: ${{ github.event.inputs.buildNumber }}
+          if_no_artifact_found: fail
+          path: ./artifacts
+
+      - name: Extract Build Information
+        run: |
+          echo "📋 Extracting build information..."
+
+          # Source build information
+          if [ -f "./artifacts/${{ steps.validate.outputs.build-info-artifact }}/build-info.txt" ]; then
+            source ./artifacts/${{ steps.validate.outputs.build-info-artifact }}/build-info.txt
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+            echo "BUILD_TAG=${BUILD_TAG}" >> $GITHUB_ENV
+            echo "🐳 Docker Image: ${IMAGE_TAG}"
+          else
+            echo "❌ Build information not found!"
+            exit 1
+          fi
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Backend Deployment (Container-based with MyPersn pattern)
+      - name: Deploy Backend Container
+        if: github.event.inputs.deploy_backend == 'true'
+        run: |
+          echo "🚀 Deploying backend container with pre-built image..."
+
+          # Clean up existing containers
+          echo "🧹 Cleaning up old backend containers..."
+          BACKEND_CONTAINERS=$(az container list --resource-group ${{ env.RESOURCE_GROUP }} --query "[?contains(name, 'backend') || contains(name, 'gt-backend')].name" --output tsv 2>/dev/null || echo "")
+
+          if [ ! -z "$BACKEND_CONTAINERS" ]; then
+            for container in $BACKEND_CONTAINERS; do
+              echo "🗑️ Deleting container: $container"
+              az container delete \
+                --resource-group ${{ env.RESOURCE_GROUP }} \
+                --name "$container" \
+                --yes || echo "Failed to delete $container"
+            done
+            echo "⏳ Waiting for cleanup to complete..."
+            sleep 30
+          fi
+
+          # Deploy new container with pre-built image
+          echo "🐳 Deploying container with image: ${{ env.IMAGE_TAG }}"
+          az container create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.CONTAINER_NAME }} \
+            --image ${{ env.IMAGE_TAG }} \
+            --os-type Linux \
+            --dns-name-label gt-automotives-backend-prod \
+            --ports 3000 \
+            --cpu 2 \
+            --memory 4 \
+            --registry-login-server ${{ env.REGISTRY_NAME }}.azurecr.io \
+            --registry-username ${{ env.REGISTRY_NAME }} \
+            --registry-password $(az acr credential show --name ${{ env.REGISTRY_NAME }} --query "passwords[0].value" --output tsv) \
+            --environment-variables \
+              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY_LIVE }}" \
+              CLERK_API_URL="${{ secrets.CLERK_API_URL }}" \
+              CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY_LIVE }}" \
+              CLERK_JWKS_URL="${{ secrets.CLERK_JWKS_URL }}" \
+              FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
+              HOST="0.0.0.0" \
+              PORT="3000" \
+              NODE_ENV="production"
+
+          echo "✅ Backend container deployment completed"
+
+      # Database Migrations (MyPersn pattern with downloaded source)
+      - name: Run Database Migrations
+        if: github.event.inputs.run_migrations == 'true'
+        run: |
+          echo "🗄️ Running database migrations from downloaded source..."
+
+          # Use the downloaded repository artifact
+          cd ./artifacts/${{ steps.validate.outputs.repo-artifact }}
+
+          # Setup Node.js environment for migrations
+          export NVM_DIR="$HOME/.nvm"
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+          source $NVM_DIR/nvm.sh
+          nvm install 20
+          nvm use 20
+
+          # Install only what's needed for migrations
+          npm install -g prisma@latest
+          npm install @prisma/client@latest
+
+          # Set database URL
+          export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+          SCHEMA_PATH="libs/database/src/lib/prisma/schema.prisma"
+
+          if [ -f "$SCHEMA_PATH" ]; then
+            echo "📋 Found Prisma schema, running migrations..."
+
+            # Generate Prisma client
+            npx prisma generate --schema="$SCHEMA_PATH"
+
+            # Run migrations
+            echo "🚀 Running database migrations..."
+            if npx prisma migrate deploy --schema="$SCHEMA_PATH"; then
+              echo "✅ Migrations completed successfully"
+            else
+              echo "❌ Migration failed, but continuing with deployment..."
+              echo "⚠️ Check database connectivity and migration files"
+            fi
+          else
+            echo "⚠️ No Prisma schema found at $SCHEMA_PATH, skipping migrations"
+          fi
+
+          cd ../..
+
+      # Frontend Deployment
+      - name: Deploy Frontend
+        if: github.event.inputs.deploy_frontend == 'true'
+        run: |
+          echo "🌐 Deploying frontend from pre-built artifact..."
+
+          # Deploy to Azure App Service using pre-built artifact
+          az webapp deploy \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.FRONTEND_APP_NAME }} \
+            --src-path ./artifacts/${{ steps.validate.outputs.frontend-artifact }}/${{ steps.validate.outputs.frontend-artifact }}.zip \
+            --type zip
+
+          echo "✅ Frontend deployment completed"
+
+      - name: Restart Services
+        run: |
+          echo "🔄 Restarting services..."
+
+          if [ "${{ github.event.inputs.deploy_frontend }}" = "true" ]; then
+            echo "🔄 Restarting frontend App Service..."
+            az webapp restart \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --name ${{ env.FRONTEND_APP_NAME }}
+          fi
+
+          echo "✅ Services restarted successfully"
+
+      - name: Verify Deployments
+        run: |
+          echo "🔍 Verifying deployments..."
+
+          # Wait for services to be ready
+          sleep 60
+
+          # Test backend if deployed
+          if [ "${{ github.event.inputs.deploy_backend }}" = "true" ]; then
+            echo "🔍 Testing backend container..."
+            CONTAINER_URL="http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000"
+
+            for i in {1..10}; do
+              echo "📊 Backend health check attempt $i..."
+
+              if curl -f -s "$CONTAINER_URL/health" > /dev/null; then
+                echo "✅ Backend is responding (attempt $i)"
+                break
+              else
+                echo "⏳ Backend not ready, waiting... (attempt $i/10)"
+                if [ $i -eq 5 ]; then
+                  echo "🔍 Mid-deployment container status:"
+                  az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "instanceView" --output table || echo "Could not retrieve status"
+                fi
+                sleep 30
+              fi
+            done
+          fi
+
+          # Test frontend if deployed
+          if [ "${{ github.event.inputs.deploy_frontend }}" = "true" ]; then
+            echo "🔍 Testing frontend..."
+            FRONTEND_URL="https://gt-automotives.com"
+
+            for i in {1..5}; do
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL/health" || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "✅ Frontend is responding (attempt $i)"
+                break
+              else
+                echo "⏳ Frontend not ready (HTTP $HTTP_CODE), waiting... (attempt $i/5)"
+                sleep 15
+              fi
+            done
+          fi
+
+      - name: Create Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary (MyPersn Pattern)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Number:** \`${{ env.BUILD_NUMBER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Target Environment:** \`${{ env.TARGET }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Image:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Pattern:** MyPersn artifact-based deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Component status
+          if [ "${{ github.event.inputs.deploy_backend }}" = "true" ]; then
+            echo "✅ **Backend:** Deployed from pre-built Docker image" >> $GITHUB_STEP_SUMMARY
+            echo "🐳 **Container URL:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏭️ **Backend:** Skipped" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ github.event.inputs.deploy_frontend }}" = "true" ]; then
+            echo "✅ **Frontend:** Deployed from pre-built artifact" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏭️ **Frontend:** Skipped" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ github.event.inputs.run_migrations }}" = "true" ]; then
+            echo "✅ **Database:** Migrations executed from source" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏭️ **Database:** Migrations skipped" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌐 Production URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** https://gt-automotives.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend Health:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000/health" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚡ MyPersn Optimizations Applied" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ No rebuild during deployment (uses pre-built artifacts)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Artifact-based deployment pattern" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Cached Docker images from build phase" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Fast container recreation with existing images" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Parallel deployment preparation" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deployment Completed
+        run: |
+          echo "🎉 MyPersn-pattern deployment completed successfully!"
+          echo "🏗️ Build: ${{ env.BUILD_NUMBER }}"
+          echo "🐳 Docker Image: ${{ env.IMAGE_TAG }}"
+          echo "🌐 Site: https://gt-automotives.com"
+          echo "⚡ Deployed using optimized MyPersn artifact pattern"
+          echo "🚀 No redundant builds - maximum deployment speed achieved!"

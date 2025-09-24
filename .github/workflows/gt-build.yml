@@ -1,0 +1,306 @@
+name: GT-Automotive-Build
+on:
+  push:
+    branches:
+      - 'main'
+      - 'release/*'
+      - 'buildtest/*'
+  workflow_dispatch:
+
+env:
+  REGISTRY_NAME: gtautomotivesregistry
+  RESOURCE_GROUP: gt-automotives-prod
+  DISABLE_ERD: true
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    outputs:
+      build-number: ${{ steps.build-info.outputs.build-number }}
+      frontend-artifact: ${{ steps.build-info.outputs.frontend-artifact }}
+      backend-artifact: ${{ steps.build-info.outputs.backend-artifact }}
+      docker-image: ${{ steps.build-info.outputs.docker-image }}
+
+    steps:
+      - uses: AutoModality/action-clean@v1
+
+      - uses: actions/checkout@v4
+
+      - name: Generate build info
+        id: build-info
+        run: |
+          BUILD_NUMBER="build-$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA:0:7}"
+          echo "build-number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "frontend-artifact=frontend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "backend-artifact=backend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "docker-image=${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "🏗️ Build Number: $BUILD_NUMBER"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      # Advanced caching strategy (MyPersn pattern)
+      - name: Cache dependencies and build outputs
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.yarn/cache
+            node_modules
+            .nx/cache
+            apps/webApp/dist
+            dist/libs/shared-dto
+          key: ${{ runner.os }}-gt-deps-${{ hashFiles('yarn.lock', 'package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-gt-deps-
+            ${{ runner.os }}-gt-
+
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing dependencies with caching..."
+          yarn install --frozen-lockfile --ignore-engines --network-timeout 100000
+
+      - name: Generate Prisma Client
+        run: |
+          echo "🔧 Generating Prisma client..."
+          yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
+
+      # Parallel linting and type checking
+      - name: Code Quality Checks
+        run: |
+          echo "🔍 Running parallel code quality checks..."
+          yarn lint &
+          LINT_PID=$!
+          yarn typecheck &
+          TYPE_PID=$!
+
+          # Wait for both processes
+          wait $LINT_PID
+          LINT_EXIT=$?
+          wait $TYPE_PID
+          TYPE_EXIT=$?
+
+          if [ $LINT_EXIT -ne 0 ] || [ $TYPE_EXIT -ne 0 ]; then
+            echo "❌ Code quality checks failed"
+            exit 1
+          fi
+          echo "✅ Code quality checks passed"
+
+      # Tests (commented out but ready to enable)
+      # - name: Run Tests
+      #   run: |
+      #     echo "🧪 Running tests..."
+      #     yarn test
+
+      # Parallel frontend and shared library builds
+      - name: Build Frontend and Shared Libraries
+        run: |
+          echo "🌐 Building frontend and shared libraries in parallel..."
+          yarn build:web &
+          FRONTEND_PID=$!
+          yarn nx build shared-dto &
+          SHARED_PID=$!
+
+          # Wait for both builds
+          wait $FRONTEND_PID
+          FRONTEND_EXIT=$?
+          wait $SHARED_PID
+          SHARED_EXIT=$?
+
+          if [ $FRONTEND_EXIT -ne 0 ] || [ $SHARED_EXIT -ne 0 ]; then
+            echo "❌ Build failed"
+            exit 1
+          fi
+          echo "✅ Frontend and shared libraries built successfully"
+        env:
+          VITE_API_URL: https://gt-automotives.com
+          VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
+          NODE_ENV: production
+
+      - name: Prepare Frontend Artifact
+        run: |
+          echo "📦 Creating frontend deployment package..."
+          cd apps/webApp/dist
+
+          # Create Node.js server with API proxy (optimized)
+          cat > server.js << 'EOF'
+          const express = require('express');
+          const { createProxyMiddleware } = require('http-proxy-middleware');
+          const path = require('path');
+          const app = express();
+          const PORT = process.env.PORT || 8080;
+
+          // Backend configuration - Using production container deployment
+          const BACKEND_URL = 'http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000';
+
+          // CORS and proxy middleware
+          app.use('/api', (req, res, next) => {
+            res.header('Access-Control-Allow-Origin', 'https://gt-automotives.com');
+            res.header('Access-Control-Allow-Credentials', 'true');
+            res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+            if (req.method === 'OPTIONS') {
+              res.sendStatus(200);
+            } else {
+              next();
+            }
+          });
+
+          app.use('/api', createProxyMiddleware({
+            target: BACKEND_URL,
+            changeOrigin: true,
+            timeout: 30000,
+            onError: (err, req, res) => {
+              console.error('Proxy error:', err.message);
+              res.status(500).json({ error: 'Backend service unavailable', message: err.message });
+            }
+          }));
+
+          // Health check
+          app.get('/health', (req, res) => {
+            res.json({
+              status: 'healthy',
+              service: 'gt-automotive-web-app',
+              backend: BACKEND_URL,
+              build: '${{ steps.build-info.outputs.build-number }}',
+              timestamp: new Date().toISOString()
+            });
+          });
+
+          app.use(express.static(__dirname));
+          app.get('*', (req, res) => {
+            res.sendFile(path.join(__dirname, 'index.html'));
+          });
+
+          app.listen(PORT, () => {
+            console.log(`🚀 GT Automotive Web App running on port ${PORT}`);
+            console.log(`📡 Proxying API requests to: ${BACKEND_URL}`);
+            console.log(`🏗️ Build: ${{ steps.build-info.outputs.build-number }}`);
+          });
+          EOF
+
+          # Create optimized package.json
+          cat > package.json << 'EOF'
+          {
+            "name": "gt-automotives-frontend",
+            "version": "${{ steps.build-info.outputs.build-number }}",
+            "description": "GT Automotive Web App with API Proxy",
+            "scripts": {
+              "start": "node server.js"
+            },
+            "dependencies": {
+              "express": "^4.18.2",
+              "http-proxy-middleware": "^2.0.6"
+            },
+            "engines": {
+              "node": ">=20"
+            }
+          }
+          EOF
+
+          # Create deployment zip
+          zip -r ../../../${{ steps.build-info.outputs.frontend-artifact }}.zip .
+          cd ../../..
+
+      - name: Login to Azure Container Registry
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR Login
+        run: |
+          echo "🔐 Logging in to Azure Container Registry..."
+          az acr login --name ${{ env.REGISTRY_NAME }}
+
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6
+
+      # Optimized Docker build with caching
+      - name: Build, Tag & Push Docker image to Azure Container Registry
+        env:
+          DOCKER_IMAGE: ${{ steps.build-info.outputs.docker-image }}
+          BUILD_TAG: ${{ steps.branch-name.outputs.current_branch }}-${{ github.run_number }}
+        run: |
+          echo "🐳 Building optimized Docker image with caching..."
+
+          # Enable BuildKit for better performance
+          export DOCKER_BUILDKIT=1
+
+          # Build with cache optimization
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
+            --progress=plain \
+            -t ${{ env.DOCKER_IMAGE }} \
+            -t ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
+            .
+
+          echo "📤 Pushing images to registry..."
+          docker push ${{ env.DOCKER_IMAGE }}
+          docker push ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache
+
+          echo "IMAGE_TAG=${{ env.DOCKER_IMAGE }}" >> build-info.txt
+          echo "BUILD_TAG=$BUILD_TAG" >> build-info.txt
+          echo "BUILD_NUMBER=${{ steps.build-info.outputs.build-number }}" >> build-info.txt
+
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build-info.outputs.frontend-artifact }}
+          path: ${{ steps.build-info.outputs.frontend-artifact }}.zip
+          retention-days: 30
+
+      - name: Upload Build Information
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info-${{ steps.build-info.outputs.build-number }}
+          path: build-info.txt
+          if-no-files-found: error
+
+      - name: Upload Repository Artifact (for deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-${{ steps.build-info.outputs.build-number }}
+          path: |
+            ./
+            !node_modules
+            !apps/webApp/dist
+            !.nx/cache
+          if-no-files-found: error
+          include-hidden-files: true
+
+      - name: Create Build Summary
+        run: |
+          echo "## 🚀 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Number:** \`${{ steps.build-info.outputs.build-number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Image:** \`${{ steps.build-info.outputs.docker-image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts Created" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** \`${{ steps.build-info.outputs.frontend-artifact }}.zip\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend:** Docker image pushed to ACR" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository:** Source code for migrations" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "To deploy this build, go to **Actions** → **GT-Automotive-Deploy** and enter:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** \`${{ steps.build-info.outputs.build-number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚡ Performance Optimizations Applied" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Advanced dependency caching" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Parallel builds (frontend + shared libraries)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Parallel code quality checks" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Docker BuildKit with layer caching" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Optimized artifact packaging" >> $GITHUB_STEP_SUMMARY
+
+      - name: Build Completed
+        run: |
+          echo "✅ Optimized build completed successfully!"
+          echo "🏗️ Build Number: ${{ steps.build-info.outputs.build-number }}"
+          echo "🐳 Docker Image: ${{ steps.build-info.outputs.docker-image }}"
+          echo "📦 Frontend Artifact: ${{ steps.build-info.outputs.frontend-artifact }}.zip"
+          echo "⚡ MyPersn optimization patterns applied"
