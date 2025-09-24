@@ -56,6 +56,13 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       props.isSatellite = false;
       // Critical for cross-device authentication - prevents subdomain cookie leaking
       props.authorizedParties = ['https://gt-automotives.com', 'https://www.gt-automotives.com'];
+
+      // Enhanced mobile device support
+      props.allowedRedirectOrigins = ['https://gt-automotives.com', 'https://www.gt-automotives.com'];
+      props.telemetry = false; // Reduce mobile network overhead
+
+      // Mobile-friendly session configuration
+      props.signInMode = 'modal'; // Better mobile UX
     }
 
     return props;
