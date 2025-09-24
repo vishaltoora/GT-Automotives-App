@@ -28,9 +28,10 @@ USER nodejs
 # Expose port
 EXPOSE 3000
 
-# Health check for container monitoring
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+# Health check for container monitoring (Azure best practice: 40s start-period for Node.js)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Run the application (correct path for Nx build output - dist/server/main.js)
-CMD ["node", "dist/server/main.js"]
+# Run the application (MyPersn pattern - change to dist/server directory first)
+WORKDIR /app/dist/server
+CMD ["node", "main.js"]
