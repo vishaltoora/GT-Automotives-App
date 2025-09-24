@@ -4,7 +4,7 @@ on:
     inputs:
       buildNumber:
         type: string
-        description: Build# (GT-Automotive-Build Run#)
+        description: Build# (GT-Automotive-Build Run Number, e.g., 1, 2, 3)
         required: true
       target:
         type: choice
@@ -51,32 +51,11 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Validate Build Number
-        id: validate
-        run: |
-          BUILD_NUMBER="${{ github.event.inputs.buildNumber }}"
-
-          # Validate format: build-YYYYMMDD-HHMMSS-shortsha
-          if [[ $BUILD_NUMBER =~ ^build-[0-9]{8}-[0-9]{6}-[a-f0-9]{7}$ ]]; then
-            echo "✅ Build number format is valid: $BUILD_NUMBER"
-            echo "build-valid=true" >> $GITHUB_OUTPUT
-            echo "frontend-artifact=frontend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
-            echo "backend-artifact=backend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
-            echo "build-info-artifact=build-info-$BUILD_NUMBER" >> $GITHUB_OUTPUT
-            echo "repo-artifact=repo-$BUILD_NUMBER" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Invalid build number format: $BUILD_NUMBER"
-            echo "Expected format: build-YYYYMMDD-HHMMSS-shortsha"
-            echo "Example: build-20241212-143052-abc1234"
-            exit 1
-          fi
-
       - name: Download Build Artifacts
         uses: dawidd6/action-download-artifact@v9
         with:
           workflow: gt-build.yml
-          name: 'frontend-${{ github.event.inputs.buildNumber }}|build-info-${{ github.event.inputs.buildNumber }}|repo-${{ github.event.inputs.buildNumber }}'
-          name_is_regexp: true
+          run_number: ${{ github.event.inputs.buildNumber }}
           workflow_conclusion: success
           if_no_artifact_found: fail
           path: ./artifacts
@@ -85,9 +64,11 @@ jobs:
         run: |
           echo "📋 Extracting build information..."
 
-          # Source build information
-          if [ -f "./artifacts/${{ steps.validate.outputs.build-info-artifact }}/build-info.txt" ]; then
-            source ./artifacts/${{ steps.validate.outputs.build-info-artifact }}/build-info.txt
+          # Find and source build information from any build-info artifact
+          BUILD_INFO_FILE=$(find ./artifacts -name "build-info.txt" -type f | head -1)
+
+          if [ -f "$BUILD_INFO_FILE" ]; then
+            source "$BUILD_INFO_FILE"
             echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
             echo "BUILD_TAG=${BUILD_TAG}" >> $GITHUB_ENV
             echo "🐳 Docker Image: ${IMAGE_TAG}"
