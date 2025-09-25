@@ -51,10 +51,8 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
     const isProductionKey = publishableKey?.startsWith('pk_live_');
 
     if (isProduction && isProductionKey && publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
-      // TEMPORARY FIX: Use Clerk's default domain instead of custom domain
-      // The custom domain appears to have verification/cookie issues across devices
-      const instanceId = 'clean-dove-53';
-      props.domain = `${instanceId}.clerk.accounts.dev`;
+      // Production configuration with custom domain
+      props.domain = 'clerk.gt-automotives.com';
 
       // Disable satellite mode and set proper origins
       props.isSatellite = false;
@@ -62,7 +60,7 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       props.allowedRedirectOrigins = ['https://gt-automotives.com', 'https://www.gt-automotives.com'];
 
       // Add debugging
-      console.log('[Clerk Config] Using domain:', props.domain);
+      console.log('[Clerk Config] Using custom domain:', props.domain);
       console.log('[Clerk Config] Production mode:', isProduction);
       console.log('[Clerk Config] User Agent:', typeof window !== 'undefined' ? navigator.userAgent : 'SSR');
     }
