@@ -1,32 +1,32 @@
-const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
-const { join } = require('path');
+const { composePlugins, withNx } = require('@nx/webpack');
+const path = require('node:path');
 
-// Hybrid approach: Use NxAppWebpackPlugin for proper TypeScript compilation
-// but with simplified externals configuration (MyPersn-inspired)
-module.exports = {
-  output: {
-    path: join(__dirname, '../dist/server'),
-  },
-  devtool: 'source-map',
+// Nx plugins for webpack - MyPersn Pattern (WORKING CONFIGURATION)
+module.exports = composePlugins(withNx(), (config) => {
+  // Note: This was added by an Nx migration. Webpack builds are required to have a corresponding Webpack config file.
+  // See: https://nx.dev/recipes/webpack/webpack-config-setup
 
-  // Critical: Webpack externals for shared libraries and Prisma (from MyPersn pattern)
-  externals: {
+  // Enable inline source maps for debugging
+  config.devtool = 'inline-source-map';
+
+  config.output = {
+    ...config.output,
+    devtoolModuleFilenameTemplate: (info) => {
+      const relativePath = path.relative(process.cwd(), info.absoluteResourcePath);
+      return `webpack:///${relativePath}`;
+    },
+  };
+
+  // Ensure source maps are included
+  config.module = config.module || {};
+  config.module.rules = config.module.rules || [];
+
+  // CRITICAL: Only externalize Prisma (not shared-dto - let webpack bundle it)
+  // This is what makes the working build work!
+  config.externals = {
     '@prisma/client': 'commonjs @prisma/client',
     '.prisma/client': 'commonjs .prisma/client',
-    '@gt-automotive/shared-dto': 'commonjs @gt-automotive/shared-dto',
-  },
+  };
 
-  plugins: [
-    new NxAppWebpackPlugin({
-      target: 'node',
-      compiler: 'tsc',
-      main: './src/main.ts',
-      tsConfig: './tsconfig.app.json',
-      assets: ['./src/assets'],
-      optimization: false,
-      outputHashing: 'none',
-      // Enable package.json generation for better container deployment
-      generatePackageJson: true,
-    }),
-  ],
-};
+  return config;
+});
