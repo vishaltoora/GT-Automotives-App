@@ -229,11 +229,12 @@ jobs:
           # Enable BuildKit for better performance
           export DOCKER_BUILDKIT=1
 
-          # Build with cache optimization
+          # Build with simple Dockerfile (single-stage, more reliable)
           docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
             --progress=plain \
+            -f Dockerfile.simple \
             -t ${{ env.DOCKER_IMAGE }} \
             -t ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
             .

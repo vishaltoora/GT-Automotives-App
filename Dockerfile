@@ -22,8 +22,14 @@ RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 # Disable Nx daemon for Docker builds
 ENV NX_DAEMON=false
 
+# Clear any existing builds
+RUN rm -rf dist/
+
 # Build shared libraries first (Nx dependency order)
 RUN yarn nx build shared-dto --skip-nx-cache
+
+# Verify shared-dto build output
+RUN ls -la dist/libs/shared-dto/ && ls -la dist/libs/shared-dto/src/
 
 # Build server (production mode is default for server:build)
 RUN yarn nx build server --skip-nx-cache
