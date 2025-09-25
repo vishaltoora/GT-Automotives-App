@@ -34,14 +34,6 @@ RUN ls -la dist/libs/shared-dto/ && ls -la dist/libs/shared-dto/src/
 # Build server (production mode is default for server:build)
 RUN yarn nx build server --skip-nx-cache
 
-# Debug: Verify server build output structure
-RUN echo "Debugging server build output structure:" && \
-    ls -la dist/ && \
-    echo "Contents of dist/server:" && \
-    ls -la dist/server/ && \
-    echo "Size of main.js:" && \
-    du -h dist/server/main.js
-
 # Stage 2: Production
 FROM node:20-slim AS production
 
