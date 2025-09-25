@@ -635,3 +635,331 @@ ls -la ../dist/server/  # Should show main.js if config is correct
 4. Test with local Docker build before CI/CD deployment
 
 This resolution demonstrates the importance of following framework-specific official documentation when community patterns or cross-project adaptations don't work as expected.
+
+## 🆕 Critical Discovery: Azure Container DNS Name Requirements (Sept 24, 2025)
+
+### Issue: Frontend Loading Page - Missing Standard Backend DNS
+
+After successfully deploying both backend and frontend, the production website (https://gt-automotives.com) was stuck on a loading page despite both services appearing to be operational.
+
+### Root Cause: Missing DNS Name Label in Container Deployment
+
+**Problem**: Backend container was created without a `--dns-name-label` parameter, resulting in only an IP address instead of the expected FQDN.
+
+**Container Creation (Broken)**:
+```bash
+az container create --name gt-automotives-backend-prod \
+  # ... other parameters
+  # ❌ Missing: --dns-name-label gt-automotives-backend-prod
+```
+
+**Result**:
+- ✅ Container running: `4.204.151.26:3000`
+- ❌ No FQDN: `null`
+- ❌ Frontend reverse proxy couldn't connect
+
+### The Standard Backend Naming Convention
+
+**Expected Standard**: `gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000`
+
+**Fixed Container Creation**:
+```bash
+az container create --name gt-automotives-backend-prod \
+  --dns-name-label gt-automotives-backend-prod \  # ✅ Critical addition
+  # ... other parameters
+```
+
+**Result**:
+- ✅ Container running: `4.248.235.42:3000`
+- ✅ Standard FQDN: `gt-automotives-backend-prod.canadacentral.azurecontainer.io`
+- ✅ Frontend reverse proxy connects successfully
+
+### Frontend Reverse Proxy Architecture
+
+The GT Automotive application uses a **reverse proxy pattern** where:
+
+1. **Frontend**: https://gt-automotives.com (Azure Web App)
+2. **Reverse Proxy**: Built-in Express server proxies `/api/*` requests
+3. **Backend Target**: Standard FQDN `http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000`
+
+**Critical Dependency**: The reverse proxy expects a **consistent, predictable DNS name** - not a changing IP address.
+
+### Container Networking Principle for Frontend Integration
+
+> **"Always use --dns-name-label for Azure Container Instances that need to be accessed by other services"**
+
+**Why**:
+- IP addresses change with each container deployment
+- Frontend reverse proxy configurations expect stable DNS names
+- Standard naming conventions improve maintainability and debugging
+
+### Resolution Timeline
+
+1. **Initial Issue**: Frontend loading page after backend deployment
+2. **Investigation**: Backend container healthy but no FQDN assigned
+3. **Root Cause**: Missing `--dns-name-label` parameter in container creation
+4. **Solution**: Recreated container with proper DNS name label
+5. **Verification**: Frontend immediately connected and worked properly
+
+### Critical Commands for Standard Container Deployment
+
+**Always Include DNS Name Label**:
+```bash
+az container create \
+  --resource-group gt-automotives-prod \
+  --name gt-automotives-backend-prod \
+  --dns-name-label gt-automotives-backend-prod \
+  --image gtautomotivesregistry.azurecr.io/gt-backend:latest \
+  # ... other parameters
+```
+
+**Verification Commands**:
+```bash
+# Check FQDN is assigned
+az container show --name gt-automotives-backend-prod \
+  --resource-group gt-automotives-prod \
+  --query "ipAddress.fqdn" --output tsv
+
+# Test standard endpoint
+curl -s http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000/health
+```
+
+### Integration Testing Checklist
+
+When deploying backend containers for GT Automotive:
+
+1. ✅ **Standard DNS Name**: Use `--dns-name-label gt-automotives-backend-prod`
+2. ✅ **Health Endpoint**: Verify `/health` responds via FQDN
+3. ✅ **Frontend Connection**: Test https://gt-automotives.com loads properly
+4. ✅ **API Proxy**: Verify `/api/*` requests proxy correctly through reverse proxy
+5. ✅ **Environment Variables**: Ensure DATABASE_URL and Clerk keys are set
+
+### Future Deployment Automation
+
+All backend deployment scripts should include:
+- Automatic DNS name label assignment
+- FQDN verification after container creation
+- Frontend integration testing
+- Standard naming convention validation
+
+### Documentation Updates Needed
+
+Update all deployment guides to emphasize:
+- **DNS Name Label Requirement** for container-to-container communication
+- **Standard FQDN Pattern** for GT Automotive backend containers
+- **Frontend Integration Dependencies** on stable backend DNS names
+
+This discovery highlights that **container deployment success isn't just about the container running** - it's about proper service integration through consistent DNS naming conventions.
+
+## 🔍 Research Findings: Missing Best Practices Causing Container Crashes (Sept 24, 2025)
+
+Based on comprehensive research into Nx monorepo container deployment best practices for 2025, several critical missing practices were identified that contributed to our deployment issues.
+
+### Key Missing Best Practices We Weren't Using
+
+#### 1. **generatePackageJson Configuration**
+**Missing Practice**: Enable `generatePackageJson` option in build configuration
+```typescript
+// project.json - Should have included this
+{
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "options": {
+        "generatePackageJson": true  // ❌ We were missing this
+      }
+    }
+  }
+}
+```
+
+**What This Fixes**:
+- Creates optimized package.json with only required dependencies
+- Eliminates shared library resolution issues in containers
+- Reduces container size significantly
+- Prevents node_modules complexity issues
+
+#### 2. **Multi-Stage Docker Build Pattern**
+**Missing Practice**: Use multi-stage builds for optimal container structure
+```dockerfile
+# Industry best practice we should adopt
+FROM node:20 AS builder
+WORKDIR /app
+COPY . .
+RUN yarn install --frozen-lockfile
+RUN yarn nx build shared-dto
+RUN yarn nx build server --generatePackageJson
+
+FROM node:20-slim AS production
+WORKDIR /app
+COPY --from=builder /app/dist/server ./
+RUN npm install --only=prod
+CMD ["node", "main.js"]
+```
+
+**Benefits**:
+- Separates build environment from runtime
+- Smaller production images
+- Better security (no dev dependencies)
+- Cleaner container architecture
+
+#### 3. **Webpack Externals for Prisma**
+**Missing Practice**: Proper webpack externals configuration for Prisma in containers
+```javascript
+// webpack.config.js - Missing externals configuration
+module.exports = {
+  externals: {
+    '@prisma/client': 'commonjs @prisma/client',
+    '.prisma/client': 'commonjs .prisma/client'
+  },
+  plugins: [
+    new NxAppWebpackPlugin({
+      generatePackageJson: true,  // Critical for containers
+      // ... other config
+    })
+  ]
+}
+```
+
+**What This Prevents**:
+- Prisma client bundling issues
+- Missing query engine files
+- Runtime module resolution failures
+- Container startup crashes
+
+#### 4. **Asset Configuration for Prisma Files**
+**Missing Practice**: Include Prisma engines in build assets
+```json
+// project.json - Should include assets for Prisma
+{
+  "targets": {
+    "build": {
+      "options": {
+        "assets": [
+          {
+            "input": "libs/database/src/lib/prisma",
+            "glob": "**",
+            "output": "."
+          },
+          {
+            "input": "node_modules/.prisma/client",
+            "glob": "*engine*",
+            "output": "."
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+**Purpose**:
+- Ensures Prisma query engines are copied to build output
+- Prevents "Query Engine not found" errors in containers
+- Maintains proper Prisma client functionality
+
+#### 5. **Pruned Lock File Generation**
+**Missing Practice**: Generate optimized lock files for containers
+```bash
+# Should be part of our build process
+yarn nx generate-package-json server
+yarn install --frozen-lockfile --production
+```
+
+**Benefits**:
+- Significantly faster container builds
+- Reduced container size
+- Only installs required dependencies
+- Better build reproducibility
+
+#### 6. **Build Context Optimization**
+**Missing Practice**: Use proper Docker build context
+```dockerfile
+# Instead of copying everything, use .dockerignore
+COPY package*.json ./
+COPY yarn.lock ./
+COPY dist/server ./dist/server
+# Don't copy entire source tree in production
+```
+
+**Advantages**:
+- Faster Docker builds
+- Reduced context size
+- Better security (less surface area)
+- More predictable builds
+
+### Industry Standards We Should Adopt
+
+#### Automated CI/CD Integration
+```yaml
+# GitHub Actions best practice
+- name: Build optimized container
+  run: |
+    yarn nx build server --generatePackageJson
+    docker build --target production -t app:latest .
+```
+
+#### Health Check Integration
+```dockerfile
+# Missing health check configuration
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s \
+  CMD curl -f http://localhost:3000/health || exit 1
+```
+
+#### Environment-Specific Builds
+```bash
+# Production optimization we should use
+NODE_ENV=production yarn nx build server --generatePackageJson
+```
+
+### 2025 Best Practices Summary
+
+**Modern Nx Container Deployment Requirements**:
+1. ✅ **generatePackageJson**: Always enable for container builds
+2. ✅ **Multi-stage builds**: Separate build and runtime environments
+3. ✅ **Webpack externals**: Proper Prisma and shared library handling
+4. ✅ **Asset configuration**: Include all required runtime files
+5. ✅ **Pruned dependencies**: Only install production dependencies
+6. ✅ **Build context optimization**: Minimize Docker build context
+7. ✅ **Health checks**: Include proper application health monitoring
+8. ✅ **Automated versioning**: Integrate with semantic versioning
+9. ✅ **CI/CD integration**: Streamlined deployment pipelines
+10. ✅ **Security scanning**: Container vulnerability assessment
+
+### Critical Gap Analysis
+
+**What We Were Doing**:
+- Manual shared library copying
+- Single-stage Docker builds
+- No generatePackageJson configuration
+- Missing webpack externals
+- Manual node_modules manipulation
+
+**What Industry Does (2025)**:
+- Nx-native dependency resolution
+- Multi-stage optimized builds
+- Automated package.json generation
+- Proper externals configuration
+- CI/CD integrated deployments
+
+### Implementation Priority
+
+**High Priority (Fix Container Crashes)**:
+1. Enable `generatePackageJson` in server build config
+2. Add webpack externals for Prisma
+3. Include Prisma assets in build configuration
+4. Implement multi-stage Dockerfile
+
+**Medium Priority (Optimization)**:
+1. Add health checks to containers
+2. Optimize Docker build context
+3. Implement pruned lock file generation
+4. Add container security scanning
+
+**Low Priority (Enhancement)**:
+1. Integrate automated versioning
+2. Add container monitoring
+3. Implement blue/green deployments
+4. Add performance monitoring
+
+This research confirms that our container crashes were primarily due to **missing industry-standard Nx configuration practices** rather than fundamental architectural issues. The solution involves adopting proven 2025 best practices for Nx monorepo container deployments.

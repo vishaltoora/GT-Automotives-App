@@ -60,3 +60,4 @@ azure-credentials.json
 
 # Production environment files with secrets
 .env.production
+azure-backend/

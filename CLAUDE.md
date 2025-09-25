@@ -124,6 +124,18 @@ yarn test          # Run tests
 
 ## 🔄 Recent Updates
 
+### September 24, 2025 - DNS Name Label Fix & Production Integration Resolution ✅
+- ✅ **Critical Discovery**: Frontend loading page caused by missing `--dns-name-label` in backend container deployment
+- ✅ **Standard Backend DNS**: Fixed container to use proper FQDN `gt-automotives-backend-prod.canadacentral.azurecontainer.io`
+- ✅ **Reverse Proxy Integration**: Frontend reverse proxy now connects to stable DNS name instead of changing IP addresses
+- ✅ **Container Recreation**: Properly deployed backend with standard naming convention
+- ✅ **Production Resolution**: Website https://gt-automotives.com fully operational after DNS fix
+- ✅ **Docker Issues Resolved**: Fixed local Docker daemon issues and completed fresh image build process
+- ✅ **Local Build Process**: Successfully built latest server changes locally and deployed to Azure registry
+- ✅ **Environment Variables**: Ensured proper DATABASE_URL and Clerk configuration in production container
+- ✅ **Prisma Documentation**: Created comprehensive Prisma learning guide with best practices and patterns
+- ⚠️ **Key Learning**: Azure Container Instances require `--dns-name-label` for service-to-service communication via stable DNS names
+
 ### September 23, 2025 - MyPersn Pattern Implementation & Docker CMD Path Fix ✅
 - ✅ **Docker Build Issue Resolved**: Fixed "target stage 'production' could not be found" error
 - ✅ **MyPersn Single-Stage Pattern**: Converted from multi-stage to proven MyPersn container approach

@@ -1,9 +1,6 @@
-node_modules
 .git
 *.log
 .env*
-dist
-build
 .nx
 .cache
 README.md
@@ -12,3 +9,7 @@ README.md
 .vscode
 *.zip
 *.tar.gz
+# We need dist and specific node_modules for prebuilt approach
+# So we're NOT ignoring them here
+!dist/
+!node_modules/
