@@ -9,36 +9,41 @@ The Azure production container was failing due to improper webpack bundling of t
 ## Solution Implemented
 
 ### 1. Webpack Configuration Update
-Changed from `NxAppWebpackPlugin` to `composePlugins(withNx())` pattern (MyPersn-inspired):
+Initially tried `composePlugins(withNx())` pattern but reverted to hybrid approach for TypeScript compatibility:
 
-**File**: `server/webpack.config.js`
+**File**: `server/webpack.config.js` (Hybrid Approach)
 ```javascript
-const { composePlugins, withNx } = require('@nx/webpack');
-const path = require('path');
+const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
+const { join } = require('path');
 
-module.exports = composePlugins(withNx(), (config) => {
-  // Set output path
-  config.output = {
-    ...config.output,
-    path: path.join(__dirname, '../dist/server'),
-    filename: 'main.js',
-  };
+// Hybrid approach: Use NxAppWebpackPlugin for proper TypeScript compilation
+// but with simplified externals configuration (MyPersn-inspired)
+module.exports = {
+  output: {
+    path: join(__dirname, '../dist/server'),
+  },
+  devtool: 'source-map',
 
-  // Externalize critical dependencies
-  config.externals = {
+  // Critical: Webpack externals for shared libraries and Prisma
+  externals: {
     '@prisma/client': 'commonjs @prisma/client',
     '.prisma/client': 'commonjs .prisma/client',
     '@gt-automotive/shared-dto': 'commonjs @gt-automotive/shared-dto',
-  };
+  },
 
-  config.target = 'node';
-  config.optimization = {
-    ...config.optimization,
-    minimize: false,
-  };
-
-  return config;
-});
+  plugins: [
+    new NxAppWebpackPlugin({
+      target: 'node',
+      compiler: 'tsc',
+      main: './src/main.ts',
+      tsConfig: './tsconfig.app.json',
+      assets: ['./src/assets'],
+      optimization: false,
+      outputHashing: 'none',
+      generatePackageJson: true, // Enable for better container deployment
+    }),
+  ],
+};
 ```
 
 ### 2. Docker Build Strategy
@@ -93,11 +98,11 @@ The GitHub Actions workflow (`gt-build.yml`) will automatically:
 
 ## Key Learnings
 
-### Why composePlugins Pattern Works Better
-1. **Native Nx Integration**: Works seamlessly with Nx's dependency resolution
-2. **External Module Handling**: Properly handles shared libraries and Prisma
-3. **Simpler Configuration**: Less configuration needed compared to NxAppWebpackPlugin
-4. **Production-Proven**: Used successfully in MyPersn production environment
+### Why Hybrid Approach Works Better
+1. **TypeScript Compilation**: NxAppWebpackPlugin ensures proper decorator and metadata handling
+2. **External Module Handling**: Manual externals prevent bundling of shared libraries and Prisma
+3. **Container Compatibility**: generatePackageJson enables proper dependency management
+4. **Build Reliability**: Maintains TypeScript compilation while adding container deployment benefits
 
 ### Container Best Practices Applied
 1. **Build from Source**: Let container handle the build process
