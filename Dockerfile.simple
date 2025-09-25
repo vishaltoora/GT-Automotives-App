@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y openssl curl && rm -rf /var/lib/apt/lis
 # Set environment variables for build optimization
 ENV DISABLE_ERD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV NX_DAEMON=false
 
 # Install all dependencies
 RUN yarn install --frozen-lockfile --network-timeout 1000000
@@ -22,8 +23,8 @@ RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 # Build shared libraries first
 RUN yarn nx build shared-dto --skip-nx-cache
 
-# Build server application
-RUN yarn nx run server:build:production --skip-nx-cache
+# Build server application (production is default)
+RUN yarn nx build server --skip-nx-cache
 
 # Create non-root user for security
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs && \

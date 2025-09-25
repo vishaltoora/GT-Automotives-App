@@ -19,12 +19,14 @@ RUN yarn install --frozen-lockfile --network-timeout 1000000
 # Generate Prisma client
 RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 
+# Disable Nx daemon for Docker builds
+ENV NX_DAEMON=false
+
 # Build shared libraries first (Nx dependency order)
 RUN yarn nx build shared-dto --skip-nx-cache
 
-# Build server with production configuration
-# The new webpack config will handle externals properly
-RUN yarn nx run server:build:production --skip-nx-cache
+# Build server (production mode is default for server:build)
+RUN yarn nx build server --skip-nx-cache
 
 # Stage 2: Production
 FROM node:20-slim AS production
