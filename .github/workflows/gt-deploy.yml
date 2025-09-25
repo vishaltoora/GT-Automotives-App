@@ -121,9 +121,9 @@ jobs:
             --environment-variables \
               DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY_LIVE }}" \
+              CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
               CLERK_API_URL="${{ secrets.CLERK_API_URL }}" \
-              CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY_LIVE }}" \
+              CLERK_PUBLISHABLE_KEY="${{ secrets.CLERK_PUBLISHABLE_KEY }}" \
               CLERK_JWKS_URL="${{ secrets.CLERK_JWKS_URL }}" \
               FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
               HOST="0.0.0.0" \
