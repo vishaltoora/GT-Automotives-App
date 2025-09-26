@@ -4,7 +4,7 @@ import { CreateInvoiceDto, InvoiceItemType } from '@gt-automotive/data';
 import gtLogoImage from '../images-and-logos/logo.png';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3000';
 
 // Helper to get fresh token from Clerk
 let getClerkToken: (() => Promise<string | null>) | null = null;
@@ -84,7 +84,7 @@ class InvoiceService {
           return freshToken;
         }
       } catch (error) {
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV !== 'production') {
           console.error('Failed to get fresh Clerk token:', error);
         }
       }

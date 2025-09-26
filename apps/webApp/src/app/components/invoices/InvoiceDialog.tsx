@@ -374,7 +374,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       onSuccess(result);
       onClose();
     } catch (error: any) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Error creating invoice:', error);
       }
       

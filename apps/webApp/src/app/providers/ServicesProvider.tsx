@@ -7,7 +7,7 @@ import { setClerkTokenGetter as setCompanyTokenGetter } from '../services/compan
 
 // Check if Clerk is configured - use direct import.meta.env access for consistency
 // @ts-ignore
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+const publishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 const useAuth = publishableKey ? useClerkAuth : useMockAuth;
 
 export const ServicesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

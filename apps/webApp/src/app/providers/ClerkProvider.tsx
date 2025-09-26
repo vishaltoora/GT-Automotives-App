@@ -6,7 +6,7 @@ import { MockClerkProvider } from './MockClerkProvider';
 
 // Direct import.meta.env access - Vite will replace this at build time
 // @ts-ignore
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+const publishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 
 
 interface ClerkProviderProps {
@@ -47,7 +47,7 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
     };
 
     // Only use custom domain for production builds with production key
-    const isProduction = import.meta.env.PROD;
+    const isProduction = process.env.PROD;
     const isProductionKey = publishableKey?.startsWith('pk_live_');
 
     if (isProduction && isProductionKey && publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {

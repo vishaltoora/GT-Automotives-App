@@ -122,7 +122,7 @@ export const getColor = (path: string): string => {
   for (const key of keys) {
     result = result?.[key];
     if (result === undefined) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.warn(`Color not found: ${path}`);
       }
       return '#000000';

@@ -5,9 +5,9 @@ import { useUser as useMockUser, useAuth as useMockAuth } from '../providers/Moc
 // Conditionally use Clerk or Mock hooks based on environment
 // Use direct import.meta.env access like ClerkProvider for consistency
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+const publishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3000';
 
 const useUser = publishableKey ? useClerkUser : useMockUser;
 const useClerkAuth = publishableKey ? useClerkAuthHook : useMockAuth;
@@ -91,14 +91,14 @@ export function useAuth() {
           });
           setAppUser(response.data);
         } catch (error: any) {
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV !== 'production') {
             console.error('Failed to sync user:', error);
           }
           
           // For now, set a default customer user to prevent redirect loops
           // The proper sync should happen via Clerk webhook
           if (error.response?.status === 404 || error.response?.status === 401) {
-            if (import.meta.env.DEV) {
+            if (process.env.NODE_ENV !== 'production') {
               console.log('User not found in database. Checking for pre-seeded user...');
             }
             
@@ -149,7 +149,7 @@ export function useAuth() {
       localStorage.removeItem('authToken');
       setAppUser(null);
     } catch (error) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Error during logout:', error);
       }
     }
