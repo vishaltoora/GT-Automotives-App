@@ -29,4 +29,5 @@ RUN yarn nx build server --configuration=production
 EXPOSE 3000
 
 # Run the application
-CMD ["node", "./dist/apps/server/main.js"]
+WORKDIR /app/dist/apps/server
+CMD ["node", "main.js"]
