@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsEnum, IsOptional, Min, IsBoolean, IsArray, ValidateNested, Type } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsOptional, Min, IsBoolean, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TireType, TireCondition } from '@prisma/client';
 
 export enum AdjustmentType {
@@ -277,4 +278,109 @@ export class TireSearchParamsDto {
   @Min(1)
   @Type(() => Number)
   limit?: number;
+}
+
+// Alias for TireSearchParamsDto to maintain compatibility
+export class TireSearchDto extends TireSearchParamsDto {}
+
+// Basic tire DTO for search results
+export class TireDto {
+  @IsString()
+  id!: string;
+
+  @IsString()
+  brand!: string;
+
+  @IsString()
+  size!: string;
+
+  @IsEnum(TireType)
+  type!: TireType;
+
+  @IsEnum(TireCondition)
+  condition!: TireCondition;
+
+  @IsNumber()
+  price!: number;
+
+  @IsOptional()
+  @IsNumber()
+  cost?: number;
+
+  @IsNumber()
+  quantity!: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsBoolean()
+  inStock!: boolean;
+
+  @IsString()
+  createdAt!: string;
+
+  @IsString()
+  updatedAt!: string;
+
+  @IsString()
+  createdBy!: string;
+
+  @IsOptional()
+  @IsNumber()
+  minStock?: number;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// Search result wrapper
+export class TireSearchResultDto {
+  @IsArray()
+  items!: TireDto[];
+
+  @IsNumber()
+  total!: number;
+
+  @IsNumber()
+  page!: number;
+
+  @IsNumber()
+  limit!: number;
+
+  @IsNumber()
+  totalPages!: number;
+
+  @IsBoolean()
+  hasMore!: boolean;
+}
+
+// Inventory report DTO
+export class InventoryReportDto {
+  @IsNumber()
+  totalValue!: number;
+
+  @IsNumber()
+  totalCost!: number;
+
+  @IsNumber()
+  totalItems!: number;
+
+  @IsArray()
+  lowStockItems!: any[]; // This would be Tire[] but we don't want circular deps
+
+  @IsOptional()
+  byBrand?: Record<string, number>;
+
+  @IsOptional()
+  byType?: Record<string, number>;
 }

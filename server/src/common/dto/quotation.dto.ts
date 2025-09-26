@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { QuotationStatus } from '@prisma/client';
 
 export enum QuotationItemType {

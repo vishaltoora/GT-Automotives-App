@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import { Tire, Prisma, TireType } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
-import { TireSearchDto, TireFiltersDto, TireSearchResultDto, TireDto } from '@gt-automotive/shared-dto';
+import { TireFiltersDto, TireSearchDto, TireSearchResultDto, TireDto } from '../../common/dto/tire.dto';
 
 @Injectable()
 export class TireRepository extends BaseRepository<Tire> {

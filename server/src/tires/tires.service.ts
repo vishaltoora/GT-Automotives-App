@@ -10,11 +10,7 @@ import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CreateTireDto } from '../common/dto/tire.dto';
 import { UpdateTireDto } from '../common/dto/tire.dto';
 import { TireFiltersDto } from '../common/dto/tire.dto';
-import { TireSearchDto } from '@gt-automotive/shared-dto';
-import { TireSearchResultDto } from '@gt-automotive/shared-dto';
-import { TireResponseDto } from '@gt-automotive/shared-dto';
-import { StockAdjustmentDto } from '../common/dto/tire.dto';
-import { InventoryReportDto } from '@gt-automotive/shared-dto';
+import { TireSearchDto, TireSearchResultDto, TireResponseDto, StockAdjustmentDto, InventoryReportDto } from '../common/dto/tire.dto';
 import { TireType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 

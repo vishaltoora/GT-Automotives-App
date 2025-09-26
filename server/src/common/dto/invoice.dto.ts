@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type, ValidateIf, IsPositive } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, ValidateIf, IsPositive } from 'class-validator';
+import { Type } from 'class-transformer';
 import { InvoiceStatus, PaymentMethod } from '@prisma/client';
 
 export enum InvoiceItemType {

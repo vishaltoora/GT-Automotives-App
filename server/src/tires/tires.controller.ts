@@ -22,9 +22,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import { CreateTireDto } from '../common/dto/tire.dto';
 import { UpdateTireDto } from '../common/dto/tire.dto';
 import { StockAdjustmentDto } from '../common/dto/tire.dto';
-import { TireSearchDto } from '@gt-automotive/shared-dto';
-import { TireResponseDto } from '@gt-automotive/shared-dto';
-import { TireSearchResultDto } from '@gt-automotive/shared-dto';
+import { TireSearchDto, TireResponseDto, TireSearchResultDto } from '../common/dto/tire.dto';
 
 @Controller('api/tires')
 export class TiresController {
