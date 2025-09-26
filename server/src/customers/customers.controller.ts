@@ -10,8 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
-import { CreateCustomerDto } from '@gt-automotive/shared-dto';
-import { UpdateCustomerDto } from '@gt-automotive/shared-dto';
+import { CreateCustomerDto, UpdateCustomerDto } from '../common/dto/customer.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

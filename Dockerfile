@@ -1,4 +1,4 @@
-# Base Image - MyPersn pattern with shared library fix
+# Simplified Dockerfile - MyPersn pattern without shared-dto complexity
 FROM node:20
 
 WORKDIR /app
@@ -15,20 +15,11 @@ RUN yarn install --frozen-lockfile --network-timeout 1000000
 # Generate Prisma client
 RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 
-# Build shared-dto library first
-RUN yarn nx build shared-dto
-
-# Create symlink for shared-dto in node_modules (required for external webpack resolution)
-# Remove yarn's workspace symlink and replace with built dist version
-RUN rm -f node_modules/@gt-automotive/shared-dto && \
-    mkdir -p node_modules/@gt-automotive && \
-    ln -s /app/dist/libs/shared-dto node_modules/@gt-automotive/shared-dto
-
-# Build server (will output to dist/apps/server)
+# Build server (simplified - no shared library complications)
 RUN yarn nx build server --configuration=production
 
 # Expose port
 EXPOSE 3000
 
-# Run the application (from /app to access symlinks in node_modules)
+# Run the application (simple path)
 CMD ["node", "./dist/apps/server/main.js"]

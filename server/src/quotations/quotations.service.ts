@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { QuotationRepository } from './repositories/quotation.repository';
-import { CreateQuoteDto } from '@gt-automotive/shared-dto';
-import { UpdateQuoteDto } from '@gt-automotive/shared-dto';
+import { CreateQuoteDto } from '../common/dto/quotation.dto';
+import { UpdateQuoteDto } from '../common/dto/quotation.dto';
 import { Quotation, QuotationItem, Tire } from '@prisma/client';
 import { PrismaService } from '@gt-automotive/database';
 
