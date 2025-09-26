@@ -16,17 +16,14 @@ export class InvoicesService {
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
-    console.log('Creating invoice with data:', JSON.stringify(createInvoiceDto, null, 2));
     let customerId = createInvoiceDto.customerId;
 
     // Create customer ONLY if customerData is provided AND no customerId exists
     // This prevents creating duplicate customers when an existing customer is selected
     if (!customerId && createInvoiceDto.customerData) {
       const { firstName, lastName, businessName, address, phone, email } = createInvoiceDto.customerData;
-      
+
       try {
-        console.log('Creating customer with firstName:', firstName, 'lastName:', lastName);
-        
         // Create customer directly without user relationship
         const customerData: any = {
           firstName,
@@ -37,12 +34,9 @@ export class InvoicesService {
           businessName: businessName || null,
         };
 
-        console.log('Customer data to create:', JSON.stringify(customerData, null, 2));
         const newCustomer = await this.customerRepository.create(customerData);
         customerId = newCustomer.id;
-        console.log('Customer created with ID:', customerId);
       } catch (error) {
-        console.error('Error creating customer:', error);
         throw new BadRequestException(`Failed to create customer: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
@@ -87,14 +81,6 @@ export class InvoicesService {
     const taxAmount = subtotal * taxRate;
     const total = subtotal + taxAmount;
 
-    console.log('Calculated tax values:', {
-      gstRate,
-      pstRate,
-      gstAmount,
-      pstAmount,
-      taxRate,
-      taxAmount
-    });
 
     // Generate invoice number
     const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber();
@@ -105,6 +91,7 @@ export class InvoicesService {
         invoiceNumber,
         customer: { connect: { id: customerId } },
         vehicle: createInvoiceDto.vehicleId ? { connect: { id: createInvoiceDto.vehicleId } } : undefined,
+        company: { connect: { id: createInvoiceDto.companyId } },
         subtotal: new Decimal(subtotal),
         taxRate: new Decimal(taxRate),
         taxAmount: new Decimal(taxAmount),
@@ -149,6 +136,7 @@ export class InvoicesService {
       include: {
         customer: true,
         vehicle: true,
+        company: true,
         items: {
           include: {
             tire: true,
@@ -238,13 +226,14 @@ export class InvoicesService {
     startDate?: string;
     endDate?: string;
     status?: InvoiceStatus;
+    companyId?: string;
   }, user: any): Promise<Invoice[]> {
     const params: any = { ...searchParams };
-    
+
     if (searchParams.startDate) {
       params.startDate = new Date(searchParams.startDate);
     }
-    
+
     if (searchParams.endDate) {
       params.endDate = new Date(searchParams.endDate);
     }

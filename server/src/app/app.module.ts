@@ -10,6 +10,7 @@ import { CustomersModule } from '../customers/customers.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
 import { InvoicesModule } from '../invoices/invoices.module';
 import { QuotationsModule } from '../quotations/quotations.module';
+import { CompaniesModule } from '../companies/companies.module';
 import { HealthModule } from '../health/health.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -27,6 +28,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     VehiclesModule,
     InvoicesModule,
     QuotationsModule,
+    CompaniesModule,
     HealthModule,
   ],
   controllers: [AppController],

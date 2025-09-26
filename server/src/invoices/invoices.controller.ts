@@ -42,6 +42,7 @@ export class InvoicesController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('status') status?: InvoiceStatus,
+    @Query('companyId') companyId?: string,
     @CurrentUser() user?: any,
   ) {
     return this.invoicesService.searchInvoices(
@@ -51,6 +52,7 @@ export class InvoicesController {
         startDate,
         endDate,
         status,
+        companyId,
       },
       user,
     );
@@ -82,7 +84,6 @@ export class InvoicesController {
     @Body() updateInvoiceDto: UpdateInvoiceDto,
     @CurrentUser() user: any,
   ) {
-    console.log(`Controller: PATCH /api/invoices/${id} called by user:`, user?.id, 'with role:', user?.role, 'data:', updateInvoiceDto);
     return this.invoicesService.update(id, updateInvoiceDto, user.id);
   }
 

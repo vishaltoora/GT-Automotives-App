@@ -27,6 +27,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
+import { companyService, Company } from '../../services/company.service';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import { ActionsMenu, ActionItem } from '../../components/common';
@@ -40,18 +41,30 @@ const InvoiceList: React.FC = () => {
   const { confirm } = useConfirmation();
   const { showApiError } = useErrorHelpers();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useState({
     customerName: '',
     invoiceNumber: '',
     status: '',
+    companyId: '',
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadInvoices();
+    loadCompanies();
   }, []);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await companyService.getCompanies();
+      setCompanies(data);
+    } catch (error) {
+      showApiError(error, 'Failed to load companies');
+    }
+  };
 
   const loadInvoices = async () => {
     try {
@@ -67,13 +80,17 @@ const InvoiceList: React.FC = () => {
 
   const handleSearch = async () => {
     try {
-      const filtered = searchParams.status || searchParams.customerName || searchParams.invoiceNumber
+      const hasFilters = searchParams.status || searchParams.customerName || searchParams.invoiceNumber || searchParams.companyId;
+
+      const filtered = hasFilters
         ? await invoiceService.searchInvoices({
             customerName: searchParams.customerName || undefined,
             invoiceNumber: searchParams.invoiceNumber || undefined,
             status: searchParams.status as any || undefined,
+            companyId: searchParams.companyId || undefined,
           })
         : await invoiceService.getInvoices();
+
       setInvoices(filtered);
     } catch (error) {
       showApiError(error, 'Failed to search invoices');
@@ -86,8 +103,6 @@ const InvoiceList: React.FC = () => {
 
 
   const handleDelete = async (invoice: Invoice) => {
-    console.log('Delete button clicked for invoice:', invoice.id, 'by user role:', role);
-
     const confirmed = await confirm({
       title: 'Delete Invoice',
       message: `Are you sure you want to permanently delete invoice ${invoice.invoiceNumber}? This action cannot be undone and will restore tire inventory.`,
@@ -97,16 +112,11 @@ const InvoiceList: React.FC = () => {
       confirmButtonColor: 'error',
     });
 
-    console.log('Confirmation result:', confirmed);
-
     if (confirmed) {
       try {
-        console.log('Calling invoiceService.deleteInvoice with ID:', invoice.id);
         await invoiceService.deleteInvoice(invoice.id);
-        console.log('Delete API call completed successfully');
         loadInvoices();
       } catch (error) {
-        console.error('Delete API call failed:', error);
         showApiError(error, 'Failed to delete invoice');
       }
     }
@@ -141,6 +151,17 @@ const InvoiceList: React.FC = () => {
       case 'DRAFT':
         return 'default';
       case 'REFUNDED':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  };
+
+  const getCompanyColor = (companyName: string) => {
+    switch (companyName) {
+      case 'GT Automotives':
+        return 'primary';
+      case 'GT Car Detailing':
         return 'secondary';
       default:
         return 'default';
@@ -260,7 +281,7 @@ const InvoiceList: React.FC = () => {
               onChange={(e) => setSearchParams({ ...searchParams, customerName: e.target.value })}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 3 }}>
+          <Grid size={{ xs: 12, sm: 2 }}>
             <TextField
               fullWidth
               select
@@ -276,7 +297,23 @@ const InvoiceList: React.FC = () => {
               <MenuItem value="REFUNDED">Refunded</MenuItem>
             </TextField>
           </Grid>
-          <Grid size={{ xs: 12, sm: 3 }}>
+          <Grid size={{ xs: 12, sm: 2 }}>
+            <TextField
+              fullWidth
+              select
+              label="Company"
+              value={searchParams.companyId}
+              onChange={(e) => setSearchParams({ ...searchParams, companyId: e.target.value })}
+            >
+              <MenuItem value="">All Companies</MenuItem>
+              {companies.map((company) => (
+                <MenuItem key={company.id} value={company.id}>
+                  {company.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 2 }}>
             <Button
               fullWidth
               variant="contained"
@@ -296,6 +333,7 @@ const InvoiceList: React.FC = () => {
               <TableCell>Invoice #</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Customer</TableCell>
+              <TableCell>Company</TableCell>
               <TableCell>Total</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Payment</TableCell>
@@ -320,6 +358,14 @@ const InvoiceList: React.FC = () => {
                     return 'Customer';
                   })()}
                 </TableCell>
+                <TableCell>
+                  <Chip
+                    label={invoice.company?.name || 'Unknown'}
+                    size="small"
+                    color={getCompanyColor(invoice.company?.name || 'Unknown')}
+                    variant="filled"
+                  />
+                </TableCell>
                 <TableCell>{formatCurrency(invoice.total)}</TableCell>
                 <TableCell>
                   <Chip
@@ -342,7 +388,7 @@ const InvoiceList: React.FC = () => {
             ))}
             {invoices.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   {loading ? 'Loading...' : 'No invoices found'}
                 </TableCell>
               </TableRow>

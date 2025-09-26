@@ -47,6 +47,7 @@ export class InvoiceRepository extends BaseRepository<
       include: {
         customer: true,
         vehicle: true,
+        company: true,
         items: {
           include: {
             tire: true,
@@ -71,6 +72,7 @@ export class InvoiceRepository extends BaseRepository<
         include: {
           customer: true,
           vehicle: true,
+          company: true,
           items: {
             include: {
               tire: true,
@@ -166,6 +168,7 @@ export class InvoiceRepository extends BaseRepository<
     startDate?: Date;
     endDate?: Date;
     status?: InvoiceStatus;
+    companyId?: string;
   }): Promise<Invoice[]> {
     const where: Prisma.InvoiceWhereInput = {};
 
@@ -178,6 +181,10 @@ export class InvoiceRepository extends BaseRepository<
 
     if (searchParams.status) {
       where.status = searchParams.status;
+    }
+
+    if (searchParams.companyId) {
+      where.companyId = searchParams.companyId;
     }
 
     if (searchParams.startDate || searchParams.endDate) {
@@ -214,6 +221,7 @@ export class InvoiceRepository extends BaseRepository<
       include: {
         customer: true,
         vehicle: true,
+        company: true,
         items: true,
       },
       orderBy: { createdAt: 'desc' },
