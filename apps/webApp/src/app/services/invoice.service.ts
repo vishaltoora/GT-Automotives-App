@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { PaymentMethod } from '../../enums';
-import { CreateInvoiceDto, InvoiceItemType } from '@gt-automotive/shared-dto';
+import { CreateInvoiceDto, InvoiceItemType } from '@gt-automotive/data';
 import gtLogoImage from '../images-and-logos/logo.png';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts

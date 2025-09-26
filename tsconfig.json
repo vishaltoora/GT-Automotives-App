@@ -16,7 +16,7 @@
       "path": "./libs/database"
     },
     {
-      "path": "./libs/shared-dto"
+      "path": "./libs/data"
     }
   ]
 }

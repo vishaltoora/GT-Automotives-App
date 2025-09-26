@@ -13,12 +13,14 @@ import { TireFiltersDto } from '../common/dto/tire.dto';
 import { TireSearchDto, TireSearchResultDto, TireResponseDto, StockAdjustmentDto, InventoryReportDto } from '../common/dto/tire.dto';
 import { TireType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaService } from '@gt-automotive/database';
 
 @Injectable()
 export class TiresService {
   constructor(
     private tireRepository: TireRepository,
     private auditRepository: AuditRepository,
+    private prisma: PrismaService,
   ) {}
 
   async findAll(
@@ -63,12 +65,36 @@ export class TiresService {
       throw new ForbiddenException('Insufficient permissions to create tires');
     }
 
-    // Check for duplicates (same brand, size, type, condition)
-    const existingTires = await this.tireRepository.findAll({
-      brand: createTireDto.brand,
-      size: createTireDto.size,
-      type: createTireDto.type,
-      condition: createTireDto.condition,
+    // Find or create tire brand
+    let tireBrand = await this.prisma.tireBrand.findUnique({
+      where: { name: createTireDto.brand },
+    });
+
+    if (!tireBrand) {
+      tireBrand = await this.prisma.tireBrand.create({
+        data: { name: createTireDto.brand },
+      });
+    }
+
+    // Find or create tire size
+    let tireSize = await this.prisma.tireSize.findUnique({
+      where: { size: createTireDto.size },
+    });
+
+    if (!tireSize) {
+      tireSize = await this.prisma.tireSize.create({
+        data: { size: createTireDto.size },
+      });
+    }
+
+    // Check for duplicates using the relationship IDs
+    const existingTires = await this.prisma.tire.findMany({
+      where: {
+        brandId: tireBrand.id,
+        sizeId: tireSize.id,
+        type: createTireDto.type,
+        condition: createTireDto.condition,
+      },
     });
 
     if (existingTires.length > 0) {
@@ -77,12 +103,20 @@ export class TiresService {
       );
     }
 
-    // Set default values
+    // Create tire data with relationship connections
     const tireData = {
-      ...createTireDto,
-      minStock: createTireDto.minStock || 5,
+      brand: { connect: { id: tireBrand.id } },
+      size: { connect: { id: tireSize.id } },
+      type: createTireDto.type,
+      condition: createTireDto.condition,
+      quantity: createTireDto.quantity,
       price: new Decimal(createTireDto.price),
       cost: createTireDto.cost ? new Decimal(createTireDto.cost) : null,
+      location: createTireDto.location,
+      minStock: createTireDto.minStock || 5,
+      imageUrl: createTireDto.imageUrl,
+      description: createTireDto.description,
+      notes: createTireDto.notes,
     };
 
     const tire = await this.tireRepository.create(tireData);
@@ -94,8 +128,8 @@ export class TiresService {
       entityType: 'tire',
       entityId: tire.id,
       details: {
-        brand: tire.brand,
-        size: tire.size,
+        brand: createTireDto.brand,
+        size: createTireDto.size,
         quantity: tire.quantity,
       },
     });
@@ -221,8 +255,8 @@ export class TiresService {
         reason: adjustmentDto.reason,
         oldQuantity,
         newQuantity: updatedTire.quantity,
-        brand: updatedTire.brand,
-        size: updatedTire.size,
+        brand: updatedTire.brand?.name || 'Unknown Brand',
+        size: updatedTire.size?.size || 'Unknown Size',
       },
     });
 
@@ -268,10 +302,16 @@ export class TiresService {
   private formatSingleTireResponse(tire: any, userRole?: string): TireResponseDto {
     const response: any = {
       ...tire,
+      brand: tire.brand?.name || tire.brand,
+      size: tire.size?.size || tire.size,
       price: tire.price.toNumber ? tire.price.toNumber() : tire.price,
       cost: tire.cost?.toNumber ? tire.cost.toNumber() : tire.cost,
       isLowStock: tire.quantity <= tire.minStock,
     };
+
+    // Remove the relationship objects to avoid confusion
+    delete response.brandId;
+    delete response.sizeId;
 
     // Hide cost from non-admin users
     if (userRole !== 'ADMIN') {

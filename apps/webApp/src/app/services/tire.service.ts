@@ -6,7 +6,7 @@ import {
   ITireSearchParams,
   ITireSearchResult,
   ITireImage,
-} from '@gt-automotive/shared-dto';
+} from '@gt-automotive/data';
 
 // Type declaration for Clerk global
 declare global {

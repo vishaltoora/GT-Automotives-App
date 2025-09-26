@@ -20,7 +20,7 @@ import {
   TireDto, 
   CreateTireDto, 
   UpdateTireDto
-} from '@gt-automotive/shared-dto';
+} from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',

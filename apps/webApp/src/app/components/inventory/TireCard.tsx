@@ -19,7 +19,7 @@ import {
   Visibility as ViewIcon,
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
-import { TireResponseDto as ITire } from '@gt-automotive/shared-dto';
+import { TireResponseDto as ITire } from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',

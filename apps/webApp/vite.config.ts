@@ -34,7 +34,7 @@ export default defineConfig(() => ({
   // },
   resolve: {
     alias: {
-      '@gt-automotive/shared-dto': '../../dist/libs/shared-dto/src/index.js',
+      '@gt-automotive/data': '../../dist/libs/data/src/index.js',
     },
   },
   build: {

@@ -25,7 +25,7 @@ import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
-import { TireFiltersDto } from '@gt-automotive/shared-dto';
+import { TireFiltersDto } from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',

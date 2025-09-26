@@ -3,7 +3,7 @@
   "include": [],
   "references": [
     {
-      "path": "../../libs/shared-dto"
+      "path": "../../libs/data"
     },
     {
       "path": "./tsconfig.app.json"

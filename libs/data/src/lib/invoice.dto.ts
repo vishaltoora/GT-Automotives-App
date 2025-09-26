@@ -45,7 +45,7 @@ export class InvoiceItemDto {
   quantity!: number;
 
   @IsNumber()
-  @ValidateIf((o) => o.itemType !== 'DISCOUNT' && o.itemType !== 'DISCOUNT_PERCENTAGE')
+  @ValidateIf((o: any) => o.itemType !== 'DISCOUNT' && o.itemType !== 'DISCOUNT_PERCENTAGE')
   @IsPositive({ message: 'Unit price must be positive for non-discount items' })
   unitPrice!: number; // Can be negative for DISCOUNT items
 

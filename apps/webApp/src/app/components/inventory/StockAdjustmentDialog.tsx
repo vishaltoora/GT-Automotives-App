@@ -27,7 +27,7 @@ import {
   Edit as EditIcon,
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
-import { TireResponseDto as ITire } from '@gt-automotive/shared-dto';
+import { TireResponseDto as ITire } from '@gt-automotive/data';
 import { useStockAdjustment } from '../../hooks/useTires';
 
 interface StockAdjustmentDialogProps {

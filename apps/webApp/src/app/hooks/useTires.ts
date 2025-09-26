@@ -6,7 +6,7 @@ import {
   CreateTireDto as ITireCreateInput,
   UpdateTireDto as ITireUpdateInput,
   TireSearchDto as ITireSearchParams,
-} from '@gt-automotive/shared-dto';
+} from '@gt-automotive/data';
 
 // Query Keys
 export const TIRE_QUERY_KEYS = {

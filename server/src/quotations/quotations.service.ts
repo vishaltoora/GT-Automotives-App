@@ -191,11 +191,21 @@ export class QuotationsService {
       throw new Error('Quotation has already been converted to an invoice');
     }
 
+    // Get the default company for the invoice
+    const defaultCompany = await this.prisma.company.findFirst({
+      where: { isDefault: true },
+    });
+
+    if (!defaultCompany) {
+      throw new Error('No default company found. Please configure a default company.');
+    }
+
     // Create invoice from quotation
     const invoice = await this.prisma.invoice.create({
       data: {
         customerId,
         vehicleId,
+        companyId: defaultCompany.id,
         subtotal: quotation.subtotal,
         taxRate: quotation.taxRate,
         taxAmount: quotation.taxAmount,
