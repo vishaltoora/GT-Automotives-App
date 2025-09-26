@@ -46,7 +46,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams, ITire } from '@gt-automotive/shared-dto';
+import { ITireSearchParams, ITire } from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',

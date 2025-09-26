@@ -20,12 +20,20 @@ export class TireRepository extends BaseRepository<Tire> {
   override async findById(id: string): Promise<Tire | null> {
     return this.prisma.tire.findUnique({
       where: { id },
+      include: {
+        brand: true,
+        size: true,
+      },
     });
   }
 
   override async create(data: Prisma.TireCreateInput): Promise<Tire> {
     return this.prisma.tire.create({
       data,
+      include: {
+        brand: true,
+        size: true,
+      },
     });
   }
 
@@ -33,6 +41,10 @@ export class TireRepository extends BaseRepository<Tire> {
     return this.prisma.tire.update({
       where: { id },
       data,
+      include: {
+        brand: true,
+        size: true,
+      },
     });
   }
 
@@ -72,19 +84,29 @@ export class TireRepository extends BaseRepository<Tire> {
         orderBy: { [sortBy]: sortOrder },
         skip,
         take: limitNumber,
+        include: {
+          brand: true,
+          size: true,
+        },
       }),
       this.prisma.tire.count({ where }),
     ]);
 
     // Convert Prisma Decimal to number and handle null/undefined for compatibility with TireDto
     const convertedItems: TireDto[] = items.map(tire => ({
-      ...tire,
+      id: tire.id,
+      brand: tire.brand.name,
+      size: tire.size.size,
+      type: tire.type as any, // Convert Prisma enum to DTO enum
+      condition: tire.condition as any, // Convert Prisma enum to DTO enum
+      quantity: tire.quantity,
       price: parseFloat(tire.price.toString()),
       cost: tire.cost ? parseFloat(tire.cost.toString()) : undefined,
       location: tire.location || undefined, // Convert null to undefined
       imageUrl: tire.imageUrl || undefined, // Convert null to undefined
-      type: tire.type as any, // Convert Prisma enum to DTO enum
-      condition: tire.condition as any, // Convert Prisma enum to DTO enum
+      description: undefined, // Field not in model, set to undefined
+      notes: undefined, // Field not in model, set to undefined
+      minStock: tire.minStock || undefined,
       inStock: tire.quantity > 0, // Calculate inStock based on quantity
       createdBy: 'system', // Default value since Prisma model doesn't have this field
       createdAt: tire.createdAt.toISOString(),
@@ -116,7 +138,7 @@ export class TireRepository extends BaseRepository<Tire> {
       quantity: number;
       type: 'add' | 'remove' | 'set';
     },
-  ): Promise<Tire> {
+  ): Promise<Tire & { brand: { name: string; id: string; imageUrl: string | null; createdAt: Date; updatedAt: Date; }; size: { id: string; createdAt: Date; updatedAt: Date; size: string; }; }> {
     return this.prisma.$transaction(async (prisma) => {
       const tire = await prisma.tire.findUnique({
         where: { id },
@@ -144,6 +166,10 @@ export class TireRepository extends BaseRepository<Tire> {
       return prisma.tire.update({
         where: { id },
         data: { quantity: newQuantity },
+        include: {
+          brand: true,
+          size: true,
+        },
       });
     });
   }
@@ -173,10 +199,10 @@ export class TireRepository extends BaseRepository<Tire> {
       brandAggregation,
       typeAggregation,
     ] = await Promise.all([
-      this.prisma.tire.findMany({ where }),
+      this.prisma.tire.findMany({ where, include: { brand: true, size: true } }),
       this.findLowStock(),
       this.prisma.tire.groupBy({
-        by: ['brand'],
+        by: ['brandId'],
         where,
         _sum: {
           quantity: true,
@@ -203,9 +229,18 @@ export class TireRepository extends BaseRepository<Tire> {
 
     const totalItems = tires.reduce((sum, tire) => sum + tire.quantity, 0);
 
+    // Create a map of brandId to brand name for the report
+    const brandMap = new Map<string, string>();
+    tires.forEach(tire => {
+      if (tire.brand) {
+        brandMap.set(tire.brandId, tire.brand.name);
+      }
+    });
+
     const byBrand = brandAggregation.reduce(
       (acc, item) => {
-        acc[item.brand] = item._sum.quantity || 0;
+        const brandName = brandMap.get(item.brandId) || `Unknown Brand (${item.brandId})`;
+        acc[brandName] = item._sum?.quantity || 0;
         return acc;
       },
       {} as Record<string, number>,
@@ -213,7 +248,7 @@ export class TireRepository extends BaseRepository<Tire> {
 
     const byType = typeAggregation.reduce(
       (acc, item) => {
-        acc[item.type] = item._sum.quantity || 0;
+        acc[item.type] = item._sum?.quantity || 0;
         return acc;
       },
       {} as Record<TireType, number>,
@@ -234,9 +269,15 @@ export class TireRepository extends BaseRepository<Tire> {
     return this.prisma.tire.findMany({
       where: {
         brand: {
-          equals: brand,
-          mode: 'insensitive',
+          name: {
+            equals: brand,
+            mode: 'insensitive',
+          },
         },
+      },
+      include: {
+        brand: true,
+        size: true,
       },
     });
   }
@@ -244,8 +285,10 @@ export class TireRepository extends BaseRepository<Tire> {
   async findBySizeAndType(size: string, type?: TireType): Promise<Tire[]> {
     const where: Prisma.TireWhereInput = {
       size: {
-        equals: size,
-        mode: 'insensitive',
+        size: {
+          equals: size,
+          mode: 'insensitive',
+        },
       },
     };
 
@@ -255,7 +298,11 @@ export class TireRepository extends BaseRepository<Tire> {
 
     return this.prisma.tire.findMany({
       where,
-      orderBy: [{ brand: 'asc' }, { size: 'asc' }],
+      orderBy: [{ brand: { name: 'asc' } }, { size: { size: 'asc' } }],
+      include: {
+        brand: true,
+        size: true,
+      },
     });
   }
 
@@ -268,16 +315,20 @@ export class TireRepository extends BaseRepository<Tire> {
     if (filters) {
       if (filters.brand) {
         where.brand = {
-          contains: filters.brand,
-          mode: 'insensitive',
+          name: {
+            contains: filters.brand,
+            mode: 'insensitive',
+          },
         };
       }
 
 
       if (filters.size) {
         where.size = {
-          contains: filters.size,
-          mode: 'insensitive',
+          size: {
+            contains: filters.size,
+            mode: 'insensitive',
+          },
         };
       }
 
@@ -314,14 +365,18 @@ export class TireRepository extends BaseRepository<Tire> {
       where.OR = [
         {
           brand: {
-            contains: search,
-            mode: 'insensitive',
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
           },
         },
         {
           size: {
-            contains: search,
-            mode: 'insensitive',
+            size: {
+              contains: search,
+              mode: 'insensitive',
+            },
           },
         },
       ];
@@ -331,12 +386,11 @@ export class TireRepository extends BaseRepository<Tire> {
   }
 
   async getBrands(): Promise<string[]> {
-    const result = await this.prisma.tire.findMany({
-      select: { brand: true },
-      distinct: ['brand'],
-      orderBy: { brand: 'asc' },
+    const result = await this.prisma.tireBrand.findMany({
+      select: { name: true },
+      orderBy: { name: 'asc' },
     });
-    return result.map((tire) => tire.brand);
+    return result.map((brand) => brand.name);
   }
 
   async getModelsForBrand(brand: string): Promise<string[]> {
@@ -345,11 +399,10 @@ export class TireRepository extends BaseRepository<Tire> {
   }
 
   async getSizes(): Promise<string[]> {
-    const result = await this.prisma.tire.findMany({
+    const result = await this.prisma.tireSize.findMany({
       select: { size: true },
-      distinct: ['size'],
       orderBy: { size: 'asc' },
     });
-    return result.map((tire) => tire.size);
+    return result.map((size) => size.size);
   }
 }

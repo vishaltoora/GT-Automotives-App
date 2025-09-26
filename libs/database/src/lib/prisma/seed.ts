@@ -284,11 +284,38 @@ async function main() {
 
     // Create sample tire inventory
     console.log('Creating sample tire inventory...');
-    
+
+    // First, create tire brands
+    const brands = ['Michelin', 'Bridgestone', 'Goodyear', 'Continental', 'BF Goodrich'];
+    const brandMap = new Map<string, string>();
+
+    for (const brandName of brands) {
+      const brand = await prisma.tireBrand.upsert({
+        where: { name: brandName },
+        update: {},
+        create: { name: brandName },
+      });
+      brandMap.set(brandName, brand.id);
+    }
+
+    // Create tire sizes
+    const sizes = ['225/45R17', '215/60R16', '245/40R18', '235/65R17', '265/70R17'];
+    const sizeMap = new Map<string, string>();
+
+    for (const sizeValue of sizes) {
+      const tireSize = await prisma.tireSize.upsert({
+        where: { size: sizeValue },
+        update: {},
+        create: { size: sizeValue },
+      });
+      sizeMap.set(sizeValue, tireSize.id);
+    }
+
+    // Now create tires with proper relationships
     const tireData = [
       {
-        brand: 'Michelin',
-        size: '225/45R17',
+        brandId: brandMap.get('Michelin')!,
+        sizeId: sizeMap.get('225/45R17')!,
         type: 'SUMMER' as const,
         condition: 'NEW' as const,
         quantity: 20,
@@ -297,8 +324,8 @@ async function main() {
         minStock: 5,
       },
       {
-        brand: 'Bridgestone',
-        size: '215/60R16',
+        brandId: brandMap.get('Bridgestone')!,
+        sizeId: sizeMap.get('215/60R16')!,
         type: 'WINTER' as const,
         condition: 'NEW' as const,
         quantity: 15,
@@ -307,8 +334,8 @@ async function main() {
         minStock: 5,
       },
       {
-        brand: 'Goodyear',
-        size: '245/40R18',
+        brandId: brandMap.get('Goodyear')!,
+        sizeId: sizeMap.get('245/40R18')!,
         type: 'PERFORMANCE' as const,
         condition: 'NEW' as const,
         quantity: 12,
@@ -317,8 +344,8 @@ async function main() {
         minStock: 3,
       },
       {
-        brand: 'Continental',
-        size: '235/65R17',
+        brandId: brandMap.get('Continental')!,
+        sizeId: sizeMap.get('235/65R17')!,
         type: 'ALL_SEASON' as const,
         condition: 'NEW' as const,
         quantity: 25,
@@ -327,8 +354,8 @@ async function main() {
         minStock: 8,
       },
       {
-        brand: 'BF Goodrich',
-        size: '265/70R17',
+        brandId: brandMap.get('BF Goodrich')!,
+        sizeId: sizeMap.get('265/70R17')!,
         type: 'OFF_ROAD' as const,
         condition: 'NEW' as const,
         quantity: 10,

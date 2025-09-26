@@ -36,7 +36,7 @@ import {
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams } from '@gt-automotive/shared-dto';
+import { ITireSearchParams } from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
   ALL_SEASON: 'ALL_SEASON',
