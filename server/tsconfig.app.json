@@ -14,9 +14,6 @@
   "references": [
     {
       "path": "../libs/database/tsconfig.lib.json"
-    },
-    {
-      "path": "../libs/shared-dto"
     }
   ]
 }
