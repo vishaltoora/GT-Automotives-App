@@ -234,7 +234,7 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
             --progress=plain \
-            -f Dockerfile.simple \
+            -f Dockerfile \
             -t ${{ env.DOCKER_IMAGE }} \
             -t ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
             .

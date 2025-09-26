@@ -5,34 +5,33 @@
   "sourceRoot": "server/src",
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
-      "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": [
-        "production",
-        "^production",
-        {
-          "externalDependencies": ["webpack-cli"]
-        }
-      ],
-      "outputs": ["{workspaceRoot}/dist/server"],
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "commands": [
-          "mkdir -p dist/server",
-          "NX_TASK_TARGET_PROJECT=server NX_TASK_TARGET_TARGET=build NX_TASK_TARGET_CONFIGURATION=production webpack-cli build --node-env=production",
-          "ls -la dist/server/ || echo 'Checking build output'"
-        ],
-        "parallel": false
+        "outputPath": "dist/apps/server",
+        "main": "server/src/main.ts",
+        "tsConfig": "server/tsconfig.app.json",
+        "assets": ["server/src/assets"],
+        "compiler": "tsc",
+        "target": "node",
+        "webpackConfig": "server/webpack.config.js"
       },
       "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "fileReplacements": [
+            {
+              "replace": "server/src/environments/environment.ts",
+              "with": "server/src/environments/environment.prod.ts"
+            }
+          ]
+        },
         "development": {
-          "options": {
-            "commands": [
-              "cd server && webpack-cli build --node-env=development",
-              "mkdir -p ../dist/server",
-              "find . -name 'main.js' -path '*/dist/server/*' -exec cp {} ../dist/server/ \\; || echo 'Build files will be in Nx cache'"
-            ]
-          }
+          "optimization": false,
+          "extractLicenses": false,
+          "inspect": true
         }
       }
     },
