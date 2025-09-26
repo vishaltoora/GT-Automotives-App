@@ -10,7 +10,7 @@ import { colors } from '../../theme/colors';
 
 // Use direct import.meta.env access - Vite will replace this at build time
 // @ts-ignore
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+const publishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 const SignIn = publishableKey ? ClerkSignIn : MockSignIn;
 
 

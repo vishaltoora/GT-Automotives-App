@@ -58,7 +58,7 @@ export function StaffLayout() {
     try {
       await signOut({ redirectUrl: '/' });
     } catch (error) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Error signing out:', error);
       }
       // Fallback navigation if signOut fails

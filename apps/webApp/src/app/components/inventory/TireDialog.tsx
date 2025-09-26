@@ -166,7 +166,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
       onClose();
     },
     onError: (error: any) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Create tire failed:', error?.response?.data?.message || error.message);
       }
     },
@@ -185,7 +185,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
       onClose();
     },
     onError: (error: any) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Update tire failed:', error?.response?.data?.message || error.message);
       }
     },

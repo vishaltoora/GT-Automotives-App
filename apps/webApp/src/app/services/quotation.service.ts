@@ -2,7 +2,7 @@ import axios from 'axios';
 import gtLogoImage from '../images-and-logos/logo.png';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3000';
 
 // Helper to get fresh token from Clerk
 let getClerkToken: (() => Promise<string | null>) | null = null;
@@ -96,7 +96,7 @@ class QuoteService {
           return freshToken;
         }
       } catch (error) {
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV !== 'production') {
           console.error('Failed to get fresh Clerk token:', error);
         }
       }
@@ -418,7 +418,7 @@ class QuoteService {
         try {
           printWindow.print();
         } catch (error) {
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV !== 'production') {
             console.warn('Print dialog failed:', error);
           }
           // Close the window if print failed
@@ -428,7 +428,7 @@ class QuoteService {
         }
       }, 500);
     } catch (error) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Failed to open print window:', error);
       }
       // Fallback to blob method
@@ -459,14 +459,14 @@ class QuoteService {
           try {
             printWindow.print();
           } catch (error) {
-            if (import.meta.env.DEV) {
+            if (process.env.NODE_ENV !== 'production') {
               console.warn('Print dialog failed:', error);
             }
           }
         }, 500);
       };
     } catch (error) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Alternative print method failed:', error);
       }
       throw error;

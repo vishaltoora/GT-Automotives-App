@@ -253,7 +253,7 @@ const InvoiceForm: React.FC = () => {
       const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
       navigate(`${basePath}/invoices/${invoice.id}`);
     } catch (error: any) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== 'production') {
         console.error('Error creating invoice:', error);
         if (error.response?.data) {
           console.error('Error details:', error.response.data);
