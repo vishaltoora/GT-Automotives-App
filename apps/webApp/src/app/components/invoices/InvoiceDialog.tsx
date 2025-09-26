@@ -23,6 +23,7 @@ import TireService from '../../services/tire.service';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import InvoiceFormContent from './InvoiceFormContent';
+import companyService, { Company } from '../../services/company.service';
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -50,6 +51,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [customers, setCustomers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [tires, setTires] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const isEditMode = Boolean(invoice);
@@ -66,6 +68,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [formData, setFormData] = useState({
     customerId: '',
     vehicleId: '',
+    companyId: '',
     gstRate: 0.05,
     pstRate: 0.07,
     paymentMethod: '',
@@ -158,9 +161,11 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       phone: '',
       email: '',
     });
+    const defaultCompany = companies.find(c => c.isDefault) || companies[0];
     setFormData({
       customerId: '',
       vehicleId: '',
+      companyId: defaultCompany?.id || '',
       gstRate: 0.05,
       pstRate: 0.07,
       paymentMethod: '',
@@ -200,6 +205,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     setFormData({
       customerId: invoiceData.customer?.id || '',
       vehicleId: invoiceData.vehicle?.id || '',
+      companyId: invoiceData.company?.id || invoiceData.companyId || '',
       gstRate: invoiceData.gstRate || 0.05,
       pstRate: invoiceData.pstRate || 0.07,
       paymentMethod: invoiceData.paymentMethod || '',
@@ -231,12 +237,20 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
   const loadData = async () => {
     try {
-      const [customersData, tiresResult] = await Promise.all([
+      const [customersData, tiresResult, companiesData] = await Promise.all([
         customerService.getCustomers(),
         TireService.getTires({ page: 1, limit: 100 }),
+        companyService.getCompanies(),
       ]);
       setCustomers(customersData);
       setTires(tiresResult.items || []);
+      setCompanies(companiesData);
+
+      // Set default company if not in edit mode
+      if (!isEditMode && companiesData.length > 0) {
+        const defaultCompany = companiesData.find(c => c.isDefault) || companiesData[0];
+        setFormData(prev => ({ ...prev, companyId: defaultCompany.id }));
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -347,6 +361,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         invoiceData.vehicleId = formData.vehicleId;
       }
 
+      if (formData.companyId) {
+        invoiceData.companyId = formData.companyId;
+      }
 
       let result;
       if (isEditMode && invoice) {
@@ -505,6 +522,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           customers={customers}
           vehicles={vehicles}
           tires={tires}
+          companies={companies}
           isNewCustomer={isNewCustomer}
           customerForm={customerForm}
           setCustomerForm={setCustomerForm}

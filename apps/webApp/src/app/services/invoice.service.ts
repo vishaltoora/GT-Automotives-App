@@ -34,6 +34,17 @@ export interface Invoice {
   customer?: any;
   vehicleId?: string;
   vehicle?: any;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+    registrationNumber: string;
+    businessType?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    isDefault: boolean;
+  };
   items: InvoiceItem[];
   subtotal: number;
   taxRate: number;
@@ -130,18 +141,9 @@ class InvoiceService {
   }
 
   async deleteInvoice(id: string): Promise<void> {
-    console.log('InvoiceService.deleteInvoice called with ID:', id);
-    console.log('Making DELETE request to:', `${API_URL}/api/invoices/${id}`);
-
-    try {
-      const response = await axios.delete(`${API_URL}/api/invoices/${id}`, {
-        headers: await this.getHeaders(),
-      });
-      console.log('Delete request successful, response:', response);
-    } catch (error) {
-      console.error('Delete request failed:', error);
-      throw error;
-    }
+    await axios.delete(`${API_URL}/api/invoices/${id}`, {
+      headers: await this.getHeaders(),
+    });
   }
 
   async searchInvoices(params: {
@@ -150,6 +152,7 @@ class InvoiceService {
     startDate?: string;
     endDate?: string;
     status?: Invoice['status'];
+    companyId?: string;
   }): Promise<Invoice[]> {
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -283,14 +286,14 @@ class InvoiceService {
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55;">GT Automotives</h1>
-                <p style="margin: 0; font-size: 14px; color: #666;">Professional Tire & Auto Services</p>
-                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
+                <h1 style="margin: 0; color: #243c55;">${invoice.company?.name || 'GT Automotives'}</h1>
+                <p style="margin: 0; font-size: 14px; color: #666;">${invoice.company?.businessType || 'Professional Tire & Auto Services'}</p>
+                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${invoice.company?.registrationNumber || '16472991'} Canada INC.</p>
               </div>
             </div>
-            <p style="margin-top: 8px; font-size: 13px;">Prince George, BC<br>
-            Phone: 250-570-2333<br>
-            Email: gt-automotives@outlook.com</p>
+            <p style="margin-top: 8px; font-size: 13px;">${invoice.company?.address || 'Prince George, BC'}<br>
+            ${invoice.company?.phone ? `Phone: ${invoice.company.phone}<br>` : 'Phone: 250-570-2333<br>'}
+            ${invoice.company?.email ? `Email: ${invoice.company.email}` : 'Email: gt-automotives@outlook.com'}</p>
           </div>
           <div class="invoice-details">
             <h2>INVOICE</h2>
@@ -419,14 +422,14 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55; font-size: 26px;">GT Automotives</h1>
-                <p style="margin: 0; font-size: 14px; color: #666;">Professional Tire & Auto Services</p>
-                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
+                <h1 style="margin: 0; color: #243c55; font-size: 26px;">${invoice.company?.name || 'GT Automotives'}</h1>
+                <p style="margin: 0; font-size: 14px; color: #666;">${invoice.company?.businessType || 'Professional Tire & Auto Services'}</p>
+                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${invoice.company?.registrationNumber || '16472991'} Canada INC.</p>
               </div>
             </div>
-            <p style="margin-top: 8px; font-size: 13px;">Prince George, BC<br>
-            Phone: 250-570-2333<br>
-            Email: gt-automotives@outlook.com</p>
+            <p style="margin-top: 8px; font-size: 13px;">${invoice.company?.address || 'Prince George, BC'}<br>
+            ${invoice.company?.phone ? `Phone: ${invoice.company.phone}<br>` : 'Phone: 250-570-2333<br>'}
+            ${invoice.company?.email ? `Email: ${invoice.company.email}` : 'Email: gt-automotives@outlook.com'}</p>
           </div>
           <div style="text-align: right;">
             <h2 style="margin: 0; color: #333;">INVOICE</h2>

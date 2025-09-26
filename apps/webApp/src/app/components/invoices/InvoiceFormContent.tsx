@@ -37,12 +37,14 @@ import {
   Build as BuildIcon,
 } from '@mui/icons-material';
 import { InvoiceItem } from '../../services/invoice.service';
+import { Company } from '../../services/company.service';
 import { colors } from '../../theme/colors';
 
 interface InvoiceFormContentProps {
   customers: any[];
   vehicles: any[];
   tires: any[];
+  companies: Company[];
   isNewCustomer: boolean;
   customerForm: {
     firstName: string;
@@ -56,6 +58,7 @@ interface InvoiceFormContentProps {
   formData: {
     customerId: string;
     vehicleId: string;
+    companyId: string;
     gstRate: number;
     pstRate: number;
     paymentMethod: string;
@@ -79,6 +82,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   customers,
   vehicles,
   tires,
+  companies,
   isNewCustomer,
   customerForm,
   setCustomerForm,
@@ -133,6 +137,47 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* COMPANY SELECTION */}
+      <Box sx={{ mb: 3 }}>
+        <Card sx={{
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: `1px solid ${colors.neutral[200]}`,
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <BuildIcon sx={{ color: colors.primary.main }} />
+              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                Company / Business Unit
+              </Typography>
+            </Box>
+            <FormControl fullWidth size="small">
+              <InputLabel>Select Company</InputLabel>
+              <Select
+                value={formData.companyId}
+                onChange={(e) => setFormData({ ...formData, companyId: e.target.value })}
+                label="Select Company"
+                sx={{
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary.light },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary.main }
+                }}
+              >
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    <Box>
+                      <Typography variant="body1">{company.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {company.registrationNumber} {company.businessType && `• ${company.businessType}`}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </CardContent>
+        </Card>
+      </Box>
+
       {/* TOP ROW: Customer Information & Payment/Notes */}
       <Box sx={{ mb: 3 }}>
         <Grid container spacing={3}>
@@ -169,29 +214,67 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       if (typeof option === 'string') return option;
                       return `${option.firstName} ${option.lastName}`;
                     }}
-                    filterOptions={(options, { inputValue }) => {
-                      if (!inputValue) return options;
-                      const searchValue = inputValue.toLowerCase();
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.id}>
+                        <Box>
+                          <Typography variant="body1">
+                            {option.firstName} {option.lastName}
+                          </Typography>
+                          {(option.phone || option.email) && (
+                            <Typography variant="caption" color="text.secondary">
+                              {option.phone} {option.email && `• ${option.email}`}
+                            </Typography>
+                          )}
+                        </Box>
+                      </li>
+                    )}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    filterOptions={(options, state) => {
+                      const inputValue = state.inputValue.toLowerCase().trim();
+
+                      if (!inputValue) {
+                        return options;
+                      }
+
                       return options.filter((option) => {
                         const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
                         const phone = (option.phone || '').toLowerCase();
                         const email = (option.email || '').toLowerCase();
-                        return fullName.includes(searchValue) ||
-                               phone.includes(searchValue) ||
-                               email.includes(searchValue);
+                        return fullName.includes(inputValue) ||
+                               phone.includes(inputValue) ||
+                               email.includes(inputValue);
                       });
                     }}
                     value={customers.find(c => c.id === formData.customerId) || null}
                     onChange={(_, newValue) => {
                       if (typeof newValue === 'string') {
-                        // User typed a new name directly - try to parse firstName/lastName
-                        const nameParts = newValue.trim().split(' ');
-                        const firstName = nameParts[0] || '';
-                        const lastName = nameParts.slice(1).join(' ') || '';
-                        setCustomerForm({ ...customerForm, firstName, lastName });
-                        setFormData({ ...formData, customerId: '' }); // Clear customerId
-                        // Signal that this is a new customer
-                        onCustomerSelect(null);
+                        const searchTerm = newValue.trim().toLowerCase();
+
+                        const matchingCustomer = customers.find(c => {
+                          const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
+                          const firstName = c.firstName.toLowerCase();
+                          const lastName = c.lastName.toLowerCase();
+                          const phone = (c.phone || '').toLowerCase();
+                          const email = (c.email || '').toLowerCase();
+
+                          return fullName === searchTerm ||
+                                 firstName === searchTerm ||
+                                 lastName === searchTerm ||
+                                 phone === searchTerm ||
+                                 email === searchTerm ||
+                                 (searchTerm.includes(' ') && fullName.includes(searchTerm));
+                        });
+
+                        if (matchingCustomer) {
+                          onCustomerSelect(matchingCustomer);
+                        } else {
+                          const nameParts = newValue.trim().split(' ');
+                          const firstName = nameParts[0] || '';
+                          const lastName = nameParts.slice(1).join(' ') || '';
+                          setCustomerForm({ ...customerForm, firstName, lastName });
+                          setFormData({ ...formData, customerId: '' });
+                          onCustomerSelect(null);
+                        }
                       } else {
                         onCustomerSelect(newValue);
                       }
