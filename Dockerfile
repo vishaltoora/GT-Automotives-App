@@ -19,8 +19,10 @@ RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 RUN yarn nx build shared-dto
 
 # Create symlink for shared-dto in node_modules (required for external webpack resolution)
-RUN mkdir -p node_modules/@gt-automotive && \
-    ln -sf /app/dist/libs/shared-dto node_modules/@gt-automotive/shared-dto
+# Remove yarn's workspace symlink and replace with built dist version
+RUN rm -f node_modules/@gt-automotive/shared-dto && \
+    mkdir -p node_modules/@gt-automotive && \
+    ln -s /app/dist/libs/shared-dto node_modules/@gt-automotive/shared-dto
 
 # Build server (will output to dist/apps/server)
 RUN yarn nx build server --configuration=production
@@ -28,6 +30,5 @@ RUN yarn nx build server --configuration=production
 # Expose port
 EXPOSE 3000
 
-# Run the application
-WORKDIR /app/dist/apps/server
-CMD ["node", "main.js"]
+# Run the application (from /app to access symlinks in node_modules)
+CMD ["node", "./dist/apps/server/main.js"]
