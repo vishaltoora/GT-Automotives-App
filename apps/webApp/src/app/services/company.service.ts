@@ -34,9 +34,7 @@ class CompanyService {
           return freshToken;
         }
       } catch (error) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error('Failed to get fresh Clerk token:', error);
-        }
+        // Token refresh failed, will use fallback
       }
     }
     // Fallback to localStorage

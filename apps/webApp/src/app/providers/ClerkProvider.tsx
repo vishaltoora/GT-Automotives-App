@@ -15,7 +15,6 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
 
   // In development without Clerk keys, use mock provider
   if (!publishableKey || publishableKey === '') {
-    console.warn('Clerk Publishable Key not found. Running in development mode without authentication.');
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
   
@@ -56,21 +55,6 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       props.isSatellite = false;
       props.authorizedParties = ['https://gt-automotives.com', 'https://www.gt-automotives.com'];
       props.allowedRedirectOrigins = ['https://gt-automotives.com', 'https://www.gt-automotives.com'];
-
-      // Add debugging
-      console.log('[Clerk Config] Using custom domain:', props.domain);
-      console.log('[Clerk Config] Production mode:', isProduction);
-      console.log('[Clerk Config] Vite Mode:', import.meta.env.MODE);
-      console.log('[Clerk Config] Vite PROD:', import.meta.env.PROD);
-      console.log('[Clerk Config] Production key:', isProductionKey);
-      console.log('[Clerk Config] Publishable key (partial):', publishableKey?.substring(0, 12) + '...');
-    } else {
-      // Development configuration or missing production setup
-      console.log('[Clerk Config] Using development configuration');
-      console.log('[Clerk Config] Production mode:', isProduction);
-      console.log('[Clerk Config] Vite Mode:', import.meta.env.MODE);
-      console.log('[Clerk Config] Production key:', isProductionKey);
-      console.log('[Clerk Config] Publishable key (partial):', publishableKey?.substring(0, 12) + '...');
     }
 
     return props;

@@ -96,9 +96,7 @@ class QuoteService {
           return freshToken;
         }
       } catch (error) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error('Failed to get fresh Clerk token:', error);
-        }
+        // Token refresh failed, will use fallback
       }
     }
     // Fallback to localStorage
@@ -418,9 +416,6 @@ class QuoteService {
         try {
           printWindow.print();
         } catch (error) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.warn('Print dialog failed:', error);
-          }
           // Close the window if print failed
           printWindow.close();
           // Try alternative method
@@ -428,9 +423,6 @@ class QuoteService {
         }
       }, 500);
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Failed to open print window:', error);
-      }
       // Fallback to blob method
       this.printUsingBlob(quote);
     }
@@ -459,16 +451,11 @@ class QuoteService {
           try {
             printWindow.print();
           } catch (error) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.warn('Print dialog failed:', error);
-            }
+            // Print dialog failed
           }
         }, 500);
       };
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Alternative print method failed:', error);
-      }
       throw error;
     }
   }

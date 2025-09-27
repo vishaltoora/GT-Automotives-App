@@ -258,7 +258,8 @@
       "Bash(export NX_DAEMON=false)",
       "Bash(git fetch:*)",
       "Bash(git pull:*)",
-      "Bash(do sed -i '' 's/process\\.env\\.VITE_/import.meta.env.VITE_/g' \"$file\")"
+      "Bash(do sed -i '' 's/process\\.env\\.VITE_/import.meta.env.VITE_/g' \"$file\")",
+      "Bash(do sed -i '' '/console\\.\\(log\\|warn\\|error\\|info\\|debug\\)/d' \"$file\")"
     ],
     "deny": [],
     "ask": []

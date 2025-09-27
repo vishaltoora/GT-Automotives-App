@@ -15,9 +15,7 @@ export async function getAuthToken(): Promise<string | null> {
         return await clerkInstance.session.getToken();
       }
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Error getting Clerk token:', error);
-      }
+      // Token retrieval failed, will use fallback
     }
   }
   
@@ -48,10 +46,7 @@ export function setupAxiosInterceptors() {
     (response: any) => response,
     (error: any) => {
       if (error.response?.status === 401) {
-        // Handle unauthorized access
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('Unauthorized access - token may be expired');
-        }
+        // Handle unauthorized access - token may be expired
         // Could trigger logout or token refresh here
       }
       return Promise.reject(error);
