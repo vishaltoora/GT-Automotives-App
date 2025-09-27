@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Quick Reference
 
+### 🚨 Critical Rules
+- **[Environment Variables](.claude/rules/environment-variables.md)** - **CRITICAL**: Always use `import.meta.env.VITE_*` in frontend, NEVER `process.env.VITE_*`
+
 ### 📁 Documentation Structure
 - **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview
 - **[Project Overview](.claude/docs/project-overview.md)** - Application summary, status, and roadmap

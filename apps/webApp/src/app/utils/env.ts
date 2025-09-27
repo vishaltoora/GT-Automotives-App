@@ -2,8 +2,11 @@
 
 /**
  * Environment variable utility that works in both browser and test environments
- * 
- * NOTE: Vite replaces process.env.VITE_* at build time with actual values.
+ *
+ * CRITICAL: Always use import.meta.env.VITE_* in Vite projects, NEVER process.env.VITE_*
+ * - import.meta.env.VITE_* is replaced at build time by Vite
+ * - process.env does not exist in browser environments
+ *
  * This function provides a runtime fallback for tests and development.
  */
 export function getEnvVar(key: string, defaultValue: string = ''): string {
