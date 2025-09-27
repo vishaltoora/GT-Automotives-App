@@ -51,7 +51,7 @@ jobs:
             node_modules
             .nx/cache
             apps/webApp/dist
-            dist/libs/shared-dto
+            dist/libs/data
           key: ${{ runner.os }}-gt-deps-${{ hashFiles('yarn.lock', 'package.json') }}
           restore-keys: |
             ${{ runner.os }}-gt-deps-
@@ -100,7 +100,7 @@ jobs:
           echo "🌐 Building frontend and shared libraries in parallel..."
           yarn build:web &
           FRONTEND_PID=$!
-          yarn nx build shared-dto &
+          yarn nx build data &
           SHARED_PID=$!
 
           # Wait for both builds
