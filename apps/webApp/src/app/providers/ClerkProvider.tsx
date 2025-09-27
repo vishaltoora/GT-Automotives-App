@@ -7,6 +7,11 @@ import { MockClerkProvider } from './MockClerkProvider';
 // Direct import.meta.env access - Vite will replace this at build time
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 
+// Debug logging to verify env var is set
+console.log('[Clerk Debug] Raw publishableKey:', publishableKey);
+console.log('[Clerk Debug] publishableKey type:', typeof publishableKey);
+console.log('[Clerk Debug] publishableKey length:', publishableKey?.length);
+console.log('[Clerk Debug] Is empty?:', !publishableKey);
 
 interface ClerkProviderProps {
   children: React.ReactNode;
@@ -15,7 +20,9 @@ interface ClerkProviderProps {
 export function ClerkProvider({ children }: ClerkProviderProps) {
 
   // In development without Clerk keys, use mock provider
-  if (!publishableKey) {
+  if (!publishableKey || publishableKey === '') {
+    console.error('[Clerk Error] Publishable Key not found or empty!');
+    console.error('[Clerk Error] ENV dump:', import.meta.env);
     console.warn('Clerk Publishable Key not found. Running in development mode without authentication.');
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
