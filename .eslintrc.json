@@ -1,0 +1,60 @@
+{
+  "root": true,
+  "ignorePatterns": ["**/*"],
+  "plugins": ["@nx"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        "@nx/enforce-module-boundaries": [
+          "error",
+          {
+            "enforceBuildableLibDependency": true,
+            "allow": ["apps/webApp", "libs/data", "apps/server", "server"],
+            "depConstraints": [
+              {
+                "sourceTag": "*",
+                "onlyDependOnLibsWithTags": ["*"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": ["plugin:@nx/typescript"],
+      "rules": {
+        "no-empty-function": "off",
+        "@typescript-eslint/no-empty-function": [
+          "error",
+          {
+            "allow": ["private-constructors"]
+          }
+        ],
+        "@typescript-eslint/no-extra-semi": "error",
+        "no-extra-semi": "off"
+      }
+    },
+    {
+      "files": ["*.js", "*.jsx"],
+      "extends": ["plugin:@nx/javascript"],
+      "rules": {
+        "@typescript-eslint/no-extra-semi": "error",
+        "no-extra-semi": "off"
+      }
+    },
+    {
+      "files": ["apps/webApp/**/*.ts", "apps/webApp/**/*.tsx"],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "MemberExpression[object.object.name='process'][object.property.name='env'][property.name=/^VITE_/]",
+            "message": "❌ CRITICAL: Use import.meta.env.VITE_* instead of process.env.VITE_* in Vite projects. See .claude/rules/environment-variables.md"
+          }
+        ]
+      }
+    }
+  ]
+}

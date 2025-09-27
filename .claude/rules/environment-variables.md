@@ -125,9 +125,13 @@ find apps/webApp/src -name "*.ts" -o -name "*.tsx" | \
   xargs sed -i '' 's/process\.env\.VITE_/import.meta.env.VITE_/g'
 ```
 
-## ESLint Rule (Future Enhancement)
+## ESLint Rule - ACTIVE
 
-Consider adding this ESLint rule to prevent future mistakes:
+✅ **ESLint rule is now active** in the following files:
+- `.eslintrc.json` (root)
+- `apps/webApp/.eslintrc.json`
+
+The rule will catch and prevent usage of `process.env.VITE_*` in frontend code:
 
 ```json
 {
@@ -136,12 +140,20 @@ Consider adding this ESLint rule to prevent future mistakes:
       "error",
       {
         "selector": "MemberExpression[object.object.name='process'][object.property.name='env'][property.name=/^VITE_/]",
-        "message": "Use import.meta.env.VITE_* instead of process.env.VITE_* in Vite projects"
+        "message": "❌ CRITICAL: Use import.meta.env.VITE_* instead of process.env.VITE_* in Vite projects. See .claude/rules/environment-variables.md"
       }
     ]
   }
 }
 ```
+
+### Testing the Rule
+
+A test file is available at `apps/webApp/src/test-eslint-rule.ts` that demonstrates:
+- ❌ Wrong usage: `process.env.VITE_API_URL`
+- ✅ Correct usage: `import.meta.env.VITE_API_URL`
+
+**Note**: Lint targets need to be configured in Nx for automated enforcement. The ESLint configuration is in place and ready to use.
 
 ## Historical Context
 

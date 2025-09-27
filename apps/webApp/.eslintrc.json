@@ -1,0 +1,26 @@
+{
+  "extends": ["plugin:@nx/react", "../../.eslintrc.json"],
+  "ignorePatterns": ["!**/*"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {}
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "MemberExpression[object.object.name='process'][object.property.name='env'][property.name=/^VITE_/]",
+            "message": "❌ CRITICAL: Use import.meta.env.VITE_* instead of process.env.VITE_* in Vite projects. See .claude/rules/environment-variables.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["*.js", "*.jsx"],
+      "rules": {}
+    }
+  ]
+}
