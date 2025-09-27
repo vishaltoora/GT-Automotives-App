@@ -255,7 +255,10 @@
       "Bash(FRONTEND_URL=\"https://gt-automotives.com\" )",
       "Bash(HOST=\"0.0.0.0\" )",
       "Bash(NX_DAEMON=false npx nx run server:build:production --skip-nx-cache)",
-      "Bash(export NX_DAEMON=false)"
+      "Bash(export NX_DAEMON=false)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(do sed -i '' 's/process\\.env\\.VITE_/import.meta.env.VITE_/g' \"$file\")"
     ],
     "deny": [],
     "ask": []

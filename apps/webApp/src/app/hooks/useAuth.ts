@@ -4,10 +4,8 @@ import { useUser as useClerkUser, useAuth as useClerkAuthHook, useClerk } from '
 import { useUser as useMockUser, useAuth as useMockAuth } from '../providers/MockClerkProvider';
 // Conditionally use Clerk or Mock hooks based on environment
 // Use direct import.meta.env access like ClerkProvider for consistency
-// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const publishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY || '';
-// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const API_URL = process.env.VITE_API_URL || 'http://localhost:3000';
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const useUser = publishableKey ? useClerkUser : useMockUser;
 const useClerkAuth = publishableKey ? useClerkAuthHook : useMockAuth;

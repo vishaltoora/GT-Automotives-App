@@ -2,7 +2,7 @@ import axios from 'axios';
 import gtLogoImage from '../images-and-logos/logo.png';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const API_URL = process.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Helper to get fresh token from Clerk
 let getClerkToken: (() => Promise<string | null>) | null = null;
