@@ -5,8 +5,7 @@ import { MockClerkProvider } from './MockClerkProvider';
 // Custom domain setup - let Clerk handle JS loading automatically
 
 // Direct import.meta.env access - Vite will replace this at build time
-// @ts-ignore
-const publishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 
 
 interface ClerkProviderProps {
@@ -47,7 +46,7 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
     };
 
     // Only use custom domain for production builds with production key
-    const isProduction = process.env.PROD;
+    const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
     const isProductionKey = publishableKey?.startsWith('pk_live_');
 
     if (isProduction && isProductionKey && publishableKey?.includes('Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA')) {
@@ -62,7 +61,17 @@ export function ClerkProvider({ children }: ClerkProviderProps) {
       // Add debugging
       console.log('[Clerk Config] Using custom domain:', props.domain);
       console.log('[Clerk Config] Production mode:', isProduction);
-      console.log('[Clerk Config] User Agent:', typeof window !== 'undefined' ? navigator.userAgent : 'SSR');
+      console.log('[Clerk Config] Vite Mode:', import.meta.env.MODE);
+      console.log('[Clerk Config] Vite PROD:', import.meta.env.PROD);
+      console.log('[Clerk Config] Production key:', isProductionKey);
+      console.log('[Clerk Config] Publishable key (partial):', publishableKey?.substring(0, 12) + '...');
+    } else {
+      // Development configuration or missing production setup
+      console.log('[Clerk Config] Using development configuration');
+      console.log('[Clerk Config] Production mode:', isProduction);
+      console.log('[Clerk Config] Vite Mode:', import.meta.env.MODE);
+      console.log('[Clerk Config] Production key:', isProductionKey);
+      console.log('[Clerk Config] Publishable key (partial):', publishableKey?.substring(0, 12) + '...');
     }
 
     return props;
