@@ -1,15 +1,29 @@
 .git
-*.log
-.env*
-.nx
-.cache
-README.md
-*.md
 .github
 .vscode
+.nx
+.cache
+*.log
+*.md
 *.zip
 *.tar.gz
-# We need dist and specific node_modules for prebuilt approach
-# So we're NOT ignoring them here
-!dist/
-!node_modules/
+.env*
+
+# Exclude everything that will be rebuilt inside Docker
+node_modules/
+dist/
+apps/webApp/dist/
+apps/webApp/node_modules/
+
+# Exclude development files
+*.test.ts
+*.spec.ts
+coverage/
+.prettierrc
+.eslintrc.json
+
+# Include only essential files
+!package.json
+!yarn.lock
+!nx.json
+!tsconfig*.json
