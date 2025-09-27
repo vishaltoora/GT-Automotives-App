@@ -9,4 +9,4 @@ export * from './lib/quotation.dto';
 export * from './lib/decorators';
 
 // Export utility functions
-export * from './lib/utils';
+export * from './lib/utils/index';

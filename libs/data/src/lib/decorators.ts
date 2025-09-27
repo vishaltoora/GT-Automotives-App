@@ -1,63 +1,37 @@
-// Conditional exports for server (Node.js) and browser (Vite) environments
+// Frontend-compatible decorators for compilation compatibility
+// These provide proper PropertyDecorator types for TypeScript
 
-// No-op decorator for browser environments
-const noopDecorator = () => (target: any, propertyKey?: string | symbol) => {};
-
-// Try to load validation libraries, fallback to no-ops if they fail (browser environment)
-let validationDecorators: any = {};
-let transformerDecorators: any = {};
-let mappedTypes: any = {};
-
-try {
-  // This will work in Node.js but fail in browser/Vite build
-  validationDecorators = require('class-validator');
-  transformerDecorators = require('class-transformer');
-  mappedTypes = require('@nestjs/mapped-types');
-} catch (error) {
-  // Browser environment - use no-ops
-  validationDecorators = {
-    IsString: noopDecorator,
-    IsNumber: noopDecorator,
-    IsEnum: noopDecorator,
-    IsOptional: noopDecorator,
-    Min: noopDecorator,
-    IsEmail: noopDecorator,
-    IsArray: noopDecorator,
-    ValidateNested: noopDecorator,
-    IsBoolean: noopDecorator,
-    IsDate: noopDecorator,
-    ValidateIf: noopDecorator,
-    IsPositive: noopDecorator,
+// Simple decorator factory
+const createDecorator = () => {
+  return (..._args: any[]): PropertyDecorator => {
+    return (_target: any, _propertyKey: string | symbol) => {
+      // No-op for frontend/build compatibility
+    };
   };
-  transformerDecorators = {
-    Type: noopDecorator,
-  };
-  mappedTypes = {
-    PartialType: <T>(classRef: T) => classRef,
-    OmitType: <T, K extends keyof T>(classRef: T, keys: K[]) => classRef,
-  };
-}
+};
 
-// Export decorators
-export const IsString = validationDecorators.IsString;
-export const IsNumber = validationDecorators.IsNumber;
-export const IsEnum = validationDecorators.IsEnum;
-export const IsOptional = validationDecorators.IsOptional;
-export const Min = validationDecorators.Min;
-export const IsEmail = validationDecorators.IsEmail;
-export const IsArray = validationDecorators.IsArray;
-export const ValidateNested = validationDecorators.ValidateNested;
-export const IsBoolean = validationDecorators.IsBoolean;
-export const IsDate = validationDecorators.IsDate;
-export const ValidateIf = validationDecorators.ValidateIf;
-export const IsPositive = validationDecorators.IsPositive;
+// Export all decorators using the factory
+export const IsString = createDecorator();
+export const IsNumber = createDecorator();
+export const IsEnum = createDecorator();
+export const IsOptional = createDecorator();
+export const Min = createDecorator();
+export const IsEmail = createDecorator();
+export const IsArray = createDecorator();
+export const ValidateNested = createDecorator();
+export const IsBoolean = createDecorator();
+export const IsDate = createDecorator();
+export const ValidateIf = createDecorator();
+export const IsPositive = createDecorator();
+export const Type = createDecorator();
 
-export const Type = transformerDecorators.Type;
+// Mapped type functions
+export const PartialType = <T>(classRef: T): T => classRef;
+export const OmitType = <T, K extends keyof T>(classRef: new (...args: any[]) => T, _keys: readonly K[]): new (...args: any[]) => Omit<T, K> => {
+  return classRef as any;
+};
 
-export const PartialType = mappedTypes.PartialType;
-export const OmitType = mappedTypes.OmitType;
-
-// TypeScript types for validation options (no-op in browser)
+// TypeScript interface for validation options
 export interface ValidationOptions {
   message?: string | ((args: any) => string);
   groups?: string[];

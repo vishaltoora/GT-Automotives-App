@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsEnum, IsOptional, Min, IsBoolean, IsArray, ValidateNested, Type } from './decorators';
+import { IsString, IsNumber, IsEnum, IsOptional, Min } from './decorators';
 
 export enum TireType {
   ALL_SEASON = 'ALL_SEASON',
@@ -122,229 +122,85 @@ export class UpdateTireDto implements Partial<CreateTireDto> {
   notes?: string;
 }
 
-export class TireResponseDto {
-  @IsString()
-  id!: string;
-
-  @IsString()
-  brand!: string;
-
-  @IsString()
-  size!: string;
-
-  @IsEnum(TireType)
-  type!: TireType;
-
-  @IsEnum(TireCondition)
-  condition!: TireCondition;
-
-  @IsNumber()
-  @Min(0)
-  price!: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
+export interface TireResponseDto {
+  id: string;
+  brand: string;
+  size: string;
+  type: TireType;
+  condition: TireCondition;
+  price: number;
   cost?: number;
-
-  @IsNumber()
-  @Min(0)
-  quantity!: number;
-
-  @IsOptional()
-  @IsString()
+  quantity: number;
   description?: string;
-
-  @IsOptional()
-  @IsString()
   imageUrl?: string;
-
-  @IsBoolean()
-  inStock!: boolean;
-
-  @IsString()
-  createdAt!: string;
-
-  @IsString()
-  updatedAt!: string;
-
-  @IsString()
-  createdBy!: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
+  inStock: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
   minStock?: number;
-
-  @IsOptional()
-  @IsString()
   location?: string;
-
-  @IsOptional()
-  @IsString()
   notes?: string;
 }
 
-export class StockAdjustmentDto {
-  @IsNumber()
-  quantity!: number;
-
-  @IsEnum(AdjustmentType)
-  type!: AdjustmentType;
-
-  @IsOptional()
-  @IsString()
+export interface StockAdjustmentDto {
+  quantity: number;
+  type: AdjustmentType;
   reason?: string;
 }
 
-export class TireFiltersDto {
-  @IsOptional()
-  @IsString()
+export interface TireFiltersDto {
   brand?: string;
-
-  @IsOptional()
-  @IsString()
   size?: string;
-
-  @IsOptional()
-  @IsEnum(TireType)
   type?: TireType;
-
-  @IsOptional()
-  @IsEnum(TireCondition)
   condition?: TireCondition;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
   minPrice?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
   maxPrice?: number;
-
-  @IsOptional()
-  @IsBoolean()
   inStock?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
   lowStock?: boolean;
 }
 
-export class TireSearchParamsDto {
-  @IsOptional()
-  @IsString()
+export interface TireSearchParamsDto {
   search?: string;
-
-  @IsOptional()
-  @IsString()
   brand?: string;
-
-  @IsOptional()
-  @IsString()
   size?: string;
-
-  @IsOptional()
-  @IsEnum(TireType)
   type?: TireType;
-
-  @IsOptional()
-  @IsEnum(TireCondition)
   condition?: TireCondition;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
   minPrice?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
   maxPrice?: number;
-
-  @IsOptional()
-  @IsBoolean()
   inStock?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
   lowStock?: boolean;
-
-  @IsOptional()
-  @IsString()
   sortBy?: string;
-
-  @IsOptional()
-  @IsString()
   sortOrder?: 'asc' | 'desc';
-
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Type(() => Number)
   page?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Type(() => Number)
   limit?: number;
 }
 
-export class TireSearchResultResponseDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TireResponseDto)
-  items!: TireResponseDto[];
-
-  @IsNumber()
-  total!: number;
-
-  @IsNumber()
-  page!: number;
-
-  @IsNumber()
-  limit!: number;
-
-  @IsNumber()
-  totalPages!: number;
-
-  @IsBoolean()
-  hasMore!: boolean;
+export interface TireSearchResultResponseDto {
+  items: TireResponseDto[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
 }
 
-export class TireImageDto {
-  @IsString()
-  id!: string;
-
-  @IsString()
-  url!: string;
-
-  @IsOptional()
-  @IsString()
+export interface TireImageDto {
+  id: string;
+  url: string;
   alt?: string;
 }
 
-export class InventoryReportDto {
-  @IsNumber()
-  totalValue!: number;
-
-  @IsNumber()
-  totalCost!: number;
-
-  @IsNumber()
-  totalItems!: number;
-
-  @IsArray()
-  lowStockItems!: TireResponseDto[];
+export interface InventoryReportDto {
+  totalValue: number;
+  totalCost: number;
+  totalItems: number;
+  lowStockItems: TireResponseDto[];
 }
 
 // Export with original names for consistency
-export { TireSearchParamsDto as TireSearchDto };
-export { TireSearchResultResponseDto as TireSearchResultDto };
-export { TireImageDto as TireImageResponseDto };
+export type { TireSearchParamsDto as TireSearchDto };
+export type { TireSearchResultResponseDto as TireSearchResultDto };
+export type { TireImageDto as TireImageResponseDto };
 
 // Legacy type aliases for backward compatibility
 export type TireDto = TireResponseDto;

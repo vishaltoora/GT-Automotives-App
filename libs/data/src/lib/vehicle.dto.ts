@@ -19,18 +19,15 @@ export class CreateVehicleDto {
   licensePlate?: string;
 
   @IsOptional()
-  @IsString()
-  color?: string;
-
-  @IsOptional()
   @IsNumber()
   mileage?: number;
 
+  @IsOptional()
   @IsString()
-  customerId!: string;
+  customerId?: string;
 }
 
-export class UpdateVehicleDto {
+export class UpdateVehicleDto implements Partial<CreateVehicleDto> {
   @IsOptional()
   @IsString()
   make?: string;
@@ -52,16 +49,8 @@ export class UpdateVehicleDto {
   licensePlate?: string;
 
   @IsOptional()
-  @IsString()
-  color?: string;
-
-  @IsOptional()
   @IsNumber()
   mileage?: number;
-
-  @IsOptional()
-  @IsString()
-  customerId?: string;
 }
 
 export class VehicleResponseDto {
@@ -86,18 +75,42 @@ export class VehicleResponseDto {
   licensePlate?: string;
 
   @IsOptional()
-  @IsString()
-  color?: string;
+  @IsNumber()
+  mileage?: number;
 
   @IsString()
   customerId!: string;
-
-  @IsOptional()
-  customer?: any;
 
   @IsString()
   createdAt!: string;
 
   @IsString()
   updatedAt!: string;
+
+  @IsOptional()
+  customer?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    businessName?: string;
+  };
+
+  @IsOptional()
+  _count?: {
+    invoices: number;
+    appointments: number;
+  };
+
+  @IsOptional()
+  stats?: {
+    serviceCount: number;
+    totalSpent: number;
+    lastServiceDate: Date | null;
+    nextAppointment: any | null;
+  };
 }
+
+// Legacy type aliases for backward compatibility
+export type VehicleDto = VehicleResponseDto;

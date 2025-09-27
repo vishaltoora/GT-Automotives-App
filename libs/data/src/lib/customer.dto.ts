@@ -82,3 +82,6 @@ export class CustomerResponseDto {
   @IsString()
   updatedAt!: string;
 }
+
+// Legacy type aliases for backward compatibility
+export type CustomerDto = CustomerResponseDto;
