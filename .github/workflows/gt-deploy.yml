@@ -138,8 +138,16 @@ jobs:
         run: |
           echo "🗄️ Running database migrations from downloaded source..."
 
-          # Use the downloaded repository artifact
-          cd ./artifacts/${{ steps.validate.outputs.repo-artifact }}
+          # Find the repository artifact directory
+          REPO_ARTIFACT=$(find ./artifacts -type d -name "repo-*" | head -1)
+
+          if [ -z "$REPO_ARTIFACT" ]; then
+            echo "❌ Repository artifact not found, skipping migrations"
+            exit 0
+          fi
+
+          echo "📦 Found repository artifact: $REPO_ARTIFACT"
+          cd "$REPO_ARTIFACT"
 
           # Setup Node.js environment for migrations
           export NVM_DIR="$HOME/.nvm"
