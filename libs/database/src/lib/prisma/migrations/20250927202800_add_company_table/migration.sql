@@ -29,7 +29,7 @@ BEGIN
 END $$;
 
 -- Create default company if none exists
-INSERT INTO "public"."Company" (id, name, registrationNumber, businessType, address, phone, email, "isDefault", "createdAt", "updatedAt")
+INSERT INTO "public"."Company" (id, name, "registrationNumber", "businessType", address, phone, email, "isDefault", "createdAt", "updatedAt")
 SELECT
     'default-company-001',
     'GT Automotives',
