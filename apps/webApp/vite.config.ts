@@ -34,8 +34,9 @@ export default defineConfig(() => ({
   // },
   resolve: {
     alias: {
-      '@gt-automotive/data': '../../dist/libs/data/src/index.js',
+      '@gt-automotive/data': '/Users/vishaltoora/projects/gt-automotives-app/libs/data/src/index.ts',
     },
+    // Module resolution handled by symlinks in node_modules
   },
   build: {
     outDir: './dist',

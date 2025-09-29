@@ -105,6 +105,16 @@ export function useAuth() {
                 role: { id: 1, name: 'admin' }, // Admin role
                 isActive: true
               });
+            } else if (userEmail.endsWith('@gtautomotive.com') || userEmail === 'staff@example.com') {
+              // Staff users - company email or test staff account
+              setAppUser({
+                id: clerkUser.id,
+                email: userEmail,
+                firstName: clerkUser.firstName || 'Staff',
+                lastName: clerkUser.lastName || 'Member',
+                role: { id: 2, name: 'staff' }, // Staff role
+                isActive: true
+              });
             } else {
               // Default to customer role for other users
               setAppUser({

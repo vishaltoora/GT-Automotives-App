@@ -48,12 +48,12 @@ class JobService {
     // Handle empty responses (like DELETE operations)
     const contentLength = response.headers.get('content-length');
     if (contentLength === '0' || response.status === 204) {
-      return null;
+      return null as T;
     }
 
     const text = await response.text();
     if (!text) {
-      return null;
+      return null as T;
     }
 
     return JSON.parse(text);

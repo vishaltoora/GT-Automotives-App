@@ -27,6 +27,7 @@ import {
   LocationOn as LocationIcon,
   Facebook as FacebookIcon,
   Instagram as InstagramIcon,
+  Login as LoginIcon,
 } from '@mui/icons-material';
 import { colors } from '../theme/colors';
 import gtLogo from '../images-and-logos/gt-automotive-logo.svg';
@@ -124,26 +125,22 @@ export function PublicLayout() {
       <Divider sx={{ my: 2 }} />
       <List>
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/login" onClick={handleDrawerToggle}>
-            <ListItemText primary="Login" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton 
-            component={Link} 
-            to="/register" 
+          <ListItemButton
+            component={Link}
+            to="/login"
             onClick={handleDrawerToggle}
             sx={{
               m: 1,
-              backgroundColor: colors.secondary.main,
+              backgroundColor: colors.primary.main,
               color: 'white',
               '&:hover': {
-                backgroundColor: colors.secondary.dark,
+                backgroundColor: colors.primary.dark,
               },
               borderRadius: 1,
             }}
           >
-            <ListItemText primary="Get Started" primaryTypographyProps={{ align: 'center' }} />
+            <LoginIcon sx={{ mr: 1 }} />
+            <ListItemText primary="Login" primaryTypographyProps={{ align: 'center', fontWeight: 600 }} />
           </ListItemButton>
         </ListItem>
       </List>
@@ -236,30 +233,28 @@ export function PublicLayout() {
                 ))}
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button 
-                  component={Link} 
+                <Button
+                  component={Link}
                   to="/login"
-                  variant="text"
-                  sx={{ 
-                    color: colors.primary.main,
-                    fontWeight: 500,
+                  variant="contained"
+                  startIcon={<LoginIcon />}
+                  sx={{
+                    backgroundColor: colors.primary.main,
+                    color: 'white',
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    borderRadius: 2,
+                    boxShadow: `0 2px 8px ${colors.primary.main}30`,
+                    '&:hover': {
+                      backgroundColor: colors.primary.dark,
+                      transform: 'translateY(-1px)',
+                      boxShadow: `0 4px 12px ${colors.primary.main}40`,
+                    },
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   Login
-                </Button>
-                <Button 
-                  component={Link} 
-                  to="/register"
-                  variant="contained"
-                  sx={{ 
-                    backgroundColor: colors.secondary.main,
-                    '&:hover': {
-                      backgroundColor: colors.secondary.dark,
-                    },
-                    fontWeight: 600,
-                  }}
-                >
-                  Get Started
                 </Button>
               </Box>
             </>
