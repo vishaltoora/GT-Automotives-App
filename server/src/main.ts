@@ -22,12 +22,35 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     Logger.log('✅ NestJS application created');
 
-    // Enable CORS
+    // Enable CORS with support for multiple origins
+    const allowedOrigins = [
+      'http://localhost:4200', // Development frontend
+      'https://gt-automotives.com', // Production frontend
+      'https://www.gt-automotives.com', // Production www subdomain
+    ];
+
+    // Add custom frontend URL if provided
+    if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+      allowedOrigins.push(process.env.FRONTEND_URL);
+    }
+
     app.enableCors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          Logger.warn(`🚫 CORS blocked origin: ${origin}`);
+          callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+        }
+      },
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
     });
-    Logger.log('✅ CORS enabled');
+    Logger.log(`✅ CORS enabled for origins: ${allowedOrigins.join(', ')}`);
 
     // Global validation pipe
     app.useGlobalPipes(new ValidationPipe({
