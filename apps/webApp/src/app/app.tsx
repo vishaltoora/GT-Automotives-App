@@ -42,6 +42,7 @@ import { PayrollDashboard } from './pages/admin/payroll/PayrollDashboard';
 import { JobsManagement } from './pages/admin/payroll/JobsManagement';
 import { PaymentsManagement } from './pages/admin/payroll/PaymentsManagement';
 
+
 // Inventory Pages
 import TireListSimple from './pages/inventory/TireListSimple';
 import TireFormSimple from './pages/inventory/TireFormSimple';

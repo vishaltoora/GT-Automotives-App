@@ -5,16 +5,16 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
     constructor(prisma: PrismaService);
     findByEmail(email: string): Promise<({
         _count: {
-            appointments: number;
             invoices: number;
+            appointments: number;
         };
         vehicles: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            model: string;
             make: string;
+            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -22,19 +22,19 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
         }[];
     } & {
         id: string;
+        createdAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
-        address: string | null;
         businessName: string | null;
+        address: string | null;
+        phone: string | null;
     }) | null>;
     findAllWithDetails(): Promise<({
         _count: {
-            appointments: number;
             invoices: number;
+            appointments: number;
             vehicles: number;
         };
         vehicles: {
@@ -42,8 +42,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            model: string;
             make: string;
+            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -51,51 +51,24 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
         }[];
     } & {
         id: string;
+        createdAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
-        address: string | null;
         businessName: string | null;
+        address: string | null;
+        phone: string | null;
     })[]>;
     findOneWithDetails(id: string): Promise<({
-        appointments: ({
-            vehicle: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                customerId: string;
-                model: string;
-                make: string;
-                year: number;
-                vin: string | null;
-                licensePlate: string | null;
-                mileage: number | null;
-            } | null;
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            customerId: string;
-            notes: string | null;
-            scheduledDate: Date;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
-            vehicleId: string | null;
-            scheduledTime: string;
-            duration: number;
-            serviceType: string;
-            reminderSent: boolean;
-        })[];
         invoices: ({
             vehicle: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 customerId: string;
-                model: string;
                 make: string;
+                model: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
@@ -106,11 +79,11 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
                 createdAt: Date;
                 updatedAt: Date;
                 description: string;
-                quantity: number;
-                total: Prisma.Decimal;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                unitPrice: Prisma.Decimal;
                 tireId: string | null;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
+                quantity: number;
+                unitPrice: Prisma.Decimal;
+                total: Prisma.Decimal;
                 invoiceId: string;
             }[];
         } & {
@@ -118,31 +91,58 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            notes: string | null;
-            createdBy: string;
             total: Prisma.Decimal;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
             vehicleId: string | null;
             companyId: string;
             subtotal: Prisma.Decimal;
             taxRate: Prisma.Decimal;
             taxAmount: Prisma.Decimal;
+            gstRate: Prisma.Decimal | null;
+            gstAmount: Prisma.Decimal | null;
+            pstRate: Prisma.Decimal | null;
+            pstAmount: Prisma.Decimal | null;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+            notes: string | null;
             invoiceDate: Date;
             paidAt: Date | null;
-            gstAmount: Prisma.Decimal | null;
-            gstRate: Prisma.Decimal | null;
-            pstAmount: Prisma.Decimal | null;
-            pstRate: Prisma.Decimal | null;
+            invoiceNumber: string;
+            createdBy: string;
+        })[];
+        appointments: ({
+            vehicle: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                customerId: string;
+                make: string;
+                model: string;
+                year: number;
+                vin: string | null;
+                licensePlate: string | null;
+                mileage: number | null;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            customerId: string;
+            vehicleId: string | null;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            notes: string | null;
+            scheduledDate: Date;
+            scheduledTime: string;
+            duration: number;
+            serviceType: string;
+            reminderSent: boolean;
         })[];
         vehicles: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            model: string;
             make: string;
+            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -150,19 +150,19 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
         }[];
     } & {
         id: string;
+        createdAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
-        address: string | null;
         businessName: string | null;
+        address: string | null;
+        phone: string | null;
     }) | null>;
     search(searchTerm: string): Promise<({
         _count: {
-            appointments: number;
             invoices: number;
+            appointments: number;
             vehicles: number;
         };
         vehicles: {
@@ -170,8 +170,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            model: string;
             make: string;
+            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -179,14 +179,14 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
         }[];
     } & {
         id: string;
+        createdAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
-        address: string | null;
         businessName: string | null;
+        address: string | null;
+        phone: string | null;
     })[]>;
     getCustomerStats(customerId: string): Promise<{
         totalSpent: number | Prisma.Decimal;
@@ -196,14 +196,14 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
     }>;
     findById(id: string): Promise<{
         id: string;
+        createdAt: Date;
         email: string | null;
         firstName: string;
         lastName: string;
-        createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
-        address: string | null;
         businessName: string | null;
+        address: string | null;
+        phone: string | null;
     } | null>;
 }
 //# sourceMappingURL=customer.repository.d.ts.map

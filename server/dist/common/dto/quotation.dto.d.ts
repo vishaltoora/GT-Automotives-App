@@ -15,17 +15,15 @@ export declare class QuotationItemDto {
     total?: number;
 }
 export declare class CreateQuoteDto {
-    customerId: string;
+    customerName: string;
+    businessName?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
     vehicleId?: string;
     items: QuotationItemDto[];
-    subtotal: number;
-    taxRate: number;
-    taxAmount: number;
     gstRate?: number;
-    gstAmount?: number;
     pstRate?: number;
-    pstAmount?: number;
-    total: number;
     status: QuotationStatus;
     notes?: string;
     validUntil?: string;

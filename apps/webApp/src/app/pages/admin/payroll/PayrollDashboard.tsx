@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -24,7 +24,6 @@ import {
   Person as PersonIcon,
   TrendingUp as TrendingUpIcon,
   Schedule as ScheduleIcon,
-  CheckCircle as CheckCircleIcon,
   ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
