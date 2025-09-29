@@ -14,14 +14,12 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   Grid,
   Card,
   CardContent,
-  Tooltip,
   Alert,
 } from '@mui/material';
 import {
@@ -40,7 +38,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { JobResponseDto, JobSummaryDto } from '@gt-automotive/data';
-import { JobStatus, JobType } from '@prisma/client';
+import { JobStatus, JobType } from '@gt-automotive/data';
 import { jobService } from '../../../services/job.service';
 import { userService } from '../../../services/user.service';
 import { CreateJobDialog } from '../../../components/payroll/CreateJobDialog';
@@ -88,8 +86,8 @@ export function JobsManagement() {
       setLoading(true);
       const filterParams = {
         employeeId: filters.employeeId || undefined,
-        status: filters.status as JobStatus || undefined,
-        jobType: filters.jobType as JobType || undefined,
+        status: filters.status ? (filters.status as JobStatus) : undefined,
+        jobType: filters.jobType ? (filters.jobType as JobType) : undefined,
         startDate: filters.startDate?.toISOString() || undefined,
         endDate: filters.endDate?.toISOString() || undefined,
       };
@@ -398,14 +396,14 @@ export function JobsManagement() {
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: colors.neutral[50] }}>
-                  <TableCell fontWeight="bold">Job</TableCell>
-                  <TableCell fontWeight="bold">Employee</TableCell>
-                  <TableCell fontWeight="bold">Type</TableCell>
-                  <TableCell fontWeight="bold">Amount</TableCell>
-                  <TableCell fontWeight="bold">Status</TableCell>
-                  <TableCell fontWeight="bold">Due Date</TableCell>
-                  <TableCell fontWeight="bold">Created</TableCell>
-                  <TableCell fontWeight="bold" align="center">Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Job</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Employee</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Type</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Due Date</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Created</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }} align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
