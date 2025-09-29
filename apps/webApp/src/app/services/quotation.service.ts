@@ -382,7 +382,7 @@ class QuoteService {
 
         <div class="validity-notice">
           <strong>Terms & Conditions:</strong><br>
-          • This quote is valid until ${quote.validUntil ? formatDate(quote.validUntil) : '30 days from date of issue'}.<br>
+          • This quote is valid until ${quote.validUntil ? formatDate(quote.validUntil) : formatDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString())}.<br>
           • Prices are subject to change without notice after expiry date.<br>
           • This is a quote only and does not constitute a commitment to provide services or products.<br>
           • All work is subject to parts availability.

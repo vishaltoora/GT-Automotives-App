@@ -36,8 +36,25 @@ export class QuotationItemDto {
 }
 
 export class CreateQuoteDto {
+  // Customer information (sent directly from frontend)
   @IsString()
-  customerId!: string;
+  customerName!: string;
+
+  @IsOptional()
+  @IsString()
+  businessName?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
 
   @IsOptional()
   @IsString()
@@ -48,33 +65,13 @@ export class CreateQuoteDto {
   @Type(() => QuotationItemDto)
   items!: QuotationItemDto[];
 
-  @IsNumber()
-  subtotal!: number;
-
-  @IsNumber()
-  taxRate!: number;
-
-  @IsNumber()
-  taxAmount!: number;
-
   @IsOptional()
   @IsNumber()
   gstRate?: number;
 
   @IsOptional()
   @IsNumber()
-  gstAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
   pstRate?: number;
-
-  @IsOptional()
-  @IsNumber()
-  pstAmount?: number;
-
-  @IsNumber()
-  total!: number;
 
   @IsEnum(QuotationStatus)
   status!: QuotationStatus;

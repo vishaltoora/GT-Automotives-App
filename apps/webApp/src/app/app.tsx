@@ -37,6 +37,11 @@ import { StaffDashboard } from './pages/staff/Dashboard';
 import { AdminDashboard } from './pages/admin/Dashboard';
 import UserManagement from '../pages/admin/UserManagement';
 
+// Payroll Pages
+import { PayrollDashboard } from './pages/admin/payroll/PayrollDashboard';
+import { JobsManagement } from './pages/admin/payroll/JobsManagement';
+import { PaymentsManagement } from './pages/admin/payroll/PaymentsManagement';
+
 // Inventory Pages
 import TireListSimple from './pages/inventory/TireListSimple';
 import TireFormSimple from './pages/inventory/TireFormSimple';
@@ -169,6 +174,9 @@ export function App() {
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="appointments" element={<div>All Appointments</div>} />
+          <Route path="payroll" element={<PayrollDashboard />} />
+          <Route path="payroll/jobs" element={<JobsManagement />} />
+          <Route path="payroll/payments" element={<PaymentsManagement />} />
           <Route path="reports" element={<div>Financial Reports</div>} />
           <Route path="analytics" element={<div>Analytics</div>} />
           <Route path="security" element={<div>Security Settings</div>} />

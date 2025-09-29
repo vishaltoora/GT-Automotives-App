@@ -7,6 +7,7 @@ import 'reflect-metadata';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { InternalApiGuard } from './common/guards/internal-api.guard';
 
 async function bootstrap() {
   try {
@@ -17,40 +18,66 @@ async function bootstrap() {
       PORT: process.env.PORT,
       DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
       CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY ? 'SET' : 'NOT SET',
+      INTERNAL_API_KEY: process.env.INTERNAL_API_KEY ? 'SET' : 'NOT SET',
     });
 
     const app = await NestFactory.create(AppModule);
     Logger.log('✅ NestJS application created');
 
-    // Enable CORS with support for multiple origins
+    // Secure CORS configuration
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Define allowed origins
     const allowedOrigins = [
-      'http://localhost:4200', // Development frontend
-      'https://gt-automotives.com', // Production frontend
-      'https://www.gt-automotives.com', // Production www subdomain
+      'https://gt-automotives.com',
+      'https://www.gt-automotives.com',
+      'http://localhost:4200',
+      'http://localhost:3000',
     ];
 
-    // Add custom frontend URL if provided
-    if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
-      allowedOrigins.push(process.env.FRONTEND_URL);
+    // Add additional origins from environment if provided
+    if (process.env.ALLOWED_ORIGINS) {
+      const additionalOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+      allowedOrigins.push(...additionalOrigins);
     }
 
     app.enableCors({
-      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin (like mobile apps or Postman)
-        if (!origin) return callback(null, true);
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, server-to-server)
+        if (!origin) {
+          return callback(null, true);
+        }
 
+        // In development, allow any localhost origin
+        if (!isProduction && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+          return callback(null, true);
+        }
+
+        // Check against allowed origins
         if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
           Logger.warn(`🚫 CORS blocked origin: ${origin}`);
-          callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+          if (isProduction) {
+            callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+          } else {
+            // In development, log but allow (helps with debugging)
+            Logger.warn(`⚠️  Development mode: Allowing despite not in whitelist`);
+            callback(null, true);
+          }
         }
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
     });
-    Logger.log(`✅ CORS enabled for origins: ${allowedOrigins.join(', ')}`);
+
+    Logger.log(`✅ CORS configured (${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode)`);
+    Logger.log(`📋 Allowed origins: ${allowedOrigins.join(', ')}`);
+
+    // Global Internal API Guard - Protect against direct access
+    app.useGlobalGuards(new InternalApiGuard());
+    Logger.log('🔒 Internal API guard enabled');
 
     // Global validation pipe
     app.useGlobalPipes(new ValidationPipe({

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  Button, 
-  Container, 
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Container,
   Box,
   Drawer,
   List,
@@ -15,7 +15,8 @@ import {
   ListItemText,
   IconButton,
   Divider,
-  Chip
+  Chip,
+  Tooltip
 } from '@mui/material';
 import {
   Dashboard,
@@ -32,21 +33,33 @@ import {
   Menu as MenuIcon,
   DirectionsCar,
   AccountCircle,
-  Description
+  Description,
+  ChevronLeft,
+  ChevronRight,
+  Payment,
+  Work,
+  AttachMoney
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
 import gtLogo from '../images-and-logos/gt-automotive-logo.svg';
 
 const drawerWidth = 280;
+const drawerCollapsedWidth = 72;
 
 export function AdminLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [drawerCollapsed, setDrawerCollapsed] = React.useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleDrawerCollapse = () => {
+    setDrawerCollapsed(!drawerCollapsed);
   };
 
   const handleSignOut = async () => {
@@ -64,6 +77,10 @@ export function AdminLayout() {
     { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
     { divider: true },
+    { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
+    { text: 'Jobs', icon: <Work />, path: '/admin/payroll/jobs' },
+    { text: 'Payments', icon: <Payment />, path: '/admin/payroll/payments' },
+    { divider: true },
     { text: 'Reports', icon: <Assessment />, path: '/admin/reports' },
     { text: 'Analytics', icon: <Analytics />, path: '/admin/analytics' },
     { divider: true },
@@ -77,13 +94,15 @@ export function AdminLayout() {
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', background: colors.neutral[50] }}>
-      <Toolbar sx={{ 
+      <Toolbar sx={{
         py: 2,
-        px: 2,
+        px: drawerCollapsed ? 1 : 2,
         background: colors.primary.main,
         borderBottom: `1px solid ${colors.neutral[200]}`,
+        justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+        minHeight: 80,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: drawerCollapsed ? 0 : 1.5, width: '100%', justifyContent: drawerCollapsed ? 'center' : 'flex-start' }}>
           <Box
             sx={{
               width: 42,
@@ -96,6 +115,7 @@ export function AdminLayout() {
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              flexShrink: 0,
             }}
           >
             <img
@@ -108,79 +128,131 @@ export function AdminLayout() {
               }}
             />
           </Box>
-          <Box>
-            <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, lineHeight: 1 }}>
-              GT Automotives
-            </Typography>
-            <Typography variant="caption" sx={{ color: colors.neutral[100], fontWeight: 500 }}>
-              16472991 Canada INC.
-            </Typography>
-          </Box>
+          {!drawerCollapsed && (
+            <Box>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, lineHeight: 1 }}>
+                GT Automotives
+              </Typography>
+              <Typography variant="caption" sx={{ color: colors.neutral[100], fontWeight: 500 }}>
+                16472991 Canada INC.
+              </Typography>
+            </Box>
+          )}
         </Box>
       </Toolbar>
 
-      <List sx={{ flex: 1, py: 1, px: 1 }}>
+      {/* Collapse Toggle Button - Only on Desktop */}
+      <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: drawerCollapsed ? 'center' : 'flex-end', px: 1, py: 0.5 }}>
+        <IconButton
+          onClick={handleDrawerCollapse}
+          size="small"
+          sx={{
+            color: colors.neutral[600],
+            backgroundColor: colors.neutral[100],
+            '&:hover': {
+              backgroundColor: colors.neutral[200],
+            },
+          }}
+        >
+          {drawerCollapsed ? <ChevronRight /> : <ChevronLeft />}
+        </IconButton>
+      </Box>
+
+      <List sx={{ flex: 1, py: 1, px: drawerCollapsed ? 0.5 : 1 }}>
         {menuItems.map((item, index) => {
           if (item.divider) {
-            return <Divider key={index} sx={{ my: 1, borderColor: colors.neutral[200] }} />;
+            return <Divider key={index} sx={{ my: 1, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />;
           }
           const active = item.path ? isActive(item.path) : false;
-          return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton 
-                component={Link} 
-                to={item.path!}
-                sx={{
-                  borderRadius: 1.5,
-                  mx: 0.5,
-                  transition: 'all 0.2s',
-                  backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                  borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
-                  '&:hover': {
-                    backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ 
-                  color: active ? colors.primary.main : colors.neutral[600],
-                  minWidth: 40,
-                }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.text} 
+          const listButton = (
+            <ListItemButton
+              component={Link}
+              to={item.path!}
+              sx={{
+                borderRadius: 1.5,
+                mx: 0.5,
+                transition: 'all 0.2s',
+                backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
+                borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                px: drawerCollapsed ? 0 : 2,
+                '&:hover': {
+                  backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                },
+              }}
+            >
+              <ListItemIcon sx={{
+                color: active ? colors.primary.main : colors.neutral[600],
+                minWidth: drawerCollapsed ? 0 : 40,
+                justifyContent: 'center',
+              }}>
+                {item.icon}
+              </ListItemIcon>
+              {!drawerCollapsed && (
+                <ListItemText
+                  primary={item.text}
                   primaryTypographyProps={{
                     fontSize: '0.95rem',
                     fontWeight: active ? 600 : 400,
                     color: active ? colors.primary.main : colors.text.primary,
                   }}
                 />
-              </ListItemButton>
+              )}
+            </ListItemButton>
+          );
+
+          return (
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+              {drawerCollapsed ? (
+                <Tooltip title={item.text} placement="right" arrow>
+                  {listButton}
+                </Tooltip>
+              ) : (
+                listButton
+              )}
             </ListItem>
           );
         })}
       </List>
 
       <Divider sx={{ borderColor: colors.neutral[200] }} />
-      
-      <Box sx={{ p: 2 }}>
-        <Button
-          fullWidth
-          variant="text"
-          startIcon={<Logout />}
-          onClick={handleSignOut}
-          sx={{
-            color: colors.neutral[600],
-            fontWeight: 500,
-            py: 1.2,
-            '&:hover': {
-              backgroundColor: colors.neutral[100],
-              color: colors.text.primary,
-            },
-          }}
-        >
-          Sign Out
-        </Button>
+
+      <Box sx={{ p: drawerCollapsed ? 1 : 2 }}>
+        {drawerCollapsed ? (
+          <Tooltip title="Sign Out" placement="right" arrow>
+            <IconButton
+              onClick={handleSignOut}
+              sx={{
+                color: colors.neutral[600],
+                width: '100%',
+                '&:hover': {
+                  backgroundColor: colors.neutral[100],
+                  color: colors.text.primary,
+                },
+              }}
+            >
+              <Logout />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <Button
+            fullWidth
+            variant="text"
+            startIcon={<Logout />}
+            onClick={handleSignOut}
+            sx={{
+              color: colors.neutral[600],
+              fontWeight: 500,
+              py: 1.2,
+              '&:hover': {
+                backgroundColor: colors.neutral[100],
+                color: colors.text.primary,
+              },
+            }}
+          >
+            Sign Out
+          </Button>
+        )}
       </Box>
     </Box>
   );
@@ -189,7 +261,11 @@ export function AdminLayout() {
     <Box sx={{ display: 'flex', height: '100vh' }}>
       <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        sx={{
+          width: { sm: drawerCollapsed ? drawerCollapsedWidth : drawerWidth, md: drawerCollapsed ? drawerCollapsedWidth : drawerWidth },
+          flexShrink: { sm: 0 },
+          transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+        }}
       >
         <Drawer
           variant="temporary"
@@ -198,8 +274,8 @@ export function AdminLayout() {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: drawerWidth,
               borderRight: 'none',
               boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
@@ -214,13 +290,15 @@ export function AdminLayout() {
           variant="permanent"
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: drawerWidth,
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerCollapsed ? drawerCollapsedWidth : drawerWidth,
               borderRight: 'none',
               boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
               height: '100vh',
               borderRadius: 0,
+              transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+              overflowX: 'hidden',
             },
           }}
           open
@@ -234,9 +312,10 @@ export function AdminLayout() {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: { md: `calc(100% - ${drawerCollapsed ? drawerCollapsedWidth : drawerWidth}px)` },
           height: '100vh',
           overflow: 'hidden',
+          transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
         }}
       >
         <AppBar 

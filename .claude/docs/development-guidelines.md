@@ -43,6 +43,51 @@ const publishableKey = getEnvVar('VITE_CLERK_PUBLISHABLE_KEY');
 - `useAuth` hook falls back to mock providers unintentionally
 - Console shows `publishableKey: 'NONE'` despite key being set
 
+## Database Schema Management (Critical - September 28, 2025)
+
+### **GOLDEN RULE: NEVER modify schema.prisma without creating migrations**
+
+**Schema Change Workflow (MANDATORY):**
+```bash
+# 1. BEFORE any schema changes - check current state
+yarn prisma migrate status --schema=libs/database/src/lib/prisma/schema.prisma
+
+# 2. Make your schema changes in schema.prisma
+# Edit libs/database/src/lib/prisma/schema.prisma
+
+# 3. IMMEDIATELY create migration (required)
+DATABASE_URL="postgresql://postgres@localhost:5432/gt_automotive?schema=public" npx prisma migrate dev --name "descriptive_name" --schema=libs/database/src/lib/prisma/schema.prisma
+
+# 4. Test locally first
+yarn dev  # Verify everything works
+
+# 5. Deploy to production ONLY after local testing
+DATABASE_URL="postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require" yarn prisma migrate deploy --schema=libs/database/src/lib/prisma/schema.prisma
+```
+
+**Critical Rules:**
+- ❌ **NEVER commit schema changes without migrations**
+- ❌ **NEVER modify production database directly**
+- ❌ **NEVER skip migration testing locally**
+- ✅ **ALWAYS create migrations for ANY schema change**
+- ✅ **ALWAYS test migrations locally before production**
+- ✅ **ALWAYS use production-safe migration patterns for breaking changes**
+
+**Schema Drift Prevention:**
+```bash
+# Before deploying - always verify consistency
+DATABASE_URL="production_url" yarn prisma migrate status
+# Should show: "Database schema is up to date!"
+```
+
+**Production-Safe Migration Pattern:**
+```sql
+-- For adding required fields to tables with existing data
+ALTER TABLE "TableName" ADD COLUMN "newField" TEXT; -- nullable first
+UPDATE "TableName" SET "newField" = 'default_value'; -- populate
+ALTER TABLE "TableName" ALTER COLUMN "newField" SET NOT NULL; -- make required
+```
+
 ## DTO Best Practices (Updated September 2025)
 - **Use DTOs for all data transfer** - No interfaces for API contracts
 - **Import enums from @prisma/client** - Never create custom enums that duplicate Prisma

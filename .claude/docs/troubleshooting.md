@@ -1,5 +1,47 @@
 # Troubleshooting Guide
 
+## Critical Schema Migration Learnings (September 28, 2025)
+
+### Database Schema Drift Detection ✅ RESOLVED
+**Problem:** Production 500 errors on `/api/companies` and `/api/tires` endpoints
+```
+GET https://gt-automotives.com/api/companies 500 (Internal Server Error)
+Error: relation "Company" does not exist
+```
+
+**Root Cause:** Schema drift - code expected Company, TireBrand, TireSize tables that didn't exist in production database. The invoice-modification branch was merged without proper migrations.
+
+**Critical Learning:** **NEVER commit schema changes without creating migrations first**
+
+**Production-Safe Migration Solution:**
+1. **Detect Schema Drift:** Use `prisma migrate status` to compare local vs production
+2. **Custom Migration Approach:** For breaking changes with existing data:
+   - Create nullable columns first
+   - Migrate existing data
+   - Add constraints and make required
+   - Drop old columns last
+3. **Data Preservation:** Always preserve existing production data during schema changes
+
+**Migration Strategy Used:**
+```sql
+-- Example production-safe migration pattern
+ALTER TABLE "Invoice" ADD COLUMN "companyId" TEXT; -- nullable first
+UPDATE "Invoice" SET "companyId" = 'default-company-id'; -- populate data
+ALTER TABLE "Invoice" ALTER COLUMN "companyId" SET NOT NULL; -- make required
+```
+
+**Prevention Commands:**
+```bash
+# Always check migration status before deploying
+DATABASE_URL="production_url" yarn prisma migrate status
+
+# Create migrations for ALL schema changes
+DATABASE_URL="local_url" npx prisma migrate dev --name "descriptive_name"
+
+# Deploy only after local testing
+DATABASE_URL="production_url" yarn prisma migrate deploy
+```
+
 ## Recent Resolutions (September 23, 2025)
 
 ### Local Development Server Startup Failures ✅ RESOLVED

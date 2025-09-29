@@ -259,7 +259,14 @@
       "Bash(git fetch:*)",
       "Bash(git pull:*)",
       "Bash(do sed -i '' 's/process\\.env\\.VITE_/import.meta.env.VITE_/g' \"$file\")",
-      "Bash(do sed -i '' '/console\\.\\(log\\|warn\\|error\\|info\\|debug\\)/d' \"$file\")"
+      "Bash(do sed -i '' '/console\\.\\(log\\|warn\\|error\\|info\\|debug\\)/d' \"$file\")",
+      "Bash(git ls-tree:*)",
+      "Read(//private/tmp/**)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev --name \"add_company_table_and_invoice_company_relation\" --schema=libs/database/src/lib/prisma/schema.prisma)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate reset --force --schema=libs/database/src/lib/prisma/schema.prisma)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes go ahead\" DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate reset --force --schema=libs/database/src/lib/prisma/schema.prisma)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev --name \"add_tire_brand_and_size_tables\" --schema=libs/database/src/lib/prisma/schema.prisma)",
+      "Bash(DATABASE_URL=\"postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require\" yarn prisma migrate status --schema=libs/database/src/lib/prisma/schema.prisma)"
     ],
     "deny": [],
     "ask": []

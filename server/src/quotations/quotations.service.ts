@@ -25,16 +25,8 @@ export class QuotationsService {
     try {
       const { items, ...quoteData } = createQuoteDto;
 
-      // Get customer information
-      const customer = await this.prisma.customer.findUnique({
-        where: { id: createQuoteDto.customerId }
-      });
-
-      if (!customer) {
-        throw new Error(`Customer not found: ${createQuoteDto.customerId}`);
-      }
-
-      const customerName = `${customer.firstName} ${customer.lastName}`.trim();
+      // Customer information is now provided directly in the DTO
+      const customerName = createQuoteDto.customerName;
 
       // Generate quotation number
       const quotationNumber = `Q${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
@@ -63,10 +55,10 @@ export class QuotationsService {
 
       console.log('Service: Calculated totals - subtotal:', subtotal, 'total:', total);
 
-      // Set valid until date if not provided (30 days from now)
-      const validUntil = quoteData.validUntil 
+      // Set valid until date if not provided (15 days from now)
+      const validUntil = quoteData.validUntil
         ? new Date(quoteData.validUntil)
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        : new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
 
       console.log('Service: About to call repository create...');
       
@@ -74,10 +66,10 @@ export class QuotationsService {
         ...quoteData,
         quotationNumber,
         customerName,
-        businessName: customer.businessName,
-        phone: customer.phone,
-        email: customer.email,
-        address: customer.address,
+        businessName: createQuoteDto.businessName,
+        phone: createQuoteDto.phone,
+        email: createQuoteDto.email,
+        address: createQuoteDto.address,
         subtotal,
         gstRate,
         gstAmount,

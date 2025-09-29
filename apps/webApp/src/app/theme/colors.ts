@@ -3,90 +3,92 @@
  * Centralized color palette for consistent theming across the application
  */
 
+import { colorPalette } from './colorPalette';
+
 export const colors = {
   // Primary brand colors - GT Navy Blue
   primary: {
-    main: '#243c55',      // GT Navy blue
-    light: '#3a5270',     // Lighter blue for hover states
-    lighter: '#4a90e2',   // Accent blue
-    dark: '#1a2d40',      // Dark blue for emphasis
-    contrast: '#ffffff',  // Text on primary
+    main: colorPalette.primary800,      // GT Navy blue
+    light: colorPalette.primary700,     // Lighter blue for hover states
+    lighter: colorPalette.primary600,   // Accent blue
+    dark: colorPalette.primary900,      // Dark blue for emphasis
+    contrast: colorPalette.white,       // Text on primary
   },
 
   // Secondary brand colors - Energetic orange for CTAs
   secondary: {
-    main: '#ff6b35',      // Vibrant orange
-    light: '#ff8c5a',     // Light orange for hover
-    lighter: '#ffb088',   // Soft orange
-    dark: '#e55100',      // Dark orange for emphasis
-    contrast: '#ffffff',  // Text on secondary
+    main: colorPalette.secondary800,      // Vibrant orange
+    light: colorPalette.secondary700,     // Light orange for hover
+    lighter: colorPalette.secondary600,   // Soft orange
+    dark: colorPalette.secondary900,      // Dark orange for emphasis
+    contrast: colorPalette.white,         // Text on secondary
   },
 
   // Neutral colors - Grays for UI elements
   neutral: {
-    50: '#fafafa',
-    100: '#f5f5f5',
-    200: '#eeeeee',
-    300: '#e0e0e0',
-    400: '#bdbdbd',
-    500: '#9e9e9e',
-    600: '#757575',
-    700: '#616161',
-    800: '#424242',
-    900: '#212121',
+    50: colorPalette.grey50,
+    100: colorPalette.grey100,
+    200: colorPalette.grey200,
+    300: colorPalette.grey300,
+    400: colorPalette.grey400,
+    500: colorPalette.grey500,
+    600: colorPalette.grey600,
+    700: colorPalette.grey700,
+    800: colorPalette.grey800,
+    900: colorPalette.grey900,
   },
 
   // Semantic colors for states and feedback
   semantic: {
-    success: '#4caf50',
-    successLight: '#81c784',
-    successDark: '#388e3c',
-    
-    warning: '#ff9800',
-    warningLight: '#ffb74d',
-    warningDark: '#f57c00',
-    
-    error: '#f44336',
-    errorLight: '#e57373',
-    errorDark: '#d32f2f',
-    
-    info: '#2196f3',
-    infoLight: '#64b5f6',
-    infoDark: '#1976d2',
+    success: colorPalette.success500,
+    successLight: colorPalette.success400,
+    successDark: colorPalette.success700,
+
+    warning: colorPalette.warning500,
+    warningLight: colorPalette.warning400,
+    warningDark: colorPalette.warning700,
+
+    error: colorPalette.error500,
+    errorLight: colorPalette.error400,
+    errorDark: colorPalette.error700,
+
+    info: colorPalette.info500,
+    infoLight: colorPalette.info400,
+    infoDark: colorPalette.info700,
   },
 
   // Background colors
   background: {
-    default: '#ffffff',
-    paper: '#ffffff',
-    light: '#f8f9fa',
-    dark: '#1a1a1a',
+    default: colorPalette.white,
+    paper: colorPalette.white,
+    light: colorPalette.grey25,
+    dark: colorPalette.grey900,
     overlay: 'rgba(0, 0, 0, 0.5)',
   },
 
   // Text colors
   text: {
-    primary: '#212121',
-    secondary: '#616161',
-    disabled: '#9e9e9e',
-    hint: '#bdbdbd',
-    light: '#ffffff',
-    dark: '#000000',
+    primary: colorPalette.grey800,
+    secondary: colorPalette.grey600,
+    disabled: colorPalette.grey400,
+    hint: colorPalette.grey300,
+    light: colorPalette.white,
+    dark: colorPalette.black,
   },
 
   // Special purpose colors
   tire: {
-    new: '#4caf50',       // Green for new tires
-    used: '#ff9800',      // Orange for used tires
-    premium: '#7b68ee',   // Purple for premium tires
+    new: colorPalette.success500,       // Green for new tires
+    used: colorPalette.warning500,      // Orange for used tires
+    premium: colorPalette.info700,      // Purple for premium tires
   },
 
   // Service category colors
   service: {
-    maintenance: '#2196f3',  // Blue for maintenance
-    repair: '#ff5722',       // Red-orange for repairs
-    inspection: '#9c27b0',   // Purple for inspections
-    tires: '#ff6b35',        // Orange for tire services
+    maintenance: colorPalette.info500,      // Blue for maintenance
+    repair: colorPalette.error600,          // Red-orange for repairs
+    inspection: colorPalette.info800,       // Purple for inspections
+    tires: colorPalette.secondary800,       // Orange for tire services
   },
 
   // Social media colors (for footer/contact)
@@ -100,10 +102,10 @@ export const colors = {
 
   // Gradient colors for hero sections
   gradients: {
-    primary: 'linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%)',
-    secondary: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%)',
-    hero: 'linear-gradient(135deg, #1e3a5f 0%, #4a90e2 100%)',
-    dark: 'linear-gradient(135deg, #0f1f33 0%, #1e3a5f 100%)',
+    primary: colorPalette.primaryGradient,
+    secondary: colorPalette.secondaryGradient,
+    hero: colorPalette.heroGradient,
+    dark: colorPalette.darkGradient,
   },
 
   // Shadow colors

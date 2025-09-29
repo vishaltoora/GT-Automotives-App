@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ### 🚨 Critical Rules
 - **[Environment Variables](.claude/rules/environment-variables.md)** - **CRITICAL**: Always use `import.meta.env.VITE_*` in frontend, NEVER `process.env.VITE_*`
+- **[Migration Management](.claude/agents/migration-manager.md)** - **CRITICAL**: NEVER modify schema.prisma without creating migrations first ⭐ NEW
 
 ### 📁 Documentation Structure
 - **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview
@@ -109,10 +110,14 @@ yarn test          # Run tests
 5. Log all admin actions for audit trail
 
 ## 🤖 Specialized Agents & Workflows
+- **Migration Manager** (`.claude/agents/migration-manager.md`) - **CRITICAL**: Enforces proper database migration workflows ⭐ NEW
+- **Migration Enforcement** (`.claude/workflows/migration-enforcement.md`) - Automated migration validation and CI/CD integration ⭐ NEW
 - **DTO Manager** (`.claude/agents/dto-manager.md`) - Creates and manages DTOs with class-validator
-- **Enhanced Git Workflows** (`.claude/scripts/git-workflows-enhanced.sh`) - Build-validated git operations  
+- **Enhanced Git Workflows** (`.claude/scripts/git-workflows-enhanced.sh`) - Build-validated git operations
 - **Integration Workflows** (`.claude/workflows/dto-git-integration.md`) - Combined DTO + Git workflows
-- **Commands**: `/dto create|update|validate|fix-imports` - DTO management commands
+- **Commands**:
+  - `/dto create|update|validate|fix-imports` - DTO management commands
+  - `/migration check|create|deploy|status|validate` - Migration management commands ⭐ NEW
 
 ## ⚠️ Critical Rules
 - Customers see ONLY their own data
@@ -126,6 +131,18 @@ yarn test          # Run tests
 ---
 
 ## 🔄 Recent Updates
+
+### September 28, 2025 - Critical Schema Migration Management Implementation ✅
+- ✅ **Production Database Fixed**: Resolved 500 errors on `/api/companies` and `/api/tires` endpoints
+- ✅ **Schema Drift Resolution**: Fixed missing Company, TireBrand, TireSize tables in production
+- ✅ **Production-Safe Migration**: Created custom migration handling existing Invoice data safely
+- ✅ **Migration Manager Agent**: Implemented comprehensive migration enforcement system
+- ✅ **Migration Enforcement Workflow**: Automated pre-commit hooks and CI/CD integration
+- ✅ **Documentation Updates**: Enhanced troubleshooting and development guidelines
+- ✅ **Prevention Scripts**: Created migration-check.sh for automated validation
+- ✅ **Golden Rule Established**: NEVER modify schema.prisma without creating migrations first
+- ⚠️ **Critical Learning**: Schema drift causes production failures - prevention is essential
+- ⭐ **New Rule**: All schema changes must go through migration workflow before commit
 
 ### September 26, 2025 - Final Resolution: Local DTO Migration & Production Deployment Success ✅
 - ✅ **Root Cause Identified**: Shared DTO library added unnecessary complexity to container deployment
@@ -360,5 +377,43 @@ yarn test          # Run tests
 
 ---
 
-**Last Updated: September 17, 2025 - Shared DTO deployment pipeline resolution complete with full system operational**
+**Last Updated: September 28, 2025 - Critical schema migration management system implemented with production database fully operational**
 **Note:** For detailed information on any topic, refer to the specific documentation file linked above.
+
+## 🔧 Essential Migration Commands
+
+### Slash Commands (Recommended)
+```bash
+/migration check              # Check status and detect drift
+/migration create "name"      # Create migration for schema changes
+/migration validate          # Validate changes before commit
+/migration deploy            # Deploy to production
+/migration status           # Detailed status across environments
+```
+
+### Direct Script Commands
+```bash
+# Check migration status before any schema work
+./.claude/scripts/migration-check.sh
+
+# Create migration after schema changes (MANDATORY)
+./.claude/scripts/migration-create.sh "descriptive_name"
+
+# Validate before committing
+./.claude/scripts/migration-validate.sh
+
+# Deploy to production (after local testing)
+./.claude/scripts/migration-deploy.sh
+
+# Get detailed status report
+./.claude/scripts/migration-status.sh
+```
+
+### Manual Prisma Commands (Advanced)
+```bash
+# Create migration manually
+DATABASE_URL="postgresql://postgres@localhost:5432/gt_automotive?schema=public" npx prisma migrate dev --name "descriptive_name" --schema=libs/database/src/lib/prisma/schema.prisma
+
+# Deploy to production manually
+DATABASE_URL="postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require" yarn prisma migrate deploy --schema=libs/database/src/lib/prisma/schema.prisma
+```

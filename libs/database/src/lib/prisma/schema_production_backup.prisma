@@ -1,0 +1,311 @@
+[1G[0K\[1G[0K[33m[1mwarn[22m[39m The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: [4mhttps://pris.ly/prisma-config[24m
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  clerkId   String    @unique
+  email     String    @unique
+  firstName String?
+  lastName  String?
+  roleId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  lastLogin DateTime?
+  isActive  Boolean   @default(true)
+  role      Role      @relation(fields: [roleId], references: [id])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        RoleName         @unique
+  displayName String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       User[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime         @default(now())
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  phone        String?
+  address      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  businessName String?
+  email        String?
+  firstName    String
+  lastName     String
+  appointments Appointment[]
+  invoices     Invoice[]
+  vehicles     Vehicle[]
+}
+
+model Vehicle {
+  id           String        @id @default(cuid())
+  customerId   String
+  make         String
+  model        String
+  year         Int
+  vin          String?       @unique
+  licensePlate String?
+  mileage      Int?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+  invoices     Invoice[]
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Tire {
+  id             String          @id @default(cuid())
+  brand          String
+  size           String
+  type           TireType
+  condition      TireCondition
+  quantity       Int             @default(0)
+  price          Decimal         @db.Decimal(10, 2)
+  cost           Decimal?        @db.Decimal(10, 2)
+  location       String?
+  minStock       Int             @default(5)
+  imageUrl       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  invoiceItems   InvoiceItem[]
+  quotationItems QuotationItem[]
+
+  @@index([brand, size])
+}
+
+model Invoice {
+  id            String         @id @default(cuid())
+  invoiceNumber String         @unique @default(cuid())
+  customerId    String
+  vehicleId     String?
+  subtotal      Decimal        @db.Decimal(10, 2)
+  taxRate       Decimal        @db.Decimal(5, 4)
+  taxAmount     Decimal        @db.Decimal(10, 2)
+  total         Decimal        @db.Decimal(10, 2)
+  status        InvoiceStatus
+  paymentMethod PaymentMethod?
+  notes         String?
+  createdBy     String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  paidAt        DateTime?
+  gstAmount     Decimal?       @db.Decimal(10, 2)
+  gstRate       Decimal?       @db.Decimal(5, 4)
+  pstAmount     Decimal?       @db.Decimal(10, 2)
+  pstRate       Decimal?       @db.Decimal(5, 4)
+  invoiceDate   DateTime       @default(now())
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
+  items         InvoiceItem[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id          String          @id @default(cuid())
+  invoiceId   String
+  tireId      String?
+  itemType    InvoiceItemType
+  description String
+  quantity    Int
+  unitPrice   Decimal         @db.Decimal(10, 2)
+  total       Decimal         @db.Decimal(10, 2)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  invoice     Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tire        Tire?           @relation(fields: [tireId], references: [id])
+}
+
+model Quotation {
+  id                   String          @id @default(cuid())
+  quotationNumber      String          @unique @default(cuid())
+  customerName         String
+  businessName         String?
+  phone                String?
+  email                String?
+  address              String?
+  vehicleMake          String?
+  vehicleModel         String?
+  vehicleYear          Int?
+  subtotal             Decimal         @db.Decimal(10, 2)
+  gstRate              Decimal?        @db.Decimal(5, 4)
+  gstAmount            Decimal?        @db.Decimal(10, 2)
+  pstRate              Decimal?        @db.Decimal(5, 4)
+  pstAmount            Decimal?        @db.Decimal(10, 2)
+  taxRate              Decimal         @db.Decimal(5, 4)
+  taxAmount            Decimal         @db.Decimal(10, 2)
+  total                Decimal         @db.Decimal(10, 2)
+  status               QuotationStatus @default(DRAFT)
+  validUntil           DateTime?
+  notes                String?
+  createdBy            String
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  convertedToInvoiceId String?         @unique
+  items                QuotationItem[]
+
+  @@index([status])
+  @@index([customerName])
+}
+
+model QuotationItem {
+  id          String          @id @default(cuid())
+  quotationId String
+  tireId      String?
+  itemType    InvoiceItemType
+  description String
+  quantity    Int
+  unitPrice   Decimal         @db.Decimal(10, 2)
+  total       Decimal         @db.Decimal(10, 2)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  quotation   Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  tire        Tire?           @relation(fields: [tireId], references: [id])
+}
+
+model Appointment {
+  id            String            @id @default(cuid())
+  customerId    String
+  vehicleId     String?
+  scheduledDate DateTime
+  scheduledTime String
+  duration      Int               @default(60)
+  serviceType   String
+  status        AppointmentStatus
+  notes         String?
+  reminderSent  Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  customer      Customer          @relation(fields: [customerId], references: [id])
+  vehicle       Vehicle?          @relation(fields: [vehicleId], references: [id])
+
+  @@index([scheduledDate, status])
+  @@index([customerId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  resource   String
+  resourceId String
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+}
+
+enum RoleName {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+enum TireType {
+  ALL_SEASON
+  SUMMER
+  WINTER
+  PERFORMANCE
+  OFF_ROAD
+  RUN_FLAT
+}
+
+enum TireCondition {
+  NEW
+  USED_EXCELLENT
+  USED_GOOD
+  USED_FAIR
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  CHECK
+  E_TRANSFER
+  FINANCING
+}
+
+enum InvoiceItemType {
+  TIRE
+  SERVICE
+  PART
+  OTHER
+  DISCOUNT
+  DISCOUNT_PERCENTAGE
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+
+[1G[0K\[1G[0K[1mnpm[22m [96mnotice[39m
+[1mnpm[22m [96mnotice[39m New [31mmajor[39m version of npm available! [31m10.8.2[39m -> [34m11.6.1[39m
+[1mnpm[22m [96mnotice[39m Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.6.1[39m
+[1mnpm[22m [96mnotice[39m To update run: [4mnpm install -g npm@11.6.1[24m
+[1mnpm[22m [96mnotice[39m
+[1G[0K\[1G[0K

@@ -20,8 +20,6 @@ model User {
   lastLogin DateTime?
   isActive  Boolean   @default(true)
   role      Role      @relation(fields: [roleId], references: [id])
-  jobs      Job[]     // Jobs assigned to this user (for STAFF role)
-  payments  Payment[] // Payments made to this user (for STAFF role)
 }
 
 model Role {
@@ -269,94 +267,6 @@ model AuditLog {
   @@index([userId])
   @@index([resource, resourceId])
   @@index([createdAt])
-}
-
-model Job {
-  id          String      @id @default(cuid())
-  jobNumber   String      @unique @default(cuid())
-  employeeId  String      // Foreign key to User (where role = STAFF)
-  title       String      // Job description/title
-  description String?     // Detailed job description
-  payAmount   Decimal     @db.Decimal(10, 2)
-  status      JobStatus   @default(PENDING)
-  jobType     JobType     // Regular, Overtime, Bonus, Commission
-  dueDate     DateTime?   // When payment is due
-  completedAt DateTime?   // When job was completed
-  createdBy   String      // Who assigned the job
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  employee    User        @relation(fields: [employeeId], references: [id])
-  payments    Payment[]   // One job can have multiple payments (partial payments)
-
-  @@index([employeeId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model Payment {
-  id            String        @id @default(cuid())
-  jobId         String
-  employeeId    String        // Denormalized for faster queries
-  amount        Decimal       @db.Decimal(10, 2)
-  paymentMethod PaymentMethod
-  status        PaymentStatus @default(PENDING)
-  paidAt        DateTime?
-  paidBy        String?       // Who processed the payment
-  notes         String?
-  reference     String?       // Check number, transaction ID, etc.
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  job           Job           @relation(fields: [jobId], references: [id])
-  employee      User          @relation(fields: [employeeId], references: [id])
-
-  @@index([employeeId])
-  @@index([status])
-  @@index([paidAt])
-}
-
-model PayrollPeriod {
-  id        String   @id @default(cuid())
-  startDate DateTime
-  endDate   DateTime
-  name      String   // "January 2025", "Week 1 Jan 2025"
-  type      PeriodType // WEEKLY, MONTHLY, YEARLY
-  createdAt DateTime @default(now())
-
-  @@unique([startDate, endDate, type])
-  @@index([startDate, endDate])
-}
-
-enum JobStatus {
-  PENDING     // Job assigned, payment not yet due
-  READY       // Job completed, ready for payment
-  PAID        // Fully paid
-  CANCELLED   // Job cancelled
-  PARTIALLY_PAID // Some payments made, balance remaining
-}
-
-enum JobType {
-  REGULAR     // Regular hourly/salary work
-  OVERTIME    // Overtime pay
-  BONUS       // Performance bonus
-  COMMISSION  // Sales commission
-  EXPENSE     // Expense reimbursement
-  OTHER       // Other compensation
-}
-
-enum PaymentStatus {
-  PENDING     // Payment scheduled but not made
-  PAID        // Payment completed
-  FAILED      // Payment failed
-  CANCELLED   // Payment cancelled
-}
-
-enum PeriodType {
-  WEEKLY
-  MONTHLY
-  QUARTERLY
-  YEARLY
 }
 
 enum RoleName {
