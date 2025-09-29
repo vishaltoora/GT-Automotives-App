@@ -28,8 +28,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { UpdateJobDto, JobType, JobStatus, JobResponseDto } from '@gt-automotive/data';
 import { jobService } from '../../services/job.service';
-import { userService } from '../../services/user.service';
-import { useAuth } from '../../hooks/useAuth';
+// import { userService } from '../../services/user.service'; // TODO: Use for employee reassignment
 import { colors } from '../../theme/colors';
 
 const Transition = React.forwardRef(function Transition(
@@ -61,10 +60,10 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // TODO: Use for authorization checks
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  // const [employees, setEmployees] = useState<Employee[]>([]); // TODO: Use for employee reassignment
   const [formData, setFormData] = useState<UpdateJobDto>({
     title: '',
     description: '',
@@ -105,9 +104,9 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
 
   const fetchEmployees = async () => {
     try {
-      const users = await userService.getUsers();
-      const staffMembers = users.filter(u => u.role?.name === 'STAFF');
-      setEmployees(staffMembers);
+      // const users = await userService.getUsers();
+      // const staffMembers = users.filter(u => u.role?.name === 'STAFF');
+      // setEmployees(staffMembers); // TODO: Implement employee reassignment
     } catch (err) {
       console.error('Failed to fetch employees:', err);
       setError('Failed to load employees');

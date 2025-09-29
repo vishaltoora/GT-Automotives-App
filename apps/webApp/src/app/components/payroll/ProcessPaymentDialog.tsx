@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { ProcessPaymentDto, JobResponseDto } from '@gt-automotive/data';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod } from '@gt-automotive/data';
 import { paymentService } from '../../services/payment.service';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
@@ -62,7 +62,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
   const [formData, setFormData] = useState<ProcessPaymentDto>({
     jobId: '',
     amount: 0,
-    paymentMethod: PaymentMethod.CASH,
+    paymentMethod: 'CASH' as PaymentMethod,
     notes: '',
     reference: '',
     paidBy: user?.id || '',
@@ -73,7 +73,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
       setFormData({
         jobId: job.id,
         amount: job.payAmount,
-        paymentMethod: PaymentMethod.CASH,
+        paymentMethod: 'CASH' as PaymentMethod,
         notes: '',
         reference: '',
         paidBy: user?.id || '',
@@ -95,7 +95,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
       return;
     }
 
-    if (formData.amount <= 0) {
+    if ((formData.amount || 0) <= 0) {
       setError('Payment amount must be greater than 0');
       return;
     }
@@ -279,7 +279,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography>New Balance:</Typography>
-                <Typography fontWeight="bold" color={remainingBalance - formData.amount <= 0 ? colors.semantic.success : colors.semantic.warning}>
+                <Typography fontWeight="bold" color={remainingBalance - (formData.amount || 0) <= 0 ? colors.semantic.success : colors.semantic.warning}>
                   ${Math.max(0, remainingBalance - (formData.amount || 0)).toFixed(2)}
                 </Typography>
               </Box>

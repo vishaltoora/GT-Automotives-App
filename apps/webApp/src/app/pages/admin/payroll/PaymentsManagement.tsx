@@ -38,7 +38,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { PaymentResponseDto, PaymentSummaryDto, JobResponseDto } from '@gt-automotive/data';
-import { PaymentStatus, PaymentMethod } from '@prisma/client';
+import { PaymentStatus, PaymentMethod } from '@gt-automotive/data';
 import { paymentService } from '../../../services/payment.service';
 import { jobService } from '../../../services/job.service';
 import { userService } from '../../../services/user.service';
@@ -99,8 +99,8 @@ export function PaymentsManagement() {
       setLoading(true);
       const filterParams = {
         employeeId: filters.employeeId || undefined,
-        status: filters.status as PaymentStatus || undefined,
-        paymentMethod: filters.paymentMethod as PaymentMethod || undefined,
+        status: filters.status ? (filters.status as PaymentStatus) : undefined,
+        paymentMethod: filters.paymentMethod ? (filters.paymentMethod as PaymentMethod) : undefined,
         startDate: filters.startDate?.toISOString() || undefined,
         endDate: filters.endDate?.toISOString() || undefined,
       };
@@ -303,11 +303,11 @@ export function PaymentsManagement() {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: colors.neutral[50] }}>
-                    <TableCell fontWeight="bold">Job</TableCell>
-                    <TableCell fontWeight="bold">Employee</TableCell>
-                    <TableCell fontWeight="bold">Amount</TableCell>
-                    <TableCell fontWeight="bold">Completed</TableCell>
-                    <TableCell fontWeight="bold" align="center">Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Job</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Employee</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Completed</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }} align="center">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -454,14 +454,14 @@ export function PaymentsManagement() {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: colors.neutral[50] }}>
-                    <TableCell fontWeight="bold">Payment</TableCell>
-                    <TableCell fontWeight="bold">Employee</TableCell>
-                    <TableCell fontWeight="bold">Job</TableCell>
-                    <TableCell fontWeight="bold">Amount</TableCell>
-                    <TableCell fontWeight="bold">Method</TableCell>
-                    <TableCell fontWeight="bold">Status</TableCell>
-                    <TableCell fontWeight="bold">Date</TableCell>
-                    <TableCell fontWeight="bold" align="center">Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Payment</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Employee</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Job</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Method</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }} align="center">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
