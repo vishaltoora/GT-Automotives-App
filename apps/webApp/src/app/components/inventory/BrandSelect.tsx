@@ -232,7 +232,7 @@ export function BrandSelect({ value, onChange, error, helperText, disabled }: Br
           return brandNames.map(name => ({
             id: name, // Use name as ID for fallback
             name,
-            imageUrl: null,
+            imageUrl: undefined,
             createdAt: new Date(),
             updatedAt: new Date(),
           }));

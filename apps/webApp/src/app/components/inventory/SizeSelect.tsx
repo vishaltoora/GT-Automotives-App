@@ -194,11 +194,6 @@ export function SizeSelect({ value, onChange, error, helperText, disabled }: Siz
     setDialogOpen(true);
   };
 
-  const handleEdit = (size: TireSize) => {
-    setEditingSize(size);
-    setDialogOpen(true);
-  };
-
   const handleDelete = async (size: TireSize) => {
     if (window.confirm(`Are you sure you want to delete size "${size.size}"? This action cannot be undone.`)) {
       deleteMutation.mutate(size.id);

@@ -68,7 +68,7 @@ export class AuditRepository {
     endDate?: Date;
   }): Promise<AuditLog[]> {
     const where: Prisma.AuditLogWhereInput = {};
-    
+
     if (filters?.userId) where.userId = filters.userId;
     if (filters?.action) where.action = filters.action;
     if (filters?.entityType) where.resource = filters.entityType;
@@ -82,5 +82,21 @@ export class AuditRepository {
       where,
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // Alias method for backward compatibility
+  async log(data: {
+    userId: string;
+    action: string;
+    entityType?: string;
+    entityId?: string;
+    resource?: string;
+    resourceId?: string;
+    oldValue?: any;
+    newValue?: any;
+    details?: any;
+    ipAddress?: string;
+  }): Promise<AuditLog> {
+    return this.create(data);
   }
 }
