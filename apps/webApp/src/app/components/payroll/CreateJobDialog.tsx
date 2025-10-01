@@ -172,9 +172,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3 }}>
+      <DialogContent sx={{ p: 0 }}>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 3 }}>
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
