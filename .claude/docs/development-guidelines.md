@@ -439,6 +439,124 @@ Always test features with all three roles:
 - Record price changes
 - Monitor failed login attempts
 
+## TypeScript Best Practices (Updated September 29, 2025)
+
+### Material-UI Component Props
+```typescript
+// ✅ CORRECT: Use sx prop for font styling
+<TableCell sx={{ fontWeight: 'bold' }}>Header</TableCell>
+
+// ❌ INCORRECT: Direct props deprecated
+<TableCell fontWeight="bold">Header</TableCell>
+```
+
+### Enum Compatibility and Type Safety
+```typescript
+// ✅ CORRECT: Proper enum typing with conditional checks
+const filterParams = {
+  status: filters.status ? (filters.status as JobStatus) : undefined,
+  jobType: filters.jobType ? (filters.jobType as JobType) : undefined,
+};
+
+// ✅ CORRECT: Safe optional chaining for undefined values
+if ((formData.amount || 0) <= 0) {
+  setError('Amount must be greater than 0');
+}
+
+// ✅ CORRECT: String literal with type assertion for enum compatibility
+const payment = {
+  paymentMethod: 'CASH' as PaymentMethod,
+  amount: formData.amount || 0
+};
+```
+
+### Enum Mapping Records Pattern (From MyPersn)
+```typescript
+// ✅ BEST PRACTICE: Create user-friendly label mappings
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
+  PENDING: 'Pending',
+  READY: 'Ready for Payment',
+  PAID: 'Paid',
+  CANCELLED: 'Cancelled',
+  PARTIALLY_PAID: 'Partially Paid'
+};
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  CASH: 'Cash',
+  CREDIT_CARD: 'Credit Card',
+  DEBIT_CARD: 'Debit Card',
+  CHECK: 'Check',
+  E_TRANSFER: 'E-Transfer',
+  FINANCING: 'Financing'
+};
+
+// Usage in components
+<MenuItem value={status}>
+  {JOB_STATUS_LABELS[status]}
+</MenuItem>
+```
+
+### Prisma Relation Handling
+```typescript
+// ✅ CORRECT: Use connect syntax for relations
+const jobData = {
+  employee: {
+    connect: { id: createJobDto.employeeId }
+  },
+  title: createJobDto.title,
+  payAmount: createJobDto.payAmount,
+  createdBy: userId,
+};
+
+// ❌ INCORRECT: Direct ID assignment may fail
+const jobData = {
+  employeeId: createJobDto.employeeId, // May cause relation issues
+};
+```
+
+### Import Organization
+```typescript
+// ✅ CORRECT: Import enums from @gt-automotive/data (shared)
+import { JobStatus, JobType, PaymentMethod } from '@gt-automotive/data';
+
+// ✅ CORRECT: Import from @prisma/client when using Prisma directly
+import { TireType, TireCondition } from '@prisma/client';
+
+// Clean up unused imports regularly
+// Remove console.log statements before committing
+```
+
+## Vite Configuration Best Practices (Critical - September 29, 2025)
+
+### Path Resolution for CI/CD Compatibility
+```typescript
+// ✅ CORRECT: Use relative paths for alias configuration
+resolve: {
+  alias: {
+    '@gt-automotive/data': '../../libs/data/src/index.ts',
+  },
+},
+
+// ❌ INCORRECT: Absolute paths fail in CI/CD environments
+resolve: {
+  alias: {
+    '@gt-automotive/data': '/Users/username/projects/app/libs/data/src/index.ts',
+  },
+},
+```
+
+**Why Relative Paths are Critical:**
+- Absolute paths only work on specific machines
+- GitHub Actions runners have different file system paths
+- Relative paths work consistently across all environments
+- Prevents `ENOENT: no such file or directory` build failures
+
+**Common Vite Build Issues:**
+- Module resolution failures in production builds
+- Path not found errors during CI/CD
+- Works locally but fails in GitHub Actions
+- Build step fails with "could not load" errors
+
 ## Performance Optimization
 
 ### Database

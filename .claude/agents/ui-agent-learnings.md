@@ -192,3 +192,146 @@ The UI agent successfully fixed 12 color reference errors in ProcessPaymentDialo
 - **Verification Important**: Not all color references were broken - agent correctly identified which needed updating
 - **Pattern Consistency**: Applied semantic color pattern for success, warning, error, and info states
 - **Gradient Preservation**: Maintained existing gradient patterns where they were already working correctly
+
+## 🔄 TypeScript & Enum Mapping Learnings (September 29, 2025)
+
+### Enum Record Mapping Pattern (From MyPersn)
+**Key Learning**: The user prefers creating Record objects to map enum values to user-friendly strings for frontend display.
+
+#### Implementation Pattern:
+```typescript
+// ✅ BEST PRACTICE: Create Record mappings for enum labels
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
+  PENDING: 'Pending',
+  READY: 'Ready for Payment',
+  PAID: 'Paid',
+  CANCELLED: 'Cancelled',
+  PARTIALLY_PAID: 'Partially Paid'
+};
+
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
+  REGULAR: 'Regular',
+  OVERTIME: 'Overtime',
+  BONUS: 'Bonus',
+  COMMISSION: 'Commission',
+  EXPENSE: 'Expense',
+  OTHER: 'Other'
+};
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  CASH: 'Cash',
+  CREDIT_CARD: 'Credit Card',
+  DEBIT_CARD: 'Debit Card',
+  CHECK: 'Check',
+  E_TRANSFER: 'E-Transfer',
+  FINANCING: 'Financing'
+};
+```
+
+#### Usage in Components:
+```typescript
+// In dropdown menus
+<MenuItem value={status}>
+  {JOB_STATUS_LABELS[status]}
+</MenuItem>
+
+// In table displays
+<TableCell>{JOB_TYPE_LABELS[job.jobType]}</TableCell>
+
+// In chip components
+<Chip label={PAYMENT_METHOD_LABELS[payment.method]} />
+```
+
+### TypeScript Error Resolution Patterns
+
+#### Material-UI Component Props:
+```typescript
+// ✅ CORRECT: Use sx prop for styling
+<TableCell sx={{ fontWeight: 'bold' }}>Header</TableCell>
+
+// ❌ INCORRECT: Direct props cause deprecation warnings
+<TableCell fontWeight="bold">Header</TableCell>
+```
+
+#### Enum Type Safety with Conditionals:
+```typescript
+// ✅ CORRECT: Safe conditional enum typing
+const filterParams = {
+  status: filters.status ? (filters.status as JobStatus) : undefined,
+  jobType: filters.jobType ? (filters.jobType as JobType) : undefined,
+};
+
+// ✅ CORRECT: Optional chaining with fallbacks
+if ((formData.amount || 0) <= 0) {
+  setError('Amount must be greater than 0');
+}
+```
+
+#### Prisma Relation Patterns:
+```typescript
+// ✅ CORRECT: Use connect syntax for relations
+const jobData = {
+  employee: {
+    connect: { id: createJobDto.employeeId }
+  },
+  title: createJobDto.title,
+  payAmount: createJobDto.payAmount,
+  createdBy: userId,
+};
+
+// ❌ INCORRECT: Direct ID assignment may cause issues
+const jobData = {
+  employeeId: createJobDto.employeeId, // May cause relation issues
+};
+```
+
+### Import Organization Best Practices:
+```typescript
+// ✅ CORRECT: Import enums from @gt-automotive/data (shared)
+import { JobStatus, JobType, PaymentMethod } from '@gt-automotive/data';
+
+// ✅ CORRECT: Import from @prisma/client when using Prisma directly
+import { TireType, TireCondition } from '@prisma/client';
+
+// Clean up unused imports regularly
+// Remove console.log statements before committing
+```
+
+### Critical Error Patterns Fixed:
+
+#### PaymentMethod Enum Compatibility:
+```typescript
+// ✅ CORRECT: String literal with type assertion
+const payment = {
+  paymentMethod: 'CASH' as PaymentMethod,
+  amount: formData.amount || 0
+};
+
+// ❌ INCORRECT: Direct enum reference might fail
+paymentMethod: PaymentMethod.CASH, // Can cause enum compatibility issues
+```
+
+#### TableCell FontWeight Props:
+```typescript
+// ✅ CORRECT: All TableCell components updated
+<TableCell sx={{ fontWeight: 'bold' }}>Job</TableCell>
+<TableCell sx={{ fontWeight: 'bold' }}>Employee</TableCell>
+<TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+
+// ❌ INCORRECT: Deprecated props
+<TableCell fontWeight="bold">Job</TableCell>
+```
+
+### Systematic Error Resolution Approach:
+1. **Run TypeScript Check**: `yarn typecheck` to identify all errors
+2. **Group Similar Errors**: Fix all instances of same pattern (e.g., TableCell props)
+3. **Verify Enum Values**: Check actual Prisma schema for correct enum values
+4. **Test Build System**: Run `yarn build:web` to verify production compatibility
+5. **Clean Up Imports**: Remove unused imports and console statements
+
+### Key Patterns for UI Agent:
+- **Always create enum Record mappings** when working with enums in UI
+- **Use sx prop for Material-UI styling** instead of direct props
+- **Apply type assertions for enum compatibility** in form handling
+- **Import enums from shared library** for consistency
+- **Test TypeScript compilation** after any enum or type changes

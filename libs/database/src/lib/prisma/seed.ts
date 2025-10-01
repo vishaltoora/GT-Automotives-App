@@ -285,31 +285,19 @@ async function main() {
     // Create sample tire inventory
     console.log('Creating sample tire inventory...');
 
-    // First, create tire brands
-    const brands = ['Michelin', 'Bridgestone', 'Goodyear', 'Continental', 'BF Goodrich'];
+    // Get existing tire brands (created by migration)
+    const brands = await prisma.tireBrand.findMany({
+      where: { name: { in: ['Michelin', 'Bridgestone', 'Goodyear', 'Continental', 'BF Goodrich'] } }
+    });
     const brandMap = new Map<string, string>();
+    brands.forEach(brand => brandMap.set(brand.name, brand.id));
 
-    for (const brandName of brands) {
-      const brand = await prisma.tireBrand.upsert({
-        where: { name: brandName },
-        update: {},
-        create: { name: brandName },
-      });
-      brandMap.set(brandName, brand.id);
-    }
-
-    // Create tire sizes
-    const sizes = ['225/45R17', '215/60R16', '245/40R18', '235/65R17', '265/70R17'];
+    // Get existing tire sizes (created by migration)
+    const sizes = await prisma.tireSize.findMany({
+      where: { size: { in: ['225/45R17', '215/60R16', '245/40R18', '235/65R17', '265/70R17'] } }
+    });
     const sizeMap = new Map<string, string>();
-
-    for (const sizeValue of sizes) {
-      const tireSize = await prisma.tireSize.upsert({
-        where: { size: sizeValue },
-        update: {},
-        create: { size: sizeValue },
-      });
-      sizeMap.set(sizeValue, tireSize.id);
-    }
+    sizes.forEach(size => sizeMap.set(size.size, size.id));
 
     // Now create tires with proper relationships
     const tireData = [
