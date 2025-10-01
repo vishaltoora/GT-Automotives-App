@@ -25,9 +25,10 @@ export class CreateTireDto {
   @Min(0)
   price!: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  cost!: number;
+  cost?: number;
 
   @IsNumber()
   @Min(0)

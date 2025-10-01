@@ -23,6 +23,9 @@ import { CreateTireDto } from '../common/dto/tire.dto';
 import { UpdateTireDto } from '../common/dto/tire.dto';
 import { StockAdjustmentDto } from '../common/dto/tire.dto';
 import { TireSearchDto, TireResponseDto, TireSearchResultDto } from '../common/dto/tire.dto';
+import { CreateTireBrandDto, UpdateTireBrandDto, TireBrandDto } from '../common/dto/tire-brand.dto';
+import { CreateTireSizeDto, UpdateTireSizeDto, TireSizeDto } from '../common/dto/tire-size.dto';
+import { CreateLocationDto, UpdateLocationDto, LocationDto } from '../common/dto/location.dto';
 
 @Controller('api/tires')
 export class TiresController {
@@ -50,6 +53,16 @@ export class TiresController {
     return this.tiresService.findAll(filters, userRole);
   }
 
+  // ============ TIRE BRAND MANAGEMENT ============
+
+  // Get all tire brands (CRUD endpoint - must come before generic 'brands' route)
+  @Get('brands/all')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  async getAllTireBrands(): Promise<TireBrandDto[]> {
+    return this.tiresService.getAllTireBrands();
+  }
+
   // Public endpoint - get all tire brands
   @Get('brands')
   @Public()
@@ -58,6 +71,18 @@ export class TiresController {
   ): Promise<string[]> {
     const userRole = user?.role?.name;
     return this.tiresService.getBrands(userRole);
+  }
+
+  // Create new tire brand
+  @Post('brands')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createTireBrand(
+    @Body() createTireBrandDto: CreateTireBrandDto,
+    @CurrentUser() user: any,
+  ): Promise<TireBrandDto> {
+    return this.tiresService.createTireBrand(createTireBrandDto, user.id);
   }
 
   // Public endpoint - get all tire models for a brand
@@ -71,6 +96,41 @@ export class TiresController {
     return this.tiresService.getModelsForBrand(brand, userRole);
   }
 
+  // Update tire brand
+  @Put('brands/:id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateTireBrand(
+    @Param('id') id: string,
+    @Body() updateTireBrandDto: UpdateTireBrandDto,
+    @CurrentUser() user: any,
+  ): Promise<TireBrandDto> {
+    return this.tiresService.updateTireBrand(id, updateTireBrandDto, user.id);
+  }
+
+  // Delete tire brand
+  @Delete('brands/:id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('ADMIN')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTireBrand(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<{ success: boolean }> {
+    return this.tiresService.deleteTireBrand(id, user.id);
+  }
+
+  // ============ TIRE SIZE MANAGEMENT ============
+
+  // Get all tire sizes (CRUD endpoint - must come before generic 'sizes' route)
+  @Get('sizes/all')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  async getAllTireSizes(): Promise<TireSizeDto[]> {
+    return this.tiresService.getAllTireSizes();
+  }
+
   // Public endpoint - get all tire sizes
   @Get('sizes')
   @Public()
@@ -79,6 +139,100 @@ export class TiresController {
   ): Promise<string[]> {
     const userRole = user?.role?.name;
     return this.tiresService.getSizes(userRole);
+  }
+
+  // Create new tire size
+  @Post('sizes')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createTireSize(
+    @Body() createTireSizeDto: CreateTireSizeDto,
+    @CurrentUser() user: any,
+  ): Promise<TireSizeDto> {
+    return this.tiresService.createTireSize(createTireSizeDto, user.id);
+  }
+
+  // Update tire size
+  @Put('sizes/:id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateTireSize(
+    @Param('id') id: string,
+    @Body() updateTireSizeDto: UpdateTireSizeDto,
+    @CurrentUser() user: any,
+  ): Promise<TireSizeDto> {
+    return this.tiresService.updateTireSize(id, updateTireSizeDto, user.id);
+  }
+
+  // Delete tire size
+  @Delete('sizes/:id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('ADMIN')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTireSize(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<{ success: boolean }> {
+    return this.tiresService.deleteTireSize(id, user.id);
+  }
+
+  // ============ LOCATION MANAGEMENT ============
+
+  // Get all locations (CRUD endpoint - must come before generic 'locations' route)
+  @Get('locations/all')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  async getAllLocations(): Promise<LocationDto[]> {
+    return this.tiresService.getAllLocations();
+  }
+
+  // Public endpoint - get all locations
+  @Get('locations')
+  @Public()
+  async getLocations(
+    @CurrentUser() user?: any,
+  ): Promise<string[]> {
+    const userRole = user?.role?.name;
+    return this.tiresService.getLocations(userRole);
+  }
+
+  // Create new location
+  @Post('locations')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createLocation(
+    @Body() createLocationDto: CreateLocationDto,
+    @CurrentUser() user: any,
+  ): Promise<LocationDto> {
+    return this.tiresService.createLocation(createLocationDto, user.id);
+  }
+
+  // Update location
+  @Put('locations/:id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateLocation(
+    @Param('id') id: string,
+    @Body() updateLocationDto: UpdateLocationDto,
+    @CurrentUser() user: any,
+  ): Promise<LocationDto> {
+    return this.tiresService.updateLocation(id, updateLocationDto, user.id);
+  }
+
+  // Delete location
+  @Delete('locations/:id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('ADMIN')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteLocation(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<{ success: boolean }> {
+    return this.tiresService.deleteLocation(id, user.id);
   }
 
   // Public endpoint - customers can view individual tires
@@ -217,6 +371,7 @@ export class TiresController {
   async getStockAlerts(): Promise<TireResponseDto[]> {
     return this.tiresService.checkLowStockAlerts();
   }
+
 
   // TODO: Image upload endpoints
   // @Post(':id/images')

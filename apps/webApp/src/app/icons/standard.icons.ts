@@ -26,6 +26,8 @@ export {
   FilterList as FilterIcon,
   Clear as ClearIcon,
   Refresh as RefreshIcon,
+  Visibility as ViewIcon,
+  Remove as RemoveIcon,
 } from '@mui/icons-material';
 
 // Business Icons
@@ -81,6 +83,8 @@ export {
   PictureAsPdf as PdfIcon,
   CloudUpload as CloudUploadIcon,
   Folder as FolderIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
 } from '@mui/icons-material';
 
 // Dashboard & Analytics Icons

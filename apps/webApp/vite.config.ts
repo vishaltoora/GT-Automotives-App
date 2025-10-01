@@ -33,9 +33,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   resolve: {
-    alias: {
-      '@gt-automotive/data': '../../libs/data/src/index.ts',
-    },
+    conditions: ['development', 'import', 'module', 'browser', 'default'],
     // Module resolution handled by symlinks in node_modules
   },
   build: {

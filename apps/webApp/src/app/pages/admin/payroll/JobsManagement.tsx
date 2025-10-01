@@ -37,8 +37,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { JobResponseDto, JobSummaryDto } from '@gt-automotive/data';
-import { JobStatus, JobType } from '@gt-automotive/data';
+import { JobResponseDto, JobSummaryDto, JobStatus, JobType } from '@gt-automotive/data';
 import { jobService } from '../../../services/job.service';
 import { userService } from '../../../services/user.service';
 import { CreateJobDialog } from '../../../components/payroll/CreateJobDialog';
@@ -401,7 +400,6 @@ export function JobsManagement() {
                   <TableCell sx={{ fontWeight: 'bold' }}>Type</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Due Date</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Created</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }} align="center">Actions</TableCell>
                 </TableRow>
@@ -409,7 +407,7 @@ export function JobsManagement() {
               <TableBody>
                 {jobs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                       <Typography color="textSecondary">
                         No jobs found. Create your first job to get started.
                       </Typography>
@@ -452,9 +450,6 @@ export function JobsManagement() {
                           color={getStatusColor(job.status)}
                           size="small"
                         />
-                      </TableCell>
-                      <TableCell>
-                        {job.dueDate ? format(new Date(job.dueDate), 'MMM dd, yyyy') : '-'}
                       </TableCell>
                       <TableCell>
                         {format(new Date(job.createdAt), 'MMM dd, yyyy')}

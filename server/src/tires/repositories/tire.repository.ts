@@ -14,6 +14,11 @@ export class TireRepository extends BaseRepository<Tire> {
     return this.prisma.tire.findMany({
       where: this.buildWhereClause(filters),
       orderBy: { updatedAt: 'desc' },
+      include: {
+        brand: true,
+        size: true,
+        location: true,
+      },
     });
   }
 
@@ -23,6 +28,7 @@ export class TireRepository extends BaseRepository<Tire> {
       include: {
         brand: true,
         size: true,
+        location: true,
       },
     });
   }
@@ -33,6 +39,7 @@ export class TireRepository extends BaseRepository<Tire> {
       include: {
         brand: true,
         size: true,
+        location: true,
       },
     });
   }
@@ -44,6 +51,7 @@ export class TireRepository extends BaseRepository<Tire> {
       include: {
         brand: true,
         size: true,
+        location: true,
       },
     });
   }
@@ -87,6 +95,7 @@ export class TireRepository extends BaseRepository<Tire> {
         include: {
           brand: true,
           size: true,
+          location: true,
         },
       }),
       this.prisma.tire.count({ where }),
@@ -102,7 +111,7 @@ export class TireRepository extends BaseRepository<Tire> {
       quantity: tire.quantity,
       price: parseFloat(tire.price.toString()),
       cost: tire.cost ? parseFloat(tire.cost.toString()) : undefined,
-      location: tire.location || undefined, // Convert null to undefined
+      location: tire.location?.name || undefined, // Convert null to undefined and get location name
       imageUrl: tire.imageUrl || undefined, // Convert null to undefined
       description: undefined, // Field not in model, set to undefined
       notes: undefined, // Field not in model, set to undefined
@@ -111,7 +120,9 @@ export class TireRepository extends BaseRepository<Tire> {
       createdBy: 'system', // Default value since Prisma model doesn't have this field
       createdAt: tire.createdAt.toISOString(),
       updatedAt: tire.updatedAt.toISOString(),
-    }));
+      // Add brand imageUrl for display purposes
+      brandImageUrl: tire.brand.imageUrl || undefined,
+    } as any));
 
     return {
       items: convertedItems,
@@ -278,6 +289,7 @@ export class TireRepository extends BaseRepository<Tire> {
       include: {
         brand: true,
         size: true,
+        location: true,
       },
     });
   }
@@ -302,6 +314,7 @@ export class TireRepository extends BaseRepository<Tire> {
       include: {
         brand: true,
         size: true,
+        location: true,
       },
     });
   }

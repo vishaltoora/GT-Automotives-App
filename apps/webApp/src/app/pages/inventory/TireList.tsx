@@ -194,11 +194,14 @@ export function TireList({
           }
         };
 
-        if (tire.imageUrl) {
+        // Prioritize brand image, fallback to tire image
+        const imageUrl = (tire as any).brandImageUrl || tire.imageUrl;
+
+        if (imageUrl) {
           return (
             <Box
               component="img"
-              src={tire.imageUrl}
+              src={imageUrl}
               alt={`${tire.brand} - ${tire.size}`}
               sx={{
                 width: 40,

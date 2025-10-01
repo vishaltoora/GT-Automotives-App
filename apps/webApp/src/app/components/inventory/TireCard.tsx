@@ -147,7 +147,7 @@ export function TireCard({
           <CardMedia
             component="img"
             height="140"
-            image={tire.imageUrl || placeholderImage}
+            image={(tire as any).brandImageUrl || tire.imageUrl || placeholderImage}
             alt={`${tire.brand} ${tire.size}`}
             sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
             onError={(e) => {
@@ -275,7 +275,7 @@ export function TireCard({
         <CardMedia
           component="img"
           height="240"
-          image={tire.imageUrl || placeholderImage}
+          image={(tire as any).brandImageUrl || tire.imageUrl || placeholderImage}
           alt={`${tire.brand} ${tire.size}`}
           sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
           onError={(e) => {

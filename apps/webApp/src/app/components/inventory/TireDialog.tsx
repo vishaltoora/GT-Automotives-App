@@ -26,6 +26,7 @@ const TireType = {
   ALL_SEASON: 'ALL_SEASON',
   SUMMER: 'SUMMER',
   WINTER: 'WINTER',
+  WINTER_STUDDED: 'WINTER_STUDDED',
   PERFORMANCE: 'PERFORMANCE',
   OFF_ROAD: 'OFF_ROAD',
   RUN_FLAT: 'RUN_FLAT',
@@ -43,6 +44,9 @@ type TireCondition = typeof TireCondition[keyof typeof TireCondition];
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TireService } from '../../services/tire.service';
 import { useAuth } from '../../hooks/useAuth';
+import { BrandSelect } from './BrandSelect';
+import { SizeSelect } from './SizeSelect';
+import { LocationSelect } from './LocationSelect';
 
 // Type declaration for Clerk global
 declare global {
@@ -63,12 +67,13 @@ interface TireDialogProps {
 }
 
 const TIRE_TYPES = [
-  { value: TireType.ALL_SEASON, label: 'All Season' },
-  { value: TireType.SUMMER, label: 'Summer' },
-  { value: TireType.WINTER, label: 'Winter' },
-  { value: TireType.PERFORMANCE, label: 'Performance' },
-  { value: TireType.OFF_ROAD, label: 'Off Road' },
-  { value: TireType.RUN_FLAT, label: 'Run Flat' },
+  { value: TireType.ALL_SEASON, label: '🌤️ All Season' },
+  { value: TireType.SUMMER, label: '☀️ Summer' },
+  { value: TireType.WINTER, label: '❄️ Winter' },
+  { value: TireType.WINTER_STUDDED, label: '🧊 Winter Studded' },
+  { value: TireType.PERFORMANCE, label: '🏁 Performance' },
+  { value: TireType.OFF_ROAD, label: '🏔️ Off Road' },
+  { value: TireType.RUN_FLAT, label: '🔧 Run Flat' },
 ];
 
 const TIRE_CONDITIONS = [
@@ -122,37 +127,39 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   const [errors, setErrors] = useState<Partial<Record<keyof CreateTireDto, string>>>({});
 
   useEffect(() => {
-    if (tire) {
-      setFormData({
-        brand: tire.brand,
-        size: tire.size,
-        type: tire.type,
-        condition: tire.condition,
-        quantity: tire.quantity,
-        price: tire.price,
-        cost: tire.cost || 0,
-        minStock: tire.minStock,
-        location: tire.location || '',
-        notes: '',
-        imageUrl: tire.imageUrl || '',
-      });
-    } else {
-      setFormData({
-        brand: '',
-        size: '',
-        type: TireType.ALL_SEASON as any,
-        condition: TireCondition.NEW as any,
-        quantity: 0,
-        price: 0,
-        cost: 0,
-        minStock: 5,
-        location: '',
-        notes: '',
-        imageUrl: '',
-      });
+    if (open) {
+      if (tire) {
+        setFormData({
+          brand: tire.brand || '',
+          size: tire.size || '',
+          type: tire.type,
+          condition: tire.condition,
+          quantity: tire.quantity,
+          price: tire.price,
+          cost: tire.cost || 0,
+          minStock: tire.minStock,
+          location: tire.location || '',
+          notes: tire.notes || '',
+          imageUrl: tire.imageUrl || '',
+        });
+      } else {
+        setFormData({
+          brand: '',
+          size: '',
+          type: TireType.ALL_SEASON as any,
+          condition: TireCondition.NEW as any,
+          quantity: 0,
+          price: 0,
+          cost: 0,
+          minStock: 5,
+          location: '',
+          notes: '',
+          imageUrl: '',
+        });
+      }
+      setErrors({});
     }
-    setErrors({});
-  }, [tire]);
+  }, [tire, open]);
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateTireDto) => {
@@ -243,6 +250,31 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     }
   };
 
+  const handleBrandChange = (brandId: string, brandName: string) => {
+    handleChange('brand', brandName);
+
+    // Find the brand object to get its image URL
+    const brands = queryClient.getQueryData(['tire-brands']) as any[];
+    if (brands) {
+      const selectedBrand = brands.find(b => b.id === brandId);
+      if (selectedBrand?.imageUrl) {
+        // Auto-populate image URL from selected brand
+        handleChange('imageUrl', selectedBrand.imageUrl);
+      } else {
+        // Clear image URL if brand has no image
+        handleChange('imageUrl', '');
+      }
+    }
+  };
+
+  const handleSizeChange = (sizeId: string, sizeName: string) => {
+    handleChange('size', sizeName);
+  };
+
+  const handleLocationChange = (locationId: string, locationName: string) => {
+    handleChange('location', locationName);
+  };
+
   const isLoading = createMutation.isPending || updateMutation.isPending;
   const error = createMutation.error || updateMutation.error;
 
@@ -259,37 +291,30 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
 
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                label="Brand"
-                fullWidth
+              <BrandSelect
                 value={formData.brand}
-                onChange={(e) => handleChange('brand', e.target.value)}
+                onChange={handleBrandChange}
                 error={!!errors.brand}
                 helperText={errors.brand}
-                required
+                disabled={isLoading}
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                label="Location"
-                fullWidth
-                value={formData.location}
-                onChange={(e) => handleChange('location', e.target.value)}
-                placeholder="e.g., Aisle 3, Shelf B"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                label="Size"
-                fullWidth
+              <SizeSelect
                 value={formData.size}
-                onChange={(e) => handleChange('size', e.target.value)}
+                onChange={handleSizeChange}
                 error={!!errors.size}
                 helperText={errors.size}
-                placeholder="e.g., 225/65R17"
-                required
+                disabled={isLoading}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <LocationSelect
+                value={formData.location}
+                onChange={handleLocationChange}
+                disabled={isLoading}
               />
             </Grid>
 

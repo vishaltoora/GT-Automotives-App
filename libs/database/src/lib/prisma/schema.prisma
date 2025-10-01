@@ -91,12 +91,12 @@ model Tire {
   id            String          @id @default(cuid())
   brandId       String
   sizeId        String
+  locationId    String?
   type          TireType
   condition     TireCondition
   quantity      Int             @default(0)
   price         Decimal         @db.Decimal(10, 2)
   cost          Decimal?        @db.Decimal(10, 2)
-  location      String?
   minStock      Int             @default(5)
   imageUrl      String?
   createdAt     DateTime        @default(now())
@@ -105,6 +105,7 @@ model Tire {
   quotationItems QuotationItem[]
   brand         TireBrand       @relation(fields: [brandId], references: [id])
   size          TireSize        @relation(fields: [sizeId], references: [id])
+  location      Location?       @relation(fields: [locationId], references: [id])
 
   @@index([brandId, sizeId])
 }
@@ -121,6 +122,14 @@ model TireBrand {
 model TireSize {
   id        String   @id @default(cuid())
   size      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tires     Tire[]
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tires     Tire[]
@@ -369,6 +378,7 @@ enum TireType {
   ALL_SEASON
   SUMMER
   WINTER
+  WINTER_STUDDED
   PERFORMANCE
   OFF_ROAD
   RUN_FLAT
