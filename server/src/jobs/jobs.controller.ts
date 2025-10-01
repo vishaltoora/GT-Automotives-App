@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { CreateJobDto, UpdateJobDto, JobResponseDto, JobSummaryDto } from '../common/dto/job.dto';
@@ -26,6 +27,9 @@ export class JobsController {
   @UseGuards(RoleGuard)
   @Roles('STAFF', 'ADMIN')
   create(@Body() createJobDto: CreateJobDto, @CurrentUser() user: any) {
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
     return this.jobsService.create(createJobDto, user.id);
   }
 

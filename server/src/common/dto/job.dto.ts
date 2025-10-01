@@ -21,9 +21,6 @@ export class CreateJobDto {
   @IsOptional()
   @IsDateString()
   dueDate?: string;
-
-  @IsString()
-  createdBy!: string;
 }
 
 export class UpdateJobDto {

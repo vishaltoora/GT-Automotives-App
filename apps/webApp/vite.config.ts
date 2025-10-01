@@ -1,6 +1,7 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 export default defineConfig(() => ({
   root: __dirname,
@@ -34,7 +35,7 @@ export default defineConfig(() => ({
   // },
   resolve: {
     alias: {
-      '@gt-automotive/data': '../../libs/data/src/index.ts',
+      '@gt-automotive/data': resolve(__dirname, '../../libs/data/src/index.ts'),
     },
     // Module resolution handled by symlinks in node_modules
   },

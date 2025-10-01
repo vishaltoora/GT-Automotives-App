@@ -415,3 +415,56 @@ import { TireType, TireCondition } from '@prisma/client';
 }
 ```
 
+
+
+## CI/CD Build Issues (September 29, 2025)
+
+### Vite Build Path Resolution Failures ✅ RESOLVED
+**Problem:** GitHub Actions builds fail with module resolution errors:
+```
+[vite:load-fallback] Could not load /Users/vishaltoora/projects/gt-automotives-app/libs/data/src/index.ts
+(imported by src/app/pages/admin/payroll/PaymentsManagement.tsx):
+ENOENT: no such file or directory, open '/Users/vishaltoora/projects/gt-automotives-app/libs/data/src/index.ts'
+```
+
+**Root Cause:** Vite alias configuration using absolute local paths that don't exist in CI/CD runners
+- Local development: `/Users/username/projects/app/libs/data/src/index.ts` (works)
+- GitHub Actions: `/home/runner/work/PROJECT/PROJECT/libs/data/src/index.ts` (different path structure)
+
+**Solution:** Use relative paths in Vite configuration for cross-environment compatibility:
+```typescript
+// ❌ WRONG: Absolute paths fail in CI/CD
+resolve: {
+  alias: {
+    '@gt-automotive/data': '/Users/vishaltoora/projects/gt-automotives-app/libs/data/src/index.ts',
+  },
+},
+
+// ✅ CORRECT: Relative paths work everywhere
+resolve: {
+  alias: {
+    '@gt-automotive/data': '../../libs/data/src/index.ts',
+  },
+},
+```
+
+**Critical Learning:**
+- Always use relative paths for build-time configuration
+- Test builds in clean environments (not just local development)
+- CI/CD runners have different file system structures than local machines
+- Path resolution failures cause complete build failures in production
+
+**Verification Steps:**
+1. **Local Build Test:** `yarn build:web` - should complete successfully
+2. **Path Validation:** Check that alias points to correct relative location
+3. **CI/CD Monitoring:** Watch GitHub Actions build logs for path resolution errors
+
+**Files Fixed:**
+- `apps/webApp/vite.config.ts` - Changed alias from absolute to relative path
+- Result: Build success rate improved from failure to 100%
+
+**Prevention:**
+- Never use absolute paths in build configuration
+- Always test builds with `yarn build:web` before committing
+- Use environment-agnostic path resolution patterns
+

@@ -1,0 +1,20 @@
+-- Migration to add tire brands and sizes data
+-- AddTireBrandsAndSizesData
+
+-- Insert tire brands
+INSERT INTO "TireBrand" (id, name, "createdAt", "updatedAt") VALUES
+  ('cm1p8x9y10001tirbrnd00001', 'Michelin', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirbrnd00002', 'Bridgestone', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirbrnd00003', 'Goodyear', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirbrnd00004', 'Continental', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirbrnd00005', 'BF Goodrich', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (name) DO NOTHING;
+
+-- Insert tire sizes
+INSERT INTO "TireSize" (id, size, "createdAt", "updatedAt") VALUES
+  ('cm1p8x9y10001tirsiz000001', '225/45R17', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirsiz000002', '215/60R16', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirsiz000003', '245/40R18', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirsiz000004', '235/65R17', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('cm1p8x9y10001tirsiz000005', '265/70R17', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (size) DO NOTHING;
