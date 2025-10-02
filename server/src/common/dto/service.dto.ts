@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsNotEmpty, Min, IsPositive } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsNotEmpty, IsPositive } from 'class-validator';
 import { Type } from 'class-transformer';
 
 // Server-side DTO with validation decorators
