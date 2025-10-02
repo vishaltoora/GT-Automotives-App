@@ -8,9 +8,9 @@ export declare class JobsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         status: import("@prisma/client").$Enums.JobStatus;
         createdBy: string;
+        description: string | null;
         jobNumber: string;
         employeeId: string;
         title: string;
@@ -29,9 +29,9 @@ export declare class JobsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         status: import("@prisma/client").$Enums.JobStatus;
         createdBy: string;
+        description: string | null;
         jobNumber: string;
         employeeId: string;
         title: string;
@@ -44,9 +44,9 @@ export declare class JobsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         status: import("@prisma/client").$Enums.JobStatus;
         createdBy: string;
+        description: string | null;
         jobNumber: string;
         employeeId: string;
         title: string;

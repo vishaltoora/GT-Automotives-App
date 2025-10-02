@@ -8,6 +8,7 @@ export declare class InvoiceRepository extends BaseRepository<Invoice, Prisma.In
     findWithDetails(id: string): Promise<Invoice | null>;
     createWithItems(invoiceData: Prisma.InvoiceCreateInput, items: Prisma.InvoiceItemCreateWithoutInvoiceInput[]): Promise<Invoice>;
     updateStatus(id: string, status: InvoiceStatus, paidAt?: Date): Promise<Invoice>;
+    updateWithItems(id: string, invoiceData: Prisma.InvoiceUpdateInput, items?: Prisma.InvoiceItemCreateWithoutInvoiceInput[]): Promise<Invoice>;
     getDailyCashReport(date: Date): Promise<any>;
     searchInvoices(searchParams: {
         customerName?: string;

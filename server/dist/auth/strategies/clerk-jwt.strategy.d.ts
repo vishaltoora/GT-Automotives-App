@@ -17,12 +17,12 @@ export declare class ClerkJwtStrategy extends ClerkJwtStrategy_base {
         firstName: string | null;
         lastName: string | null;
         role: {
-            name: import("@prisma/client").$Enums.RoleName;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            displayName: string;
+            name: import("@prisma/client").$Enums.RoleName;
             description: string | null;
+            displayName: string;
         };
         isActive: true;
     }>;

@@ -3,25 +3,25 @@ export declare class CompaniesController {
     private readonly companiesService;
     constructor(companiesService: CompaniesService);
     findAll(): Promise<{
-        name: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string | null;
         phone: string | null;
         address: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;
     }[]>;
     findDefault(): Promise<{
-        name: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string | null;
         phone: string | null;
         address: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;

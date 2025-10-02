@@ -54,6 +54,7 @@ export declare class UpdateInvoiceDto {
     notes?: string;
     paidAt?: string;
     invoiceDate?: string;
+    companyId?: string;
 }
 export declare class InvoiceResponseDto {
     id: string;

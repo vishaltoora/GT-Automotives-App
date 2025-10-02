@@ -12,13 +12,13 @@ export declare class UsersService {
         roleId?: string;
         isActive?: boolean;
     }): Promise<({
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -26,13 +26,13 @@ export declare class UsersService {
         role: import("@prisma/client").Role;
     })[]>;
     findById(id: string): Promise<{
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -40,13 +40,13 @@ export declare class UsersService {
         role: import("@prisma/client").Role;
     }>;
     findByEmail(email: string): Promise<({
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -61,13 +61,13 @@ export declare class UsersService {
         roleId: string;
         createdBy: string;
     }): Promise<{
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -85,13 +85,13 @@ export declare class UsersService {
         password: string;
     }): Promise<{
         clerkCreated: boolean;
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -104,13 +104,13 @@ export declare class UsersService {
         isActive?: boolean;
         updatedBy: string;
     }): Promise<{
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -118,13 +118,13 @@ export declare class UsersService {
         role: import("@prisma/client").Role;
     }>;
     assignRole(userId: string, roleId: string, assignedBy: string): Promise<{
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -132,13 +132,13 @@ export declare class UsersService {
         role: import("@prisma/client").Role;
     }>;
     delete(id: string, deletedBy: string): Promise<{
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
