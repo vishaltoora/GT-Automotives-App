@@ -17,6 +17,7 @@ export interface InvoiceItem {
   id?: string;
   tireId?: string;
   tire?: any;
+  serviceId?: string;
   itemType: InvoiceItemType;
   description: string;
   quantity: number;

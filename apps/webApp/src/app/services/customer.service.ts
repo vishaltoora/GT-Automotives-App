@@ -1,16 +1,5 @@
 import axios from 'axios';
 
-// Type declaration for Clerk global
-declare global {
-  interface Window {
-    Clerk?: {
-      session?: {
-        getToken(options?: { skipCache?: boolean }): Promise<string>;
-      };
-    };
-  }
-}
-
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -28,7 +17,7 @@ apiClient.interceptors.request.use(
     try {
       // Always try to get a fresh token from Clerk first
       if (window.Clerk && window.Clerk.session) {
-        const token = await window.Clerk.session.getToken();
+        const token = await window.Clerk.session.getToken({});
         if (token) {
           localStorage.setItem('authToken', token);
           config.headers.Authorization = `Bearer ${token}`;

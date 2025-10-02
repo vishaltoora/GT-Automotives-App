@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   TextField,
@@ -35,7 +35,6 @@ import {
   Extension as ExtensionIcon,
   Category as CategoryIcon,
   AccountBalance as AccountBalanceIcon,
-  TripOrigin as TireIcon,
 } from '@mui/icons-material';
 // Define QuotationItem type locally to avoid import issues
 type QuotationItem = {
@@ -45,6 +44,7 @@ type QuotationItem = {
   quantity: number;
   unitPrice: number;
   tireId?: string;
+  serviceId?: string;
   total?: number;
 };
 import { colors } from '../../theme/colors';

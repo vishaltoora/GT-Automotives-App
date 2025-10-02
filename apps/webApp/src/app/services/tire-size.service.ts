@@ -1,15 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
 
-// Type declaration for Clerk global
-declare global {
-  interface Window {
-    Clerk?: {
-      session?: {
-        getToken(): Promise<string>;
-      };
-    };
-  }
-}
 
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';

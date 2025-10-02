@@ -15,7 +15,7 @@ export interface QuoteItem {
   id?: string;
   tireId?: string;
   tire?: any;
-  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER';
+  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER' | 'LEVY';
   description: string;
   quantity: number;
   unitPrice: number;

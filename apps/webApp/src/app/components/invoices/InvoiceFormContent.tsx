@@ -33,16 +33,15 @@ import {
   ShoppingCart as ShoppingCartIcon,
   Payment as PaymentIcon,
   AttachMoney as AttachMoneyIcon,
-  Inventory as InventoryIcon,
   Build as BuildIcon,
   Extension as ExtensionIcon,
   Category as CategoryIcon,
   AccountBalance as AccountBalanceIcon,
-  TripOrigin as TireIcon,
 } from '@mui/icons-material';
 import { InvoiceItem } from '../../services/invoice.service';
 import { Company } from '../../services/company.service';
 import { ServiceDto } from '@gt-automotive/data';
+import { InvoiceItemType } from '../../../enums';
 import { colors } from '../../theme/colors';
 import ServiceSelect from '../services/ServiceSelect';
 import { PhoneInput } from '../common/PhoneInput';
@@ -117,7 +116,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   const handleServiceChange = (serviceId: string, serviceName: string, unitPrice: number) => {
     setNewItem({
       ...newItem,
-      itemType: 'SERVICE',
+      itemType: InvoiceItemType.SERVICE,
       description: serviceName,
       unitPrice: unitPrice,
       serviceId,

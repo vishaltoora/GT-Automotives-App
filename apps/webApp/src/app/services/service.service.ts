@@ -1,17 +1,6 @@
 import axios from 'axios';
 import { ServiceDto, CreateServiceDto, UpdateServiceDto } from '@gt-automotive/data';
 
-// Type declaration for Clerk global
-declare global {
-  interface Window {
-    Clerk?: {
-      session?: {
-        getToken(): Promise<string>;
-      };
-    };
-  }
-}
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Create axios instance with common configuration
@@ -28,7 +17,7 @@ apiClient.interceptors.request.use(
     try {
       // Always try to get a fresh token from Clerk first
       if (window.Clerk && window.Clerk.session) {
-        const token = await window.Clerk.session.getToken();
+        const token = await window.Clerk.session.getToken({});
         if (token) {
           localStorage.setItem('authToken', token);
           config.headers.Authorization = `Bearer ${token}`;

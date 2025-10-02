@@ -272,7 +272,10 @@
       "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"sure\" DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate reset --force --schema=libs/database/src/lib/prisma/schema.prisma)",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate status --schema=libs/database/src/lib/prisma/schema.prisma)",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev --name \"add_service_model\" --schema=libs/database/src/lib/prisma/schema.prisma)",
-      "Read(//dev/**)"
+      "Read(//dev/**)",
+      "Bash(if grep -q \"declare global\" \"$file\")",
+      "Bash(then)",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

@@ -48,16 +48,6 @@ import { BrandSelect } from './BrandSelect';
 import { SizeSelect } from './SizeSelect';
 import { LocationSelect } from './LocationSelect';
 
-// Type declaration for Clerk global
-declare global {
-  interface Window {
-    Clerk?: {
-      session?: {
-        getToken(): Promise<string>;
-      };
-    };
-  }
-}
 
 interface TireDialogProps {
   open: boolean;
