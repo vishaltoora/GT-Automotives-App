@@ -12,6 +12,7 @@ import {
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from '../common/dto/invoice.dto';
 import { UpdateInvoiceDto } from '../common/dto/invoice.dto';
+import { CreateServiceDto, UpdateServiceDto } from '../common/dto/service.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -103,5 +104,32 @@ export class InvoicesController {
   @Roles('ADMIN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.invoicesService.remove(id, user.id);
+  }
+
+  // Service endpoints
+  @Get('services/all')
+  getAllServices() {
+    return this.invoicesService.getAllServices();
+  }
+
+  @Post('services')
+  @UseGuards(RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  createService(@Body() createServiceDto: CreateServiceDto) {
+    return this.invoicesService.createService(createServiceDto);
+  }
+
+  @Patch('services/:id')
+  @UseGuards(RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  updateService(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
+    return this.invoicesService.updateService(id, updateServiceDto);
+  }
+
+  @Delete('services/:id')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN')
+  deleteService(@Param('id') id: string) {
+    return this.invoicesService.deleteService(id);
   }
 }

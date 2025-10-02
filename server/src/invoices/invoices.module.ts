@@ -4,6 +4,7 @@ import { InvoicesController } from './invoices.controller';
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
+import { ServiceRepository } from './repositories/service.repository';
 import { PrismaService } from '@gt-automotive/database';
 
 @Module({
@@ -13,6 +14,7 @@ import { PrismaService } from '@gt-automotive/database';
     InvoiceRepository,
     AuditRepository,
     CustomerRepository,
+    ServiceRepository,
     PrismaService,
   ],
   exports: [InvoicesService],

@@ -177,6 +177,10 @@ export class UpdateInvoiceDto {
   @IsOptional()
   @IsString()
   invoiceDate?: string;
+
+  @IsOptional()
+  @IsString()
+  companyId?: string;
 }
 
 export class InvoiceResponseDto {

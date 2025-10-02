@@ -35,15 +35,23 @@ import {
   AttachMoney as AttachMoneyIcon,
   Inventory as InventoryIcon,
   Build as BuildIcon,
+  Extension as ExtensionIcon,
+  Category as CategoryIcon,
+  AccountBalance as AccountBalanceIcon,
+  TripOrigin as TireIcon,
 } from '@mui/icons-material';
 import { InvoiceItem } from '../../services/invoice.service';
 import { Company } from '../../services/company.service';
+import { ServiceDto } from '@gt-automotive/data';
 import { colors } from '../../theme/colors';
+import ServiceSelect from '../services/ServiceSelect';
+import { PhoneInput } from '../common/PhoneInput';
 
 interface InvoiceFormContentProps {
   customers: any[];
   vehicles: any[];
   tires: any[];
+  services: ServiceDto[];
   companies: Company[];
   isNewCustomer: boolean;
   customerForm: {
@@ -75,6 +83,7 @@ interface InvoiceFormContentProps {
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   onTireSelect: (tireId: string) => void;
+  onServicesChange: () => void;
   isEditMode?: boolean;
 }
 
@@ -82,6 +91,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   customers,
   vehicles,
   tires,
+  services,
   companies,
   isNewCustomer,
   customerForm,
@@ -96,11 +106,22 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   onAddItem,
   onRemoveItem,
   onTireSelect,
+  onServicesChange,
   isEditMode = false,
 }) => {
 
   const formatTireType = (type: string) => {
     return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const handleServiceChange = (serviceId: string, serviceName: string, unitPrice: number) => {
+    setNewItem({
+      ...newItem,
+      itemType: 'SERVICE',
+      description: serviceName,
+      unitPrice: unitPrice,
+      serviceId,
+    });
   };
 
   const calculateTotals = () => {
@@ -359,14 +380,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
+                      <PhoneInput
                         fullWidth
                         size="small"
-                        label="Phone Number"
                         value={customerForm.phone}
                         disabled={isEditMode}
-                        onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                        placeholder="(250) 555-0123 (Optional)"
+                        onChange={(value) => setCustomerForm({ ...customerForm, phone: value })}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -539,12 +558,25 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     <InputLabel>Type</InputLabel>
                     <Select
                       value={newItem.itemType}
-                      onChange={(e) => setNewItem({ ...newItem, itemType: e.target.value as any })}
+                      onChange={(e) => {
+                        const selectedType = e.target.value as any;
+                        // Auto-fill for LEVY
+                        if (selectedType === 'LEVY') {
+                          setNewItem({
+                            ...newItem,
+                            itemType: selectedType,
+                            description: 'ECO Fee',
+                            unitPrice: 6.5
+                          });
+                        } else {
+                          setNewItem({ ...newItem, itemType: selectedType });
+                        }
+                      }}
                       label="Type"
                     >
                       <MenuItem value="TIRE">
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <InventoryIcon fontSize="small" />
+                          <span style={{ fontSize: '18px' }}>🛞</span>
                           Tire
                         </Box>
                       </MenuItem>
@@ -554,8 +586,24 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           Service
                         </Box>
                       </MenuItem>
-                      <MenuItem value="PART">Part</MenuItem>
-                      <MenuItem value="OTHER">Other</MenuItem>
+                      <MenuItem value="PART">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <ExtensionIcon fontSize="small" />
+                          Part
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="OTHER">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CategoryIcon fontSize="small" />
+                          Other
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="LEVY">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccountBalanceIcon fontSize="small" />
+                          Levy
+                        </Box>
+                      </MenuItem>
                       <MenuItem value="DISCOUNT">
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <AttachMoneyIcon fontSize="small" sx={{ color: 'red' }} />
@@ -585,9 +633,9 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           <MenuItem key={tire.id} value={tire.id}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                               <span>{tire.brand} {formatTireType(tire.type)} - {tire.size}</span>
-                              <Chip 
-                                label={`Stock: ${tire.quantity}`} 
-                                size="small" 
+                              <Chip
+                                label={`Stock: ${tire.quantity}`}
+                                size="small"
                                 color={tire.quantity < 5 ? 'warning' : 'success'}
                                 sx={{ ml: 1 }}
                               />
@@ -596,6 +644,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         ))}
                       </Select>
                     </FormControl>
+                  </Grid>
+                ) : newItem.itemType === 'SERVICE' ? (
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <ServiceSelect
+                      services={services}
+                      value={(newItem as any).serviceId}
+                      onChange={handleServiceChange}
+                      onServicesChange={onServicesChange}
+                    />
                   </Grid>
                 ) : (
                   <Grid size={{ xs: 12, md: 4 }}>

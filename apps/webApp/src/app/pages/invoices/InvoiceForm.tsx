@@ -47,6 +47,7 @@ import TireService from '../../services/tire.service';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { InvoiceItemType } from '../../../enums';
+import { PhoneInput } from '../../components/common/PhoneInput';
 
 const InvoiceForm: React.FC = () => {
   const navigate = useNavigate();
@@ -425,13 +426,12 @@ const InvoiceForm: React.FC = () => {
                         />
                       </Grid>
                       <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
+                        <PhoneInput
                           fullWidth
                           size="small"
-                          label="Phone Number"
                           value={customerForm.phone}
-                          onChange={(e) => {
-                            setCustomerForm({ ...customerForm, phone: e.target.value });
+                          onChange={(value) => {
+                            setCustomerForm({ ...customerForm, phone: value });
                             // If editing manually and no customerId, mark as new customer
                             if (!formData.customerId) {
                               setIsNewCustomer(true);

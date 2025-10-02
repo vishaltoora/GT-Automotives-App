@@ -231,8 +231,135 @@ App
     └── AdminLayout
 ```
 
-## Recent Changes (August 26, 2025)
+## Inventory Management Components (October 1, 2025)
 
+### BrandSelect
+**Location:** `/apps/webApp/src/app/components/inventory/BrandSelect.tsx`
+
+Autocomplete component for tire brand selection with CRUD functionality.
+
+**Features:**
+- Search and select from existing tire brands
+- Add new brands inline with dialog
+- Edit existing brands (admin/staff only)
+- Delete brands with confirmation
+- Fallback to public endpoint for unauthenticated users
+- Authentication token management
+
+**Props:**
+```typescript
+interface BrandSelectProps {
+  value?: string;           // Selected brand name
+  onChange: (brandId: string, brandName: string) => void;
+  error?: boolean;
+  helperText?: string;
+  disabled?: boolean;
+}
+```
+
+### SizeSelect
+**Location:** `/apps/webApp/src/app/components/inventory/SizeSelect.tsx`
+
+Autocomplete component for tire size selection with CRUD functionality.
+
+**Features:**
+- Search and select from tire sizes (e.g., "225/65R17", "265/70R16")
+- Add new sizes inline with dialog
+- Delete sizes with confirmation
+- Validation for proper tire size format
+- Fallback to public endpoint for unauthenticated users
+
+**Props:**
+```typescript
+interface SizeSelectProps {
+  value?: string;           // Selected size name
+  onChange: (sizeId: string, sizeName: string) => void;
+  error?: boolean;
+  helperText?: string;
+  disabled?: boolean;
+}
+```
+
+### LocationSelect
+**Location:** `/apps/webApp/src/app/components/inventory/LocationSelect.tsx`
+
+Autocomplete component for storage location selection with CRUD functionality.
+
+**Features:**
+- Search and select from storage locations
+- Add new locations inline with dialog
+- Delete locations with confirmation
+- Supports warehouse/storage organization
+- Fallback to public endpoint for unauthenticated users
+
+**Props:**
+```typescript
+interface LocationSelectProps {
+  value?: string;           // Selected location name
+  onChange: (locationId: string, locationName: string) => void;
+  error?: boolean;
+  helperText?: string;
+  disabled?: boolean;
+}
+```
+
+### Centralized Icon Usage (October 1, 2025)
+
+All inventory components now use the centralized icon system:
+
+```typescript
+// ✅ CORRECT: Centralized icon imports
+import { AddIcon, EditIcon, DeleteIcon } from '../../icons/standard.icons';
+
+// Benefits:
+// - Bundle optimization through reduced duplicate imports
+// - Consistent icon usage across all components
+// - Easy global icon management and changes
+// - Better tree-shaking for smaller bundle size
+```
+
+**Icon Categories in standard.icons.ts:**
+- **Action Icons**: AddIcon, EditIcon, DeleteIcon, SaveIcon, etc.
+- **Navigation Icons**: MenuIcon, CloseIcon, ArrowBackIcon, etc.
+- **Status Icons**: CheckCircleIcon, ErrorIcon, WarningIcon, etc.
+- **Business Icons**: PrintIcon, EmailIcon, PhoneIcon, etc.
+
+### Authentication Handling Pattern
+
+All inventory components follow this authentication pattern:
+
+```typescript
+// Check for authentication capability
+const hasAuthToken = !!localStorage.getItem('authToken') || !!window.Clerk?.session;
+
+// Conditional CRUD functionality
+{hasAuthToken && (
+  <Box sx={{ /* CRUD button positioning */ }}>
+    <Tooltip title="Add new item">
+      <IconButton onClick={handleAddNew}>
+        <AddIcon />
+      </IconButton>
+    </Tooltip>
+    {/* Edit and Delete buttons when item selected */}
+  </Box>
+)}
+```
+
+**Benefits:**
+- Graceful degradation for unauthenticated users
+- Full CRUD functionality for authenticated staff/admin
+- Consistent UI patterns across all inventory components
+- Proper fallback to read-only public endpoints
+
+## Recent Changes (October 1, 2025)
+
+### Centralized Icon Management
+- **Migrated inventory components** to use centralized `standard.icons.ts`
+- **Enhanced standard icons** with missing icons (ViewIcon, RemoveIcon, StarIcon, StarBorderIcon)
+- **Improved bundle optimization** through reduced duplicate icon imports
+- **Better maintainability** with single source of truth for icon management
+
+### Previous Changes (August 26, 2025)
 - **Added ErrorDialog System**: Custom error/warning/info dialogs with expandable details
 - **Added ConfirmationDialog System**: Replaced browser alerts with custom dialogs
 - **Enhanced Error Handling**: Centralized error context with helper functions for common scenarios

@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { CreateInvoiceDto } from '../common/dto/invoice.dto';
 import { UpdateInvoiceDto } from '../common/dto/invoice.dto';
+import { CreateServiceDto, UpdateServiceDto } from '../common/dto/service.dto';
 import { Invoice, InvoiceStatus, PaymentMethod, InvoiceItemType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
+import { ServiceRepository } from './repositories/service.repository';
 
 @Injectable()
 export class InvoicesService {
@@ -13,6 +15,7 @@ export class InvoicesService {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly auditRepository: AuditRepository,
     private readonly customerRepository: CustomerRepository,
+    private readonly serviceRepository: ServiceRepository,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
@@ -164,7 +167,7 @@ export class InvoicesService {
 
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto, userId: string): Promise<Invoice> {
     const invoice = await this.invoiceRepository.findById(id);
-    
+
     if (!invoice) {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
@@ -175,12 +178,87 @@ export class InvoicesService {
     }
 
     const oldValue = { ...invoice };
-    
-    const updated = await this.invoiceRepository.updateStatus(
-      id,
-      updateInvoiceDto.status || invoice.status,
-      updateInvoiceDto.paidAt ? new Date(updateInvoiceDto.paidAt) : undefined
-    );
+
+    // Prepare update data
+    const updateData: any = {};
+
+    // Handle items if provided
+    let items: any[] | undefined;
+    if (updateInvoiceDto.items) {
+      items = updateInvoiceDto.items.map(item => ({
+        ...item,
+        itemType: item.itemType as InvoiceItemType,
+        total: new Decimal(item.total || item.quantity * item.unitPrice),
+        unitPrice: new Decimal(item.unitPrice),
+      }));
+
+      // Recalculate totals based on new items
+      let subtotal = 0;
+      items.forEach(item => {
+        const total = item.quantity * Number(item.unitPrice);
+        subtotal += total;
+      });
+
+      // Use provided rates or keep existing ones
+      const gstRate = updateInvoiceDto.gstRate !== undefined ? updateInvoiceDto.gstRate : Number(invoice.gstRate || 0);
+      const pstRate = updateInvoiceDto.pstRate !== undefined ? updateInvoiceDto.pstRate : Number(invoice.pstRate || 0);
+      const taxRate = gstRate + pstRate;
+      const gstAmount = subtotal * gstRate;
+      const pstAmount = subtotal * pstRate;
+      const taxAmount = subtotal * taxRate;
+      const total = subtotal + taxAmount;
+
+      updateData.subtotal = new Decimal(subtotal);
+      updateData.taxRate = new Decimal(taxRate);
+      updateData.taxAmount = new Decimal(taxAmount);
+      updateData.gstRate = new Decimal(gstRate);
+      updateData.gstAmount = new Decimal(gstAmount);
+      updateData.pstRate = new Decimal(pstRate);
+      updateData.pstAmount = new Decimal(pstAmount);
+      updateData.total = new Decimal(total);
+    } else {
+      // If no items provided, update tax rates if provided
+      if (updateInvoiceDto.gstRate !== undefined) {
+        updateData.gstRate = new Decimal(updateInvoiceDto.gstRate);
+      }
+      if (updateInvoiceDto.pstRate !== undefined) {
+        updateData.pstRate = new Decimal(updateInvoiceDto.pstRate);
+      }
+      if (updateInvoiceDto.subtotal !== undefined) {
+        updateData.subtotal = new Decimal(updateInvoiceDto.subtotal);
+      }
+      if (updateInvoiceDto.taxAmount !== undefined) {
+        updateData.taxAmount = new Decimal(updateInvoiceDto.taxAmount);
+      }
+      if (updateInvoiceDto.total !== undefined) {
+        updateData.total = new Decimal(updateInvoiceDto.total);
+      }
+    }
+
+    // Add other fields
+    if (updateInvoiceDto.status) {
+      updateData.status = updateInvoiceDto.status;
+    }
+    if (updateInvoiceDto.paymentMethod) {
+      updateData.paymentMethod = updateInvoiceDto.paymentMethod;
+    }
+    if (updateInvoiceDto.notes !== undefined) {
+      updateData.notes = updateInvoiceDto.notes;
+    }
+    if (updateInvoiceDto.vehicleId !== undefined) {
+      updateData.vehicle = updateInvoiceDto.vehicleId ? { connect: { id: updateInvoiceDto.vehicleId } } : { disconnect: true };
+    }
+    if (updateInvoiceDto.paidAt) {
+      updateData.paidAt = new Date(updateInvoiceDto.paidAt);
+    }
+    if (updateInvoiceDto.invoiceDate) {
+      updateData.invoiceDate = new Date(updateInvoiceDto.invoiceDate);
+    }
+
+    // Use updateWithItems if items are provided, otherwise use regular update
+    const updated = items
+      ? await this.invoiceRepository.updateWithItems(id, updateData, items)
+      : await this.invoiceRepository.update(id, updateData);
 
     // Log the update
     await this.auditRepository.create({
@@ -294,5 +372,46 @@ export class InvoicesService {
     });
 
     return updated;
+  }
+
+  // Service methods
+  async getAllServices() {
+    return this.serviceRepository.findAll();
+  }
+
+  async createService(createServiceDto: CreateServiceDto) {
+    // Check if service with same name already exists
+    const existing = await this.serviceRepository.findByName(createServiceDto.name);
+    if (existing) {
+      throw new ConflictException(`Service with name "${createServiceDto.name}" already exists`);
+    }
+    return this.serviceRepository.create(createServiceDto);
+  }
+
+  async updateService(id: string, updateServiceDto: UpdateServiceDto) {
+    // Check if service exists
+    const service = await this.serviceRepository.findById(id);
+    if (!service) {
+      throw new NotFoundException(`Service with ID "${id}" not found`);
+    }
+
+    // If name is being updated, check for conflicts
+    if (updateServiceDto.name) {
+      const existing = await this.serviceRepository.findByName(updateServiceDto.name);
+      if (existing && existing.id !== id) {
+        throw new ConflictException(`Service with name "${updateServiceDto.name}" already exists`);
+      }
+    }
+
+    return this.serviceRepository.update(id, updateServiceDto);
+  }
+
+  async deleteService(id: string) {
+    // Check if service exists
+    const service = await this.serviceRepository.findById(id);
+    if (!service) {
+      throw new NotFoundException(`Service with ID "${id}" not found`);
+    }
+    return this.serviceRepository.delete(id);
   }
 }

@@ -557,6 +557,70 @@ resolve: {
 - Works locally but fails in GitHub Actions
 - Build step fails with "could not load" errors
 
+## Icon Management Best Practices (October 1, 2025)
+
+### Centralized Icon System
+Always use the centralized `standard.icons.ts` file for consistent icon management:
+
+```typescript
+// ✅ CORRECT: Use centralized icon imports
+import { AddIcon, EditIcon, DeleteIcon } from '../../icons/standard.icons';
+
+// ❌ INCORRECT: Individual Material-UI icon imports
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+```
+
+**Benefits of Centralized Icon Management:**
+- **Bundle Optimization**: Reduces duplicate icon imports across components
+- **Consistency**: Single source of truth for all icons used in the application
+- **Maintainability**: Easy to change icon mappings globally
+- **Code Quality**: Cleaner imports and better organization
+- **Performance**: Better tree-shaking and smaller bundle size
+
+### Standard Icons Structure
+The `standard.icons.ts` file organizes icons by category:
+
+```typescript
+// Navigation & UI Icons
+export { Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
+
+// Action Icons
+export { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+
+// Business Icons
+export { Print as PrintIcon, Download as DownloadIcon } from '@mui/icons-material';
+
+// Status & Feedback Icons
+export { CheckCircle as CheckCircleIcon, Error as ErrorIcon } from '@mui/icons-material';
+```
+
+### Icon Refactoring Process
+When migrating components to use centralized icons:
+
+1. **Identify Icon Usage**: Search for `@mui/icons-material` imports
+2. **Check Standard Icons**: Verify required icons exist in `standard.icons.ts`
+3. **Add Missing Icons**: Add any missing icons to appropriate categories
+4. **Update Imports**: Replace individual imports with centralized imports
+5. **Maintain Other Imports**: Keep non-icon MUI imports (IconButton, etc.)
+
+### Example Migration
+```typescript
+// BEFORE: Individual imports
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { IconButton, Tooltip } from '@mui/material';
+
+// AFTER: Centralized imports
+import { AddIcon, EditIcon, DeleteIcon } from '../../icons/standard.icons';
+import { IconButton, Tooltip } from '@mui/material';
+```
+
+### Architecture Benefits
+- **Type Safety**: Maintains TypeScript support
+- **IDE Support**: Better IntelliSense and autocompletion
+- **Scalability**: Easy to add new icons or change existing ones
+- **Code Reviews**: Easier to spot inconsistent icon usage
+- **Performance Monitoring**: Can track icon bundle impact centrally
+
 ## Performance Optimization
 
 ### Database
@@ -570,3 +634,4 @@ resolve: {
 - Implement virtual scrolling for long lists
 - Optimize images (especially tire photos)
 - Use print CSS to reduce invoice render time
+- **Use centralized icon imports** for better bundle optimization

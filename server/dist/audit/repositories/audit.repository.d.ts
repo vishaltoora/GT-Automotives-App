@@ -25,5 +25,17 @@ export declare class AuditRepository {
         startDate?: Date;
         endDate?: Date;
     }): Promise<AuditLog[]>;
+    log(data: {
+        userId: string;
+        action: string;
+        entityType?: string;
+        entityId?: string;
+        resource?: string;
+        resourceId?: string;
+        oldValue?: any;
+        newValue?: any;
+        details?: any;
+        ipAddress?: string;
+    }): Promise<AuditLog>;
 }
 //# sourceMappingURL=audit.repository.d.ts.map

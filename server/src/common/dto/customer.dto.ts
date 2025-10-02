@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsEmail, ValidateIf, Matches } from 'class-validator';
 
 export class CreateCustomerDto {
   @IsString()
@@ -7,19 +7,20 @@ export class CreateCustomerDto {
   @IsString()
   lastName!: string;
 
-  @IsOptional()
+  @ValidateIf((o) => o.email !== '' && o.email !== null && o.email !== undefined)
   @IsEmail()
   email?: string;
 
-  @IsOptional()
-  @IsString()
+  @ValidateIf((o) => o.phone !== '' && o.phone !== null && o.phone !== undefined)
+  @Matches(/^[\d\s\-\(\)]+$/, { message: 'Phone number can only contain digits, spaces, dashes, and parentheses' })
+  @Matches(/\d{10}/, { message: 'Phone number must contain exactly 10 digits' })
   phone?: string;
 
-  @IsOptional()
+  @ValidateIf((o) => o.address !== '' && o.address !== null && o.address !== undefined)
   @IsString()
   address?: string;
 
-  @IsOptional()
+  @ValidateIf((o) => o.businessName !== '' && o.businessName !== null && o.businessName !== undefined)
   @IsString()
   businessName?: string;
 }
@@ -33,19 +34,20 @@ export class UpdateCustomerDto {
   @IsString()
   lastName?: string;
 
-  @IsOptional()
+  @ValidateIf((o) => o.email !== '' && o.email !== null && o.email !== undefined)
   @IsEmail()
   email?: string;
 
-  @IsOptional()
-  @IsString()
+  @ValidateIf((o) => o.phone !== '' && o.phone !== null && o.phone !== undefined)
+  @Matches(/^[\d\s\-\(\)]+$/, { message: 'Phone number can only contain digits, spaces, dashes, and parentheses' })
+  @Matches(/\d{10}/, { message: 'Phone number must contain exactly 10 digits' })
   phone?: string;
 
-  @IsOptional()
+  @ValidateIf((o) => o.address !== '' && o.address !== null && o.address !== undefined)
   @IsString()
   address?: string;
 
-  @IsOptional()
+  @ValidateIf((o) => o.businessName !== '' && o.businessName !== null && o.businessName !== undefined)
   @IsString()
   businessName?: string;
 }

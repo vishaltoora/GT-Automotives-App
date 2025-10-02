@@ -6,6 +6,7 @@ export * from './lib/invoice.dto';
 export * from './lib/quotation.dto';
 export * from './lib/job.dto';
 export * from './lib/payment.dto';
+export * from './lib/service.dto';
 
 // Export decorators for direct use if needed
 export * from './lib/decorators';

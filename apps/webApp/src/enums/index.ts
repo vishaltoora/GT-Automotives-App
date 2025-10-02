@@ -28,6 +28,7 @@ export enum InvoiceItemType {
   SERVICE = 'SERVICE',
   PART = 'PART',
   OTHER = 'OTHER',
+  LEVY = 'LEVY',
   DISCOUNT = 'DISCOUNT',
   DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE',
 }

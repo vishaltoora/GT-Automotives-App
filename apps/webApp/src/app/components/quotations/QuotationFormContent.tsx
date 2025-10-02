@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   TextField,
@@ -32,11 +32,15 @@ import {
   Description as DescriptionIcon,
   Inventory as InventoryIcon,
   Build as BuildIcon,
+  Extension as ExtensionIcon,
+  Category as CategoryIcon,
+  AccountBalance as AccountBalanceIcon,
+  TripOrigin as TireIcon,
 } from '@mui/icons-material';
 // Define QuotationItem type locally to avoid import issues
 type QuotationItem = {
   id?: string;
-  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER';
+  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER' | 'LEVY';
   description: string;
   quantity: number;
   unitPrice: number;
@@ -44,9 +48,13 @@ type QuotationItem = {
   total?: number;
 };
 import { colors } from '../../theme/colors';
+import { ServiceDto } from '@gt-automotive/data';
+import ServiceSelect from '../services/ServiceSelect';
+import { PhoneInput } from '../common/PhoneInput';
 
 interface QuotationFormContentProps {
   tires: any[];
+  services: ServiceDto[];
   quotationForm: {
     customerName: string;
     businessName: string;
@@ -70,10 +78,12 @@ interface QuotationFormContentProps {
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   onTireSelect: (tireId: string) => void;
+  onServicesChange: () => void;
 }
 
 const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   tires,
+  services,
   quotationForm,
   setQuotationForm,
   formData,
@@ -85,7 +95,18 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   onAddItem,
   onRemoveItem,
   onTireSelect,
+  onServicesChange,
 }) => {
+
+  const handleServiceChange = (serviceId: string, serviceName: string, unitPrice: number) => {
+    setNewItem({
+      ...newItem,
+      itemType: 'SERVICE',
+      description: serviceName,
+      unitPrice: unitPrice,
+      serviceId,
+    });
+  };
 
 
   const calculateTotals = () => {
@@ -169,11 +190,10 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
+              <PhoneInput
                 fullWidth
-                label="Phone"
                 value={quotationForm.phone}
-                onChange={(e) => setQuotationForm({ ...quotationForm, phone: e.target.value })}
+                onChange={(value) => setQuotationForm({ ...quotationForm, phone: value })}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -212,12 +232,25 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 <InputLabel>Type</InputLabel>
                 <Select
                   value={newItem.itemType}
-                  onChange={(e) => setNewItem({ ...newItem, itemType: e.target.value as any })}
+                  onChange={(e) => {
+                    const selectedType = e.target.value as any;
+                    // Auto-fill for LEVY
+                    if (selectedType === 'LEVY') {
+                      setNewItem({
+                        ...newItem,
+                        itemType: selectedType,
+                        description: 'ECO Fee',
+                        unitPrice: 6.5
+                      });
+                    } else {
+                      setNewItem({ ...newItem, itemType: selectedType });
+                    }
+                  }}
                   label="Type"
                 >
                   <MenuItem value="TIRE">
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <InventoryIcon fontSize="small" />
+                      <span style={{ fontSize: '18px' }}>🛞</span>
                       Tire
                     </Box>
                   </MenuItem>
@@ -227,8 +260,24 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                       Service
                     </Box>
                   </MenuItem>
-                  <MenuItem value="PART">Part</MenuItem>
-                  <MenuItem value="OTHER">Other</MenuItem>
+                  <MenuItem value="PART">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ExtensionIcon fontSize="small" />
+                      Part
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="OTHER">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CategoryIcon fontSize="small" />
+                      Other
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="LEVY">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccountBalanceIcon fontSize="small" />
+                      Levy
+                    </Box>
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -254,6 +303,15 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                     ))}
                   </Select>
                 </FormControl>
+              </Grid>
+            ) : newItem.itemType === 'SERVICE' ? (
+              <Grid size={{ xs: 12, md: 3 }}>
+                <ServiceSelect
+                  services={services}
+                  value={(newItem as any).serviceId}
+                  onChange={handleServiceChange}
+                  onServicesChange={onServicesChange}
+                />
               </Grid>
             ) : (
               <Grid size={{ xs: 12, md: 3 }}>

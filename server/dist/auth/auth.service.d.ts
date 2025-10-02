@@ -13,12 +13,12 @@ export declare class AuthService {
     validateClerkUser(clerkUserId: string): Promise<({
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -35,12 +35,12 @@ export declare class AuthService {
     validateToken(token: string): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {

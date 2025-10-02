@@ -13,6 +13,7 @@ import {
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { customerService, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
+import { PhoneInput } from '../../components/common/PhoneInput';
 
 export function CustomerForm() {
   const navigate = useNavigate();
@@ -86,6 +87,13 @@ export function CustomerForm() {
     }));
   };
 
+  const handlePhoneChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      phone: value,
+    }));
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -141,13 +149,11 @@ export function CustomerForm() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                <PhoneInput
                   fullWidth
-                  label="Phone (Optional)"
                   value={formData.phone}
-                  onChange={handleChange('phone')}
+                  onChange={handlePhoneChange}
                   disabled={saving}
-                  placeholder="(555) 123-4567"
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>

@@ -4,28 +4,28 @@ import { Vehicle, Prisma } from '@prisma/client';
 export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.VehicleCreateInput, Prisma.VehicleUpdateInput, Prisma.VehicleWhereInput> {
     constructor(prisma: PrismaService);
     findAllWithDetails(): Promise<({
+        _count: {
+            appointments: number;
+            invoices: number;
+        };
         customer: {
             id: string;
             createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            updatedAt: Date;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
-        };
-        _count: {
-            invoices: number;
-            appointments: number;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        model: string;
         customerId: string;
         make: string;
-        model: string;
         year: number;
         vin: string | null;
         licensePlate: string | null;
@@ -33,16 +33,16 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
     })[]>;
     findByCustomer(customerId: string): Promise<({
         _count: {
-            invoices: number;
             appointments: number;
+            invoices: number;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        model: string;
         customerId: string;
         make: string;
-        model: string;
         year: number;
         vin: string | null;
         licensePlate: string | null;
@@ -52,71 +52,71 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         customer: {
             id: string;
             createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            updatedAt: Date;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
+        appointments: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            scheduledDate: Date;
+            customerId: string;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            vehicleId: string | null;
+            notes: string | null;
+            scheduledTime: string;
+            duration: number;
+            serviceType: string;
+            reminderSent: boolean;
+        }[];
         invoices: ({
             items: {
                 id: string;
                 createdAt: Date;
+                quantity: number;
                 updatedAt: Date;
+                total: Prisma.Decimal;
                 description: string;
                 tireId: string | null;
                 itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                quantity: number;
                 unitPrice: Prisma.Decimal;
-                total: Prisma.Decimal;
                 invoiceId: string;
             }[];
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             total: Prisma.Decimal;
+            customerId: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
             vehicleId: string | null;
             companyId: string;
             subtotal: Prisma.Decimal;
             taxRate: Prisma.Decimal;
             taxAmount: Prisma.Decimal;
-            gstRate: Prisma.Decimal | null;
-            gstAmount: Prisma.Decimal | null;
-            pstRate: Prisma.Decimal | null;
-            pstAmount: Prisma.Decimal | null;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             notes: string | null;
             invoiceDate: Date;
-            paidAt: Date | null;
-            invoiceNumber: string;
             createdBy: string;
+            paidAt: Date | null;
+            gstAmount: Prisma.Decimal | null;
+            gstRate: Prisma.Decimal | null;
+            pstAmount: Prisma.Decimal | null;
+            pstRate: Prisma.Decimal | null;
         })[];
-        appointments: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            customerId: string;
-            vehicleId: string | null;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
-            notes: string | null;
-            scheduledDate: Date;
-            scheduledTime: string;
-            duration: number;
-            serviceType: string;
-            reminderSent: boolean;
-        }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        model: string;
         customerId: string;
         make: string;
-        model: string;
         year: number;
         vin: string | null;
         licensePlate: string | null;
@@ -126,49 +126,49 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
         customer: {
             id: string;
             createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            updatedAt: Date;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        model: string;
         customerId: string;
         make: string;
-        model: string;
         year: number;
         vin: string | null;
         licensePlate: string | null;
         mileage: number | null;
     }) | null>;
     search(searchTerm: string): Promise<({
+        _count: {
+            appointments: number;
+            invoices: number;
+        };
         customer: {
             id: string;
             createdAt: Date;
+            updatedAt: Date;
             email: string | null;
             firstName: string;
             lastName: string;
-            updatedAt: Date;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
-        };
-        _count: {
-            invoices: number;
-            appointments: number;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        model: string;
         customerId: string;
         make: string;
-        model: string;
         year: number;
         vin: string | null;
         licensePlate: string | null;

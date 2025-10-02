@@ -109,12 +109,92 @@ export class InvoiceRepository extends BaseRepository<
       include: {
         customer: true,
         vehicle: true,
+        company: true,
         items: {
           include: {
             tire: true,
           },
         },
       },
+    });
+  }
+
+  async updateWithItems(
+    id: string,
+    invoiceData: Prisma.InvoiceUpdateInput,
+    items?: Prisma.InvoiceItemCreateWithoutInvoiceInput[]
+  ): Promise<Invoice> {
+    return this.prisma.$transaction(async (tx) => {
+      // If items are provided, delete old items and create new ones
+      if (items) {
+        // Get existing items to restore tire inventory
+        const existingInvoice = await tx.invoice.findUnique({
+          where: { id },
+          include: { items: true },
+        });
+
+        if (existingInvoice) {
+          // Restore tire inventory for old tire items
+          for (const item of existingInvoice.items) {
+            if (item.itemType === 'TIRE' && item.tireId) {
+              await tx.tire.update({
+                where: { id: item.tireId },
+                data: {
+                  quantity: {
+                    increment: item.quantity,
+                  },
+                },
+              });
+            }
+          }
+        }
+
+        // Delete old items
+        await tx.invoiceItem.deleteMany({
+          where: { invoiceId: id },
+        });
+      }
+
+      // Update invoice with new data
+      const invoice = await tx.invoice.update({
+        where: { id },
+        data: {
+          ...invoiceData,
+          ...(items && {
+            items: {
+              create: items,
+            },
+          }),
+        },
+        include: {
+          customer: true,
+          vehicle: true,
+          company: true,
+          items: {
+            include: {
+              tire: true,
+            },
+          },
+        },
+      });
+
+      // Deduct tire inventory for new tire items
+      if (items) {
+        for (const item of items) {
+          if (item.itemType === 'TIRE' && (item as any).tireId) {
+            await tx.tire.update({
+              where: { id: (item as any).tireId as string },
+              data: {
+                quantity: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+          }
+        }
+      }
+
+      return invoice;
     });
   }
 

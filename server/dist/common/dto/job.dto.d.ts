@@ -6,7 +6,6 @@ export declare class CreateJobDto {
     payAmount: number;
     jobType: JobType;
     dueDate?: string;
-    createdBy: string;
 }
 export declare class UpdateJobDto {
     title?: string;

@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { colors } from '../../theme/colors';
+import { PhoneInput } from '../common/PhoneInput';
 
 interface ContactFormData {
   name: string;
@@ -179,12 +180,11 @@ export const ContactForm: React.FC = () => {
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <PhoneInput
                   fullWidth
                   label="Phone"
-                  name="phone"
                   value={formData.phone}
-                  onChange={handleChange}
+                  onChange={(value) => setFormData({ ...formData, phone: value })}
                   error={!!errors.phone}
                   helperText={errors.phone}
                   disabled={isSubmitting}

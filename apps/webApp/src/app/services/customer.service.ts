@@ -1,7 +1,87 @@
 import axios from 'axios';
 
+// Type declaration for Clerk global
+declare global {
+  interface Window {
+    Clerk?: {
+      session?: {
+        getToken(options?: { skipCache?: boolean }): Promise<string>;
+      };
+    };
+  }
+}
+
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Create axios instance with common configuration
+const apiClient = axios.create({
+  baseURL: `${API_URL}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add token interceptor for authentication
+apiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      // Always try to get a fresh token from Clerk first
+      if (window.Clerk && window.Clerk.session) {
+        const token = await window.Clerk.session.getToken();
+        if (token) {
+          localStorage.setItem('authToken', token);
+          config.headers.Authorization = `Bearer ${token}`;
+          return config;
+        }
+      }
+
+      // Fallback to localStorage token if Clerk not available
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle 401 errors
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If we get 401 and haven't retried yet, try to refresh the token
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Try to get a fresh token from Clerk
+        if (window.Clerk && window.Clerk.session) {
+          const token = await window.Clerk.session.getToken({ skipCache: true });
+          if (token) {
+            localStorage.setItem('authToken', token);
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh token:', refreshError);
+        // Clear invalid token
+        localStorage.removeItem('authToken');
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export interface Customer {
   id: string;
@@ -63,23 +143,8 @@ export interface UpdateCustomerDto {
 }
 
 class CustomerService {
-  private getAuthHeader() {
-    const token = localStorage.getItem('authToken');
-    
-    // In development mode, use the development token if no real token exists
-    const devToken = 'mock-jwt-token-development';
-    const finalToken = token || devToken;
-    
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${finalToken}`,
-    };
-  }
-
   async getAllCustomers(): Promise<Customer[]> {
-    const response = await axios.get(`${API_URL}/api/customers`, {
-      headers: this.getAuthHeader(),
-    });
+    const response = await apiClient.get('/customers');
     return response.data;
   }
 
@@ -88,43 +153,32 @@ class CustomerService {
   }
 
   async getCustomer(id: string): Promise<Customer> {
-    const response = await axios.get(`${API_URL}/api/customers/${id}`, {
-      headers: this.getAuthHeader(),
-    });
+    const response = await apiClient.get(`/customers/${id}`);
     return response.data;
   }
 
   async getMyProfile(): Promise<Customer | null> {
-    const response = await axios.get(`${API_URL}/api/customers/profile`, {
-      headers: this.getAuthHeader(),
-    });
+    const response = await apiClient.get('/customers/profile');
     return response.data;
   }
 
   async createCustomer(data: CreateCustomerDto): Promise<Customer> {
-    const response = await axios.post(`${API_URL}/api/customers`, data, {
-      headers: this.getAuthHeader(),
-    });
+    const response = await apiClient.post('/customers', data);
     return response.data;
   }
 
   async updateCustomer(id: string, data: UpdateCustomerDto): Promise<Customer> {
-    const response = await axios.patch(`${API_URL}/api/customers/${id}`, data, {
-      headers: this.getAuthHeader(),
-    });
+    const response = await apiClient.patch(`/customers/${id}`, data);
     return response.data;
   }
 
   async deleteCustomer(id: string): Promise<void> {
-    await axios.delete(`${API_URL}/api/customers/${id}`, {
-      headers: this.getAuthHeader(),
-    });
+    await apiClient.delete(`/customers/${id}`);
   }
 
   async searchCustomers(searchTerm: string): Promise<Customer[]> {
-    const response = await axios.get(`${API_URL}/api/customers/search`, {
+    const response = await apiClient.get('/customers/search', {
       params: { q: searchTerm },
-      headers: this.getAuthHeader(),
     });
     return response.data;
   }

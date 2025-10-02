@@ -67,10 +67,22 @@ export interface Invoice {
 // export type CreateInvoiceDto = CreateInvoiceEnhancedDto;
 
 export interface UpdateInvoiceDto {
+  vehicleId?: string;
+  items?: InvoiceItem[];
+  subtotal?: number;
+  taxRate?: number;
+  taxAmount?: number;
+  gstRate?: number;
+  gstAmount?: number;
+  pstRate?: number;
+  pstAmount?: number;
+  total?: number;
   status?: Invoice['status'];
   paymentMethod?: PaymentMethod;
   notes?: string;
   paidAt?: string;
+  invoiceDate?: string;
+  companyId?: string;
 }
 
 class InvoiceService {

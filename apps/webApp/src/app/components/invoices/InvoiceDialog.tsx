@@ -20,10 +20,12 @@ import { InvoiceItemType } from '../../../enums';
 import { customerService } from '../../services/customer.service';
 import { vehicleService } from '../../services/vehicle.service';
 import TireService from '../../services/tire.service';
+import { serviceService } from '../../services/service.service';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import InvoiceFormContent from './InvoiceFormContent';
 import companyService, { Company } from '../../services/company.service';
+import { ServiceDto } from '@gt-automotive/data';
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -51,6 +53,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [customers, setCustomers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [tires, setTires] = useState<any[]>([]);
+  const [services, setServices] = useState<ServiceDto[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
@@ -237,13 +240,15 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
   const loadData = async () => {
     try {
-      const [customersData, tiresResult, companiesData] = await Promise.all([
+      const [customersData, tiresResult, servicesData, companiesData] = await Promise.all([
         customerService.getCustomers(),
         TireService.getTires({ page: 1, limit: 100 }),
+        serviceService.getAll(),
         companyService.getCompanies(),
       ]);
       setCustomers(customersData);
       setTires(tiresResult.items || []);
+      setServices(servicesData);
       setCompanies(companiesData);
 
       // Set default company if not in edit mode
@@ -289,8 +294,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         const itemCalc = calculateItemTotal(item);
         return sum + itemCalc.total; // Use calculated total (includes negative discounts)
       }, 0);
-      const gstAmount = (subtotal * formData.gstRate) / 100;
-      const pstAmount = (subtotal * formData.pstRate) / 100;
+
+      // GST and PST rates are already decimals (0.05, 0.07), so no need to divide by 100
+      const gstAmount = subtotal * formData.gstRate;
+      const pstAmount = subtotal * formData.pstRate;
       const taxAmount = gstAmount + pstAmount;
       const total = subtotal + taxAmount;
 
@@ -300,22 +307,22 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           const itemData: any = {
             itemType,
             description,
-            quantity,
-            unitPrice,
+            quantity: Number(quantity),
+            unitPrice: Number(unitPrice),
           };
           if (tireId) {
             itemData.tireId = tireId;
           }
           return itemData;
         }),
-        subtotal,
-        taxRate: formData.gstRate + formData.pstRate,
-        taxAmount,
-        total,
-        gstRate: formData.gstRate,
-        gstAmount,
-        pstRate: formData.pstRate,
-        pstAmount,
+        subtotal: Number(subtotal),
+        taxRate: Number(formData.gstRate + formData.pstRate),
+        taxAmount: Number(taxAmount),
+        total: Number(total),
+        gstRate: Number(formData.gstRate),
+        gstAmount: Number(gstAmount),
+        pstRate: Number(formData.pstRate),
+        pstAmount: Number(pstAmount),
       };
 
       if (formData.paymentMethod) {
@@ -522,6 +529,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           customers={customers}
           vehicles={vehicles}
           tires={tires}
+          services={services}
           companies={companies}
           isNewCustomer={isNewCustomer}
           customerForm={customerForm}
@@ -536,6 +544,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           onAddItem={handleAddItem}
           onRemoveItem={handleRemoveItem}
           onTireSelect={handleTireSelect}
+          onServicesChange={() => loadData()}
           isEditMode={isEditMode}
         />
       </DialogContent>

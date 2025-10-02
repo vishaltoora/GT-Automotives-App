@@ -13,6 +13,8 @@ import {
 import { Print as PrintIcon, Close as CloseIcon, RequestQuote as QuoteIcon } from '@mui/icons-material';
 import { quotationService, QuoteItem } from '../../services/quotation.service';
 import { TireService } from '../../services/tire.service';
+import { serviceService } from '../../services/service.service';
+import { ServiceDto } from '@gt-automotive/data';
 import QuotationFormContent from './QuotationFormContent';
 import { useError } from '../../contexts/ErrorContext';
 import { colors } from '../../theme/colors';
@@ -24,16 +26,17 @@ interface QuoteDialogProps {
   quoteId?: string;
 }
 
-const QuoteDialog: React.FC<QuoteDialogProps> = ({ 
-  open, 
-  onClose, 
+const QuoteDialog: React.FC<QuoteDialogProps> = ({
+  open,
+  onClose,
   onSuccess,
-  quoteId 
+  quoteId
 }) => {
   const { showError } = useError();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tires, setTires] = useState<any[]>([]);
+  const [services, setServices] = useState<ServiceDto[]>([]);
   
   const [quoteForm, setQuoteForm] = useState({
     customerName: '',
@@ -70,10 +73,14 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      // Load tires
-      const tiresData = await TireService.getTires({ page: 1, limit: 100 });
+
+      // Load tires and services
+      const [tiresData, servicesData] = await Promise.all([
+        TireService.getTires({ page: 1, limit: 100 }),
+        serviceService.getAll(),
+      ]);
       setTires(tiresData.items || []);
+      setServices(servicesData);
 
       // Load existing quotation if editing
       if (quoteId) {
@@ -137,6 +144,15 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
         description: `${tire.brand} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
       });
+    }
+  };
+
+  const handleServicesChange = async () => {
+    try {
+      const servicesData = await serviceService.getAll();
+      setServices(servicesData);
+    } catch (error) {
+      showError('Failed to refresh services');
     }
   };
 
@@ -258,6 +274,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
           <>
             <QuotationFormContent
               tires={tires}
+              services={services}
               quotationForm={quoteForm}
               setQuotationForm={setQuoteForm}
               formData={formData}
@@ -269,6 +286,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
               onAddItem={handleAddItem}
               onRemoveItem={handleRemoveItem}
               onTireSelect={handleTireSelect}
+              onServicesChange={handleServicesChange}
             />
           </>
         )}

@@ -5,12 +5,12 @@ export declare class UsersController {
     findAll(roleId?: string, isActive?: string): Promise<({
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -19,12 +19,12 @@ export declare class UsersController {
     findById(id: string): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -38,12 +38,12 @@ export declare class UsersController {
     }, currentUser: any): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -61,12 +61,12 @@ export declare class UsersController {
         clerkCreated: boolean;
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
         role: import("@prisma/client").Role;
@@ -79,12 +79,12 @@ export declare class UsersController {
     }, currentUser: any): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -93,12 +93,12 @@ export declare class UsersController {
     assignRole(id: string, roleId: string, currentUser: any): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -107,12 +107,12 @@ export declare class UsersController {
     delete(id: string, currentUser: any): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -126,12 +126,12 @@ export declare class UsersController {
     getMyProfile(currentUser: any): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -143,12 +143,12 @@ export declare class UsersController {
     }, currentUser: any): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {

@@ -14,12 +14,12 @@ export declare class UsersService {
     }): Promise<({
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -28,12 +28,12 @@ export declare class UsersService {
     findById(id: string): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -42,12 +42,12 @@ export declare class UsersService {
     findByEmail(email: string): Promise<({
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -63,12 +63,12 @@ export declare class UsersService {
     }): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -87,12 +87,12 @@ export declare class UsersService {
         clerkCreated: boolean;
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
         role: import("@prisma/client").Role;
@@ -106,12 +106,12 @@ export declare class UsersService {
     }): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -120,12 +120,12 @@ export declare class UsersService {
     assignRole(userId: string, roleId: string, assignedBy: string): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -134,12 +134,12 @@ export declare class UsersService {
     delete(id: string, deletedBy: string): Promise<{
         id: string;
         createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         roleId: string;
-        updatedAt: Date;
         lastLogin: Date | null;
         isActive: boolean;
     } & {

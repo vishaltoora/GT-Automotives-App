@@ -6,10 +6,10 @@ export declare class CompaniesController {
         name: string;
         id: string;
         createdAt: Date;
-        email: string | null;
         updatedAt: Date;
-        address: string | null;
+        email: string | null;
         phone: string | null;
+        address: string | null;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;
@@ -18,10 +18,10 @@ export declare class CompaniesController {
         name: string;
         id: string;
         createdAt: Date;
-        email: string | null;
         updatedAt: Date;
-        address: string | null;
+        email: string | null;
         phone: string | null;
+        address: string | null;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;

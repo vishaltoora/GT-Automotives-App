@@ -10,7 +10,7 @@ export declare class CreateTireDto {
     type: TireType;
     condition: TireCondition;
     price: number;
-    cost: number;
+    cost?: number;
     quantity: number;
     description?: string;
     imageUrl?: string;

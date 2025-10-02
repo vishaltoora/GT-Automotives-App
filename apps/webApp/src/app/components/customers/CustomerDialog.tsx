@@ -24,6 +24,7 @@ import {
 import { TransitionProps } from '@mui/material/transitions';
 import { customerService, Customer, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
 import { colors } from '../../theme/colors';
+import { PhoneInput } from '../common/PhoneInput';
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -142,6 +143,13 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     }));
   };
 
+  const handlePhoneChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      phone: value,
+    }));
+  };
+
   return (
     <Dialog
       open={open}
@@ -238,13 +246,11 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                <PhoneInput
                   fullWidth
-                  label="Phone (Optional)"
                   value={formData.phone}
-                  onChange={handleChange('phone')}
+                  onChange={handlePhoneChange}
                   disabled={saving}
-                  placeholder="(555) 123-4567"
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
