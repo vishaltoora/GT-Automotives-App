@@ -123,8 +123,8 @@ export function HeroSection() {
                     maxWidth: { md: 600, lg: 700 },
                   }}
                 >
-                  Expert tire installation, mobile services, and mechanical repairs by certified
-                  technicians at competitive prices
+                  Expert tire installation, mobile services, and mechanical repairs delivered by certified
+                  technicians at competitive prices in Prince George
                 </Typography>
 
                 {/* CTA Buttons */}
