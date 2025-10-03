@@ -124,7 +124,7 @@ export function StaffLayout() {
                 GT Automotives
               </Typography>
               <Typography variant="caption" sx={{ color: colors.neutral[100], fontWeight: 500 }}>
-                Staff Portal
+                16472991 Canada INC.
               </Typography>
             </Box>
           )}
@@ -374,19 +374,7 @@ export function StaffLayout() {
             </Box>
 
             {/* Desktop title */}
-            <Typography
-              variant="h5"
-              noWrap
-              component="div"
-              sx={{
-                flexGrow: 1,
-                fontWeight: 600,
-                color: colors.primary.main,
-                display: { xs: 'none', md: 'block' },
-              }}
-            >
-              Staff Dashboard
-            </Typography>
+            <Box sx={{ flexGrow: 1 }} />
 
             {/* User info and actions */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

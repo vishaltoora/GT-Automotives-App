@@ -46,12 +46,33 @@ export function StaffDashboard() {
             </Avatar>
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 700, color: colors.secondary.main }}>
-                Operations Dashboard
+                Welcome Back {user?.firstName || 'Staff Member'}{' '}
+                <span
+                  style={{
+                    display: 'inline-block',
+                    animation: 'wave 1.5s ease-in-out infinite',
+                    transformOrigin: '70% 70%',
+                  }}
+                >
+                  👋
+                </span>
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <AccessTime sx={{ fontSize: 16 }} />
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} • {user?.firstName || 'Staff Member'}
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </Typography>
+              <style>
+                {`
+                  @keyframes wave {
+                    0%, 100% { transform: rotate(0deg); }
+                    10%, 30% { transform: rotate(14deg); }
+                    20% { transform: rotate(-8deg); }
+                    40%, 60% { transform: rotate(14deg); }
+                    50% { transform: rotate(-8deg); }
+                    70% { transform: rotate(0deg); }
+                  }
+                `}
+              </style>
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>

@@ -99,11 +99,32 @@ export function AdminDashboard() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary.main }}>
-              Welcome back, {user?.firstName || 'Admin'}
+              Welcome back, {user?.firstName || 'Admin'}{' '}
+              <span
+                style={{
+                  display: 'inline-block',
+                  animation: 'wave 1.5s ease-in-out infinite',
+                  transformOrigin: '70% 70%',
+                }}
+              >
+                👋
+              </span>
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Here's what's happening with your business today
             </Typography>
+            <style>
+              {`
+                @keyframes wave {
+                  0%, 100% { transform: rotate(0deg); }
+                  10%, 30% { transform: rotate(14deg); }
+                  20% { transform: rotate(-8deg); }
+                  40%, 60% { transform: rotate(14deg); }
+                  50% { transform: rotate(-8deg); }
+                  70% { transform: rotate(0deg); }
+                }
+              `}
+            </style>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <IconButton
