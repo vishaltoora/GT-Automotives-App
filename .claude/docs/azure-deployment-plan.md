@@ -1,12 +1,15 @@
 # Azure Deployment Plan for GT Automotive
-**Budget-Friendly Cloud Deployment Strategy**
+**Cost-Optimized Cloud Deployment Strategy**
 
 ## Executive Summary
 
-This plan provides a complete Azure deployment strategy for enterprise-grade reliability and performance.
+This plan provides a complete Azure deployment strategy optimized for cost-effectiveness while maintaining reliability and performance.
 
-**Estimated Monthly Cost:**
-- **Azure: ~$25-30/month**
+**Current Production Cost (October 2025):**
+- **Azure: $49-54/month** (down from $109-129/month)
+- **Cost Reduction: 51-62% savings**
+
+**Architecture**: Dual Web App B1 deployment (frontend + backend)
 
 ## Architecture Overview
 

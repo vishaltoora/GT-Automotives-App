@@ -1,29 +1,82 @@
 # GitHub Workflow Deployment Documentation
 
-This document provides comprehensive documentation for the GT Automotive GitHub Actions deployment workflow, including recent fixes and optimizations.
+This document provides comprehensive documentation for the GT Automotive GitHub Actions deployment workflow.
 
 ## Overview
 
-The GT Automotive application uses GitHub Actions for continuous deployment to Azure. The workflow supports both frontend and backend deployments with parallel execution capabilities.
+The GT Automotive application uses a **two-step GitHub Actions workflow** for controlled deployments to Azure.
 
-## Workflow Architecture
+## Workflow Architecture (October 3, 2025 Update)
 
-### Workflow File
-- **Location**: `.github/workflows/deploy.yml`
-- **Trigger**: Manual workflow dispatch
-- **Deployment Types**: Container (recommended) or App Service
+### Two-Step Deployment Process
 
-### Job Structure
+#### Step 1: GT-Automotive-Build (Automatic)
+- **Location**: `.github/workflows/gt-build.yml`
+- **Trigger**: Automatic on push to `main` branch
+- **Purpose**: Build artifacts with production configuration
+- **Output**: Build number for manual deployment
+
+#### Step 2: GT-Automotive-Deploy (Manual)
+- **Location**: `.github/workflows/gt-deploy.yml`
+- **Trigger**: Manual workflow dispatch with build number
+- **Purpose**: Deploy specific build to production
+- **Deployment Target**: Azure Web App B1 (both frontend and backend)
+
+### GT-Automotive-Build Job Structure
 ```yaml
 jobs:
-  validate-build    # Validates build artifacts
-  deploy-backend    # App Service deployment (optional)
-  deploy-backend-container  # Container deployment (recommended)
-  deploy-frontend   # Frontend deployment
-  deployment-summary  # Summary and notifications
+  Build:
+    - Install dependencies
+    - Generate Prisma Client
+    - Code quality checks (lint + typecheck in parallel)
+    - Build frontend and shared libraries (parallel)
+    - Prepare frontend artifact with reverse proxy
+    - Build and push Docker image to ACR
+    - Upload artifacts (frontend zip, build info, repository)
 ```
 
-## Key Improvements (September 17, 2025)
+### GT-Automotive-Deploy Job Structure
+```yaml
+jobs:
+  Deploy:
+    - Download build artifacts (by build number)
+    - Extract build information
+    - Deploy backend to Web App (optional)
+    - Run database migrations (optional)
+    - Deploy frontend to Web App (optional)
+    - Verify deployments with health checks
+    - Create deployment summary
+```
+
+## Key Improvements
+
+### October 3, 2025 - Backend Migration to Web App B1
+
+**Change**: Migrated from Azure Container Instance to Azure Web App B1
+
+**Benefits**:
+- **Cost Reduction**: $73/mo → $13/mo (82% savings on backend)
+- **Total Cost**: $109-129/mo → $49-54/mo (51-62% overall savings)
+- **Same Performance**: Web App B1 provides equivalent resources
+- **Better Integration**: Simplified security with service tags
+- **Automatic SSL**: Built-in HTTPS support
+- **Easier Management**: Standard Azure App Service tooling
+
+**Architecture Change**:
+```yaml
+# Before: Container Instance deployment
+az container create \
+  --name gt-automotives-backend-prod \
+  --dns-name-label gt-automotives-backend-prod \
+  --cpu 2 --memory 4
+
+# After: Web App deployment
+az webapp config container set \
+  --name gt-automotives-backend-api \
+  --docker-custom-image-name $IMAGE_TAG
+```
+
+### September 17, 2025 - Shared Library and Parallel Deployment
 
 ### 1. Container Crash Loop Resolution
 
@@ -85,32 +138,70 @@ FRONTEND_URL="${{ secrets.FRONTEND_URL }}"
 
 ## Deployment Process
 
-### 1. Build Phase (Separate Workflow)
-- Triggered on push to main branch
-- Builds frontend and backend artifacts
-- Uploads artifacts to GitHub Actions
+### Step 1: Build (Automatic on Push)
 
-### 2. Deployment Phase
+**Trigger**: `git push origin main`
 
-#### Backend Container Deployment
-1. Download backend artifact
-2. Reorganize file structure (critical fix)
-3. Create optimized Dockerfile
-4. Build Docker image
-5. Push to Azure Container Registry
-6. Deploy to Azure Container Instances
-7. Verify health endpoint
+**GT-Automotive-Build Workflow**:
+1. Install dependencies with caching
+2. Generate Prisma Client
+3. Run code quality checks (parallel):
+   - ESLint
+   - TypeScript type checking
+4. Build artifacts (parallel):
+   - Frontend (Vite) with **production Clerk keys**
+   - Shared libraries (Nx)
+5. Create frontend deployment package:
+   - Add Express.js reverse proxy server
+   - Include production environment variables
+   - Package as zip file
+6. Build backend Docker image:
+   - Build with Docker BuildKit
+   - Tag with build number
+   - Push to Azure Container Registry
+7. Upload artifacts:
+   - Frontend zip
+   - Build info (image tag, build number)
+   - Repository source (for migrations)
 
-#### Frontend Deployment
-1. Download frontend artifact
-2. Deploy to Azure Web App
-3. Restart App Service
-4. Verify deployment
+**Output**: Build number (e.g., 82) shown in workflow summary
 
-### 3. Post-Deployment
-- Health checks
-- Container logs monitoring
-- Deployment summary generation
+### Step 2: Deploy (Manual via GitHub UI)
+
+**How to Deploy**:
+1. Go to: https://github.com/vishaltoora/GT-Automotives-App/actions/workflows/gt-deploy.yml
+2. Click "Run workflow"
+3. Enter parameters:
+   - **Build Number**: (from Step 1, e.g., 82)
+   - **Target Environment**: production
+   - **Deploy Frontend**: ✅
+   - **Deploy Backend**: ✅
+   - **Run Migrations**: ✅
+4. Click "Run workflow"
+
+**GT-Automotive-Deploy Workflow**:
+1. Download build artifacts by build number
+2. Extract build information (Docker image tag)
+3. **Backend Deployment** (if selected):
+   - Update Web App container image
+   - Set environment variables
+   - Restart Web App
+   - Wait for container pull and startup
+4. **Database Migrations** (if selected):
+   - Install Prisma CLI
+   - Run `prisma migrate deploy`
+   - Verify migration success
+5. **Frontend Deployment** (if selected):
+   - Upload frontend zip to Web App
+   - Restart frontend service
+6. **Verification**:
+   - Health check backend: https://gt-automotives-backend-api.azurewebsites.net/health
+   - Health check frontend: https://gt-automotives.com/health
+   - Retry logic with detailed status
+7. **Summary**:
+   - Deployment URLs
+   - Cost optimization metrics
+   - Component status
 
 ## Required GitHub Secrets
 
@@ -164,16 +255,34 @@ gh run view [RUN_ID]
 
 ## Performance Metrics
 
-### Deployment Times (Approximate)
-- **Sequential Deployment**: 12-15 minutes
-- **Parallel Deployment**: 6-8 minutes
-- **Backend Only**: 5-6 minutes
-- **Frontend Only**: 3-4 minutes
+### Build Times (GT-Automotive-Build)
+- **Full Build**: 4-6 minutes
+  - Dependencies + Prisma: 1-2 minutes
+  - Code quality checks: 1 minute (parallel)
+  - Frontend + shared libraries: 1-2 minutes (parallel)
+  - Docker build + push: 2-3 minutes
+- **Cached Build**: 3-4 minutes
 
-### Resource Usage
-- **Container CPU**: 2 cores
-- **Container Memory**: 4 GB
-- **Docker Image Size**: ~300MB
+### Deployment Times (GT-Automotive-Deploy)
+- **Frontend Only**: 2-3 minutes
+- **Backend Only**: 3-5 minutes (includes container pull)
+- **Full Deployment**: 5-7 minutes
+- **With Migrations**: +1-2 minutes
+
+### Resource Usage (Web App B1)
+- **Backend CPU**: Shared (equivalent to 1 core)
+- **Backend Memory**: 1.75 GB
+- **Frontend CPU**: Shared (equivalent to 1 core)
+- **Frontend Memory**: 1.75 GB
+- **Docker Image Size**: ~3.5 GB
+
+### Cost Comparison
+| Component | Before (Container) | After (Web App B1) | Savings |
+|-----------|-------------------|-------------------|---------|
+| Backend | $73/month | $13/month | **$60/mo (82%)** |
+| Frontend | $13/month | $13/month | $0 |
+| Database | $23/month | $23/month | $0 |
+| **Total** | **$109/month** | **$49/month** | **$60/mo (55%)** |
 - **Frontend Bundle**: ~10MB
 
 ## Best Practices

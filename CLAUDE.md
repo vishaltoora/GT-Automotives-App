@@ -62,7 +62,9 @@ yarn dev
 - **Production URL:** https://gt-automotives.com ✅ (HTTPS + Custom Auth Domain + Reverse Proxy)
 - **Production WWW:** https://www.gt-automotives.com ✅
 - **Backend API:** https://gt-automotives.com/api ✅ (Reverse Proxy to Internal HTTP)
-- **Frontend Hosting:** Azure Web App with integrated reverse proxy ✅
+- **Backend Direct:** https://gt-automotives-backend-api.azurewebsites.net ✅
+- **Frontend Hosting:** Azure Web App B1 with integrated reverse proxy ✅
+- **Backend Hosting:** Azure Web App B1 (Docker container) ✅
 - **Authentication:** Clerk Custom Domain (clerk.gt-automotives.com) ✅
 - **Security:** Mixed Content errors resolved ✅
 - **Progress:** 6 of 8 Epics Complete (75%)
@@ -71,7 +73,8 @@ yarn dev
 - **Dev Backend:** http://localhost:3000/api
 - **Admin User:** vishal.alawalpuria@gmail.com
 - **SSL/DNS:** Namecheap DNS + Azure SSL + Clerk Certificates
-- **Deployment:** GitHub Actions CI/CD ✅
+- **Deployment:** Two-Step GitHub Actions CI/CD ✅
+- **Monthly Cost:** $49-54 (down from $109-129) 💰
 
 ## 🔑 Key Information
 
@@ -88,12 +91,20 @@ yarn dev
 
 ### Important Commands
 ```bash
+# Development
 yarn dev           # Start both frontend and backend
 yarn db:studio     # Open Prisma Studio
 yarn nx reset      # Clear Nx cache
 yarn lint          # Run linting
 yarn test          # Run tests
-./deploy-frontend.sh  # Deploy to production
+
+# Deployment (Two-Step Process)
+# Step 1: Push to main triggers GT-Automotive-Build (automatic)
+git push origin main
+
+# Step 2: Manually deploy via GitHub Actions UI
+# Go to: Actions → GT-Automotive-Deploy → Run workflow
+# Enter build number from Step 1
 ```
 
 ## 📚 Additional Resources
@@ -131,6 +142,17 @@ yarn test          # Run tests
 ---
 
 ## 🔄 Recent Updates
+
+### October 3, 2025 - CI/CD Workflow Optimization & Cost Reduction ✅
+- ✅ **Two-Step Workflow Restored**: GT-Automotive-Build (automatic) + GT-Automotive-Deploy (manual control)
+- ✅ **Backend Migration**: Moved from Azure Container Instance ($73/mo) to Web App B1 ($13/mo)
+- ✅ **Cost Savings**: Reduced total costs from $109-129/mo to $49-54/mo (51-62% reduction)
+- ✅ **Manual Deployment Control**: User maintains full control over production deployments
+- ✅ **Production Clerk Keys**: Fixed development key issues in production builds
+- ✅ **Web App Architecture**: Both frontend and backend now on Azure Web App B1 plans
+- ✅ **Build Artifacts**: Workflow creates artifacts with build numbers for controlled deployment
+- ✅ **Health Checks**: Automated verification of backend and frontend after deployment
+- 💰 **Monthly Savings**: $60-80/month reduction while maintaining same functionality
 
 ### September 28, 2025 - Critical Schema Migration Management Implementation ✅
 - ✅ **Production Database Fixed**: Resolved 500 errors on `/api/companies` and `/api/tires` endpoints
