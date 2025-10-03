@@ -6,7 +6,10 @@ export enum QuotationItemType {
   TIRE = 'TIRE',
   SERVICE = 'SERVICE',
   PART = 'PART',
-  OTHER = 'OTHER'
+  OTHER = 'OTHER',
+  LEVY = 'LEVY',
+  DISCOUNT = 'DISCOUNT',
+  DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE'
 }
 
 export class QuotationItemDto {
@@ -29,6 +32,18 @@ export class QuotationItemDto {
 
   @IsNumber()
   unitPrice!: number;
+
+  @IsOptional()
+  @IsString()
+  discountType?: 'amount' | 'percentage';
+
+  @IsOptional()
+  @IsNumber()
+  discountValue?: number;
+
+  @IsOptional()
+  @IsNumber()
+  discountAmount?: number;
 
   @IsOptional()
   @IsNumber()
@@ -56,9 +71,18 @@ export class CreateQuoteDto {
   @IsString()
   email?: string;
 
+  // Vehicle fields (optional)
   @IsOptional()
   @IsString()
-  vehicleId?: string;
+  vehicleMake?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleModel?: string;
+
+  @IsOptional()
+  @IsNumber()
+  vehicleYear?: number;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -73,8 +97,9 @@ export class CreateQuoteDto {
   @IsNumber()
   pstRate?: number;
 
+  @IsOptional()
   @IsEnum(QuotationStatus)
-  status!: QuotationStatus;
+  status?: QuotationStatus;
 
   @IsOptional()
   @IsString()
