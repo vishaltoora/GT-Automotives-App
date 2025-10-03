@@ -3,7 +3,10 @@ export declare enum QuotationItemType {
     TIRE = "TIRE",
     SERVICE = "SERVICE",
     PART = "PART",
-    OTHER = "OTHER"
+    OTHER = "OTHER",
+    LEVY = "LEVY",
+    DISCOUNT = "DISCOUNT",
+    DISCOUNT_PERCENTAGE = "DISCOUNT_PERCENTAGE"
 }
 export declare class QuotationItemDto {
     id?: string;
@@ -12,6 +15,9 @@ export declare class QuotationItemDto {
     description: string;
     quantity: number;
     unitPrice: number;
+    discountType?: 'amount' | 'percentage';
+    discountValue?: number;
+    discountAmount?: number;
     total?: number;
 }
 export declare class CreateQuoteDto {
@@ -20,11 +26,13 @@ export declare class CreateQuoteDto {
     address?: string;
     phone?: string;
     email?: string;
-    vehicleId?: string;
+    vehicleMake?: string;
+    vehicleModel?: string;
+    vehicleYear?: number;
     items: QuotationItemDto[];
     gstRate?: number;
     pstRate?: number;
-    status: QuotationStatus;
+    status?: QuotationStatus;
     notes?: string;
     validUntil?: string;
 }
