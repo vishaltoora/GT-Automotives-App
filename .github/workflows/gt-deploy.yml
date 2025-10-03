@@ -180,11 +180,21 @@ jobs:
         run: |
           echo "🌐 Deploying frontend from pre-built artifact..."
 
-          # Find the frontend zip file
-          FRONTEND_ZIP=$(find ./artifacts -name "frontend-*.zip" -type f | head -1)
+          # Find the frontend artifact directory (not the repo artifact)
+          FRONTEND_ARTIFACT_DIR=$(find ./artifacts -type d -name "frontend-build-*" | head -1)
+
+          if [ -z "$FRONTEND_ARTIFACT_DIR" ]; then
+            echo "❌ Frontend artifact directory not found!"
+            exit 1
+          fi
+
+          # Find the zip file in the frontend artifact directory
+          FRONTEND_ZIP=$(find "$FRONTEND_ARTIFACT_DIR" -name "frontend-*.zip" -type f | head -1)
 
           if [ -z "$FRONTEND_ZIP" ]; then
             echo "❌ Frontend artifact ZIP file not found!"
+            echo "Searched in: $FRONTEND_ARTIFACT_DIR"
+            ls -la "$FRONTEND_ARTIFACT_DIR"
             exit 1
           fi
 
