@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
   Grid,
-  Card, 
-  CardContent, 
+  Card,
+  CardContent,
   Button,
   Chip,
   IconButton,
@@ -14,11 +14,11 @@ import {
   ListItemText,
   ListItemAvatar,
   Divider,
+  CircularProgress,
 } from '@mui/material';
-import { 
-  People, 
-  AttachMoney, 
- 
+import {
+  People,
+  AttachMoney,
   Inventory,
   SupervisorAccount,
   Analytics,
@@ -30,9 +30,7 @@ import {
   Error,
   ArrowUpward,
   ArrowDownward,
-  MoreVert,
   Refresh,
-  Add,
   TireRepair,
   Speed,
   LocalShipping,
@@ -43,19 +41,30 @@ import { Link, useNavigate } from 'react-router-dom';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import QuotationDialog from '../../components/quotations/QuotationDialog';
 import { useAuth } from '../../hooks/useAuth';
+import { dashboardService, DashboardStats } from '../../services/dashboard.service';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for demonstration
-  const stats = {
-    revenue: { value: 125430, change: 12.5, trend: 'up' },
-    customers: { value: 1247, change: 8.3, trend: 'up' },
-    vehicles: { value: 2341, change: -2.1, trend: 'down' },
-    appointments: { value: 43, change: 15.7, trend: 'up' },
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      const data = await dashboardService.getStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Failed to load dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const recentActivities = [
@@ -97,227 +106,209 @@ export function AdminDashboard() {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton 
-              sx={{ 
+            <IconButton
+              onClick={loadStats}
+              disabled={loading}
+              sx={{
                 border: `1px solid ${colors.neutral[300]}`,
                 '&:hover': { backgroundColor: colors.neutral[100] },
               }}
             >
               <Refresh />
             </IconButton>
-            <Button 
-              variant="contained" 
-              startIcon={<Add />}
-              sx={{ 
-                backgroundColor: colors.secondary.main,
-                '&:hover': { backgroundColor: colors.secondary.dark },
-              }}
-            >
-              Quick Action
-            </Button>
           </Box>
         </Box>
       </Box>
 
-      {/* Stats Cards */}
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { 
-          xs: '1fr', 
-          sm: 'repeat(2, 1fr)', 
-          md: 'repeat(4, 1fr)',
-        },
-        gap: 3,
-        mb: 3,
-      }}>
-        <Card 
-          elevation={0}
-          sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            position: 'relative',
-            overflow: 'visible',
-          }}
-        >
-          <CardContent sx={{ pb: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box 
-                  sx={{ 
-                    p: 1.5,
+      {/* Stats Cards - Compact Design */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : stats ? (
+        <Box sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(4, 1fr)',
+          },
+          gap: 2,
+          mb: 3,
+        }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    p: 1,
                     backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 2,
-                    backdropFilter: 'blur(10px)',
+                    borderRadius: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
-                  <AttachMoney sx={{ fontSize: 28 }} />
+                  <AttachMoney sx={{ fontSize: 24 }} />
                 </Box>
-                <IconButton size="small" sx={{ color: 'white', opacity: 0.8 }}>
-                  <MoreVert fontSize="small" />
-                </IconButton>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                ${stats.revenue.value.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                Total Revenue
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {stats.revenue.trend === 'up' ? (
-                  <ArrowUpward sx={{ fontSize: 16, color: colors.semantic.successLight }} />
-                ) : (
-                  <ArrowDownward sx={{ fontSize: 16, color: colors.semantic.errorLight }} />
-                )}
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {stats.revenue.change}%
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  vs last month
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                    Total Revenue
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                    ${stats.revenue.value.toLocaleString()}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {stats.revenue.trend === 'up' ? (
+                      <ArrowUpward sx={{ fontSize: 14 }} />
+                    ) : (
+                      <ArrowDownward sx={{ fontSize: 14 }} />
+                    )}
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                      {stats.revenue.change}% vs last month
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             elevation={0}
-            sx={{ 
+            sx={{
               background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               color: 'white',
-              position: 'relative',
-              overflow: 'visible',
+              border: 'none',
             }}
           >
-            <CardContent sx={{ pb: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box 
-                  sx={{ 
-                    p: 1.5,
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    p: 1,
                     backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 2,
-                    backdropFilter: 'blur(10px)',
+                    borderRadius: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
-                  <People sx={{ fontSize: 28 }} />
+                  <People sx={{ fontSize: 24 }} />
                 </Box>
-                <IconButton size="small" sx={{ color: 'white', opacity: 0.8 }}>
-                  <MoreVert fontSize="small" />
-                </IconButton>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {stats.customers.value.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                Total Customers
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {stats.customers.trend === 'up' ? (
-                  <ArrowUpward sx={{ fontSize: 16, color: colors.semantic.successLight }} />
-                ) : (
-                  <ArrowDownward sx={{ fontSize: 16, color: colors.semantic.errorLight }} />
-                )}
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {stats.customers.change}%
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  growth rate
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                    Total Customers
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                    {stats.customers.value.toLocaleString()}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {stats.customers.trend === 'up' ? (
+                      <ArrowUpward sx={{ fontSize: 14 }} />
+                    ) : (
+                      <ArrowDownward sx={{ fontSize: 14 }} />
+                    )}
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                      {stats.customers.change}% growth
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             elevation={0}
-            sx={{ 
+            sx={{
               background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
               color: 'white',
-              position: 'relative',
-              overflow: 'visible',
+              border: 'none',
             }}
           >
-            <CardContent sx={{ pb: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box 
-                  sx={{ 
-                    p: 1.5,
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    p: 1,
                     backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 2,
-                    backdropFilter: 'blur(10px)',
+                    borderRadius: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
-                  <DirectionsCar sx={{ fontSize: 28 }} />
+                  <DirectionsCar sx={{ fontSize: 24 }} />
                 </Box>
-                <IconButton size="small" sx={{ color: 'white', opacity: 0.8 }}>
-                  <MoreVert fontSize="small" />
-                </IconButton>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {stats.vehicles.value.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                Vehicles Serviced
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {stats.vehicles.trend === 'up' ? (
-                  <ArrowUpward sx={{ fontSize: 16, color: colors.semantic.successLight }} />
-                ) : (
-                  <ArrowDownward sx={{ fontSize: 16, color: colors.semantic.errorLight }} />
-                )}
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {Math.abs(stats.vehicles.change)}%
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  from last month
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                    Total Vehicles
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                    {stats.vehicles.value.toLocaleString()}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {stats.vehicles.trend === 'up' ? (
+                      <ArrowUpward sx={{ fontSize: 14 }} />
+                    ) : (
+                      <ArrowDownward sx={{ fontSize: 14 }} />
+                    )}
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                      {Math.abs(stats.vehicles.change)}% change
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             elevation={0}
-            sx={{ 
+            sx={{
               background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
               color: 'white',
-              position: 'relative',
-              overflow: 'visible',
+              border: 'none',
             }}
           >
-            <CardContent sx={{ pb: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box 
-                  sx={{ 
-                    p: 1.5,
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    p: 1,
                     backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 2,
-                    backdropFilter: 'blur(10px)',
+                    borderRadius: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
-                  <CalendarMonth sx={{ fontSize: 28 }} />
+                  <CalendarMonth sx={{ fontSize: 24 }} />
                 </Box>
-                <IconButton size="small" sx={{ color: 'white', opacity: 0.8 }}>
-                  <MoreVert fontSize="small" />
-                </IconButton>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {stats.appointments.value}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                Appointments Today
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {stats.appointments.trend === 'up' ? (
-                  <ArrowUpward sx={{ fontSize: 16, color: colors.semantic.successLight }} />
-                ) : (
-                  <ArrowDownward sx={{ fontSize: 16, color: colors.semantic.errorLight }} />
-                )}
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {stats.appointments.change}%
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  increase
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                    Today's Jobs
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                    {stats.appointments.value}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {stats.appointments.trend === 'up' ? (
+                      <ArrowUpward sx={{ fontSize: 14 }} />
+                    ) : (
+                      <ArrowDownward sx={{ fontSize: 14 }} />
+                    )}
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                      {stats.appointments.change}% vs yesterday
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
             </CardContent>
           </Card>
-      </Box>
+        </Box>
+      ) : null}
 
       {/* Charts and Activity Section */}
       <Grid container spacing={3} sx={{ mt: 3 }}>

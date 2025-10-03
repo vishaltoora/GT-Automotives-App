@@ -14,6 +14,7 @@ import { CompaniesModule } from '../companies/companies.module';
 import { JobsModule } from '../jobs/jobs.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { HealthModule } from '../health/health.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -34,6 +35,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     JobsModule,
     PaymentsModule,
     HealthModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

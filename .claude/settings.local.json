@@ -275,7 +275,8 @@
       "Read(//dev/**)",
       "Bash(if grep -q \"declare global\" \"$file\")",
       "Bash(then)",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" NODE_ENV=development yarn db:seed)"
     ],
     "deny": [],
     "ask": []

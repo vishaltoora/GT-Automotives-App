@@ -45,6 +45,8 @@ interface CreateJobDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (job: any) => void;
+  preselectedEmployeeId?: string;
+  hideEmployeeSelect?: boolean;
 }
 
 interface Employee {
@@ -58,13 +60,15 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   open,
   onClose,
   onSuccess,
+  preselectedEmployeeId,
+  hideEmployeeSelect = false,
 }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState<CreateJobDto>({
-    employeeId: '',
+    employeeId: preselectedEmployeeId || '',
     title: '',
     description: '',
     payAmount: 0,
@@ -74,9 +78,11 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      fetchEmployees();
+      if (!hideEmployeeSelect) {
+        fetchEmployees();
+      }
       setFormData({
-        employeeId: '',
+        employeeId: preselectedEmployeeId || '',
         title: '',
         description: '',
         payAmount: 0,
@@ -85,7 +91,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
       });
       setError(null);
     }
-  }, [open, user]);
+  }, [open, user, preselectedEmployeeId, hideEmployeeSelect]);
 
   const fetchEmployees = async () => {
     try {
@@ -181,20 +187,22 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
               </Alert>
             )}
 
-            <FormControl fullWidth required>
-              <InputLabel>Employee</InputLabel>
-              <Select
-                value={formData.employeeId}
-                onChange={(e) => handleInputChange('employeeId', e.target.value)}
-                label="Employee"
-              >
-                {employees.map((employee) => (
-                  <MenuItem key={employee.id} value={employee.id}>
-                    {getEmployeeName(employee)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {!hideEmployeeSelect && (
+              <FormControl fullWidth required>
+                <InputLabel>Employee</InputLabel>
+                <Select
+                  value={formData.employeeId}
+                  onChange={(e) => handleInputChange('employeeId', e.target.value)}
+                  label="Employee"
+                >
+                  {employees.map((employee) => (
+                    <MenuItem key={employee.id} value={employee.id}>
+                      {getEmployeeName(employee)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
 
             <TextField
               fullWidth

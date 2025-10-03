@@ -54,7 +54,7 @@ export class JobsController {
 
   @Get('summary')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('STAFF', 'ADMIN')
   getJobSummary(@Query('employeeId') employeeId?: string): Promise<JobSummaryDto> {
     return this.jobsService.getJobSummary(employeeId);
   }

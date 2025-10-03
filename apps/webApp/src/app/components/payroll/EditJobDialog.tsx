@@ -45,6 +45,7 @@ interface EditJobDialogProps {
   job: JobResponseDto | null;
   onClose: () => void;
   onSuccess: (job: JobResponseDto) => void;
+  isStaffView?: boolean;
 }
 
 interface Employee {
@@ -59,6 +60,7 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
   job,
   onClose,
   onSuccess,
+  isStaffView = false,
 }) => {
   // const { user } = useAuth(); // TODO: Use for authorization checks
   const [loading, setLoading] = useState(false);
@@ -257,22 +259,33 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
+              {!isStaffView && (
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    label="Status"
+                  >
+                    {Object.values(JobStatus)
+                      .filter(status => status !== JobStatus.PAID && status !== JobStatus.PARTIALLY_PAID)
+                      .map((status) => (
+                      <MenuItem key={status} value={status}>
+                        {status.replace('_', ' ')}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              {isStaffView && (
+                <TextField
+                  fullWidth
                   label="Status"
-                >
-                  {Object.values(JobStatus)
-                    .filter(status => status !== JobStatus.PAID && status !== JobStatus.PARTIALLY_PAID)
-                    .map((status) => (
-                    <MenuItem key={status} value={status}>
-                      {status.replace('_', ' ')}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  value={formData.status?.replace('_', ' ')}
+                  disabled
+                  helperText="Use 'Mark as Complete' from the jobs list to change status"
+                />
+              )}
 
               <DateTimePicker
                 label="Due Date (Optional)"

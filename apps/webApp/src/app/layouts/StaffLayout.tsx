@@ -32,7 +32,8 @@ import {
   AccountCircle,
   Description,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Work
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -63,6 +64,8 @@ export function StaffLayout() {
 
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/staff/dashboard' },
+    { text: 'My Jobs', icon: <Work />, path: '/staff/jobs' },
+    { divider: true },
     { text: 'Customers', icon: <People />, path: '/staff/customers' },
     { text: 'Vehicles', icon: <DirectionsCar />, path: '/staff/vehicles' },
     { text: 'Inventory', icon: <Inventory />, path: '/staff/inventory' },
@@ -432,7 +435,7 @@ export function StaffLayout() {
             flexGrow: 1,
             overflow: 'auto',
             p: { xs: 2, sm: 3 },
-            backgroundColor: colors.background.light,
+            backgroundColor: 'white',
           }}
         >
           <Container maxWidth="xl">

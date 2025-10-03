@@ -32,6 +32,7 @@ import { CustomerDashboard } from './pages/customer/Dashboard';
 
 // Staff Pages
 import { StaffDashboard } from './pages/staff/Dashboard';
+import { MyJobs } from './pages/staff/MyJobs';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/Dashboard';
@@ -138,6 +139,7 @@ export function App() {
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
+          <Route path="jobs" element={<MyJobs />} />
           <Route path="appointments" element={<div>Appointments</div>} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
