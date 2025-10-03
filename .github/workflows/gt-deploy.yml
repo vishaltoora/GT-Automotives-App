@@ -34,7 +34,7 @@ env:
   REGISTRY_NAME: gtautomotivesregistry
   RESOURCE_GROUP: gt-automotives-prod
   FRONTEND_APP_NAME: gt-automotives-frontend
-  CONTAINER_NAME: gt-automotives-backend-prod
+  BACKEND_APP_NAME: gt-automotives-backend-api
   DISABLE_ERD: true
   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
 
@@ -82,43 +82,25 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Backend Deployment (Container-based with MyPersn pattern)
-      - name: Deploy Backend Container
+      # Backend Deployment (Web App with Docker container)
+      - name: Deploy Backend to Web App
         if: github.event.inputs.deploy_backend == 'true'
         run: |
-          echo "🚀 Deploying backend container with pre-built image..."
+          echo "🚀 Deploying backend to Azure Web App with pre-built image..."
+          echo "🐳 Using Docker image: ${{ env.IMAGE_TAG }}"
 
-          # Clean up existing containers
-          echo "🧹 Cleaning up old backend containers..."
-          BACKEND_CONTAINERS=$(az container list --resource-group ${{ env.RESOURCE_GROUP }} --query "[?contains(name, 'backend') || contains(name, 'gt-backend')].name" --output tsv 2>/dev/null || echo "")
-
-          if [ ! -z "$BACKEND_CONTAINERS" ]; then
-            for container in $BACKEND_CONTAINERS; do
-              echo "🗑️ Deleting container: $container"
-              az container delete \
-                --resource-group ${{ env.RESOURCE_GROUP }} \
-                --name "$container" \
-                --yes || echo "Failed to delete $container"
-            done
-            echo "⏳ Waiting for cleanup to complete..."
-            sleep 30
-          fi
-
-          # Deploy new container with pre-built image
-          echo "🐳 Deploying container with image: ${{ env.IMAGE_TAG }}"
-          az container create \
+          # Update Web App to use new container image
+          az webapp config container set \
+            --name ${{ env.BACKEND_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.CONTAINER_NAME }} \
-            --image ${{ env.IMAGE_TAG }} \
-            --os-type Linux \
-            --dns-name-label gt-automotives-backend-prod \
-            --ports 3000 \
-            --cpu 2 \
-            --memory 4 \
-            --registry-login-server ${{ env.REGISTRY_NAME }}.azurecr.io \
-            --registry-username ${{ env.REGISTRY_NAME }} \
-            --registry-password $(az acr credential show --name ${{ env.REGISTRY_NAME }} --query "passwords[0].value" --output tsv) \
-            --environment-variables \
+            --docker-custom-image-name ${{ env.IMAGE_TAG }} \
+            --docker-registry-server-url https://${{ env.REGISTRY_NAME }}.azurecr.io
+
+          # Update environment variables
+          az webapp config appsettings set \
+            --name ${{ env.BACKEND_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings \
               DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
@@ -128,10 +110,17 @@ jobs:
               FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
               INTERNAL_API_KEY="${{ secrets.INTERNAL_API_KEY }}" \
               HOST="0.0.0.0" \
-              PORT="3000" \
-              NODE_ENV="production"
+              PORT="8080" \
+              NODE_ENV="production" \
+              WEBSITES_PORT="8080"
 
-          echo "✅ Backend container deployment completed"
+          # Restart the Web App to pull new image
+          echo "🔄 Restarting backend Web App..."
+          az webapp restart \
+            --name ${{ env.BACKEND_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
+
+          echo "✅ Backend Web App deployment completed"
 
       # Database Migrations (MyPersn pattern with downloaded source)
       - name: Run Database Migrations
@@ -210,44 +199,41 @@ jobs:
 
           echo "✅ Frontend deployment completed"
 
-      - name: Restart Services
+      - name: Restart Frontend Service
+        if: github.event.inputs.deploy_frontend == 'true'
         run: |
-          echo "🔄 Restarting services..."
-
-          if [ "${{ github.event.inputs.deploy_frontend }}" = "true" ]; then
-            echo "🔄 Restarting frontend App Service..."
-            az webapp restart \
-              --resource-group ${{ env.RESOURCE_GROUP }} \
-              --name ${{ env.FRONTEND_APP_NAME }}
-          fi
-
-          echo "✅ Services restarted successfully"
+          echo "🔄 Restarting frontend App Service..."
+          az webapp restart \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.FRONTEND_APP_NAME }}
+          echo "✅ Frontend restarted successfully"
 
       - name: Verify Deployments
         run: |
           echo "🔍 Verifying deployments..."
 
           # Wait for services to be ready
-          sleep 60
+          sleep 30
 
           # Test backend if deployed
           if [ "${{ github.event.inputs.deploy_backend }}" = "true" ]; then
-            echo "🔍 Testing backend container..."
-            CONTAINER_URL="http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000"
+            echo "🔍 Testing backend Web App..."
+            BACKEND_URL="https://gt-automotives-backend-api.azurewebsites.net"
 
             for i in {1..10}; do
               echo "📊 Backend health check attempt $i..."
 
-              if curl -f -s "$CONTAINER_URL/health" > /dev/null; then
-                echo "✅ Backend is responding (attempt $i)"
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL/health" || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "✅ Backend is responding (HTTP 200, attempt $i)"
                 break
               else
-                echo "⏳ Backend not ready, waiting... (attempt $i/10)"
+                echo "⏳ Backend not ready (HTTP $HTTP_CODE), waiting... (attempt $i/10)"
                 if [ $i -eq 5 ]; then
-                  echo "🔍 Mid-deployment container status:"
-                  az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "instanceView" --output table || echo "Could not retrieve status"
+                  echo "🔍 Mid-deployment Web App status:"
+                  az webapp show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.BACKEND_APP_NAME }} --query "state" --output tsv || echo "Could not retrieve status"
                 fi
-                sleep 30
+                sleep 20
               fi
             done
           fi
@@ -260,7 +246,7 @@ jobs:
             for i in {1..5}; do
               HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL/health" || echo "000")
               if [ "$HTTP_CODE" = "200" ]; then
-                echo "✅ Frontend is responding (attempt $i)"
+                echo "✅ Frontend is responding (HTTP 200, attempt $i)"
                 break
               else
                 echo "⏳ Frontend not ready (HTTP $HTTP_CODE), waiting... (attempt $i/5)"
@@ -271,26 +257,26 @@ jobs:
 
       - name: Create Deployment Summary
         run: |
-          echo "## 🚀 Deployment Summary (MyPersn Pattern)" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Build Number:** \`${{ env.BUILD_NUMBER }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Target Environment:** \`${{ env.TARGET }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Docker Image:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployment Pattern:** MyPersn artifact-based deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Pattern:** Artifact-based Web App deployment" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "**Deployment Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Component status
           if [ "${{ github.event.inputs.deploy_backend }}" = "true" ]; then
-            echo "✅ **Backend:** Deployed from pre-built Docker image" >> $GITHUB_STEP_SUMMARY
-            echo "🐳 **Container URL:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Backend:** Deployed to Azure Web App (B1)" >> $GITHUB_STEP_SUMMARY
+            echo "🐳 **Backend URL:** https://gt-automotives-backend-api.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
           else
             echo "⏭️ **Backend:** Skipped" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ github.event.inputs.deploy_frontend }}" = "true" ]; then
-            echo "✅ **Frontend:** Deployed from pre-built artifact" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Frontend:** Deployed to Azure Web App (B1)" >> $GITHUB_STEP_SUMMARY
           else
             echo "⏭️ **Frontend:** Skipped" >> $GITHUB_STEP_SUMMARY
           fi
@@ -304,21 +290,26 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🌐 Production URLs" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend:** https://gt-automotives.com" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend Health:** http://gt-automotives-backend-prod.canadacentral.azurecontainer.io:3000/health" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend API:** https://gt-automotives-backend-api.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend Health:** https://gt-automotives-backend-api.azurewebsites.net/health" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ⚡ MyPersn Optimizations Applied" >> $GITHUB_STEP_SUMMARY
+          echo "### 💰 Cost Optimization" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Migrated from Container Instance (\$73/mo) to Web App B1 (\$13/mo)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 82% cost reduction on backend hosting" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Total monthly cost: ~\$49-54 (down from \$109-129)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚡ Deployment Optimizations" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ No rebuild during deployment (uses pre-built artifacts)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Artifact-based deployment pattern" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Cached Docker images from build phase" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Fast container recreation with existing images" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Parallel deployment preparation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Pre-built Docker images from build phase" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Fast Web App container updates" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment Completed
         run: |
-          echo "🎉 MyPersn-pattern deployment completed successfully!"
+          echo "🎉 Deployment completed successfully!"
           echo "🏗️ Build: ${{ env.BUILD_NUMBER }}"
           echo "🐳 Docker Image: ${{ env.IMAGE_TAG }}"
-          echo "🌐 Site: https://gt-automotives.com"
-          echo "⚡ Deployed using optimized MyPersn artifact pattern"
-          echo "🚀 No redundant builds - maximum deployment speed achieved!"
+          echo "🌐 Frontend: https://gt-automotives.com"
+          echo "🔧 Backend: https://gt-automotives-backend-api.azurewebsites.net"
+          echo "⚡ Deployed using artifact-based pattern"
+          echo "💰 Cost-optimized Web App B1 deployment"
