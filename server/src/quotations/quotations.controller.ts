@@ -26,7 +26,13 @@ export class QuotationsController {
   @Roles('ADMIN', 'STAFF')
   create(@Body() createQuoteDto: CreateQuoteDto, @Request() req: any) {
     const userId = req.user?.sub || req.user?.id || 'system';
-    console.log('Creating quotation with userId:', userId, 'user object:', req.user);
+    console.log('=== QUOTATION CREATE REQUEST ===');
+    console.log('User ID:', userId);
+    console.log('Request Body:', JSON.stringify(createQuoteDto, null, 2));
+    console.log('DTO Type:', typeof createQuoteDto);
+    console.log('Items:', createQuoteDto.items);
+    console.log('Status:', createQuoteDto.status);
+    console.log('================================');
     return this.quotationsService.create(createQuoteDto, userId);
   }
 
