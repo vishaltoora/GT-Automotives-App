@@ -66,6 +66,9 @@ import CashReport from './pages/invoices/CashReport';
 import QuoteList from './pages/quotations/QuotationList';
 import QuotationDetails from './pages/quotations/QuotationDetails';
 
+// Vendor Pages
+import VendorManagement from './pages/vendors/VendorManagement';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -176,6 +179,7 @@ export function App() {
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
+          <Route path="vendors" element={<VendorManagement />} />
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="payroll/jobs" element={<JobsManagement />} />

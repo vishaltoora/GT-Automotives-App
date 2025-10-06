@@ -38,7 +38,8 @@ import {
   ChevronRight,
   Payment,
   Work,
-  AttachMoney
+  AttachMoney,
+  Business
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -75,6 +76,7 @@ export function AdminLayout() {
     { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
     { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
     { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },
+    { text: 'Vendors', icon: <Business />, path: '/admin/vendors' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
     { divider: true },
     { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
