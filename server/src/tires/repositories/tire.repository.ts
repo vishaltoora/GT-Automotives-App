@@ -104,6 +104,8 @@ export class TireRepository extends BaseRepository<Tire> {
     // Convert Prisma Decimal to number and handle null/undefined for compatibility with TireDto
     const convertedItems: TireDto[] = items.map(tire => ({
       id: tire.id,
+      name: tire.name || undefined,
+      sku: tire.sku || undefined,
       brand: tire.brand.name,
       size: tire.size.size,
       type: tire.type as any, // Convert Prisma enum to DTO enum

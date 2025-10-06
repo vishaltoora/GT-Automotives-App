@@ -11,6 +11,7 @@ export declare enum QuotationItemType {
 export declare class QuotationItemDto {
     id?: string;
     tireId?: string;
+    tireName?: string;
     itemType: QuotationItemType;
     description: string;
     quantity: number;

@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
   IconButton,
   Tooltip,
   CircularProgress,
@@ -15,6 +10,8 @@ import {
   DialogActions,
   Button,
   Typography,
+  Autocomplete,
+  TextField,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -121,27 +118,32 @@ export const ServiceSelect: React.FC<ServiceSelectProps> = ({
   return (
     <>
       <Box sx={{ position: 'relative' }}>
-        <FormControl fullWidth disabled={disabled}>
-          <InputLabel>Select Service</InputLabel>
-          <Select
-            value={value || ''}
-            onChange={(e) => handleServiceSelect(e.target.value)}
-            label="Select Service"
-          >
-            {services.map(service => (
-              <MenuItem key={service.id} value={service.id}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <span>{service.name}</span>
-                  <Chip
-                    label={`$${service.unitPrice}`}
-                    size="small"
-                    color="primary"
-                  />
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Autocomplete
+          options={services}
+          value={selectedService || null}
+          onChange={(event, newValue) => {
+            if (newValue) {
+              handleServiceSelect(newValue.id);
+            }
+          }}
+          getOptionLabel={(service) => service.name}
+          renderOption={(props, service) => (
+            <Box component="li" {...props}>
+              {service.name}
+            </Box>
+          )}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Select Service"
+              placeholder="Type to search..."
+              size="small"
+            />
+          )}
+          size="small"
+          fullWidth
+          disabled={disabled}
+        />
 
         <Box sx={{
           position: 'absolute',

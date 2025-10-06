@@ -36,6 +36,10 @@ export class InvoiceItemDto {
   @IsString()
   tireId?: string;
 
+  @IsOptional()
+  @IsString()
+  tireName?: string;
+
   @IsEnum(InvoiceItemType)
   itemType!: InvoiceItemType;
 

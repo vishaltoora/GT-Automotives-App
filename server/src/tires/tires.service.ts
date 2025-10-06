@@ -121,6 +121,8 @@ export class TiresService {
 
     // Create tire data with relationship connections
     const tireData = {
+      name: createTireDto.name,
+      sku: createTireDto.sku,
       brand: { connect: { id: tireBrand.id } },
       size: { connect: { id: tireSize.id } },
       ...(tireLocation && { location: { connect: { id: tireLocation.id } } }),
@@ -220,6 +222,14 @@ export class TiresService {
     }
 
     // Handle other direct fields
+    if (updateTireDto.name !== undefined) {
+      updateData.name = updateTireDto.name;
+    }
+
+    if (updateTireDto.sku !== undefined) {
+      updateData.sku = updateTireDto.sku;
+    }
+
     if (updateTireDto.type !== undefined) {
       updateData.type = updateTireDto.type;
     }

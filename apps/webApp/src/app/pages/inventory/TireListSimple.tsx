@@ -259,7 +259,8 @@ export function TireListSimple({
         <TableHead>
           <TableRow>
             <TableCell>Image</TableCell>
-            <TableCell>Brand</TableCell>
+            <TableCell>Name/Brand</TableCell>
+            <TableCell>SKU</TableCell>
             <TableCell>Location</TableCell>
             <TableCell>Size</TableCell>
             <TableCell>Type</TableCell>
@@ -297,7 +298,23 @@ export function TireListSimple({
                    tire.type === 'RUN_FLAT' ? '🛡️' : '🛞'}
                 </Box>
               </TableCell>
-              <TableCell>{tire.brand}</TableCell>
+              <TableCell>
+                <Box>
+                  {tire.name && (
+                    <Typography variant="body2" fontWeight="medium">
+                      {tire.name}
+                    </Typography>
+                  )}
+                  <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
+                    {tire.brand}
+                  </Typography>
+                </Box>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                  {tire.sku || '-'}
+                </Typography>
+              </TableCell>
               <TableCell>{tire.location || '-'}</TableCell>
               <TableCell>{tire.size}</TableCell>
               <TableCell>

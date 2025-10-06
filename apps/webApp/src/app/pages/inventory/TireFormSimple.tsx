@@ -75,6 +75,8 @@ export function TireFormSimple() {
   const isEditing = Boolean(id && id !== 'new');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [formData, setFormData] = useState({
+    name: '',
+    sku: '',
     brand: '',
     size: '',
     type: TireType.ALL_SEASON as TireType,
@@ -101,6 +103,8 @@ export function TireFormSimple() {
   useEffect(() => {
     if (tire && isEditing) {
       setFormData({
+        name: tire.name || '',
+        sku: tire.sku || '',
         brand: tire.brand || '',
         size: tire.size || '',
         type: (tire.type as TireType) || TireType.ALL_SEASON,
@@ -224,6 +228,30 @@ export function TireFormSimple() {
                 </Typography>
                 
                 <Grid container spacing={2}>
+                  {/* Name (Optional) */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Tire Name (Optional)"
+                      placeholder="e.g., Michelin Defender"
+                      value={formData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      helperText="Product or model name"
+                    />
+                  </Grid>
+
+                  {/* SKU (Optional) */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="SKU (Optional)"
+                      placeholder="e.g., TIRE-12345"
+                      value={formData.sku}
+                      onChange={(e) => handleChange('sku', e.target.value)}
+                      helperText="Stock keeping unit"
+                    />
+                  </Grid>
+
                   {/* Brand */}
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
@@ -235,7 +263,6 @@ export function TireFormSimple() {
                       helperText={errors.brand}
                     />
                   </Grid>
-
 
                   {/* Size */}
                   <Grid size={{ xs: 12, sm: 6 }}>

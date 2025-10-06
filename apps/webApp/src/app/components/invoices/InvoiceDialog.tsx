@@ -303,7 +303,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
       const invoiceData: any = {
         items: items.map((item) => {
-          const { itemType, description, quantity, unitPrice, tireId } = item;
+          const { itemType, description, quantity, unitPrice, tireId, tireName } = item;
           const itemData: any = {
             itemType,
             description,
@@ -312,6 +312,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           };
           if (tireId) {
             itemData.tireId = tireId;
+          }
+          if (tireName) {
+            itemData.tireName = tireName;
           }
           return itemData;
         }),
@@ -434,6 +437,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         discountAmount: calculation.discountAmount,
         total: calculation.total
       };
+      console.log('Adding item to invoice:', itemWithCalculations);
 
       // For DISCOUNT items, set the correct properties
       if (newItem.itemType === InvoiceItemType.DISCOUNT) {
@@ -468,13 +472,18 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const handleTireSelect = (tireId: string) => {
     const tire = tires.find(t => t.id === tireId);
     if (tire) {
-      setNewItem({
+      console.log('Selected tire:', tire);
+      console.log('Tire name:', tire.name);
+      const newItemData = {
         ...newItem,
         tireId: tire.id,
         itemType: InvoiceItemType.TIRE,
         description: `${tire.brand} ${formatTireType(tire.type)} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
-      });
+        tireName: tire.name || undefined,
+      };
+      console.log('New item data:', newItemData);
+      setNewItem(newItemData);
     }
   };
 

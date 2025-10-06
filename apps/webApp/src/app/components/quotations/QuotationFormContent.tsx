@@ -18,10 +18,10 @@ import {
   Select,
   Card,
   CardContent,
-  Chip,
   Tooltip,
   InputAdornment,
   Typography,
+  Autocomplete,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -136,17 +136,6 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
       default:
         return '🚗';
     }
-  };
-
-  const getConditionChip = (condition: string) => {
-    const conditionMap: { [key: string]: { label: string; color: 'success' | 'warning' | 'error' | 'default' } } = {
-      'NEW': { label: 'New', color: 'success' },
-      'USED_EXCELLENT': { label: 'Used - Excellent', color: 'success' },
-      'USED_GOOD': { label: 'Used - Good', color: 'warning' },
-      'USED_FAIR': { label: 'Used - Fair', color: 'error' },
-    };
-    const config = conditionMap[condition] || { label: condition, color: 'default' };
-    return <Chip label={config.label} color={config.color} size="small" />;
   };
 
   // Set default valid until date (30 days from now) if not set
@@ -284,25 +273,45 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
 
             {newItem.itemType === 'TIRE' ? (
               <Grid size={{ xs: 12, md: 3 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Select Tire</InputLabel>
-                  <Select
-                    value={newItem.tireId || ''}
-                    onChange={(e) => onTireSelect(e.target.value)}
-                    label="Select Tire"
-                  >
-                    {tires.map((tire) => (
-                      <MenuItem key={tire.id} value={tire.id}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                          <span>{getTireEmoji(tire.type)}</span>
-                          <span>{tire.brand} - {tire.size}</span>
-                          {getConditionChip(tire.condition)}
-                          <span style={{ marginLeft: 'auto' }}>${tire.price}</span>
+                <Autocomplete
+                  options={tires}
+                  value={tires.find(t => t.id === newItem.tireId) || null}
+                  onChange={(event, newValue) => {
+                    if (newValue) {
+                      onTireSelect(newValue.id);
+                    }
+                  }}
+                  getOptionLabel={(tire) => {
+                    const name = tire.name || '';
+                    const details = `${tire.brand} - ${tire.size}`;
+                    return name ? `${name} - ${details}` : details;
+                  }}
+                  renderOption={(props, tire) => (
+                    <Box component="li" {...props}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{getTireEmoji(tire.type)}</span>
+                        <Box>
+                          {tire.name && (
+                            <Typography variant="body2" fontWeight="medium">
+                              {tire.name}
+                            </Typography>
+                          )}
+                          <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
+                            {tire.brand} - {tire.size}
+                          </Typography>
                         </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                      </Box>
+                    </Box>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Tire"
+                      placeholder="Type to search..."
+                    />
+                  )}
+                  fullWidth
+                />
               </Grid>
             ) : newItem.itemType === 'SERVICE' ? (
               <Grid size={{ xs: 12, md: 3 }}>
@@ -393,7 +402,16 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                         {item.itemType === 'SERVICE' && <BuildIcon fontSize="small" sx={{ mr: 0.5 }} />}
                         {item.itemType.replace('_', ' ')}
                       </TableCell>
-                      <TableCell>{item.description}</TableCell>
+                      <TableCell>
+                        {(item as any).tireName && (
+                          <Typography variant="body2" fontWeight="medium">
+                            {(item as any).tireName}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                          {item.description}
+                        </Typography>
+                      </TableCell>
                       <TableCell align="center">{item.quantity}</TableCell>
                       <TableCell align="right">${Number(item.unitPrice).toFixed(2)}</TableCell>
                       <TableCell align="right">${(item.quantity * Number(item.unitPrice)).toFixed(2)}</TableCell>

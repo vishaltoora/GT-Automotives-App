@@ -298,7 +298,16 @@ const InvoiceDetails: React.FC = () => {
                       <TableCell>
                         <Chip label={item.itemType} size="small" />
                       </TableCell>
-                      <TableCell>{item.description}</TableCell>
+                      <TableCell>
+                        {(item as any).tireName && (
+                          <Typography variant="body2" fontWeight="medium">
+                            {(item as any).tireName}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                          {item.description}
+                        </Typography>
+                      </TableCell>
                       <TableCell align="right">{item.quantity}</TableCell>
                       <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
                       <TableCell align="right">

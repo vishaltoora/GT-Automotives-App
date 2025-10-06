@@ -17,6 +17,7 @@ export function setClerkTokenGetter(getter: () => Promise<string | null>) {
 export interface InvoiceItem {
   id?: string;
   tireId?: string;
+  tireName?: string;
   tire?: any;
   serviceId?: string;
   itemType: InvoiceItemType;
@@ -486,7 +487,10 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
           <tbody>
             ${invoice.items.map(item => `
               <tr>
-                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.description}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">
+                  ${(item as any).tireName ? `<div style="font-weight: 600; margin-bottom: 2px;">${(item as any).tireName}</div>` : ''}
+                  <div style="${(item as any).tireName ? 'color: #666; font-size: 0.95em;' : ''}">${item.description}</div>
+                </td>
                 <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.itemType}</td>
                 <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.quantity}</td>
                 <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(item.unitPrice)}</td>
@@ -564,10 +568,13 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             <title>Invoice ${invoice.invoiceNumber}</title>
             <style>
               @media print {
-                body { margin: 0; padding: 20px; }
+                body { margin: 0; padding: 10px; }
                 .no-print { display: none; }
-                @page { 
-                  margin: 0.5in; 
+                @page {
+                  margin-top: 0.5in;
+                  margin-right: 0.25in;
+                  margin-bottom: 0.25in;
+                  margin-left: 0.25in;
                   size: A4;
                   @top-left { content: ""; }
                   @top-center { content: ""; }

@@ -5,6 +5,8 @@ export declare enum AdjustmentType {
     SET = "set"
 }
 export declare class CreateTireDto {
+    name?: string;
+    sku?: string;
     brand: string;
     size: string;
     type: TireType;
@@ -19,6 +21,8 @@ export declare class CreateTireDto {
     notes?: string;
 }
 export declare class UpdateTireDto {
+    name?: string;
+    sku?: string;
     brand?: string;
     size?: string;
     type?: TireType;
@@ -34,6 +38,8 @@ export declare class UpdateTireDto {
 }
 export declare class TireResponseDto {
     id: string;
+    name?: string;
+    sku?: string;
     brand: string;
     size: string;
     type: TireType;
@@ -85,6 +91,8 @@ export declare class TireSearchDto extends TireSearchParamsDto {
 }
 export declare class TireDto {
     id: string;
+    name?: string;
+    sku?: string;
     brand: string;
     size: string;
     type: TireType;

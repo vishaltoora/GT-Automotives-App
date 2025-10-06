@@ -15,6 +15,7 @@ export function setClerkTokenGetter(getter: () => Promise<string | null>) {
 export interface QuoteItem {
   id?: string;
   tireId?: string;
+  tireName?: string;
   tire?: any;
   itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER' | 'LEVY';
   description: string;
@@ -195,8 +196,11 @@ class QuoteService {
           @media print {
             body { margin: 0; padding: 10px; }
             .no-print { display: none; }
-            @page { 
-              margin: 0.3in; 
+            @page {
+              margin-top: 0.5in;
+              margin-right: 0.25in;
+              margin-bottom: 0.25in;
+              margin-left: 0.25in;
               size: A4;
               @top-left { content: ""; }
               @top-center { content: ""; }
@@ -339,7 +343,10 @@ class QuoteService {
           <tbody>
             ${quote.items.map(item => `
               <tr>
-                <td>${item.description}</td>
+                <td>
+                  ${(item as any).tireName ? `<div style="font-weight: 600; margin-bottom: 2px;">${(item as any).tireName}</div>` : ''}
+                  <div style="${(item as any).tireName ? 'color: #666; font-size: 0.95em;' : ''}">${item.description}</div>
+                </td>
                 <td>${item.itemType.replace('_', ' ')}</td>
                 <td>${item.quantity}</td>
                 <td>${formatCurrency(item.unitPrice)}</td>

@@ -89,6 +89,8 @@ model Vehicle {
 
 model Tire {
   id            String          @id @default(cuid())
+  name          String?
+  sku           String?
   brandId       String
   sizeId        String
   locationId    String?
@@ -108,6 +110,7 @@ model Tire {
   location      Location?       @relation(fields: [locationId], references: [id])
 
   @@index([brandId, sizeId])
+  @@index([sku])
 }
 
 model TireBrand {
@@ -194,6 +197,7 @@ model InvoiceItem {
   id          String          @id @default(cuid())
   invoiceId   String
   tireId      String?
+  tireName    String?
   itemType    InvoiceItemType
   description String
   quantity    Int
@@ -241,6 +245,7 @@ model QuotationItem {
   id          String          @id @default(cuid())
   quotationId String
   tireId      String?
+  tireName    String?
   itemType    InvoiceItemType
   description String
   quantity    Int

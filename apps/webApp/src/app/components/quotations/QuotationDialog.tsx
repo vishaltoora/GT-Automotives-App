@@ -143,6 +143,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
         tireId,
         description: `${tire.brand} - ${tire.size}`,
         unitPrice: parseFloat(tire.price),
+        tireName: tire.name || undefined,
       });
     }
   };

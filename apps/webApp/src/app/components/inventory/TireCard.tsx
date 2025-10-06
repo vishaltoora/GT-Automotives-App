@@ -179,13 +179,24 @@ export function TireCard({
         </Box>
         
         <CardContent sx={{ flexGrow: 1, p: 2 }}>
-          <Typography variant="h6" component="h3" noWrap>
+          {tire.name && (
+            <Typography variant="h6" component="h3" noWrap fontWeight="medium">
+              {tire.name}
+            </Typography>
+          )}
+          <Typography variant={tire.name ? "body2" : "h6"} component={tire.name ? "p" : "h3"} color={tire.name ? "text.secondary" : "inherit"} noWrap>
             {tire.brand}
           </Typography>
-          
+
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {tire.size}
           </Typography>
+
+          {tire.sku && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', display: 'block' }} gutterBottom>
+              SKU: {tire.sku}
+            </Typography>
+          )}
 
           {tire.location && (
             <Typography variant="body2" color="primary" gutterBottom sx={{ fontWeight: 500 }}>
@@ -307,13 +318,24 @@ export function TireCard({
       </Box>
       
       <CardContent sx={{ flexGrow: 1 }}>
-        <Typography variant="h5" component="h2" gutterBottom>
+        {tire.name && (
+          <Typography variant="h5" component="h2" gutterBottom fontWeight="medium">
+            {tire.name}
+          </Typography>
+        )}
+        <Typography variant={tire.name ? "h6" : "h5"} component={tire.name ? "h3" : "h2"} color={tire.name ? "text.secondary" : "inherit"} gutterBottom>
           {tire.brand}
         </Typography>
-        
+
         <Typography variant="h6" color="text.secondary" gutterBottom>
           {tire.size}
         </Typography>
+
+        {tire.sku && (
+          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', mb: 1 }}>
+            SKU: {tire.sku}
+          </Typography>
+        )}
 
         {tire.location && (
           <Typography variant="body1" color="primary" gutterBottom sx={{ fontWeight: 500, mb: 2 }}>

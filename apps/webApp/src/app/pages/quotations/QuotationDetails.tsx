@@ -308,7 +308,16 @@ const QuotationDetails: React.FC = () => {
             <TableBody>
               {quotation.items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.description}</TableCell>
+                  <TableCell>
+                    {(item as any).tireName && (
+                      <Typography variant="body2" fontWeight="medium">
+                        {(item as any).tireName}
+                      </Typography>
+                    )}
+                    <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                      {item.description}
+                    </Typography>
+                  </TableCell>
                   <TableCell>{item.itemType.replace('_', ' ')}</TableCell>
                   <TableCell align="center">{item.quantity}</TableCell>
                   <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>

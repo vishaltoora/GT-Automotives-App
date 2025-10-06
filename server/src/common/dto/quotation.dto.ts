@@ -21,6 +21,10 @@ export class QuotationItemDto {
   @IsString()
   tireId?: string;
 
+  @IsOptional()
+  @IsString()
+  tireName?: string;
+
   @IsEnum(QuotationItemType)
   itemType!: QuotationItemType;
 

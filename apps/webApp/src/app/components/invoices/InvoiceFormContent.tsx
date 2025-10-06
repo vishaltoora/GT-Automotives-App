@@ -621,28 +621,52 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
 
                 {newItem.itemType === 'TIRE' ? (
                   <Grid size={{ xs: 12, md: 4 }}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Select Tire</InputLabel>
-                      <Select
-                        value={newItem.tireId || ''}
-                        onChange={(e) => onTireSelect(e.target.value)}
-                        label="Select Tire"
-                      >
-                        {tires.filter(t => t.quantity > 0).map(tire => (
-                          <MenuItem key={tire.id} value={tire.id}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                              <span>{tire.brand} {formatTireType(tire.type)} - {tire.size}</span>
-                              <Chip
-                                label={`Stock: ${tire.quantity}`}
-                                size="small"
-                                color={tire.quantity < 5 ? 'warning' : 'success'}
-                                sx={{ ml: 1 }}
-                              />
+                    <Autocomplete
+                      options={tires.filter(t => t.quantity > 0)}
+                      value={tires.find(t => t.id === newItem.tireId) || null}
+                      onChange={(event, newValue) => {
+                        if (newValue) {
+                          onTireSelect(newValue.id);
+                        }
+                      }}
+                      getOptionLabel={(tire) => {
+                        const name = tire.name || '';
+                        const details = `${tire.brand} ${formatTireType(tire.type)} - ${tire.size}`;
+                        return name ? `${name} - ${details}` : details;
+                      }}
+                      renderOption={(props, tire) => (
+                        <Box component="li" {...props}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                            <Box>
+                              {tire.name && (
+                                <Typography variant="body2" fontWeight="medium">
+                                  {tire.name}
+                                </Typography>
+                              )}
+                              <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
+                                {tire.brand} {formatTireType(tire.type)} - {tire.size}
+                              </Typography>
                             </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                            <Chip
+                              label={`Stock: ${tire.quantity}`}
+                              size="small"
+                              color={tire.quantity < 5 ? 'warning' : 'success'}
+                              sx={{ ml: 1 }}
+                            />
+                          </Box>
+                        </Box>
+                      )}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Select Tire"
+                          placeholder="Type to search..."
+                          size="small"
+                        />
+                      )}
+                      size="small"
+                      fullWidth
+                    />
                   </Grid>
                 ) : newItem.itemType === 'SERVICE' ? (
                   <Grid size={{ xs: 12, md: 4 }}>
@@ -792,7 +816,16 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             }}
                           />
                         </TableCell>
-                        <TableCell>{item.description}</TableCell>
+                        <TableCell>
+                          {(item as any).tireName && (
+                            <Typography variant="body2" fontWeight="medium">
+                              {(item as any).tireName}
+                            </Typography>
+                          )}
+                          <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                            {item.description}
+                          </Typography>
+                        </TableCell>
                         <TableCell align="center">{item.quantity}</TableCell>
                         <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
                         <TableCell align="right">

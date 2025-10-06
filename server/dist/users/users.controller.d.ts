@@ -3,13 +3,13 @@ export declare class UsersController {
     private usersService;
     constructor(usersService: UsersService);
     findAll(roleId?: string, isActive?: string): Promise<({
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -17,13 +17,13 @@ export declare class UsersController {
         role: import("@prisma/client").Role;
     })[]>;
     findById(id: string): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -36,13 +36,13 @@ export declare class UsersController {
         lastName: string;
         roleId: string;
     }, currentUser: any): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -59,13 +59,13 @@ export declare class UsersController {
         password: string;
     }, currentUser: any): Promise<{
         clerkCreated: boolean;
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -77,13 +77,13 @@ export declare class UsersController {
         lastName?: string;
         isActive?: boolean;
     }, currentUser: any): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -91,13 +91,13 @@ export declare class UsersController {
         role: import("@prisma/client").Role;
     }>;
     assignRole(id: string, roleId: string, currentUser: any): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -105,13 +105,13 @@ export declare class UsersController {
         role: import("@prisma/client").Role;
     }>;
     delete(id: string, currentUser: any): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -124,13 +124,13 @@ export declare class UsersController {
     }, currentUser: any): Promise<void>;
     resetPassword(id: string, newPassword: string, currentUser: any): Promise<void>;
     getMyProfile(currentUser: any): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -141,13 +141,13 @@ export declare class UsersController {
         firstName?: string;
         lastName?: string;
     }, currentUser: any): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;

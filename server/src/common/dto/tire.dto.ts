@@ -9,6 +9,14 @@ export enum AdjustmentType {
 }
 
 export class CreateTireDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
   @IsString()
   brand!: string;
 
@@ -57,6 +65,14 @@ export class CreateTireDto {
 }
 
 export class UpdateTireDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
   @IsOptional()
   @IsString()
   brand?: string;
@@ -113,6 +129,14 @@ export class UpdateTireDto {
 export class TireResponseDto {
   @IsString()
   id!: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  sku?: string;
 
   @IsString()
   brand!: string;
@@ -288,6 +312,14 @@ export class TireSearchDto extends TireSearchParamsDto {}
 export class TireDto {
   @IsString()
   id!: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  sku?: string;
 
   @IsString()
   brand!: string;

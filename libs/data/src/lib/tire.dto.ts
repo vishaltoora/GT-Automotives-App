@@ -22,6 +22,14 @@ export enum AdjustmentType {
 }
 
 export class CreateTireDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
   @IsString()
   brand!: string;
 
@@ -69,6 +77,14 @@ export class CreateTireDto {
 }
 
 export class UpdateTireDto implements Partial<CreateTireDto> {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
   @IsOptional()
   @IsString()
   brand?: string;
@@ -124,6 +140,8 @@ export class UpdateTireDto implements Partial<CreateTireDto> {
 
 export interface TireResponseDto {
   id: string;
+  name?: string;
+  sku?: string;
   brand: string;
   size: string;
   type: TireType;

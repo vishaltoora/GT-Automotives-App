@@ -10,6 +10,7 @@ export declare enum InvoiceItemType {
 export declare class InvoiceItemDto {
     id?: string;
     tireId?: string;
+    tireName?: string;
     itemType: InvoiceItemType;
     description: string;
     quantity: number;

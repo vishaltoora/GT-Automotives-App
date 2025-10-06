@@ -78,29 +78,9 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   useAuth();
   const isEditMode = !!tire;
 
-  // Function to ensure we have a valid auth token
-  const ensureValidToken = async () => {
-    let token = localStorage.getItem('authToken');
-    
-    if (!token && window.Clerk?.session) {
-      try {
-        token = await window.Clerk.session.getToken();
-        if (token) {
-          localStorage.setItem('authToken', token);
-        }
-      } catch (error) {
-        throw new Error('Authentication required');
-      }
-    }
-    
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
-    
-    return token;
-  };
-
   const [formData, setFormData] = useState<CreateTireDto>({
+    name: '',
+    sku: '',
     brand: '',
     size: '',
     type: TireType.ALL_SEASON as any,
@@ -120,6 +100,8 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     if (open) {
       if (tire) {
         setFormData({
+          name: tire.name || '',
+          sku: tire.sku || '',
           brand: tire.brand || '',
           size: tire.size || '',
           type: tire.type,
@@ -134,6 +116,8 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
         });
       } else {
         setFormData({
+          name: '',
+          sku: '',
           brand: '',
           size: '',
           type: TireType.ALL_SEASON as any,
@@ -153,8 +137,6 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateTireDto) => {
-      // Ensure we have a valid token before making the request
-      await ensureValidToken();
       return TireService.createTire(data);
     },
     onSuccess: () => {
@@ -171,8 +153,6 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
 
   const updateMutation = useMutation({
     mutationFn: async (data: UpdateTireDto) => {
-      // Ensure we have a valid token before making the request
-      await ensureValidToken();
       return TireService.updateTire(tire!.id, data);
     },
     onSuccess: () => {
@@ -205,12 +185,22 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
 
     // Clean up optional fields before submission
     const cleanedData = { ...formData };
-    
+
+    // Handle name field - if empty string, remove it (optional field)
+    if (!cleanedData.name || cleanedData.name.trim() === '') {
+      delete (cleanedData as any).name;
+    }
+
+    // Handle sku field - if empty string, remove it (optional field)
+    if (!cleanedData.sku || cleanedData.sku.trim() === '') {
+      delete (cleanedData as any).sku;
+    }
+
     // Handle cost field - if 0 or empty, remove it (optional field)
     if (!cleanedData.cost || cleanedData.cost <= 0) {
       delete (cleanedData as any).cost;
     }
-    
+
     // Handle imageUrl field - if empty string, remove it (optional field)
     if (!cleanedData.imageUrl || cleanedData.imageUrl.trim() === '') {
       delete cleanedData.imageUrl;
@@ -221,7 +211,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
       delete cleanedData.location;
     }
 
-    // Handle notes field - if empty string, remove it (optional field)  
+    // Handle notes field - if empty string, remove it (optional field)
     if (!cleanedData.notes || cleanedData.notes.trim() === '') {
       delete cleanedData.notes;
     }
@@ -280,6 +270,32 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
           )}
 
           <Grid container spacing={2}>
+            {/* Name (Optional) */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                label="Tire Name (Optional)"
+                fullWidth
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                placeholder="e.g., Michelin Defender"
+                helperText="Product or model name"
+                disabled={isLoading}
+              />
+            </Grid>
+
+            {/* SKU (Optional) */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                label="SKU (Optional)"
+                fullWidth
+                value={formData.sku}
+                onChange={(e) => handleChange('sku', e.target.value)}
+                placeholder="e.g., TIRE-12345"
+                helperText="Stock keeping unit"
+                disabled={isLoading}
+              />
+            </Grid>
+
             <Grid size={{ xs: 12, md: 6 }}>
               <BrandSelect
                 value={formData.brand}

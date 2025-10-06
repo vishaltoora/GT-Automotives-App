@@ -11,13 +11,13 @@ export declare class AuthService {
     private configService;
     constructor(userRepository: UserRepository, roleRepository: RoleRepository, auditRepository: AuditRepository, jwtService: JwtService, configService: ConfigService);
     validateClerkUser(clerkUserId: string): Promise<({
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -33,13 +33,13 @@ export declare class AuthService {
         phone?: string;
     }): Promise<void>;
     validateToken(token: string): Promise<{
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -58,12 +58,12 @@ export declare class AuthService {
         firstName: string | null;
         lastName: string | null;
         role: {
+            name: import("@prisma/client").$Enums.RoleName;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: import("@prisma/client").$Enums.RoleName;
-            description: string | null;
             displayName: string;
+            description: string | null;
         };
         isActive: boolean;
     }>;
