@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/gt-backend
+  IMAGE_NAME: ${{ github.repository_owner }}/gt-backend
   RESOURCE_GROUP: gt-automotives-prod
   DISABLE_ERD: true
   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
