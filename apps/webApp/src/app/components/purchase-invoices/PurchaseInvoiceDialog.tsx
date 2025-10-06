@@ -139,15 +139,23 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
     }
   };
 
-  const handleVendorChange = (_: any, value: Vendor | null) => {
-    setSelectedVendor(value);
-    if (value) {
+  const handleVendorChange = (_: any, value: string | Vendor | null) => {
+    if (typeof value === 'string') {
+      setSelectedVendor(null);
+      setFormData({
+        ...formData,
+        vendorId: '',
+        vendorName: value,
+      });
+    } else if (value) {
+      setSelectedVendor(value);
       setFormData({
         ...formData,
         vendorId: value.id,
         vendorName: value.name,
       });
     } else {
+      setSelectedVendor(null);
       setFormData({
         ...formData,
         vendorId: '',
@@ -199,7 +207,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Invoice Number"
@@ -209,10 +217,10 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <Autocomplete
                 options={vendors}
-                getOptionLabel={(option) => option.name}
+                getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
                 value={selectedVendor}
                 onChange={handleVendorChange}
                 renderInput={(params) => (
@@ -227,7 +235,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <TextField
                 fullWidth
                 required
@@ -239,7 +247,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 select
@@ -256,7 +264,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               </TextField>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 required
@@ -268,7 +276,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 type="date"
@@ -279,7 +287,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 required
@@ -291,7 +299,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 type="number"
@@ -302,7 +310,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 required
@@ -314,7 +322,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 select
@@ -331,7 +339,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               </TextField>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 select
@@ -349,7 +357,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
             </Grid>
 
             {formData.status === 'PAID' && (
-              <Grid item xs={12}>
+              <Grid xs={12}>
                 <TextField
                   fullWidth
                   type="date"
@@ -361,7 +369,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               </Grid>
             )}
 
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <TextField
                 fullWidth
                 label="Notes"
@@ -373,7 +381,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
             </Grid>
 
             {invoice && (
-              <Grid item xs={12}>
+              <Grid xs={12}>
                 <Box sx={{ border: '1px dashed', borderColor: 'divider', p: 2, borderRadius: 1 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Invoice Image

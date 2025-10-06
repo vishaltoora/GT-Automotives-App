@@ -1,12 +1,13 @@
 import axios from 'axios';
 import {
-  PurchaseInvoiceDto,
-  CreatePurchaseInvoiceDto,
-  UpdatePurchaseInvoiceDto,
-  PurchaseInvoiceListResponse,
-  PurchaseCategory,
-  PurchaseInvoiceStatus,
+  ExpenseInvoiceDto,
+  CreateExpenseInvoiceDto,
+  UpdateExpenseInvoiceDto,
+  ExpenseInvoiceListResponse,
+  ExpenseCategory,
+  ExpenseInvoiceStatus,
   PaymentMethod,
+  RecurringPeriod,
 } from '@gt-automotive/data';
 
 // @ts-ignore
@@ -19,7 +20,7 @@ const apiClient = axios.create({
   },
 });
 
-// Add token interceptor for authentication
+// Add token interceptor
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -41,33 +42,38 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Re-export types for convenience
-export type PurchaseInvoice = PurchaseInvoiceDto;
-export type { 
-  CreatePurchaseInvoiceDto,
-  UpdatePurchaseInvoiceDto,
-  PurchaseInvoiceListResponse,
-  PurchaseCategory,
-  PurchaseInvoiceStatus,
+export type ExpenseInvoice = ExpenseInvoiceDto;
+export type {
+  CreateExpenseInvoiceDto,
+  UpdateExpenseInvoiceDto,
+  ExpenseInvoiceListResponse,
+  ExpenseCategory,
+  ExpenseInvoiceStatus,
   PaymentMethod,
+  RecurringPeriod,
 };
 
+
+export interface ExpenseInvoice {
+  id: string;
+  invoiceNumber?: string;
+  vendorId?: string;
   vendorName: string;
   description: string;
   invoiceDate: string;
-  dueDate?: string;
   amount: number;
   taxAmount?: number;
   totalAmount: number;
-  category: PurchaseCategory;
-  status: PurchaseInvoiceStatus;
+  category: ExpenseCategory;
+  status: ExpenseInvoiceStatus;
   paymentDate?: string;
   paymentMethod?: PaymentMethod;
+  isRecurring: boolean;
+  recurringPeriod?: RecurringPeriod;
   notes?: string;
   imageUrl?: string;
   imageName?: string;
@@ -84,72 +90,74 @@ export type {
   };
 }
 
-export interface CreatePurchaseInvoiceDto {
+export interface CreateExpenseInvoiceDto {
   invoiceNumber?: string;
   vendorId?: string;
   vendorName: string;
   description: string;
   invoiceDate: string;
-  dueDate?: string;
   amount: number;
   taxAmount?: number;
   totalAmount: number;
-  category: PurchaseCategory;
-  status?: PurchaseInvoiceStatus;
+  category: ExpenseCategory;
+  status?: ExpenseInvoiceStatus;
   paymentDate?: string;
   paymentMethod?: PaymentMethod;
+  isRecurring?: boolean;
+  recurringPeriod?: RecurringPeriod;
   notes?: string;
   createdBy: string;
 }
 
-export interface PurchaseInvoiceListResponse {
-  data: PurchaseInvoice[];
+export interface ExpenseInvoiceListResponse {
+  data: ExpenseInvoice[];
   total: number;
   page: number;
   limit: number;
 }
 
-const purchaseInvoiceService = {
+const expenseInvoiceService = {
   async getAll(filters?: {
     vendorId?: string;
-    category?: PurchaseCategory;
-    status?: PurchaseInvoiceStatus;
+    category?: ExpenseCategory;
+    status?: ExpenseInvoiceStatus;
+    isRecurring?: boolean;
     startDate?: string;
     endDate?: string;
     page?: number;
     limit?: number;
-  }): Promise<PurchaseInvoiceListResponse> {
-    const response = await apiClient.get('/purchase-invoices', {
+  }): Promise<ExpenseInvoiceListResponse> {
+    const response = await apiClient.get('/expense-invoices', {
       params: filters,
     });
     return response.data;
   },
 
-  async getById(id: string): Promise<PurchaseInvoice> {
-    const response = await apiClient.get(`/purchase-invoices/${id}`);
+  async getById(id: string): Promise<ExpenseInvoice> {
+    const response = await apiClient.get(`/expense-invoices/${id}`);
     return response.data;
   },
 
-  async create(data: CreatePurchaseInvoiceDto): Promise<PurchaseInvoice> {
-    const response = await apiClient.post('/purchase-invoices', data);
+  async create(data: CreateExpenseInvoiceDto): Promise<ExpenseInvoice> {
+    const response = await apiClient.post('/expense-invoices', data);
     return response.data;
   },
 
-  async update(id: string, data: Partial<CreatePurchaseInvoiceDto>): Promise<PurchaseInvoice> {
-    const response = await apiClient.put(`/purchase-invoices/${id}`, data);
+  async update(id: string, data: Partial<CreateExpenseInvoiceDto>): Promise<ExpenseInvoice> {
+    const response = await apiClient.put(`/expense-invoices/${id}`, data);
     return response.data;
   },
 
-  async delete(id: string): Promise<PurchaseInvoice> {
-    const response = await apiClient.delete(`/purchase-invoices/${id}`);
+  async delete(id: string): Promise<ExpenseInvoice> {
+    const response = await apiClient.delete(`/expense-invoices/${id}`);
     return response.data;
   },
 
-  async uploadImage(id: string, file: File): Promise<PurchaseInvoice> {
+  async uploadImage(id: string, file: File): Promise<ExpenseInvoice> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await apiClient.post(`/purchase-invoices/${id}/upload`, formData, {
+    const response = await apiClient.post(`/expense-invoices/${id}/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -157,10 +165,10 @@ const purchaseInvoiceService = {
     return response.data;
   },
 
-  async deleteImage(id: string): Promise<PurchaseInvoice> {
-    const response = await apiClient.delete(`/purchase-invoices/${id}/image`);
+  async deleteImage(id: string): Promise<ExpenseInvoice> {
+    const response = await apiClient.delete(`/expense-invoices/${id}/image`);
     return response.data;
   },
 };
 
-export default purchaseInvoiceService;
+export default expenseInvoiceService;

@@ -69,7 +69,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
       const response = await purchaseInvoiceService.getAll(filterParams);
       setInvoices(response.data);
     } catch (error) {
-      showError(error, 'Failed to load purchase invoices');
+      showError('Failed to load purchase invoices');
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
         await purchaseInvoiceService.delete(invoice.id);
         loadInvoices();
       } catch (error) {
-        showError(error, 'Failed to delete purchase invoice');
+        showError('Failed to delete purchase invoice');
       }
     }
   };
@@ -120,7 +120,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
       setDialogOpen(false);
       loadInvoices();
     } catch (error) {
-      showError(error, `Failed to ${selectedInvoice ? 'update' : 'create'} purchase invoice`);
+      showError(`Failed to ${selectedInvoice ? 'update' : 'create'} purchase invoice`);
     }
   };
 
@@ -129,7 +129,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
       await purchaseInvoiceService.uploadImage(invoiceId, file);
       loadInvoices();
     } catch (error) {
-      showError(error, 'Failed to upload image');
+      showError('Failed to upload image');
     }
   };
 
@@ -175,7 +175,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
           <Typography variant="h6">Filters</Typography>
         </Box>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               select
@@ -191,7 +191,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               select
@@ -207,7 +207,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               type="date"
@@ -217,7 +217,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               type="date"

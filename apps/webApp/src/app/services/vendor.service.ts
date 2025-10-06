@@ -1,4 +1,10 @@
 import axios from 'axios';
+import {
+  VendorDto,
+  CreateVendorDto,
+  UpdateVendorDto,
+  VendorListResponse,
+} from '@gt-automotive/data';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -39,6 +45,10 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Re-export types for convenience
+export type Vendor = VendorDto;
+export type { CreateVendorDto, UpdateVendorDto, VendorListResponse };
 
 export interface Vendor {
   id: string;

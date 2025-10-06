@@ -47,7 +47,7 @@ const VendorManagement: React.FC = () => {
       const response = await vendorService.getAll();
       setVendors(response.data);
     } catch (error) {
-      showError(error, 'Failed to load vendors');
+      showError('Failed to load vendors');
     } finally {
       setLoading(false);
     }
@@ -60,7 +60,7 @@ const VendorManagement: React.FC = () => {
         const results = await vendorService.search(query, 50);
         setVendors(results);
       } catch (error) {
-        showError(error, 'Search failed');
+        showError('Search failed');
       }
     } else {
       loadVendors();
@@ -92,7 +92,7 @@ const VendorManagement: React.FC = () => {
         await vendorService.delete(vendor.id);
         loadVendors();
       } catch (error) {
-        showError(error, 'Failed to delete vendor');
+        showError('Failed to delete vendor');
       }
     }
   };
@@ -107,7 +107,7 @@ const VendorManagement: React.FC = () => {
       setDialogOpen(false);
       loadVendors();
     } catch (error) {
-      showError(error, `Failed to ${selectedVendor ? 'update' : 'create'} vendor`);
+      showError(`Failed to ${selectedVendor ? 'update' : 'create'} vendor`);
     }
   };
 
