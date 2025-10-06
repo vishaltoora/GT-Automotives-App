@@ -14,6 +14,10 @@ env:
   DISABLE_ERD: true
   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   Build:
     runs-on: ubuntu-latest
