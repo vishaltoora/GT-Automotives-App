@@ -15,6 +15,11 @@ import { JobsModule } from '../jobs/jobs.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { HealthModule } from '../health/health.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { CommonModule } from '../common/common.module';
+import { VendorsModule } from '../vendors/vendors.module';
+import { PurchaseInvoicesModule } from '../purchase-invoices/purchase-invoices.module';
+import { ExpenseInvoicesModule } from '../expense-invoices/expense-invoices.module';
+import { ReportsModule } from '../reports/reports.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -24,6 +29,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+    CommonModule,
     AuthModule,
     UsersModule,
     TiresModule,
@@ -36,6 +42,10 @@ import { RoleGuard } from '../auth/guards/role.guard';
     PaymentsModule,
     HealthModule,
     DashboardModule,
+    VendorsModule,
+    PurchaseInvoicesModule,
+    ExpenseInvoicesModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [

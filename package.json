@@ -93,6 +93,8 @@
     "libs/*"
   ],
   "dependencies": {
+    "@azure/identity": "^4.12.0",
+    "@azure/storage-blob": "^12.28.0",
     "@clerk/backend": "^2.7.1",
     "@clerk/clerk-react": "^5.42.0",
     "@clerk/clerk-sdk-node": "^5.1.6",

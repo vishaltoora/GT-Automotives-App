@@ -276,7 +276,10 @@
       "Bash(if grep -q \"declare global\" \"$file\")",
       "Bash(then)",
       "Bash(fi)",
-      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" NODE_ENV=development yarn db:seed)"
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" NODE_ENV=development yarn db:seed)",
+      "Bash(gh label:*)",
+      "Bash(gh issue:*)",
+      "Bash(__NEW_LINE__ gh issue close 41 --reason \"completed\")"
     ],
     "deny": [],
     "ask": []
