@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, RecurringPeriod } from '@prisma/client';
 import {
   ExpenseReportFilterDto,
   ExpenseReportResponseDto,
@@ -208,7 +208,7 @@ export class ReportsService {
         existing.pendingAmount += Number(purchase.totalAmount);
       }
 
-      vendorMap.set(key, existing);
+      vendorMap.set(key, existing as VendorSummaryDto);
     }
 
     // Aggregate expenses by vendor
@@ -235,7 +235,7 @@ export class ReportsService {
         existing.pendingAmount += Number(expense.totalAmount);
       }
 
-      vendorMap.set(key, existing);
+      vendorMap.set(key, existing as VendorSummaryDto);
     }
 
     // Sort by total spending and return top 10
@@ -307,11 +307,11 @@ export class ReportsService {
       description: expense.description,
       category: expense.category,
       amount: Number(expense.totalAmount),
-      recurringPeriod: expense.recurringPeriod || 'MONTHLY',
+      recurringPeriod: (expense.recurringPeriod as RecurringPeriod) || 'MONTHLY',
       lastPaymentDate: expense.paymentDate,
-      nextDueDate: this.calculateNextDueDate(expense.invoiceDate, expense.recurringPeriod),
+      nextDueDate: this.calculateNextDueDate(expense.invoiceDate, expense.recurringPeriod || undefined),
       status: expense.status,
-    }));
+    })) as RecurringExpenseSummaryDto[];
   }
 
   private calculateNextDueDate(lastDate: Date, period?: string): Date {

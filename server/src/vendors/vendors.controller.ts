@@ -16,13 +16,13 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
-@Controller('vendors')
+@Controller('api/vendors')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
   @Post()
-  @Roles(['ADMIN'])
+  @Roles('ADMIN')
   async create(
     @Body(ValidationPipe) createVendorDto: CreateVendorDto,
   ): Promise<VendorResponseDto> {
@@ -30,7 +30,7 @@ export class VendorsController {
   }
 
   @Get()
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -46,7 +46,7 @@ export class VendorsController {
   }
 
   @Get('search')
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async search(
     @Query(ValidationPipe) searchDto: VendorSearchDto,
   ): Promise<VendorResponseDto[]> {
@@ -56,19 +56,19 @@ export class VendorsController {
   }
 
   @Get('active')
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async findActive(): Promise<VendorResponseDto[]> {
     return this.vendorsService.findActive();
   }
 
   @Get(':id')
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async findOne(@Param('id') id: string): Promise<VendorResponseDto> {
     return this.vendorsService.findOne(id);
   }
 
   @Put(':id')
-  @Roles(['ADMIN'])
+  @Roles('ADMIN')
   async update(
     @Param('id') id: string,
     @Body(ValidationPipe) updateVendorDto: UpdateVendorDto,
@@ -77,7 +77,7 @@ export class VendorsController {
   }
 
   @Delete(':id')
-  @Roles(['ADMIN'])
+  @Roles('ADMIN')
   async remove(@Param('id') id: string): Promise<VendorResponseDto> {
     return this.vendorsService.remove(id);
   }

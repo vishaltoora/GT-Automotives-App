@@ -175,7 +175,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
           <Typography variant="h6">Filters</Typography>
         </Box>
         <Grid container spacing={2}>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <TextField
               fullWidth
               select
@@ -191,7 +191,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <TextField
               fullWidth
               select
@@ -207,7 +207,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <TextField
               fullWidth
               type="date"
@@ -217,7 +217,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <TextField
               fullWidth
               type="date"

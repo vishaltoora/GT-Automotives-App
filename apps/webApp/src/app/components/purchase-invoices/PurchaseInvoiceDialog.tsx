@@ -15,11 +15,11 @@ import {
   Alert,
 } from '@mui/material';
 import { CloudUpload as UploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { PaymentMethod } from '@gt-automotive/data';
 import {
   PurchaseInvoice,
   PurchaseCategory,
   PurchaseInvoiceStatus,
-  PaymentMethod,
 } from '../../services/purchase-invoice.service';
 import vendorService, { Vendor } from '../../services/vendor.service';
 
@@ -33,13 +33,13 @@ interface PurchaseInvoiceDialogProps {
 
 const categories: PurchaseCategory[] = ['TIRES', 'PARTS', 'TOOLS', 'SUPPLIES', 'OTHER'];
 const statuses: PurchaseInvoiceStatus[] = ['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
-const paymentMethods: PaymentMethod[] = [
-  'CASH',
-  'CREDIT_CARD',
-  'DEBIT_CARD',
-  'E_TRANSFER',
-  'CHEQUE',
-  'OTHER',
+const paymentMethods = [
+  PaymentMethod.CASH,
+  PaymentMethod.CREDIT_CARD,
+  PaymentMethod.DEBIT_CARD,
+  PaymentMethod.CHECK,
+  PaymentMethod.E_TRANSFER,
+  PaymentMethod.FINANCING,
 ];
 
 const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
@@ -207,7 +207,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <Grid container spacing={2}>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Invoice Number"
@@ -217,7 +217,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
                 options={vendors}
                 getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
@@ -235,7 +235,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 required
@@ -247,7 +247,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth
                 select
@@ -264,7 +264,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               </TextField>
             </Grid>
 
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth
                 required
@@ -276,7 +276,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth
                 type="date"
@@ -287,7 +287,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth
                 required
@@ -299,7 +299,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -310,7 +310,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth
                 required
@@ -322,7 +322,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               />
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 select
@@ -339,7 +339,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               </TextField>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 select
@@ -357,7 +357,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
             </Grid>
 
             {formData.status === 'PAID' && (
-              <Grid xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   type="date"
@@ -369,7 +369,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
               </Grid>
             )}
 
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Notes"
@@ -381,7 +381,7 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
             </Grid>
 
             {invoice && (
-              <Grid xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Box sx={{ border: '1px dashed', borderColor: 'divider', p: 2, borderRadius: 1 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Invoice Image

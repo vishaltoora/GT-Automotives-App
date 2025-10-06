@@ -95,8 +95,8 @@ export class PurchaseInvoicesService {
     // Update invoice with image info
     const updated = await this.purchaseInvoiceRepository.updateImageInfo(
       id,
-      uploadResult.url,
-      uploadResult.fileName,
+      uploadResult.blobUrl,
+      uploadResult.blobName,
       uploadResult.size,
     );
 

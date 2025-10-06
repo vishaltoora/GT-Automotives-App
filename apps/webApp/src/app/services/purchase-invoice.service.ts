@@ -48,7 +48,7 @@ apiClient.interceptors.request.use(
 
 // Re-export types for convenience
 export type PurchaseInvoice = PurchaseInvoiceDto;
-export type { 
+export type {
   CreatePurchaseInvoiceDto,
   UpdatePurchaseInvoiceDto,
   PurchaseInvoiceListResponse,
@@ -56,58 +56,6 @@ export type {
   PurchaseInvoiceStatus,
   PaymentMethod,
 };
-
-  vendorName: string;
-  description: string;
-  invoiceDate: string;
-  dueDate?: string;
-  amount: number;
-  taxAmount?: number;
-  totalAmount: number;
-  category: PurchaseCategory;
-  status: PurchaseInvoiceStatus;
-  paymentDate?: string;
-  paymentMethod?: PaymentMethod;
-  notes?: string;
-  imageUrl?: string;
-  imageName?: string;
-  imageSize?: number;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  vendor?: {
-    id: string;
-    name: string;
-    contactPerson?: string;
-    email?: string;
-    phone?: string;
-  };
-}
-
-export interface CreatePurchaseInvoiceDto {
-  invoiceNumber?: string;
-  vendorId?: string;
-  vendorName: string;
-  description: string;
-  invoiceDate: string;
-  dueDate?: string;
-  amount: number;
-  taxAmount?: number;
-  totalAmount: number;
-  category: PurchaseCategory;
-  status?: PurchaseInvoiceStatus;
-  paymentDate?: string;
-  paymentMethod?: PaymentMethod;
-  notes?: string;
-  createdBy: string;
-}
-
-export interface PurchaseInvoiceListResponse {
-  data: PurchaseInvoice[];
-  total: number;
-  page: number;
-  limit: number;
-}
 
 const purchaseInvoiceService = {
   async getAll(filters?: {

@@ -6,16 +6,16 @@ export declare class JobsController {
     constructor(jobsService: JobsService);
     create(createJobDto: CreateJobDto, user: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        dueDate: Date | null;
         status: import("@prisma/client").$Enums.JobStatus;
         createdBy: string;
+        createdAt: Date;
+        updatedAt: Date;
         employeeId: string;
         title: string;
         payAmount: import(".prisma/client/runtime/library").Decimal;
         jobType: import("@prisma/client").$Enums.JobType;
-        dueDate: Date | null;
         completedAt: Date | null;
         jobNumber: string;
     }>;
@@ -27,31 +27,31 @@ export declare class JobsController {
     findOne(id: string): Promise<JobResponseDto>;
     update(id: string, updateJobDto: UpdateJobDto, user: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        dueDate: Date | null;
         status: import("@prisma/client").$Enums.JobStatus;
         createdBy: string;
+        createdAt: Date;
+        updatedAt: Date;
         employeeId: string;
         title: string;
         payAmount: import(".prisma/client/runtime/library").Decimal;
         jobType: import("@prisma/client").$Enums.JobType;
-        dueDate: Date | null;
         completedAt: Date | null;
         jobNumber: string;
     }>;
     markAsComplete(id: string, user: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        dueDate: Date | null;
         status: import("@prisma/client").$Enums.JobStatus;
         createdBy: string;
+        createdAt: Date;
+        updatedAt: Date;
         employeeId: string;
         title: string;
         payAmount: import(".prisma/client/runtime/library").Decimal;
         jobType: import("@prisma/client").$Enums.JobType;
-        dueDate: Date | null;
         completedAt: Date | null;
         jobNumber: string;
     }>;

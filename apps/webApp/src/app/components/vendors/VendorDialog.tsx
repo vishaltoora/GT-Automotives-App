@@ -6,10 +6,10 @@ import {
   DialogActions,
   Button,
   TextField,
-  Grid,
   Box,
   Switch,
   FormControlLabel,
+  Grid,
 } from '@mui/material';
 import { Vendor } from '../../services/vendor.service';
 
@@ -94,7 +94,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 required
@@ -104,7 +104,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Contact Person"
@@ -113,7 +113,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Email"
@@ -123,7 +123,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Phone"
@@ -132,7 +132,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Tax ID"
@@ -141,7 +141,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Address"
@@ -152,7 +152,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Payment Terms"
@@ -163,7 +163,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
             </Grid>
 
             {vendor && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -176,7 +176,7 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
               </Grid>
             )}
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Notes"

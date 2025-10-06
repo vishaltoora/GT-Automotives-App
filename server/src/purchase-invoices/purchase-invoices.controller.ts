@@ -25,13 +25,13 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
-@Controller('purchase-invoices')
+@Controller('api/purchase-invoices')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class PurchaseInvoicesController {
   constructor(private readonly purchaseInvoicesService: PurchaseInvoicesService) {}
 
   @Post()
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async create(
     @Body(ValidationPipe) createDto: CreatePurchaseInvoiceDto,
   ): Promise<PurchaseInvoiceResponseDto> {
@@ -39,7 +39,7 @@ export class PurchaseInvoicesController {
   }
 
   @Get()
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async findAll(
     @Query(ValidationPipe) filterDto: PurchaseInvoiceFilterDto,
   ): Promise<{
@@ -52,13 +52,13 @@ export class PurchaseInvoicesController {
   }
 
   @Get(':id')
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async findOne(@Param('id') id: string): Promise<PurchaseInvoiceResponseDto> {
     return this.purchaseInvoicesService.findOne(id);
   }
 
   @Put(':id')
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async update(
     @Param('id') id: string,
     @Body(ValidationPipe) updateDto: UpdatePurchaseInvoiceDto,
@@ -67,11 +67,11 @@ export class PurchaseInvoicesController {
   }
 
   @Post(':id/upload')
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(
     @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
   ): Promise<PurchaseInvoiceResponseDto> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -86,13 +86,13 @@ export class PurchaseInvoicesController {
   }
 
   @Delete(':id/image')
-  @Roles(['ADMIN', 'STAFF'])
+  @Roles('ADMIN', 'STAFF')
   async deleteImage(@Param('id') id: string): Promise<PurchaseInvoiceResponseDto> {
     return this.purchaseInvoicesService.deleteImage(id);
   }
 
   @Delete(':id')
-  @Roles(['ADMIN'])
+  @Roles('ADMIN')
   async remove(@Param('id') id: string): Promise<PurchaseInvoiceResponseDto> {
     return this.purchaseInvoicesService.remove(id);
   }

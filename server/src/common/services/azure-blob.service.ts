@@ -4,7 +4,6 @@ import {
   StorageSharedKeyCredential,
   generateBlobSASQueryParameters,
   BlobSASPermissions,
-  ContainerClient,
 } from '@azure/storage-blob';
 import { ConfigService } from '@nestjs/config';
 
@@ -46,7 +45,7 @@ export class AzureBlobService {
     );
     this.accountName = this.configService.get<string>(
       'AZURE_STORAGE_ACCOUNT_NAME'
-    );
+    ) || null;
 
     if (!connectionString || !this.accountName) {
       this.logger.warn(
@@ -75,7 +74,7 @@ export class AzureBlobService {
    * Validate file before upload
    */
   validateFile(
-    file: Express.Multer.File | Buffer,
+    file: any | Buffer,
     mimeType?: string
   ): FileValidationResult {
     const fileSize =
@@ -131,7 +130,7 @@ export class AzureBlobService {
    * Upload invoice image to Azure Blob Storage
    */
   async uploadInvoiceImage(
-    file: Express.Multer.File | Buffer,
+    file: any | Buffer,
     originalFileName: string,
     invoiceType: 'purchase' | 'expense',
     mimeType?: string
@@ -163,12 +162,12 @@ export class AzureBlobService {
 
       // Upload
       const fileBuffer = file instanceof Buffer ? file : file.buffer;
-      const uploadResponse = await blockBlobClient.upload(
+      await blockBlobClient.upload(
         fileBuffer,
         fileBuffer.length,
         {
           blobHTTPHeaders: {
-            blobContentType: mimeType || (file as Express.Multer.File).mimetype,
+            blobContentType: mimeType || (file as any).mimetype,
           },
         }
       );
@@ -257,7 +256,7 @@ export class AzureBlobService {
         this.blobServiceClient!.getContainerClient(containerName);
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-      const deleteResponse = await blockBlobClient.delete();
+      await blockBlobClient.delete();
 
       this.logger.log(
         `Deleted blob: ${blobName} from container: ${containerName}`

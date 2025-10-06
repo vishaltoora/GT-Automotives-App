@@ -72,6 +72,9 @@ import VendorManagement from './pages/vendors/VendorManagement';
 // Purchase Invoice Pages
 import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoiceManagement';
 
+// Expense Invoice Pages
+import ExpenseInvoiceManagement from './pages/expense-invoices/ExpenseInvoiceManagement';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -184,6 +187,7 @@ export function App() {
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="vendors" element={<VendorManagement />} />
           <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
+          <Route path="expense-invoices" element={<ExpenseInvoiceManagement />} />
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="payroll/jobs" element={<JobsManagement />} />

@@ -145,6 +145,19 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### October 6, 2025 - Expense Invoice System & API Route Fixes ✅
+- ✅ **Expense Invoice UI Complete**: Full expense invoice management interface added
+- ✅ **Backend API Routes Fixed**: Added `/api` prefix to vendors, purchase-invoices, expense-invoices, and reports controllers
+- ✅ **ExpenseInvoiceManagement Page**: Complete admin interface at `/admin/expense-invoices` with filters, table, CRUD
+- ✅ **ExpenseInvoiceDialog Component**: Professional create/edit dialog with vendor autocomplete, image upload, auto-calculation
+- ✅ **Admin Sidebar Integration**: Added "Expense Invoices" menu item with ReceiptLong icon
+- ✅ **Pattern Consistency**: Matches PurchaseInvoiceManagement for maintainability
+- ✅ **Categories Supported**: RENT, UTILITIES, INSURANCE, MARKETING, OFFICE, OTHER
+- ✅ **404 Error Resolution**: Fixed purchase-invoices and expense-invoices endpoints returning 404
+- 📝 **Documentation Updated**: purchase-expense-invoice-system.md and completed-work.md updated
+- 🔧 **Files Created**: ExpenseInvoiceManagement.tsx (341 lines), ExpenseInvoiceDialog.tsx (427 lines)
+- 🔧 **Files Updated**: app.tsx, AdminLayout.tsx, 4 controller files
+
 ### October 6, 2025 - GitHub Container Registry Migration (FREE Registry) ✅
 - ✅ **Container Registry Migration**: Moved from Azure Container Registry ($5-7/mo) to GitHub Container Registry (FREE)
 - ✅ **Build Workflow Update**: Updated gt-build.yml to push images to ghcr.io instead of Azure ACR

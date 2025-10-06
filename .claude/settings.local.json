@@ -280,7 +280,8 @@
       "Bash(gh label:*)",
       "Bash(gh issue:*)",
       "Bash(__NEW_LINE__ gh issue close 41 --reason \"completed\")",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(tsc:*)"
     ],
     "deny": [],
     "ask": []

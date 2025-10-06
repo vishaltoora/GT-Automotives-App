@@ -5,13 +5,13 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
-@Controller('reports')
+@Controller('api/reports')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('expenses')
-  @Roles(['ADMIN'])
+  @Roles('ADMIN')
   async getExpenseReport(
     @Query(ValidationPipe) filterDto: ExpenseReportFilterDto,
   ): Promise<ExpenseReportResponseDto> {

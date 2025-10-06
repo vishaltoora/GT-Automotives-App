@@ -6,12 +6,12 @@ export declare class PaymentsController {
     constructor(paymentsService: PaymentsService);
     create(createPaymentDto: CreatePaymentDto, user: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         amount: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.PaymentStatus;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         notes: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         paidAt: Date | null;
         employeeId: string;
         jobId: string;
@@ -20,12 +20,12 @@ export declare class PaymentsController {
     }>;
     processPayment(processPaymentDto: ProcessPaymentDto, user: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         amount: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.PaymentStatus;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         notes: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         paidAt: Date | null;
         employeeId: string;
         jobId: string;
@@ -41,12 +41,12 @@ export declare class PaymentsController {
     findOne(id: string): Promise<PaymentResponseDto>;
     update(id: string, updatePaymentDto: UpdatePaymentDto, user: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         amount: import(".prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.PaymentStatus;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         notes: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         paidAt: Date | null;
         employeeId: string;
         jobId: string;

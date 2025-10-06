@@ -15,9 +15,9 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
@@ -56,55 +56,55 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
         invoices: ({
             items: {
                 id: string;
-                quantity: number;
+                description: string;
                 createdAt: Date;
                 updatedAt: Date;
-                total: Prisma.Decimal;
-                description: string;
                 tireId: string | null;
                 tireName: string | null;
                 itemType: import("@prisma/client").$Enums.InvoiceItemType;
+                quantity: number;
                 unitPrice: Prisma.Decimal;
+                total: Prisma.Decimal;
                 invoiceId: string;
             }[];
         } & {
             id: string;
+            invoiceNumber: string;
+            invoiceDate: Date;
+            taxAmount: Prisma.Decimal;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+            notes: string | null;
+            createdBy: string;
             createdAt: Date;
             updatedAt: Date;
-            total: Prisma.Decimal;
             customerId: string;
+            total: Prisma.Decimal;
             vehicleId: string | null;
             companyId: string;
             subtotal: Prisma.Decimal;
             taxRate: Prisma.Decimal;
-            taxAmount: Prisma.Decimal;
             gstRate: Prisma.Decimal | null;
             gstAmount: Prisma.Decimal | null;
             pstRate: Prisma.Decimal | null;
             pstAmount: Prisma.Decimal | null;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-            notes: string | null;
-            invoiceDate: Date;
             paidAt: Date | null;
-            invoiceNumber: string;
-            createdBy: string;
         })[];
         appointments: {
             id: string;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            notes: string | null;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
-            notes: string | null;
             scheduledDate: Date;
             scheduledTime: string;
             duration: number;
@@ -131,9 +131,9 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
@@ -159,9 +159,9 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
