@@ -39,7 +39,8 @@ import {
   Payment,
   Work,
   AttachMoney,
-  Business
+  Business,
+  ShoppingCart
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -77,6 +78,7 @@ export function AdminLayout() {
     { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
     { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },
     { text: 'Vendors', icon: <Business />, path: '/admin/vendors' },
+    { text: 'Purchase Invoices', icon: <ShoppingCart />, path: '/admin/purchase-invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
     { divider: true },
     { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },

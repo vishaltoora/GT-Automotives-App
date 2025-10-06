@@ -69,6 +69,9 @@ import QuotationDetails from './pages/quotations/QuotationDetails';
 // Vendor Pages
 import VendorManagement from './pages/vendors/VendorManagement';
 
+// Purchase Invoice Pages
+import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoiceManagement';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -180,6 +183,7 @@ export function App() {
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="vendors" element={<VendorManagement />} />
+          <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="payroll/jobs" element={<JobsManagement />} />
