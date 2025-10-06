@@ -274,10 +274,13 @@ jobs:
           IMAGE_LOWER=$(echo "${{ env.DOCKER_IMAGE }}" | tr '[:upper:]' '[:lower:]')
           CACHE_IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache" | tr '[:upper:]' '[:lower:]')
 
+          # Try to pull cache image (ignore error if it doesn't exist yet)
+          echo "🔍 Attempting to pull cache image..."
+          docker pull $CACHE_IMAGE || echo "⚠️ No cache image found, building from scratch..."
+
           # Build with simple Dockerfile (single-stage, more reliable)
           docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from $CACHE_IMAGE \
             --progress=plain \
             -f Dockerfile \
             -t $IMAGE_LOWER \
