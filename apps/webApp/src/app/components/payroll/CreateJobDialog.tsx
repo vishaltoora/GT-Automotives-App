@@ -96,8 +96,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   const fetchEmployees = async () => {
     try {
       const users = await userService.getUsers();
-      const staffMembers = users.filter(u => u.role?.name === 'STAFF');
-      setEmployees(staffMembers);
+      // Include both STAFF and ADMIN users in the dropdown
+      const staffAndAdmins = users.filter(u => u.role?.name === 'STAFF' || u.role?.name === 'ADMIN');
+      setEmployees(staffAndAdmins);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
       setError('Failed to load employees');

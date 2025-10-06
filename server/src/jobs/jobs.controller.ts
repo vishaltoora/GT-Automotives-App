@@ -89,7 +89,7 @@ export class JobsController {
 
   @Patch(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('STAFF', 'ADMIN')
   update(
     @Param('id') id: string,
     @Body() updateJobDto: UpdateJobDto,

@@ -107,8 +107,9 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
   const fetchEmployees = async () => {
     try {
       // const users = await userService.getUsers();
-      // const staffMembers = users.filter(u => u.role?.name === 'STAFF');
-      // setEmployees(staffMembers); // TODO: Implement employee reassignment
+      // Include both STAFF and ADMIN users when implementing employee reassignment
+      // const staffAndAdmins = users.filter(u => u.role?.name === 'STAFF' || u.role?.name === 'ADMIN');
+      // setEmployees(staffAndAdmins); // TODO: Implement employee reassignment
     } catch (err) {
       console.error('Failed to fetch employees:', err);
       setError('Failed to load employees');

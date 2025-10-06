@@ -2,6 +2,7 @@ import axios from 'axios';
 import { PaymentMethod } from '../../enums';
 import { CreateInvoiceDto, InvoiceItemType } from '@gt-automotive/data';
 import gtLogoImage from '../images-and-logos/logo.png';
+import { formatPhoneForDisplay } from '../utils/phone';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -303,7 +304,7 @@ class InvoiceService {
               </div>
             </div>
             <p style="margin-top: 8px; font-size: 13px;">${invoice.company?.address || 'Prince George, BC'}<br>
-            ${invoice.company?.phone ? `Phone: ${invoice.company.phone}<br>` : 'Phone: 250-570-2333<br>'}
+            ${invoice.company?.phone ? `Phone: ${formatPhoneForDisplay(invoice.company.phone)}<br>` : 'Phone: 250-570-2333<br>'}
             ${invoice.company?.email ? `Email: ${invoice.company.email}` : 'Email: gt-automotives@outlook.com'}</p>
           </div>
           <div class="invoice-details">
@@ -439,7 +440,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
               </div>
             </div>
             <p style="margin-top: 8px; font-size: 13px;">${invoice.company?.address || 'Prince George, BC'}<br>
-            ${invoice.company?.phone ? `Phone: ${invoice.company.phone}<br>` : 'Phone: 250-570-2333<br>'}
+            ${invoice.company?.phone ? `Phone: ${formatPhoneForDisplay(invoice.company.phone)}<br>` : 'Phone: 250-570-2333<br>'}
             ${invoice.company?.email ? `Email: ${invoice.company.email}` : 'Email: gt-automotives@outlook.com'}</p>
           </div>
           <div style="text-align: right;">

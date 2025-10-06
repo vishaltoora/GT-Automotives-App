@@ -1,7 +1,7 @@
 import React from 'react';
 import { TextField, TextFieldProps } from '@mui/material';
 
-// Format phone number as XXX-XXX-XXXX
+// Format phone number as XXX-XXX-XXXX for display
 const formatPhoneNumber = (value: string): string => {
   // Remove all non-digit characters
   const digits = value.replace(/\D/g, '');
@@ -19,9 +19,14 @@ const formatPhoneNumber = (value: string): string => {
   }
 };
 
+// Strip formatting to get digits only (for backend)
+const stripPhoneFormatting = (value: string): string => {
+  return value.replace(/\D/g, '');
+};
+
 interface PhoneInputProps extends Omit<TextFieldProps, 'onChange'> {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string) => void; // Returns digits only (no dashes)
 }
 
 export const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -31,16 +36,20 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   label = 'Phone (Optional)',
   ...textFieldProps
 }) => {
+  // Format the value for display
+  const displayValue = formatPhoneNumber(value);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = formatPhoneNumber(e.target.value);
-    onChange(formattedValue);
+    // Strip all formatting and pass only digits to parent
+    const digitsOnly = stripPhoneFormatting(e.target.value);
+    onChange(digitsOnly);
   };
 
   return (
     <TextField
       {...textFieldProps}
       label={label}
-      value={value}
+      value={displayValue}
       onChange={handleChange}
       placeholder={placeholder}
     />

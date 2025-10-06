@@ -5,19 +5,19 @@ export declare class JobsController {
     private readonly jobsService;
     constructor(jobsService: JobsService);
     create(createJobDto: CreateJobDto, user: any): Promise<{
-        status: import("@prisma/client").$Enums.JobStatus;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         jobNumber: string;
         employeeId: string;
         title: string;
         description: string | null;
         payAmount: import(".prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.JobStatus;
         jobType: import("@prisma/client").$Enums.JobType;
         dueDate: Date | null;
         completedAt: Date | null;
         createdBy: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     findAll(employeeId?: string, status?: JobStatus, jobType?: JobType, startDate?: string, endDate?: string): Promise<JobResponseDto[]>;
     getJobSummary(employeeId?: string): Promise<JobSummaryDto>;
@@ -26,34 +26,34 @@ export declare class JobsController {
     findByEmployee(employeeId: string): Promise<JobResponseDto[]>;
     findOne(id: string): Promise<JobResponseDto>;
     update(id: string, updateJobDto: UpdateJobDto, user: any): Promise<{
-        status: import("@prisma/client").$Enums.JobStatus;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         jobNumber: string;
         employeeId: string;
         title: string;
         description: string | null;
         payAmount: import(".prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.JobStatus;
         jobType: import("@prisma/client").$Enums.JobType;
         dueDate: Date | null;
         completedAt: Date | null;
         createdBy: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     markAsComplete(id: string, user: any): Promise<{
-        status: import("@prisma/client").$Enums.JobStatus;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         jobNumber: string;
         employeeId: string;
         title: string;
         description: string | null;
         payAmount: import(".prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.JobStatus;
         jobType: import("@prisma/client").$Enums.JobType;
         dueDate: Date | null;
         completedAt: Date | null;
         createdBy: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string, user: any): Promise<void>;
 }

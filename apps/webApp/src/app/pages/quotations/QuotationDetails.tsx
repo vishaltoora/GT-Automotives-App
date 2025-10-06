@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../services/quotation.service';
 import { useAuth } from '../../hooks/useAuth';
+import { formatPhoneForDisplay } from '../../utils/phone';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import QuotationDialog from '../../components/quotations/QuotationDialog';
 
@@ -271,7 +272,7 @@ const QuotationDetails: React.FC = () => {
                   </Typography>
                 )}
                 <Typography>{quotation.customerName}</Typography>
-                {quotation.phone && <Typography>Phone: {quotation.phone}</Typography>}
+                {quotation.phone && <Typography>Phone: {formatPhoneForDisplay(quotation.phone)}</Typography>}
                 {quotation.email && <Typography>Email: {quotation.email}</Typography>}
                 {quotation.address && <Typography>{quotation.address}</Typography>}
               </CardContent>

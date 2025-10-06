@@ -39,6 +39,7 @@ import { customerService, Customer } from '../../services/customer.service';
 import { useAuth } from '../../hooks/useAuth';
 import { CustomerDialog } from '../../components/customers/CustomerDialog';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
+import { formatPhoneForDisplay } from '../../utils/phone';
 
 export function CustomerList() {
   const navigate = useNavigate();
@@ -234,7 +235,9 @@ export function CustomerList() {
                       </Box>
                       <Box display="flex" alignItems="center" gap={0.5}>
                         <PhoneIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{customer.phone || 'No phone'}</Typography>
+                        <Typography variant="body2">
+                          {customer.phone ? formatPhoneForDisplay(customer.phone) : 'No phone'}
+                        </Typography>
                       </Box>
                     </Stack>
                   </TableCell>

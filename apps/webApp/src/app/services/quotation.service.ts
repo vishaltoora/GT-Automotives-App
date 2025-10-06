@@ -1,5 +1,6 @@
 import axios from 'axios';
 import gtLogoImage from '../images-and-logos/logo.png';
+import { formatPhoneForDisplay } from '../utils/phone';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -313,7 +314,7 @@ class QuoteService {
           <h3>Quoted To:</h3>
           <p>${quote.businessName ? `<strong>${quote.businessName}</strong><br>` : ''}
           ${quote.customerName}<br>
-          ${quote.phone ? `Phone: ${quote.phone}<br>` : ''}
+          ${quote.phone ? `Phone: ${formatPhoneForDisplay(quote.phone)}<br>` : ''}
           ${quote.email ? `Email: ${quote.email}<br>` : ''}
           ${quote.address || ''}</p>
         </div>
