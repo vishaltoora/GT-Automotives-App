@@ -31,7 +31,8 @@ on:
         type: boolean
 
 env:
-  REGISTRY_NAME: gtautomotivesregistry
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/gt-backend
   RESOURCE_GROUP: gt-automotives-prod
   FRONTEND_APP_NAME: gt-automotives-frontend
   BACKEND_APP_NAME: gt-automotives-backend-api
@@ -82,19 +83,28 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       # Backend Deployment (Web App with Docker container)
       - name: Deploy Backend to Web App
         if: github.event.inputs.deploy_backend == 'true'
         run: |
-          echo "🚀 Deploying backend to Azure Web App with pre-built image..."
+          echo "🚀 Deploying backend to Azure Web App with pre-built image from GitHub Container Registry..."
           echo "🐳 Using Docker image: ${{ env.IMAGE_TAG }}"
 
-          # Update Web App to use new container image
+          # Update Web App to use new container image from GHCR
           az webapp config container set \
             --name ${{ env.BACKEND_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --docker-custom-image-name ${{ env.IMAGE_TAG }} \
-            --docker-registry-server-url https://${{ env.REGISTRY_NAME }}.azurecr.io
+            --docker-registry-server-url https://${{ env.REGISTRY }} \
+            --docker-registry-server-user ${{ github.actor }} \
+            --docker-registry-server-password ${{ secrets.GITHUB_TOKEN }}
 
           # Update environment variables
           az webapp config appsettings set \
@@ -304,9 +314,10 @@ jobs:
           echo "- **Backend Health:** https://gt-automotives-backend-api.azurewebsites.net/health" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 💰 Cost Optimization" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Using GitHub Container Registry (FREE, was \$5-7/mo for ACR)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Migrated from Container Instance (\$73/mo) to Web App B1 (\$13/mo)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 82% cost reduction on backend hosting" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Total monthly cost: ~\$49-54 (down from \$109-129)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Total monthly cost: ~\$42-47 (down from \$109-129)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **62% total cost reduction**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ⚡ Deployment Optimizations" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ No rebuild during deployment (uses pre-built artifacts)" >> $GITHUB_STEP_SUMMARY

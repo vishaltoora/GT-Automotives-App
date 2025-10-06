@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY_NAME: gtautomotivesregistry
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/gt-backend
   RESOURCE_GROUP: gt-automotives-prod
   DISABLE_ERD: true
   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
@@ -34,7 +35,7 @@ jobs:
           echo "build-number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "frontend-artifact=frontend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "backend-artifact=backend-$BUILD_NUMBER" >> $GITHUB_OUTPUT
-          echo "docker-image=${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "docker-image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "🏗️ Build Number: $BUILD_NUMBER"
 
       - uses: actions/setup-node@v4
@@ -247,22 +248,19 @@ jobs:
           zip -r ../../../${{ steps.build-info.outputs.frontend-artifact }}.zip .
           cd ../../..
 
-      - name: Login to Azure Container Registry
-        uses: azure/login@v1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: ACR Login
-        run: |
-          echo "🔐 Logging in to Azure Container Registry..."
-          az acr login --name ${{ env.REGISTRY_NAME }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v6
 
       # Optimized Docker build with caching
-      - name: Build, Tag & Push Docker image to Azure Container Registry
+      - name: Build, Tag & Push Docker image to GitHub Container Registry
         env:
           DOCKER_IMAGE: ${{ steps.build-info.outputs.docker-image }}
           BUILD_TAG: ${{ steps.branch-name.outputs.current_branch }}-${{ github.run_number }}
@@ -272,21 +270,25 @@ jobs:
           # Enable BuildKit for better performance
           export DOCKER_BUILDKIT=1
 
+          # Convert image name to lowercase (GHCR requirement)
+          IMAGE_LOWER=$(echo "${{ env.DOCKER_IMAGE }}" | tr '[:upper:]' '[:lower:]')
+          CACHE_IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache" | tr '[:upper:]' '[:lower:]')
+
           # Build with simple Dockerfile (single-stage, more reliable)
           docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
+            --cache-from $CACHE_IMAGE \
             --progress=plain \
             -f Dockerfile \
-            -t ${{ env.DOCKER_IMAGE }} \
-            -t ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache \
+            -t $IMAGE_LOWER \
+            -t $CACHE_IMAGE \
             .
 
-          echo "📤 Pushing images to registry..."
-          docker push ${{ env.DOCKER_IMAGE }}
-          docker push ${{ env.REGISTRY_NAME }}.azurecr.io/gt-backend:cache
+          echo "📤 Pushing images to GitHub Container Registry (FREE)..."
+          docker push $IMAGE_LOWER
+          docker push $CACHE_IMAGE
 
-          echo "IMAGE_TAG=${{ env.DOCKER_IMAGE }}" >> build-info.txt
+          echo "IMAGE_TAG=$IMAGE_LOWER" >> build-info.txt
           echo "BUILD_TAG=$BUILD_TAG" >> build-info.txt
           echo "BUILD_NUMBER=${{ steps.build-info.outputs.build-number }}" >> build-info.txt
 
@@ -327,7 +329,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Artifacts Created" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend:** \`${{ steps.build-info.outputs.frontend-artifact }}.zip\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend:** Docker image pushed to ACR" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend:** Docker image pushed to GitHub Container Registry (FREE)" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository:** Source code for migrations" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY

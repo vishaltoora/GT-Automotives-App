@@ -31,6 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Shared DTO Deployment Guide](.claude/docs/shared-dto-deployment-guide.md)** - Complete guide for shared DTO library deployment configuration ⭐ NEW
 - **[MyPersn Monorepo Learnings](.claude/docs/mypersn-monorepo-learnings.md)** - Architecture patterns and solutions from mypersn project ⭐ NEW
 - **[Container Deployment Learnings](.claude/docs/container-deployment-learnings.md)** - Critical lessons from shared library container issues and MyPersn pattern resolution ⭐ NEW
+- **[GHCR Migration Guide](.claude/docs/ghcr-migration.md)** - Migration from Azure Container Registry to GitHub Container Registry (saves $5-7/mo) ⭐ NEW
 - **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
@@ -74,7 +75,8 @@ yarn dev
 - **Admin User:** vishal.alawalpuria@gmail.com
 - **SSL/DNS:** Namecheap DNS + Azure SSL + Clerk Certificates
 - **Deployment:** Two-Step GitHub Actions CI/CD ✅
-- **Monthly Cost:** $49-54 (down from $109-129) 💰
+- **Container Registry:** GitHub Container Registry (FREE) ✅
+- **Monthly Cost:** $42-47 (down from $109-129, 62% reduction) 💰
 
 ## 🔑 Key Information
 
@@ -142,6 +144,17 @@ git push origin main
 ---
 
 ## 🔄 Recent Updates
+
+### October 6, 2025 - GitHub Container Registry Migration (FREE Registry) ✅
+- ✅ **Container Registry Migration**: Moved from Azure Container Registry ($5-7/mo) to GitHub Container Registry (FREE)
+- ✅ **Build Workflow Update**: Updated gt-build.yml to push images to ghcr.io instead of Azure ACR
+- ✅ **Deploy Workflow Update**: Updated gt-deploy.yml to pull from GitHub Container Registry
+- ✅ **Authentication**: Automatic GITHUB_TOKEN authentication (no manual credentials needed)
+- ✅ **Cost Savings**: Additional $5-7/month reduction (15% more savings)
+- ✅ **Total Monthly Cost**: Now $42-47/month (down from $49-54/month)
+- ✅ **Cumulative Savings**: 62% total reduction from original $109-129/month
+- ✅ **Annual Savings**: $744-984/year compared to original infrastructure
+- 💰 **Next Step**: Delete Azure Container Registry after successful deployment
 
 ### October 3, 2025 - CI/CD Workflow Optimization & Cost Reduction ✅
 - ✅ **Two-Step Workflow Restored**: GT-Automotive-Build (automatic) + GT-Automotive-Deploy (manual control)
