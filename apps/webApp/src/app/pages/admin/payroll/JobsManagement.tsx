@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -21,6 +22,9 @@ import {
   Card,
   CardContent,
   Alert,
+  Avatar,
+  Breadcrumbs,
+  Link as MuiLink,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,10 +33,11 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Work as WorkIcon,
-  Person as PersonIcon,
   AttachMoney as MoneyIcon,
   Schedule as ScheduleIcon,
   FilterList as FilterIcon,
+  ArrowBack as ArrowBackIcon,
+  Group as GroupIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -47,9 +52,30 @@ import { useConfirmationDialog } from '../../../hooks/useConfirmationDialog';
 import { colors } from '../../../theme/colors';
 import { format } from 'date-fns';
 
+interface Employee {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  role?: {
+    name: string;
+  };
+}
+
+interface EmployeeJobSummary extends Employee {
+  totalJobs: number;
+  pendingJobs: number;
+  readyJobs: number;
+  totalPayAmount: number;
+}
+
 export function JobsManagement() {
+  const { employeeId } = useParams<{ employeeId: string }>();
+  const navigate = useNavigate();
+
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [employeeSummaries, setEmployeeSummaries] = useState<EmployeeJobSummary[]>([]);
   const [jobs, setJobs] = useState<JobResponseDto[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
   const [summary, setSummary] = useState<JobSummaryDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,9 +84,8 @@ export function JobsManagement() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedJob, setSelectedJob] = useState<JobResponseDto | null>(null);
 
-  // Filters
+  // Filters for jobs view
   const [filters, setFilters] = useState({
-    employeeId: '',
     status: '',
     jobType: '',
     startDate: null as Date | null,
@@ -75,16 +100,85 @@ export function JobsManagement() {
     handleCancel: confirmationCancel
   } = useConfirmationDialog();
 
+  // Fetch employee summaries when no employeeId in URL
   useEffect(() => {
-    fetchData();
-    fetchEmployees();
-  }, [filters]);
+    if (!employeeId) {
+      fetchEmployeeSummaries();
+    }
+  }, [employeeId]);
 
-  const fetchData = async () => {
+  // Fetch employee details and jobs when employeeId is in URL
+  useEffect(() => {
+    if (employeeId) {
+      const loadEmployeeData = async () => {
+        try {
+          setLoading(true);
+          const users = await userService.getUsers();
+          const employee = users.find(u => u.id === employeeId);
+
+          if (employee) {
+            setSelectedEmployee(employee);
+            setError(null);
+          } else {
+            setError('Employee not found');
+            navigate('/admin/payroll/jobs');
+          }
+        } catch (err: any) {
+          setError(err.message || 'Failed to fetch employee details');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadEmployeeData();
+    } else {
+      setSelectedEmployee(null);
+    }
+  }, [employeeId, navigate]);
+
+  // Fetch jobs when selectedEmployee is set or filters change
+  useEffect(() => {
+    if (selectedEmployee && employeeId) {
+      fetchEmployeeJobs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEmployee?.id, employeeId, filters.status, filters.jobType, filters.startDate?.toString(), filters.endDate?.toString()]);
+
+  const fetchEmployeeSummaries = async () => {
+    try {
+      setLoading(true);
+      const users = await userService.getUsers();
+      const staffAndAdmins = users.filter(u =>
+        u.role?.name === 'STAFF' || u.role?.name === 'ADMIN'
+      );
+
+      // Fetch job summaries for each employee
+      const summaries = await Promise.all(
+        staffAndAdmins.map(async (employee) => {
+          const summary = await jobService.getJobSummary(employee.id);
+          return {
+            ...employee,
+            ...summary,
+          };
+        })
+      );
+
+      setEmployeeSummaries(summaries);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch employee data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEmployeeJobs = async () => {
+    if (!selectedEmployee) return;
+
     try {
       setLoading(true);
       const filterParams = {
-        employeeId: filters.employeeId || undefined,
+        employeeId: selectedEmployee.id,
         status: filters.status ? (filters.status as JobStatus) : undefined,
         jobType: filters.jobType ? (filters.jobType as JobType) : undefined,
         startDate: filters.startDate?.toISOString() || undefined,
@@ -93,7 +187,7 @@ export function JobsManagement() {
 
       const [jobsData, summaryData] = await Promise.all([
         jobService.getJobs(filterParams),
-        jobService.getJobSummary(filters.employeeId || undefined),
+        jobService.getJobSummary(selectedEmployee.id),
       ]);
 
       setJobs(jobsData);
@@ -106,28 +200,32 @@ export function JobsManagement() {
     }
   };
 
-  const fetchEmployees = async () => {
-    try {
-      const users = await userService.getUsers();
-      const staffMembers = users.filter(u => u.role?.name === 'STAFF');
-      setEmployees(staffMembers);
-    } catch (err) {
-      console.error('Failed to fetch employees:', err);
-    }
+  const handleEmployeeClick = (employee: Employee) => {
+    navigate(`/admin/payroll/jobs/${employee.id}`);
+  };
+
+  const handleBackToEmployees = () => {
+    setSelectedEmployee(null);
+    clearFilters();
+    navigate('/admin/payroll/jobs');
   };
 
   const handleCreateJob = async (newJob: JobResponseDto) => {
-    await fetchData();
+    if (employeeId && selectedEmployee) {
+      await fetchEmployeeJobs();
+    }
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, job: JobResponseDto) => {
+    console.log('🔵 JobsManagement - Opening menu for job:', job);
     setMenuAnchor(event.currentTarget);
     setSelectedJob(job);
   };
 
   const handleMenuClose = () => {
     setMenuAnchor(null);
-    setSelectedJob(null);
+    // Don't clear selectedJob immediately - dialogs might need it
+    // It will be cleared when dialogs close
   };
 
   const handleMarkComplete = async () => {
@@ -135,7 +233,7 @@ export function JobsManagement() {
 
     try {
       await jobService.markJobComplete(selectedJob.id);
-      fetchData();
+      fetchEmployeeJobs();
       handleMenuClose();
     } catch (err: any) {
       setError(err.message || 'Failed to mark job as complete');
@@ -157,16 +255,15 @@ export function JobsManagement() {
         await jobService.deleteJob(selectedJob.id);
         handleMenuClose();
 
-        // Force a small delay to ensure backend state is updated
         setTimeout(async () => {
-          await fetchData();
+          await fetchEmployeeJobs();
         }, 100);
 
       } catch (err: any) {
         console.error('Delete error:', err);
         if (err.message?.includes('404') || err.message?.includes('Not Found')) {
           setError('Job not found. It may have already been deleted. Refreshing the list...');
-          await fetchData(); // Refresh the list to show current state
+          await fetchEmployeeJobs();
         } else {
           setError(err.message || 'Failed to delete job');
         }
@@ -176,14 +273,22 @@ export function JobsManagement() {
   };
 
   const handleEditJob = () => {
-    if (!selectedJob) return;
-    setEditDialogOpen(true);
-    // Don't close menu/clear selectedJob until after dialog opens
-    setMenuAnchor(null); // Just close the menu, keep selectedJob
+    console.log('✏️ JobsManagement - Edit job clicked, selectedJob:', selectedJob);
+    if (!selectedJob) {
+      console.log('⚠️ JobsManagement - No job selected, cannot edit!');
+      return;
+    }
+    console.log('✏️ JobsManagement - Opening edit dialog with job:', selectedJob.id, selectedJob.title);
+    // Close menu first (this triggers handleMenuClose)
+    setMenuAnchor(null);
+    // Wait a tick to ensure menu close completes, then open dialog
+    setTimeout(() => {
+      setEditDialogOpen(true);
+    }, 0);
   };
 
   const handleEditJobSuccess = async (updatedJob: JobResponseDto) => {
-    await fetchData();
+    await fetchEmployeeJobs();
   };
 
   const getStatusColor = (status: JobStatus) => {
@@ -203,9 +308,23 @@ export function JobsManagement() {
     return name || employee.email;
   };
 
+  const getEmployeeInitials = (employee: Employee) => {
+    const firstInitial = employee.firstName?.charAt(0)?.toUpperCase() || '';
+    const lastInitial = employee.lastName?.charAt(0)?.toUpperCase() || '';
+    return `${firstInitial}${lastInitial}` || employee.email.charAt(0).toUpperCase();
+  };
+
+  const getAvatarColor = (email: string) => {
+    const colors = [
+      '#1976d2', '#388e3c', '#f57c00', '#d32f2f', '#7b1fa2',
+      '#00796b', '#c2185b', '#5d4037', '#616161', '#e64a19'
+    ];
+    const charCode = email.charCodeAt(0) + email.charCodeAt(email.length - 1);
+    return colors[charCode % colors.length];
+  };
+
   const clearFilters = () => {
     setFilters({
-      employeeId: '',
       status: '',
       jobType: '',
       startDate: null,
@@ -213,38 +332,272 @@ export function JobsManagement() {
     });
   };
 
-  if (loading && !jobs.length) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
-        <Typography>Loading jobs...</Typography>
-      </Box>
-    );
-  }
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <WorkIcon sx={{ fontSize: 32, color: colors.primary.main }} />
-            <Typography variant="h4" fontWeight="bold">
-              Jobs Management
-            </Typography>
+        {/* Loading states */}
+        {loading && !employeeId && !employeeSummaries.length && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+            <Typography>Loading employees...</Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
-            sx={{
-              background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
-              px: 3,
-              py: 1.5,
-              marginLeft: 'auto',
-            }}
-          >
-            Create Job
-          </Button>
+        )}
+
+        {employeeId && (!selectedEmployee || loading) && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+            <Typography>Loading employee details...</Typography>
+          </Box>
+        )}
+
+        {/* Employee List View */}
+        {!employeeId && !loading && (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <GroupIcon sx={{ fontSize: 32, color: colors.primary.main }} />
+                <Typography variant="h4" fontWeight="bold">
+                  Employee Jobs & Payments
+                </Typography>
+              </Box>
+            </Box>
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
+
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Select an employee to view and manage their jobs and payments
+            </Typography>
+
+            <Grid container spacing={3}>
+              {employeeSummaries.map((employee) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={employee.id}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease-in-out',
+                      border: `1px solid ${colors.neutral[200]}`,
+                      overflow: 'hidden',
+                      position: 'relative',
+                      '&:hover': {
+                        transform: 'translateY(-8px)',
+                        boxShadow: `0 12px 40px rgba(0,0,0,0.12)`,
+                        borderColor: colors.primary.main,
+                        '& .employee-header': {
+                          background: colors.neutral[50],
+                        },
+                      },
+                    }}
+                    onClick={() => handleEmployeeClick(employee)}
+                  >
+                    {/* Header Section with Gradient */}
+                    <Box
+                      className="employee-header"
+                      sx={{
+                        background: 'white',
+                        p: 3,
+                        transition: 'all 0.3s',
+                        borderBottom: `1px solid ${colors.neutral[200]}`,
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                        <Avatar
+                          sx={{
+                            width: 64,
+                            height: 64,
+                            bgcolor: getAvatarColor(employee.email),
+                            fontSize: '1.75rem',
+                            fontWeight: 700,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          {getEmployeeInitials(employee)}
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight="bold" sx={{ color: 'text.primary', lineHeight: 1.2, mb: 0.5 }}>
+                            {getEmployeeName(employee)}
+                          </Typography>
+                          <Chip
+                            label={employee.role?.name || 'STAFF'}
+                            size="small"
+                            sx={{
+                              bgcolor: colors.neutral[100],
+                              color: colors.neutral[800],
+                              fontWeight: 600,
+                              border: `1px solid ${colors.neutral[300]}`,
+                            }}
+                          />
+                        </Box>
+                      </Box>
+
+                      {/* Total Earnings - Prominent Display */}
+                      <Card sx={{ bgcolor: colors.primary.light + '20', border: `1px solid ${colors.primary.light}`, boxShadow: 'none' }}>
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            Total Earnings
+                          </Typography>
+                          <Typography variant="h4" fontWeight="bold" sx={{ color: colors.primary.main, mt: 0.5 }}>
+                            ${employee.totalPayAmount.toFixed(2)}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Box>
+
+                    {/* Stats Section */}
+                    <CardContent sx={{ p: 3 }}>
+                      {/* Job Statistics Grid */}
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 2 }}>
+                        <Card sx={{
+                          bgcolor: colors.neutral[50],
+                          boxShadow: 'none',
+                          border: `1px solid ${colors.neutral[200]}`,
+                        }}>
+                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
+                            <Typography variant="h5" fontWeight="bold" color="primary.main">
+                              {employee.totalJobs}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Total
+                            </Typography>
+                          </CardContent>
+                        </Card>
+
+                        <Card sx={{
+                          bgcolor: colors.semantic.warningLight + '15',
+                          boxShadow: 'none',
+                          border: `1px solid ${colors.semantic.warningLight}`,
+                        }}>
+                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
+                            <Typography variant="h5" fontWeight="bold" color="warning.main">
+                              {employee.pendingJobs}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Pending
+                            </Typography>
+                          </CardContent>
+                        </Card>
+
+                        <Card sx={{
+                          bgcolor: colors.semantic.infoLight + '15',
+                          boxShadow: 'none',
+                          border: `1px solid ${colors.semantic.infoLight}`,
+                        }}>
+                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
+                            <Typography variant="h5" fontWeight="bold" color="info.main">
+                              {employee.readyJobs}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Ready
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Box>
+
+                      {/* Payment Breakdown */}
+                      <Card sx={{
+                        bgcolor: colors.semantic.successLight + '10',
+                        border: `1px solid ${colors.semantic.successLight}`,
+                        boxShadow: 'none',
+                      }}>
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary" fontWeight="600">
+                              Completed Jobs
+                            </Typography>
+                            <Typography variant="h6" fontWeight="bold" color="success.main">
+                              {employee.totalJobs - employee.pendingJobs - employee.readyJobs}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Avg. per job
+                            </Typography>
+                            <Typography variant="body2" fontWeight="600" color="success.dark">
+                              ${employee.totalJobs > 0 ? (employee.totalPayAmount / employee.totalJobs).toFixed(2) : '0.00'}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+
+            {employeeSummaries.length === 0 && (
+              <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <GroupIcon sx={{ fontSize: 64, color: colors.neutral[400], mb: 2 }} />
+                <Typography variant="h6" color="text.secondary">
+                  No employees found
+                </Typography>
+              </Paper>
+            )}
+          </>
+        )}
+
+        {/* Employee Jobs View */}
+        {employeeId && selectedEmployee && !loading && (
+          <>
+            {/* Header with Breadcrumbs */}
+            <Box sx={{ mb: 3 }}>
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component="button"
+              variant="body1"
+              onClick={handleBackToEmployees}
+              sx={{ textDecoration: 'none', cursor: 'pointer' }}
+            >
+              Employees
+            </MuiLink>
+            <Typography color="text.primary">
+              {selectedEmployee ? getEmployeeName(selectedEmployee) : 'Jobs'}
+            </Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                startIcon={<ArrowBackIcon />}
+                onClick={handleBackToEmployees}
+                variant="outlined"
+              >
+                Back to Employees
+              </Button>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Avatar
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    bgcolor: selectedEmployee ? getAvatarColor(selectedEmployee.email) : colors.primary.main,
+                  }}
+                >
+                  {selectedEmployee ? getEmployeeInitials(selectedEmployee) : '?'}
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" fontWeight="bold">
+                    {selectedEmployee ? getEmployeeName(selectedEmployee) : 'Employee Jobs'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Jobs and Payments Management
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{
+                background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+                px: 3,
+                py: 1.5,
+              }}
+            >
+              Create Job
+            </Button>
+          </Box>
         </Box>
 
         {error && (
@@ -257,7 +610,7 @@ export function JobsManagement() {
         {summary && (
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ background: `linear-gradient(135deg, ${colors.primary.light} 0%, ${colors.primary.main} 100%)`, color: 'white' }}>
+              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.primary.light} 0%, ${colors.primary.main} 100%)`, color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <WorkIcon />
@@ -270,7 +623,7 @@ export function JobsManagement() {
               </Card>
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ background: `linear-gradient(135deg, ${colors.semantic.warningLight} 0%, ${colors.semantic.warning} 100%)`, color: 'white' }}>
+              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.warningLight} 0%, ${colors.semantic.warning} 100%)`, color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ScheduleIcon />
@@ -283,7 +636,7 @@ export function JobsManagement() {
               </Card>
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ background: `linear-gradient(135deg, ${colors.semantic.infoLight} 0%, ${colors.semantic.info} 100%)`, color: 'white' }}>
+              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.infoLight} 0%, ${colors.semantic.info} 100%)`, color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CheckCircleIcon />
@@ -296,7 +649,7 @@ export function JobsManagement() {
               </Card>
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ background: `linear-gradient(135deg, ${colors.semantic.successLight} 0%, ${colors.semantic.success} 100%)`, color: 'white' }}>
+              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.successLight} 0%, ${colors.semantic.success} 100%)`, color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <MoneyIcon />
@@ -319,24 +672,7 @@ export function JobsManagement() {
             <Button size="small" onClick={clearFilters}>Clear All</Button>
           </Box>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Employee</InputLabel>
-                <Select
-                  value={filters.employeeId}
-                  onChange={(e) => setFilters(prev => ({ ...prev, employeeId: e.target.value }))}
-                  label="Employee"
-                >
-                  <MenuItem value="">All Employees</MenuItem>
-                  {employees.map((employee) => (
-                    <MenuItem key={employee.id} value={employee.id}>
-                      {getEmployeeName(employee)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -347,13 +683,13 @@ export function JobsManagement() {
                   <MenuItem value="">All Statuses</MenuItem>
                   {Object.values(JobStatus).map((status) => (
                     <MenuItem key={status} value={status}>
-                      {status.replace('_', ' ')}
+                      {status}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Job Type</InputLabel>
                 <Select
@@ -364,13 +700,13 @@ export function JobsManagement() {
                   <MenuItem value="">All Types</MenuItem>
                   {Object.values(JobType).map((type) => (
                     <MenuItem key={type} value={type}>
-                      {type.replace('_', ' ')}
+                      {type}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <DatePicker
                 label="Start Date"
                 value={filters.startDate}
@@ -378,7 +714,7 @@ export function JobsManagement() {
                 slotProps={{ textField: { size: 'small', fullWidth: true } }}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <DatePicker
                 label="End Date"
                 value={filters.endDate}
@@ -390,138 +726,127 @@ export function JobsManagement() {
         </Paper>
 
         {/* Jobs Table */}
-        <Paper sx={{ overflow: 'hidden' }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: colors.neutral[50] }}>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Job</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Employee</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Type</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Created</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }} align="center">Actions</TableCell>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: colors.neutral[100] }}>
+                <TableCell><strong>Job Title</strong></TableCell>
+                <TableCell><strong>Type</strong></TableCell>
+                <TableCell><strong>Date</strong></TableCell>
+                <TableCell><strong>Hours</strong></TableCell>
+                <TableCell><strong>Rate</strong></TableCell>
+                <TableCell><strong>Total</strong></TableCell>
+                <TableCell><strong>Status</strong></TableCell>
+                <TableCell align="right"><strong>Actions</strong></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {jobs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <WorkIcon sx={{ fontSize: 48, color: colors.neutral[400], mb: 1 }} />
+                    <Typography variant="body1" color="text.secondary">
+                      No jobs found for this employee
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {jobs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      <Typography color="textSecondary">
-                        No jobs found. Create your first job to get started.
+              ) : (
+                jobs.map((job) => (
+                  <TableRow key={job.id} hover>
+                    <TableCell>
+                      <Typography fontWeight="medium">{job.title}</Typography>
+                      {job.description && (
+                        <Typography variant="caption" color="text.secondary">
+                          {job.description}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={job.jobType} size="small" variant="outlined" />
+                    </TableCell>
+                    <TableCell>
+                      {job.completedAt ? format(new Date(job.completedAt), 'MMM dd, yyyy') : '-'}
+                    </TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>
+                      <Typography fontWeight="bold" color="primary">
+                        ${job.payAmount.toFixed(2)}
                       </Typography>
                     </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={job.status}
+                        color={getStatusColor(job.status)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleMenuOpen(e, job)}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
-                ) : (
-                  jobs.map((job) => (
-                    <TableRow key={job.id} hover>
-                      <TableCell>
-                        <Box>
-                          <Typography fontWeight="medium">{job.title}</Typography>
-                          {job.description && (
-                            <Typography variant="body2" color="textSecondary" noWrap>
-                              {job.description}
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <PersonIcon sx={{ fontSize: 16, color: colors.neutral[500] }} />
-                          {getEmployeeName(job.employee)}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={job.jobType.replace('_', ' ')}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography fontWeight="medium">
-                          ${job.payAmount.toFixed(2)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={job.status.replace('_', ' ')}
-                          color={getStatusColor(job.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(job.createdAt), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, job)}
-                        >
-                          <MoreVertIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-        {/* Action Menu */}
-        <Menu
-          anchorEl={menuAnchor}
-          open={Boolean(menuAnchor)}
-          onClose={handleMenuClose}
-        >
-          {selectedJob?.status === JobStatus.PENDING && (
-            <MenuItem onClick={handleMarkComplete}>
-              <CheckCircleIcon sx={{ mr: 1 }} />
-              Mark Complete
-            </MenuItem>
-          )}
-          <MenuItem onClick={handleEditJob}>
-            <EditIcon sx={{ mr: 1 }} />
-            Edit
-          </MenuItem>
-          {selectedJob?.status !== JobStatus.PAID && (
-            <MenuItem onClick={handleDeleteJob} sx={{ color: 'error.main' }}>
-              <DeleteIcon sx={{ mr: 1 }} />
-              Delete
-            </MenuItem>
-          )}
-        </Menu>
+            {/* Action Menu */}
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={handleMenuClose}
+            >
+              <MenuItem onClick={handleEditJob}>
+                <EditIcon fontSize="small" sx={{ mr: 1 }} />
+                Edit Job
+              </MenuItem>
+              {selectedJob?.status === JobStatus.PENDING && (
+                <MenuItem onClick={handleMarkComplete}>
+                  <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
+                  Mark Complete
+                </MenuItem>
+              )}
+              <MenuItem onClick={handleDeleteJob} sx={{ color: 'error.main' }}>
+                <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                Delete Job
+              </MenuItem>
+            </Menu>
 
-        {/* Create Job Dialog */}
-        <CreateJobDialog
-          open={createDialogOpen}
-          onClose={() => setCreateDialogOpen(false)}
-          onSuccess={handleCreateJob}
-        />
+            {/* Dialogs */}
+            <CreateJobDialog
+              open={createDialogOpen}
+              onClose={() => setCreateDialogOpen(false)}
+              onSuccess={handleCreateJob}
+              preselectedEmployeeId={selectedEmployee?.id}
+            />
 
-        {/* Edit Job Dialog */}
-        <EditJobDialog
-          open={editDialogOpen}
-          job={selectedJob}
-          onClose={() => {
-            setEditDialogOpen(false);
-            setSelectedJob(null); // Clear selected job when dialog closes
-          }}
-          onSuccess={handleEditJobSuccess}
-        />
+            <EditJobDialog
+              open={editDialogOpen}
+              onClose={() => {
+                setEditDialogOpen(false);
+                setSelectedJob(null);
+              }}
+              job={selectedJob}
+              onSuccess={handleEditJobSuccess}
+            />
 
-        {/* Confirmation Dialog */}
-        <ConfirmationDialog
-          open={confirmationOpen}
-          onClose={confirmationCancel}
-          onConfirm={confirmationConfirm}
-          title={confirmationData?.title || ''}
-          message={confirmationData?.message || ''}
-          confirmText={confirmationData?.confirmText}
-          severity={confirmationData?.severity}
-        />
+            <ConfirmationDialog
+              open={confirmationOpen}
+              title={confirmationData?.title || ''}
+              message={confirmationData?.message || ''}
+              confirmText={confirmationData?.confirmText}
+              severity={confirmationData?.severity}
+              onConfirm={confirmationConfirm}
+              onClose={confirmationCancel}
+            />
+          </>
+        )}
       </Box>
     </LocalizationProvider>
   );

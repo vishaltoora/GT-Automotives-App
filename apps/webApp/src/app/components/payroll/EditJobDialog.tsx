@@ -78,8 +78,9 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
 
   useEffect(() => {
     if (open && job) {
+      console.log('📝 EditJobDialog - Populating form with job:', job);
       fetchEmployees();
-      setFormData({
+      const formDataToSet = {
         title: job.title || '',
         description: job.description || '',
         payAmount: job.payAmount || 0,
@@ -87,9 +88,12 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
         jobType: job.jobType || JobType.REGULAR,
         dueDate: job.dueDate ? new Date(job.dueDate).toISOString() : '',
         completedAt: job.completedAt ? new Date(job.completedAt).toISOString() : '',
-      });
+      };
+      console.log('📝 EditJobDialog - Setting form data:', formDataToSet);
+      setFormData(formDataToSet);
       setError(null);
     } else if (!open) {
+      console.log('📝 EditJobDialog - Resetting form (dialog closed)');
       // Reset form when dialog closes
       setFormData({
         title: '',
@@ -101,6 +105,8 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
         completedAt: '',
       });
       setError(null);
+    } else if (open && !job) {
+      console.log('⚠️ EditJobDialog - Dialog opened but job is null/undefined!');
     }
   }, [open, job]);
 
