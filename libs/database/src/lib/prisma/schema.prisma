@@ -477,7 +477,6 @@ model Vendor {
 
 model PurchaseInvoice {
   id              String               @id @default(cuid())
-  invoiceNumber   String?              // Vendor's invoice number
   vendorId        String?              // Optional vendor relationship
   vendorName      String               // Free-text vendor name (if no vendorId)
   description     String               // What was purchased

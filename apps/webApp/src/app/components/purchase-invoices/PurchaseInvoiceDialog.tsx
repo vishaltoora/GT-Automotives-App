@@ -9,63 +9,45 @@ import {
   Grid,
   Box,
   MenuItem,
-  Autocomplete,
   Typography,
   IconButton,
   Alert,
+  Paper,
 } from '@mui/material';
 import { CloudUpload as UploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { PaymentMethod } from '@gt-automotive/data';
 import {
   PurchaseInvoice,
   PurchaseCategory,
-  PurchaseInvoiceStatus,
 } from '../../services/purchase-invoice.service';
 import vendorService, { Vendor } from '../../services/vendor.service';
+import VendorSelect from '../vendors/VendorSelect';
 
 interface PurchaseInvoiceDialogProps {
   open: boolean;
   invoice: PurchaseInvoice | null;
   onClose: () => void;
-  onSave: (data: any) => void;
-  onImageUpload?: (invoiceId: string, file: File) => void;
+  onSave: (data: any, file: File | null) => void;
 }
 
 const categories: PurchaseCategory[] = ['TIRES', 'PARTS', 'TOOLS', 'SUPPLIES', 'OTHER'];
-const statuses: PurchaseInvoiceStatus[] = ['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
-const paymentMethods = [
-  PaymentMethod.CASH,
-  PaymentMethod.CREDIT_CARD,
-  PaymentMethod.DEBIT_CARD,
-  PaymentMethod.CHECK,
-  PaymentMethod.E_TRANSFER,
-  PaymentMethod.FINANCING,
-];
 
 const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
   open,
   invoice,
   onClose,
   onSave,
-  onImageUpload,
 }) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
-    invoiceNumber: '',
     vendorId: '',
     vendorName: '',
     description: '',
     invoiceDate: new Date().toISOString().split('T')[0],
-    dueDate: '',
     amount: 0,
     taxAmount: 0,
     totalAmount: 0,
     category: 'PARTS' as PurchaseCategory,
-    status: 'PENDING' as PurchaseInvoiceStatus,
-    paymentDate: '',
-    paymentMethod: '' as PaymentMethod | '',
     notes: '',
   });
 
@@ -78,42 +60,28 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
   useEffect(() => {
     if (invoice) {
       setFormData({
-        invoiceNumber: invoice.invoiceNumber || '',
         vendorId: invoice.vendorId || '',
         vendorName: invoice.vendorName || '',
         description: invoice.description || '',
         invoiceDate: invoice.invoiceDate ? invoice.invoiceDate.split('T')[0] : '',
-        dueDate: invoice.dueDate ? invoice.dueDate.split('T')[0] : '',
         amount: invoice.amount || 0,
         taxAmount: invoice.taxAmount || 0,
         totalAmount: invoice.totalAmount || 0,
         category: invoice.category,
-        status: invoice.status,
-        paymentDate: invoice.paymentDate ? invoice.paymentDate.split('T')[0] : '',
-        paymentMethod: (invoice.paymentMethod as PaymentMethod) || '',
         notes: invoice.notes || '',
       });
-      if (invoice.vendor) {
-        setSelectedVendor(invoice.vendor as Vendor);
-      }
     } else {
       setFormData({
-        invoiceNumber: '',
         vendorId: '',
         vendorName: '',
         description: '',
         invoiceDate: new Date().toISOString().split('T')[0],
-        dueDate: '',
         amount: 0,
         taxAmount: 0,
         totalAmount: 0,
         category: 'PARTS',
-        status: 'PENDING',
-        paymentDate: '',
-        paymentMethod: '',
         notes: '',
       });
-      setSelectedVendor(null);
       setSelectedFile(null);
     }
   }, [invoice, open]);
@@ -139,29 +107,20 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
     }
   };
 
-  const handleVendorChange = (_: any, value: string | Vendor | null) => {
-    if (typeof value === 'string') {
-      setSelectedVendor(null);
-      setFormData({
-        ...formData,
-        vendorId: '',
-        vendorName: value,
-      });
-    } else if (value) {
-      setSelectedVendor(value);
-      setFormData({
-        ...formData,
-        vendorId: value.id,
-        vendorName: value.name,
-      });
-    } else {
-      setSelectedVendor(null);
-      setFormData({
-        ...formData,
-        vendorId: '',
-        vendorName: '',
-      });
-    }
+  const handleVendorChange = (vendorId: string, vendorName: string) => {
+    setFormData({
+      ...formData,
+      vendorId,
+      vendorName,
+    });
+  };
+
+  const handleVendorFreeTextChange = (vendorName: string) => {
+    setFormData({
+      ...formData,
+      vendorId: '',
+      vendorName,
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,16 +142,8 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
       totalAmount: parseFloat(formData.totalAmount.toString()),
     };
 
-    if (!submitData.paymentMethod) delete submitData.paymentMethod;
-    if (!submitData.paymentDate) delete submitData.paymentDate;
-    if (!submitData.dueDate) delete submitData.dueDate;
-
-    onSave(submitData);
-
-    // Upload image if selected and invoice exists
-    if (selectedFile && invoice && onImageUpload) {
-      onImageUpload(invoice.id, selectedFile);
-    }
+    // Pass both form data and file to parent
+    onSave(submitData, selectedFile);
   };
 
   const isValid =
@@ -206,210 +157,162 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
       <DialogTitle>{invoice ? 'Edit Purchase Invoice' : 'Add Purchase Invoice'}</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Invoice Number"
-                value={formData.invoiceNumber}
-                onChange={handleChange('invoiceNumber')}
-                placeholder="Optional"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Autocomplete
-                options={vendors}
-                getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
-                value={selectedVendor}
-                onChange={handleVendorChange}
-                renderInput={(params) => (
-                  <TextField {...params} label="Vendor" placeholder="Select or type vendor name" />
-                )}
-                freeSolo
-                onInputChange={(_, value) => {
-                  if (!selectedVendor) {
-                    setFormData({ ...formData, vendorName: value });
-                  }
-                }}
-              />
-            </Grid>
-
+          <Grid container spacing={3}>
+            {/* Section 1: Basic Information */}
             <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                required
-                label="Description"
-                value={formData.description}
-                onChange={handleChange('description')}
-                multiline
-                rows={2}
-              />
+              <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'grey.200' }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  Basic Information
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12 }}>
+                    <VendorSelect
+                      vendors={vendors}
+                      value={formData.vendorId}
+                      onChange={handleVendorChange}
+                      onVendorsChange={loadVendors}
+                      allowFreeSolo={true}
+                      onFreeTextChange={handleVendorFreeTextChange}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      required
+                      label="Description"
+                      value={formData.description}
+                      onChange={handleChange('description')}
+                      multiline
+                      rows={2}
+                      placeholder="What was purchased?"
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      select
+                      required
+                      label="Category"
+                      value={formData.category}
+                      onChange={handleChange('category')}
+                    >
+                      {categories.map((cat) => (
+                        <MenuItem key={cat} value={cat}>
+                          {cat}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      required
+                      type="date"
+                      label="Invoice Date"
+                      value={formData.invoiceDate}
+                      onChange={handleChange('invoiceDate')}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </Grid>
+              </Paper>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                select
-                required
-                label="Category"
-                value={formData.category}
-                onChange={handleChange('category')}
-              >
-                {categories.map((cat) => (
-                  <MenuItem key={cat} value={cat}>
-                    {cat}
-                  </MenuItem>
-                ))}
-              </TextField>
+            {/* Section 2: Financial Details */}
+            <Grid size={{ xs: 12 }}>
+              <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'grey.200' }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  Financial Details
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <TextField
+                      fullWidth
+                      required
+                      type="number"
+                      label="Amount"
+                      value={formData.amount}
+                      onChange={handleChange('amount')}
+                      inputProps={{ step: '0.01', min: '0' }}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Tax Amount"
+                      value={formData.taxAmount}
+                      onChange={handleChange('taxAmount')}
+                      inputProps={{ step: '0.01', min: '0' }}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <TextField
+                      fullWidth
+                      required
+                      type="number"
+                      label="Total Amount"
+                      value={formData.totalAmount}
+                      onChange={handleChange('totalAmount')}
+                      inputProps={{ step: '0.01', min: '0' }}
+                    />
+                  </Grid>
+                </Grid>
+              </Paper>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                required
-                type="date"
-                label="Invoice Date"
-                value={formData.invoiceDate}
-                onChange={handleChange('invoiceDate')}
-                InputLabelProps={{ shrink: true }}
-              />
+            {/* Section 3: Invoice Image */}
+            <Grid size={{ xs: 12 }}>
+              <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'grey.200' }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  Invoice Image
+                </Typography>
+                {invoice?.imageUrl && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Current image: {invoice.imageName}
+                  </Alert>
+                )}
+                <Button variant="outlined" component="label" startIcon={<UploadIcon />}>
+                  {selectedFile ? selectedFile.name : 'Choose File'}
+                  <input type="file" hidden accept="image/*,.pdf" onChange={handleFileChange} />
+                </Button>
+                {selectedFile && (
+                  <IconButton
+                    size="small"
+                    onClick={() => setSelectedFile(null)}
+                    sx={{ ml: 1 }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+                <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+                  Max 10MB - PDF, JPG, PNG, WEBP
+                </Typography>
+              </Paper>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Due Date"
-                value={formData.dueDate}
-                onChange={handleChange('dueDate')}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                required
-                type="number"
-                label="Amount"
-                value={formData.amount}
-                onChange={handleChange('amount')}
-                inputProps={{ step: '0.01', min: '0' }}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Tax Amount"
-                value={formData.taxAmount}
-                onChange={handleChange('taxAmount')}
-                inputProps={{ step: '0.01', min: '0' }}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                required
-                type="number"
-                label="Total Amount"
-                value={formData.totalAmount}
-                onChange={handleChange('totalAmount')}
-                inputProps={{ step: '0.01', min: '0' }}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                select
-                required
-                label="Status"
-                value={formData.status}
-                onChange={handleChange('status')}
-              >
-                {statuses.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    {status}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                select
-                label="Payment Method"
-                value={formData.paymentMethod}
-                onChange={handleChange('paymentMethod')}
-              >
-                <MenuItem value="">None</MenuItem>
-                {paymentMethods.map((method) => (
-                  <MenuItem key={method} value={method}>
-                    {method.replace('_', ' ')}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-
-            {formData.status === 'PAID' && (
-              <Grid size={{ xs: 12 }}>
+            {/* Section 4: Additional Notes */}
+            <Grid size={{ xs: 12 }}>
+              <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'grey.200' }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  Additional Notes
+                </Typography>
                 <TextField
                   fullWidth
-                  type="date"
-                  label="Payment Date"
-                  value={formData.paymentDate}
-                  onChange={handleChange('paymentDate')}
-                  InputLabelProps={{ shrink: true }}
+                  label="Notes"
+                  value={formData.notes}
+                  onChange={handleChange('notes')}
+                  multiline
+                  rows={3}
+                  placeholder="Any additional information..."
                 />
-              </Grid>
-            )}
-
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Notes"
-                value={formData.notes}
-                onChange={handleChange('notes')}
-                multiline
-                rows={2}
-              />
+              </Paper>
             </Grid>
-
-            {invoice && (
-              <Grid size={{ xs: 12 }}>
-                <Box sx={{ border: '1px dashed', borderColor: 'divider', p: 2, borderRadius: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Invoice Image
-                  </Typography>
-                  {invoice.imageUrl && (
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      Current image: {invoice.imageName}
-                    </Alert>
-                  )}
-                  <Button variant="outlined" component="label" startIcon={<UploadIcon />}>
-                    {selectedFile ? selectedFile.name : 'Upload New Image'}
-                    <input type="file" hidden accept="image/*,.pdf" onChange={handleFileChange} />
-                  </Button>
-                  {selectedFile && (
-                    <IconButton
-                      size="small"
-                      onClick={() => setSelectedFile(null)}
-                      sx={{ ml: 1 }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
-                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                    Max 10MB - PDF, JPG, PNG, WEBP
-                  </Typography>
-                </Box>
-              </Grid>
-            )}
           </Grid>
         </Box>
       </DialogContent>

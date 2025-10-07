@@ -41,6 +41,7 @@ import UserManagement from '../pages/admin/UserManagement';
 // Payroll Pages
 import { PayrollDashboard } from './pages/admin/payroll/PayrollDashboard';
 import { JobsManagement } from './pages/admin/payroll/JobsManagement';
+import { EmployeeJobsView } from './pages/admin/payroll/EmployeeJobsView';
 import { PaymentsManagement } from './pages/admin/payroll/PaymentsManagement';
 
 
@@ -65,9 +66,6 @@ import CashReport from './pages/invoices/CashReport';
 // Quote Pages
 import QuoteList from './pages/quotations/QuotationList';
 import QuotationDetails from './pages/quotations/QuotationDetails';
-
-// Vendor Pages
-import VendorManagement from './pages/vendors/VendorManagement';
 
 // Purchase Invoice Pages
 import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoiceManagement';
@@ -185,12 +183,12 @@ export function App() {
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
-          <Route path="vendors" element={<VendorManagement />} />
           <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
           <Route path="expense-invoices" element={<ExpenseInvoiceManagement />} />
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="payroll/jobs" element={<JobsManagement />} />
+          <Route path="payroll/jobs/:employeeId" element={<EmployeeJobsView />} />
           <Route path="payroll/payments" element={<PaymentsManagement />} />
           <Route path="reports" element={<div>Financial Reports</div>} />
           <Route path="analytics" element={<div>Analytics</div>} />

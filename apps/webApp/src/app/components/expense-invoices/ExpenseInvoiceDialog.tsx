@@ -9,7 +9,6 @@ import {
   Grid,
   Box,
   MenuItem,
-  Autocomplete,
   Typography,
   IconButton,
   Alert,
@@ -22,6 +21,7 @@ import {
   ExpenseInvoiceStatus,
 } from '../../services/expense-invoice.service';
 import vendorService, { Vendor } from '../../services/vendor.service';
+import VendorSelect from '../vendors/VendorSelect';
 
 interface ExpenseInvoiceDialogProps {
   open: boolean;
@@ -50,7 +50,6 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
   onImageUpload,
 }) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     invoiceNumber: '',
@@ -91,9 +90,6 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
         paymentMethod: (invoice.paymentMethod as PaymentMethod) || '',
         notes: invoice.notes || '',
       });
-      if (invoice.vendor) {
-        setSelectedVendor(invoice.vendor as Vendor);
-      }
     } else {
       setFormData({
         invoiceNumber: '',
@@ -110,7 +106,6 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
         paymentMethod: '',
         notes: '',
       });
-      setSelectedVendor(null);
       setSelectedFile(null);
     }
   }, [invoice, open]);
@@ -136,29 +131,20 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
     }
   };
 
-  const handleVendorChange = (_: any, value: string | Vendor | null) => {
-    if (typeof value === 'string') {
-      setSelectedVendor(null);
-      setFormData({
-        ...formData,
-        vendorId: '',
-        vendorName: value,
-      });
-    } else if (value) {
-      setSelectedVendor(value);
-      setFormData({
-        ...formData,
-        vendorId: value.id,
-        vendorName: value.name,
-      });
-    } else {
-      setSelectedVendor(null);
-      setFormData({
-        ...formData,
-        vendorId: '',
-        vendorName: '',
-      });
-    }
+  const handleVendorChange = (vendorId: string, vendorName: string) => {
+    setFormData({
+      ...formData,
+      vendorId,
+      vendorName,
+    });
+  };
+
+  const handleVendorFreeTextChange = (vendorName: string) => {
+    setFormData({
+      ...formData,
+      vendorId: '',
+      vendorName,
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,20 +201,13 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
             </Grid>
 
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Autocomplete
-                options={vendors}
-                getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
-                value={selectedVendor}
+              <VendorSelect
+                vendors={vendors}
+                value={formData.vendorId}
                 onChange={handleVendorChange}
-                renderInput={(params) => (
-                  <TextField {...params} label="Vendor" placeholder="Select or type vendor name" />
-                )}
-                freeSolo
-                onInputChange={(_, value) => {
-                  if (!selectedVendor) {
-                    setFormData({ ...formData, vendorName: value });
-                  }
-                }}
+                onVendorsChange={loadVendors}
+                allowFreeSolo={true}
+                onFreeTextChange={handleVendorFreeTextChange}
               />
             </Grid>
 

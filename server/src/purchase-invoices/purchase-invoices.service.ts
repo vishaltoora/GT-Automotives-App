@@ -33,7 +33,6 @@ export class PurchaseInvoicesService {
     const filters: any = {};
     if (filterDto.vendorId) filters.vendorId = filterDto.vendorId;
     if (filterDto.category) filters.category = filterDto.category;
-    if (filterDto.status) filters.status = filterDto.status;
     if (filterDto.startDate) filters.startDate = new Date(filterDto.startDate);
     if (filterDto.endDate) filters.endDate = new Date(filterDto.endDate);
 

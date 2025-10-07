@@ -281,7 +281,10 @@
       "Bash(gh issue:*)",
       "Bash(__NEW_LINE__ gh issue close 41 --reason \"completed\")",
       "Bash(xargs:*)",
-      "Bash(tsc:*)"
+      "Bash(tsc:*)",
+      "Bash(do echo -e \"\\n=== Searching for $dto usage in frontend ===\")",
+      "Bash(do echo -e \"\\n$file.service.ts:\")",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma studio --schema=libs/database/src/lib/prisma/schema.prisma)"
     ],
     "deny": [],
     "ask": []

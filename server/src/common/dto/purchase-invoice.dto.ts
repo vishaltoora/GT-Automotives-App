@@ -4,11 +4,6 @@ import { PurchaseCategory, PurchaseInvoiceStatus, PaymentMethod } from '@prisma/
 export class CreatePurchaseInvoiceDto {
   @IsString()
   @IsOptional()
-  @MaxLength(50)
-  invoiceNumber?: string;
-
-  @IsString()
-  @IsOptional()
   vendorId?: string;
 
   @IsString()
@@ -21,10 +16,6 @@ export class CreatePurchaseInvoiceDto {
 
   @IsDateString()
   invoiceDate!: string;
-
-  @IsDateString()
-  @IsOptional()
-  dueDate?: string;
 
   @IsNumber()
   amount!: number;
@@ -39,18 +30,6 @@ export class CreatePurchaseInvoiceDto {
   @IsEnum(PurchaseCategory)
   category!: PurchaseCategory;
 
-  @IsEnum(PurchaseInvoiceStatus)
-  @IsOptional()
-  status?: PurchaseInvoiceStatus;
-
-  @IsDateString()
-  @IsOptional()
-  paymentDate?: string;
-
-  @IsEnum(PaymentMethod)
-  @IsOptional()
-  paymentMethod?: PaymentMethod;
-
   @IsString()
   @IsOptional()
   notes?: string;
@@ -60,11 +39,6 @@ export class CreatePurchaseInvoiceDto {
 }
 
 export class UpdatePurchaseInvoiceDto {
-  @IsString()
-  @IsOptional()
-  @MaxLength(50)
-  invoiceNumber?: string;
-
   @IsString()
   @IsOptional()
   vendorId?: string;
@@ -83,10 +57,6 @@ export class UpdatePurchaseInvoiceDto {
   @IsOptional()
   invoiceDate?: string;
 
-  @IsDateString()
-  @IsOptional()
-  dueDate?: string;
-
   @IsNumber()
   @IsOptional()
   amount?: number;
@@ -102,18 +72,6 @@ export class UpdatePurchaseInvoiceDto {
   @IsEnum(PurchaseCategory)
   @IsOptional()
   category?: PurchaseCategory;
-
-  @IsEnum(PurchaseInvoiceStatus)
-  @IsOptional()
-  status?: PurchaseInvoiceStatus;
-
-  @IsDateString()
-  @IsOptional()
-  paymentDate?: string;
-
-  @IsEnum(PaymentMethod)
-  @IsOptional()
-  paymentMethod?: PaymentMethod;
 
   @IsString()
   @IsOptional()
@@ -159,10 +117,6 @@ export class PurchaseInvoiceFilterDto {
   @IsEnum(PurchaseCategory)
   @IsOptional()
   category?: PurchaseCategory;
-
-  @IsEnum(PurchaseInvoiceStatus)
-  @IsOptional()
-  status?: PurchaseInvoiceStatus;
 
   @IsDateString()
   @IsOptional()

@@ -35,6 +35,10 @@ import {
   Speed,
   LocalShipping,
   Description,
+  Work,
+  Payment,
+  ShoppingCart,
+  ReceiptLong,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';
@@ -516,6 +520,98 @@ export function AdminDashboard() {
                 <CalendarMonth sx={{ fontSize: 32, color: colors.primary.lighter, mb: 1 }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
                   New Appointment
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/payroll/jobs"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: '#9c27b0',
+                  },
+                }}
+              >
+                <Work sx={{ fontSize: 32, color: '#9c27b0', mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                  Jobs
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/payroll/payments"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: '#00bcd4',
+                  },
+                }}
+              >
+                <Payment sx={{ fontSize: 32, color: '#00bcd4', mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                  Payments
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/purchase-invoices"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: '#ff5722',
+                  },
+                }}
+              >
+                <ShoppingCart sx={{ fontSize: 32, color: '#ff5722', mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                  Purchase Invoices
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/expense-invoices"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: '#795548',
+                  },
+                }}
+              >
+                <ReceiptLong sx={{ fontSize: 32, color: '#795548', mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                  Expense Invoices
                 </Typography>
               </Paper>
             </Box>

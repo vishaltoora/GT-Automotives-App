@@ -11,9 +11,6 @@ export class PurchaseInvoiceRepository {
       data: {
         ...data,
         invoiceDate: new Date(data.invoiceDate),
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        paymentDate: data.paymentDate ? new Date(data.paymentDate) : undefined,
-        status: data.status || 'PENDING',
       },
       include: {
         vendor: {
@@ -103,8 +100,6 @@ export class PurchaseInvoiceRepository {
       data: {
         ...data,
         invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : undefined,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        paymentDate: data.paymentDate ? new Date(data.paymentDate) : undefined,
       },
       include: {
         vendor: {

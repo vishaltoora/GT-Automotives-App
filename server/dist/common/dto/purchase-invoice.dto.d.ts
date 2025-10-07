@@ -1,35 +1,25 @@
 import { PurchaseCategory, PurchaseInvoiceStatus, PaymentMethod } from '@prisma/client';
 export declare class CreatePurchaseInvoiceDto {
-    invoiceNumber?: string;
     vendorId?: string;
     vendorName: string;
     description: string;
     invoiceDate: string;
-    dueDate?: string;
     amount: number;
     taxAmount?: number;
     totalAmount: number;
     category: PurchaseCategory;
-    status?: PurchaseInvoiceStatus;
-    paymentDate?: string;
-    paymentMethod?: PaymentMethod;
     notes?: string;
     createdBy: string;
 }
 export declare class UpdatePurchaseInvoiceDto {
-    invoiceNumber?: string;
     vendorId?: string;
     vendorName?: string;
     description?: string;
     invoiceDate?: string;
-    dueDate?: string;
     amount?: number;
     taxAmount?: number;
     totalAmount?: number;
     category?: PurchaseCategory;
-    status?: PurchaseInvoiceStatus;
-    paymentDate?: string;
-    paymentMethod?: PaymentMethod;
     notes?: string;
 }
 export declare class PurchaseInvoiceResponseDto {
@@ -65,7 +55,6 @@ export declare class PurchaseInvoiceResponseDto {
 export declare class PurchaseInvoiceFilterDto {
     vendorId?: string;
     category?: PurchaseCategory;
-    status?: PurchaseInvoiceStatus;
     startDate?: string;
     endDate?: string;
     page?: string;

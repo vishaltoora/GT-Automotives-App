@@ -39,7 +39,6 @@ import {
   Payment,
   Work,
   AttachMoney,
-  Business,
   ShoppingCart,
   ReceiptLong
 } from '@mui/icons-material';
@@ -78,7 +77,6 @@ export function AdminLayout() {
     { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
     { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
     { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },
-    { text: 'Vendors', icon: <Business />, path: '/admin/vendors' },
     { text: 'Purchase Invoices', icon: <ShoppingCart />, path: '/admin/purchase-invoices' },
     { text: 'Expense Invoices', icon: <ReceiptLong />, path: '/admin/expense-invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
@@ -390,15 +388,21 @@ export function AdminLayout() {
             </Box>
 
             {/* Desktop title */}
-            <Typography 
-              variant="h5" 
-              noWrap 
-              component="div" 
-              sx={{ 
+            <Typography
+              variant="h5"
+              noWrap
+              component={Link}
+              to="/admin/dashboard"
+              sx={{
                 flexGrow: 1,
                 fontWeight: 600,
                 color: colors.primary.main,
                 display: { xs: 'none', md: 'block' },
+                textDecoration: 'none',
+                cursor: 'pointer',
+                '&:hover': {
+                  color: colors.primary.dark,
+                },
               }}
             >
               Admin Dashboard
@@ -451,7 +455,7 @@ export function AdminLayout() {
             flexGrow: 1,
             overflow: 'auto',
             p: { xs: 2, sm: 3 },
-            backgroundColor: colors.background.light,
+            backgroundColor: 'white',
           }}
         >
           <Container maxWidth="xl">

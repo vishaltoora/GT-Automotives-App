@@ -15,6 +15,11 @@ import {
   TextField,
   MenuItem,
   Grid,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -23,11 +28,11 @@ import {
   Receipt as ReceiptIcon,
   Image as ImageIcon,
   FilterList as FilterIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import purchaseInvoiceService, {
   PurchaseInvoice,
   PurchaseCategory,
-  PurchaseInvoiceStatus,
 } from '../../services/purchase-invoice.service';
 import PurchaseInvoiceDialog from '../../components/purchase-invoices/PurchaseInvoiceDialog';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
@@ -35,16 +40,16 @@ import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
 
 const categories: PurchaseCategory[] = ['TIRES', 'PARTS', 'TOOLS', 'SUPPLIES', 'OTHER'];
-const statuses: PurchaseInvoiceStatus[] = ['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
 
 const PurchaseInvoiceManagement: React.FC = () => {
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState<string>('');
   const [filters, setFilters] = useState({
     category: '',
-    status: '',
     startDate: '',
     endDate: '',
   });
@@ -62,7 +67,6 @@ const PurchaseInvoiceManagement: React.FC = () => {
       setLoading(true);
       const filterParams: any = {};
       if (filters.category) filterParams.category = filters.category;
-      if (filters.status) filterParams.status = filters.status;
       if (filters.startDate) filterParams.startDate = filters.startDate;
       if (filters.endDate) filterParams.endDate = filters.endDate;
 
@@ -85,6 +89,11 @@ const PurchaseInvoiceManagement: React.FC = () => {
     setDialogOpen(true);
   };
 
+  const handleViewInvoice = (imageUrl: string) => {
+    setViewerUrl(imageUrl);
+    setViewerOpen(true);
+  };
+
   const handleDelete = async (invoice: PurchaseInvoice) => {
     const confirmed = await confirm({
       title: 'Delete Purchase Invoice',
@@ -105,44 +114,29 @@ const PurchaseInvoiceManagement: React.FC = () => {
     }
   };
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: any, file: File | null) => {
     try {
       const saveData = {
         ...data,
         createdBy: user?.id || '',
       };
 
+      let savedInvoice;
       if (selectedInvoice) {
-        await purchaseInvoiceService.update(selectedInvoice.id, saveData);
+        savedInvoice = await purchaseInvoiceService.update(selectedInvoice.id, saveData);
       } else {
-        await purchaseInvoiceService.create(saveData);
+        savedInvoice = await purchaseInvoiceService.create(saveData);
       }
+
+      // Upload image if file is provided
+      if (file && savedInvoice) {
+        await purchaseInvoiceService.uploadImage(savedInvoice.id, file);
+      }
+
       setDialogOpen(false);
       loadInvoices();
     } catch (error) {
       showError(`Failed to ${selectedInvoice ? 'update' : 'create'} purchase invoice`);
-    }
-  };
-
-  const handleImageUpload = async (invoiceId: string, file: File) => {
-    try {
-      await purchaseInvoiceService.uploadImage(invoiceId, file);
-      loadInvoices();
-    } catch (error) {
-      showError('Failed to upload image');
-    }
-  };
-
-  const getStatusColor = (status: PurchaseInvoiceStatus): 'success' | 'warning' | 'error' | 'default' => {
-    switch (status) {
-      case 'PAID':
-        return 'success';
-      case 'PENDING':
-        return 'warning';
-      case 'OVERDUE':
-        return 'error';
-      default:
-        return 'default';
     }
   };
 
@@ -194,22 +188,6 @@ const PurchaseInvoiceManagement: React.FC = () => {
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <TextField
               fullWidth
-              select
-              label="Status"
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            >
-              <MenuItem value="">All Statuses</MenuItem>
-              {statuses.map((status) => (
-                <MenuItem key={status} value={status}>
-                  {status}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <TextField
-              fullWidth
               type="date"
               label="Start Date"
               value={filters.startDate}
@@ -234,13 +212,11 @@ const PurchaseInvoiceManagement: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Invoice #</TableCell>
               <TableCell>Vendor</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Amount</TableCell>
-              <TableCell>Status</TableCell>
               <TableCell>Image</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -248,20 +224,19 @@ const PurchaseInvoiceManagement: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} align="center">
+                <TableCell colSpan={7} align="center">
                   Loading invoices...
                 </TableCell>
               </TableRow>
             ) : invoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} align="center">
+                <TableCell colSpan={7} align="center">
                   No purchase invoices found
                 </TableCell>
               </TableRow>
             ) : (
               invoices.map((invoice) => (
                 <TableRow key={invoice.id}>
-                  <TableCell>{invoice.invoiceNumber || '-'}</TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight="medium">
                       {invoice.vendorName}
@@ -278,17 +253,16 @@ const PurchaseInvoiceManagement: React.FC = () => {
                   <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
                   <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={invoice.status}
-                      color={getStatusColor(invoice.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
                     {invoice.imageUrl ? (
-                      <IconButton size="small" color="primary" href={invoice.imageUrl} target="_blank">
-                        <ImageIcon />
-                      </IconButton>
+                      <Tooltip title={invoice.imageUrl?.includes('localhost') ? 'View invoice (dev mode - mock data)' : 'View invoice'}>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => invoice.imageUrl && handleViewInvoice(invoice.imageUrl)}
+                        >
+                          <ImageIcon />
+                        </IconButton>
+                      </Tooltip>
                     ) : (
                       '-'
                     )}
@@ -313,8 +287,79 @@ const PurchaseInvoiceManagement: React.FC = () => {
         invoice={selectedInvoice}
         onClose={() => setDialogOpen(false)}
         onSave={handleSave}
-        onImageUpload={handleImageUpload}
       />
+
+      {/* Invoice Viewer Dialog */}
+      <Dialog
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">Invoice Preview</Typography>
+            <IconButton onClick={() => setViewerOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {viewerUrl.includes('localhost') ? (
+            <Box
+              sx={{
+                p: 4,
+                textAlign: 'center',
+                bgcolor: 'grey.100',
+                borderRadius: 1,
+                minHeight: 300,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+              }}
+            >
+              <ImageIcon sx={{ fontSize: 80, color: 'grey.400', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                Development Mode
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Invoice file upload is enabled but preview is not available in development mode.
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                In production, the actual PDF/image will be displayed here.
+              </Typography>
+            </Box>
+          ) : viewerUrl.toLowerCase().endsWith('.pdf') ? (
+            <Box sx={{ height: '70vh', width: '100%' }}>
+              <iframe
+                src={viewerUrl}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                title="Invoice PDF"
+              />
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', p: 2 }}>
+              <img
+                src={viewerUrl}
+                alt="Invoice"
+                style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {!viewerUrl.includes('localhost') && (
+            <Button
+              variant="outlined"
+              onClick={() => window.open(viewerUrl, '_blank')}
+            >
+              Open in New Tab
+            </Button>
+          )}
+          <Button onClick={() => setViewerOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

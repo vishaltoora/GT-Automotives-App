@@ -265,6 +265,24 @@ async function main() {
     });
     console.log('✅ Created staff user:', staffUser.email);
 
+    // Vishal Toora - Staff User
+    const vishalStaff = await prisma.user.upsert({
+      where: { email: 'vishal.toora83@gmail.com' },
+      update: {
+        clerkId: 'user_31sHjURpn89Xfle4f48fwUogFcd',
+        roleId: staffRole.id, // Update role to STAFF if user already exists
+      },
+      create: {
+        clerkId: 'user_31sHjURpn89Xfle4f48fwUogFcd',
+        email: 'vishal.toora83@gmail.com',
+        firstName: 'Vishal',
+        lastName: 'Toora',
+        roleId: staffRole.id,
+        isActive: true,
+      },
+    });
+    console.log('✅ Created staff user:', vishalStaff.email);
+
     // Create demo customer (customers are now independent entities)
     await prisma.customer.upsert({
       where: { id: 'demo-customer-1' },

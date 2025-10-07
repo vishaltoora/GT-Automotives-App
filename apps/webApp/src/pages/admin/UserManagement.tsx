@@ -35,6 +35,7 @@ import {
   Block as BlockIcon,
   CheckCircle as ActiveIcon,
   Email as EmailIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@clerk/clerk-react';
 import { useError } from '../../app/contexts/ErrorContext';
@@ -197,14 +198,24 @@ const UserManagement: React.FC = () => {
         <Typography variant="h4" component="h1">
           User Management
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          Add User
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<RefreshIcon />}
+            onClick={fetchUsers}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            Add User
+          </Button>
+        </Stack>
       </Box>
 
       <Paper sx={{ mb: 2, p: 2 }}>

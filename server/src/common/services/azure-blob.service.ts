@@ -136,7 +136,13 @@ export class AzureBlobService {
     mimeType?: string
   ): Promise<UploadResult> {
     if (!this.isConfigured) {
-      throw new Error('Azure Storage is not configured. File upload is disabled in development mode.');
+      this.logger.warn('⚠️ Azure Storage not configured - returning mock URL for development');
+      return {
+        blobUrl: `http://localhost:3000/uploads/mock/${invoiceType}/${originalFileName}`,
+        blobName: `mock-${Date.now()}-${originalFileName}`,
+        containerName: `${invoiceType}-invoices`,
+        size: Buffer.isBuffer(file) ? file.length : 0,
+      };
     }
 
     try {
@@ -248,7 +254,8 @@ export class AzureBlobService {
     blobName: string
   ): Promise<boolean> {
     if (!this.isConfigured) {
-      throw new Error('Azure Storage is not configured. File deletion is disabled in development mode.');
+      this.logger.warn('⚠️ Azure Storage not configured - skipping file deletion in development');
+      return true;
     }
 
     try {
