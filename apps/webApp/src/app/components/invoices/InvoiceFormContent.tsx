@@ -489,7 +489,20 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     <InputLabel>Payment Method</InputLabel>
                     <Select
                       value={formData.paymentMethod}
-                      onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                      onChange={(e) => {
+                        const paymentMethod = e.target.value;
+                        // Automatically set GST and PST to 0% when Cash is selected
+                        if (paymentMethod === 'CASH') {
+                          setFormData({
+                            ...formData,
+                            paymentMethod,
+                            gstRate: 0,
+                            pstRate: 0
+                          });
+                        } else {
+                          setFormData({ ...formData, paymentMethod });
+                        }
+                      }}
                       label="Payment Method"
                     >
                       <MenuItem value="">Pending Payment</MenuItem>
