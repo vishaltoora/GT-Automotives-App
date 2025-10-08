@@ -16,10 +16,6 @@ import {
   MenuItem,
   Grid,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -28,7 +24,6 @@ import {
   Receipt as ReceiptIcon,
   Image as ImageIcon,
   FilterList as FilterIcon,
-  Close as CloseIcon,
 } from '@mui/icons-material';
 import purchaseInvoiceService, {
   PurchaseInvoice,
@@ -39,7 +34,7 @@ import expenseInvoiceService, {
   ExpenseCategory,
 } from '../../services/expense-invoice.service';
 import PurchaseInvoiceDialog from '../../components/purchase-invoices/PurchaseInvoiceDialog';
-import FileViewer from '../../components/common/FileViewer';
+import FileViewerDialog from '../../components/common/FileViewerDialog';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -355,35 +350,13 @@ const PurchaseInvoiceManagement: React.FC = () => {
       />
 
       {/* Invoice Viewer Dialog */}
-      <Dialog
+      <FileViewerDialog
         open={viewerOpen}
         onClose={() => setViewerOpen(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">Invoice Preview</Typography>
-            <IconButton onClick={() => setViewerOpen(false)} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ height: '70vh', width: '100%' }}>
-            <FileViewer url={viewerUrl} fileName={viewerFileName} />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            variant="outlined"
-            onClick={() => window.open(viewerUrl, '_blank')}
-          >
-            Open in New Tab
-          </Button>
-          <Button onClick={() => setViewerOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+        url={viewerUrl}
+        fileName={viewerFileName}
+        title="Invoice Preview"
+      />
     </Box>
   );
 };
