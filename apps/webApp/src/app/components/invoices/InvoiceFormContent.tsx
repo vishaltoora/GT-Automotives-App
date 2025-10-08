@@ -492,12 +492,21 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       onChange={(e) => {
                         const paymentMethod = e.target.value;
                         // Automatically set GST and PST to 0% when Cash is selected
+                        // Restore default rates (5% GST, 7% PST) when switching from Cash to other methods
                         if (paymentMethod === 'CASH') {
                           setFormData({
                             ...formData,
                             paymentMethod,
                             gstRate: 0,
                             pstRate: 0
+                          });
+                        } else if (formData.paymentMethod === 'CASH') {
+                          // Switching from Cash to another method - restore default rates
+                          setFormData({
+                            ...formData,
+                            paymentMethod,
+                            gstRate: 0.05,
+                            pstRate: 0.07
                           });
                         } else {
                           setFormData({ ...formData, paymentMethod });
