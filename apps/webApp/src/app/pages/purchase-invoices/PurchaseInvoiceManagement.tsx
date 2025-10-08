@@ -39,6 +39,7 @@ import expenseInvoiceService, {
   ExpenseCategory,
 } from '../../services/expense-invoice.service';
 import PurchaseInvoiceDialog from '../../components/purchase-invoices/PurchaseInvoiceDialog';
+import FileViewer from '../../components/common/FileViewer';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -54,6 +55,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | ExpenseInvoice | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string>('');
+  const [viewerFileName, setViewerFileName] = useState<string>('');
   const [filters, setFilters] = useState({
     type: 'all',
     category: '',
@@ -118,6 +120,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
         : await expenseInvoiceService.getImageUrl(invoice.id);
 
       setViewerUrl(imageUrl);
+      setViewerFileName(invoice.imageName || 'invoice');
       setViewerOpen(true);
     } catch (error) {
       showError('Failed to load invoice image');
@@ -311,24 +314,24 @@ const PurchaseInvoiceManagement: React.FC = () => {
                     <TableCell>
                       <Chip label={invoice.category.replace(/_/g, ' ')} size="small" />
                     </TableCell>
-                  <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
-                  <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
-                  <TableCell>
-                    {invoice.imageUrl ? (
-                      <Tooltip title="View invoice">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleViewInvoice(invoice)}
-                        >
-                          <ImageIcon />
-                        </IconButton>
-                      </Tooltip>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell align="right">
+                    <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
+                    <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
+                    <TableCell>
+                      {invoice.imageUrl ? (
+                        <Tooltip title="View invoice">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleViewInvoice(invoice)}
+                          >
+                            <ImageIcon />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
                       <IconButton size="small" onClick={() => handleEdit(invoice)} color="primary">
                         <EditIcon />
                       </IconButton>
@@ -367,23 +370,9 @@ const PurchaseInvoiceManagement: React.FC = () => {
           </Box>
         </DialogTitle>
         <DialogContent>
-          {viewerUrl.toLowerCase().endsWith('.pdf') ? (
-            <Box sx={{ height: '70vh', width: '100%' }}>
-              <iframe
-                src={viewerUrl}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                title="Invoice PDF"
-              />
-            </Box>
-          ) : (
-            <Box sx={{ textAlign: 'center', p: 2 }}>
-              <img
-                src={viewerUrl}
-                alt="Invoice"
-                style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
-              />
-            </Box>
-          )}
+          <Box sx={{ height: '70vh', width: '100%' }}>
+            <FileViewer url={viewerUrl} fileName={viewerFileName} />
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button
