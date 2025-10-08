@@ -118,6 +118,31 @@ export class ExpenseInvoicesService {
     return this.mapToResponse(updated);
   }
 
+  async getImageUrl(id: string): Promise<string> {
+    const invoice = await this.expenseInvoiceRepository.findById(id);
+    if (!invoice) {
+      throw new NotFoundException(`Expense invoice with ID ${id} not found`);
+    }
+
+    if (!invoice.imageUrl || !invoice.imageName) {
+      throw new NotFoundException(`No image found for expense invoice ${id}`);
+    }
+
+    // If imageUrl is a mock URL (development mode), return as-is
+    if (invoice.imageUrl.includes('localhost') || invoice.imageUrl.includes('/uploads/mock/')) {
+      return invoice.imageUrl;
+    }
+
+    // Generate SAS URL for Azure Blob Storage (expires in 1 hour)
+    const sasUrl = await this.azureBlobService.generateSasUrl(
+      'expense-invoices',
+      invoice.imageName,
+      60
+    );
+
+    return sasUrl;
+  }
+
   async remove(id: string): Promise<ExpenseInvoiceResponseDto> {
     const invoice = await this.expenseInvoiceRepository.findById(id);
     if (!invoice) {

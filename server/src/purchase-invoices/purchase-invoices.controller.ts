@@ -91,6 +91,13 @@ export class PurchaseInvoicesController {
     return this.purchaseInvoicesService.deleteImage(id);
   }
 
+  @Get(':id/image-url')
+  @Roles('ADMIN', 'STAFF')
+  async getImageUrl(@Param('id') id: string): Promise<{ imageUrl: string }> {
+    const imageUrl = await this.purchaseInvoicesService.getImageUrl(id);
+    return { imageUrl };
+  }
+
   @Delete(':id')
   @Roles('ADMIN')
   async remove(@Param('id') id: string): Promise<PurchaseInvoiceResponseDto> {

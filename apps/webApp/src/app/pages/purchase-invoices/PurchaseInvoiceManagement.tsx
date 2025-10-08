@@ -34,21 +34,28 @@ import purchaseInvoiceService, {
   PurchaseInvoice,
   PurchaseCategory,
 } from '../../services/purchase-invoice.service';
+import expenseInvoiceService, {
+  ExpenseInvoice,
+  ExpenseCategory,
+} from '../../services/expense-invoice.service';
 import PurchaseInvoiceDialog from '../../components/purchase-invoices/PurchaseInvoiceDialog';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
 
-const categories: PurchaseCategory[] = ['TIRES', 'PARTS', 'TOOLS', 'SUPPLIES', 'OTHER'];
+const purchaseCategories: PurchaseCategory[] = ['TIRES', 'PARTS', 'TOOLS', 'SUPPLIES', 'OTHER'];
+const expenseCategories: ExpenseCategory[] = ['RENT', 'UTILITIES', 'INSURANCE', 'MARKETING', 'OFFICE_SUPPLIES', 'MAINTENANCE', 'OTHER'];
+const allCategories = [...purchaseCategories, ...expenseCategories];
 
 const PurchaseInvoiceManagement: React.FC = () => {
-  const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
+  const [invoices, setInvoices] = useState<(PurchaseInvoice | ExpenseInvoice)[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | ExpenseInvoice | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string>('');
   const [filters, setFilters] = useState({
+    type: 'all',
     category: '',
     startDate: '',
     endDate: '',
@@ -70,10 +77,24 @@ const PurchaseInvoiceManagement: React.FC = () => {
       if (filters.startDate) filterParams.startDate = filters.startDate;
       if (filters.endDate) filterParams.endDate = filters.endDate;
 
-      const response = await purchaseInvoiceService.getAll(filterParams);
-      setInvoices(response.data);
+      let allInvoices: (PurchaseInvoice | ExpenseInvoice)[] = [];
+
+      if (filters.type === 'all' || filters.type === 'purchase') {
+        const purchaseResponse = await purchaseInvoiceService.getAll(filterParams);
+        allInvoices = [...allInvoices, ...purchaseResponse.data];
+      }
+
+      if (filters.type === 'all' || filters.type === 'expense') {
+        const expenseResponse = await expenseInvoiceService.getAll(filterParams);
+        allInvoices = [...allInvoices, ...expenseResponse.data];
+      }
+
+      // Sort by invoice date descending
+      allInvoices.sort((a, b) => new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime());
+
+      setInvoices(allInvoices);
     } catch (error) {
-      showError('Failed to load purchase invoices');
+      showError('Failed to load invoices');
     } finally {
       setLoading(false);
     }
@@ -84,20 +105,31 @@ const PurchaseInvoiceManagement: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleEdit = (invoice: PurchaseInvoice) => {
+  const handleEdit = (invoice: PurchaseInvoice | ExpenseInvoice) => {
     setSelectedInvoice(invoice);
     setDialogOpen(true);
   };
 
-  const handleViewInvoice = (imageUrl: string) => {
-    setViewerUrl(imageUrl);
-    setViewerOpen(true);
+  const handleViewInvoice = async (invoice: PurchaseInvoice | ExpenseInvoice) => {
+    try {
+      const isPurchase = purchaseCategories.includes(invoice.category as PurchaseCategory);
+      const imageUrl = isPurchase
+        ? await purchaseInvoiceService.getImageUrl(invoice.id)
+        : await expenseInvoiceService.getImageUrl(invoice.id);
+
+      setViewerUrl(imageUrl);
+      setViewerOpen(true);
+    } catch (error) {
+      showError('Failed to load invoice image');
+    }
   };
 
-  const handleDelete = async (invoice: PurchaseInvoice) => {
+  const handleDelete = async (invoice: PurchaseInvoice | ExpenseInvoice) => {
+    const invoiceType = purchaseCategories.includes(invoice.category as PurchaseCategory) ? 'purchase' : 'expense';
+
     const confirmed = await confirm({
-      title: 'Delete Purchase Invoice',
-      message: `Are you sure you want to delete this purchase invoice? This action cannot be undone.`,
+      title: `Delete ${invoiceType === 'purchase' ? 'Purchase' : 'Expense'} Invoice`,
+      message: `Are you sure you want to delete this ${invoiceType} invoice? This action cannot be undone.`,
       confirmText: 'Delete',
       cancelText: 'Cancel',
       severity: 'error',
@@ -106,15 +138,19 @@ const PurchaseInvoiceManagement: React.FC = () => {
 
     if (confirmed) {
       try {
-        await purchaseInvoiceService.delete(invoice.id);
+        if (invoiceType === 'purchase') {
+          await purchaseInvoiceService.delete(invoice.id);
+        } else {
+          await expenseInvoiceService.delete(invoice.id);
+        }
         loadInvoices();
       } catch (error) {
-        showError('Failed to delete purchase invoice');
+        showError(`Failed to delete ${invoiceType} invoice`);
       }
     }
   };
 
-  const handleSave = async (data: any, file: File | null) => {
+  const handleSave = async (data: any, file: File | null, invoiceType: 'purchase' | 'expense') => {
     try {
       const saveData = {
         ...data,
@@ -122,21 +158,23 @@ const PurchaseInvoiceManagement: React.FC = () => {
       };
 
       let savedInvoice;
+      const service = invoiceType === 'purchase' ? purchaseInvoiceService : expenseInvoiceService;
+
       if (selectedInvoice) {
-        savedInvoice = await purchaseInvoiceService.update(selectedInvoice.id, saveData);
+        savedInvoice = await service.update(selectedInvoice.id, saveData);
       } else {
-        savedInvoice = await purchaseInvoiceService.create(saveData);
+        savedInvoice = await service.create(saveData);
       }
 
       // Upload image if file is provided
       if (file && savedInvoice) {
-        await purchaseInvoiceService.uploadImage(savedInvoice.id, file);
+        await service.uploadImage(savedInvoice.id, file);
       }
 
       setDialogOpen(false);
       loadInvoices();
     } catch (error) {
-      showError(`Failed to ${selectedInvoice ? 'update' : 'create'} purchase invoice`);
+      showError(`Failed to ${selectedInvoice ? 'update' : 'create'} invoice`);
     }
   };
 
@@ -156,10 +194,10 @@ const PurchaseInvoiceManagement: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <ReceiptIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-          <Typography variant="h4">Purchase Invoices</Typography>
+          <Typography variant="h4">Invoices</Typography>
         </Box>
         <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate}>
-          Add Purchase Invoice
+          Add Invoice
         </Button>
       </Box>
 
@@ -173,14 +211,27 @@ const PurchaseInvoiceManagement: React.FC = () => {
             <TextField
               fullWidth
               select
+              label="Invoice Type"
+              value={filters.type}
+              onChange={(e) => setFilters({ ...filters, type: e.target.value, category: '' })}
+            >
+              <MenuItem value="all">All Types</MenuItem>
+              <MenuItem value="purchase">Purchase Invoices</MenuItem>
+              <MenuItem value="expense">Expense Invoices</MenuItem>
+            </TextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <TextField
+              fullWidth
+              select
               label="Category"
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
             >
               <MenuItem value="">All Categories</MenuItem>
-              {categories.map((cat) => (
+              {allCategories.map((cat) => (
                 <MenuItem key={cat} value={cat}>
-                  {cat}
+                  {cat.replace(/_/g, ' ')}
                 </MenuItem>
               ))}
             </TextField>
@@ -212,6 +263,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Type</TableCell>
               <TableCell>Vendor</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Category</TableCell>
@@ -224,32 +276,41 @@ const PurchaseInvoiceManagement: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   Loading invoices...
                 </TableCell>
               </TableRow>
             ) : invoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No purchase invoices found
+                <TableCell colSpan={8} align="center">
+                  No invoices found
                 </TableCell>
               </TableRow>
             ) : (
-              invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {invoice.vendorName}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                      {invoice.description}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={invoice.category} size="small" />
-                  </TableCell>
+              invoices.map((invoice) => {
+                const isPurchase = purchaseCategories.includes(invoice.category as PurchaseCategory);
+                return (
+                  <TableRow key={invoice.id}>
+                    <TableCell>
+                      <Chip
+                        label={isPurchase ? 'Purchase' : 'Expense'}
+                        size="small"
+                        color={isPurchase ? 'primary' : 'secondary'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {invoice.vendorName}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                        {invoice.description}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={invoice.category.replace(/_/g, ' ')} size="small" />
+                    </TableCell>
                   <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
                   <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
                   <TableCell>
@@ -258,7 +319,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
                         <IconButton
                           size="small"
                           color="primary"
-                          onClick={() => invoice.imageUrl && handleViewInvoice(invoice.imageUrl)}
+                          onClick={() => handleViewInvoice(invoice)}
                         >
                           <ImageIcon />
                         </IconButton>
@@ -268,15 +329,16 @@ const PurchaseInvoiceManagement: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" onClick={() => handleEdit(invoice)} color="primary">
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleDelete(invoice)} color="error">
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
+                      <IconButton size="small" onClick={() => handleEdit(invoice)} color="primary">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleDelete(invoice)} color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

@@ -119,6 +119,8 @@ jobs:
               CLERK_JWKS_URL="${{ secrets.CLERK_JWKS_URL }}" \
               FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
               INTERNAL_API_KEY="${{ secrets.INTERNAL_API_KEY }}" \
+              AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_ACCOUNT_NAME="${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}" \
               HOST="0.0.0.0" \
               PORT="8080" \
               NODE_ENV="production" \

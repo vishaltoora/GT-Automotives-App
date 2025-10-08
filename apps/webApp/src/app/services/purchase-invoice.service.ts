@@ -109,6 +109,11 @@ const purchaseInvoiceService = {
     const response = await apiClient.delete(`/purchase-invoices/${id}/image`);
     return response.data;
   },
+
+  async getImageUrl(id: string): Promise<string> {
+    const response = await apiClient.get<{ imageUrl: string }>(`/purchase-invoices/${id}/image-url`);
+    return response.data.imageUrl;
+  },
 };
 
 export default purchaseInvoiceService;
