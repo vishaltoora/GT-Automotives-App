@@ -145,7 +145,7 @@ export function StockAdjustmentDialog({
   const isLoading = stockAdjustmentMutation.isPending;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} disableEscapeKeyDown maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h6">Adjust Stock</Typography>

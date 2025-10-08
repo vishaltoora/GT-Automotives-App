@@ -148,7 +148,7 @@ function BrandDialog({ open, onClose, brand, onSuccess }: BrandDialogProps) {
   const error = createMutation.error || updateMutation.error;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} disableEscapeKeyDown maxWidth="sm" fullWidth>
       <DialogTitle>{isEditMode ? 'Edit Brand' : 'Add New Brand'}</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 1 }}>

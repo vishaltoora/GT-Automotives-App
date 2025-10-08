@@ -98,7 +98,7 @@ function SizeDialog({ open, onClose, size, onSuccess }: SizeDialogProps) {
   const error = createMutation.error || updateMutation.error;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} disableEscapeKeyDown maxWidth="sm" fullWidth>
       <DialogTitle>{isEditMode ? 'Edit Size' : 'Add New Size'}</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 1 }}>

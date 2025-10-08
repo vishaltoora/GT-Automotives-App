@@ -10,7 +10,9 @@ import {
   Switch,
   FormControlLabel,
   Grid,
+  IconButton,
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { Vendor } from '../../services/vendor.service';
 
 interface VendorDialogProps {
@@ -89,8 +91,15 @@ const VendorDialog: React.FC<VendorDialogProps> = ({ open, vendor, onClose, onSa
   const isValid = formData.name.trim().length > 0;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{vendor ? 'Edit Vendor' : 'Add Vendor'}</DialogTitle>
+    <Dialog open={open} disableEscapeKeyDown maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {vendor ? 'Edit Vendor' : 'Add Vendor'}
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <Grid container spacing={2}>

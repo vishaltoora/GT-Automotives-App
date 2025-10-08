@@ -70,8 +70,8 @@ import QuotationDetails from './pages/quotations/QuotationDetails';
 // Purchase Invoice Pages
 import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoiceManagement';
 
-// Expense Invoice Pages
-import ExpenseInvoiceManagement from './pages/expense-invoices/ExpenseInvoiceManagement';
+// Expense Invoice Pages - Merged into Purchase Invoice Management
+// import ExpenseInvoiceManagement from './pages/expense-invoices/ExpenseInvoiceManagement';
 
 export function App() {
   return (
@@ -184,7 +184,7 @@ export function App() {
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
-          <Route path="expense-invoices" element={<ExpenseInvoiceManagement />} />
+          {/* Expense invoices merged into purchase-invoices */}
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="payroll/jobs" element={<JobsManagement />} />

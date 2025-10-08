@@ -490,10 +490,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
       TransitionComponent={Transition}
       maxWidth="xl"
       fullWidth
+      disableEscapeKeyDown
       PaperProps={{
         sx: {
           borderRadius: 3,

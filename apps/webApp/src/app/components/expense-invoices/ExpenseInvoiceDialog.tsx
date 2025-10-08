@@ -13,7 +13,7 @@ import {
   IconButton,
   Alert,
 } from '@mui/material';
-import { CloudUpload as UploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { CloudUpload as UploadIcon, Delete as DeleteIcon, Close as CloseIcon } from '@mui/icons-material';
 import { PaymentMethod } from '@gt-automotive/data';
 import {
   ExpenseInvoice,
@@ -185,8 +185,15 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
     formData.totalAmount > 0;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{invoice ? 'Edit Expense Invoice' : 'Add Expense Invoice'}</DialogTitle>
+    <Dialog open={open} maxWidth="md" fullWidth disableEscapeKeyDown>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {invoice ? 'Edit Expense Invoice' : 'Add Expense Invoice'}
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <Grid container spacing={2}>

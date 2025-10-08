@@ -233,7 +233,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
+    <Dialog open={open} disableEscapeKeyDown maxWidth="xl" fullWidth>
       <DialogTitle
         sx={{
           background: colors.gradients.primary,

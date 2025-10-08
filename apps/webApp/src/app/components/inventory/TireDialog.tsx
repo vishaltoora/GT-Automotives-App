@@ -259,7 +259,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   const error = createMutation.error || updateMutation.error;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} disableEscapeKeyDown maxWidth="md" fullWidth>
       <DialogTitle>{isEditMode ? 'Edit Tire' : 'Add New Tire'}</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>

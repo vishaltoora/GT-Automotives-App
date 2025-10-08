@@ -79,7 +79,7 @@ function LocationDialog({ open, onClose, onSuccess }: LocationDialogProps) {
   const error = createMutation.error;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} disableEscapeKeyDown maxWidth="sm" fullWidth>
       <DialogTitle>Add New Location</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 1 }}>
