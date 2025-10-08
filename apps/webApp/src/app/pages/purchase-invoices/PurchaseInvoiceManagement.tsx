@@ -254,7 +254,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
                   <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
                   <TableCell>
                     {invoice.imageUrl ? (
-                      <Tooltip title={invoice.imageUrl?.includes('localhost') ? 'View invoice (dev mode - mock data)' : 'View invoice'}>
+                      <Tooltip title="View invoice">
                         <IconButton
                           size="small"
                           color="primary"
@@ -305,32 +305,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
           </Box>
         </DialogTitle>
         <DialogContent>
-          {viewerUrl.includes('localhost') ? (
-            <Box
-              sx={{
-                p: 4,
-                textAlign: 'center',
-                bgcolor: 'grey.100',
-                borderRadius: 1,
-                minHeight: 300,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-              }}
-            >
-              <ImageIcon sx={{ fontSize: 80, color: 'grey.400', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Development Mode
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Invoice file upload is enabled but preview is not available in development mode.
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                In production, the actual PDF/image will be displayed here.
-              </Typography>
-            </Box>
-          ) : viewerUrl.toLowerCase().endsWith('.pdf') ? (
+          {viewerUrl.toLowerCase().endsWith('.pdf') ? (
             <Box sx={{ height: '70vh', width: '100%' }}>
               <iframe
                 src={viewerUrl}
@@ -349,14 +324,12 @@ const PurchaseInvoiceManagement: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          {!viewerUrl.includes('localhost') && (
-            <Button
-              variant="outlined"
-              onClick={() => window.open(viewerUrl, '_blank')}
-            >
-              Open in New Tab
-            </Button>
-          )}
+          <Button
+            variant="outlined"
+            onClick={() => window.open(viewerUrl, '_blank')}
+          >
+            Open in New Tab
+          </Button>
           <Button onClick={() => setViewerOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
