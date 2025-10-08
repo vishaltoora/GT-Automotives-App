@@ -12,12 +12,12 @@ export declare class JobsController {
         createdBy: string;
         createdAt: Date;
         updatedAt: Date;
+        jobNumber: string;
         employeeId: string;
         title: string;
         payAmount: import(".prisma/client/runtime/library").Decimal;
         jobType: import("@prisma/client").$Enums.JobType;
         completedAt: Date | null;
-        jobNumber: string;
     }>;
     findAll(employeeId?: string, status?: JobStatus, jobType?: JobType, startDate?: string, endDate?: string): Promise<JobResponseDto[]>;
     getJobSummary(employeeId?: string): Promise<JobSummaryDto>;
@@ -33,12 +33,12 @@ export declare class JobsController {
         createdBy: string;
         createdAt: Date;
         updatedAt: Date;
+        jobNumber: string;
         employeeId: string;
         title: string;
         payAmount: import(".prisma/client/runtime/library").Decimal;
         jobType: import("@prisma/client").$Enums.JobType;
         completedAt: Date | null;
-        jobNumber: string;
     }>;
     markAsComplete(id: string, user: any): Promise<{
         id: string;
@@ -48,12 +48,12 @@ export declare class JobsController {
         createdBy: string;
         createdAt: Date;
         updatedAt: Date;
+        jobNumber: string;
         employeeId: string;
         title: string;
         payAmount: import(".prisma/client/runtime/library").Decimal;
         jobType: import("@prisma/client").$Enums.JobType;
         completedAt: Date | null;
-        jobNumber: string;
     }>;
     remove(id: string, user: any): Promise<void>;
 }

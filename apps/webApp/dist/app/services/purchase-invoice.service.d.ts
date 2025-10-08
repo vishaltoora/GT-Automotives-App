@@ -17,6 +17,7 @@ declare const purchaseInvoiceService: {
     delete(id: string): Promise<PurchaseInvoice>;
     uploadImage(id: string, file: File): Promise<PurchaseInvoice>;
     deleteImage(id: string): Promise<PurchaseInvoice>;
+    getImageUrl(id: string): Promise<string>;
 };
 export default purchaseInvoiceService;
 //# sourceMappingURL=purchase-invoice.service.d.ts.map

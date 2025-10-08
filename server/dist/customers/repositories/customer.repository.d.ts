@@ -13,8 +13,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -42,8 +42,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -67,8 +67,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
                 createdAt: Date;
                 updatedAt: Date;
                 customerId: string;
-                make: string;
                 model: string;
+                make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
@@ -79,17 +79,16 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
                 description: string;
                 createdAt: Date;
                 updatedAt: Date;
-                tireId: string | null;
+                total: Prisma.Decimal;
+                quantity: number;
                 tireName: string | null;
                 itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                quantity: number;
                 unitPrice: Prisma.Decimal;
-                total: Prisma.Decimal;
+                tireId: string | null;
                 invoiceId: string;
             }[];
         } & {
             id: string;
-            invoiceNumber: string;
             invoiceDate: Date;
             taxAmount: Prisma.Decimal;
             status: import("@prisma/client").$Enums.InvoiceStatus;
@@ -98,17 +97,18 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdBy: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             total: Prisma.Decimal;
+            invoiceNumber: string;
+            customerId: string;
             vehicleId: string | null;
             companyId: string;
             subtotal: Prisma.Decimal;
             taxRate: Prisma.Decimal;
-            gstRate: Prisma.Decimal | null;
-            gstAmount: Prisma.Decimal | null;
-            pstRate: Prisma.Decimal | null;
-            pstAmount: Prisma.Decimal | null;
             paidAt: Date | null;
+            gstAmount: Prisma.Decimal | null;
+            gstRate: Prisma.Decimal | null;
+            pstAmount: Prisma.Decimal | null;
+            pstRate: Prisma.Decimal | null;
         })[];
         appointments: ({
             vehicle: {
@@ -116,8 +116,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
                 createdAt: Date;
                 updatedAt: Date;
                 customerId: string;
-                make: string;
                 model: string;
+                make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
@@ -130,8 +130,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            vehicleId: string | null;
             scheduledDate: Date;
+            vehicleId: string | null;
             scheduledTime: string;
             duration: number;
             serviceType: string;
@@ -142,8 +142,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -171,8 +171,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;

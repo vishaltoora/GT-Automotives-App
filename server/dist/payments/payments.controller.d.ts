@@ -15,8 +15,8 @@ export declare class PaymentsController {
         paidAt: Date | null;
         employeeId: string;
         jobId: string;
-        reference: string | null;
         paidBy: string | null;
+        reference: string | null;
     }>;
     processPayment(processPaymentDto: ProcessPaymentDto, user: any): Promise<{
         id: string;
@@ -29,8 +29,8 @@ export declare class PaymentsController {
         paidAt: Date | null;
         employeeId: string;
         jobId: string;
-        reference: string | null;
         paidBy: string | null;
+        reference: string | null;
     }>;
     findAll(employeeId?: string, status?: PaymentStatus, paymentMethod?: PaymentMethod, startDate?: string, endDate?: string): Promise<PaymentResponseDto[]>;
     getPaymentSummary(employeeId?: string): Promise<PaymentSummaryDto>;
@@ -50,8 +50,8 @@ export declare class PaymentsController {
         paidAt: Date | null;
         employeeId: string;
         jobId: string;
-        reference: string | null;
         paidBy: string | null;
+        reference: string | null;
     }>;
     remove(id: string, user: any): Promise<void>;
 }

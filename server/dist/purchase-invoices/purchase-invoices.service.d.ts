@@ -16,6 +16,7 @@ export declare class PurchaseInvoicesService {
     update(id: string, updateDto: UpdatePurchaseInvoiceDto): Promise<PurchaseInvoiceResponseDto>;
     uploadImage(id: string, file: Buffer, originalFileName: string, mimeType?: string): Promise<PurchaseInvoiceResponseDto>;
     deleteImage(id: string): Promise<PurchaseInvoiceResponseDto>;
+    getImageUrl(id: string): Promise<string>;
     remove(id: string): Promise<PurchaseInvoiceResponseDto>;
     private mapToResponse;
 }

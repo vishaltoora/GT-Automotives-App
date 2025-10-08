@@ -29,35 +29,35 @@ export declare class InvoicesService {
     getCustomerInvoices(customerId: string, user: any): Promise<Invoice[]>;
     markAsPaid(id: string, paymentMethod: PaymentMethod, userId: string): Promise<Invoice>;
     getAllServices(): Promise<{
+        name: string;
         id: string;
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }[]>;
     createService(createServiceDto: CreateServiceDto): Promise<{
+        name: string;
         id: string;
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     updateService(id: string, updateServiceDto: UpdateServiceDto): Promise<{
+        name: string;
         id: string;
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     deleteService(id: string): Promise<{
+        name: string;
         id: string;
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
 }

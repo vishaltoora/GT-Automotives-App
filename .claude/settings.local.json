@@ -284,7 +284,9 @@
       "Bash(tsc:*)",
       "Bash(do echo -e \"\\n=== Searching for $dto usage in frontend ===\")",
       "Bash(do echo -e \"\\n$file.service.ts:\")",
-      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma studio --schema=libs/database/src/lib/prisma/schema.prisma)"
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma studio --schema=libs/database/src/lib/prisma/schema.prisma)",
+      "Bash(while read file)",
+      "Bash(do echo \"=== $file ===\" grep -A 1 \"DialogTitle\" \"$file\")"
     ],
     "deny": [],
     "ask": []

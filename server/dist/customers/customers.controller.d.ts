@@ -25,8 +25,8 @@ export declare class CustomersController {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -54,8 +54,8 @@ export declare class CustomersController {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -85,8 +85,8 @@ export declare class CustomersController {
                 createdAt: Date;
                 updatedAt: Date;
                 customerId: string;
-                make: string;
                 model: string;
+                make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
@@ -97,17 +97,16 @@ export declare class CustomersController {
                 description: string;
                 createdAt: Date;
                 updatedAt: Date;
-                tireId: string | null;
+                total: import(".prisma/client/runtime/library").Decimal;
+                quantity: number;
                 tireName: string | null;
                 itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                quantity: number;
                 unitPrice: import(".prisma/client/runtime/library").Decimal;
-                total: import(".prisma/client/runtime/library").Decimal;
+                tireId: string | null;
                 invoiceId: string;
             }[];
         } & {
             id: string;
-            invoiceNumber: string;
             invoiceDate: Date;
             taxAmount: import(".prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.InvoiceStatus;
@@ -116,17 +115,18 @@ export declare class CustomersController {
             createdBy: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             total: import(".prisma/client/runtime/library").Decimal;
+            invoiceNumber: string;
+            customerId: string;
             vehicleId: string | null;
             companyId: string;
             subtotal: import(".prisma/client/runtime/library").Decimal;
             taxRate: import(".prisma/client/runtime/library").Decimal;
-            gstRate: import(".prisma/client/runtime/library").Decimal | null;
-            gstAmount: import(".prisma/client/runtime/library").Decimal | null;
-            pstRate: import(".prisma/client/runtime/library").Decimal | null;
-            pstAmount: import(".prisma/client/runtime/library").Decimal | null;
             paidAt: Date | null;
+            gstAmount: import(".prisma/client/runtime/library").Decimal | null;
+            gstRate: import(".prisma/client/runtime/library").Decimal | null;
+            pstAmount: import(".prisma/client/runtime/library").Decimal | null;
+            pstRate: import(".prisma/client/runtime/library").Decimal | null;
         })[];
         appointments: ({
             vehicle: {
@@ -134,8 +134,8 @@ export declare class CustomersController {
                 createdAt: Date;
                 updatedAt: Date;
                 customerId: string;
-                make: string;
                 model: string;
+                make: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
@@ -148,8 +148,8 @@ export declare class CustomersController {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            vehicleId: string | null;
             scheduledDate: Date;
+            vehicleId: string | null;
             scheduledTime: string;
             duration: number;
             serviceType: string;
@@ -160,8 +160,8 @@ export declare class CustomersController {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -183,8 +183,8 @@ export declare class CustomersController {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;

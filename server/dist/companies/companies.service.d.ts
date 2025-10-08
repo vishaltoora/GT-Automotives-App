@@ -3,10 +3,10 @@ export declare class CompaniesService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         email: string | null;
         phone: string | null;
         address: string | null;
@@ -15,10 +15,10 @@ export declare class CompaniesService {
         isDefault: boolean;
     }[]>;
     findDefault(): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         email: string | null;
         phone: string | null;
         address: string | null;
@@ -27,10 +27,10 @@ export declare class CompaniesService {
         isDefault: boolean;
     } | null>;
     findById(id: string): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         email: string | null;
         phone: string | null;
         address: string | null;

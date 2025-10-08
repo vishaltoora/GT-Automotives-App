@@ -14,6 +14,9 @@ export declare class ExpenseInvoicesController {
     update(id: string, updateDto: UpdateExpenseInvoiceDto): Promise<ExpenseInvoiceResponseDto>;
     uploadImage(id: string, file: any): Promise<ExpenseInvoiceResponseDto>;
     deleteImage(id: string): Promise<ExpenseInvoiceResponseDto>;
+    getImageUrl(id: string): Promise<{
+        imageUrl: string;
+    }>;
     remove(id: string): Promise<ExpenseInvoiceResponseDto>;
 }
 //# sourceMappingURL=expense-invoices.controller.d.ts.map
