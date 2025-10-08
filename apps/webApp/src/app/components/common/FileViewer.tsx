@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress, Typography, Alert } from '@mui/material';
+import { Box, CircularProgress, Alert } from '@mui/material';
 import ReactPanZoom from 'react-image-pan-zoom-rotate';
 
 interface FileViewerProps {
