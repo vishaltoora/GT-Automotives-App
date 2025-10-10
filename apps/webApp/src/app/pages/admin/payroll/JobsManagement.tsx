@@ -38,6 +38,8 @@ import {
   FilterList as FilterIcon,
   ArrowBack as ArrowBackIcon,
   Group as GroupIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -83,6 +85,7 @@ export function JobsManagement() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedJob, setSelectedJob] = useState<JobResponseDto | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   // Filters for jobs view
   const [filters, setFilters] = useState({
@@ -201,13 +204,13 @@ export function JobsManagement() {
   };
 
   const handleEmployeeClick = (employee: Employee) => {
-    navigate(`/admin/payroll/jobs/${employee.id}`);
+    navigate(`/admin/jobs/${employee.id}`);
   };
 
   const handleBackToEmployees = () => {
     setSelectedEmployee(null);
     clearFilters();
-    navigate('/admin/payroll/jobs');
+    navigate('/admin/jobs');
   };
 
   const handleCreateJob = async (newJob: JobResponseDto) => {
@@ -332,6 +335,18 @@ export function JobsManagement() {
     });
   };
 
+  const toggleCardExpanded = (employeeId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(employeeId)) {
+        newSet.delete(employeeId);
+      } else {
+        newSet.add(employeeId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ p: 3 }}>
@@ -370,160 +385,184 @@ export function JobsManagement() {
               Select an employee to view and manage their jobs and payments
             </Typography>
 
-            <Grid container spacing={3}>
-              {employeeSummaries.map((employee) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={employee.id}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease-in-out',
-                      border: `1px solid ${colors.neutral[200]}`,
-                      overflow: 'hidden',
-                      position: 'relative',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                        boxShadow: `0 12px 40px rgba(0,0,0,0.12)`,
-                        borderColor: colors.primary.main,
-                        '& .employee-header': {
-                          background: colors.neutral[50],
-                        },
-                      },
-                    }}
-                    onClick={() => handleEmployeeClick(employee)}
-                  >
-                    {/* Header Section with Gradient */}
-                    <Box
-                      className="employee-header"
+            <Grid container spacing={2}>
+              {employeeSummaries.map((employee) => {
+                const isExpanded = expandedCards.has(employee.id);
+                const completedJobs = employee.totalJobs - employee.pendingJobs - employee.readyJobs;
+                return (
+                  <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={employee.id}>
+                    <Card
                       sx={{
-                        background: 'white',
-                        p: 3,
-                        transition: 'all 0.3s',
-                        borderBottom: `1px solid ${colors.neutral[200]}`,
+                        transition: 'all 0.2s ease-in-out',
+                        border: `1px solid ${colors.neutral[200]}`,
+                        '&:hover': {
+                          borderColor: colors.primary.main,
+                          boxShadow: 2,
+                        },
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Avatar
-                          sx={{
-                            width: 64,
-                            height: 64,
-                            bgcolor: getAvatarColor(employee.email),
-                            fontSize: '1.75rem',
-                            fontWeight: 700,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          }}
-                        >
-                          {getEmployeeInitials(employee)}
-                        </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" sx={{ color: 'text.primary', lineHeight: 1.2, mb: 0.5 }}>
-                            {getEmployeeName(employee)}
-                          </Typography>
-                          <Chip
-                            label={employee.role?.name || 'STAFF'}
-                            size="small"
+                      <CardContent sx={{ p: 2, pb: 1.5 }}>
+                        {/* Compact Header */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                          <Avatar
                             sx={{
-                              bgcolor: colors.neutral[100],
-                              color: colors.neutral[800],
+                              width: 48,
+                              height: 48,
+                              bgcolor: getAvatarColor(employee.email),
+                              fontSize: '1.1rem',
                               fontWeight: 600,
-                              border: `1px solid ${colors.neutral[300]}`,
+                              cursor: 'pointer',
                             }}
-                          />
+                            onClick={() => handleEmployeeClick(employee)}
+                          >
+                            {getEmployeeInitials(employee)}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => handleEmployeeClick(employee)}>
+                            <Typography variant="subtitle1" fontWeight="600" noWrap>
+                              {getEmployeeName(employee)}
+                            </Typography>
+                            <Chip
+                              label={employee.role?.name || 'STAFF'}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.7rem',
+                                bgcolor: colors.neutral[100],
+                                border: `1px solid ${colors.neutral[300]}`,
+                              }}
+                            />
+                          </Box>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCardExpanded(employee.id);
+                            }}
+                            sx={{ ml: 'auto' }}
+                          >
+                            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          </IconButton>
                         </Box>
-                      </Box>
 
-                      {/* Total Earnings - Prominent Display */}
-                      <Card sx={{ bgcolor: colors.primary.light + '20', border: `1px solid ${colors.primary.light}`, boxShadow: 'none' }}>
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                            Total Earnings
-                          </Typography>
-                          <Typography variant="h4" fontWeight="bold" sx={{ color: colors.primary.main, mt: 0.5 }}>
-                            ${employee.totalPayAmount.toFixed(2)}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Box>
-
-                    {/* Stats Section */}
-                    <CardContent sx={{ p: 3 }}>
-                      {/* Job Statistics Grid */}
-                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 2 }}>
-                        <Card sx={{
-                          bgcolor: colors.neutral[50],
-                          boxShadow: 'none',
-                          border: `1px solid ${colors.neutral[200]}`,
-                        }}>
-                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
-                            <Typography variant="h5" fontWeight="bold" color="primary.main">
-                              {employee.totalJobs}
+                        {/* Key Metrics - Always Visible */}
+                        <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                          <Box
+                            sx={{
+                              flex: 1,
+                              p: 1.5,
+                              bgcolor: colors.primary.light + '15',
+                              border: `1px solid ${colors.primary.light}`,
+                              borderRadius: 1,
+                              textAlign: 'center',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => handleEmployeeClick(employee)}
+                          >
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem', mb: 0.5 }}>
+                              Total Earnings
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                              Total
+                            <Typography variant="h6" fontWeight="bold" color="primary.main">
+                              ${employee.totalPayAmount.toFixed(0)}
                             </Typography>
-                          </CardContent>
-                        </Card>
-
-                        <Card sx={{
-                          bgcolor: colors.semantic.warningLight + '15',
-                          boxShadow: 'none',
-                          border: `1px solid ${colors.semantic.warningLight}`,
-                        }}>
-                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
-                            <Typography variant="h5" fontWeight="bold" color="warning.main">
-                              {employee.pendingJobs}
+                            <Typography variant="caption" color="text.secondary">
+                              {employee.totalJobs} jobs
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                              Pending
+                          </Box>
+                          <Box
+                            sx={{
+                              flex: 1,
+                              p: 1.5,
+                              bgcolor: colors.semantic.infoLight + '15',
+                              border: `1px solid ${colors.semantic.infoLight}`,
+                              borderRadius: 1,
+                              textAlign: 'center',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => handleEmployeeClick(employee)}
+                          >
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem', mb: 0.5 }}>
+                              Ready to Pay
                             </Typography>
-                          </CardContent>
-                        </Card>
-
-                        <Card sx={{
-                          bgcolor: colors.semantic.infoLight + '15',
-                          boxShadow: 'none',
-                          border: `1px solid ${colors.semantic.infoLight}`,
-                        }}>
-                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
-                            <Typography variant="h5" fontWeight="bold" color="info.main">
+                            <Typography variant="h6" fontWeight="bold" color="info.main">
                               {employee.readyJobs}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                              Ready
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Box>
-
-                      {/* Payment Breakdown */}
-                      <Card sx={{
-                        bgcolor: colors.semantic.successLight + '10',
-                        border: `1px solid ${colors.semantic.successLight}`,
-                        boxShadow: 'none',
-                      }}>
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="body2" color="text.secondary" fontWeight="600">
-                              Completed Jobs
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold" color="success.main">
-                              {employee.totalJobs - employee.pendingJobs - employee.readyJobs}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="caption" color="text.secondary">
-                              Avg. per job
-                            </Typography>
-                            <Typography variant="body2" fontWeight="600" color="success.dark">
-                              ${employee.totalJobs > 0 ? (employee.totalPayAmount / employee.totalJobs).toFixed(2) : '0.00'}
+                              jobs ready
                             </Typography>
                           </Box>
-                        </CardContent>
-                      </Card>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+                        </Box>
+
+                        {/* Expandable Details */}
+                        {isExpanded && (
+                          <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${colors.neutral[200]}` }}>
+                            {/* Job Status Counts */}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
+                              <Box sx={{ textAlign: 'center', p: 1, bgcolor: colors.neutral[50], borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" color="primary.main">
+                                  {employee.totalJobs}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Total
+                                </Typography>
+                              </Box>
+                              <Box sx={{ textAlign: 'center', p: 1, bgcolor: colors.semantic.warningLight + '10', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" color="warning.main">
+                                  {employee.pendingJobs}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Pending
+                                </Typography>
+                              </Box>
+                              <Box sx={{ textAlign: 'center', p: 1, bgcolor: colors.semantic.successLight + '10', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" color="success.main">
+                                  {completedJobs}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Completed
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            {/* Average Per Job */}
+                            <Box
+                              sx={{
+                                p: 1.5,
+                                bgcolor: colors.neutral[50],
+                                borderRadius: 1,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Typography variant="body2" color="text.secondary" fontWeight="600">
+                                Average per Job
+                              </Typography>
+                              <Typography variant="h6" fontWeight="bold" color="success.main">
+                                ${employee.totalJobs > 0 ? (employee.totalPayAmount / employee.totalJobs).toFixed(2) : '0.00'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+
+                        {/* View Jobs Button */}
+                        <Button
+                          fullWidth
+                          size="small"
+                          variant="contained"
+                          onClick={() => handleEmployeeClick(employee)}
+                          sx={{
+                            mt: 1.5,
+                            background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+                            fontWeight: 600,
+                          }}
+                        >
+                          View Jobs
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
 
             {employeeSummaries.length === 0 && (

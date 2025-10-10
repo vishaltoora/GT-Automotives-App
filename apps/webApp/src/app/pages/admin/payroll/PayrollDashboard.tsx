@@ -244,7 +244,7 @@ export function PayrollDashboard() {
                 variant="contained"
                 size="small"
                 startIcon={<PaymentIcon />}
-                onClick={() => navigate('/admin/payroll/payments')}
+                onClick={() => navigate('/admin/payments')}
                 sx={{
                   mt: 2,
                   background: `linear-gradient(135deg, ${colors.semantic.success} 0%, ${colors.semantic.successDark} 100%)`,
@@ -261,7 +261,7 @@ export function PayrollDashboard() {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ cursor: 'pointer', '&:hover': { transform: 'translateY(-2px)', transition: 'transform 0.2s' } }}
-                onClick={() => navigate('/admin/payroll/jobs')}>
+                onClick={() => navigate('/admin/jobs')}>
             <CardContent sx={{ textAlign: 'center', py: 4 }}>
               <WorkIcon sx={{ fontSize: 48, color: colors.primary.main, mb: 2 }} />
               <Typography variant="h6" fontWeight="bold">Manage Jobs</Typography>
@@ -274,7 +274,7 @@ export function PayrollDashboard() {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ cursor: 'pointer', '&:hover': { transform: 'translateY(-2px)', transition: 'transform 0.2s' } }}
-                onClick={() => navigate('/admin/payroll/payments')}>
+                onClick={() => navigate('/admin/payments')}>
             <CardContent sx={{ textAlign: 'center', py: 4 }}>
               <PaymentIcon sx={{ fontSize: 48, color: colors.semantic.success, mb: 2 }} />
               <Typography variant="h6" fontWeight="bold">Process Payments</Typography>
@@ -318,7 +318,7 @@ export function PayrollDashboard() {
               <Typography variant="h6" fontWeight="bold">Recent Jobs</Typography>
               <Button
                 endIcon={<ArrowForwardIcon />}
-                onClick={() => navigate('/admin/payroll/jobs')}
+                onClick={() => navigate('/admin/jobs')}
                 size="small"
               >
                 View All
@@ -369,7 +369,7 @@ export function PayrollDashboard() {
               <Typography variant="h6" fontWeight="bold">Recent Payments</Typography>
               <Button
                 endIcon={<ArrowForwardIcon />}
-                onClick={() => navigate('/admin/payroll/payments')}
+                onClick={() => navigate('/admin/payments')}
                 size="small"
               >
                 View All

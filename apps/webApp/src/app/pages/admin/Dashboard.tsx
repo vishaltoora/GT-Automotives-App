@@ -525,7 +525,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/payroll/jobs"
+                to="/admin/jobs"
                 sx={{
                   p: 2,
                   textAlign: 'center',
@@ -548,7 +548,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/payroll/payments"
+                to="/admin/payments"
                 sx={{
                   p: 2,
                   textAlign: 'center',

@@ -16,6 +16,7 @@ import {
   MenuItem,
   Grid,
   Tooltip,
+  Menu,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -24,6 +25,8 @@ import {
   Receipt as ReceiptIcon,
   Image as ImageIcon,
   FilterList as FilterIcon,
+  MoreVert as MoreVertIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import purchaseInvoiceService, {
   PurchaseInvoice,
@@ -51,6 +54,8 @@ const PurchaseInvoiceManagement: React.FC = () => {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string>('');
   const [viewerFileName, setViewerFileName] = useState<string>('');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuInvoice, setMenuInvoice] = useState<PurchaseInvoice | ExpenseInvoice | null>(null);
   const [filters, setFilters] = useState({
     type: 'all',
     category: '',
@@ -97,17 +102,29 @@ const PurchaseInvoiceManagement: React.FC = () => {
     }
   };
 
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, invoice: PurchaseInvoice | ExpenseInvoice) => {
+    setAnchorEl(event.currentTarget);
+    setMenuInvoice(invoice);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+    setMenuInvoice(null);
+  };
+
   const handleCreate = () => {
     setSelectedInvoice(null);
     setDialogOpen(true);
   };
 
   const handleEdit = (invoice: PurchaseInvoice | ExpenseInvoice) => {
+    handleCloseMenu();
     setSelectedInvoice(invoice);
     setDialogOpen(true);
   };
 
   const handleViewInvoice = async (invoice: PurchaseInvoice | ExpenseInvoice) => {
+    handleCloseMenu();
     try {
       const isPurchase = purchaseCategories.includes(invoice.category as PurchaseCategory);
       const imageUrl = isPurchase
@@ -123,6 +140,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
   };
 
   const handleDelete = async (invoice: PurchaseInvoice | ExpenseInvoice) => {
+    handleCloseMenu();
     const invoiceType = purchaseCategories.includes(invoice.category as PurchaseCategory) ? 'purchase' : 'expense';
 
     const confirmed = await confirm({
@@ -267,20 +285,19 @@ const PurchaseInvoiceManagement: React.FC = () => {
               <TableCell>Category</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Amount</TableCell>
-              <TableCell>Image</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={7} align="center">
                   Loading invoices...
                 </TableCell>
               </TableRow>
             ) : invoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={7} align="center">
                   No invoices found
                 </TableCell>
               </TableRow>
@@ -311,27 +328,12 @@ const PurchaseInvoiceManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
                     <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
-                    <TableCell>
-                      {invoice.imageUrl ? (
-                        <Tooltip title="View invoice">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleViewInvoice(invoice)}
-                          >
-                            <ImageIcon />
-                          </IconButton>
-                        </Tooltip>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => handleEdit(invoice)} color="primary">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleDelete(invoice)} color="error">
-                        <DeleteIcon />
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleOpenMenu(e, invoice)}
+                      >
+                        <MoreVertIcon />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -357,6 +359,26 @@ const PurchaseInvoiceManagement: React.FC = () => {
         fileName={viewerFileName}
         title="Invoice Preview"
       />
+
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+      >
+        <MenuItem onClick={() => menuInvoice && handleViewInvoice(menuInvoice)} disabled={!menuInvoice?.imageUrl}>
+          <VisibilityIcon sx={{ mr: 1, fontSize: 20 }} />
+          View
+        </MenuItem>
+        <MenuItem onClick={() => menuInvoice && handleEdit(menuInvoice)}>
+          <EditIcon sx={{ mr: 1, fontSize: 20 }} />
+          Edit
+        </MenuItem>
+        <MenuItem onClick={() => menuInvoice && handleDelete(menuInvoice)}>
+          <DeleteIcon sx={{ mr: 1, fontSize: 20, color: 'error.main' }} />
+          Delete
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

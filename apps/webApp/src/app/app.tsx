@@ -187,9 +187,9 @@ export function App() {
           {/* Expense invoices merged into purchase-invoices */}
           <Route path="appointments" element={<div>All Appointments</div>} />
           <Route path="payroll" element={<PayrollDashboard />} />
-          <Route path="payroll/jobs" element={<JobsManagement />} />
-          <Route path="payroll/jobs/:employeeId" element={<EmployeeJobsView />} />
-          <Route path="payroll/payments" element={<PaymentsManagement />} />
+          <Route path="jobs" element={<JobsManagement />} />
+          <Route path="jobs/:employeeId" element={<JobsManagement />} />
+          <Route path="payments" element={<PaymentsManagement />} />
           <Route path="reports" element={<div>Financial Reports</div>} />
           <Route path="analytics" element={<div>Analytics</div>} />
           <Route path="security" element={<div>Security Settings</div>} />

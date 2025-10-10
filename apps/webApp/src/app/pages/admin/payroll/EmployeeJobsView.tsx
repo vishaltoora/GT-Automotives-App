@@ -104,7 +104,7 @@ export function EmployeeJobsView() {
         setError(null);
       } else {
         setError('Employee not found');
-        navigate('/admin/payroll/jobs');
+        navigate('/admin/jobs');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch employee details');

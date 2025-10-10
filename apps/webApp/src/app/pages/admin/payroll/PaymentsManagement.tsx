@@ -31,6 +31,8 @@ import {
   FilterList as FilterIcon,
   Assignment as AssignmentIcon,
   Group as GroupIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -98,6 +100,7 @@ export function PaymentsManagement() {
   const [selectedJob, setSelectedJob] = useState<JobResponseDto | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentResponseDto | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   // Filters
   const [filters, setFilters] = useState({
@@ -252,6 +255,18 @@ export function PaymentsManagement() {
     }
   };
 
+  const toggleCardExpanded = (employeeId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(employeeId)) {
+        newSet.delete(employeeId);
+      } else {
+        newSet.add(employeeId);
+      }
+      return newSet;
+    });
+  };
+
   if (loading && !payments.length && !pendingJobs.length) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -280,20 +295,19 @@ export function PaymentsManagement() {
         )}
 
         {/* Tabs */}
-        <Paper sx={{ mb: 3 }}>
-          <Tabs
-            value={tabValue}
-            onChange={(e, newValue) => setTabValue(newValue)}
-            sx={{
-              borderBottom: 1,
-              borderColor: 'divider',
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontSize: '1rem',
-                fontWeight: 'medium',
-              },
-            }}
-          >
+        <Box sx={{ mb: 3 }}>
+          <Paper sx={{ mb: 0 }}>
+            <Tabs
+              value={tabValue}
+              onChange={(e, newValue) => setTabValue(newValue)}
+              sx={{
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 'medium',
+                },
+              }}
+            >
             <Tab
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -319,217 +333,219 @@ export function PaymentsManagement() {
               }
             />
           </Tabs>
+          </Paper>
 
           <TabPanel value={tabValue} index={0}>
-            {/* Employee Cards */}
-            <Grid container spacing={3}>
-              {employeePaymentSummaries.map((employee) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={employee.id}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      transition: 'all 0.3s ease-in-out',
-                      border: `1px solid ${colors.neutral[200]}`,
-                      overflow: 'hidden',
-                      position: 'relative',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                        boxShadow: `0 12px 40px rgba(0,0,0,0.12)`,
-                        borderColor: colors.primary.main,
-                        '& .employee-header': {
-                          background: colors.neutral[50],
-                        },
-                      },
-                    }}
-                  >
-                    {/* Header Section */}
-                    <Box
-                      className="employee-header"
+            {/* Employee Cards - Compact View */}
+            <Grid container spacing={2}>
+              {employeePaymentSummaries.map((employee) => {
+                const isExpanded = expandedCards.has(employee.id);
+                return (
+                  <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={employee.id}>
+                    <Card
                       sx={{
-                        background: 'white',
-                        p: 3,
-                        transition: 'all 0.3s',
-                        borderBottom: `1px solid ${colors.neutral[200]}`,
+                        transition: 'all 0.2s ease-in-out',
+                        border: `1px solid ${colors.neutral[200]}`,
+                        '&:hover': {
+                          borderColor: colors.primary.main,
+                          boxShadow: 2,
+                        },
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Avatar
-                          sx={{
-                            width: 64,
-                            height: 64,
-                            bgcolor: getAvatarColor(employee.email),
-                            fontSize: '1.75rem',
-                            fontWeight: 700,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          }}
-                        >
-                          {getEmployeeInitials(employee)}
-                        </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" sx={{ color: 'text.primary', lineHeight: 1.2, mb: 0.5 }}>
-                            {getEmployeeName(employee)}
-                          </Typography>
-                          <Chip
-                            label={employee.role?.name || 'STAFF'}
-                            size="small"
+                      {/* Compact Header */}
+                      <CardContent sx={{ p: 2, pb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                          <Avatar
                             sx={{
-                              bgcolor: colors.neutral[100],
-                              color: colors.neutral[800],
+                              width: 48,
+                              height: 48,
+                              bgcolor: getAvatarColor(employee.email),
+                              fontSize: '1.1rem',
                               fontWeight: 600,
-                              border: `1px solid ${colors.neutral[300]}`,
                             }}
-                          />
+                          >
+                            {getEmployeeInitials(employee)}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="subtitle1" fontWeight="600" noWrap>
+                              {getEmployeeName(employee)}
+                            </Typography>
+                            <Chip
+                              label={employee.role?.name || 'STAFF'}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.7rem',
+                                bgcolor: colors.neutral[100],
+                                border: `1px solid ${colors.neutral[300]}`,
+                              }}
+                            />
+                          </Box>
+                          <IconButton
+                            size="small"
+                            onClick={() => toggleCardExpanded(employee.id)}
+                            sx={{ ml: 'auto' }}
+                          >
+                            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          </IconButton>
                         </Box>
-                      </Box>
 
-                      {/* Earnings Overview - Today, MTD, YTD */}
-                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
-                        <Card sx={{ bgcolor: colors.semantic.infoLight + '15', border: `1px solid ${colors.semantic.infoLight}`, boxShadow: 'none' }}>
-                          <CardContent sx={{ p: 1.5, textAlign: 'center', '&:last-child': { pb: 1.5 } }}>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                              Today
+                        {/* Key Metrics - Always Visible */}
+                        <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                          <Box
+                            sx={{
+                              flex: 1,
+                              p: 1.5,
+                              bgcolor: colors.semantic.successLight + '15',
+                              border: `1px solid ${colors.semantic.successLight}`,
+                              borderRadius: 1,
+                              textAlign: 'center',
+                            }}
+                          >
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem', mb: 0.5 }}>
+                              Ready to Pay
                             </Typography>
-                            <Typography variant="h6" fontWeight="bold" sx={{ color: colors.semantic.info, mt: 0.5 }}>
-                              ${employee.todayEarnings.toFixed(2)}
+                            <Typography variant="h6" fontWeight="bold" color="success.main">
+                              ${employee.totalReadyAmount.toFixed(0)}
                             </Typography>
-                          </CardContent>
-                        </Card>
-
-                        <Card sx={{ bgcolor: colors.primary.light + '15', border: `1px solid ${colors.primary.light}`, boxShadow: 'none' }}>
-                          <CardContent sx={{ p: 1.5, textAlign: 'center', '&:last-child': { pb: 1.5 } }}>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                              MTD
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold" sx={{ color: colors.primary.main, mt: 0.5 }}>
-                              ${employee.mtdEarnings.toFixed(2)}
-                            </Typography>
-                          </CardContent>
-                        </Card>
-
-                        <Card sx={{ bgcolor: colors.semantic.successLight + '15', border: `1px solid ${colors.semantic.successLight}`, boxShadow: 'none' }}>
-                          <CardContent sx={{ p: 1.5, textAlign: 'center', '&:last-child': { pb: 1.5 } }}>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                              YTD
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold" sx={{ color: colors.semantic.success, mt: 0.5 }}>
-                              ${employee.ytdEarnings.toFixed(2)}
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Box>
-
-                      {/* Ready for Payment - Prominent Display */}
-                      <Card sx={{ bgcolor: colors.semantic.successLight + '20', border: `1px solid ${colors.semantic.successLight}`, boxShadow: 'none', mt: 1.5 }}>
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                            Ready for Payment
-                          </Typography>
-                          <Typography variant="h4" fontWeight="bold" sx={{ color: colors.semantic.success, mt: 0.5 }}>
-                            ${employee.totalReadyAmount.toFixed(2)}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Box>
-
-                    {/* Stats Section */}
-                    <CardContent sx={{ p: 3 }}>
-                      {/* Payment Statistics Grid */}
-                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 2 }}>
-                        <Card sx={{
-                          bgcolor: colors.semantic.infoLight + '15',
-                          boxShadow: 'none',
-                          border: `1px solid ${colors.semantic.infoLight}`,
-                        }}>
-                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
-                            <Typography variant="h5" fontWeight="bold" color="info.main">
-                              {employee.totalReadyJobs}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                              Ready
-                            </Typography>
-                          </CardContent>
-                        </Card>
-
-                        <Card sx={{
-                          bgcolor: colors.semantic.warningLight + '15',
-                          boxShadow: 'none',
-                          border: `1px solid ${colors.semantic.warningLight}`,
-                        }}>
-                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
-                            <Typography variant="h5" fontWeight="bold" color="warning.main">
-                              {employee.pendingPayments}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                              Pending
-                            </Typography>
-                          </CardContent>
-                        </Card>
-
-                        <Card sx={{
-                          bgcolor: colors.semantic.successLight + '15',
-                          boxShadow: 'none',
-                          border: `1px solid ${colors.semantic.successLight}`,
-                        }}>
-                          <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
-                            <Typography variant="h5" fontWeight="bold" color="success.main">
-                              {employee.totalPaidJobs}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                              Paid
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Box>
-
-                      {/* Total Paid Amount */}
-                      <Card sx={{
-                        bgcolor: colors.primary.light + '10',
-                        border: `1px solid ${colors.primary.light}`,
-                        boxShadow: 'none',
-                        mb: 2,
-                      }}>
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="body2" color="text.secondary" fontWeight="600">
-                              Total Paid
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold" color="primary.main">
-                              ${employee.totalPaidAmount.toFixed(2)}
+                            <Typography variant="caption" color="text.secondary">
+                              {employee.totalReadyJobs} jobs
                             </Typography>
                           </Box>
-                        </CardContent>
-                      </Card>
+                          <Box
+                            sx={{
+                              flex: 1,
+                              p: 1.5,
+                              bgcolor: colors.primary.light + '10',
+                              border: `1px solid ${colors.primary.light}`,
+                              borderRadius: 1,
+                              textAlign: 'center',
+                            }}
+                          >
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem', mb: 0.5 }}>
+                              MTD Earnings
+                            </Typography>
+                            <Typography variant="h6" fontWeight="bold" color="primary.main">
+                              ${employee.mtdEarnings.toFixed(0)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {employee.totalPaidJobs} paid
+                            </Typography>
+                          </Box>
+                        </Box>
 
-                      {/* Process All Ready Jobs Button */}
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={<PaymentIcon />}
-                        onClick={() => handleProcessAllReadyJobs(employee.id)}
-                        disabled={employee.totalReadyJobs === 0}
-                        sx={{
-                          background: employee.totalReadyJobs > 0
-                            ? `linear-gradient(135deg, ${colors.semantic.success} 0%, ${colors.semantic.successDark} 100%)`
-                            : colors.neutral[300],
-                          py: 1.5,
-                          fontWeight: 600,
-                          '&:hover': {
+                        {/* Expandable Details */}
+                        {isExpanded && (
+                          <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${colors.neutral[200]}` }}>
+                            {/* Earnings Overview */}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
+                              <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                  Today
+                                </Typography>
+                                <Typography variant="body2" fontWeight="600" color="info.main">
+                                  ${employee.todayEarnings.toFixed(2)}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                  MTD
+                                </Typography>
+                                <Typography variant="body2" fontWeight="600" color="primary.main">
+                                  ${employee.mtdEarnings.toFixed(2)}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                  YTD
+                                </Typography>
+                                <Typography variant="body2" fontWeight="600" color="success.main">
+                                  ${employee.ytdEarnings.toFixed(2)}
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            {/* Payment Status Counts */}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
+                              <Box sx={{ textAlign: 'center', p: 1, bgcolor: colors.semantic.infoLight + '10', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" color="info.main">
+                                  {employee.totalReadyJobs}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Ready
+                                </Typography>
+                              </Box>
+                              <Box sx={{ textAlign: 'center', p: 1, bgcolor: colors.semantic.warningLight + '10', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" color="warning.main">
+                                  {employee.pendingPayments}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Pending
+                                </Typography>
+                              </Box>
+                              <Box sx={{ textAlign: 'center', p: 1, bgcolor: colors.semantic.successLight + '10', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" color="success.main">
+                                  {employee.totalPaidJobs}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Paid
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            {/* Total Paid */}
+                            <Box
+                              sx={{
+                                p: 1.5,
+                                bgcolor: colors.neutral[50],
+                                borderRadius: 1,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mb: 2,
+                              }}
+                            >
+                              <Typography variant="body2" color="text.secondary" fontWeight="600">
+                                Total Paid (All Time)
+                              </Typography>
+                              <Typography variant="h6" fontWeight="bold" color="primary.main">
+                                ${employee.totalPaidAmount.toFixed(2)}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+
+                        {/* Process Payment Button */}
+                        <Button
+                          fullWidth
+                          size="small"
+                          variant="contained"
+                          startIcon={<PaymentIcon />}
+                          onClick={() => handleProcessAllReadyJobs(employee.id)}
+                          disabled={employee.totalReadyJobs === 0}
+                          sx={{
                             background: employee.totalReadyJobs > 0
-                              ? `linear-gradient(135deg, ${colors.semantic.successDark} 0%, ${colors.semantic.success} 100%)`
+                              ? `linear-gradient(135deg, ${colors.semantic.success} 0%, ${colors.semantic.successDark} 100%)`
                               : colors.neutral[300],
-                          },
-                          '&.Mui-disabled': {
-                            background: colors.neutral[300],
-                            color: colors.neutral[500],
-                          },
-                        }}
-                      >
-                        Process All Ready Jobs ({employee.totalReadyJobs})
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+                            fontWeight: 600,
+                            '&:hover': {
+                              background: employee.totalReadyJobs > 0
+                                ? `linear-gradient(135deg, ${colors.semantic.successDark} 0%, ${colors.semantic.success} 100%)`
+                                : colors.neutral[300],
+                            },
+                            '&.Mui-disabled': {
+                              background: colors.neutral[300],
+                              color: colors.neutral[500],
+                            },
+                          }}
+                        >
+                          Process {employee.totalReadyJobs > 0 ? `${employee.totalReadyJobs} Jobs` : 'Jobs'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
 
             {employeePaymentSummaries.length === 0 && (
@@ -776,7 +792,7 @@ export function PaymentsManagement() {
               </Table>
             </TableContainer>
           </TabPanel>
-        </Paper>
+        </Box>
 
         {/* Action Menu */}
         <Menu
