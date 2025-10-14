@@ -15,7 +15,6 @@ import {
   TextField,
   MenuItem,
   Grid,
-  Tooltip,
   Menu,
 } from '@mui/material';
 import {
@@ -23,7 +22,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Receipt as ReceiptIcon,
-  Image as ImageIcon,
   FilterList as FilterIcon,
   MoreVert as MoreVertIcon,
   Visibility as VisibilityIcon,

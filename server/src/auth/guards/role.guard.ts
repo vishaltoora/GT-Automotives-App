@@ -11,17 +11,31 @@ export class RoleGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    
+
     if (!requiredRoles) {
       return true;
     }
-    
+
     const { user } = context.switchToHttp().getRequest();
-    
+    const request = context.switchToHttp().getRequest();
+
+    console.log('[ROLE GUARD] Checking access:', {
+      endpoint: `${request.method} ${request.url}`,
+      requiredRoles,
+      userRole: user?.role?.name,
+      userId: user?.id,
+      hasUser: !!user,
+      hasRole: !!user?.role,
+    });
+
     if (!user || !user.role) {
+      console.log('[ROLE GUARD] REJECTED: No user or role');
       return false;
     }
-    
-    return requiredRoles.includes(user.role.name);
+
+    const hasAccess = requiredRoles.includes(user.role.name);
+    console.log('[ROLE GUARD] Result:', hasAccess ? 'ALLOWED' : 'REJECTED');
+
+    return hasAccess;
   }
 }

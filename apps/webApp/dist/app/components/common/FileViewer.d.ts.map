@@ -1,0 +1,1 @@
+{"version":3,"file":"FileViewer.d.ts","sourceRoot":"","sources":["../../../../src/app/components/common/FileViewer.tsx"],"names":[],"mappings":"AAAA,OAAO,KAA8B,MAAM,OAAO,CAAC;AAInD,UAAU,eAAe;IACvB,GAAG,EAAE,MAAM,CAAC;IACZ,QAAQ,CAAC,EAAE,MAAM,CAAC;CACnB;AAED,QAAA,MAAM,UAAU,EAAE,KAAK,CAAC,EAAE,CAAC,eAAe,CAgGzC,CAAC;AAEF,eAAe,UAAU,CAAC"}

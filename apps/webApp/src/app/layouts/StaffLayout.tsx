@@ -33,7 +33,8 @@ import {
   Description,
   ChevronLeft,
   ChevronRight,
-  Work
+  Work,
+  EventAvailable
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -72,6 +73,7 @@ export function StaffLayout() {
     { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
     { text: 'Quotations', icon: <Description />, path: '/staff/quotations' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
+    { text: 'My Availability', icon: <EventAvailable />, path: '/staff/appointments/availability' },
     { divider: true },
     { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
     { divider: true },

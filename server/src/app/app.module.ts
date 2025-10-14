@@ -20,6 +20,7 @@ import { VendorsModule } from '../vendors/vendors.module';
 import { PurchaseInvoicesModule } from '../purchase-invoices/purchase-invoices.module';
 import { ExpenseInvoicesModule } from '../expense-invoices/expense-invoices.module';
 import { ReportsModule } from '../reports/reports.module';
+import { AppointmentsModule } from '../appointments/appointments.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -46,6 +47,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     PurchaseInvoicesModule,
     ExpenseInvoicesModule,
     ReportsModule,
+    AppointmentsModule,
   ],
   controllers: [AppController],
   providers: [

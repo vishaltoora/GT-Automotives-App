@@ -9,19 +9,22 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  clerkId   String    @unique
-  email     String    @unique
-  firstName String?
-  lastName  String?
-  roleId    String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  lastLogin DateTime?
-  isActive  Boolean   @default(true)
-  role      Role      @relation(fields: [roleId], references: [id])
-  jobs      Job[]     // Jobs assigned to this user (for STAFF role)
-  payments  Payment[] // Payments made to this user (for STAFF role)
+  id                String                 @id @default(cuid())
+  clerkId           String                 @unique
+  email             String                 @unique
+  firstName         String?
+  lastName          String?
+  roleId            String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  lastLogin         DateTime?
+  isActive          Boolean                @default(true)
+  role              Role                   @relation(fields: [roleId], references: [id])
+  jobs              Job[]                  // Jobs assigned to this user (for STAFF role)
+  payments          Payment[]              // Payments made to this user (for STAFF role)
+  appointments      Appointment[]          // Appointments assigned to this employee
+  availability      EmployeeAvailability[] // Weekly recurring schedule
+  timeSlotOverrides TimeSlotOverride[]     // Date-specific exceptions (time-off, extra shifts)
 }
 
 model Role {
@@ -261,20 +264,57 @@ model Appointment {
   id            String            @id @default(cuid())
   customerId    String
   vehicleId     String?
+  employeeId    String?           // Assigned employee (STAFF user)
   scheduledDate DateTime
-  scheduledTime String
-  duration      Int               @default(60)
+  scheduledTime String            // "09:00" format (24-hour)
+  endTime       String?           // "10:30" format (calculated from duration)
+  duration      Int               @default(60) // minutes
   serviceType   String
   status        AppointmentStatus
   notes         String?
   reminderSent  Boolean           @default(false)
+  bookedBy      String?           // User ID who created the booking
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   customer      Customer          @relation(fields: [customerId], references: [id])
   vehicle       Vehicle?          @relation(fields: [vehicleId], references: [id])
+  employee      User?             @relation(fields: [employeeId], references: [id])
 
   @@index([scheduledDate, status])
+  @@index([employeeId, scheduledDate])
   @@index([customerId])
+}
+
+model EmployeeAvailability {
+  id          String   @id @default(cuid())
+  employeeId  String
+  dayOfWeek   Int      // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime   String   // "09:00" (24-hour format)
+  endTime     String   // "17:00" (24-hour format)
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee    User     @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, dayOfWeek, startTime])
+  @@index([employeeId, dayOfWeek])
+}
+
+model TimeSlotOverride {
+  id          String   @id @default(cuid())
+  employeeId  String
+  date        DateTime // Specific date (date only, no time)
+  startTime   String   // "09:00" (24-hour format)
+  endTime     String   // "17:00" (24-hour format)
+  isAvailable Boolean  // false = blocked (vacation), true = additional availability
+  reason      String?  // "Vacation", "Sick Leave", "Extra Shift", etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee    User     @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId, date])
 }
 
 model AuditLog {
