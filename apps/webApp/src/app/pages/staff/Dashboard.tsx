@@ -1,15 +1,25 @@
-import { Box, Typography, Grid, Card, CardContent, Button, Paper, Chip, CircularProgress, IconButton, Avatar, Divider, LinearProgress, Stack } from '@mui/material';
-import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Refresh, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning } from '@mui/icons-material';
+import { Box, Typography, Grid, Card, CardContent, Button, Paper, Chip, CircularProgress, Avatar, Divider, LinearProgress, Stack, useTheme, useMediaQuery } from '@mui/material';
+import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning, Work } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { dashboardService, DashboardStats } from '../../services/dashboard.service';
 import { colors } from '../../theme/colors';
+import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
+import InvoiceDialog from '../../components/invoices/InvoiceDialog';
+import QuotationDialog from '../../components/quotations/QuotationDialog';
+import { CustomerDialog } from '../../components/customers/CustomerDialog';
 
 export function StaffDashboard() {
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [myJobDialogOpen, setMyJobDialogOpen] = useState(false);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -28,80 +38,104 @@ export function StaffDashboard() {
   };
 
   return (
-    <Box>
+    <Box sx={{ p: { xs: 1, sm: 0 } }}>
+      {/* Waving hand animation - global for both mobile and desktop */}
+      <style>
+        {`
+          @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            10%, 30% { transform: rotate(14deg); }
+            20% { transform: rotate(-8deg); }
+            40%, 60% { transform: rotate(14deg); }
+            50% { transform: rotate(-8deg); }
+            70% { transform: rotate(0deg); }
+          }
+        `}
+      </style>
+
       {/* Header Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar
-              sx={{
-                width: 56,
-                height: 56,
-                bgcolor: colors.secondary.main,
-                fontSize: '1.5rem',
-                fontWeight: 700,
-              }}
-            >
-              {user?.firstName?.charAt(0) || 'S'}
-            </Avatar>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.secondary.main }}>
-                Welcome Back {user?.firstName || 'Staff Member'}{' '}
-                <span
-                  style={{
-                    display: 'inline-block',
-                    animation: 'wave 1.5s ease-in-out infinite',
-                    transformOrigin: '70% 70%',
-                  }}
-                >
-                  👋
-                </span>
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AccessTime sx={{ fontSize: 16 }} />
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </Typography>
-              <style>
-                {`
-                  @keyframes wave {
-                    0%, 100% { transform: rotate(0deg); }
-                    10%, 30% { transform: rotate(14deg); }
-                    20% { transform: rotate(-8deg); }
-                    40%, 60% { transform: rotate(14deg); }
-                    50% { transform: rotate(-8deg); }
-                    70% { transform: rotate(0deg); }
-                  }
-                `}
-              </style>
+      <Box sx={{ mb: { xs: 2, sm: 4 } }}>
+        {isMobile ? (
+          /* Mobile Header */
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+              <Avatar
+                sx={{
+                  width: 44,
+                  height: 44,
+                  bgcolor: colors.secondary.main,
+                  fontSize: '1.2rem',
+                  fontWeight: 700,
+                }}
+              >
+                {user?.firstName?.charAt(0) || 'S'}
+              </Avatar>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+                  Welcome {user?.firstName || 'Staff'}{' '}
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      animation: 'wave 1.5s ease-in-out infinite',
+                      transformOrigin: '70% 70%',
+                    }}
+                  >
+                    👋
+                  </span>
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <AccessTime sx={{ fontSize: 12 }} />
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </Typography>
+              </Box>
             </Box>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        ) : (
+          /* Desktop Header */
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  width: 56,
+                  height: 56,
+                  bgcolor: colors.secondary.main,
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                }}
+              >
+                {user?.firstName?.charAt(0) || 'S'}
+              </Avatar>
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+                  Welcome Back {user?.firstName || 'Staff Member'}{' '}
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      animation: 'wave 1.5s ease-in-out infinite',
+                      transformOrigin: '70% 70%',
+                    }}
+                  >
+                    👋
+                  </span>
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AccessTime sx={{ fontSize: 16 }} />
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </Typography>
+              </Box>
+            </Box>
             <Chip
               label="Operations"
               color="secondary"
               icon={<Build />}
               sx={{ fontWeight: 600, px: 1 }}
             />
-            <IconButton
-              onClick={loadStats}
-              disabled={loading}
-              sx={{
-                border: `2px solid ${colors.secondary.main}`,
-                color: colors.secondary.main,
-                '&:hover': {
-                  backgroundColor: colors.secondary.main,
-                  color: 'white',
-                },
-              }}
-            >
-              <Refresh />
-            </IconButton>
           </Box>
-        </Box>
+        )}
       </Box>
 
-      {/* Today's Metrics - Same style as Admin Dashboard */}
-      {loading ? (
+      {/* Today's Metrics - Hidden on mobile */}
+      {!isMobile && (loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
@@ -109,7 +143,6 @@ export function StaffDashboard() {
         <Box sx={{
           display: 'grid',
           gridTemplateColumns: {
-            xs: '1fr',
             sm: 'repeat(2, 1fr)',
             md: 'repeat(4, 1fr)',
           },
@@ -295,118 +328,143 @@ export function StaffDashboard() {
             </CardContent>
           </Card>
         </Box>
-      ) : null}
+      ) : null)}
 
       {/* Main Content Grid */}
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 1.5, sm: 3 }}>
         {/* Quick Actions Section */}
         <Grid size={{ xs: 12, lg: 8 }}>
           <Paper
             elevation={0}
             sx={{
-              p: 3,
+              p: { xs: 1.5, sm: 3 },
               borderRadius: 2,
               border: `1px solid ${colors.neutral[200]}`,
-              mb: 3,
+              mb: { xs: 1.5, sm: 3 },
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.secondary.main }}>
                 Quick Actions
               </Typography>
-              <Chip label="Most Used" size="small" color="secondary" />
+              {!isMobile && <Chip label="Most Used" size="small" color="secondary" />}
             </Box>
 
             <Box sx={{
               display: 'grid',
               gridTemplateColumns: {
                 xs: '1fr',
-                sm: 'repeat(2, 1fr)',
+                sm: 'repeat(3, 1fr)',
                 md: 'repeat(4, 1fr)',
                 lg: 'repeat(5, 1fr)',
               },
-              gap: 2,
+              gap: { xs: 1, sm: 2 },
             }}>
+              <Paper
+                onClick={() => setMyJobDialogOpen(true)}
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.primary.main,
+                  },
+                }}
+              >
+                <Assignment sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.main, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Add My Job
+                </Typography>
+              </Paper>
+
               <Paper
                 component={Link}
                 to="/staff/jobs"
                 sx={{
-                  p: 2.5,
+                  p: { xs: 1.5, sm: 2 },
                   textAlign: 'center',
                   cursor: 'pointer',
                   textDecoration: 'none',
-                  border: `2px solid ${colors.primary.main}`,
-                  backgroundColor: colors.primary.lighter + '10',
+                  border: `1px solid ${colors.neutral[200]}`,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 24px ${colors.primary.main}30`,
-                    borderColor: colors.primary.dark,
-                    backgroundColor: colors.primary.main,
-                    '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                      color: 'white !important',
-                    },
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.primary.main,
                   },
                 }}
               >
-                <Assignment sx={{ fontSize: 40, color: colors.primary.main, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 700, color: colors.primary.main }}>
+                <Work sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.main, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   My Jobs
                 </Typography>
               </Paper>
 
               <Paper
-                component={Link}
-                to="/staff/invoices/new"
+                onClick={() => setInvoiceDialogOpen(true)}
                 sx={{
-                  p: 2.5,
+                  p: { xs: 1.5, sm: 2 },
                   textAlign: 'center',
                   cursor: 'pointer',
                   textDecoration: 'none',
-                  border: `2px solid ${colors.secondary.main}`,
-                  backgroundColor: colors.secondary.lighter + '10',
+                  border: `1px solid ${colors.neutral[200]}`,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 24px ${colors.secondary.main}30`,
-                    borderColor: colors.secondary.dark,
-                    backgroundColor: colors.secondary.main,
-                    '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                      color: 'white !important',
-                    },
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.secondary.main,
                   },
                 }}
               >
-                <Receipt sx={{ fontSize: 40, color: colors.secondary.main, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+                <Receipt sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.secondary.main, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   New Invoice
                 </Typography>
               </Paper>
 
               <Paper
-                component={Link}
-                to="/staff/customers/new"
+                onClick={() => setQuotationDialogOpen(true)}
                 sx={{
-                  p: 2.5,
+                  p: { xs: 1.5, sm: 2 },
                   textAlign: 'center',
                   cursor: 'pointer',
                   textDecoration: 'none',
-                  border: `2px solid ${colors.semantic.warning}`,
-                  backgroundColor: colors.semantic.warningLight + '10',
+                  border: `1px solid ${colors.neutral[200]}`,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 24px ${colors.semantic.warning}30`,
-                    borderColor: colors.semantic.warningDark,
-                    backgroundColor: colors.semantic.warning,
-                    '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                      color: 'white !important',
-                    },
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.semantic.info,
                   },
                 }}
               >
-                <People sx={{ fontSize: 40, color: colors.semantic.warning, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 700, color: colors.semantic.warning }}>
+                <Description sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.info, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  New Quote
+                </Typography>
+              </Paper>
+
+              <Paper
+                onClick={() => setCustomerDialogOpen(true)}
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.semantic.warning,
+                  },
+                }}
+              >
+                <People sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.warning, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   Add Customer
                 </Typography>
               </Paper>
@@ -415,55 +473,22 @@ export function StaffDashboard() {
                 component={Link}
                 to="/staff/inventory"
                 sx={{
-                  p: 2.5,
+                  p: { xs: 1.5, sm: 2 },
                   textAlign: 'center',
                   cursor: 'pointer',
                   textDecoration: 'none',
-                  border: `2px solid ${colors.semantic.success}`,
-                  backgroundColor: colors.semantic.successLight + '10',
+                  border: `1px solid ${colors.neutral[200]}`,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 24px ${colors.semantic.success}30`,
-                    borderColor: colors.semantic.successDark,
-                    backgroundColor: colors.semantic.success,
-                    '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                      color: 'white !important',
-                    },
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.semantic.success,
                   },
                 }}
               >
-                <Inventory sx={{ fontSize: 40, color: colors.semantic.success, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 700, color: colors.semantic.success }}>
+                <Inventory sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   Inventory
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/quotations/new"
-                sx={{
-                  p: 2.5,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `2px solid ${colors.semantic.info}`,
-                  backgroundColor: colors.semantic.infoLight + '10',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 24px ${colors.semantic.info}30`,
-                    borderColor: colors.semantic.infoDark,
-                    backgroundColor: colors.semantic.info,
-                    '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Description sx={{ fontSize: 40, color: colors.semantic.info, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 700, color: colors.semantic.info }}>
-                  New Quote
                 </Typography>
               </Paper>
             </Box>
@@ -473,14 +498,14 @@ export function StaffDashboard() {
           <Paper
             elevation={0}
             sx={{
-              p: 3,
+              p: { xs: 1.5, sm: 3 },
               borderRadius: 2,
               border: `1px solid ${colors.neutral[200]}`,
               background: `linear-gradient(135deg, ${colors.neutral[50]} 0%, white 100%)`,
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.secondary.main }}>
                 Work Queue
               </Typography>
               <Chip
@@ -575,15 +600,15 @@ export function StaffDashboard() {
           <Paper
             elevation={0}
             sx={{
-              p: 3,
+              p: { xs: 1.5, sm: 3 },
               borderRadius: 2,
               border: `1px solid ${colors.neutral[200]}`,
-              mb: 3,
+              mb: { xs: 1.5, sm: 3 },
               background: `linear-gradient(135deg, ${colors.semantic.info}10 0%, white 100%)`,
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: colors.semantic.info }}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.semantic.info }}>
                 Today's Schedule
               </Typography>
               <Schedule sx={{ color: colors.semantic.info }} />
@@ -649,13 +674,13 @@ export function StaffDashboard() {
           <Paper
             elevation={0}
             sx={{
-              p: 3,
+              p: { xs: 1.5, sm: 3 },
               borderRadius: 2,
               border: `1px solid ${colors.neutral[200]}`,
               background: `linear-gradient(135deg, ${colors.semantic.success}10 0%, white 100%)`,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 700, color: colors.semantic.success, mb: 3 }}>
+            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.semantic.success, mb: { xs: 2, sm: 3 } }}>
               This Week
             </Typography>
 
@@ -699,6 +724,48 @@ export function StaffDashboard() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* My Job Dialog - For staff to add their own job */}
+      <CreateJobDialog
+        open={myJobDialogOpen}
+        onClose={() => setMyJobDialogOpen(false)}
+        onSuccess={(job) => {
+          setMyJobDialogOpen(false);
+          loadStats(); // Refresh stats after creating job
+        }}
+        preselectedEmployeeId={user?.id}
+        hideEmployeeSelect={true}
+      />
+
+      {/* Invoice Dialog */}
+      <InvoiceDialog
+        open={invoiceDialogOpen}
+        onClose={() => setInvoiceDialogOpen(false)}
+        onSuccess={() => {
+          setInvoiceDialogOpen(false);
+          loadStats();
+        }}
+      />
+
+      {/* Quotation Dialog */}
+      <QuotationDialog
+        open={quotationDialogOpen}
+        onClose={() => setQuotationDialogOpen(false)}
+        onSuccess={() => {
+          setQuotationDialogOpen(false);
+          loadStats();
+        }}
+      />
+
+      {/* Customer Dialog */}
+      <CustomerDialog
+        open={customerDialogOpen}
+        onClose={() => setCustomerDialogOpen(false)}
+        onSuccess={() => {
+          setCustomerDialogOpen(false);
+          loadStats();
+        }}
+      />
     </Box>
   );
 }

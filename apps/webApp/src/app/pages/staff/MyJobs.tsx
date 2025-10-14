@@ -19,6 +19,10 @@ import {
   CardContent,
   Alert,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Stack,
+  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -40,6 +44,8 @@ import { format } from 'date-fns';
 
 export function MyJobs() {
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [jobs, setJobs] = useState<JobResponseDto[]>([]);
   const [summary, setSummary] = useState<JobSummaryDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -196,27 +202,37 @@ export function MyJobs() {
   }
 
   return (
-    <Box>
+    <Box sx={{ p: { xs: 1, sm: 0 } }}>
       {/* Header */}
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{
+        mb: { xs: 2, sm: 4 },
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: { xs: 2, sm: 0 }
+      }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+          <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 700, color: colors.secondary.main }}>
             My Jobs
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Track and manage your work assignments
-          </Typography>
+          {!isMobile && (
+            <Typography variant="body1" color="text.secondary">
+              Track and manage your work assignments
+            </Typography>
+          )}
         </Box>
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={!isMobile && <AddIcon />}
           onClick={handleCreateJob}
+          fullWidth={isMobile}
           sx={{
             backgroundColor: colors.secondary.main,
             '&:hover': { backgroundColor: colors.secondary.dark },
           }}
         >
-          Add Job
+          {isMobile ? 'Add Job' : 'Add Job'}
         </Button>
       </Box>
 
@@ -228,26 +244,26 @@ export function MyJobs() {
 
       {/* Summary Cards */}
       {summary && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: { xs: 2, sm: 3 } }}>
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
             <Card elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexDirection: isMobile ? 'column' : 'row' }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       backgroundColor: colors.primary.lighter + '20',
                       borderRadius: 2,
                       display: 'flex',
                     }}
                   >
-                    <WorkIcon sx={{ fontSize: 32, color: colors.primary.main }} />
+                    <WorkIcon sx={{ fontSize: { xs: 24, sm: 32 }, color: colors.primary.main }} />
                   </Box>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary.main }}>
+                  <Box sx={{ textAlign: isMobile ? 'center' : 'left' }}>
+                    <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 700, color: colors.primary.main }}>
                       {summary.totalJobs}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
                       Total Jobs
                     </Typography>
                   </Box>
@@ -256,25 +272,25 @@ export function MyJobs() {
             </Card>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
             <Card elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexDirection: isMobile ? 'column' : 'row' }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       backgroundColor: colors.semantic.warning + '20',
                       borderRadius: 2,
                       display: 'flex',
                     }}
                   >
-                    <ScheduleIcon sx={{ fontSize: 32, color: colors.semantic.warning }} />
+                    <ScheduleIcon sx={{ fontSize: { xs: 24, sm: 32 }, color: colors.semantic.warning }} />
                   </Box>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: colors.semantic.warning }}>
+                  <Box sx={{ textAlign: isMobile ? 'center' : 'left' }}>
+                    <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 700, color: colors.semantic.warning }}>
                       {summary.pendingJobs}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
                       In Progress
                     </Typography>
                   </Box>
@@ -283,26 +299,26 @@ export function MyJobs() {
             </Card>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
             <Card elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexDirection: isMobile ? 'column' : 'row' }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       backgroundColor: colors.semantic.info + '20',
                       borderRadius: 2,
                       display: 'flex',
                     }}
                   >
-                    <CheckCircleIcon sx={{ fontSize: 32, color: colors.semantic.info }} />
+                    <CheckCircleIcon sx={{ fontSize: { xs: 24, sm: 32 }, color: colors.semantic.info }} />
                   </Box>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: colors.semantic.info }}>
+                  <Box sx={{ textAlign: isMobile ? 'center' : 'left' }}>
+                    <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 700, color: colors.semantic.info }}>
                       {summary.readyJobs}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Ready for Payment
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                      Ready
                     </Typography>
                   </Box>
                 </Box>
@@ -310,26 +326,26 @@ export function MyJobs() {
             </Card>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
             <Card elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexDirection: isMobile ? 'column' : 'row' }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       backgroundColor: colors.semantic.success + '20',
                       borderRadius: 2,
                       display: 'flex',
                     }}
                   >
-                    <MoneyIcon sx={{ fontSize: 32, color: colors.semantic.success }} />
+                    <MoneyIcon sx={{ fontSize: { xs: 24, sm: 32 }, color: colors.semantic.success }} />
                   </Box>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: colors.semantic.success }}>
+                  <Box sx={{ textAlign: isMobile ? 'center' : 'left' }}>
+                    <Typography variant={isMobile ? 'h6' : 'h4'} sx={{ fontWeight: 700, color: colors.semantic.success, fontSize: { xs: '1rem', sm: '2.125rem' } }}>
                       ${summary.pendingPayAmount.toLocaleString()}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Pending Payment
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                      Pending
                     </Typography>
                   </Box>
                 </Box>
@@ -339,109 +355,203 @@ export function MyJobs() {
         </Grid>
       )}
 
-      {/* Jobs Table */}
-      <Paper elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: colors.neutral[50] }}>
-                <TableCell sx={{ fontWeight: 600 }}>Job #</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Amount</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Due Date</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Completed</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {jobs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      No jobs found. Click "Add Job" to create your first job entry.
+      {/* Jobs List - Table on Desktop, Cards on Mobile */}
+      {isMobile ? (
+        /* Mobile Card Layout */
+        <Stack spacing={1.5}>
+          {jobs.length === 0 ? (
+            <Paper elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}`, p: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                No jobs found. Click "Add Job" to create your first job entry.
+              </Typography>
+            </Paper>
+          ) : (
+            jobs.map((job) => (
+              <Paper
+                key={job.id}
+                elevation={0}
+                sx={{
+                  border: `1px solid ${colors.neutral[200]}`,
+                  p: 2,
+                  borderLeft: `4px solid ${getStatusColor(job.status)}`,
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: job.description ? 0.5 : 1.5 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      {job.title}
                     </Typography>
-                  </TableCell>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, job)}
+                    sx={{ ml: 1 }}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+
+                {job.description && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5, mt: 0 }}>
+                    {job.description}
+                  </Typography>
+                )}
+
+                <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+                  <Chip
+                    label={getStatusLabel(job.status)}
+                    size="small"
+                    sx={{
+                      backgroundColor: getStatusColor(job.status),
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '0.7rem',
+                    }}
+                  />
+                  <Chip
+                    label={getJobTypeLabel(job.jobType)}
+                    size="small"
+                    sx={{ backgroundColor: colors.neutral[100], fontSize: '0.7rem' }}
+                  />
+                </Box>
+
+                <Divider sx={{ my: 1.5 }} />
+
+                <Stack spacing={1}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Amount
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: colors.semantic.success }}>
+                      ${Number(job.payAmount).toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  {job.dueDate && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Due Date
+                      </Typography>
+                      <Typography variant="caption">
+                        {format(new Date(job.dueDate), 'MMM dd, yyyy')}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {job.completedAt && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Completed
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: colors.semantic.success }}>
+                        {format(new Date(job.completedAt), 'MMM dd, yyyy')}
+                      </Typography>
+                    </Box>
+                  )}
+                </Stack>
+              </Paper>
+            ))
+          )}
+        </Stack>
+      ) : (
+        /* Desktop Table Layout */
+        <Paper elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: colors.neutral[50] }}>
+                  <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Amount</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Due Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Completed</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
                 </TableRow>
-              ) : (
-                jobs.map((job) => (
-                  <TableRow key={job.id} hover>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                        {job.jobNumber.substring(0, 8)}
+              </TableHead>
+              <TableBody>
+                {jobs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        No jobs found. Click "Add Job" to create your first job entry.
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {job.title}
-                      </Typography>
-                      {job.description && (
-                        <Typography variant="caption" color="text.secondary">
-                          {job.description}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getJobTypeLabel(job.jobType)}
-                        size="small"
-                        sx={{ backgroundColor: colors.neutral[100] }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ${Number(job.payAmount).toLocaleString()}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getStatusLabel(job.status)}
-                        size="small"
-                        sx={{
-                          backgroundColor: getStatusColor(job.status),
-                          color: 'white',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {job.dueDate ? (
-                        <Typography variant="body2">
-                          {format(new Date(job.dueDate), 'MMM dd, yyyy')}
-                        </Typography>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          N/A
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {job.completedAt ? (
-                        <Typography variant="body2" sx={{ color: colors.semantic.success }}>
-                          {format(new Date(job.completedAt), 'MMM dd, yyyy')}
-                        </Typography>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Not completed
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, job)}
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+                ) : (
+                  jobs.map((job) => (
+                    <TableRow key={job.id} hover>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: job.description ? 0.25 : 0 }}>
+                          {job.title}
+                        </Typography>
+                        {job.description && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0 }}>
+                            {job.description}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getJobTypeLabel(job.jobType)}
+                          size="small"
+                          sx={{ backgroundColor: colors.neutral[100] }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          ${Number(job.payAmount).toLocaleString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusLabel(job.status)}
+                          size="small"
+                          sx={{
+                            backgroundColor: getStatusColor(job.status),
+                            color: 'white',
+                            fontWeight: 600,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {job.dueDate ? (
+                          <Typography variant="body2">
+                            {format(new Date(job.dueDate), 'MMM dd, yyyy')}
+                          </Typography>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            N/A
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {job.completedAt ? (
+                          <Typography variant="body2" sx={{ color: colors.semantic.success }}>
+                            {format(new Date(job.completedAt), 'MMM dd, yyyy')}
+                          </Typography>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            Not completed
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, job)}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      )}
 
       {/* Action Menu */}
       <Menu

@@ -24,6 +24,8 @@ import {
   Tooltip,
   InputAdornment,
   Typography,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -108,6 +110,8 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   onServicesChange,
   isEditMode = false,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const formatTireType = (type: string) => {
     return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
@@ -156,18 +160,21 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   const { subtotal, gstAmount, pstAmount, totalTax, total } = calculateTotals();
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       {/* COMPANY SELECTION */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
         <Card sx={{
           borderRadius: 2,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           border: `1px solid ${colors.neutral[200]}`,
         }}>
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <BuildIcon sx={{ color: colors.primary.main }} />
-              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
+              {!isMobile && <BuildIcon sx={{ color: colors.primary.main }} />}
+              <Typography
+                variant={isMobile ? 'subtitle1' : 'h6'}
+                sx={{ fontWeight: 600, color: colors.text.primary }}
+              >
                 Company / Business Unit
               </Typography>
             </Box>
@@ -199,29 +206,25 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
       </Box>
 
       {/* TOP ROW: Customer Information & Payment/Notes */}
-      <Box sx={{ mb: 3 }}>
-        <Grid container spacing={3}>
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
           <Grid size={{ xs: 12, lg: 6 }}>
-            <Card sx={{ 
+            <Card sx={{
               borderRadius: 2,
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
               border: `1px solid ${colors.neutral[200]}`,
               height: '100%',
-              minHeight: 280
+              minHeight: isMobile ? 'auto' : 280
             }}>
-              <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <PersonIcon sx={{ color: colors.primary.main }} />
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                      Customer Information
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={isNewCustomer ? "New Customer" : "Existing Customer"} 
-                    color={isNewCustomer ? "success" : "primary"}
-                    size="small"
-                  />
+              <CardContent sx={{ p: { xs: 2, sm: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
+                  {!isMobile && <PersonIcon sx={{ color: colors.primary.main }} />}
+                  <Typography
+                    variant={isMobile ? 'subtitle1' : 'h6'}
+                    sx={{ fontWeight: 600, color: colors.text.primary }}
+                  >
+                    Customer Information
+                  </Typography>
                 </Box>
                 
                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -438,12 +441,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
               border: `1px solid ${colors.neutral[200]}`,
               height: '100%',
-              minHeight: 280
+              minHeight: isMobile ? 'auto' : 280
             }}>
-              <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                  <PaymentIcon sx={{ color: colors.primary.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
+              <CardContent sx={{ p: { xs: 2, sm: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
+                  {!isMobile && <PaymentIcon sx={{ color: colors.primary.main }} />}
+                  <Typography
+                    variant={isMobile ? 'subtitle1' : 'h6'}
+                    sx={{ fontWeight: 600, color: colors.text.primary }}
+                  >
                     Payment & Notes
                   </Typography>
                 </Box>
@@ -552,16 +558,19 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
       </Box>
 
       {/* SECOND ROW: Add Items Section - Full Width */}
-      <Box sx={{ mb: 3 }}>
-        <Card sx={{ 
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+        <Card sx={{
           borderRadius: 2,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           border: `1px solid ${colors.neutral[200]}`
         }}>
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-              <ShoppingCartIcon sx={{ color: colors.primary.main }} />
-              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
+              {!isMobile && <ShoppingCartIcon sx={{ color: colors.primary.main }} />}
+              <Typography
+                variant={isMobile ? 'subtitle1' : 'h6'}
+                sx={{ fontWeight: 600, color: colors.text.primary }}
+              >
                 Invoice Items
               </Typography>
             </Box>
@@ -894,21 +903,24 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
       </Box>
 
       {/* THIRD ROW: Invoice Summary */}
-      <Card sx={{ 
+      <Card sx={{
         borderRadius: 2,
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         border: `1px solid ${colors.neutral[200]}`,
         background: `linear-gradient(135deg, ${colors.primary.main}05 0%, ${colors.primary.light}10 100%)`
       }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-            <AttachMoneyIcon sx={{ color: colors.primary.main }} />
-            <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
+            {!isMobile && <AttachMoneyIcon sx={{ color: colors.primary.main }} />}
+            <Typography
+              variant={isMobile ? 'subtitle1' : 'h6'}
+              sx={{ fontWeight: 600, color: colors.text.primary }}
+            >
               Invoice Summary
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 400 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: isMobile ? '100%' : 400 }}>
             {/* Subtotal */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body1" color="text.secondary">

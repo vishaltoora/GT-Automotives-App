@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,6 +16,11 @@ import {
   Grid,
   MenuItem,
   InputAdornment,
+  useTheme,
+  useMediaQuery,
+  Stack,
+  Divider,
+  Pagination,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -37,6 +42,8 @@ import { useErrorHelpers } from '../../contexts/ErrorContext';
 
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { role } = useAuth();
   const { confirm } = useConfirmation();
   const { showApiError } = useErrorHelpers();
@@ -51,6 +58,19 @@ const InvoiceList: React.FC = () => {
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [rowsPerPage] = useState(isMobile ? 10 : 20);
+
+  // Calculate paginated data
+  const paginatedInvoices = useMemo(() => {
+    const startIndex = (page - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return invoices.slice(startIndex, endIndex);
+  }, [invoices, page, rowsPerPage]);
+
+  const totalPages = Math.ceil(invoices.length / rowsPerPage);
 
   useEffect(() => {
     loadInvoices();
@@ -92,9 +112,15 @@ const InvoiceList: React.FC = () => {
         : await invoiceService.getInvoices();
 
       setInvoices(filtered);
+      setPage(1); // Reset to first page after search
     } catch (error) {
       showApiError(error, 'Failed to search invoices');
     }
+  };
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePrint = (invoice: Invoice) => {
@@ -226,20 +252,29 @@ const InvoiceList: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ p: { xs: 1, sm: 3 } }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        mb: { xs: 2, sm: 3 },
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: { xs: 2, sm: 0 },
+        alignItems: isMobile ? 'stretch' : 'center'
+      }}>
+        <Typography variant={isMobile ? 'h5' : 'h4'} component="h1">
           Invoices
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, flexDirection: isMobile ? 'column' : 'row' }}>
           {canViewReports && (
             <Button
               variant="outlined"
-              startIcon={<ReportIcon />}
+              startIcon={!isMobile && <ReportIcon />}
               onClick={() => {
                 const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
                 navigate(`${basePath}/invoices/cash-report`);
               }}
+              fullWidth={isMobile}
+              size={isMobile ? 'medium' : 'medium'}
             >
               Cash Report
             </Button>
@@ -247,8 +282,10 @@ const InvoiceList: React.FC = () => {
           {canCreateInvoice && (
             <Button
               variant="contained"
-              startIcon={<AddIcon />}
+              startIcon={!isMobile && <AddIcon />}
               onClick={() => setDialogOpen(true)}
+              fullWidth={isMobile}
+              size={isMobile ? 'medium' : 'medium'}
             >
               New Invoice
             </Button>
@@ -256,18 +293,19 @@ const InvoiceList: React.FC = () => {
         </Box>
       </Box>
 
-      <Paper sx={{ mb: 3, p: 2 }}>
-        <Grid container spacing={2} alignItems="center">
+      <Paper sx={{ mb: { xs: 2, sm: 3 }, p: { xs: 1.5, sm: 2 } }}>
+        <Grid container spacing={{ xs: 1.5, sm: 2 }} alignItems="center">
           <Grid size={{ xs: 12, sm: 3 }}>
             <TextField
               fullWidth
               label="Invoice Number"
               value={searchParams.invoiceNumber}
               onChange={(e) => setSearchParams({ ...searchParams, invoiceNumber: e.target.value })}
+              size={isMobile ? 'small' : 'medium'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <SearchIcon fontSize="small" />
                   </InputAdornment>
                 ),
               }}
@@ -279,6 +317,7 @@ const InvoiceList: React.FC = () => {
               label="Customer Name"
               value={searchParams.customerName}
               onChange={(e) => setSearchParams({ ...searchParams, customerName: e.target.value })}
+              size={isMobile ? 'small' : 'medium'}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 2 }}>
@@ -288,6 +327,7 @@ const InvoiceList: React.FC = () => {
               label="Status"
               value={searchParams.status}
               onChange={(e) => setSearchParams({ ...searchParams, status: e.target.value })}
+              size={isMobile ? 'small' : 'medium'}
             >
               <MenuItem value="">All</MenuItem>
               <MenuItem value="DRAFT">Draft</MenuItem>
@@ -304,6 +344,7 @@ const InvoiceList: React.FC = () => {
               label="Company"
               value={searchParams.companyId}
               onChange={(e) => setSearchParams({ ...searchParams, companyId: e.target.value })}
+              size={isMobile ? 'small' : 'medium'}
             >
               <MenuItem value="">All Companies</MenuItem>
               {companies.map((company) => (
@@ -318,7 +359,8 @@ const InvoiceList: React.FC = () => {
               fullWidth
               variant="contained"
               onClick={handleSearch}
-              startIcon={<SearchIcon />}
+              startIcon={!isMobile && <SearchIcon />}
+              size={isMobile ? 'medium' : 'medium'}
             >
               Search
             </Button>
@@ -326,26 +368,48 @@ const InvoiceList: React.FC = () => {
         </Grid>
       </Paper>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Invoice #</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Customer</TableCell>
-              <TableCell>Company</TableCell>
-              <TableCell>Total</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Payment</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell>{invoice.invoiceNumber}</TableCell>
-                <TableCell>{formatDate(invoice.createdAt)}</TableCell>
-                <TableCell>
+      {isMobile ? (
+        /* Mobile Card Layout */
+        <Stack spacing={1.5}>
+          {paginatedInvoices.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                {loading ? 'Loading...' : 'No invoices found'}
+              </Typography>
+            </Paper>
+          ) : (
+            paginatedInvoices.map((invoice) => (
+              <Paper
+                key={invoice.id}
+                elevation={0}
+                sx={{
+                  p: 1.5,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderLeft: `4px solid ${
+                    invoice.status === 'PAID' ? theme.palette.success.main :
+                    invoice.status === 'PENDING' ? theme.palette.warning.main :
+                    invoice.status === 'CANCELLED' ? theme.palette.error.main :
+                    theme.palette.grey[400]
+                  }`,
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25, fontSize: '0.875rem' }}>
+                      {invoice.invoiceNumber}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                      {formatDate(invoice.createdAt)}
+                    </Typography>
+                  </Box>
+                  <ActionsMenu
+                    actions={getInvoiceActions(invoice)}
+                    tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
+                    id={`invoice-${invoice.id}`}
+                  />
+                </Box>
+
+                <Typography variant="body2" sx={{ mb: 0.75, fontSize: '0.8rem' }}>
                   {(() => {
                     const customer = invoice.customer;
                     if (customer?.firstName || customer?.lastName) {
@@ -357,45 +421,138 @@ const InvoiceList: React.FC = () => {
                     }
                     return 'Customer';
                   })()}
-                </TableCell>
-                <TableCell>
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
+                  <Chip
+                    label={invoice.status}
+                    color={getStatusColor(invoice.status)}
+                    size="small"
+                    sx={{ fontSize: '0.65rem', height: '20px' }}
+                  />
                   <Chip
                     label={invoice.company?.name || 'Unknown'}
                     size="small"
                     color={getCompanyColor(invoice.company?.name || 'Unknown')}
                     variant="filled"
+                    sx={{ fontSize: '0.65rem', height: '20px' }}
                   />
-                </TableCell>
-                <TableCell>{formatCurrency(invoice.total)}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={invoice.status}
-                    color={getStatusColor(invoice.status)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  {invoice.paymentMethod ? invoice.paymentMethod.replace(/_/g, ' ') : '-'}
-                </TableCell>
-                <TableCell align="center">
-                  <ActionsMenu 
-                    actions={getInvoiceActions(invoice)}
-                    tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
-                    id={`invoice-${invoice.id}`}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-            {invoices.length === 0 && (
+                </Box>
+
+                <Divider sx={{ my: 1 }} />
+
+                <Stack spacing={0.5}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                      Total
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: theme.palette.success.main, fontSize: '0.875rem' }}>
+                      {formatCurrency(invoice.total)}
+                    </Typography>
+                  </Box>
+                  {invoice.paymentMethod && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        Payment
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                        {invoice.paymentMethod.replace(/_/g, ' ')}
+                      </Typography>
+                    </Box>
+                  )}
+                </Stack>
+              </Paper>
+            ))
+          )}
+        </Stack>
+      ) : (
+        /* Desktop Table Layout */
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={8} align="center">
-                  {loading ? 'Loading...' : 'No invoices found'}
-                </TableCell>
+                <TableCell>Invoice #</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Customer</TableCell>
+                <TableCell>Company</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Payment</TableCell>
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {paginatedInvoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell>{invoice.invoiceNumber}</TableCell>
+                  <TableCell>{formatDate(invoice.createdAt)}</TableCell>
+                  <TableCell>
+                    {(() => {
+                      const customer = invoice.customer;
+                      if (customer?.firstName || customer?.lastName) {
+                        const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+                        if (customer.businessName) {
+                          return `${fullName} (${customer.businessName})`;
+                        }
+                        return fullName || 'Customer';
+                      }
+                      return 'Customer';
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={invoice.company?.name || 'Unknown'}
+                      size="small"
+                      color={getCompanyColor(invoice.company?.name || 'Unknown')}
+                      variant="filled"
+                    />
+                  </TableCell>
+                  <TableCell>{formatCurrency(invoice.total)}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={invoice.status}
+                      color={getStatusColor(invoice.status)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {invoice.paymentMethod ? invoice.paymentMethod.replace(/_/g, ' ') : '-'}
+                  </TableCell>
+                  <TableCell align="center">
+                    <ActionsMenu
+                      actions={getInvoiceActions(invoice)}
+                      tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
+                      id={`invoice-${invoice.id}`}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+              {paginatedInvoices.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    {loading ? 'Loading...' : 'No invoices found'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: { xs: 2, sm: 3 }, mb: 2 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+            size={isMobile ? 'medium' : 'large'}
+            showFirstButton
+            showLastButton
+          />
+        </Box>
+      )}
 
       {/* Invoice Dialog - Used for both create and edit */}
       <InvoiceDialog

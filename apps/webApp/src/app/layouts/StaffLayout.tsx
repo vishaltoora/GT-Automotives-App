@@ -33,7 +33,8 @@ import {
   Description,
   ChevronLeft,
   ChevronRight,
-  Work
+  Work,
+  EventAvailable
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -72,6 +73,7 @@ export function StaffLayout() {
     { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
     { text: 'Quotations', icon: <Description />, path: '/staff/quotations' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
+    { text: 'My Availability', icon: <EventAvailable />, path: '/staff/appointments/availability' },
     { divider: true },
     { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
     { divider: true },
@@ -93,31 +95,38 @@ export function StaffLayout() {
         minHeight: 80,
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: drawerCollapsed ? 0 : 1.5, width: '100%', justifyContent: drawerCollapsed ? 'center' : 'flex-start' }}>
-          <Box
-            sx={{
-              width: 42,
-              height: 42,
-              borderRadius: '50%',
-              overflow: 'hidden',
-              backgroundColor: 'white',
-              border: `2px solid ${colors.secondary.main}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              flexShrink: 0,
-            }}
-          >
-            <img
-              src={gtLogo}
-              alt="GT Logo"
-              style={{
-                width: '85%',
-                height: '85%',
-                objectFit: 'contain',
+          <Link to="/staff/dashboard" style={{ textDecoration: 'none', display: 'flex' }}>
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                backgroundColor: 'white',
+                border: `2px solid ${colors.secondary.main}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                flexShrink: 0,
+                transition: 'transform 0.2s',
+                cursor: 'pointer',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                }
               }}
-            />
-          </Box>
+            >
+              <img
+                src={gtLogo}
+                alt="GT Logo"
+                style={{
+                  width: '85%',
+                  height: '85%',
+                  objectFit: 'contain',
+                }}
+              />
+            </Box>
+          </Link>
           {!drawerCollapsed && (
             <Box>
               <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, lineHeight: 1 }}>
@@ -339,29 +348,36 @@ export function StaffLayout() {
                 flexGrow: 1,
               }}
             >
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  backgroundColor: 'white',
-                  border: `2px solid ${colors.primary.main}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <img
-                  src={gtLogo}
-                  alt="GT Logo"
-                  style={{
-                    width: '85%',
-                    height: '85%',
-                    objectFit: 'contain',
+              <Link to="/staff/dashboard" style={{ textDecoration: 'none', display: 'flex' }}>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    backgroundColor: 'white',
+                    border: `2px solid ${colors.primary.main}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'transform 0.2s',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                    }
                   }}
-                />
-              </Box>
+                >
+                  <img
+                    src={gtLogo}
+                    alt="GT Logo"
+                    style={{
+                      width: '85%',
+                      height: '85%',
+                      objectFit: 'contain',
+                    }}
+                  />
+                </Box>
+              </Link>
               <Typography
                 variant="h6"
                 sx={{
@@ -422,11 +438,16 @@ export function StaffLayout() {
           sx={{
             flexGrow: 1,
             overflow: 'auto',
-            p: { xs: 2, sm: 3 },
+            p: { xs: 1, sm: 3 },
             backgroundColor: 'white',
           }}
         >
-          <Container maxWidth="xl">
+          <Container
+            maxWidth="xl"
+            sx={{
+              px: { xs: 0, sm: 2 },
+            }}
+          >
             <Outlet />
           </Container>
         </Box>

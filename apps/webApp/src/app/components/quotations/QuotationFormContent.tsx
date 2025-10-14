@@ -22,6 +22,8 @@ import {
   InputAdornment,
   Typography,
   Autocomplete,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -97,6 +99,8 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   onTireSelect,
   onServicesChange,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleServiceChange = (serviceId: string, serviceName: string, unitPrice: number) => {
     setNewItem({
@@ -153,11 +157,16 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   return (
     <>
       {/* Customer Information */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <Card sx={{ mb: { xs: 2, sm: 3 } }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <PersonIcon sx={{ mr: 1, color: colors.primary }} />
-            <Typography variant="h6">Customer Information</Typography>
+            {!isMobile && <PersonIcon sx={{ mr: 1, color: colors.primary }} />}
+            <Typography
+              variant={isMobile ? 'subtitle1' : 'h6'}
+              sx={{ fontWeight: 600 }}
+            >
+              Customer Information
+            </Typography>
           </Box>
           
           <Grid container spacing={2}>
@@ -208,11 +217,16 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
 
 
       {/* Add Items */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <Card sx={{ mb: { xs: 2, sm: 3 } }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <ShoppingCartIcon sx={{ mr: 1, color: colors.primary }} />
-            <Typography variant="h6">Items</Typography>
+            {!isMobile && <ShoppingCartIcon sx={{ mr: 1, color: colors.primary }} />}
+            <Typography
+              variant={isMobile ? 'subtitle1' : 'h6'}
+              sx={{ fontWeight: 600 }}
+            >
+              Items
+            </Typography>
           </Box>
           
           <Grid container spacing={2} alignItems="flex-end">
@@ -436,11 +450,16 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
       </Card>
 
       {/* Additional Information */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <Card sx={{ mb: { xs: 2, sm: 3 } }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <DescriptionIcon sx={{ mr: 1, color: colors.primary }} />
-            <Typography variant="h6">Additional Information</Typography>
+            {!isMobile && <DescriptionIcon sx={{ mr: 1, color: colors.primary }} />}
+            <Typography
+              variant={isMobile ? 'subtitle1' : 'h6'}
+              sx={{ fontWeight: 600 }}
+            >
+              Additional Information
+            </Typography>
           </Box>
           
           <Grid container spacing={2}>
@@ -506,10 +525,15 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
 
       {/* Totals */}
       <Card>
-        <CardContent>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <AttachMoneyIcon sx={{ mr: 1, color: colors.primary }} />
-            <Typography variant="h6">Totals</Typography>
+            {!isMobile && <AttachMoneyIcon sx={{ mr: 1, color: colors.primary }} />}
+            <Typography
+              variant={isMobile ? 'subtitle1' : 'h6'}
+              sx={{ fontWeight: 600 }}
+            >
+              Totals
+            </Typography>
           </Box>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>

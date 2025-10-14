@@ -41,7 +41,6 @@ import UserManagement from '../pages/admin/UserManagement';
 // Payroll Pages
 import { PayrollDashboard } from './pages/admin/payroll/PayrollDashboard';
 import { JobsManagement } from './pages/admin/payroll/JobsManagement';
-import { EmployeeJobsView } from './pages/admin/payroll/EmployeeJobsView';
 import { PaymentsManagement } from './pages/admin/payroll/PaymentsManagement';
 
 
@@ -59,7 +58,6 @@ import { VehicleForm } from './pages/customers/VehicleForm';
 
 // Invoice Pages
 import InvoiceList from './pages/invoices/InvoiceList';
-import InvoiceForm from './pages/invoices/InvoiceForm';
 import InvoiceDetails from './pages/invoices/InvoiceDetails';
 import CashReport from './pages/invoices/CashReport';
 
@@ -72,6 +70,10 @@ import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoice
 
 // Expense Invoice Pages - Merged into Purchase Invoice Management
 // import ExpenseInvoiceManagement from './pages/expense-invoices/ExpenseInvoiceManagement';
+
+// Appointment Pages
+import { AppointmentsManagement } from './pages/admin/appointments/AppointmentsManagement';
+import { EmployeeAvailabilityManagement } from './pages/admin/appointments/EmployeeAvailabilityManagement';
 
 export function App() {
   return (
@@ -141,13 +143,13 @@ export function App() {
           <Route path="inventory/:id/edit" element={<TireFormSimple />} />
           <Route path="inventory/dashboard" element={<InventoryDashboard />} />
           <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/new" element={<InvoiceForm />} />
           <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="jobs" element={<MyJobs />} />
-          <Route path="appointments" element={<div>Appointments</div>} />
+          <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="appointments/availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -178,14 +180,14 @@ export function App() {
           <Route path="inventory/:id/edit" element={<TireFormSimple />} />
           <Route path="inventory/dashboard" element={<InventoryDashboard />} />
           <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/new" element={<InvoiceForm />} />
           <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
           {/* Expense invoices merged into purchase-invoices */}
-          <Route path="appointments" element={<div>All Appointments</div>} />
+          <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="appointments/availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
