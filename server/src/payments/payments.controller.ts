@@ -118,6 +118,16 @@ export class PaymentsController {
     return this.paymentsService.update(id, updatePaymentDto, user.id);
   }
 
+  @Patch(':id/revert-status')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN')
+  revertPaymentStatus(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.paymentsService.revertPaymentStatus(id, user.id);
+  }
+
   @Delete(':id')
   @UseGuards(RoleGuard)
   @Roles('ADMIN')

@@ -252,9 +252,14 @@ export function JobsManagement() {
   const handleDeleteJob = async () => {
     if (!selectedJob) return;
 
+    const isPaid = selectedJob.status === JobStatus.PAID;
+    const message = isPaid
+      ? `Are you sure you want to delete the PAID job "${selectedJob.title}"? This job has already been paid out ($${selectedJob.payAmount.toFixed(2)}). This action cannot be undone and should only be used to correct mistakes.`
+      : `Are you sure you want to delete the job "${selectedJob.title}"? This action cannot be undone.`;
+
     const confirmed = await showConfirmation(
       'Delete Job',
-      `Are you sure you want to delete the job "${selectedJob.title}"? This action cannot be undone.`,
+      message,
       'Delete',
       'error'
     );
@@ -990,9 +995,17 @@ export function JobsManagement() {
                   Mark Complete
                 </MenuItem>
               )}
-              <MenuItem onClick={handleDeleteJob} sx={{ color: 'error.main' }}>
+              <MenuItem
+                onClick={handleDeleteJob}
+                sx={{ color: 'error.main' }}
+              >
                 <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
                 Delete Job
+                {selectedJob?.status === JobStatus.PAID && (
+                  <Typography variant="caption" sx={{ ml: 1, fontStyle: 'italic' }}>
+                    (Paid)
+                  </Typography>
+                )}
               </MenuItem>
             </Menu>
 
