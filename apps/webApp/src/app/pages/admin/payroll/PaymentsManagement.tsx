@@ -35,6 +35,8 @@ import {
   Group as GroupIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -45,6 +47,8 @@ import { paymentService } from '../../../services/payment.service';
 import { jobService } from '../../../services/job.service';
 import { userService } from '../../../services/user.service';
 import { ProcessPaymentDialog } from '../../../components/payroll/ProcessPaymentDialog';
+import { ConfirmationDialog } from '../../../components/common/ConfirmationDialog';
+import { useConfirmationDialog } from '../../../hooks/useConfirmationDialog';
 import { colors } from '../../../theme/colors';
 import { format } from 'date-fns';
 
@@ -116,6 +120,14 @@ export function PaymentsManagement() {
     startDate: null as Date | null,
     endDate: null as Date | null,
   });
+
+  const {
+    showConfirmation,
+    isOpen: confirmationOpen,
+    dialogData: confirmationData,
+    handleConfirm: confirmationConfirm,
+    handleCancel: confirmationCancel,
+  } = useConfirmationDialog();
 
   useEffect(() => {
     fetchData();
@@ -210,6 +222,63 @@ export function PaymentsManagement() {
   const handleMenuClose = () => {
     setMenuAnchor(null);
     setSelectedPayment(null);
+  };
+
+  const handleDeletePayment = async () => {
+    if (!selectedPayment) return;
+
+    const confirmed = await showConfirmation(
+      'Delete Payment',
+      `Are you sure you want to delete this payment for "${getEmployeeName(selectedPayment.employee)}"? This action cannot be undone.`,
+      'Delete',
+      'error'
+    );
+
+    if (confirmed) {
+      try {
+        await paymentService.deletePayment(selectedPayment.id);
+        handleMenuClose();
+
+        setTimeout(async () => {
+          await fetchData();
+        }, 100);
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        if (err.message?.includes('404') || err.message?.includes('Not Found')) {
+          setError('Payment not found. It may have already been deleted. Refreshing the list...');
+          await fetchData();
+        } else {
+          setError(err.message || 'Failed to delete payment');
+        }
+        handleMenuClose();
+      }
+    }
+  };
+
+  const handleEditPaymentStatus = async () => {
+    if (!selectedPayment) return;
+
+    const confirmed = await showConfirmation(
+      'Revert Payment Status',
+      `Are you sure you want to revert this payment status back to PENDING? This will also change the related job status back to READY for reprocessing. Payment: $${selectedPayment.amount.toFixed(2)} for ${getEmployeeName(selectedPayment.employee)}.`,
+      'Revert Status',
+      'warning'
+    );
+
+    if (confirmed) {
+      try {
+        await paymentService.revertPaymentStatus(selectedPayment.id);
+        handleMenuClose();
+
+        setTimeout(async () => {
+          await fetchData();
+        }, 100);
+      } catch (err: any) {
+        console.error('Revert status error:', err);
+        setError(err.message || 'Failed to revert payment status');
+        handleMenuClose();
+      }
+    }
   };
 
   const getStatusColor = (status: PaymentStatus) => {
@@ -1052,9 +1121,19 @@ export function PaymentsManagement() {
           <MenuItem onClick={handleMenuClose}>
             View Details
           </MenuItem>
-          {selectedPayment?.status === PaymentStatus.PENDING && (
-            <MenuItem onClick={handleMenuClose}>
-              Edit Payment
+          {selectedPayment?.status === PaymentStatus.PAID && (
+            <MenuItem onClick={handleEditPaymentStatus} sx={{ color: 'warning.main' }}>
+              <EditIcon fontSize="small" sx={{ mr: 1 }} />
+              Revert to PENDING
+            </MenuItem>
+          )}
+          {selectedPayment?.status !== PaymentStatus.PAID && (
+            <MenuItem
+              onClick={handleDeletePayment}
+              sx={{ color: 'error.main' }}
+            >
+              <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+              Delete Payment
             </MenuItem>
           )}
         </Menu>
@@ -1065,6 +1144,17 @@ export function PaymentsManagement() {
           onClose={() => setProcessDialogOpen(false)}
           onSuccess={handleProcessPayment}
           job={selectedJob}
+        />
+
+        {/* Confirmation Dialog */}
+        <ConfirmationDialog
+          open={confirmationOpen}
+          title={confirmationData?.title || ''}
+          message={confirmationData?.message || ''}
+          confirmText={confirmationData?.confirmText}
+          severity={confirmationData?.severity}
+          onConfirm={confirmationConfirm}
+          onClose={confirmationCancel}
         />
       </Box>
     </LocalizationProvider>

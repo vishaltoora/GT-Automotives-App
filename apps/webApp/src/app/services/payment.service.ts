@@ -109,6 +109,12 @@ class PaymentService {
     });
   }
 
+  async revertPaymentStatus(id: string): Promise<PaymentResponseDto> {
+    return this.makeRequest<PaymentResponseDto>(`${this.baseUrl}/${id}/revert-status`, {
+      method: 'PATCH',
+    });
+  }
+
   async getPaymentsByEmployee(employeeId: string): Promise<PaymentResponseDto[]> {
     return this.makeRequest<PaymentResponseDto[]>(`${this.baseUrl}/employee/${employeeId}`);
   }

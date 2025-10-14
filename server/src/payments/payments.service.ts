@@ -235,6 +235,44 @@ export class PaymentsService {
     }
   }
 
+  async revertPaymentStatus(id: string, userId: string): Promise<Payment> {
+    const existingPayment = await this.paymentRepository.findById(id);
+    if (!existingPayment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    if (existingPayment.status !== PaymentStatus.PAID) {
+      throw new BadRequestException('Can only revert PAID payments');
+    }
+
+    try {
+      // Revert payment status to PENDING and clear paidAt
+      const updatedPayment = await this.paymentRepository.update(id, {
+        status: PaymentStatus.PENDING,
+        paidAt: null,
+      });
+
+      // Also need to update the related job status back to READY
+      if (existingPayment.jobId) {
+        await this.jobRepository.updateStatus(existingPayment.jobId, JobStatus.READY);
+      }
+
+      // Log the action
+      await this.auditRepository.create({
+        userId,
+        action: 'REVERT_PAYMENT_STATUS',
+        resource: 'Payment',
+        resourceId: id,
+        oldValue: existingPayment,
+        newValue: updatedPayment,
+      });
+
+      return updatedPayment;
+    } catch (error) {
+      throw new BadRequestException('Failed to revert payment status');
+    }
+  }
+
   async remove(id: string, userId: string): Promise<void> {
     const existingPayment = await this.paymentRepository.findById(id);
     if (!existingPayment) {

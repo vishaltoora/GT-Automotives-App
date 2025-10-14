@@ -22,6 +22,7 @@ export declare class PaymentsService {
     findByJob(jobId: string): Promise<PaymentResponseDto[]>;
     findPendingPayments(): Promise<PaymentResponseDto[]>;
     update(id: string, updatePaymentDto: UpdatePaymentDto, userId: string): Promise<Payment>;
+    revertPaymentStatus(id: string, userId: string): Promise<Payment>;
     remove(id: string, userId: string): Promise<void>;
     getPaymentSummary(employeeId?: string): Promise<PaymentSummaryDto>;
     getPayrollReport(startDate: string, endDate: string, employeeId?: string): Promise<any[]>;
