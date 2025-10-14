@@ -290,7 +290,8 @@
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev --name \"add_employee_availability_system\" --schema=libs/database/src/lib/prisma/schema.prisma)",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" psql -c \"SELECT id, \"\"employeeId\"\", \"\"scheduledDate\"\", \"\"scheduledTime\"\", duration, status FROM \"\"Appointment\"\" WHERE \"\"employeeId\"\" IN (SELECT id FROM \"\"User\"\" WHERE \"\"firstName\"\" = ''Vishal'' AND \"\"lastName\"\" = ''Toora'') ORDER BY \"\"scheduledDate\"\", \"\"scheduledTime\"\" LIMIT 10;\")",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" psql -c \"\\dt\")",
-      "Bash(DATABASE_URL:*)"
+      "Bash(DATABASE_URL:*)",
+      "Bash(ESLINT_USE_FLAT_CONFIG=false npx eslint:*)"
     ],
     "deny": [],
     "ask": []

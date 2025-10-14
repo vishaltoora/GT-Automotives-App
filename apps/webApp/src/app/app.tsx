@@ -58,7 +58,6 @@ import { VehicleForm } from './pages/customers/VehicleForm';
 
 // Invoice Pages
 import InvoiceList from './pages/invoices/InvoiceList';
-import InvoiceForm from './pages/invoices/InvoiceForm';
 import InvoiceDetails from './pages/invoices/InvoiceDetails';
 import CashReport from './pages/invoices/CashReport';
 
@@ -144,7 +143,6 @@ export function App() {
           <Route path="inventory/:id/edit" element={<TireFormSimple />} />
           <Route path="inventory/dashboard" element={<InventoryDashboard />} />
           <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/new" element={<InvoiceForm />} />
           <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
@@ -182,7 +180,6 @@ export function App() {
           <Route path="inventory/:id/edit" element={<TireFormSimple />} />
           <Route path="inventory/dashboard" element={<InventoryDashboard />} />
           <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/new" element={<InvoiceForm />} />
           <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />

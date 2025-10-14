@@ -9,6 +9,8 @@ import {
   Typography,
   CircularProgress,
   IconButton,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { Print as PrintIcon, Close as CloseIcon, RequestQuote as QuoteIcon } from '@mui/icons-material';
 import { quotationService, QuoteItem } from '../../services/quotation.service';
@@ -33,6 +35,8 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   quoteId
 }) => {
   const { showError } = useError();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tires, setTires] = useState<any[]>([]);
@@ -233,7 +237,23 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} disableEscapeKeyDown maxWidth="xl" fullWidth>
+    <Dialog
+      open={open}
+      disableEscapeKeyDown
+      maxWidth="xl"
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          borderRadius: isMobile ? 0 : 3,
+          ...(isMobile && {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+          })
+        }
+      }}
+    >
       <DialogTitle
         sx={{
           background: colors.gradients.primary,
@@ -241,32 +261,51 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          py: 2,
+          py: { xs: 1.5, sm: 2 },
+          px: { xs: 2, sm: 3 },
+          ...(isMobile && {
+            flexShrink: 0,
+          })
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <QuoteIcon sx={{ fontSize: 28 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <QuoteIcon sx={{ fontSize: { xs: 24, sm: 28 }, display: { xs: 'none', sm: 'block' } }} />
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              {quoteId ? 'Edit Quote' : 'Create New Quote'}
+            <Typography
+              variant={isMobile ? 'h6' : 'h5'}
+              sx={{ fontWeight: 600 }}
+            >
+              {quoteId ? 'Edit Quote' : 'Create Quote'}
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              {quoteId ? 'Modify existing quotation details' : 'Generate professional quotations for your customers'}
-            </Typography>
+            {!isMobile && (
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                {quoteId ? 'Modify existing quotation details' : 'Generate professional quotations for your customers'}
+              </Typography>
+            )}
           </Box>
         </Box>
         <IconButton
           onClick={onClose}
+          size={isMobile ? 'small' : 'medium'}
           sx={{
             color: 'white',
             '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
           }}
         >
-          <CloseIcon />
+          <CloseIcon fontSize={isMobile ? 'small' : 'medium'} />
         </IconButton>
       </DialogTitle>
       
-      <DialogContent>
+      <DialogContent
+        sx={{
+          ...(isMobile && {
+            flex: '1 1 auto',
+            overflowY: 'auto',
+            minHeight: 0,
+            p: 0,
+          })
+        }}
+      >
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress />
@@ -293,15 +332,46 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
         )}
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} startIcon={<CloseIcon />}>
+      <DialogActions
+        sx={{
+          p: { xs: 2, sm: 3 },
+          background: colors.background.light,
+          borderTop: `1px solid ${colors.neutral[200]}`,
+          gap: 2,
+          ...(isMobile && {
+            flexShrink: 0,
+            backgroundColor: 'white',
+          })
+        }}
+      >
+        <Button
+          onClick={onClose}
+          startIcon={<CloseIcon />}
+          variant="outlined"
+          fullWidth={isMobile}
+          sx={{
+            borderColor: colors.neutral[400],
+            color: colors.text.secondary,
+            '&:hover': {
+              borderColor: colors.neutral[600],
+              background: colors.neutral[50]
+            }
+          }}
+        >
           Cancel
         </Button>
         <Button
           variant="contained"
           onClick={handleSaveAndPrint}
           disabled={loading || saving}
+          fullWidth={isMobile}
           startIcon={saving ? <CircularProgress size={20} /> : <PrintIcon />}
+          sx={{
+            background: colors.primary.main,
+            '&:hover': {
+              background: colors.primary.dark
+            }
+          }}
         >
           {saving ? 'Saving...' : 'Save & Print'}
         </Button>

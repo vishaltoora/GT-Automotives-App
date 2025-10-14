@@ -25,6 +25,9 @@ import {
   Avatar,
   Breadcrumbs,
   Link as MuiLink,
+  useTheme,
+  useMediaQuery,
+  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -74,6 +77,9 @@ interface EmployeeJobSummary extends Employee {
 export function JobsManagement() {
   const { employeeId } = useParams<{ employeeId: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeSummaries, setEmployeeSummaries] = useState<EmployeeJobSummary[]>([]);
@@ -349,7 +355,7 @@ export function JobsManagement() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
         {/* Loading states */}
         {loading && !employeeId && !employeeSummaries.length && (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -367,10 +373,10 @@ export function JobsManagement() {
         {!employeeId && !loading && (
           <>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <GroupIcon sx={{ fontSize: 32, color: colors.primary.main }} />
-                <Typography variant="h4" fontWeight="bold">
-                  Employee Jobs & Payments
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+                <GroupIcon sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.main }} />
+                <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold">
+                  Employee Jobs {isMobile ? '' : '& Payments'}
                 </Typography>
               </Box>
             </Box>
@@ -595,16 +601,10 @@ export function JobsManagement() {
             </Typography>
           </Breadcrumbs>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Button
-                startIcon={<ArrowBackIcon />}
-                onClick={handleBackToEmployees}
-                variant="outlined"
-              >
-                Back to Employees
-              </Button>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {/* Mobile: Vertical Stack */}
+          {isMobile ? (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <Avatar
                   sx={{
                     width: 40,
@@ -614,29 +614,86 @@ export function JobsManagement() {
                 >
                   {selectedEmployee ? getEmployeeInitials(selectedEmployee) : '?'}
                 </Avatar>
-                <Box>
-                  <Typography variant="h5" fontWeight="bold">
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="h6" fontWeight="bold" noWrap>
                     {selectedEmployee ? getEmployeeName(selectedEmployee) : 'Employee Jobs'}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Jobs and Payments Management
+                  <Typography variant="caption" color="text.secondary">
+                    Jobs and Payments
                   </Typography>
                 </Box>
               </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  startIcon={<ArrowBackIcon />}
+                  onClick={handleBackToEmployees}
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setCreateDialogOpen(true)}
+                  size="small"
+                  fullWidth
+                  sx={{
+                    background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+                  }}
+                >
+                  Create Job
+                </Button>
+              </Box>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{
-                background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
-                px: 3,
-                py: 1.5,
-              }}
-            >
-              Create Job
-            </Button>
-          </Box>
+          ) : (
+            /* Desktop/Tablet: Horizontal Layout */
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Button
+                  startIcon={<ArrowBackIcon />}
+                  onClick={handleBackToEmployees}
+                  variant="outlined"
+                  size={isTablet ? 'small' : 'medium'}
+                >
+                  Back to Employees
+                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      bgcolor: selectedEmployee ? getAvatarColor(selectedEmployee.email) : colors.primary.main,
+                    }}
+                  >
+                    {selectedEmployee ? getEmployeeInitials(selectedEmployee) : '?'}
+                  </Avatar>
+                  <Box>
+                    <Typography variant={isTablet ? 'h6' : 'h5'} fontWeight="bold">
+                      {selectedEmployee ? getEmployeeName(selectedEmployee) : 'Employee Jobs'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Jobs and Payments Management
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateDialogOpen(true)}
+                size={isTablet ? 'small' : 'medium'}
+                sx={{
+                  background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+                  px: isTablet ? 2 : 3,
+                  py: isTablet ? 1 : 1.5,
+                }}
+              >
+                Create Job
+              </Button>
+            </Box>
+          )}
         </Box>
 
         {error && (
@@ -764,76 +821,158 @@ export function JobsManagement() {
           </Grid>
         </Paper>
 
-        {/* Jobs Table */}
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: colors.neutral[100] }}>
-                <TableCell><strong>Job Title</strong></TableCell>
-                <TableCell><strong>Type</strong></TableCell>
-                <TableCell><strong>Date</strong></TableCell>
-                <TableCell><strong>Hours</strong></TableCell>
-                <TableCell><strong>Rate</strong></TableCell>
-                <TableCell><strong>Total</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
-                <TableCell align="right"><strong>Actions</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {jobs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                    <WorkIcon sx={{ fontSize: 48, color: colors.neutral[400], mb: 1 }} />
-                    <Typography variant="body1" color="text.secondary">
-                      No jobs found for this employee
-                    </Typography>
-                  </TableCell>
+        {/* Jobs Table/Cards */}
+        {isMobile ? (
+          /* Mobile: Card View */
+          <Box>
+            {jobs.length === 0 ? (
+              <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <WorkIcon sx={{ fontSize: 48, color: colors.neutral[400], mb: 1 }} />
+                <Typography variant="body1" color="text.secondary">
+                  No jobs found for this employee
+                </Typography>
+              </Paper>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {jobs.map((job) => (
+                  <Card key={job.id} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
+                    <CardContent sx={{ p: 2 }}>
+                      {/* Header with title and actions */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                            {job.title}
+                          </Typography>
+                          {job.description && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                              {job.description}
+                            </Typography>
+                          )}
+                        </Box>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, job)}
+                          sx={{ flexShrink: 0 }}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </Box>
+
+                      {/* Job details */}
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                        <Chip
+                          label={job.jobType}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontSize: '0.75rem' }}
+                        />
+                        <Chip
+                          label={job.status}
+                          color={getStatusColor(job.status)}
+                          size="small"
+                          sx={{ fontSize: '0.75rem' }}
+                        />
+                      </Box>
+
+                      <Divider sx={{ my: 1.5 }} />
+
+                      {/* Payment and date info */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Completed Date
+                          </Typography>
+                          <Typography variant="body2" fontWeight="medium">
+                            {job.completedAt ? format(new Date(job.completedAt), 'MMM dd, yyyy') : 'Not completed'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Pay Amount
+                          </Typography>
+                          <Typography variant="h6" fontWeight="bold" color="primary.main">
+                            ${job.payAmount.toFixed(2)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            )}
+          </Box>
+        ) : (
+          /* Desktop/Tablet: Table View */
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: colors.neutral[100] }}>
+                  <TableCell><strong>Job Title</strong></TableCell>
+                  <TableCell><strong>Type</strong></TableCell>
+                  <TableCell><strong>Date</strong></TableCell>
+                  <TableCell><strong>Hours</strong></TableCell>
+                  <TableCell><strong>Rate</strong></TableCell>
+                  <TableCell><strong>Total</strong></TableCell>
+                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell align="right"><strong>Actions</strong></TableCell>
                 </TableRow>
-              ) : (
-                jobs.map((job) => (
-                  <TableRow key={job.id} hover>
-                    <TableCell>
-                      <Typography fontWeight="medium">{job.title}</Typography>
-                      {job.description && (
-                        <Typography variant="caption" color="text.secondary">
-                          {job.description}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={job.jobType} size="small" variant="outlined" />
-                    </TableCell>
-                    <TableCell>
-                      {job.completedAt ? format(new Date(job.completedAt), 'MMM dd, yyyy') : '-'}
-                    </TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>
-                      <Typography fontWeight="bold" color="primary">
-                        ${job.payAmount.toFixed(2)}
+              </TableHead>
+              <TableBody>
+                {jobs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                      <WorkIcon sx={{ fontSize: 48, color: colors.neutral[400], mb: 1 }} />
+                      <Typography variant="body1" color="text.secondary">
+                        No jobs found for this employee
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={job.status}
-                        color={getStatusColor(job.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, job)}
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
-                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : (
+                  jobs.map((job) => (
+                    <TableRow key={job.id} hover>
+                      <TableCell>
+                        <Typography fontWeight="medium">{job.title}</Typography>
+                        {job.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {job.description}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={job.jobType} size="small" variant="outlined" />
+                      </TableCell>
+                      <TableCell>
+                        {job.completedAt ? format(new Date(job.completedAt), 'MMM dd, yyyy') : '-'}
+                      </TableCell>
+                      <TableCell>-</TableCell>
+                      <TableCell>-</TableCell>
+                      <TableCell>
+                        <Typography fontWeight="bold" color="primary">
+                          ${job.payAmount.toFixed(2)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={job.status}
+                          color={getStatusColor(job.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, job)}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
             {/* Action Menu */}
             <Menu

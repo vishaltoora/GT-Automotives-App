@@ -104,7 +104,23 @@ export function AdminLayout() {
         justifyContent: drawerCollapsed ? 'center' : 'flex-start',
         minHeight: 80,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: drawerCollapsed ? 0 : 1.5, width: '100%', justifyContent: drawerCollapsed ? 'center' : 'flex-start' }}>
+        <Box
+          component={Link}
+          to="/admin/dashboard"
+          onClick={() => setMobileOpen(false)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: drawerCollapsed ? 0 : 1.5,
+            width: '100%',
+            justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+            textDecoration: 'none',
+            cursor: 'pointer',
+            '&:hover': {
+              opacity: 0.9,
+            },
+          }}
+        >
           <Box
             sx={{
               width: 42,
@@ -342,13 +358,20 @@ export function AdminLayout() {
               <MenuIcon />
             </IconButton>
             
-            {/* Logo for mobile */}
-            <Box 
-              sx={{ 
+            {/* Logo for mobile - Clickable */}
+            <Box
+              component={Link}
+              to="/admin/dashboard"
+              sx={{
                 display: { xs: 'flex', md: 'none' },
                 alignItems: 'center',
                 gap: 1,
                 flexGrow: 1,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
+                },
               }}
             >
               <Box

@@ -9,6 +9,8 @@ import {
   IconButton,
   Typography,
   Slide,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -50,6 +52,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   invoice = null,
 }) => {
   const { } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [customers, setCustomers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [tires, setTires] = useState<any[]>([]);
@@ -493,11 +497,17 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       TransitionComponent={Transition}
       maxWidth="xl"
       fullWidth
+      fullScreen={isMobile}
       disableEscapeKeyDown
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          maxHeight: '90vh',
+          borderRadius: isMobile ? 0 : 3,
+          maxHeight: isMobile ? '100vh' : '90vh',
+          ...(isMobile && {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+          })
         }
       }}
     >
@@ -508,32 +518,51 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          py: 2,
+          py: { xs: 1.5, sm: 2 },
+          px: { xs: 2, sm: 3 },
+          ...(isMobile && {
+            flexShrink: 0,
+          })
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <ReceiptIcon sx={{ fontSize: 28 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <ReceiptIcon sx={{ fontSize: { xs: 24, sm: 28 }, display: { xs: 'none', sm: 'block' } }} />
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              {isEditMode ? 'Edit Invoice' : 'Create New Invoice'}
+            <Typography
+              variant={isMobile ? 'h6' : 'h5'}
+              sx={{ fontWeight: 600 }}
+            >
+              {isEditMode ? 'Edit Invoice' : 'Create Invoice'}
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              {isEditMode ? 'Update invoice details and items' : 'Generate professional invoices for your customers'}
-            </Typography>
+            {!isMobile && (
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                {isEditMode ? 'Update invoice details and items' : 'Generate professional invoices for your customers'}
+              </Typography>
+            )}
           </Box>
         </Box>
         <IconButton
           onClick={onClose}
+          size={isMobile ? 'small' : 'medium'}
           sx={{
             color: 'white',
             '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
           }}
         >
-          <CloseIcon />
+          <CloseIcon fontSize={isMobile ? 'small' : 'medium'} />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent
+        sx={{
+          p: 0,
+          ...(isMobile && {
+            flex: '1 1 auto',
+            overflowY: 'auto',
+            minHeight: 0,
+          })
+        }}
+      >
         <InvoiceFormContent
           customers={customers}
           vehicles={vehicles}
@@ -560,21 +589,26 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
       <DialogActions
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           background: colors.background.light,
           borderTop: `1px solid ${colors.neutral[200]}`,
           gap: 2,
+          ...(isMobile && {
+            flexShrink: 0,
+            backgroundColor: 'white',
+          })
         }}
       >
         <Button
           onClick={onClose}
           variant="outlined"
           size="large"
+          fullWidth={isMobile}
           disabled={loading}
           sx={{
             borderColor: colors.neutral[400],
             color: colors.text.secondary,
-            '&:hover': { 
+            '&:hover': {
               borderColor: colors.neutral[600],
               background: colors.neutral[50]
             }
@@ -586,6 +620,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           onClick={handleSubmit}
           variant="contained"
           size="large"
+          fullWidth={isMobile}
           disabled={loading || (!formData.customerId && (!customerForm.firstName || !customerForm.lastName)) || items.length === 0}
           sx={{
             background: colors.primary.main,

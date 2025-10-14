@@ -7,7 +7,6 @@ import {
   CardContent,
   Button,
   Chip,
-  IconButton,
   Paper,
   List,
   ListItem,
@@ -30,7 +29,6 @@ import {
   Error,
   ArrowUpward,
   ArrowDownward,
-  Refresh,
   TireRepair,
   Speed,
   LocalShipping,
@@ -44,6 +42,7 @@ import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import QuotationDialog from '../../components/quotations/QuotationDialog';
+import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
 import { useAuth } from '../../hooks/useAuth';
 import { dashboardService, DashboardStats } from '../../services/dashboard.service';
 
@@ -52,8 +51,57 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
+  const [jobDialogOpen, setJobDialogOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Common mobile-optimized styles for action items
+  const actionItemStyles = {
+    p: { xs: 1.5, sm: 2 },
+    textAlign: 'center' as const,
+    cursor: 'pointer',
+    border: `1px solid ${colors.neutral[200]}`,
+    transition: 'all 0.2s',
+  };
+
+  const actionIconStyles = {
+    fontSize: { xs: 28, sm: 32 },
+    mb: { xs: 0.5, sm: 1 },
+  };
+
+  const actionTextStyles = {
+    fontWeight: 600,
+    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+  };
+
+  // Common styles for insight cards
+  const insightCardStyles = {
+    p: { xs: 1, sm: 1.5, md: 2 },
+    textAlign: 'center' as const,
+    background: 'white',
+    border: `1px solid ${colors.neutral[200]}`,
+    borderRadius: 2,
+    transition: 'all 0.2s',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+    },
+  };
+
+  const insightIconStyles = {
+    fontSize: { xs: 28, sm: 32, md: 36 },
+    mb: { xs: 0.5, sm: 0.75, md: 1 },
+  };
+
+  const insightValueStyles = {
+    fontWeight: 700,
+    color: colors.primary.main,
+    fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+  };
+
+  const insightLabelStyles = {
+    fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+  };
 
   useEffect(() => {
     loadStats();
@@ -97,12 +145,19 @@ export function AdminDashboard() {
   };
 
   return (
-    <Box>
+    <Box sx={{ px: { xs: 0.5, sm: 2, md: 3 } }}>
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1, sm: 2 } }}>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary.main }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: colors.primary.main,
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+              }}
+            >
               Welcome back, {user?.firstName || 'Admin'}{' '}
               <span
                 style={{
@@ -114,7 +169,14 @@ export function AdminDashboard() {
                 👋
               </span>
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                fontSize: { sm: '0.875rem', md: '1rem' }
+              }}
+            >
               Here's what's happening with your business today
             </Typography>
             <style>
@@ -130,36 +192,23 @@ export function AdminDashboard() {
               `}
             </style>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton
-              onClick={loadStats}
-              disabled={loading}
-              sx={{
-                border: `1px solid ${colors.neutral[300]}`,
-                '&:hover': { backgroundColor: colors.neutral[100] },
-              }}
-            >
-              <Refresh />
-            </IconButton>
-          </Box>
         </Box>
       </Box>
 
-      {/* Stats Cards - Compact Design */}
+      {/* Stats Cards - Compact Design - Hidden on mobile */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <Box sx={{ display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', py: { sm: 6, md: 8 } }}>
           <CircularProgress />
         </Box>
       ) : stats ? (
         <Box sx={{
-          display: 'grid',
+          display: { xs: 'none', sm: 'grid' },
           gridTemplateColumns: {
-            xs: '1fr',
             sm: 'repeat(2, 1fr)',
             md: 'repeat(4, 1fr)',
           },
-          gap: 2,
-          mb: 3,
+          gap: { sm: 1.5, md: 2 },
+          mb: { sm: 2.5, md: 3 },
         }}>
           <Card
             elevation={0}
@@ -169,33 +218,33 @@ export function AdminDashboard() {
               border: 'none',
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: { xs: 0.75, sm: 1 },
                     backgroundColor: 'rgba(255,255,255,0.2)',
                     borderRadius: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                   }}
                 >
-                  <AttachMoney sx={{ fontSize: 24 }} />
+                  <AttachMoney sx={{ fontSize: { xs: 20, sm: 24 } }} />
                 </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Total Revenue
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                     ${stats.revenue.value.toLocaleString()}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {stats.revenue.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: 14 }} />
+                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     ) : (
-                      <ArrowDownward sx={{ fontSize: 14 }} />
+                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
                       {stats.revenue.change}% vs last month
                     </Typography>
                   </Box>
@@ -212,33 +261,33 @@ export function AdminDashboard() {
               border: 'none',
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: { xs: 0.75, sm: 1 },
                     backgroundColor: 'rgba(255,255,255,0.2)',
                     borderRadius: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                   }}
                 >
-                  <People sx={{ fontSize: 24 }} />
+                  <People sx={{ fontSize: { xs: 20, sm: 24 } }} />
                 </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Total Customers
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                     {stats.customers.value.toLocaleString()}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {stats.customers.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: 14 }} />
+                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     ) : (
-                      <ArrowDownward sx={{ fontSize: 14 }} />
+                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
                       {stats.customers.change}% growth
                     </Typography>
                   </Box>
@@ -255,33 +304,33 @@ export function AdminDashboard() {
               border: 'none',
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: { xs: 0.75, sm: 1 },
                     backgroundColor: 'rgba(255,255,255,0.2)',
                     borderRadius: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                   }}
                 >
-                  <DirectionsCar sx={{ fontSize: 24 }} />
+                  <DirectionsCar sx={{ fontSize: { xs: 20, sm: 24 } }} />
                 </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Total Vehicles
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                     {stats.vehicles.value.toLocaleString()}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {stats.vehicles.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: 14 }} />
+                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     ) : (
-                      <ArrowDownward sx={{ fontSize: 14 }} />
+                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
                       {Math.abs(stats.vehicles.change)}% change
                     </Typography>
                   </Box>
@@ -298,33 +347,33 @@ export function AdminDashboard() {
               border: 'none',
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: { xs: 0.75, sm: 1 },
                     backgroundColor: 'rgba(255,255,255,0.2)',
                     borderRadius: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                   }}
                 >
-                  <CalendarMonth sx={{ fontSize: 24 }} />
+                  <CalendarMonth sx={{ fontSize: { xs: 20, sm: 24 } }} />
                 </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Today's Jobs
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                     {stats.appointments.value}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {stats.appointments.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: 14 }} />
+                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     ) : (
-                      <ArrowDownward sx={{ fontSize: 14 }} />
+                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
                     )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
                       {stats.appointments.change}% vs yesterday
                     </Typography>
                   </Box>
@@ -336,44 +385,40 @@ export function AdminDashboard() {
       ) : null}
 
       {/* Charts and Activity Section */}
-      <Grid container spacing={3} sx={{ mt: 3 }}>
+      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mt: { xs: 1, sm: 2, md: 3 } }}>
         {/* Quick Actions */}
         <Grid size={{ xs: 12, lg: 9 }}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 3, 
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1.5, sm: 2, md: 3 },
               borderRadius: 2,
               border: `1px solid ${colors.neutral[200]}`,
               height: '100%',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2, md: 3 } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
                 Quick Actions
               </Typography>
-              <Chip label="Most Used" size="small" color="primary" />
+              <Chip label="Most Used" size="small" color="primary" sx={{ display: { xs: 'none', sm: 'flex' } }} />
             </Box>
-            
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { 
-                xs: '1fr', 
-                sm: 'repeat(2, 1fr)', 
-                md: 'repeat(4, 1fr)',
+
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
                 lg: 'repeat(6, 1fr)',
               },
-              gap: 2,
-              mb: 3,
+              gap: { xs: 1, sm: 1.5, md: 2 },
+              mb: { xs: 1.5, sm: 2, md: 3 },
             }}>
               <Paper
                 onClick={() => setInvoiceDialogOpen(true)}
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
+                  ...actionItemStyles,
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -381,20 +426,16 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Receipt sx={{ fontSize: 32, color: colors.secondary.main, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   New Invoice
                 </Typography>
               </Paper>
-              
+
               <Paper
                 onClick={() => setQuotationDialogOpen(true)}
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
+                  ...actionItemStyles,
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -402,22 +443,74 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Description sx={{ fontSize: 32, color: colors.primary.lighter, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <Description sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   New Quotation
                 </Typography>
               </Paper>
-              
+
+              <Paper
+                onClick={() => setJobDialogOpen(true)}
+                sx={{
+                  ...actionItemStyles,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: '#9c27b0',
+                  },
+                }}
+              >
+                <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                  New Job
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/payments"
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: '#00bcd4',
+                  },
+                }}
+              >
+                <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                  Payments
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/appointments/new"
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.primary.lighter,
+                  },
+                }}
+              >
+                <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                  New Appointment
+                </Typography>
+              </Paper>
+
               <Paper
                 component={Link}
                 to="/admin/customers"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -425,22 +518,18 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <People sx={{ fontSize: 32, color: colors.primary.main, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <People sx={{ ...actionIconStyles, color: colors.primary.main }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   Customers
                 </Typography>
               </Paper>
-              
+
               <Paper
                 component={Link}
                 to="/admin/inventory"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -448,22 +537,18 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Inventory sx={{ fontSize: 32, color: colors.semantic.success, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <Inventory sx={{ ...actionIconStyles, color: colors.semantic.success }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   Inventory
                 </Typography>
               </Paper>
-              
+
               <Paper
                 component={Link}
                 to="/admin/reports"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -471,8 +556,8 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Analytics sx={{ fontSize: 32, color: colors.semantic.info, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <Analytics sx={{ ...actionIconStyles, color: colors.semantic.info }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   View Reports
                 </Typography>
               </Paper>
@@ -481,12 +566,8 @@ export function AdminDashboard() {
                 component={Link}
                 to="/admin/vehicles"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -494,78 +575,9 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <DirectionsCar sx={{ fontSize: 32, color: colors.semantic.warning, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <DirectionsCar sx={{ ...actionIconStyles, color: colors.semantic.warning }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   Vehicles
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/appointments/new"
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.lighter,
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ fontSize: 32, color: colors.primary.lighter, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                  New Appointment
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/jobs"
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: '#9c27b0',
-                  },
-                }}
-              >
-                <Work sx={{ fontSize: 32, color: '#9c27b0', mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                  Jobs
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/payments"
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: '#00bcd4',
-                  },
-                }}
-              >
-                <Payment sx={{ fontSize: 32, color: '#00bcd4', mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                  Payments
                 </Typography>
               </Paper>
 
@@ -573,12 +585,8 @@ export function AdminDashboard() {
                 component={Link}
                 to="/admin/purchase-invoices"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -586,8 +594,8 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <ShoppingCart sx={{ fontSize: 32, color: '#ff5722', mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <ShoppingCart sx={{ ...actionIconStyles, color: '#ff5722' }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   Purchase Invoices
                 </Typography>
               </Paper>
@@ -596,12 +604,8 @@ export function AdminDashboard() {
                 component={Link}
                 to="/admin/expense-invoices"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -609,34 +613,35 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <ReceiptLong sx={{ fontSize: 32, color: '#795548', mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                <ReceiptLong sx={{ ...actionIconStyles, color: '#795548' }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   Expense Invoices
                 </Typography>
               </Paper>
             </Box>
 
-            <Divider sx={{ my: 3 }} />
+            <Divider sx={{ my: { xs: 1.5, sm: 2, md: 3 } }} />
 
-            <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: { xs: 1, sm: 1.5, md: 2 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
               Quick Navigation
             </Typography>
-            
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(3, 1fr)', 
-              gap: 2 
+
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+              },
+              gap: { xs: 1, sm: 1.5, md: 2 }
             }}>
               <Paper
                 component={Link}
                 to="/admin/inventory"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
                   border: `1px solid ${colors.primary.main}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -651,22 +656,19 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Inventory sx={{ fontSize: 28, color: colors.primary.main, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.primary.main }}>
+                <Inventory sx={{ ...actionIconStyles, color: colors.primary.main }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.main }}>
                   Inventory
                 </Typography>
               </Paper>
-              
+
               <Paper
                 component={Link}
                 to="/admin/invoices"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
                   border: `1px solid ${colors.secondary.main}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -681,22 +683,19 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Receipt sx={{ fontSize: 28, color: colors.secondary.main, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.secondary.main }}>
+                <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.secondary.main }}>
                   Invoices
                 </Typography>
               </Paper>
-              
+
               <Paper
                 component={Link}
                 to="/admin/quotations"
                 sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
+                  ...actionItemStyles,
                   textDecoration: 'none',
                   border: `1px solid ${colors.semantic.info}`,
-                  transition: 'all 0.2s',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -711,8 +710,8 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Description sx={{ fontSize: 28, color: colors.semantic.info, mb: 1 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.info }}>
+                <Description sx={{ ...actionIconStyles, color: colors.semantic.info }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
                   Quotations
                 </Typography>
               </Paper>
@@ -722,20 +721,20 @@ export function AdminDashboard() {
 
         {/* Recent Activity */}
         <Grid size={{ xs: 12, lg: 3 }}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 3, 
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1.5, sm: 2, md: 3 },
               borderRadius: 2,
               border: `1px solid ${colors.neutral[200]}`,
               height: '100%',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1, sm: 1.5, md: 2 } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
                 Recent Activity
               </Typography>
-              <Button size="small" sx={{ color: colors.primary.main }}>
+              <Button size="small" sx={{ color: colors.primary.main, fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>
                 View All
               </Button>
             </Box>
@@ -781,165 +780,75 @@ export function AdminDashboard() {
       </Grid>
 
       {/* Business Insights */}
-      <Grid container spacing={3} sx={{ mt: 3 }}>
+      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mt: { xs: 1, sm: 2, md: 3 } }}>
         <Grid size={12}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 3, 
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1.5, sm: 2, md: 3 },
               borderRadius: 2,
               border: `1px solid ${colors.neutral[200]}`,
               background: `linear-gradient(135deg, ${colors.primary.main}10 0%, ${colors.secondary.main}10 100%)`,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: { xs: 1.5, sm: 2, md: 3 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
               Business Insights
             </Typography>
-            
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { 
-                xs: '1fr', 
-                sm: 'repeat(2, 1fr)', 
+
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'repeat(2, 1fr)',
+                sm: 'repeat(3, 1fr)',
                 md: 'repeat(4, 1fr)',
                 lg: 'repeat(6, 1fr)',
               },
-              gap: 3,
+              gap: { xs: 1, sm: 1.5, md: 2, lg: 3 },
             }}>
-              <Paper
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  background: 'white',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <Speed sx={{ fontSize: 36, color: colors.primary.main, mb: 1 }} />
-                <Typography variant="h5" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                  4.2 hrs
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+              <Paper sx={insightCardStyles}>
+                <Speed sx={{ ...insightIconStyles, color: colors.primary.main }} />
+                <Typography variant="h5" sx={insightValueStyles}>4.2 hrs</Typography>
+                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
                   Avg Service Time
                 </Typography>
               </Paper>
-              
-              <Paper
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  background: 'white',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <TireRepair sx={{ fontSize: 36, color: colors.secondary.main, mb: 1 }} />
-                <Typography variant="h5" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                  347
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+
+              <Paper sx={insightCardStyles}>
+                <TireRepair sx={{ ...insightIconStyles, color: colors.secondary.main }} />
+                <Typography variant="h5" sx={insightValueStyles}>347</Typography>
+                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
                   Tires in Stock
                 </Typography>
               </Paper>
-              
-              <Paper
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  background: 'white',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <LocalShipping sx={{ fontSize: 36, color: colors.semantic.success, mb: 1 }} />
-                <Typography variant="h5" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                  12
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+
+              <Paper sx={insightCardStyles}>
+                <LocalShipping sx={{ ...insightIconStyles, color: colors.semantic.success }} />
+                <Typography variant="h5" sx={insightValueStyles}>12</Typography>
+                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
                   Pending Orders
                 </Typography>
               </Paper>
-              
-              <Paper
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  background: 'white',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <SupervisorAccount sx={{ fontSize: 36, color: colors.semantic.info, mb: 1 }} />
-                <Typography variant="h5" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                  8
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+
+              <Paper sx={insightCardStyles}>
+                <SupervisorAccount sx={{ ...insightIconStyles, color: colors.semantic.info }} />
+                <Typography variant="h5" sx={insightValueStyles}>8</Typography>
+                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
                   Active Staff
                 </Typography>
               </Paper>
-              
-              <Paper
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  background: 'white',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ fontSize: 36, color: colors.semantic.warning, mb: 1 }} />
-                <Typography variant="h5" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                  156
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+
+              <Paper sx={insightCardStyles}>
+                <CalendarMonth sx={{ ...insightIconStyles, color: colors.semantic.warning }} />
+                <Typography variant="h5" sx={insightValueStyles}>156</Typography>
+                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
                   Monthly Jobs
                 </Typography>
               </Paper>
-              
-              <Paper
-                sx={{
-                  p: 2,
-                  textAlign: 'center',
-                  background: 'white',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <Receipt sx={{ fontSize: 36, color: colors.primary.dark, mb: 1 }} />
-                <Typography variant="h5" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                  $45.8K
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+
+              <Paper sx={insightCardStyles}>
+                <Receipt sx={{ ...insightIconStyles, color: colors.primary.dark }} />
+                <Typography variant="h5" sx={insightValueStyles}>$45.8K</Typography>
+                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
                   Avg Invoice
                 </Typography>
               </Paper>
@@ -962,6 +871,16 @@ export function AdminDashboard() {
         onSuccess={() => {
           setQuotationDialogOpen(false);
           // Optionally navigate to quotations list or show success message
+        }}
+      />
+
+      {/* Create Job Dialog */}
+      <CreateJobDialog
+        open={jobDialogOpen}
+        onClose={() => setJobDialogOpen(false)}
+        onSuccess={(job) => {
+          setJobDialogOpen(false);
+          loadStats(); // Refresh stats after creating job
         }}
       />
     </Box>

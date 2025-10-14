@@ -16,6 +16,8 @@ import {
   Slide,
   Alert,
   InputAdornment,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -64,6 +66,8 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   hideEmployeeSelect = false,
 }) => {
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -153,10 +157,17 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
       TransitionComponent={Transition}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: 2,
+          borderRadius: isMobile ? 0 : 2,
           boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+          m: isMobile ? 0 : 2,
+          ...(isMobile && {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+          })
         },
       }}
     >
@@ -167,7 +178,11 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: 2,
-          py: 3,
+          py: { xs: 2, sm: 3 },
+          px: { xs: 2, sm: 3 },
+          ...(isMobile && {
+            flexShrink: 0,
+          })
         }}
       >
         <WorkIcon />
@@ -179,9 +194,19 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent
+        dividers={isMobile}
+        sx={{
+          p: 0,
+          ...(isMobile && {
+            flex: '1 1 auto',
+            overflowY: 'auto',
+            minHeight: 0,
+          })
+        }}
+      >
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 3 }, p: { xs: 2, sm: 3 } }}>
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
@@ -273,12 +298,23 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         </LocalizationProvider>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, pt: 0 }}>
+      <DialogActions
+        sx={{
+          p: { xs: 2, sm: 3 },
+          pt: { xs: 2, sm: 0 },
+          ...(isMobile && {
+            flexShrink: 0,
+            backgroundColor: 'white',
+            borderTop: `1px solid ${colors.neutral[200]}`,
+          })
+        }}
+      >
         <Button
           onClick={onClose}
           variant="outlined"
           size="large"
-          sx={{ minWidth: 120 }}
+          fullWidth={isMobile}
+          sx={{ minWidth: isMobile ? 'auto' : 120 }}
         >
           Cancel
         </Button>
@@ -287,8 +323,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
           variant="contained"
           size="large"
           disabled={loading}
+          fullWidth={isMobile}
           sx={{
-            minWidth: 120,
+            minWidth: isMobile ? 'auto' : 120,
             background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
           }}
         >

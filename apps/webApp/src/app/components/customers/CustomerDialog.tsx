@@ -13,6 +13,8 @@ import {
   Alert,
   CircularProgress,
   Slide,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -50,6 +52,8 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
   customerId,
   customer: initialCustomer,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isEdit = !!customerId;
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -157,10 +161,16 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
       TransitionComponent={Transition}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          maxHeight: '90vh',
+          borderRadius: isMobile ? 0 : 3,
+          maxHeight: isMobile ? '100vh' : '90vh',
+          ...(isMobile && {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+          })
         }
       }}
     >
@@ -171,13 +181,14 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          py: 1.5,
-          px: 2.5,
+          py: { xs: 1.5, sm: 1.5 },
+          px: { xs: 2, sm: 2.5 },
+          flexShrink: 0,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {isEdit ? <EditIcon sx={{ fontSize: 24 }} /> : <PersonAddIcon sx={{ fontSize: 24 }} />}
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          {!isMobile && (isEdit ? <EditIcon sx={{ fontSize: 24 }} /> : <PersonAddIcon sx={{ fontSize: 24 }} />)}
+          <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
             {isEdit ? 'Edit Customer' : 'Add New Customer'}
           </Typography>
         </Box>
@@ -192,13 +203,15 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent 
-        sx={{ 
-          p: 3, 
-          pt: 3,
-          overflow: 'visible',
+      <DialogContent
+        sx={{
+          p: { xs: 2, sm: 3 },
+          pt: { xs: 2, sm: 3 },
+          overflow: 'auto',
+          flex: '1 1 auto',
+          minHeight: 0,
           '&:first-of-type': {
-            paddingTop: 3
+            paddingTop: { xs: 2, sm: 3 }
           }
         }}
       >
@@ -214,7 +227,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
               </Alert>
             )}
             
-            <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mt: 0 }}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
@@ -223,6 +236,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   value={formData.firstName}
                   onChange={handleChange('firstName')}
                   disabled={saving}
+                  size={isMobile ? 'small' : 'medium'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -233,6 +247,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   value={formData.lastName}
                   onChange={handleChange('lastName')}
                   disabled={saving}
+                  size={isMobile ? 'small' : 'medium'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -243,6 +258,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   value={formData.email}
                   onChange={handleChange('email')}
                   disabled={saving}
+                  size={isMobile ? 'small' : 'medium'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -251,6 +267,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   value={formData.phone}
                   onChange={handlePhoneChange}
                   disabled={saving}
+                  size={isMobile ? 'small' : 'medium'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -261,6 +278,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   onChange={handleChange('businessName')}
                   disabled={saving}
                   placeholder="Optional"
+                  size={isMobile ? 'small' : 'medium'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -271,8 +289,9 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   onChange={handleChange('address')}
                   disabled={saving}
                   multiline
-                  rows={2}
+                  rows={isMobile ? 2 : 2}
                   placeholder="Street address, city, province"
+                  size={isMobile ? 'small' : 'medium'}
                 />
               </Grid>
             </Grid>
@@ -280,13 +299,20 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2.5, borderTop: `1px solid ${colors.neutral[200]}` }}>
+      <DialogActions sx={{
+        p: { xs: 2, sm: 2.5 },
+        borderTop: `1px solid ${colors.neutral[200]}`,
+        flexShrink: 0,
+        gap: { xs: 1, sm: 0 },
+        flexDirection: isMobile ? 'column-reverse' : 'row'
+      }}>
         <Button
           onClick={onClose}
           variant="outlined"
-          startIcon={<CancelIcon />}
+          startIcon={!isMobile && <CancelIcon />}
           disabled={saving}
-          sx={{ mr: 1 }}
+          fullWidth={isMobile}
+          sx={{ mr: isMobile ? 0 : 1 }}
         >
           Cancel
         </Button>
@@ -294,8 +320,9 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           type="submit"
           form="customer-form"
           variant="contained"
-          startIcon={<SaveIcon />}
+          startIcon={!isMobile && <SaveIcon />}
           disabled={saving || loading}
+          fullWidth={isMobile}
           sx={{
             background: colors.gradients.primary,
             '&:hover': {
