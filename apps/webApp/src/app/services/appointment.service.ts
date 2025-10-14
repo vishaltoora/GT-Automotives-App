@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus } from '@gt-automotive/data';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 

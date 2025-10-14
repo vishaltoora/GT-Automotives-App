@@ -1,4 +1,4 @@
-import { JobStatus, JobType, PaymentStatus, PaymentMethod } from '@prisma/client';
+import { JobStatus, JobType, PaymentStatus, PaymentMethod } from '@gt-automotive/data';
 
 // Job Status mappings
 export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
