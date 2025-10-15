@@ -8,13 +8,13 @@ export declare class AvailabilityController {
      * Roles: ADMIN (any employee), STAFF (own availability only)
      */
     setRecurring(dto: SetAvailabilityDto, user: any): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         dayOfWeek: number;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
     }>;
     /**
@@ -22,13 +22,13 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF (staff can view their own)
      */
     getRecurring(employeeId: string): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         dayOfWeek: number;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
     }[]>;
     /**
@@ -36,12 +36,12 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF (staff can add their own overrides)
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
         date: Date;
         reason: string | null;
@@ -51,12 +51,12 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF
      */
     getOverrides(employeeId: string, startDate: string, endDate: string): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
         date: Date;
         reason: string | null;
@@ -66,12 +66,12 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF
      */
     deleteOverride(overrideId: string): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
         date: Date;
         reason: string | null;
@@ -90,7 +90,11 @@ export declare class AvailabilityController {
         date: string;
         startTime: string;
         duration: number;
-        available: boolean;
+        available: boolean | {
+            available: false;
+            reason: string;
+            suggestion: string;
+        };
     }>;
 }
 //# sourceMappingURL=availability.controller.d.ts.map

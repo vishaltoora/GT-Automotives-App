@@ -7,38 +7,38 @@ export declare class AvailabilityService {
      * Set or update recurring weekly availability for an employee
      */
     setRecurringAvailability(dto: SetAvailabilityDto): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         dayOfWeek: number;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
     }>;
     /**
      * Get all recurring availability for an employee
      */
     getEmployeeAvailability(employeeId: string): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         dayOfWeek: number;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
     }[]>;
     /**
      * Add a time slot override (vacation, sick day, extra shift)
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
         date: Date;
         reason: string | null;
@@ -47,12 +47,12 @@ export declare class AvailabilityService {
      * Get all overrides for an employee within a date range
      */
     getOverrides(employeeId: string, startDate: Date, endDate: Date): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
         date: Date;
         reason: string | null;
@@ -61,12 +61,12 @@ export declare class AvailabilityService {
      * Delete an override
      */
     deleteOverride(overrideId: string): Promise<{
-        employeeId: string;
         id: string;
-        endTime: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         startTime: string;
+        endTime: string;
         isAvailable: boolean;
         date: Date;
         reason: string | null;
@@ -78,7 +78,11 @@ export declare class AvailabilityService {
     /**
      * Check if a specific employee is available at a specific time
      */
-    isEmployeeAvailable(employeeId: string, date: Date, startTime: string, duration: number, excludeAppointmentId?: string): Promise<boolean>;
+    isEmployeeAvailable(employeeId: string, date: Date, startTime: string, duration: number, excludeAppointmentId?: string): Promise<boolean | {
+        available: false;
+        reason: string;
+        suggestion: string;
+    }>;
     /**
      * Helper: Generate time slots for a day
      */
