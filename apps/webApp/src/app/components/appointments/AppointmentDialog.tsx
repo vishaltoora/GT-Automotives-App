@@ -19,7 +19,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -69,12 +69,42 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
 
+  // Helper function to get current time rounded to next 15-minute interval
+  const getCurrentTimeRounded = () => {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const roundedMinutes = Math.ceil(minutes / 15) * 15;
+    now.setMinutes(roundedMinutes);
+    now.setSeconds(0);
+    const hours = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${mins}`;
+  };
+
+  // Helper function to check if selected date is today
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // Get minimum time based on selected date
+  const getMinTime = () => {
+    if (isToday(formData.scheduledDate)) {
+      return getCurrentTimeRounded();
+    }
+    return undefined;
+  };
+
   const [formData, setFormData] = useState({
     customerId: preselectedCustomerId || '',
     vehicleId: '',
     employeeId: '',
     scheduledDate: new Date(),
-    scheduledTime: '09:00',
+    scheduledTime: getCurrentTimeRounded(),
     duration: 60,
     serviceType: 'TIRE_CHANGE',
     notes: '',
@@ -108,6 +138,16 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     }
   }, [open, appointment, preselectedCustomerId]);
 
+  // Auto-adjust time if date changes to today and selected time is in the past
+  useEffect(() => {
+    if (isToday(formData.scheduledDate)) {
+      const minTime = getCurrentTimeRounded();
+      if (formData.scheduledTime < minTime) {
+        setFormData(prev => ({ ...prev, scheduledTime: minTime }));
+      }
+    }
+  }, [formData.scheduledDate]);
+
   useEffect(() => {
     if (formData.scheduledDate && formData.duration && formData.scheduledTime) {
       checkAvailability();
@@ -119,8 +159,6 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       setCustomersLoading(true);
       const data = await customerService.getCustomers();
       setCustomers(data);
-    } catch (err) {
-      console.error('Failed to load customers:', err);
     } finally {
       setCustomersLoading(false);
     }
@@ -130,14 +168,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     try {
       setEmployeesLoading(true);
       const allUsers = await userService.getUsers();
-      console.log('All users loaded:', allUsers);
       const staffUsers = allUsers.filter(
         (user) => user.role?.name === 'STAFF' && user.isActive
       );
-      console.log('Filtered STAFF users:', staffUsers);
       setEmployees(staffUsers);
-    } catch (err) {
-      console.error('Failed to load employees:', err);
     } finally {
       setEmployeesLoading(false);
     }
@@ -148,7 +182,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       const customer = await customerService.getCustomer(customerId);
       setSelectedCustomer(customer);
     } catch (err) {
-      console.error('Failed to load customer:', err);
+      // Silently fail
     }
   };
 
@@ -160,14 +194,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         duration: formData.duration,
         employeeId: formData.employeeId || undefined,
       });
-      console.log('[AVAILABILITY CHECK] Received slots:', slots);
-      console.log('[AVAILABILITY CHECK] Current time:', formData.scheduledTime);
-      console.log('[AVAILABILITY CHECK] Slots at current time:',
-        slots.filter(s => s.startTime === formData.scheduledTime)
-      );
       setAvailableSlots(slots);
-    } catch (err) {
-      console.error('Failed to check availability:', err);
     } finally {
       setCheckingAvailability(false);
     }
@@ -249,7 +276,17 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       onSuccess();
       handleClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save appointment');
+      // Handle specific error types
+      if (err.response?.status === 409) {
+        // Conflict error - scheduling conflict
+        const message = err.response?.data?.message || 'Scheduling conflict detected';
+        setError(
+          `${message}. The selected time slot may already be booked. Please choose a different time or employee.`
+        );
+      } else {
+        // Generic error
+        setError(err.response?.data?.message || 'Failed to save appointment');
+      }
     } finally {
       setLoading(false);
     }
@@ -261,7 +298,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       vehicleId: '',
       employeeId: '',
       scheduledDate: new Date(),
-      scheduledTime: '09:00',
+      scheduledTime: getCurrentTimeRounded(),
       duration: 60,
       serviceType: 'TIRE_CHANGE',
       notes: '',
@@ -293,9 +330,52 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {appointment ? 'Edit Appointment' : 'New Appointment'}
+      <Dialog
+        open={open}
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick') {
+            return; // Prevent closing on backdrop click
+          }
+          handleClose();
+        }}
+        maxWidth="lg"
+        fullWidth
+        fullScreen={window.innerWidth < 600} // Fullscreen on small screens
+        PaperProps={{
+          sx: {
+            maxHeight: { xs: '100vh', sm: '90vh' },
+            m: { xs: 0, sm: 2 },
+            width: { lg: '1200px' },
+            maxWidth: { lg: '1200px' },
+            borderRadius: { xs: 0, sm: 2 },
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            bgcolor: 'primary.main',
+            color: 'white',
+            position: 'relative',
+            pb: 2,
+            borderTopLeftRadius: { xs: 0, sm: 2 },
+            borderTopRightRadius: { xs: 0, sm: 2 },
+          }}
+        >
+          <Box sx={{ fontWeight: 'bold', color: 'white' }}>
+            {appointment ? 'Edit Appointment' : 'New Appointment'}
+          </Box>
+          <IconButton
+            aria-label="close"
+            onClick={handleClose}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: 'white',
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent>
           {error && (
@@ -318,12 +398,48 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                       ? `${customer.businessName} (${customer.firstName} ${customer.lastName})`
                       : `${customer.firstName} ${customer.lastName}`
                   }
+                  filterOptions={(options, { inputValue }) => {
+                    // Filter by name, business name, or phone number
+                    const filterValue = inputValue.toLowerCase();
+                    return options.filter((customer) => {
+                      const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
+                      const businessName = customer.businessName?.toLowerCase() || '';
+                      const phone = customer.phone?.toLowerCase() || '';
+
+                      return (
+                        fullName.includes(filterValue) ||
+                        businessName.includes(filterValue) ||
+                        phone.includes(filterValue)
+                      );
+                    });
+                  }}
+                  renderOption={(props, customer) => (
+                    <li {...props} key={customer.id}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Box sx={{ fontWeight: 600 }}>
+                          {customer.businessName
+                            ? `${customer.businessName}`
+                            : `${customer.firstName} ${customer.lastName}`}
+                        </Box>
+                        {customer.businessName && (
+                          <Box sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                            {customer.firstName} {customer.lastName}
+                          </Box>
+                        )}
+                        {customer.phone && (
+                          <Box sx={{ fontSize: '0.875rem', color: 'primary.main' }}>
+                            {customer.phone}
+                          </Box>
+                        )}
+                      </Box>
+                    </li>
+                  )}
                   loading={customersLoading}
                   disabled={!!appointment}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Customer"
+                      label="Customer (search by name or phone)"
                       required
                       InputProps={{
                         ...params.InputProps,
@@ -496,7 +612,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   setFormData({ ...formData, scheduledTime: e.target.value })
                 }
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ step: 900 }}
+                inputProps={{
+                  step: 900,
+                  min: getMinTime()
+                }}
                 required
               />
             </Grid>

@@ -72,14 +72,15 @@ export class AppointmentsService {
       }
 
       // Check availability
-      const isAvailable = await this.availabilityService.isEmployeeAvailable(
+      const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
         employeeId,
         dto.scheduledDate,
         dto.scheduledTime,
         dto.duration
       );
-      if (!isAvailable) {
-        throw new ConflictException('Employee is not available at the requested time');
+      if (availabilityCheck !== true) {
+        const error = availabilityCheck as { available: false; reason: string; suggestion: string };
+        throw new ConflictException(`${error.reason}. ${error.suggestion}`);
       }
     }
 
@@ -276,15 +277,16 @@ export class AppointmentsService {
       const duration = dto.duration || appointment.duration;
 
       if (employeeId) {
-        const isAvailable = await this.availabilityService.isEmployeeAvailable(
+        const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
           employeeId,
           scheduledDate,
           scheduledTime,
           duration,
           id // Exclude current appointment from conflict check
         );
-        if (!isAvailable) {
-          throw new ConflictException('Employee is not available at the requested time');
+        if (availabilityCheck !== true) {
+          const error = availabilityCheck as { available: false; reason: string; suggestion: string };
+          throw new ConflictException(`${error.reason}. ${error.suggestion}`);
         }
       }
 

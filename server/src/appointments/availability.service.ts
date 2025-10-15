@@ -237,7 +237,7 @@ export class AvailabilityService {
     startTime: string,
     duration: number,
     excludeAppointmentId?: string
-  ): Promise<boolean> {
+  ): Promise<boolean | { available: false; reason: string; suggestion: string }> {
     const dayOfWeek = date.getDay();
 
     // Normalize date to start of day in UTC to match Prisma DateTime storage
@@ -264,7 +264,11 @@ export class AvailabilityService {
     // Check if time is blocked by an override
     for (const override of overrides) {
       if (!override.isAvailable && this.timeOverlaps(startTime, endTime, override.startTime, override.endTime)) {
-        return false; // Blocked by time-off
+        return {
+          available: false,
+          reason: `Employee has time off from ${override.startTime} to ${override.endTime}`,
+          suggestion: override.reason || 'Employee is unavailable during this time',
+        };
       }
     }
 
@@ -289,7 +293,14 @@ export class AvailabilityService {
 
     // If no override and not in recurring slot, not available
     if (!hasAvailableOverride && !withinRecurringSlot) {
-      return false;
+      const availableSlots = recurringSlots.map(s => `${s.startTime}-${s.endTime}`).join(', ');
+      return {
+        available: false,
+        reason: `Employee's working hours on this day: ${availableSlots || 'Not scheduled to work'}`,
+        suggestion: availableSlots
+          ? `Please choose a time within: ${availableSlots}`
+          : 'Employee is not scheduled to work on this day',
+      };
     }
 
     // 3. Check for appointment conflicts (double-booking)
@@ -330,7 +341,11 @@ export class AvailabilityService {
       console.log(`  - Existing appointment: ${appointment.scheduledTime} - ${appointmentEnd}`);
       if (this.timeOverlaps(startTime, endTime, appointment.scheduledTime, appointmentEnd)) {
         console.log(`  ❌ CONFLICT DETECTED! Overlaps with appointment ${appointment.id}`);
-        return false; // Conflict with existing appointment
+        return {
+          available: false,
+          reason: `Employee already has an appointment from ${appointment.scheduledTime} to ${appointmentEnd}`,
+          suggestion: `Please choose a time after ${appointmentEnd} (plus 15-minute buffer)`,
+        };
       }
     }
 
@@ -344,7 +359,12 @@ export class AvailabilityService {
         this.timeInMinutes(startTime) >= this.timeInMinutes(appointmentEnd) &&
         this.timeInMinutes(startTime) < this.timeInMinutes(appointmentEnd) + bufferMinutes
       ) {
-        return false;
+        const suggestedTime = this.addMinutesToTime(appointmentEnd, bufferMinutes);
+        return {
+          available: false,
+          reason: `Employee needs a 15-minute buffer after their ${appointment.scheduledTime}-${appointmentEnd} appointment`,
+          suggestion: `Earliest available time: ${suggestedTime}`,
+        };
       }
 
       // Check if new appointment is too close before existing
@@ -352,7 +372,12 @@ export class AvailabilityService {
         this.timeInMinutes(endTime) <= this.timeInMinutes(appointment.scheduledTime) &&
         this.timeInMinutes(endTime) > this.timeInMinutes(appointment.scheduledTime) - bufferMinutes
       ) {
-        return false;
+        const latestTime = this.addMinutesToTime(appointment.scheduledTime, -duration - bufferMinutes);
+        return {
+          available: false,
+          reason: `Employee needs a 15-minute buffer before their ${appointment.scheduledTime}-${appointmentEnd} appointment`,
+          suggestion: `Latest start time: ${latestTime}`,
+        };
       }
     }
 

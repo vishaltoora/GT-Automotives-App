@@ -43,6 +43,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import QuotationDialog from '../../components/quotations/QuotationDialog';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
+import { AppointmentDialog } from '../../components/appointments/AppointmentDialog';
+import TireDialog from '../../components/inventory/TireDialog';
 import { useAuth } from '../../hooks/useAuth';
 import { dashboardService, DashboardStats } from '../../services/dashboard.service';
 
@@ -52,6 +54,8 @@ export function AdminDashboard() {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
+  const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
+  const [tireDialogOpen, setTireDialogOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -416,6 +420,23 @@ export function AdminDashboard() {
               mb: { xs: 1.5, sm: 2, md: 3 },
             }}>
               <Paper
+                onClick={() => setAppointmentDialogOpen(true)}
+                sx={{
+                  ...actionItemStyles,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.primary.lighter,
+                  },
+                }}
+              >
+                <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                  New Appointment
+                </Typography>
+              </Paper>
+
+              <Paper
                 onClick={() => setInvoiceDialogOpen(true)}
                 sx={{
                   ...actionItemStyles,
@@ -488,25 +509,6 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/appointments/new"
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.lighter,
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  New Appointment
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
                 to="/admin/customers"
                 sx={{
                   ...actionItemStyles,
@@ -525,11 +527,9 @@ export function AdminDashboard() {
               </Paper>
 
               <Paper
-                component={Link}
-                to="/admin/inventory"
+                onClick={() => setTireDialogOpen(true)}
                 sx={{
                   ...actionItemStyles,
-                  textDecoration: 'none',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -537,47 +537,9 @@ export function AdminDashboard() {
                   },
                 }}
               >
-                <Inventory sx={{ ...actionIconStyles, color: colors.semantic.success }} />
+                <TireRepair sx={{ ...actionIconStyles, color: colors.semantic.success }} />
                 <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  Inventory
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/reports"
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.semantic.info,
-                  },
-                }}
-              >
-                <Analytics sx={{ ...actionIconStyles, color: colors.semantic.info }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  View Reports
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/vehicles"
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.semantic.warning,
-                  },
-                }}
-              >
-                <DirectionsCar sx={{ ...actionIconStyles, color: colors.semantic.warning }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  Vehicles
+                  Add Tires
                 </Typography>
               </Paper>
 
@@ -632,9 +594,64 @@ export function AdminDashboard() {
                 xs: '1fr',
                 sm: 'repeat(2, 1fr)',
                 md: 'repeat(3, 1fr)',
+                lg: 'repeat(5, 1fr)',
               },
               gap: { xs: 1, sm: 1.5, md: 2 }
             }}>
+              <Paper
+                component={Link}
+                to="/admin/appointments"
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.primary.lighter}`,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.primary.lighter,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.lighter }}>
+                  Appointments
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/jobs"
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  border: `1px solid #9c27b0`,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: '#9c27b0',
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: '#9c27b0' }}>
+                  Jobs
+                </Typography>
+              </Paper>
+
               <Paper
                 component={Link}
                 to="/admin/inventory"
@@ -881,6 +898,26 @@ export function AdminDashboard() {
         onSuccess={(job) => {
           setJobDialogOpen(false);
           loadStats(); // Refresh stats after creating job
+        }}
+      />
+
+      {/* Appointment Dialog */}
+      <AppointmentDialog
+        open={appointmentDialogOpen}
+        onClose={() => setAppointmentDialogOpen(false)}
+        onSuccess={() => {
+          setAppointmentDialogOpen(false);
+          loadStats(); // Refresh stats after creating appointment
+        }}
+      />
+
+      {/* Tire Dialog */}
+      <TireDialog
+        open={tireDialogOpen}
+        onClose={() => setTireDialogOpen(false)}
+        onSuccess={() => {
+          setTireDialogOpen(false);
+          loadStats(); // Refresh stats after adding tire
         }}
       />
     </Box>
