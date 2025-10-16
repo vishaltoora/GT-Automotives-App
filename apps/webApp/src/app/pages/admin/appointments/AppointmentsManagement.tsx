@@ -55,6 +55,7 @@ import {
   Appointment,
   appointmentService,
 } from '../../../services/appointment.service';
+import { format12Hour, formatTimeRange, formatDateLocal } from '../../../utils/timeFormat';
 
 const STATUS_COLORS: Record<
   AppointmentStatus,
@@ -149,7 +150,7 @@ export const AppointmentsManagement: React.FC = () => {
         appointment.customer.firstName
       } ${appointment.customer.lastName} on ${new Date(
         appointment.scheduledDate
-      ).toLocaleDateString()} at ${appointment.scheduledTime}?`,
+      ).toLocaleDateString()} at ${formatTime(appointment.scheduledTime, appointment.endTime)}?`,
       confirmText: 'Cancel Appointment',
       severity: 'warning',
     });
@@ -197,7 +198,7 @@ export const AppointmentsManagement: React.FC = () => {
   };
 
   const formatTime = (time: string, endTime?: string) => {
-    return endTime ? `${time} - ${endTime}` : time;
+    return endTime ? formatTimeRange(time, endTime) : format12Hour(time);
   };
 
   // Calendar helpers
@@ -303,7 +304,7 @@ export const AppointmentsManagement: React.FC = () => {
   const renderAppointmentRow = (appointment: Appointment) => (
     <TableRow key={appointment.id} hover>
       <TableCell>
-        {new Date(appointment.scheduledDate).toLocaleDateString()}
+        {formatDateLocal(appointment.scheduledDate)}
         <br />
         <Typography variant="caption" color="text.secondary">
           {formatTime(appointment.scheduledTime, appointment.endTime)}
@@ -785,11 +786,11 @@ export const AppointmentsManagement: React.FC = () => {
                                           }}
                                         >
                                           <Box sx={{ display: { sm: 'none', md: 'block' } }}>
-                                            {apt.scheduledTime} - {apt.customer.firstName}{' '}
+                                            {formatTime(apt.scheduledTime, apt.endTime)} - {apt.customer.firstName}{' '}
                                             {apt.customer.lastName}
                                           </Box>
                                           <Box sx={{ display: { sm: 'block', md: 'none' } }}>
-                                            {apt.scheduledTime}
+                                            {formatTime(apt.scheduledTime, apt.endTime)}
                                           </Box>
                                         </Box>
                                       ))}
@@ -855,8 +856,7 @@ export const AppointmentsManagement: React.FC = () => {
                               <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
                                 <Box>
                                   <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 'bold' }}>
-                                    {appointment.scheduledTime}
-                                    {appointment.endTime && ` - ${appointment.endTime}`}
+                                    {formatTime(appointment.scheduledTime, appointment.endTime)}
                                   </Typography>
                                   <Chip
                                     label={appointment.status}
@@ -1105,7 +1105,7 @@ export const AppointmentsManagement: React.FC = () => {
                           <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
                             <Box flex={1}>
                               <Typography variant="subtitle2" fontWeight="bold" fontSize="0.9375rem" color="text.primary">
-                                {new Date(appointment.scheduledDate).toLocaleDateString()}
+                                {formatDateLocal(appointment.scheduledDate)}
                               </Typography>
                               <Typography variant="body2" fontSize="0.8125rem" fontWeight={500} color="text.secondary">
                                 {formatTime(appointment.scheduledTime, appointment.endTime)}
@@ -1362,8 +1362,7 @@ export const AppointmentsManagement: React.FC = () => {
                             color: 'text.primary'
                           }}
                         >
-                          {appointment.scheduledTime}
-                          {appointment.endTime && ` - ${appointment.endTime}`}
+                          {formatTime(appointment.scheduledTime, appointment.endTime)}
                         </Typography>
                         <Chip
                           label={appointment.status}

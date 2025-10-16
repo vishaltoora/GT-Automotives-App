@@ -129,6 +129,13 @@ export const availabilityService = {
   },
 
   /**
+   * Delete a recurring availability slot
+   */
+  async deleteRecurringAvailability(availabilityId: string): Promise<void> {
+    await apiClient.delete(`/api/availability/recurring/${availabilityId}`);
+  },
+
+  /**
    * Add a time slot override (vacation, sick day, extra shift)
    */
   async addOverride(data: TimeSlotOverrideRequest): Promise<TimeSlotOverride> {

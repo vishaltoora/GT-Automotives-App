@@ -44,6 +44,10 @@ export declare const availabilityService: {
      */
     getEmployeeAvailability(employeeId: string): Promise<EmployeeAvailability[]>;
     /**
+     * Delete a recurring availability slot
+     */
+    deleteRecurringAvailability(availabilityId: string): Promise<void>;
+    /**
      * Add a time slot override (vacation, sick day, extra shift)
      */
     addOverride(data: TimeSlotOverrideRequest): Promise<TimeSlotOverride>;

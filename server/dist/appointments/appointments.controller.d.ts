@@ -40,17 +40,17 @@ export declare class AppointmentsController {
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     }>;
@@ -91,17 +91,17 @@ export declare class AppointmentsController {
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     })[]>;
@@ -146,17 +146,17 @@ export declare class AppointmentsController {
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     })[]>;
@@ -185,17 +185,17 @@ export declare class AppointmentsController {
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     })[]>;
@@ -236,17 +236,17 @@ export declare class AppointmentsController {
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     }>;
@@ -287,17 +287,17 @@ export declare class AppointmentsController {
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     }>;
@@ -338,17 +338,17 @@ export declare class AppointmentsController {
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     }>;
@@ -359,17 +359,17 @@ export declare class AppointmentsController {
     remove(id: string): Promise<{
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
+        endTime: string | null;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string | null;
         customerId: string;
         vehicleId: string | null;
         scheduledDate: Date;
         scheduledTime: string;
         duration: number;
         serviceType: string;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         reminderSent: boolean;
         bookedBy: string | null;
     }>;

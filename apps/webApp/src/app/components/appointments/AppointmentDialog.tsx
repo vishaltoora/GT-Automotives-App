@@ -31,6 +31,7 @@ import {
 import { customerService, Customer } from '../../services/customer.service';
 import { userService, User } from '../../services/user.service';
 import { CustomerDialog } from '../customers/CustomerDialog';
+import { format12Hour } from '../../utils/timeFormat';
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -641,7 +642,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                     {getAvailableTimesForSelectedTime().length > 0
                       ? `${
                           getAvailableTimesForSelectedTime().length
-                        } employee(s) available at ${formData.scheduledTime}`
+                        } employee(s) available at ${format12Hour(formData.scheduledTime)}`
                       : 'No employees available at this time. Please select a different time.'}
                   </Alert>
                   {getAvailableTimesForSelectedTime().length > 0 && (

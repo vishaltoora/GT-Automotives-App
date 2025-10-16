@@ -73,6 +73,29 @@ export class AvailabilityService {
   }
 
   /**
+   * Delete a recurring availability slot
+   */
+  async deleteRecurringAvailability(availabilityId: string, user: any) {
+    // First, get the availability to check ownership
+    const availability = await this.prisma.employeeAvailability.findUnique({
+      where: { id: availabilityId },
+    });
+
+    if (!availability) {
+      throw new NotFoundException(`Availability slot not found`);
+    }
+
+    // STAFF users can only delete their own availability
+    if (user.role?.name === 'STAFF' && availability.employeeId !== user.id) {
+      throw new BadRequestException('Staff users can only delete their own availability');
+    }
+
+    return this.prisma.employeeAvailability.delete({
+      where: { id: availabilityId },
+    });
+  }
+
+  /**
    * Add a time slot override (vacation, sick day, extra shift)
    */
   async addOverride(dto: TimeSlotOverrideDto) {
@@ -192,21 +215,24 @@ export class AvailabilityService {
         },
       });
 
-      console.log(`[CHECK SLOTS] Employee ${employee.firstName} ${employee.lastName}:`, {
-        employeeId: employee.id,
-        dateQuerying: dateOnly.toISOString(),
-        appointmentsFound: appointments.length,
-        appointments: appointments.map(a => ({
-          id: a.id,
-          date: a.scheduledDate.toISOString(),
-          time: a.scheduledTime,
-        })),
-      });
+
+      // Calculate the day start and end times from the recurring slots
+      let dayStart = '09:00';
+      let dayEnd = '17:00';
+
+      if (recurringSlots.length > 0) {
+        // Find the earliest start time and latest end time
+        const startTimes = recurringSlots.map(s => s.startTime);
+        const endTimes = recurringSlots.map(s => s.endTime);
+        dayStart = startTimes.sort()[0]; // Earliest start
+        dayEnd = endTimes.sort().reverse()[0]; // Latest end
+      }
+
 
       // Generate time slots (every 30 minutes)
       const slots = this.generateTimeSlots(
-        '09:00',
-        '17:00',
+        dayStart,
+        dayEnd,
         30,
         recurringSlots,
         overrides,

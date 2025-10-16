@@ -93,6 +93,27 @@ export class AvailabilityController {
   }
 
   /**
+   * Delete a recurring availability slot
+   * Roles: ADMIN, STAFF (staff can delete their own)
+   */
+  @Delete('recurring/:availabilityId')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'STAFF')
+  async deleteRecurring(
+    @Param('availabilityId') availabilityId: string,
+    @CurrentUser() user: any
+  ) {
+    console.log('[DELETE RECURRING AVAILABILITY] User:', {
+      id: user?.id,
+      email: user?.email,
+      role: user?.role?.name,
+    });
+    console.log('[DELETE RECURRING AVAILABILITY] Availability ID:', availabilityId);
+
+    return this.availabilityService.deleteRecurringAvailability(availabilityId, user);
+  }
+
+  /**
    * Delete an override
    * Roles: ADMIN, STAFF
    */

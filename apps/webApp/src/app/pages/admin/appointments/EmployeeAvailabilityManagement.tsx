@@ -52,6 +52,7 @@ import { userService, User } from '../../../services/user.service';
 import { useError } from '../../../contexts/ErrorContext';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { useAuth } from '../../../hooks/useAuth';
+import { formatTimeRange } from '../../../utils/timeFormat';
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday', short: 'Sun' },
@@ -88,8 +89,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
 
   // Availability Form - now supports multiple days with multiple slots per day
   interface TimeSlot {
+    id?: string; // Optional ID for existing slots from database
     startTime: string;
     endTime: string;
+    isExisting?: boolean; // Flag to distinguish between DB slots and new ones
   }
 
   interface WeeklySlots {
@@ -228,8 +231,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     if (employee) {
       employee.availability.forEach((slot) => {
         existingSlots[slot.dayOfWeek].push({
+          id: slot.id,
           startTime: slot.startTime,
           endTime: slot.endTime,
+          isExisting: true, // Mark as existing slot from database
         });
       });
     }
@@ -313,11 +318,44 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     }));
   };
 
-  const handleRemoveSlotFromDay = (dayOfWeek: number, slotIndex: number) => {
-    setWeeklySlots((prev) => ({
-      ...prev,
-      [dayOfWeek]: prev[dayOfWeek].filter((_, index) => index !== slotIndex),
-    }));
+  const handleRemoveSlotFromDay = async (dayOfWeek: number, slotIndex: number) => {
+    const slot = weeklySlots[dayOfWeek][slotIndex];
+
+    // If it's an existing slot from the database, delete it via API
+    if (slot.isExisting && slot.id) {
+      const confirmed = await confirm({
+        title: 'Delete Time Slot',
+        message: `Are you sure you want to delete the ${slot.startTime} - ${slot.endTime} time slot?`,
+        confirmText: 'Delete',
+        severity: 'warning',
+      });
+
+      if (confirmed) {
+        try {
+          await availabilityService.deleteRecurringAvailability(slot.id);
+
+          // Update local state immediately by removing the slot
+          setWeeklySlots((prev) => ({
+            ...prev,
+            [dayOfWeek]: prev[dayOfWeek].filter((_, index) => index !== slotIndex),
+          }));
+
+          // Reload data in background to sync with server
+          await loadAllData();
+        } catch (err: any) {
+          showError({
+            title: 'Failed to delete time slot',
+            message: err.message,
+          });
+        }
+      }
+    } else {
+      // For newly added slots (not yet saved), just remove from local state
+      setWeeklySlots((prev) => ({
+        ...prev,
+        [dayOfWeek]: prev[dayOfWeek].filter((_, index) => index !== slotIndex),
+      }));
+    }
   };
 
   const handleApplyQuickTemplate = (template: keyof typeof QUICK_SCHEDULES) => {
@@ -648,7 +686,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                           {slots.map((slot) => (
                                             <Chip
                                               key={slot.id}
-                                              label={`${slot.startTime} - ${slot.endTime}`}
+                                              label={formatTimeRange(slot.startTime, slot.endTime)}
                                               color={slot.isAvailable ? 'success' : 'default'}
                                               size="small"
                                             />
@@ -682,7 +720,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                       {slots.map((slot) => (
                                         <Chip
                                           key={slot.id}
-                                          label={`${slot.startTime} - ${slot.endTime}`}
+                                          label={formatTimeRange(slot.startTime, slot.endTime)}
                                           color={slot.isAvailable ? 'success' : 'default'}
                                           size="small"
                                           sx={{ fontSize: '0.75rem', height: '24px' }}
@@ -742,7 +780,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                         {new Date(override.date).toLocaleDateString()}
                                       </TableCell>
                                       <TableCell>
-                                        {override.startTime} - {override.endTime}
+                                        {formatTimeRange(override.startTime, override.endTime)}
                                       </TableCell>
                                       <TableCell>
                                         <Chip
@@ -779,7 +817,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                           {new Date(override.date).toLocaleDateString()}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
-                                          {override.startTime} - {override.endTime}
+                                          {formatTimeRange(override.startTime, override.endTime)}
                                         </Typography>
                                       </Box>
                                       <IconButton
@@ -1033,7 +1071,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                               <Chip
                                 key={index}
                                 icon={<AccessTimeIcon />}
-                                label={`${slot.startTime} - ${slot.endTime}`}
+                                label={formatTimeRange(slot.startTime, slot.endTime)}
                                 onDelete={() => handleRemoveSlotFromDay(day.value, index)}
                                 color="primary"
                                 variant="filled"
