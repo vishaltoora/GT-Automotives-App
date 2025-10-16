@@ -38,6 +38,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Testing](.claude/docs/testing.md)** - Testing strategy, frameworks, and best practices
 - **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions (includes crash loop resolution)
 - **[Completed Work](.claude/docs/completed-work.md)** - Detailed log of implemented features
+- **[SMS Integration Plan](.claude/docs/sms-integration-plan.md)** - Complete SMS/text messaging integration with Telnyx (Issue #60) ⭐ NEW
 
 ## 🚀 Quick Start
 
@@ -144,6 +145,23 @@ git push origin main
 ---
 
 ## 🔄 Recent Updates
+
+### October 16, 2025 - SMS Integration Plan & GitHub Issues Created ✅
+- ✅ **Comprehensive SMS Integration Plan**: Complete 3-week implementation plan for Telnyx SMS integration
+- ✅ **Cost Analysis**: Telnyx selected as cheapest provider at $0.004/message (47% cheaper than Twilio)
+- ✅ **Detailed Documentation**: 16-section plan covering database schema, backend services, frontend UI, testing, and compliance
+- ✅ **GitHub Issues Created**:
+  - Issue #60: [EPIC] SMS/Text Messaging Integration with Telnyx
+  - Issue #56: Phase 1 - Telnyx Setup & Configuration
+  - Issue #57: Phase 2 - Database & Backend Implementation
+  - Issue #58: Phase 3 - Frontend UI & Full Integration
+  - Issue #59: Phase 4 - Monitoring & Optimization
+- ✅ **ROI Analysis**: $48/year cost, pays for itself with 2-3 prevented no-shows
+- ✅ **Use Cases Defined**: Appointment reminders, service status updates, confirmations, promotional messages
+- ✅ **Technical Stack**: NestJS + @telnyx/sdk + React + PostgreSQL with Prisma
+- ✅ **Code Examples**: Complete implementation code for services, controllers, and UI components
+- ✅ **TCPA Compliance**: Opt-in/opt-out mechanisms and legal compliance guidelines
+- 📝 **Documentation**: [SMS Integration Plan](.claude/docs/sms-integration-plan.md)
 
 ### October 6, 2025 - Expense Invoice System & API Route Fixes ✅
 - ✅ **Expense Invoice UI Complete**: Full expense invoice management interface added
