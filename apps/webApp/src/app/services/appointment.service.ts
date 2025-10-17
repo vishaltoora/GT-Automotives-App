@@ -75,8 +75,9 @@ apiClient.interceptors.response.use(
 export interface CreateAppointmentRequest {
   customerId: string;
   vehicleId?: string;
-  employeeId?: string;
-  scheduledDate: Date;
+  employeeId?: string; // Deprecated: Use employeeIds instead
+  employeeIds?: string[]; // Multiple employees
+  scheduledDate: Date | string; // Allow string to avoid timezone issues
   scheduledTime: string;
   duration: number;
   serviceType: string;
@@ -84,8 +85,9 @@ export interface CreateAppointmentRequest {
 }
 
 export interface UpdateAppointmentRequest {
-  employeeId?: string;
-  scheduledDate?: Date;
+  employeeId?: string; // Deprecated: Use employeeIds instead
+  employeeIds?: string[]; // Multiple employees
+  scheduledDate?: Date | string; // Allow string to avoid timezone issues
   scheduledTime?: string;
   duration?: number;
   status?: AppointmentStatus;
@@ -110,7 +112,7 @@ export interface Appointment {
   id: string;
   customerId: string;
   vehicleId?: string;
-  employeeId?: string;
+  employeeId?: string; // Deprecated: Use employees array instead
   scheduledDate: Date;
   scheduledTime: string;
   endTime?: string;
@@ -129,6 +131,7 @@ export interface Appointment {
     email?: string;
     phone?: string;
     businessName?: string;
+    address?: string;
   };
   vehicle?: {
     id: string;
@@ -143,6 +146,16 @@ export interface Appointment {
     lastName: string;
     email: string;
   };
+  employees?: Array<{
+    id: string;
+    employeeId: string;
+    employee: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  }>;
 }
 
 export interface AvailableSlot {
@@ -155,7 +168,7 @@ export interface AvailableSlot {
 
 export interface CheckAvailabilityRequest {
   employeeId?: string;
-  date: Date;
+  date: Date | string; // Allow string to avoid timezone issues
   duration: number;
 }
 
@@ -164,7 +177,14 @@ export const appointmentService = {
    * Create a new appointment
    */
   async createAppointment(data: CreateAppointmentRequest): Promise<Appointment> {
-    const response = await apiClient.post(`/api/appointments`, data);
+    // Convert Date to YYYY-MM-DD string to avoid timezone issues
+    const payload = {
+      ...data,
+      scheduledDate: data.scheduledDate instanceof Date
+        ? data.scheduledDate.toLocaleDateString('en-CA') // en-CA format is YYYY-MM-DD
+        : data.scheduledDate,
+    };
+    const response = await apiClient.post(`/api/appointments`, payload);
     return response.data;
   },
 
@@ -225,7 +245,14 @@ export const appointmentService = {
    * Update an appointment
    */
   async updateAppointment(id: string, data: UpdateAppointmentRequest): Promise<Appointment> {
-    const response = await apiClient.patch(`/api/appointments/${id}`, data);
+    // Convert Date to YYYY-MM-DD string to avoid timezone issues
+    const payload = {
+      ...data,
+      scheduledDate: data.scheduledDate instanceof Date
+        ? data.scheduledDate.toLocaleDateString('en-CA') // en-CA format is YYYY-MM-DD
+        : data.scheduledDate,
+    };
+    const response = await apiClient.patch(`/api/appointments/${id}`, payload);
     return response.data;
   },
 
@@ -248,7 +275,14 @@ export const appointmentService = {
    * Check available time slots
    */
   async checkAvailability(data: CheckAvailabilityRequest): Promise<AvailableSlot[]> {
-    const response = await apiClient.post(`/api/availability/check`, data);
+    // Convert Date to YYYY-MM-DD string to avoid timezone issues
+    const payload = {
+      ...data,
+      date: data.date instanceof Date
+        ? data.date.toLocaleDateString('en-CA') // en-CA format is YYYY-MM-DD
+        : data.date,
+    };
+    const response = await apiClient.post(`/api/availability/check`, payload);
     return response.data;
   },
 

@@ -85,10 +85,12 @@ export class AvailabilityService {
       throw new NotFoundException(`Availability slot not found`);
     }
 
-    // STAFF users can only delete their own availability
+    // STAFF users can only delete their own availability (ADMIN can delete any)
     if (user.role?.name === 'STAFF' && availability.employeeId !== user.id) {
       throw new BadRequestException('Staff users can only delete their own availability');
     }
+
+    // Allow ADMIN to delete any availability (no restriction)
 
     return this.prisma.employeeAvailability.delete({
       where: { id: availabilityId },
@@ -176,10 +178,10 @@ export class AvailabilityService {
       }
       employees = [employee];
     } else {
-      // Get all STAFF users
+      // Get all STAFF and ADMIN users
       employees = await this.prisma.user.findMany({
         where: {
-          role: { name: 'STAFF' },
+          role: { name: { in: ['STAFF', 'ADMIN'] } },
           isActive: true,
         },
         include: { role: true },
@@ -206,12 +208,15 @@ export class AvailabilityService {
         },
       });
 
-      // Get existing appointments for this date
+      // Get existing appointments for this date (check both old employeeId and new employees relation)
       const appointments = await this.prisma.appointment.findMany({
         where: {
-          employeeId: employee.id,
           scheduledDate: dateOnly,
           status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+          OR: [
+            { employeeId: employee.id },
+            { employees: { some: { employeeId: employee.id } } }
+          ],
         },
       });
 
@@ -330,10 +335,14 @@ export class AvailabilityService {
     }
 
     // 3. Check for appointment conflicts (double-booking)
+    // Check both old employeeId and new employees relation
     const whereClause: any = {
-      employeeId,
       scheduledDate: dateOnly,
       status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+      OR: [
+        { employeeId },
+        { employees: { some: { employeeId } } }
+      ],
     };
 
     // Exclude the current appointment if updating (don't conflict with itself)
@@ -370,39 +379,7 @@ export class AvailabilityService {
         return {
           available: false,
           reason: `Employee already has an appointment from ${appointment.scheduledTime} to ${appointmentEnd}`,
-          suggestion: `Please choose a time after ${appointmentEnd} (plus 15-minute buffer)`,
-        };
-      }
-    }
-
-    // 4. Check buffer time (15 minutes)
-    const bufferMinutes = 15;
-    for (const appointment of conflictingAppointments) {
-      const appointmentEnd = appointment.endTime || this.addMinutesToTime(appointment.scheduledTime, appointment.duration);
-
-      // Check if new appointment is too close after existing
-      if (
-        this.timeInMinutes(startTime) >= this.timeInMinutes(appointmentEnd) &&
-        this.timeInMinutes(startTime) < this.timeInMinutes(appointmentEnd) + bufferMinutes
-      ) {
-        const suggestedTime = this.addMinutesToTime(appointmentEnd, bufferMinutes);
-        return {
-          available: false,
-          reason: `Employee needs a 15-minute buffer after their ${appointment.scheduledTime}-${appointmentEnd} appointment`,
-          suggestion: `Earliest available time: ${suggestedTime}`,
-        };
-      }
-
-      // Check if new appointment is too close before existing
-      if (
-        this.timeInMinutes(endTime) <= this.timeInMinutes(appointment.scheduledTime) &&
-        this.timeInMinutes(endTime) > this.timeInMinutes(appointment.scheduledTime) - bufferMinutes
-      ) {
-        const latestTime = this.addMinutesToTime(appointment.scheduledTime, -duration - bufferMinutes);
-        return {
-          available: false,
-          reason: `Employee needs a 15-minute buffer before their ${appointment.scheduledTime}-${appointmentEnd} appointment`,
-          suggestion: `Latest start time: ${latestTime}`,
+          suggestion: `Please choose a time after ${appointmentEnd}`,
         };
       }
     }

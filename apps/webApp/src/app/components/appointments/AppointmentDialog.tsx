@@ -103,7 +103,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [formData, setFormData] = useState({
     customerId: preselectedCustomerId || '',
     vehicleId: '',
-    employeeId: '',
+    employeeId: '', // Deprecated: kept for backward compatibility
+    employeeIds: [] as string[], // New: multiple employee IDs
     scheduledDate: new Date(),
     scheduledTime: getCurrentTimeRounded(),
     duration: 60,
@@ -114,22 +115,46 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
+  const [selectedEmployees, setSelectedEmployees] = useState<User[]>([]);
 
   useEffect(() => {
     if (open) {
       loadCustomers();
       loadEmployees();
       if (appointment) {
+        // Get employee IDs from either new employees array or old employeeId
+        const employeeIds = appointment.employees?.map(e => e.employeeId) ||
+                          (appointment.employeeId ? [appointment.employeeId] : []);
+
         setFormData({
           customerId: appointment.customerId,
           vehicleId: appointment.vehicleId || '',
           employeeId: appointment.employeeId || '',
+          employeeIds: employeeIds,
           scheduledDate: new Date(appointment.scheduledDate),
           scheduledTime: appointment.scheduledTime,
           duration: appointment.duration,
           serviceType: appointment.serviceType,
           notes: appointment.notes || '',
         });
+
+        // Set selected employees for autocomplete
+        if (appointment.employees && appointment.employees.length > 0) {
+          const empObjects = appointment.employees.map(e => e.employee);
+          setSelectedEmployees(empObjects.map(e => ({
+            id: e.id,
+            firstName: e.firstName,
+            lastName: e.lastName,
+            email: e.email,
+          } as User)));
+        } else if (appointment.employee) {
+          setSelectedEmployees([{
+            id: appointment.employee.id,
+            firstName: appointment.employee.firstName,
+            lastName: appointment.employee.lastName,
+            email: appointment.employee.email,
+          } as User]);
+        }
       } else if (preselectedCustomerId) {
         loadCustomerDetails(preselectedCustomerId);
       }
@@ -169,10 +194,16 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     try {
       setEmployeesLoading(true);
       const allUsers = await userService.getUsers();
-      const staffUsers = allUsers.filter(
-        (user) => user.role?.name === 'STAFF' && user.isActive
+      const staffAndAdminUsers = allUsers.filter(
+        (user) => (user.role?.name === 'STAFF' || user.role?.name === 'ADMIN') && user.isActive
       );
-      setEmployees(staffUsers);
+
+      // Deduplicate by user ID (in case same user appears multiple times)
+      const uniqueUsers = staffAndAdminUsers.filter(
+        (user, index, self) => index === self.findIndex((u) => u.id === user.id)
+      );
+
+      setEmployees(uniqueUsers);
     } finally {
       setEmployeesLoading(false);
     }
@@ -230,32 +261,37 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       }
 
       // Validate employee availability if manually selected
-      if (formData.employeeId) {
-        const employeeSlot = availableSlots.find(
-          (slot) =>
-            slot.employeeId === formData.employeeId &&
-            slot.startTime === formData.scheduledTime
-        );
-
-        if (employeeSlot && !employeeSlot.available) {
-          setError(
-            `The selected employee is not available at ${formData.scheduledTime}. Please choose a different time or use auto-assign.`
+      // Skip frontend validation when editing - backend will properly exclude current appointment
+      if (formData.employeeIds.length > 0 && !appointment) {
+        for (const empId of formData.employeeIds) {
+          const employeeSlot = availableSlots.find(
+            (slot) =>
+              slot.employeeId === empId &&
+              slot.startTime === formData.scheduledTime
           );
-          return;
-        }
 
-        // Additional check: if we have availability data but employee not in list, they're unavailable
-        if (availableSlots.length > 0 && !employeeSlot) {
-          setError(
-            `The selected employee has no availability at ${formData.scheduledTime}. Please choose a different time or employee.`
-          );
-          return;
+          if (employeeSlot && !employeeSlot.available) {
+            const employee = employees.find(e => e.id === empId);
+            setError(
+              `${employee?.firstName} ${employee?.lastName} is not available at ${formData.scheduledTime}. Please choose a different time or employee.`
+            );
+            return;
+          }
+
+          // Additional check: if we have availability data but employee not in list, they're unavailable
+          if (availableSlots.length > 0 && !employeeSlot) {
+            const employee = employees.find(e => e.id === empId);
+            setError(
+              `${employee?.firstName} ${employee?.lastName} has no availability at ${formData.scheduledTime}. Please choose a different time or employee.`
+            );
+            return;
+          }
         }
       }
 
       if (appointment) {
         await appointmentService.updateAppointment(appointment.id, {
-          employeeId: formData.employeeId || undefined,
+          employeeIds: formData.employeeIds.length > 0 ? formData.employeeIds : undefined,
           scheduledDate: formData.scheduledDate,
           scheduledTime: formData.scheduledTime,
           duration: formData.duration,
@@ -265,7 +301,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         await appointmentService.createAppointment({
           customerId: formData.customerId,
           vehicleId: formData.vehicleId || undefined,
-          employeeId: formData.employeeId || undefined,
+          employeeIds: formData.employeeIds.length > 0 ? formData.employeeIds : undefined,
           scheduledDate: formData.scheduledDate,
           scheduledTime: formData.scheduledTime,
           duration: formData.duration,
@@ -298,6 +334,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       customerId: preselectedCustomerId || '',
       vehicleId: '',
       employeeId: '',
+      employeeIds: [],
       scheduledDate: new Date(),
       scheduledTime: getCurrentTimeRounded(),
       duration: 60,
@@ -305,6 +342,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       notes: '',
     });
     setSelectedCustomer(null);
+    setSelectedEmployees([]);
     setError(null);
     setAvailableSlots([]);
     onClose();
@@ -386,7 +424,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           )}
 
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            {/* Customer Selection */}
+            {/* 1. Customer Selection */}
             <Grid size={{ xs: 12 }}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                 <Autocomplete
@@ -474,7 +512,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               </Box>
             </Grid>
 
-            {/* Vehicle Selection */}
+            {/* Vehicle Selection (if customer has vehicles) */}
             {selectedCustomer?.vehicles &&
               selectedCustomer.vehicles.length > 0 && (
                 <Grid size={{ xs: 12 }}>
@@ -501,91 +539,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 </Grid>
               )}
 
-            {/* Employee Assignment */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Assign to Employee (Optional)</InputLabel>
-                <Select
-                  value={formData.employeeId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, employeeId: e.target.value })
-                  }
-                  label="Assign to Employee (Optional)"
-                  disabled={employeesLoading}
-                >
-                  <MenuItem value="">
-                    <em>Auto-assign (system will find available employee)</em>
-                  </MenuItem>
-                  {employees.map((employee) => {
-                    // Check if this employee is available at selected time
-                    const isAvailable = availableSlots.some(
-                      (slot) =>
-                        slot.employeeId === employee.id &&
-                        slot.startTime === formData.scheduledTime &&
-                        slot.available
-                    );
-                    const hasSlots = availableSlots.some(
-                      (slot) => slot.employeeId === employee.id
-                    );
-
-                    // Disable if we have availability data and they're unavailable
-                    const isDisabled = hasSlots && !isAvailable;
-
-                    return (
-                      <MenuItem
-                        key={employee.id}
-                        value={employee.id}
-                        disabled={isDisabled}
-                        sx={isDisabled ? { opacity: 0.5 } : {}}
-                      >
-                        {employee.firstName} {employee.lastName}
-                        {isDisabled && ' (Already booked)'}
-                        {hasSlots && isAvailable && ' ✅'}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Service Type */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth required>
-                <InputLabel>Service Type</InputLabel>
-                <Select
-                  value={formData.serviceType}
-                  onChange={(e) => handleServiceTypeChange(e.target.value)}
-                  label="Service Type"
-                  disabled={!!appointment}
-                >
-                  {SERVICE_TYPES.map((service) => (
-                    <MenuItem key={service.value} value={service.value}>
-                      {service.label} ({service.duration} min)
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Duration */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Duration (minutes)"
-                type="number"
-                value={formData.duration}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    duration: parseInt(e.target.value),
-                  })
-                }
-                inputProps={{ min: 15, max: 480, step: 15 }}
-                required
-              />
-            </Grid>
-
-            {/* Date */}
+            {/* 2. Date */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <DatePicker
                 label="Date"
@@ -602,7 +556,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               />
             </Grid>
 
-            {/* Time */}
+            {/* 3. Start Time */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
@@ -621,6 +575,148 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               />
             </Grid>
 
+            {/* 4. Service Type */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth required>
+                <InputLabel>Service Type</InputLabel>
+                <Select
+                  value={formData.serviceType}
+                  onChange={(e) => handleServiceTypeChange(e.target.value)}
+                  label="Service Type"
+                  disabled={!!appointment}
+                >
+                  {SERVICE_TYPES.map((service) => (
+                    <MenuItem key={service.value} value={service.value}>
+                      {service.label} ({service.duration} min)
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* 5. Duration */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Duration (minutes)"
+                type="number"
+                value={formData.duration}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    duration: parseInt(e.target.value),
+                  })
+                }
+                inputProps={{ min: 15, max: 480, step: 15 }}
+                required
+              />
+            </Grid>
+
+            {/* 6. Employee Assignment - Multi-select */}
+            <Grid size={{ xs: 12 }}>
+              <Autocomplete
+                multiple
+                options={employees}
+                value={selectedEmployees}
+                onChange={(_, newValue) => {
+                  setSelectedEmployees(newValue);
+                  setFormData({
+                    ...formData,
+                    employeeIds: newValue.map((e) => e.id),
+                    employeeId: newValue.length > 0 ? newValue[0].id : '',
+                  });
+                }}
+                getOptionLabel={(option) =>
+                  `${option.firstName} ${option.lastName}`
+                }
+                getOptionDisabled={(option) => {
+                  // Check if this employee is available at selected time
+                  const isAvailable = availableSlots.some(
+                    (slot) =>
+                      slot.employeeId === option.id &&
+                      slot.startTime === formData.scheduledTime &&
+                      slot.available
+                  );
+                  const hasSlots = availableSlots.some(
+                    (slot) => slot.employeeId === option.id
+                  );
+
+                  // Disable if we have availability data and they're unavailable
+                  return hasSlots && !isAvailable;
+                }}
+                renderTags={(value, getTagProps) =>
+                  value.map((employee, index) => (
+                    <Chip
+                      label={`${employee.firstName} ${employee.lastName}`}
+                      {...getTagProps({ index })}
+                      key={employee.id}
+                    />
+                  ))
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Assign to Employee(s) (Optional)"
+                    placeholder={
+                      selectedEmployees.length === 0
+                        ? 'Auto-assign or select employees...'
+                        : ''
+                    }
+                    helperText={
+                      selectedEmployees.length === 0
+                        ? 'Leave empty for auto-assignment'
+                        : `${selectedEmployees.length} employee${selectedEmployees.length > 1 ? 's' : ''} selected`
+                    }
+                  />
+                )}
+                renderOption={(props, option) => {
+                  // Check if this employee is available at selected time
+                  const isAvailable = availableSlots.some(
+                    (slot) =>
+                      slot.employeeId === option.id &&
+                      slot.startTime === formData.scheduledTime &&
+                      slot.available
+                  );
+                  const hasSlots = availableSlots.some(
+                    (slot) => slot.employeeId === option.id
+                  );
+
+                  const isDisabled = hasSlots && !isAvailable;
+                  const noAvailabilityData = availableSlots.length === 0;
+
+                  return (
+                    <li {...props} key={option.id}>
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        width="100%"
+                        sx={{ opacity: isDisabled ? 0.5 : 1 }}
+                      >
+                        <span>
+                          {option.firstName} {option.lastName}
+                        </span>
+                        {isDisabled && (
+                          <span style={{ color: '#d32f2f', fontSize: '0.875rem' }}>
+                            Already booked
+                          </span>
+                        )}
+                        {hasSlots && isAvailable && (
+                          <span style={{ color: '#2e7d32' }}>✅</span>
+                        )}
+                        {noAvailabilityData && (
+                          <span style={{ color: '#757575', fontSize: '0.75rem' }}>
+                            No schedule set
+                          </span>
+                        )}
+                      </Box>
+                    </li>
+                  );
+                }}
+                disabled={employeesLoading}
+                disableCloseOnSelect
+              />
+            </Grid>
+
             {/* Available Slots */}
             {checkingAvailability ? (
               <Grid size={{ xs: 12 }}>
@@ -629,37 +725,41 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   <span>Checking availability...</span>
                 </Box>
               </Grid>
+            ) : availableSlots.length === 0 ? (
+              <Grid size={{ xs: 12 }}>
+                <Alert severity="info">
+                  No availability configured yet. You can still create appointments and assign employees manually, or leave unassigned for auto-assignment.
+                </Alert>
+              </Grid>
             ) : (
-              availableSlots.length > 0 && (
-                <Grid size={{ xs: 12 }}>
-                  <Alert
-                    severity={
-                      getAvailableTimesForSelectedTime().length > 0
-                        ? 'success'
-                        : 'warning'
-                    }
-                  >
-                    {getAvailableTimesForSelectedTime().length > 0
-                      ? `${
-                          getAvailableTimesForSelectedTime().length
-                        } employee(s) available at ${format12Hour(formData.scheduledTime)}`
-                      : 'No employees available at this time. Please select a different time.'}
-                  </Alert>
-                  {getAvailableTimesForSelectedTime().length > 0 && (
-                    <Box mt={1}>
-                      {getAvailableTimesForSelectedTime().map((slot) => (
-                        <Chip
-                          key={slot.employeeId}
-                          label={slot.employeeName}
-                          color="primary"
-                          size="small"
-                          sx={{ mr: 0.5, mb: 0.5 }}
-                        />
-                      ))}
-                    </Box>
-                  )}
-                </Grid>
-              )
+              <Grid size={{ xs: 12 }}>
+                <Alert
+                  severity={
+                    getAvailableTimesForSelectedTime().length > 0
+                      ? 'success'
+                      : 'warning'
+                  }
+                >
+                  {getAvailableTimesForSelectedTime().length > 0
+                    ? `${
+                        getAvailableTimesForSelectedTime().length
+                      } employee(s) available at ${format12Hour(formData.scheduledTime)}`
+                    : 'No employees available at this time. Please select a different time.'}
+                </Alert>
+                {getAvailableTimesForSelectedTime().length > 0 && (
+                  <Box mt={1}>
+                    {getAvailableTimesForSelectedTime().map((slot) => (
+                      <Chip
+                        key={slot.employeeId}
+                        label={slot.employeeName}
+                        color="primary"
+                        size="small"
+                        sx={{ mr: 0.5, mb: 0.5 }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </Grid>
             )}
 
             {/* Notes */}

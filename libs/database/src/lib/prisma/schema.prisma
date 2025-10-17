@@ -9,22 +9,23 @@ datasource db {
 }
 
 model User {
-  id                String                 @id @default(cuid())
-  clerkId           String                 @unique
-  email             String                 @unique
-  firstName         String?
-  lastName          String?
-  roleId            String
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  lastLogin         DateTime?
-  isActive          Boolean                @default(true)
-  role              Role                   @relation(fields: [roleId], references: [id])
-  jobs              Job[]                  // Jobs assigned to this user (for STAFF role)
-  payments          Payment[]              // Payments made to this user (for STAFF role)
-  appointments      Appointment[]          // Appointments assigned to this employee
-  availability      EmployeeAvailability[] // Weekly recurring schedule
-  timeSlotOverrides TimeSlotOverride[]     // Date-specific exceptions (time-off, extra shifts)
+  id                    String                  @id @default(cuid())
+  clerkId               String                  @unique
+  email                 String                  @unique
+  firstName             String?
+  lastName              String?
+  roleId                String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  lastLogin             DateTime?
+  isActive              Boolean                 @default(true)
+  role                  Role                    @relation(fields: [roleId], references: [id])
+  jobs                  Job[]                   // Jobs assigned to this user (for STAFF role)
+  payments              Payment[]               // Payments made to this user (for STAFF role)
+  appointments          Appointment[]           // Appointments assigned to this employee (deprecated)
+  appointmentEmployees  AppointmentEmployee[]   @relation("AppointmentEmployees") // Multiple appointment assignments
+  availability          EmployeeAvailability[]  // Weekly recurring schedule
+  timeSlotOverrides     TimeSlotOverride[]      // Date-specific exceptions (time-off, extra shifts)
 }
 
 model Role {
@@ -261,28 +262,42 @@ model QuotationItem {
 }
 
 model Appointment {
-  id            String            @id @default(cuid())
+  id            String                  @id @default(cuid())
   customerId    String
   vehicleId     String?
-  employeeId    String?           // Assigned employee (STAFF user)
+  employeeId    String?                 // Deprecated: Use employees relation instead
   scheduledDate DateTime
-  scheduledTime String            // "09:00" format (24-hour)
-  endTime       String?           // "10:30" format (calculated from duration)
-  duration      Int               @default(60) // minutes
+  scheduledTime String                  // "09:00" format (24-hour)
+  endTime       String?                 // "10:30" format (calculated from duration)
+  duration      Int                     @default(60) // minutes
   serviceType   String
   status        AppointmentStatus
   notes         String?
-  reminderSent  Boolean           @default(false)
-  bookedBy      String?           // User ID who created the booking
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  customer      Customer          @relation(fields: [customerId], references: [id])
-  vehicle       Vehicle?          @relation(fields: [vehicleId], references: [id])
-  employee      User?             @relation(fields: [employeeId], references: [id])
+  reminderSent  Boolean                 @default(false)
+  bookedBy      String?                 // User ID who created the booking
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  customer      Customer                @relation(fields: [customerId], references: [id])
+  vehicle       Vehicle?                @relation(fields: [vehicleId], references: [id])
+  employee      User?                   @relation(fields: [employeeId], references: [id])
+  employees     AppointmentEmployee[]   // Multiple employees assigned to this appointment
 
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
   @@index([customerId])
+}
+
+model AppointmentEmployee {
+  id            String      @id @default(cuid())
+  appointmentId String
+  employeeId    String
+  createdAt     DateTime    @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  employee      User        @relation("AppointmentEmployees", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, employeeId])
+  @@index([appointmentId])
+  @@index([employeeId])
 }
 
 model EmployeeAvailability {

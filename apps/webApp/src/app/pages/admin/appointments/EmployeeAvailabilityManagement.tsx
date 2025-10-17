@@ -39,10 +39,12 @@ import {
   CheckCircle as CheckCircleIcon,
   AccessTime as AccessTimeIcon,
   Close as CloseIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useNavigate } from 'react-router-dom';
 import {
   availabilityService,
   EmployeeAvailability,
@@ -68,6 +70,7 @@ const QUICK_SCHEDULES = {
   WEEKDAYS: { days: [1, 2, 3, 4, 5], start: '09:00', end: '17:00' },
   WEEKENDS: { days: [0, 6], start: '10:00', end: '16:00' },
   ALL_WEEK: { days: [0, 1, 2, 3, 4, 5, 6], start: '09:00', end: '17:00' },
+  EXTENDED: { days: [0, 1, 2, 3, 4, 5, 6], start: '09:00', end: '22:00' },
 };
 
 interface EmployeeWithAvailability extends User {
@@ -132,6 +135,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
   const { showError } = useError();
   const { confirm } = useConfirmation();
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
 
   // Check if current user is staff (not admin) - case insensitive
   const isStaff = currentUser?.role?.name?.toUpperCase() === 'STAFF';
@@ -146,10 +150,13 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       const allUsers = await userService.getUsers();
 
       // If staff user, only show their own availability
-      // If admin user, show all staff members
+      // If admin user, show all staff and admin members
       const staffUsers = isStaff
         ? allUsers.filter((user) => user.id === currentUser?.id && user.isActive)
-        : allUsers.filter((user) => user.role?.name?.toUpperCase() === 'STAFF' && user.isActive);
+        : allUsers.filter((user) =>
+            (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN') &&
+            user.isActive
+          );
 
       // Load availability and overrides for each employee
       const employeesWithData = await Promise.all(
@@ -474,6 +481,24 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
 
   return (
     <Box>
+      {/* Back Button */}
+      <Box mb={2}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/admin/appointments')}
+          sx={{
+            textTransform: 'none',
+            color: 'text.secondary',
+            '&:hover': {
+              color: 'primary.main',
+              bgcolor: 'action.hover',
+            },
+          }}
+        >
+          Back to Appointments
+        </Button>
+      </Box>
+
       {/* Header */}
       <Box
         display="flex"
@@ -487,7 +512,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
           Employee Availability
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {employees.length} Staff Member{employees.length !== 1 ? 's' : ''}
+          {employees.length} Team Member{employees.length !== 1 ? 's' : ''} (Staff & Admin)
         </Typography>
       </Box>
 
@@ -609,7 +634,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                               py: { xs: 0.5, sm: 0.75 },
                             }}
                           >
-                            Mon-Fri 9-5
+                            Mon-Fri 9am-5pm
                           </Button>
                           <Button
                             size="small"
@@ -622,7 +647,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                               py: { xs: 0.5, sm: 0.75 },
                             }}
                           >
-                            Weekends 10-4
+                            Weekends 10am-4pm
                           </Button>
                           <Button
                             size="small"
@@ -635,7 +660,20 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                               py: { xs: 0.5, sm: 0.75 },
                             }}
                           >
-                            All Week 9-5
+                            All Week 9am-5pm
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handleQuickSchedule(employee.id, 'EXTENDED')}
+                            sx={{
+                              textTransform: 'none',
+                              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                              px: { xs: 1, sm: 2 },
+                              py: { xs: 0.5, sm: 0.75 },
+                            }}
+                          >
+                            All Week 9am-10pm
                           </Button>
                         </Stack>
                       </Box>
@@ -861,7 +899,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       {employees.length === 0 && (
         <Paper sx={{ p: 4 }}>
           <Typography variant="body1" color="text.secondary" align="center">
-            No staff members found. Add staff users to manage their availability.
+            No team members found. Add staff or admin users to manage their availability.
           </Typography>
         </Paper>
       )}
@@ -984,7 +1022,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   width: { xs: '100%', sm: 'auto' },
                 }}
               >
-                Mon-Fri 9:00-17:00
+                Mon-Fri 9am-5pm
               </Button>
               <Button
                 variant="contained"
@@ -997,7 +1035,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   width: { xs: '100%', sm: 'auto' },
                 }}
               >
-                Sat-Sun 10:00-16:00
+                Sat-Sun 10am-4pm
               </Button>
               <Button
                 variant="contained"
@@ -1010,7 +1048,20 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   width: { xs: '100%', sm: 'auto' },
                 }}
               >
-                Every Day 9:00-17:00
+                Every Day 9am-5pm
+              </Button>
+              <Button
+                variant="contained"
+                size="medium"
+                onClick={() => handleApplyQuickTemplate('EXTENDED')}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                  py: { xs: 1.5, sm: 1 },
+                  width: { xs: '100%', sm: 'auto' },
+                }}
+              >
+                Every Day 9am-10pm
               </Button>
             </Stack>
           </Paper>

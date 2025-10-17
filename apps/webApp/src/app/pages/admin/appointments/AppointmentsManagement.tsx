@@ -201,6 +201,39 @@ export const AppointmentsManagement: React.FC = () => {
     return endTime ? formatTimeRange(time, endTime) : format12Hour(time);
   };
 
+  /**
+   * Get the time-based status of an appointment
+   * Returns: 'current' | 'past' | 'future'
+   */
+  const getAppointmentTimeStatus = (appointment: Appointment): 'current' | 'past' | 'future' => {
+    const scheduledDate = typeof appointment.scheduledDate === 'string'
+      ? new Date(appointment.scheduledDate)
+      : appointment.scheduledDate;
+
+    const dateStr = scheduledDate.toISOString().split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [startHours, startMinutes] = appointment.scheduledTime.split(':').map(Number);
+
+    // Calculate appointment start and end times
+    const appointmentStart = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
+    const appointmentEnd = new Date(appointmentStart.getTime() + appointment.duration * 60000);
+
+    const now = new Date();
+
+    // Check if current time is within appointment range
+    if (now >= appointmentStart && now <= appointmentEnd) {
+      return 'current';
+    }
+
+    // Check if appointment has ended
+    if (now > appointmentEnd) {
+      return 'past';
+    }
+
+    // Appointment is in the future
+    return 'future';
+  };
+
   // Calendar helpers
   const getMonthDays = (date: Date) => {
     const year = date.getFullYear();
@@ -1080,24 +1113,43 @@ export const AppointmentsManagement: React.FC = () => {
               ) : (
                 <Stack spacing={2}>
                   {appointments.map((appointment) => {
-                    // Check if appointment is in the past
-                    const scheduledDate = appointment.scheduledDate instanceof Date
-                      ? appointment.scheduledDate
-                      : new Date(appointment.scheduledDate);
-                    const dateStr = scheduledDate.toISOString().split('T')[0];
-                    const [year, month, day] = dateStr.split('-').map(Number);
-                    const [hours, minutes] = appointment.scheduledTime.split(':').map(Number);
-                    const appointmentDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
-                    const isPast = appointmentDateTime < new Date();
+                    // Get time-based status for the appointment
+                    const timeStatus = getAppointmentTimeStatus(appointment);
+
+                    // Don't show time-based status for cancelled or no-show appointments
+                    const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW';
+                    const isManuallyCompleted = appointment.status === 'COMPLETED';
+
+                    // Determine visual styling based on status
+                    const isCurrent = timeStatus === 'current' && !isCancelled && !isManuallyCompleted;
+                    const isCompleted = (timeStatus === 'past' || isManuallyCompleted) && !isCancelled;
+                    const isUpcoming = timeStatus === 'future' && !isCancelled && !isManuallyCompleted;
+
+                    // Background colors
+                    const getBgColor = () => {
+                      if (isCancelled) return '#ffebee'; // Very light red
+                      if (isCurrent) return '#e3f2fd'; // Very light blue
+                      if (isCompleted) return '#e8f5e9'; // Light green
+                      // No background color for upcoming
+                      return 'background.paper';
+                    };
+
+                    const getBorderColor = () => {
+                      if (isCancelled) return 'error.light';
+                      if (isCurrent) return 'info.main';
+                      if (isCompleted) return 'success.light';
+                      if (isUpcoming) return 'warning.light';
+                      return 'divider';
+                    };
 
                     return (
                       <Card
                         key={appointment.id}
                         variant="outlined"
                         sx={{
-                          bgcolor: isPast ? '#fff9e6' : 'background.paper',
-                          border: isPast ? 1 : 1,
-                          borderColor: isPast ? 'warning.main' : 'divider',
+                          bgcolor: getBgColor(),
+                          border: 1,
+                          borderColor: getBorderColor(),
                         }}
                       >
                         <CardContent sx={{ p: 2, pb: '16px !important' }}>
@@ -1326,17 +1378,34 @@ export const AppointmentsManagement: React.FC = () => {
           <DialogContent dividers>
             <Box sx={{ py: 2 }}>
               {getSelectedDayAppointments().map((appointment) => {
-                // Check if appointment is in the past
-                // Parse date and time properly to avoid timezone issues
-                const scheduledDate = appointment.scheduledDate instanceof Date
-                  ? appointment.scheduledDate
-                  : new Date(appointment.scheduledDate);
-                const dateStr = scheduledDate.toISOString().split('T')[0]; // Get YYYY-MM-DD
-                const [year, month, day] = dateStr.split('-').map(Number);
-                const [hours, minutes] = appointment.scheduledTime.split(':').map(Number);
+                // Get time-based status for the appointment
+                const timeStatus = getAppointmentTimeStatus(appointment);
 
-                const appointmentDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
-                const isPast = appointmentDateTime < new Date();
+                // Don't show time-based status for cancelled or no-show appointments
+                const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW';
+                const isManuallyCompleted = appointment.status === 'COMPLETED';
+
+                // Determine visual styling based on status
+                const isCurrent = timeStatus === 'current' && !isCancelled && !isManuallyCompleted;
+                const isCompleted = (timeStatus === 'past' || isManuallyCompleted) && !isCancelled;
+                const isUpcoming = timeStatus === 'future' && !isCancelled && !isManuallyCompleted;
+
+                // Background colors
+                const getBgColor = () => {
+                  if (isCancelled) return '#ffebee'; // Very light red
+                  if (isCurrent) return '#e3f2fd'; // Very light blue
+                  if (isCompleted) return '#e8f5e9'; // Light green
+                  // No background color for upcoming
+                  return 'background.paper';
+                };
+
+                const getBorderColor = () => {
+                  if (isCancelled) return 'error.light';
+                  if (isCurrent) return 'info.main';
+                  if (isCompleted) return 'success.light';
+                  if (isUpcoming) return 'warning.light';
+                  return 'divider';
+                };
 
                 return (
                 <Card
@@ -1345,177 +1414,119 @@ export const AppointmentsManagement: React.FC = () => {
                   sx={{
                     mb: 2,
                     '&:last-child': { mb: 0 },
-                    bgcolor: isPast ? '#fff9e6' : 'background.paper',
-                    border: isPast ? 1 : 1,
-                    borderColor: isPast ? 'warning.main' : 'divider',
+                    bgcolor: getBgColor(),
+                    border: 1,
+                    borderColor: getBorderColor(),
                   }}
                 >
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    {/* Compact Header: Time, Status, Actions */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                      <Box display="flex" alignItems="center" gap={1.5} flex={1}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{
-                            fontWeight: 'bold',
-                            fontSize: '1rem',
-                            color: 'text.primary'
-                          }}
-                        >
+                  <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                    {/* Header Row: Time and Status */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Box display="flex" alignItems="center" gap={1.5}>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.125rem', color: 'primary.main' }}>
                           {formatTime(appointment.scheduledTime, appointment.endTime)}
                         </Typography>
                         <Chip
                           label={appointment.status}
                           color={STATUS_COLORS[appointment.status]}
                           size="small"
-                          sx={{
-                            height: '24px',
-                            fontSize: '0.75rem',
-                          }}
+                          sx={{ height: '24px', fontSize: '0.75rem', fontWeight: 600 }}
                         />
-                        {isPast && (
-                          <Chip
-                            label="Past"
-                            size="small"
-                            color="warning"
-                            sx={{
-                              height: '24px',
-                              fontSize: '0.7rem',
-                            }}
-                          />
+                        {isCurrent && (
+                          <Chip label="IN PROGRESS" size="small" color="info" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
+                        )}
+                        {isCompleted && !isManuallyCompleted && (
+                          <Chip label="COMPLETED" size="small" color="success" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
+                        )}
+                        {isUpcoming && (
+                          <Chip label="UPCOMING" size="small" color="warning" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
                         )}
                       </Box>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, appointment.id)}
-                        sx={{ padding: '6px' }}
-                      >
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, appointment.id)} sx={{ padding: '6px' }}>
                         <MoreVertIcon />
                       </IconButton>
                     </Box>
 
-                    <Divider sx={{ mb: 1.5 }} />
-
-                    {/* Compact Details: Single row with all info */}
-                    <Box
-                      display="flex"
-                      flexWrap="wrap"
-                      gap={2.5}
-                      sx={{
-                        fontSize: '0.875rem',
-                      }}
-                    >
-                      {/* Customer */}
-                      <Box>
-                        <Typography
-                          component="span"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: '0.9375rem',
-                            color: 'text.primary'
-                          }}
-                        >
-                          {appointment.customer.businessName || `${appointment.customer.firstName} ${appointment.customer.lastName}`}
-                        </Typography>
-                        {appointment.customer.businessName && (
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: '0.8125rem',
-                              color: 'text.secondary',
-                              ml: 0.75
-                            }}
-                          >
-                            ({appointment.customer.firstName} {appointment.customer.lastName})
+                    {/* Customer Section */}
+                    <Box mb={2}>
+                      <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+                        {appointment.customer.businessName || `${appointment.customer.firstName} ${appointment.customer.lastName}`}
+                        {appointment.customer.phone && (
+                          <Typography component="span" sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.secondary', ml: 1 }}>
+                            ({appointment.customer.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3').replace(/^\+?1?[-.\s]?/, '')})
                           </Typography>
                         )}
-                      </Box>
+                      </Typography>
+                      {appointment.customer.businessName && (
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary', mb: 0.5 }}>
+                          {appointment.customer.firstName} {appointment.customer.lastName}
+                        </Typography>
+                      )}
+                    </Box>
 
+                    <Divider sx={{ mb: 2 }} />
+
+                    {/* Service & Technician Row */}
+                    <Box display="flex" gap={2} mb={2} flexWrap="wrap">
                       {/* Service */}
-                      <Box display="flex" alignItems="center" gap={0.75}>
-                        <Typography
-                          component="span"
-                          sx={{
-                            fontSize: '0.875rem',
-                            color: 'text.secondary',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          •
+                      <Box flex={1} minWidth="200px">
+                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
+                          Service
                         </Typography>
-                        <Typography
-                          component="span"
-                          sx={{
-                            fontSize: '0.9375rem',
-                            fontWeight: 500,
-                            color: 'text.primary'
-                          }}
-                        >
-                          {appointment.serviceType.replace(/_/g, ' ')}
-                        </Typography>
-                        <Typography
-                          component="span"
-                          sx={{
-                            fontSize: '0.8125rem',
-                            color: 'text.secondary'
-                          }}
-                        >
-                          ({appointment.duration}min)
-                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary' }}>
+                            {appointment.serviceType.replace(/_/g, ' ')}
+                          </Typography>
+                          <Chip label={`${appointment.duration} min`} size="small" sx={{ height: '20px', fontSize: '0.75rem' }} />
+                        </Box>
                       </Box>
 
-                      {/* Employee */}
-                      {appointment.employee && (
-                        <Box display="flex" alignItems="center" gap={0.75}>
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: '0.875rem',
-                              color: 'text.secondary',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            •
+                      {/* Technician(s) */}
+                      {(appointment.employees && appointment.employees.length > 0) ? (
+                        <Box flex={1} minWidth="200px">
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
+                            {appointment.employees.length > 1 ? 'Technicians' : 'Technician'}
                           </Typography>
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: '0.9375rem',
-                              fontWeight: 500,
-                              color: 'text.primary'
-                            }}
-                          >
+                          {appointment.employees.map((empAssignment, index) => (
+                            <Typography key={empAssignment.id} sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary' }}>
+                              {empAssignment.employee.firstName} {empAssignment.employee.lastName}
+                              {index < appointment.employees!.length - 1 && ', '}
+                            </Typography>
+                          ))}
+                        </Box>
+                      ) : appointment.employee && (
+                        <Box flex={1} minWidth="200px">
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
+                            Technician
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary' }}>
                             {appointment.employee.firstName} {appointment.employee.lastName}
                           </Typography>
                         </Box>
                       )}
+                    </Box>
 
-                      {/* Vehicle */}
-                      {appointment.vehicle && (
-                        <Box display="flex" alignItems="center" gap={0.75}>
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: '0.875rem',
-                              color: 'text.secondary',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            •
-                          </Typography>
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: '0.9375rem',
-                              fontWeight: 500,
-                              color: 'text.primary'
-                            }}
-                          >
+                    {/* Vehicle Info */}
+                    {appointment.vehicle && (
+                      <Box>
+                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
+                          Vehicle
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary' }}>
                             {appointment.vehicle.year} {appointment.vehicle.make} {appointment.vehicle.model}
                           </Typography>
+                          {appointment.vehicle.licensePlate && (
+                            <Chip
+                              label={appointment.vehicle.licensePlate}
+                              size="small"
+                              variant="outlined"
+                              sx={{ height: '20px', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}
+                            />
+                          )}
                         </Box>
-                      )}
-                    </Box>
+                      </Box>
+                    )}
 
                     {/* Notes (if present) */}
                     {appointment.notes && (

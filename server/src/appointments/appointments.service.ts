@@ -11,6 +11,32 @@ import { AvailabilityService } from './availability.service';
 
 @Injectable()
 export class AppointmentsService {
+  // Standard include for appointment queries with multiple employees
+  private readonly appointmentInclude = {
+    customer: true,
+    vehicle: true,
+    employee: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+    },
+    employees: {
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    },
+  };
+
   constructor(
     private prisma: PrismaService,
     private availabilityService: AvailabilityService
@@ -20,9 +46,12 @@ export class AppointmentsService {
    * Create a new appointment
    */
   async create(dto: CreateAppointmentDto, bookedBy: string) {
+    // Support both old employeeId and new employeeIds
+    const employeeIds = dto.employeeIds || (dto.employeeId ? [dto.employeeId] : []);
+
     console.log('[CREATE APPOINTMENT] Request received:', {
       customerId: dto.customerId,
-      employeeId: dto.employeeId || 'AUTO-ASSIGN',
+      employeeIds: employeeIds.length > 0 ? employeeIds : 'AUTO-ASSIGN',
       scheduledDate: dto.scheduledDate,
       scheduledTime: dto.scheduledTime,
       duration: dto.duration,
@@ -50,37 +79,39 @@ export class AppointmentsService {
       }
     }
 
-    // Auto-assign employee if not provided
-    let employeeId = dto.employeeId;
-    if (!employeeId) {
+    // Auto-assign employee if none provided
+    let finalEmployeeIds = employeeIds;
+    if (finalEmployeeIds.length === 0) {
       const foundEmployeeId = await this.findAvailableEmployee(dto.scheduledDate, dto.scheduledTime, dto.duration);
       if (!foundEmployeeId) {
         throw new ConflictException('No available employees for the requested time slot');
       }
-      employeeId = foundEmployeeId;
+      finalEmployeeIds = [foundEmployeeId];
     } else {
-      // Validate provided employee exists and is available
-      const employee = await this.prisma.user.findUnique({
-        where: { id: employeeId },
-        include: { role: true },
-      });
-      if (!employee) {
-        throw new NotFoundException(`Employee with ID ${employeeId} not found`);
-      }
-      if (employee.role.name !== 'STAFF') {
-        throw new BadRequestException('Selected user is not a staff member');
-      }
+      // Validate all provided employees exist and are available
+      for (const empId of finalEmployeeIds) {
+        const employee = await this.prisma.user.findUnique({
+          where: { id: empId },
+          include: { role: true },
+        });
+        if (!employee) {
+          throw new NotFoundException(`Employee with ID ${empId} not found`);
+        }
+        if (employee.role.name !== 'STAFF' && employee.role.name !== 'ADMIN') {
+          throw new BadRequestException(`User ${employee.firstName} ${employee.lastName} is not a staff or admin member`);
+        }
 
-      // Check availability
-      const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
-        employeeId,
-        dto.scheduledDate,
-        dto.scheduledTime,
-        dto.duration
-      );
-      if (availabilityCheck !== true) {
-        const error = availabilityCheck as { available: false; reason: string; suggestion: string };
-        throw new ConflictException(`${error.reason}. ${error.suggestion}`);
+        // Check availability
+        const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
+          empId,
+          dto.scheduledDate,
+          dto.scheduledTime,
+          dto.duration
+        );
+        if (availabilityCheck !== true) {
+          const error = availabilityCheck as { available: false; reason: string; suggestion: string };
+          throw new ConflictException(`${employee.firstName} ${employee.lastName}: ${error.reason}. ${error.suggestion}`);
+        }
       }
     }
 
@@ -91,12 +122,12 @@ export class AppointmentsService {
     // Calculate end time
     const endTime = this.calculateEndTime(dto.scheduledTime, dto.duration);
 
-    // Create appointment
-    return this.prisma.appointment.create({
+    // Create appointment with multiple employees
+    const appointment = await this.prisma.appointment.create({
       data: {
         customerId: dto.customerId,
         vehicleId: dto.vehicleId,
-        employeeId,
+        employeeId: finalEmployeeIds[0], // Keep first employee for backward compatibility
         scheduledDate: normalizedDate,
         scheduledTime: dto.scheduledTime,
         endTime,
@@ -106,6 +137,11 @@ export class AppointmentsService {
         status: AppointmentStatus.SCHEDULED,
         bookedBy,
         reminderSent: false,
+        employees: {
+          create: finalEmployeeIds.map(empId => ({
+            employeeId: empId,
+          })),
+        },
       },
       include: {
         customer: true,
@@ -118,8 +154,22 @@ export class AppointmentsService {
             email: true,
           },
         },
+        employees: {
+          include: {
+            employee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
+
+    return appointment;
   }
 
   /**
@@ -160,18 +210,7 @@ export class AppointmentsService {
 
     return this.prisma.appointment.findMany({
       where,
-      include: {
-        customer: true,
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
+      include: this.appointmentInclude,
       orderBy: [{ scheduledDate: 'asc' }, { scheduledTime: 'asc' }],
     });
   }
@@ -201,17 +240,7 @@ export class AppointmentsService {
 
     const appointments = await this.prisma.appointment.findMany({
       where,
-      include: {
-        customer: true,
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      include: this.appointmentInclude,
       orderBy: [{ scheduledDate: 'asc' }, { scheduledTime: 'asc' }],
     });
 
@@ -235,18 +264,7 @@ export class AppointmentsService {
   async findOne(id: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
-      include: {
-        customer: true,
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
+      include: this.appointmentInclude,
     });
 
     if (!appointment) {
@@ -262,6 +280,13 @@ export class AppointmentsService {
   async update(id: string, dto: UpdateAppointmentDto) {
     const appointment = await this.findOne(id);
 
+    console.log('[UPDATE APPOINTMENT] Updating appointment:', id);
+    console.log('[UPDATE APPOINTMENT] DTO received:', JSON.stringify(dto, null, 2));
+    console.log('[UPDATE APPOINTMENT] Current appointment employees:', appointment.employees);
+
+    // Support both old employeeId and new employeeIds
+    const employeeIds = dto.employeeIds || (dto.employeeId ? [dto.employeeId] : undefined);
+
     // Normalize scheduledDate if provided
     if (dto.scheduledDate) {
       const normalizedDate = new Date(dto.scheduledDate);
@@ -270,23 +295,61 @@ export class AppointmentsService {
     }
 
     // If rescheduling or changing employee, check availability
-    if (dto.employeeId || dto.scheduledDate || dto.scheduledTime || dto.duration) {
-      const employeeId = dto.employeeId || appointment.employeeId;
+    if (employeeIds || dto.scheduledDate || dto.scheduledTime || dto.duration) {
       const scheduledDate = dto.scheduledDate || appointment.scheduledDate;
       const scheduledTime = dto.scheduledTime || appointment.scheduledTime;
       const duration = dto.duration || appointment.duration;
 
-      if (employeeId) {
-        const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
-          employeeId,
-          scheduledDate,
-          scheduledTime,
-          duration,
-          id // Exclude current appointment from conflict check
-        );
-        if (availabilityCheck !== true) {
-          const error = availabilityCheck as { available: false; reason: string; suggestion: string };
-          throw new ConflictException(`${error.reason}. ${error.suggestion}`);
+      // Check if time/date is changing (convert to boolean)
+      const isTimeChanging = !!(dto.scheduledDate || dto.scheduledTime || dto.duration);
+
+      // Check availability for employees
+      if (employeeIds && employeeIds.length > 0) {
+        // Get currently assigned employee IDs
+        console.log('[UPDATE APPOINTMENT] Raw appointment.employees:', JSON.stringify(appointment.employees, null, 2));
+        console.log('[UPDATE APPOINTMENT] appointment.employeeId:', appointment.employeeId);
+
+        // Get current employees - check both new employees relation and old employeeId field
+        let currentEmployeeIds: string[] = [];
+        if (appointment.employees && appointment.employees.length > 0) {
+          currentEmployeeIds = appointment.employees.map(e => e.employeeId);
+        } else if (appointment.employeeId) {
+          currentEmployeeIds = [appointment.employeeId];
+        }
+
+        console.log('[UPDATE APPOINTMENT] Current employees:', currentEmployeeIds);
+        console.log('[UPDATE APPOINTMENT] New employees:', employeeIds);
+        console.log('[UPDATE APPOINTMENT] Time changing:', isTimeChanging);
+
+        // CRITICAL DEBUG - Make this visible
+        if (currentEmployeeIds.length === 0) {
+          console.error('⚠️⚠️⚠️ WARNING: currentEmployeeIds is EMPTY! This will cause all employees to be validated!');
+          console.error('⚠️ appointment.employees:', appointment.employees);
+          console.error('⚠️ appointment.employeeId:', appointment.employeeId);
+        }
+
+        for (const empId of employeeIds) {
+          // Only check availability if:
+          // 1. Time is changing (all employees need revalidation), OR
+          // 2. This is a new employee being added
+          const isNewEmployee = !currentEmployeeIds.includes(empId);
+
+          console.log(`[UPDATE APPOINTMENT] Employee ${empId}: isNew=${isNewEmployee}, shouldValidate=${isTimeChanging || isNewEmployee}`);
+
+          if (isTimeChanging || isNewEmployee) {
+            const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
+              empId,
+              scheduledDate,
+              scheduledTime,
+              duration,
+              id // Exclude current appointment from conflict check
+            );
+            if (availabilityCheck !== true) {
+              const error = availabilityCheck as { available: false; reason: string; suggestion: string };
+              const employee = await this.prisma.user.findUnique({ where: { id: empId } });
+              throw new ConflictException(`${employee?.firstName} ${employee?.lastName}: ${error.reason}. ${error.suggestion}`);
+            }
+          }
         }
       }
 
@@ -297,24 +360,36 @@ export class AppointmentsService {
       }
     }
 
+    // Prepare update data
+    const updateData: any = {
+      ...dto,
+      updatedAt: new Date(),
+    };
+
+    // Remove employeeIds from direct update (will be handled separately)
+    delete updateData.employeeIds;
+
+    // Update appointment and employees if provided
+    if (employeeIds && employeeIds.length > 0) {
+      // Delete existing employee assignments and create new ones
+      await this.prisma.appointmentEmployee.deleteMany({
+        where: { appointmentId: id },
+      });
+
+      updateData.employees = {
+        create: employeeIds.map(empId => ({
+          employeeId: empId,
+        })),
+      };
+
+      // Update employeeId for backward compatibility
+      updateData.employeeId = employeeIds[0];
+    }
+
     return this.prisma.appointment.update({
       where: { id },
-      data: {
-        ...dto,
-        updatedAt: new Date(),
-      },
-      include: {
-        customer: true,
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
+      data: updateData,
+      include: this.appointmentInclude,
     });
   }
 
@@ -401,17 +476,7 @@ export class AppointmentsService {
 
     const result = await this.prisma.appointment.findMany({
       where,
-      include: {
-        customer: true,
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      include: this.appointmentInclude,
       orderBy: { scheduledTime: 'asc' },
     });
 
@@ -444,16 +509,7 @@ export class AppointmentsService {
           in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
         },
       },
-      include: {
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      include: this.appointmentInclude,
       orderBy: [{ scheduledDate: 'asc' }, { scheduledTime: 'asc' }],
     });
   }
@@ -462,15 +518,15 @@ export class AppointmentsService {
    * Helper: Find an available employee for a time slot
    */
   private async findAvailableEmployee(date: Date, startTime: string, duration: number): Promise<string | null> {
-    // Get all staff users
+    // Get all staff and admin users
     const staffUsers = await this.prisma.user.findMany({
       where: {
-        role: { name: 'STAFF' },
+        role: { name: { in: ['STAFF', 'ADMIN'] } },
         isActive: true,
       },
     });
 
-    // Check each staff member's availability
+    // Check each staff/admin member's availability
     for (const staff of staffUsers) {
       const isAvailable = await this.availabilityService.isEmployeeAvailable(
         staff.id,

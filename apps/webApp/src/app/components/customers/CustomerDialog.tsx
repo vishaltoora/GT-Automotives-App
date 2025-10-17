@@ -27,6 +27,7 @@ import { TransitionProps } from '@mui/material/transitions';
 import { customerService, Customer, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
 import { colors } from '../../theme/colors';
 import { PhoneInput } from '../common/PhoneInput';
+import { AddressAutocomplete } from '../common/AddressAutocomplete';
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -282,16 +283,12 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Address"
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={handleChange('address')}
+                  onChange={(address) => setFormData({ ...formData, address })}
                   disabled={saving}
-                  multiline
-                  rows={isMobile ? 2 : 2}
-                  placeholder="Street address, city, province"
-                  size={isMobile ? 'small' : 'medium'}
+                  label="Address"
+                  helperText="Start typing to search addresses"
                 />
               </Grid>
             </Grid>

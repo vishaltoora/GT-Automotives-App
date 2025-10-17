@@ -122,6 +122,7 @@ jobs:
         env:
           VITE_API_URL: https://gt-automotives.com
           VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           NODE_ENV: production
 
       - name: Prepare Frontend Artifact

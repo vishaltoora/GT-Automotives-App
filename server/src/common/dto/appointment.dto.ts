@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AppointmentStatus } from '@prisma/client';
 
@@ -12,7 +12,12 @@ export class CreateAppointmentDto {
 
   @IsOptional()
   @IsString()
-  employeeId?: string;
+  employeeId?: string; // Deprecated: Use employeeIds instead
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  employeeIds?: string[]; // Multiple employee IDs
 
   @Type(() => Date)
   @IsDate()
@@ -37,7 +42,12 @@ export class CreateAppointmentDto {
 export class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
   @IsOptional()
   @IsString()
-  employeeId?: string;
+  employeeId?: string; // Deprecated: Use employeeIds instead
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  employeeIds?: string[]; // Multiple employee IDs
 
   @IsOptional()
   @Type(() => Date)
