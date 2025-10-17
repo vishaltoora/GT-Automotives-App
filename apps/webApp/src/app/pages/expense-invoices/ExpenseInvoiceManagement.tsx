@@ -23,13 +23,16 @@ import {
   Receipt as ReceiptIcon,
   Image as ImageIcon,
   FilterList as FilterIcon,
+  AccountBalance as ExpenseIcon,
 } from '@mui/icons-material';
 import expenseInvoiceService, {
   ExpenseInvoice,
   ExpenseCategory,
   ExpenseInvoiceStatus,
 } from '../../services/expense-invoice.service';
+import analyticsService, { AnalyticsData } from '../../services/analytics.service';
 import ExpenseInvoiceDialog from '../../components/expense-invoices/ExpenseInvoiceDialog';
+import { AnalyticsCards, AnalyticsCardData } from '../../components/common';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -40,6 +43,8 @@ const statuses: ExpenseInvoiceStatus[] = ['PENDING', 'PAID', 'OVERDUE', 'CANCELL
 const ExpenseInvoiceManagement: React.FC = () => {
   const [invoices, setInvoices] = useState<ExpenseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ExpenseInvoice | null>(null);
   const [filters, setFilters] = useState({
@@ -55,6 +60,7 @@ const ExpenseInvoiceManagement: React.FC = () => {
 
   useEffect(() => {
     loadInvoices();
+    loadAnalytics();
   }, [filters]);
 
   const loadInvoices = async () => {
@@ -72,6 +78,18 @@ const ExpenseInvoiceManagement: React.FC = () => {
       showError('Failed to load expense invoices');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const data = await analyticsService.getAnalytics();
+      setAnalytics(data);
+    } catch (error) {
+      showError('Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
     }
   };
 
@@ -157,6 +175,20 @@ const ExpenseInvoiceManagement: React.FC = () => {
     return new Date(date).toLocaleDateString('en-CA');
   };
 
+  const analyticsCards: AnalyticsCardData[] = analytics
+    ? [
+        {
+          title: 'Expenses Only',
+          mtdValue: analytics.mtd.expenses.total,
+          ytdValue: analytics.ytd.expenses.total,
+          mtdCount: analytics.mtd.expenses.count,
+          ytdCount: analytics.ytd.expenses.count,
+          icon: <ExpenseIcon />,
+          color: '#d32f2f',
+        },
+      ]
+    : [];
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -168,6 +200,9 @@ const ExpenseInvoiceManagement: React.FC = () => {
           Add Expense Invoice
         </Button>
       </Box>
+
+      {/* Analytics Cards */}
+      <AnalyticsCards cards={analyticsCards} loading={analyticsLoading} />
 
       <Paper sx={{ mb: 3, p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>

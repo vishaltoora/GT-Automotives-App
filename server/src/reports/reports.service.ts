@@ -336,4 +336,99 @@ export class ReportsService {
 
     return next;
   }
+
+  async getAnalytics() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    // MTD (Month-to-Date) calculations
+    const [mtdPurchases, mtdExpenses, mtdSalesInvoices] = await Promise.all([
+      this.prisma.purchaseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfMonth },
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.expenseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfMonth },
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.invoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfMonth },
+        },
+        _sum: { total: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    // YTD (Year-to-Date) calculations
+    const [ytdPurchases, ytdExpenses, ytdSalesInvoices] = await Promise.all([
+      this.prisma.purchaseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfYear },
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.expenseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfYear },
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.invoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfYear },
+        },
+        _sum: { total: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    return {
+      mtd: {
+        purchases: {
+          count: mtdPurchases._count.id,
+          total: Number(mtdPurchases._sum.totalAmount || 0),
+        },
+        expenses: {
+          count: mtdExpenses._count.id,
+          total: Number(mtdExpenses._sum.totalAmount || 0),
+        },
+        salesInvoices: {
+          count: mtdSalesInvoices._count.id,
+          total: Number(mtdSalesInvoices._sum.total || 0),
+        },
+        combined: {
+          count: mtdPurchases._count.id + mtdExpenses._count.id,
+          total: Number(mtdPurchases._sum.totalAmount || 0) + Number(mtdExpenses._sum.totalAmount || 0),
+        },
+      },
+      ytd: {
+        purchases: {
+          count: ytdPurchases._count.id,
+          total: Number(ytdPurchases._sum.totalAmount || 0),
+        },
+        expenses: {
+          count: ytdExpenses._count.id,
+          total: Number(ytdExpenses._sum.totalAmount || 0),
+        },
+        salesInvoices: {
+          count: ytdSalesInvoices._count.id,
+          total: Number(ytdSalesInvoices._sum.total || 0),
+        },
+        combined: {
+          count: ytdPurchases._count.id + ytdExpenses._count.id,
+          total: Number(ytdPurchases._sum.totalAmount || 0) + Number(ytdExpenses._sum.totalAmount || 0),
+        },
+      },
+    };
+  }
 }

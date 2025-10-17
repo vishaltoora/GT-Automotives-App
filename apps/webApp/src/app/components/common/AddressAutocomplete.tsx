@@ -230,13 +230,13 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         return (
           <li {...props} key={option.place_id}>
             <Grid container alignItems="center">
-              <Grid item>
+              <Grid size="auto">
                 <Box
                   component={LocationOnIcon}
                   sx={{ color: 'text.secondary', mr: 2 }}
                 />
               </Grid>
-              <Grid item xs>
+              <Grid size="grow">
                 {parts.map((part: any, index: number) => (
                   <span
                     key={index}

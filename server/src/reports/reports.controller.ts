@@ -17,4 +17,10 @@ export class ReportsController {
   ): Promise<ExpenseReportResponseDto> {
     return this.reportsService.getExpenseReport(filterDto);
   }
+
+  @Get('analytics')
+  @Roles('ADMIN', 'STAFF')
+  async getAnalytics() {
+    return this.reportsService.getAnalytics();
+  }
 }

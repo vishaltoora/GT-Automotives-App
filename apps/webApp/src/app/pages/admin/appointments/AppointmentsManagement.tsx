@@ -772,7 +772,7 @@ export const AppointmentsManagement: React.FC = () => {
                                 </Typography>
                                 {dayAppointments.length > 0 && (
                                   <Box flex={1} overflow="auto">
-                                    {/* Mobile: Show count badge */}
+                                    {/* Mobile: Show small count badge */}
                                     <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
                                       <Box
                                         sx={{
@@ -793,8 +793,8 @@ export const AppointmentsManagement: React.FC = () => {
                                       </Box>
                                     </Box>
 
-                                    {/* Desktop: Show appointment details */}
-                                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                    {/* Tablet: Show appointment details */}
+                                    <Box sx={{ display: { xs: 'none', sm: 'block', lg: 'none' } }}>
                                       {dayAppointments.slice(0, 2).map((apt) => (
                                         <Box
                                           key={apt.id}
@@ -837,6 +837,47 @@ export const AppointmentsManagement: React.FC = () => {
                                         </Typography>
                                       )}
                                     </Box>
+
+                                    {/* Large Screens: Show styled count badge */}
+                                    <Box sx={{ display: { xs: 'none', lg: 'flex' }, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 0.5 }}>
+                                      <Box
+                                        sx={{
+                                          width: '44px',
+                                          height: '44px',
+                                          borderRadius: '10px',
+                                          bgcolor: 'primary.main',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          boxShadow: 2,
+                                          border: '2px solid',
+                                          borderColor: 'background.paper',
+                                        }}
+                                      >
+                                        <Typography
+                                          sx={{
+                                            fontSize: '1.5rem',
+                                            fontWeight: 700,
+                                            color: 'primary.contrastText',
+                                            lineHeight: 1,
+                                          }}
+                                        >
+                                          {dayAppointments.length}
+                                        </Typography>
+                                      </Box>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          fontSize: '0.75rem',
+                                          fontWeight: 600,
+                                          color: 'primary.main',
+                                          textTransform: 'uppercase',
+                                          letterSpacing: '0.5px',
+                                        }}
+                                      >
+                                        {dayAppointments.length === 1 ? 'appointment' : 'appointments'}
+                                      </Typography>
+                                    </Box>
                                   </Box>
                                 )}
                               </>
@@ -858,145 +899,190 @@ export const AppointmentsManagement: React.FC = () => {
                     </Alert>
                   ) : (
                     <>
-                      {/* Desktop Table View */}
-                      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                        <TableContainer>
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Time</TableCell>
-                                <TableCell>Customer</TableCell>
-                                <TableCell>Vehicle</TableCell>
-                                <TableCell>Service</TableCell>
-                                <TableCell>Duration</TableCell>
-                                <TableCell>Employee</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell>Actions</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {todayAppointments.map(renderAppointmentRow)}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      </Box>
+                      {/* Card View for All Screen Sizes */}
+                      <Box sx={{ p: 1 }}>
+                        {todayAppointments.map((appointment) => {
+                          // Get time-based status for the appointment
+                          const timeStatus = getAppointmentTimeStatus(appointment);
 
-                      {/* Mobile Card View */}
-                      <Box sx={{ display: { xs: 'block', md: 'none' }, p: 1 }}>
-                        {todayAppointments.map((appointment) => (
-                          <Card key={appointment.id} sx={{ mb: 2 }}>
-                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                              <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
-                                <Box>
-                                  <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 'bold' }}>
-                                    {formatTime(appointment.scheduledTime, appointment.endTime)}
-                                  </Typography>
-                                  <Chip
-                                    label={appointment.status}
-                                    color={STATUS_COLORS[appointment.status]}
-                                    size="small"
-                                    sx={{ mt: 0.5 }}
-                                  />
-                                </Box>
-                                <Box display="flex" gap={0.5}>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleEdit(appointment)}
-                                    sx={{ padding: '4px' }}
-                                  >
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                  {appointment.status !== AppointmentStatus.CANCELLED &&
-                                    appointment.status !== AppointmentStatus.COMPLETED && (
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleCancel(appointment)}
-                                        color="warning"
-                                        sx={{ padding: '4px' }}
-                                      >
-                                        <CancelIcon fontSize="small" />
-                                      </IconButton>
+                          // Don't show time-based status for cancelled or no-show appointments
+                          const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW';
+                          const isManuallyCompleted = appointment.status === 'COMPLETED';
+
+                          // Determine visual styling based on status
+                          const isCurrent = timeStatus === 'current' && !isCancelled && !isManuallyCompleted;
+                          const isCompleted = (timeStatus === 'past' || isManuallyCompleted) && !isCancelled;
+                          const isUpcoming = timeStatus === 'future' && !isCancelled && !isManuallyCompleted;
+                          const isPast = timeStatus === 'past';
+
+                          // Background colors
+                          const getBgColor = () => {
+                            if (isCancelled) return '#ffebee'; // Very light red
+                            if (isCurrent) return '#e3f2fd'; // Very light blue
+                            if (isCompleted) return '#e8f5e9'; // Light green
+                            // No background color for upcoming
+                            return 'background.paper';
+                          };
+
+                          const getBorderColor = () => {
+                            if (isCancelled) return 'error.light';
+                            if (isCurrent) return 'info.main';
+                            if (isCompleted) return 'success.light';
+                            if (isUpcoming) return 'warning.light';
+                            return 'divider';
+                          };
+
+                          return (
+                            <Card
+                              key={appointment.id}
+                              variant="outlined"
+                              sx={{
+                                mb: 2,
+                                '&:last-child': { mb: 0 },
+                                bgcolor: getBgColor(),
+                                border: 1,
+                                borderColor: getBorderColor(),
+                              }}
+                            >
+                              <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                                {/* Header Row: Time and Status */}
+                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                  <Box display="flex" alignItems="center" gap={1.5}>
+                                    <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.125rem', color: 'primary.main' }}>
+                                      {formatTime(appointment.scheduledTime, appointment.endTime)}
+                                    </Typography>
+                                    <Chip
+                                      label={appointment.status}
+                                      color={STATUS_COLORS[appointment.status]}
+                                      size="small"
+                                      sx={{ height: '24px', fontSize: '0.75rem', fontWeight: 600 }}
+                                    />
+                                    {isCurrent && (
+                                      <Chip label="IN PROGRESS" size="small" color="info" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
                                     )}
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleDelete(appointment)}
-                                    color="error"
-                                    sx={{ padding: '4px' }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
+                                    {isCompleted && !isManuallyCompleted && (
+                                      <Chip label="COMPLETED" size="small" color="success" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
+                                    )}
+                                    {isUpcoming && (
+                                      <Chip label="UPCOMING" size="small" color="warning" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
+                                    )}
+                                  </Box>
+                                  <IconButton size="small" onClick={(e) => handleMenuOpen(e, appointment.id)} sx={{ padding: '6px' }}>
+                                    <MoreVertIcon />
                                   </IconButton>
                                 </Box>
-                              </Box>
 
-                              <Divider sx={{ my: 1 }} />
-
-                              <Grid container spacing={1}>
-                                <Grid size={{ xs: 12 }}>
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    Customer
-                                  </Typography>
-                                  <Typography variant="body2" fontWeight="medium">
-                                    {appointment.customer.businessName && (
-                                      <>
-                                        <strong>{appointment.customer.businessName}</strong>
-                                        <br />
-                                      </>
-                                    )}
-                                    {appointment.customer.firstName} {appointment.customer.lastName}
+                                {/* Customer Section */}
+                                <Box mb={2}>
+                                  <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+                                    {appointment.customer.businessName || `${appointment.customer.firstName} ${appointment.customer.lastName}`}
                                     {appointment.customer.phone && (
-                                      <>
-                                        <br />
-                                        <Typography component="span" variant="caption" color="text.secondary">
-                                          {appointment.customer.phone}
-                                        </Typography>
-                                      </>
+                                      <Typography component="span" sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.secondary', ml: 1 }}>
+                                        ({appointment.customer.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3').replace(/^\+?1?[-.\s]?/, '')})
+                                      </Typography>
                                     )}
                                   </Typography>
-                                </Grid>
+                                  {appointment.customer.businessName && (
+                                    <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary', mb: 0.5 }}>
+                                      {appointment.customer.firstName} {appointment.customer.lastName}
+                                    </Typography>
+                                  )}
+                                </Box>
 
-                                <Grid size={{ xs: 6 }}>
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    Service
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {appointment.serviceType.replace(/_/g, ' ')}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {appointment.duration} min
-                                  </Typography>
-                                </Grid>
+                                <Divider sx={{ mb: 2 }} />
 
-                                <Grid size={{ xs: 6 }}>
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    Employee
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {appointment.employee
-                                      ? `${appointment.employee.firstName} ${appointment.employee.lastName}`
-                                      : 'Unassigned'}
-                                  </Typography>
-                                </Grid>
+                                {/* Service & Technician Row */}
+                                <Box display="flex" gap={2} mb={2} flexWrap="wrap">
+                                  {/* Service */}
+                                  <Box flex={1} minWidth="200px">
+                                    <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
+                                      Service
+                                    </Typography>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary' }}>
+                                        {appointment.serviceType.replace(/_/g, ' ')}
+                                      </Typography>
+                                      <Chip label={`${appointment.duration} min`} size="small" sx={{ height: '20px', fontSize: '0.75rem' }} />
+                                    </Box>
+                                  </Box>
 
+                                  {/* Technician(s) */}
+                                  {(appointment.employees && appointment.employees.length > 0) ? (
+                                    <Box flex={1} minWidth="200px">
+                                      <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
+                                        {appointment.employees.length > 1 ? 'Technicians' : 'Technician'}
+                                      </Typography>
+                                      {appointment.employees.map((empAssignment, index) => (
+                                        <Typography key={empAssignment.id} sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary' }}>
+                                          {empAssignment.employee.firstName} {empAssignment.employee.lastName}
+                                          {index < appointment.employees!.length - 1 && ', '}
+                                        </Typography>
+                                      ))}
+                                    </Box>
+                                  ) : appointment.employee && (
+                                    <Box flex={1} minWidth="200px">
+                                      <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
+                                        Technician
+                                      </Typography>
+                                      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary' }}>
+                                        {appointment.employee.firstName} {appointment.employee.lastName}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+
+                                {/* Vehicle Info */}
                                 {appointment.vehicle && (
-                                  <Grid size={{ xs: 12 }}>
-                                    <Typography variant="caption" color="text.secondary" display="block">
+                                  <Box>
+                                    <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
                                       Vehicle
                                     </Typography>
-                                    <Typography variant="body2">
-                                      {appointment.vehicle.year} {appointment.vehicle.make} {appointment.vehicle.model}
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary' }}>
+                                        {appointment.vehicle.year} {appointment.vehicle.make} {appointment.vehicle.model}
+                                      </Typography>
                                       {appointment.vehicle.licensePlate && (
-                                        <Typography component="span" variant="caption" color="text.secondary">
-                                          {' '}
-                                          - {appointment.vehicle.licensePlate}
-                                        </Typography>
+                                        <Chip
+                                          label={appointment.vehicle.licensePlate}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ height: '20px', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}
+                                        />
                                       )}
-                                    </Typography>
-                                  </Grid>
+                                    </Box>
+                                  </Box>
                                 )}
-                              </Grid>
-                            </CardContent>
-                          </Card>
-                        ))}
+
+                                {/* Notes (if present) */}
+                                {appointment.notes && (
+                                  <Box
+                                    mt={1.5}
+                                    p={1.5}
+                                    sx={{
+                                      bgcolor: isPast ? '#fffbf0' : '#e3f2fd',
+                                      borderRadius: 1,
+                                      borderLeft: 3,
+                                      borderColor: isPast ? 'warning.main' : 'info.main'
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: '0.9375rem',
+                                        fontWeight: 500,
+                                        fontStyle: 'italic',
+                                        color: isPast ? 'warning.dark' : 'info.dark',
+                                        whiteSpace: 'pre-wrap'
+                                      }}
+                                    >
+                                      {appointment.notes}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
                       </Box>
                     </>
                   )}
@@ -1124,6 +1210,7 @@ export const AppointmentsManagement: React.FC = () => {
                     const isCurrent = timeStatus === 'current' && !isCancelled && !isManuallyCompleted;
                     const isCompleted = (timeStatus === 'past' || isManuallyCompleted) && !isCancelled;
                     const isUpcoming = timeStatus === 'future' && !isCancelled && !isManuallyCompleted;
+                    const isPast = timeStatus === 'past';
 
                     // Background colors
                     const getBgColor = () => {
@@ -1389,6 +1476,7 @@ export const AppointmentsManagement: React.FC = () => {
                 const isCurrent = timeStatus === 'current' && !isCancelled && !isManuallyCompleted;
                 const isCompleted = (timeStatus === 'past' || isManuallyCompleted) && !isCancelled;
                 const isUpcoming = timeStatus === 'future' && !isCancelled && !isManuallyCompleted;
+                const isPast = timeStatus === 'past';
 
                 // Background colors
                 const getBgColor = () => {

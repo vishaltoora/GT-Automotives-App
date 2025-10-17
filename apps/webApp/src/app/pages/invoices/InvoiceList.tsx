@@ -30,12 +30,14 @@ import {
   Assessment as ReportIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { companyService, Company } from '../../services/company.service';
+import analyticsService, { AnalyticsData } from '../../services/analytics.service';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
-import { ActionsMenu, ActionItem } from '../../components/common';
+import { ActionsMenu, ActionItem, AnalyticsCards, AnalyticsCardData } from '../../components/common';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 
@@ -50,6 +52,8 @@ const InvoiceList: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [searchParams, setSearchParams] = useState({
     customerName: '',
     invoiceNumber: '',
@@ -75,6 +79,7 @@ const InvoiceList: React.FC = () => {
   useEffect(() => {
     loadInvoices();
     loadCompanies();
+    loadAnalytics();
   }, []);
 
   const loadCompanies = async () => {
@@ -95,6 +100,18 @@ const InvoiceList: React.FC = () => {
       showApiError(error, 'Failed to load invoices');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const data = await analyticsService.getAnalytics();
+      setAnalytics(data);
+    } catch (error) {
+      showApiError(error, 'Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
     }
   };
 
@@ -210,6 +227,20 @@ const InvoiceList: React.FC = () => {
   const canViewReports = role === 'staff' || role === 'admin';
   const canDeleteInvoice = role === 'admin';
 
+  const analyticsCards: AnalyticsCardData[] = analytics
+    ? [
+        {
+          title: 'Sales Invoices',
+          mtdValue: analytics.mtd.salesInvoices.total,
+          ytdValue: analytics.ytd.salesInvoices.total,
+          mtdCount: analytics.mtd.salesInvoices.count,
+          ytdCount: analytics.ytd.salesInvoices.count,
+          icon: <ReceiptIcon />,
+          color: '#2e7d32',
+        },
+      ]
+    : [];
+
   const getInvoiceActions = (invoice: Invoice): ActionItem[] => {
     const actions: ActionItem[] = [
       {
@@ -292,6 +323,9 @@ const InvoiceList: React.FC = () => {
           )}
         </Box>
       </Box>
+
+      {/* Analytics Cards */}
+      <AnalyticsCards cards={analyticsCards} loading={analyticsLoading} />
 
       <Paper sx={{ mb: { xs: 2, sm: 3 }, p: { xs: 1.5, sm: 2 } }}>
         <Grid container spacing={{ xs: 1.5, sm: 2 }} alignItems="center">

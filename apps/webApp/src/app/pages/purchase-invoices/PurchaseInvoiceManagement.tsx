@@ -25,6 +25,8 @@ import {
   FilterList as FilterIcon,
   MoreVert as MoreVertIcon,
   Visibility as VisibilityIcon,
+  ShoppingCart as PurchaseIcon,
+  AccountBalance as ExpenseIcon,
 } from '@mui/icons-material';
 import purchaseInvoiceService, {
   PurchaseInvoice,
@@ -34,8 +36,10 @@ import expenseInvoiceService, {
   ExpenseInvoice,
   ExpenseCategory,
 } from '../../services/expense-invoice.service';
+import analyticsService, { AnalyticsData } from '../../services/analytics.service';
 import PurchaseInvoiceDialog from '../../components/purchase-invoices/PurchaseInvoiceDialog';
 import FileViewerDialog from '../../components/common/FileViewerDialog';
+import { AnalyticsCards, AnalyticsCardData } from '../../components/common';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -47,6 +51,8 @@ const allCategories = [...purchaseCategories, ...expenseCategories];
 const PurchaseInvoiceManagement: React.FC = () => {
   const [invoices, setInvoices] = useState<(PurchaseInvoice | ExpenseInvoice)[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | ExpenseInvoice | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -67,6 +73,7 @@ const PurchaseInvoiceManagement: React.FC = () => {
 
   useEffect(() => {
     loadInvoices();
+    loadAnalytics();
   }, [filters]);
 
   const loadInvoices = async () => {
@@ -97,6 +104,18 @@ const PurchaseInvoiceManagement: React.FC = () => {
       showError('Failed to load invoices');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const data = await analyticsService.getAnalytics();
+      setAnalytics(data);
+    } catch (error) {
+      showError('Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
     }
   };
 
@@ -203,6 +222,38 @@ const PurchaseInvoiceManagement: React.FC = () => {
     return new Date(date).toLocaleDateString('en-CA');
   };
 
+  const analyticsCards: AnalyticsCardData[] = analytics
+    ? [
+        {
+          title: 'Purchases',
+          mtdValue: analytics.mtd.purchases.total,
+          ytdValue: analytics.ytd.purchases.total,
+          mtdCount: analytics.mtd.purchases.count,
+          ytdCount: analytics.ytd.purchases.count,
+          icon: <PurchaseIcon />,
+          color: '#1976d2',
+        },
+        {
+          title: 'Expenses',
+          mtdValue: analytics.mtd.expenses.total,
+          ytdValue: analytics.ytd.expenses.total,
+          mtdCount: analytics.mtd.expenses.count,
+          ytdCount: analytics.ytd.expenses.count,
+          icon: <ExpenseIcon />,
+          color: '#d32f2f',
+        },
+        {
+          title: 'Combined',
+          mtdValue: analytics.mtd.combined.total,
+          ytdValue: analytics.ytd.combined.total,
+          mtdCount: analytics.mtd.combined.count,
+          ytdCount: analytics.ytd.combined.count,
+          icon: <ReceiptIcon />,
+          color: '#9c27b0',
+        },
+      ]
+    : [];
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -214,6 +265,9 @@ const PurchaseInvoiceManagement: React.FC = () => {
           Add Invoice
         </Button>
       </Box>
+
+      {/* Analytics Cards */}
+      <AnalyticsCards cards={analyticsCards} loading={analyticsLoading} />
 
       <Paper sx={{ mb: 3, p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
