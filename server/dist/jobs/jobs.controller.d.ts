@@ -5,8 +5,8 @@ export declare class JobsController {
     private readonly jobsService;
     constructor(jobsService: JobsService);
     create(createJobDto: CreateJobDto, user: any): Promise<{
-        employeeId: string;
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
@@ -26,8 +26,8 @@ export declare class JobsController {
     findByEmployee(employeeId: string): Promise<JobResponseDto[]>;
     findOne(id: string): Promise<JobResponseDto>;
     update(id: string, updateJobDto: UpdateJobDto, user: any): Promise<{
-        employeeId: string;
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
@@ -41,8 +41,8 @@ export declare class JobsController {
         jobNumber: string;
     }>;
     markAsComplete(id: string, user: any): Promise<{
-        employeeId: string;
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;

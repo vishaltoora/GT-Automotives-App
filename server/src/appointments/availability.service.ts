@@ -462,12 +462,4 @@ export class AvailabilityService {
     const newMins = totalMinutes % 60;
     return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
   }
-
-  /**
-   * Helper: Convert time string to total minutes
-   */
-  private timeInMinutes(time: string): number {
-    const [hours, mins] = time.split(':').map(Number);
-    return hours * 60 + mins;
-  }
 }

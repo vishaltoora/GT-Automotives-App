@@ -8,5 +8,43 @@ export declare class ReportsService {
     private calculateMonthlyTrends;
     private getRecurringExpenses;
     private calculateNextDueDate;
+    getAnalytics(): Promise<{
+        mtd: {
+            purchases: {
+                count: number;
+                total: number;
+            };
+            expenses: {
+                count: number;
+                total: number;
+            };
+            salesInvoices: {
+                count: number;
+                total: number;
+            };
+            combined: {
+                count: number;
+                total: number;
+            };
+        };
+        ytd: {
+            purchases: {
+                count: number;
+                total: number;
+            };
+            expenses: {
+                count: number;
+                total: number;
+            };
+            salesInvoices: {
+                count: number;
+                total: number;
+            };
+            combined: {
+                count: number;
+                total: number;
+            };
+        };
+    }>;
 }
 //# sourceMappingURL=reports.service.d.ts.map

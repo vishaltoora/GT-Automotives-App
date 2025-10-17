@@ -11,6 +11,9 @@ export declare class QuotationsController {
         email: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
         notes: string | null;
+        phone: string | null;
+        address: string | null;
+        businessName: string | null;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
@@ -21,9 +24,6 @@ export declare class QuotationsController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        businessName: string | null;
-        address: string | null;
-        phone: string | null;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
@@ -38,6 +38,9 @@ export declare class QuotationsController {
         email: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
         notes: string | null;
+        phone: string | null;
+        address: string | null;
+        businessName: string | null;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
@@ -48,9 +51,6 @@ export declare class QuotationsController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        businessName: string | null;
-        address: string | null;
-        phone: string | null;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
@@ -65,6 +65,9 @@ export declare class QuotationsController {
         email: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
         notes: string | null;
+        phone: string | null;
+        address: string | null;
+        businessName: string | null;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
@@ -75,9 +78,6 @@ export declare class QuotationsController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        businessName: string | null;
-        address: string | null;
-        phone: string | null;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
@@ -92,6 +92,9 @@ export declare class QuotationsController {
         email: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
         notes: string | null;
+        phone: string | null;
+        address: string | null;
+        businessName: string | null;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
@@ -102,9 +105,6 @@ export declare class QuotationsController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        businessName: string | null;
-        address: string | null;
-        phone: string | null;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;
@@ -119,6 +119,9 @@ export declare class QuotationsController {
         email: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
         notes: string | null;
+        phone: string | null;
+        address: string | null;
+        businessName: string | null;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
@@ -129,9 +132,6 @@ export declare class QuotationsController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         customerName: string;
-        businessName: string | null;
-        address: string | null;
-        phone: string | null;
         vehicleMake: string | null;
         vehicleModel: string | null;
         vehicleYear: number | null;

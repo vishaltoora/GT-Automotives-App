@@ -14,9 +14,9 @@ export declare class CustomersService {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     }>;
     findAll(userId: string, userRole: string): Promise<({
         _count: {
@@ -43,9 +43,9 @@ export declare class CustomersService {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     })[]>;
     findOne(id: string, userId: string, userRole: string): Promise<{
         stats: {
@@ -68,16 +68,16 @@ export declare class CustomersService {
                 mileage: number | null;
             } | null;
         } & {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -151,9 +151,9 @@ export declare class CustomersService {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     }>;
     update(id: string, updateCustomerDto: UpdateCustomerDto, userId: string, userRole: string): Promise<{
         vehicles: {
@@ -175,9 +175,9 @@ export declare class CustomersService {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     }>;
     remove(id: string, userId: string): Promise<{
         message: string;
@@ -207,9 +207,9 @@ export declare class CustomersService {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     })[]>;
 }
 //# sourceMappingURL=customers.service.d.ts.map

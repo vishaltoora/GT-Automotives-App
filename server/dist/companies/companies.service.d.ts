@@ -8,8 +8,8 @@ export declare class CompaniesService {
         updatedAt: Date;
         name: string;
         email: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;
@@ -20,8 +20,8 @@ export declare class CompaniesService {
         updatedAt: Date;
         name: string;
         email: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;
@@ -32,8 +32,8 @@ export declare class CompaniesService {
         updatedAt: Date;
         name: string;
         email: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;

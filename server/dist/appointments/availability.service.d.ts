@@ -112,9 +112,5 @@ export declare class AvailabilityService {
      * Helper: Add minutes to a time string
      */
     private addMinutesToTime;
-    /**
-     * Helper: Convert time string to total minutes
-     */
-    private timeInMinutes;
 }
 //# sourceMappingURL=availability.service.d.ts.map

@@ -3,6 +3,7 @@ export declare class CreateAppointmentDto {
     customerId: string;
     vehicleId?: string;
     employeeId?: string;
+    employeeIds?: string[];
     scheduledDate: Date;
     scheduledTime: string;
     duration: number;
@@ -11,6 +12,7 @@ export declare class CreateAppointmentDto {
 }
 export declare class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
     employeeId?: string;
+    employeeIds?: string[];
     scheduledDate?: Date;
     scheduledTime?: string;
     duration?: number;

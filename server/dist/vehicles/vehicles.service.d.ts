@@ -12,16 +12,16 @@ export declare class VehiclesService {
     constructor(vehicleRepository: VehicleRepository, customerRepository: CustomerRepository, auditRepository: AuditRepository, prisma: PrismaService);
     create(createVehicleDto: CreateVehicleDto, userId: string, userRole: string): Promise<({
         appointments: {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -35,9 +35,9 @@ export declare class VehiclesService {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
         invoices: ({
             items: {
@@ -100,9 +100,9 @@ export declare class VehiclesService {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
@@ -145,16 +145,16 @@ export declare class VehiclesService {
             } | null;
         };
         appointments: {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -168,9 +168,9 @@ export declare class VehiclesService {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
         invoices: ({
             items: {
@@ -222,16 +222,16 @@ export declare class VehiclesService {
     }>;
     update(id: string, updateVehicleDto: UpdateVehicleDto, userId: string, userRole: string): Promise<({
         appointments: {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -245,9 +245,9 @@ export declare class VehiclesService {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
         invoices: ({
             items: {
@@ -313,9 +313,9 @@ export declare class VehiclesService {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;

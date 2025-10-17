@@ -10,9 +10,9 @@ export declare class CustomersController {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     }>;
     findAll(user: any): Promise<({
         _count: {
@@ -39,9 +39,9 @@ export declare class CustomersController {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     })[]>;
     search(searchTerm: string, user: any): Promise<({
         _count: {
@@ -68,9 +68,9 @@ export declare class CustomersController {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     })[]>;
     findOne(id: string, user: any): Promise<{
         stats: {
@@ -93,16 +93,16 @@ export declare class CustomersController {
                 mileage: number | null;
             } | null;
         } & {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -176,9 +176,9 @@ export declare class CustomersController {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     }>;
     update(id: string, updateCustomerDto: UpdateCustomerDto, user: any): Promise<{
         vehicles: {
@@ -200,9 +200,9 @@ export declare class CustomersController {
         email: string | null;
         firstName: string;
         lastName: string;
-        businessName: string | null;
-        address: string | null;
         phone: string | null;
+        address: string | null;
+        businessName: string | null;
     }>;
     remove(id: string, user: any): Promise<{
         message: string;

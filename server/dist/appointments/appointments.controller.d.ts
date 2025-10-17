@@ -37,6 +37,19 @@ export declare class AppointmentsController {
             licensePlate: string | null;
             mileage: number | null;
         } | null;
+        employees: ({
+            employee: {
+                id: string;
+                email: string;
+                firstName: string | null;
+                lastName: string | null;
+            };
+        } & {
+            id: string;
+            employeeId: string;
+            createdAt: Date;
+            appointmentId: string;
+        })[];
     } & {
         id: string;
         employeeId: string | null;
@@ -88,6 +101,19 @@ export declare class AppointmentsController {
             licensePlate: string | null;
             mileage: number | null;
         } | null;
+        employees: ({
+            employee: {
+                id: string;
+                email: string;
+                firstName: string | null;
+                lastName: string | null;
+            };
+        } & {
+            id: string;
+            employeeId: string;
+            createdAt: Date;
+            appointmentId: string;
+        })[];
     } & {
         id: string;
         employeeId: string | null;
@@ -117,6 +143,7 @@ export declare class AppointmentsController {
     getToday(user: any): Promise<({
         employee: {
             id: string;
+            email: string;
             firstName: string | null;
             lastName: string | null;
         } | null;
@@ -143,6 +170,19 @@ export declare class AppointmentsController {
             licensePlate: string | null;
             mileage: number | null;
         } | null;
+        employees: ({
+            employee: {
+                id: string;
+                email: string;
+                firstName: string | null;
+                lastName: string | null;
+            };
+        } & {
+            id: string;
+            employeeId: string;
+            createdAt: Date;
+            appointmentId: string;
+        })[];
     } & {
         id: string;
         employeeId: string | null;
@@ -167,9 +207,21 @@ export declare class AppointmentsController {
     getCustomerAppointments(customerId: string, user: any): Promise<({
         employee: {
             id: string;
+            email: string;
             firstName: string | null;
             lastName: string | null;
         } | null;
+        customer: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            businessName: string | null;
+        };
         vehicle: {
             id: string;
             createdAt: Date;
@@ -182,6 +234,19 @@ export declare class AppointmentsController {
             licensePlate: string | null;
             mileage: number | null;
         } | null;
+        employees: ({
+            employee: {
+                id: string;
+                email: string;
+                firstName: string | null;
+                lastName: string | null;
+            };
+        } & {
+            id: string;
+            employeeId: string;
+            createdAt: Date;
+            appointmentId: string;
+        })[];
     } & {
         id: string;
         employeeId: string | null;
@@ -233,6 +298,19 @@ export declare class AppointmentsController {
             licensePlate: string | null;
             mileage: number | null;
         } | null;
+        employees: ({
+            employee: {
+                id: string;
+                email: string;
+                firstName: string | null;
+                lastName: string | null;
+            };
+        } & {
+            id: string;
+            employeeId: string;
+            createdAt: Date;
+            appointmentId: string;
+        })[];
     } & {
         id: string;
         employeeId: string | null;
@@ -284,6 +362,19 @@ export declare class AppointmentsController {
             licensePlate: string | null;
             mileage: number | null;
         } | null;
+        employees: ({
+            employee: {
+                id: string;
+                email: string;
+                firstName: string | null;
+                lastName: string | null;
+            };
+        } & {
+            id: string;
+            employeeId: string;
+            createdAt: Date;
+            appointmentId: string;
+        })[];
     } & {
         id: string;
         employeeId: string | null;

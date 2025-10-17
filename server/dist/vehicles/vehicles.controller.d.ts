@@ -5,16 +5,16 @@ export declare class VehiclesController {
     constructor(vehiclesService: VehiclesService);
     create(createVehicleDto: CreateVehicleDto, user: any): Promise<({
         appointments: {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -28,9 +28,9 @@ export declare class VehiclesController {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
         invoices: ({
             items: {
@@ -93,9 +93,9 @@ export declare class VehiclesController {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
@@ -121,9 +121,9 @@ export declare class VehiclesController {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
     } & {
         id: string;
@@ -166,16 +166,16 @@ export declare class VehiclesController {
             } | null;
         };
         appointments: {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -189,9 +189,9 @@ export declare class VehiclesController {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
         invoices: ({
             items: {
@@ -243,16 +243,16 @@ export declare class VehiclesController {
     }>;
     update(id: string, updateVehicleDto: UpdateVehicleDto, user: any): Promise<({
         appointments: {
+            id: string;
             employeeId: string | null;
             endTime: string | null;
-            duration: number;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
+            duration: number;
             serviceType: string;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
@@ -266,9 +266,9 @@ export declare class VehiclesController {
             email: string | null;
             firstName: string;
             lastName: string;
-            businessName: string | null;
-            address: string | null;
             phone: string | null;
+            address: string | null;
+            businessName: string | null;
         };
         invoices: ({
             items: {
