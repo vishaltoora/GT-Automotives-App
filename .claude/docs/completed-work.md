@@ -1,5 +1,74 @@
 # Completed Work Log
 
+## October 20, 2025 Updates
+
+### CORS Fix & Appointment Scheduling Enhancements ✅
+
+**Critical Mobile Bug Fix:**
+- **CORS PATCH Method Support:** Added PATCH to reverse proxy CORS allowed methods
+  - Updated `.github/workflows/gt-build.yml` line 179
+  - Changed from `'GET,PUT,POST,DELETE,OPTIONS'` to `'GET,PUT,POST,PATCH,DELETE,OPTIONS'`
+  - Resolved "Method PATCH is not allowed by Access-Control-Allow-Methods" error
+  - Fixes staff unable to mark jobs as completed on iPhone 16 Pro Max
+  - Mobile Safari/iOS enforces CORS more strictly than desktop browsers
+
+**Appointment Time Slot Improvements:**
+- **15-Minute Intervals:** Changed from 30-minute to 15-minute time slots
+  - Updated `server/src/appointments/availability.service.ts` line 237
+  - Backend now generates slots: 9:00, 9:15, 9:30, 9:45, 10:00, etc.
+  - Allows more flexible appointment scheduling
+
+- **Autocomplete Time Selector:** Replaced free-text time input with dropdown
+  - Updated `apps/webApp/src/app/components/appointments/AppointmentDialog.tsx`
+  - Generates time options from 9:00 AM to 11:00 PM in 15-minute intervals
+  - Displays in 12-hour format (e.g., "10:15 AM", "2:30 PM")
+  - Searchable/filterable dropdown (type "10" to see all 10 AM times)
+  - Prevents invalid time entries that backend can't handle
+  - Auto-filters past times when booking for today
+
+- **Extended Booking Hours:** Increased from 6 PM to 11 PM
+  - Changed `endHour` from 18 to 23 in time slot generation
+  - Supports late-night appointments
+
+**Service Type Updates:**
+- Tire Change → **Tire Mount Balance** (duration: 30 min → 60 min)
+- Tire Rotation: duration 45 min → **30 min**
+- Tire Repair: duration 60 min → **30 min**
+- All service types display duration in label (e.g., "Tire Rotation (30 min)")
+
+**Enhanced Error Handling & Logging:**
+- **Mobile Network Error Handling:** Added in `job.service.ts`
+  - 30-second timeout for all API requests using AbortController
+  - Better error messages: "Network error. Please check your internet connection"
+  - Timeout-specific message: "Request timeout. Please try again."
+  - Authentication error: "Authentication failed. Please try logging out and back in."
+
+- **Comprehensive Logging:** Added throughout request lifecycle
+  - Clerk token retrieval logging with success/failure tracking
+  - Request URL and method logging
+  - Response status logging
+  - Error logging with detailed context
+  - Helps debug mobile-specific issues in production
+
+**TypeScript Fixes:**
+- Fixed `AppointmentDialog.tsx` line 619: Changed `|| null` to `|| undefined` for Autocomplete compatibility
+- Fixed `Dashboard.tsx`: Changed `colors.neutral[1000]` to `colors.neutral[900]` (4 locations)
+- All type checks passing successfully
+
+**Files Modified:**
+- `.github/workflows/gt-build.yml` - CORS configuration
+- `apps/webApp/src/app/components/appointments/AppointmentDialog.tsx` - Time selector + service types
+- `apps/webApp/src/app/services/job.service.ts` - Error handling + logging
+- `server/src/appointments/availability.service.ts` - 15-minute intervals
+- `apps/webApp/src/app/pages/staff/Dashboard.tsx` - Color fixes
+
+**Impact:**
+- ✅ Staff can now mark jobs as completed on mobile devices
+- ✅ More flexible appointment booking (15-min intervals, extended hours)
+- ✅ Better user experience with time selector dropdown
+- ✅ Accurate service durations
+- ✅ Better error messages for mobile users
+
 ## October 6, 2025 Updates
 
 ### Expense Invoice Management System Implementation ✅

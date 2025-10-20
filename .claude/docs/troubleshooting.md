@@ -1,5 +1,35 @@
 # Troubleshooting Guide
 
+## Mobile CORS Issues (October 20, 2025)
+
+### PATCH Method Blocked by CORS Policy ✅ RESOLVED
+**Problem:** Staff unable to mark jobs as completed on iPhone 16 Pro Max
+```
+Access to fetch at 'https://gt-automotives.com/api/jobs/.../complete' from origin 'https://www.gt-automotives.com'
+has been blocked by CORS policy: Method PATCH is not allowed by Access-Control-Allow-Methods in preflight response.
+```
+
+**Root Cause:** The reverse proxy server's CORS configuration only allowed `GET,PUT,POST,DELETE,OPTIONS` but excluded `PATCH`.
+
+**Solution:**
+Updated `.github/workflows/gt-build.yml` line 179:
+```javascript
+// Before
+res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+
+// After
+res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
+```
+
+**Deployment:**
+1. Push changes to trigger GT-Automotive-Build workflow
+2. Manually deploy frontend using GT-Automotive-Deploy workflow
+3. Verify PATCH requests work on mobile devices
+
+**Key Learning:** Always include all HTTP methods used by the API in CORS configuration, especially PATCH which is often forgotten.
+
+**Related Issue:** This was particularly problematic on mobile Safari/iOS which enforces CORS more strictly than desktop browsers.
+
 ## Critical Schema Migration Learnings (September 28, 2025)
 
 ### Database Schema Drift Detection ✅ RESOLVED

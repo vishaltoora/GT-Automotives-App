@@ -146,6 +146,27 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### October 20, 2025 - CORS Fix & Appointment Scheduling Enhancements ✅
+- ✅ **CORS PATCH Method Fix**: Added PATCH to allowed methods in reverse proxy CORS configuration
+- ✅ **Critical Mobile Bug Fixed**: Resolved "Method PATCH is not allowed" error preventing staff from marking jobs complete on iPhone
+- ✅ **15-Minute Time Slots**: Changed appointment booking intervals from 30 minutes to 15 minutes (9:00, 9:15, 9:30, 9:45, etc.)
+- ✅ **Extended Booking Hours**: Increased available appointment times from 6 PM to 11 PM
+- ✅ **Autocomplete Time Selector**: Replaced free-text time input with searchable dropdown to prevent invalid time entries
+- ✅ **Service Type Updates**:
+  - Tire Change → Tire Mount Balance (60 min)
+  - Tire Rotation: 45 min → 30 min
+  - Tire Repair: 60 min → 30 min
+- ✅ **Enhanced Error Handling**: Added better error messages for mobile network issues with 30-second timeout
+- ✅ **Comprehensive Logging**: Added detailed logging for token retrieval and API requests to aid mobile debugging
+- ✅ **TypeScript Fixes**: Fixed Autocomplete null/undefined type error and colors.neutral[1000] references
+- 🔧 **Files Updated**:
+  - `.github/workflows/gt-build.yml` (CORS fix)
+  - `apps/webApp/src/app/components/appointments/AppointmentDialog.tsx` (time selector + service types)
+  - `apps/webApp/src/app/services/job.service.ts` (error handling + logging)
+  - `server/src/appointments/availability.service.ts` (15-min intervals)
+  - `apps/webApp/src/app/pages/staff/Dashboard.tsx` (color fixes)
+- 📝 **Impact**: Staff can now successfully complete jobs on mobile devices, users have more flexible appointment booking options
+
 ### October 16, 2025 - SMS Integration Plan & GitHub Issues Created ✅
 - ✅ **Comprehensive SMS Integration Plan**: Complete 3-week implementation plan for Telnyx SMS integration
 - ✅ **Cost Analysis**: Telnyx selected as cheapest provider at $0.004/message (47% cheaper than Twilio)
