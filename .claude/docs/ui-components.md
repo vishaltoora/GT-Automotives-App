@@ -209,6 +209,192 @@ All modal dialogs should follow this pattern:
 7. **Validation:** Validate on blur and before submission
 8. **Theme:** Always use theme colors, never hardcode values
 
+## Responsive Design Guidelines
+
+### Responsive Text Sizing
+
+**CRITICAL:** All text elements must have responsive font sizes that adapt to screen size. Never use fixed font sizes without considering mobile devices.
+
+#### Font Size Breakpoints
+
+Use Material-UI's responsive `sx` prop with breakpoint objects:
+
+```typescript
+// Good: Responsive font sizing
+<Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+  Customer Name
+</Typography>
+
+// Bad: Fixed font size
+<Typography variant="h6">
+  Customer Name
+</Typography>
+```
+
+#### Recommended Font Sizes by Element Type
+
+**Headers (h1-h6):**
+```typescript
+// h1 - Page titles
+sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}
+
+// h2 - Section titles
+sx={{ fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2rem' } }}
+
+// h3 - Card titles
+sx={{ fontSize: { xs: '1.125rem', sm: '1.5rem' } }}
+
+// h4 - Subsection headers
+sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+
+// h5, h6 - Small headers
+sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+```
+
+**Body Text:**
+```typescript
+// Standard body text
+sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+
+// Small body text
+sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+
+// Captions and labels
+sx={{ fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
+
+// Fine print
+sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+```
+
+**Interactive Elements:**
+```typescript
+// Buttons
+sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+
+// Chips
+sx={{ fontSize: { xs: '0.75rem', sm: '0.813rem' }, height: { xs: 24, sm: 28 } }}
+
+// Tabs
+'& .MuiTab-root': {
+  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+}
+```
+
+#### Icon Sizing
+
+Icons should scale proportionally with text:
+
+```typescript
+// Standard icons with text
+<BuildIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+
+// Large header icons
+<ScheduleIcon sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }} />
+
+// Small inline icons
+<PhoneIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />
+```
+
+### Responsive Spacing
+
+**Padding and Margins:**
+```typescript
+// Card padding
+sx={{ p: { xs: 1.5, sm: 2.5 } }}
+
+// Grid spacing
+<Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
+
+// Section margins
+sx={{ my: { xs: 2, sm: 3, md: 4 } }}
+```
+
+### Responsive Layout Patterns
+
+**Stack vs. Side-by-Side:**
+```typescript
+// Vertical on mobile, horizontal on desktop
+<Box sx={{
+  display: 'flex',
+  flexDirection: { xs: 'column', sm: 'row' },
+  gap: { xs: 1.5, sm: 2 }
+}}>
+```
+
+**Grid Layouts:**
+```typescript
+// Full width mobile, half width desktop
+<Grid item size={{ xs: 12, md: 6 }}>
+
+// Full width mobile, 3 columns desktop
+<Grid item size={{ xs: 12, sm: 6, md: 4 }}>
+```
+
+### Dialog Responsiveness
+
+**Full Screen on Mobile:**
+```typescript
+<Dialog
+  maxWidth="lg"
+  fullWidth
+  PaperProps={{
+    sx: {
+      height: { xs: '100vh', sm: '85vh' },
+      width: { xs: '100vw', sm: '100%' },
+      borderRadius: { xs: 0, sm: 2 },
+    }
+  }}
+>
+```
+
+**Scrollable Tabs:**
+```typescript
+<Tabs
+  variant="scrollable"
+  scrollButtons="auto"
+  allowScrollButtonsMobile
+  sx={{
+    '& .MuiTab-root': {
+      minHeight: { xs: 48, sm: 64 },
+      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+    }
+  }}
+>
+```
+
+### Testing Checklist
+
+- [ ] Test on mobile (320px - 767px)
+- [ ] Test on tablet (768px - 1023px)
+- [ ] Test on desktop (1024px+)
+- [ ] Verify text is readable at all sizes
+- [ ] Check touch targets are at least 44px on mobile
+- [ ] Ensure no horizontal scrolling on mobile
+- [ ] Test with Chrome DevTools device emulation
+- [ ] Verify actual device testing (iOS/Android)
+
+### Common Patterns
+
+**Appointment Cards Example:**
+```typescript
+<CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
+  {/* Customer name */}
+  <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+    {name}
+  </Typography>
+
+  {/* Service details */}
+  <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+    {service}
+  </Typography>
+
+  {/* Amount */}
+  <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+    ${amount}
+  </Typography>
+</CardContent>
+```
+
 ## Component Hierarchy
 
 ```

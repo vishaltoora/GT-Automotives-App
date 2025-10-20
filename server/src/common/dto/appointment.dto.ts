@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus, AppointmentType } from '@prisma/client';
 
 export class CreateAppointmentDto {
   @IsString()
@@ -33,6 +33,9 @@ export class CreateAppointmentDto {
 
   @IsString()
   serviceType!: string;
+
+  @IsEnum(AppointmentType)
+  appointmentType!: AppointmentType;
 
   @IsOptional()
   @IsString()
@@ -69,8 +72,25 @@ export class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
   status?: AppointmentStatus;
 
   @IsOptional()
+  @IsEnum(AppointmentType)
+  appointmentType?: AppointmentType;
+
+  @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  paymentAmount?: number;
+
+  @IsOptional()
+  paymentBreakdown?: any; // JSON array of payment entries
+
+  @IsOptional()
+  @IsString()
+  paymentNotes?: string;
+
+  @IsOptional()
+  expectedAmount?: number;
 
   // Internal field for recalculated end time (not validated from request)
   endTime?: string;

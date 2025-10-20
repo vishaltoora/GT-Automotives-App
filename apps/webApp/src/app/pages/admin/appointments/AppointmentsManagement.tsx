@@ -2,7 +2,6 @@ import {
   Add as AddIcon,
   CalendarMonth as CalendarIcon,
   Cancel as CancelIcon,
-  Close as CloseIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   MoreVert as MoreVertIcon,
@@ -11,6 +10,8 @@ import {
   ViewList as ViewListIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  LocationOn as LocationOnIcon,
+  DriveEta as DriveEtaIcon,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -19,10 +20,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Grid,
   IconButton,
@@ -48,6 +45,7 @@ import { AppointmentStatus } from '@gt-automotive/data';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppointmentDialog } from '../../../components/appointments/AppointmentDialog';
+import { DayAppointmentsDialog } from '../../../components/appointments/DayAppointmentsDialog';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { useError } from '../../../contexts/ErrorContext';
 import { useAuth } from '../../../hooks/useAuth';
@@ -67,6 +65,18 @@ const STATUS_COLORS: Record<
   COMPLETED: 'default',
   CANCELLED: 'error',
   NO_SHOW: 'error',
+};
+
+const getAppointmentTypeIcon = (type: string) => {
+  return type === 'MOBILE_SERVICE' ? <DriveEtaIcon fontSize="small" /> : <LocationOnIcon fontSize="small" />;
+};
+
+const getAppointmentTypeLabel = (type: string) => {
+  return type === 'MOBILE_SERVICE' ? 'Mobile Service' : 'At Garage';
+};
+
+const getAppointmentTypeColor = (type: string) => {
+  return type === 'MOBILE_SERVICE' ? 'secondary' : 'primary';
 };
 
 export const AppointmentsManagement: React.FC = () => {
@@ -169,6 +179,35 @@ export const AppointmentsManagement: React.FC = () => {
     }
   };
 
+  const handleStatusChange = async (appointmentId: string, newStatus: string, paymentData?: any) => {
+    try {
+      const updateData: any = {
+        status: newStatus as AppointmentStatus,
+      };
+
+      // If payment data is provided (completing or updating payment), include it
+      if (paymentData) {
+        console.log('AppointmentsManagement - Received payment data:', paymentData);
+        updateData.paymentAmount = paymentData.totalAmount;
+        updateData.paymentBreakdown = paymentData.payments; // Array of payment entries
+        updateData.paymentNotes = paymentData.paymentNotes;
+        if (paymentData.expectedAmount !== undefined) {
+          updateData.expectedAmount = paymentData.expectedAmount;
+        }
+        console.log('AppointmentsManagement - Update data being sent:', updateData);
+      }
+
+      await appointmentService.updateAppointment(appointmentId, updateData);
+      loadAppointments();
+      loadTodayAppointments();
+    } catch (err: any) {
+      showError({
+        title: 'Failed to update appointment status',
+        message: err.message,
+      });
+    }
+  };
+
   const handleDelete = async (appointment: Appointment) => {
     const confirmed = await confirm({
       title: 'Delete Appointment',
@@ -189,6 +228,13 @@ export const AppointmentsManagement: React.FC = () => {
           message: err.message,
         });
       }
+    }
+  };
+
+  const handleDeleteById = async (appointmentId: string) => {
+    const appointment = appointments.find(apt => apt.id === appointmentId);
+    if (appointment) {
+      await handleDelete(appointment);
     }
   };
 
@@ -374,6 +420,14 @@ export const AppointmentsManagement: React.FC = () => {
         )}
       </TableCell>
       <TableCell>{appointment.serviceType.replace(/_/g, ' ')}</TableCell>
+      <TableCell>
+        <Chip
+          icon={getAppointmentTypeIcon(appointment.appointmentType || 'AT_GARAGE')}
+          label={getAppointmentTypeLabel(appointment.appointmentType || 'AT_GARAGE')}
+          color={getAppointmentTypeColor(appointment.appointmentType || 'AT_GARAGE') as any}
+          size="small"
+        />
+      </TableCell>
       <TableCell>{appointment.duration} min</TableCell>
       <TableCell>
         {appointment.employee
@@ -998,11 +1052,18 @@ export const AppointmentsManagement: React.FC = () => {
                                     <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
                                       Service
                                     </Typography>
-                                    <Box display="flex" alignItems="center" gap={1}>
+                                    <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                                       <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary' }}>
                                         {appointment.serviceType.replace(/_/g, ' ')}
                                       </Typography>
                                       <Chip label={`${appointment.duration} min`} size="small" sx={{ height: '20px', fontSize: '0.75rem' }} />
+                                      <Chip
+                                        icon={getAppointmentTypeIcon(appointment.appointmentType || 'AT_GARAGE')}
+                                        label={getAppointmentTypeLabel(appointment.appointmentType || 'AT_GARAGE')}
+                                        color={getAppointmentTypeColor(appointment.appointmentType || 'AT_GARAGE') as any}
+                                        size="small"
+                                        sx={{ height: '20px', fontSize: '0.75rem' }}
+                                      />
                                     </Box>
                                   </Box>
 
@@ -1159,6 +1220,7 @@ export const AppointmentsManagement: React.FC = () => {
                       <TableCell>Customer</TableCell>
                       <TableCell>Vehicle</TableCell>
                       <TableCell>Service</TableCell>
+                      <TableCell>Type</TableCell>
                       <TableCell>Duration</TableCell>
                       <TableCell>Employee</TableCell>
                       <TableCell>Status</TableCell>
@@ -1168,13 +1230,13 @@ export const AppointmentsManagement: React.FC = () => {
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={8} align="center">
+                        <TableCell colSpan={9} align="center">
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : appointments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} align="center">
+                        <TableCell colSpan={9} align="center">
                           No appointments found
                         </TableCell>
                       </TableRow>
@@ -1312,8 +1374,8 @@ export const AppointmentsManagement: React.FC = () => {
                           )}
 
                           {/* Service and Duration */}
-                          <Box display="flex" gap={2} mb={1.5}>
-                            <Box flex={1}>
+                          <Box display="flex" gap={2} mb={1.5} flexWrap="wrap">
+                            <Box flex={1} minWidth="120px">
                               <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
                                 SERVICE
                               </Typography>
@@ -1321,13 +1383,25 @@ export const AppointmentsManagement: React.FC = () => {
                                 {appointment.serviceType.replace(/_/g, ' ')}
                               </Typography>
                             </Box>
-                            <Box>
+                            <Box minWidth="80px">
                               <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
                                 DURATION
                               </Typography>
                               <Typography variant="body2" fontSize="0.875rem" fontWeight={600} color="text.primary">
                                 {appointment.duration} min
                               </Typography>
+                            </Box>
+                            <Box minWidth="120px">
+                              <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
+                                TYPE
+                              </Typography>
+                              <Chip
+                                icon={getAppointmentTypeIcon(appointment.appointmentType || 'AT_GARAGE')}
+                                label={getAppointmentTypeLabel(appointment.appointmentType || 'AT_GARAGE')}
+                                color={getAppointmentTypeColor(appointment.appointmentType || 'AT_GARAGE') as any}
+                                size="small"
+                                sx={{ height: '22px', fontSize: '0.75rem' }}
+                              />
                             </Box>
                           </Box>
 
@@ -1405,253 +1479,16 @@ export const AppointmentsManagement: React.FC = () => {
         />
 
         {/* Day Appointments Dialog */}
-        <Dialog
+        <DayAppointmentsDialog
           open={dayDialogOpen}
-          onClose={(event, reason) => {
-            if (reason === 'backdropClick') {
-              return; // Prevent closing on backdrop click
-            }
-            handleCloseDayDialog();
-          }}
-          maxWidth="lg"
-          fullWidth
-          fullScreen={window.innerWidth < 600} // Fullscreen on small screens
-          PaperProps={{
-            sx: {
-              maxHeight: { xs: '100vh', sm: '90vh' },
-              m: { xs: 0, sm: 2 },
-              width: { lg: '1200px' },
-              maxWidth: { lg: '1200px' },
-              borderRadius: { xs: 0, sm: 2 },
-            }
-          }}
-        >
-          <DialogTitle
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              position: 'relative',
-              pb: 2,
-              borderTopLeftRadius: { xs: 0, sm: 2 },
-              borderTopRightRadius: { xs: 0, sm: 2 },
-            }}
-          >
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white' }}>
-                {selectedDate?.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                {getSelectedDayAppointments().length} appointment{getSelectedDayAppointments().length !== 1 ? 's' : ''}
-              </Typography>
-            </Box>
-            <IconButton
-              aria-label="close"
-              onClick={handleCloseDayDialog}
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: 8,
-                color: 'white',
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers>
-            <Box sx={{ py: 2 }}>
-              {getSelectedDayAppointments().map((appointment) => {
-                // Get time-based status for the appointment
-                const timeStatus = getAppointmentTimeStatus(appointment);
-
-                // Don't show time-based status for cancelled or no-show appointments
-                const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW';
-                const isManuallyCompleted = appointment.status === 'COMPLETED';
-
-                // Determine visual styling based on status
-                const isCurrent = timeStatus === 'current' && !isCancelled && !isManuallyCompleted;
-                const isCompleted = (timeStatus === 'past' || isManuallyCompleted) && !isCancelled;
-                const isUpcoming = timeStatus === 'future' && !isCancelled && !isManuallyCompleted;
-                const isPast = timeStatus === 'past';
-
-                // Background colors
-                const getBgColor = () => {
-                  if (isCancelled) return '#ffebee'; // Very light red
-                  if (isCurrent) return '#e3f2fd'; // Very light blue
-                  if (isCompleted) return '#e8f5e9'; // Light green
-                  // No background color for upcoming
-                  return 'background.paper';
-                };
-
-                const getBorderColor = () => {
-                  if (isCancelled) return 'error.light';
-                  if (isCurrent) return 'info.main';
-                  if (isCompleted) return 'success.light';
-                  if (isUpcoming) return 'warning.light';
-                  return 'divider';
-                };
-
-                return (
-                <Card
-                  key={appointment.id}
-                  variant="outlined"
-                  sx={{
-                    mb: 2,
-                    '&:last-child': { mb: 0 },
-                    bgcolor: getBgColor(),
-                    border: 1,
-                    borderColor: getBorderColor(),
-                  }}
-                >
-                  <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-                    {/* Header Row: Time and Status */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                      <Box display="flex" alignItems="center" gap={1.5}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.125rem', color: 'primary.main' }}>
-                          {formatTime(appointment.scheduledTime, appointment.endTime)}
-                        </Typography>
-                        <Chip
-                          label={appointment.status}
-                          color={STATUS_COLORS[appointment.status]}
-                          size="small"
-                          sx={{ height: '24px', fontSize: '0.75rem', fontWeight: 600 }}
-                        />
-                        {isCurrent && (
-                          <Chip label="IN PROGRESS" size="small" color="info" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
-                        )}
-                        {isCompleted && !isManuallyCompleted && (
-                          <Chip label="COMPLETED" size="small" color="success" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
-                        )}
-                        {isUpcoming && (
-                          <Chip label="UPCOMING" size="small" color="warning" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
-                        )}
-                      </Box>
-                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, appointment.id)} sx={{ padding: '6px' }}>
-                        <MoreVertIcon />
-                      </IconButton>
-                    </Box>
-
-                    {/* Customer Section */}
-                    <Box mb={2}>
-                      <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-                        {appointment.customer.businessName || `${appointment.customer.firstName} ${appointment.customer.lastName}`}
-                        {appointment.customer.phone && (
-                          <Typography component="span" sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.secondary', ml: 1 }}>
-                            ({appointment.customer.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3').replace(/^\+?1?[-.\s]?/, '')})
-                          </Typography>
-                        )}
-                      </Typography>
-                      {appointment.customer.businessName && (
-                        <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary', mb: 0.5 }}>
-                          {appointment.customer.firstName} {appointment.customer.lastName}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    <Divider sx={{ mb: 2 }} />
-
-                    {/* Service & Technician Row */}
-                    <Box display="flex" gap={2} mb={2} flexWrap="wrap">
-                      {/* Service */}
-                      <Box flex={1} minWidth="200px">
-                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
-                          Service
-                        </Typography>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary' }}>
-                            {appointment.serviceType.replace(/_/g, ' ')}
-                          </Typography>
-                          <Chip label={`${appointment.duration} min`} size="small" sx={{ height: '20px', fontSize: '0.75rem' }} />
-                        </Box>
-                      </Box>
-
-                      {/* Technician(s) */}
-                      {(appointment.employees && appointment.employees.length > 0) ? (
-                        <Box flex={1} minWidth="200px">
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
-                            {appointment.employees.length > 1 ? 'Technicians' : 'Technician'}
-                          </Typography>
-                          {appointment.employees.map((empAssignment, index) => (
-                            <Typography key={empAssignment.id} sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary' }}>
-                              {empAssignment.employee.firstName} {empAssignment.employee.lastName}
-                              {index < appointment.employees!.length - 1 && ', '}
-                            </Typography>
-                          ))}
-                        </Box>
-                      ) : appointment.employee && (
-                        <Box flex={1} minWidth="200px">
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
-                            Technician
-                          </Typography>
-                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary' }}>
-                            {appointment.employee.firstName} {appointment.employee.lastName}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-
-                    {/* Vehicle Info */}
-                    {appointment.vehicle && (
-                      <Box>
-                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', mb: 0.5 }}>
-                          Vehicle
-                        </Typography>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary' }}>
-                            {appointment.vehicle.year} {appointment.vehicle.make} {appointment.vehicle.model}
-                          </Typography>
-                          {appointment.vehicle.licensePlate && (
-                            <Chip
-                              label={appointment.vehicle.licensePlate}
-                              size="small"
-                              variant="outlined"
-                              sx={{ height: '20px', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}
-                            />
-                          )}
-                        </Box>
-                      </Box>
-                    )}
-
-                    {/* Notes (if present) */}
-                    {appointment.notes && (
-                      <Box
-                        mt={1.5}
-                        p={1.5}
-                        sx={{
-                          bgcolor: isPast ? '#fffbf0' : '#e3f2fd',
-                          borderRadius: 1,
-                          borderLeft: 3,
-                          borderColor: isPast ? 'warning.main' : 'info.main'
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: '0.9375rem',
-                            fontWeight: 500,
-                            fontStyle: 'italic',
-                            color: isPast ? 'warning.dark' : 'info.dark',
-                            whiteSpace: 'pre-wrap'
-                          }}
-                        >
-                          {appointment.notes}
-                        </Typography>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
-                );
-              })}
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDayDialog}>Close</Button>
-          </DialogActions>
-        </Dialog>
+          onClose={handleCloseDayDialog}
+          date={selectedDate}
+          appointments={getSelectedDayAppointments() as any}
+          onEditAppointment={handleEdit as any}
+          onDeleteAppointment={handleDeleteById}
+          onStatusChange={handleStatusChange}
+          onAddAppointment={handleCreate}
+        />
 
         {/* Action Menu */}
         <Menu

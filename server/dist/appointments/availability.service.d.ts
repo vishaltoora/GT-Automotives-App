@@ -7,8 +7,8 @@ export declare class AvailabilityService {
      * Set or update recurring weekly availability for an employee
      */
     setRecurringAvailability(dto: SetAvailabilityDto): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         dayOfWeek: number;
         startTime: string;
         endTime: string;
@@ -20,8 +20,8 @@ export declare class AvailabilityService {
      * Get all recurring availability for an employee
      */
     getEmployeeAvailability(employeeId: string): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         dayOfWeek: number;
         startTime: string;
         endTime: string;
@@ -31,10 +31,11 @@ export declare class AvailabilityService {
     }[]>;
     /**
      * Delete a recurring availability slot
+     * Both ADMIN and STAFF can delete any availability
      */
     deleteRecurringAvailability(availabilityId: string, user: any): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         dayOfWeek: number;
         startTime: string;
         endTime: string;
@@ -46,8 +47,8 @@ export declare class AvailabilityService {
      * Add a time slot override (vacation, sick day, extra shift)
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         startTime: string;
         endTime: string;
         isAvailable: boolean;
@@ -60,8 +61,8 @@ export declare class AvailabilityService {
      * Get all overrides for an employee within a date range
      */
     getOverrides(employeeId: string, startDate: Date, endDate: Date): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         startTime: string;
         endTime: string;
         isAvailable: boolean;
@@ -74,8 +75,8 @@ export declare class AvailabilityService {
      * Delete an override
      */
     deleteOverride(overrideId: string): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         startTime: string;
         endTime: string;
         isAvailable: boolean;
@@ -106,6 +107,8 @@ export declare class AvailabilityService {
     private timeInRange;
     /**
      * Helper: Check if two time ranges overlap
+     * Two appointments overlap if one starts before the other ends AND ends after the other starts
+     * However, if one ends exactly when the other starts, they DO NOT overlap (back-to-back is allowed)
      */
     private timeOverlaps;
     /**

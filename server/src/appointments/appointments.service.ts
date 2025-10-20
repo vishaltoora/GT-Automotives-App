@@ -133,6 +133,7 @@ export class AppointmentsService {
         endTime,
         duration: dto.duration,
         serviceType: dto.serviceType,
+        appointmentType: dto.appointmentType,
         notes: dto.notes,
         status: AppointmentStatus.SCHEDULED,
         bookedBy,
@@ -174,16 +175,10 @@ export class AppointmentsService {
 
   /**
    * Find all appointments with optional filters
-   * STAFF users see only their assigned appointments
-   * ADMIN users see all appointments
+   * All users (STAFF and ADMIN) can see all appointments
    */
   async findAll(query: AppointmentQueryDto, user?: any) {
     const where: any = {};
-
-    // STAFF users can only see their own appointments
-    if (user && user.role?.name === 'STAFF') {
-      where.employeeId = user.id;
-    }
 
     if (query.startDate || query.endDate) {
       where.scheduledDate = {};
@@ -195,8 +190,8 @@ export class AppointmentsService {
       }
     }
 
-    // Only apply employeeId filter if not already set by STAFF role
-    if (query.employeeId && !where.employeeId) {
+    // Apply employeeId filter from query if provided
+    if (query.employeeId) {
       where.employeeId = query.employeeId;
     }
 
@@ -217,8 +212,7 @@ export class AppointmentsService {
 
   /**
    * Get calendar view data
-   * STAFF users see only their assigned appointments
-   * ADMIN users see all appointments
+   * All users (STAFF and ADMIN) can see all appointments
    */
   async getCalendar(query: CalendarQueryDto, user?: any) {
     const where: any = {
@@ -231,10 +225,8 @@ export class AppointmentsService {
       },
     };
 
-    // STAFF users can only see their own appointments
-    if (user && user.role?.name === 'STAFF') {
-      where.employeeId = user.id;
-    } else if (query.employeeId) {
+    // Apply employeeId filter from query if provided
+    if (query.employeeId) {
       where.employeeId = query.employeeId;
     }
 
@@ -437,8 +429,7 @@ export class AppointmentsService {
 
   /**
    * Get today's appointments for printing/display
-   * STAFF users see only their assigned appointments
-   * ADMIN users see all appointments
+   * All users (STAFF and ADMIN) can see all appointments
    */
   async getTodayAppointments(user?: any) {
     console.log('[GET TODAY APPOINTMENTS] User:', {
@@ -464,14 +455,7 @@ export class AppointmentsService {
       },
     };
 
-    // STAFF users can only see their own appointments
-    if (user && user.role?.name === 'STAFF') {
-      console.log('[GET TODAY APPOINTMENTS] Filtering for STAFF user:', user.id);
-      where.employeeId = user.id;
-    } else {
-      console.log('[GET TODAY APPOINTMENTS] No filtering - showing all appointments');
-    }
-
+    console.log('[GET TODAY APPOINTMENTS] No filtering - showing all appointments');
     console.log('[GET TODAY APPOINTMENTS] Query where:', where);
 
     const result = await this.prisma.appointment.findMany({

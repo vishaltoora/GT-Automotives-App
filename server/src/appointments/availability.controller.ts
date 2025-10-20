@@ -27,7 +27,7 @@ export class AvailabilityController {
 
   /**
    * Set or update recurring availability for an employee
-   * Roles: ADMIN (any employee), STAFF (own availability only)
+   * Roles: ADMIN and STAFF can set availability for any employee
    */
   @Post('recurring')
   @UseGuards(RoleGuard)
@@ -40,12 +40,6 @@ export class AvailabilityController {
       roleName: user?.role?.name,
     });
     console.log('[SET RECURRING AVAILABILITY] DTO:', dto);
-
-    // STAFF users can only set their own availability
-    if (user.role?.name === 'STAFF' && dto.employeeId !== user.id) {
-      console.log('[SET RECURRING AVAILABILITY] REJECTED: Staff user trying to set availability for another employee');
-      throw new Error('Staff users can only set their own availability');
-    }
 
     console.log('[SET RECURRING AVAILABILITY] ALLOWED: Proceeding with availability update');
     return this.availabilityService.setRecurringAvailability(dto);

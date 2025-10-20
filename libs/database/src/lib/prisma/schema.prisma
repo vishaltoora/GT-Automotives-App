@@ -262,25 +262,30 @@ model QuotationItem {
 }
 
 model Appointment {
-  id            String                  @id @default(cuid())
-  customerId    String
-  vehicleId     String?
-  employeeId    String?                 // Deprecated: Use employees relation instead
-  scheduledDate DateTime
-  scheduledTime String                  // "09:00" format (24-hour)
-  endTime       String?                 // "10:30" format (calculated from duration)
-  duration      Int                     @default(60) // minutes
-  serviceType   String
-  status        AppointmentStatus
-  notes         String?
-  reminderSent  Boolean                 @default(false)
-  bookedBy      String?                 // User ID who created the booking
-  createdAt     DateTime                @default(now())
-  updatedAt     DateTime                @updatedAt
-  customer      Customer                @relation(fields: [customerId], references: [id])
-  vehicle       Vehicle?                @relation(fields: [vehicleId], references: [id])
-  employee      User?                   @relation(fields: [employeeId], references: [id])
-  employees     AppointmentEmployee[]   // Multiple employees assigned to this appointment
+  id              String                  @id @default(cuid())
+  customerId      String
+  vehicleId       String?
+  employeeId      String?                 // Deprecated: Use employees relation instead
+  scheduledDate   DateTime
+  scheduledTime   String                  // "09:00" format (24-hour)
+  endTime         String?                 // "10:30" format (calculated from duration)
+  duration        Int                     @default(60) // minutes
+  serviceType     String
+  appointmentType AppointmentType         @default(AT_GARAGE)
+  status          AppointmentStatus
+  notes           String?
+  paymentAmount   Float?                  // Total payment amount collected
+  paymentBreakdown Json?                  // Array of payment entries: [{id: 'uuid', method: 'CASH', amount: 50}, {id: 'uuid', method: 'E_TRANSFER', amount: 30}]
+  paymentNotes    String?                 // Additional payment notes
+  expectedAmount  Float?                  // Expected total amount for tracking partial payments
+  reminderSent    Boolean                 @default(false)
+  bookedBy        String?                 // User ID who created the booking
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  customer        Customer                @relation(fields: [customerId], references: [id])
+  vehicle         Vehicle?                @relation(fields: [vehicleId], references: [id])
+  employee        User?                   @relation(fields: [employeeId], references: [id])
+  employees       AppointmentEmployee[]   // Multiple employees assigned to this appointment
 
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
@@ -494,6 +499,11 @@ enum AppointmentStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+enum AppointmentType {
+  AT_GARAGE
+  MOBILE_SERVICE
 }
 
 enum QuotationStatus {

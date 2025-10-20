@@ -1,4 +1,4 @@
-import { AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus, AppointmentType } from '@prisma/client';
 export declare class CreateAppointmentDto {
     customerId: string;
     vehicleId?: string;
@@ -8,6 +8,7 @@ export declare class CreateAppointmentDto {
     scheduledTime: string;
     duration: number;
     serviceType: string;
+    appointmentType: AppointmentType;
     notes?: string;
 }
 export declare class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
@@ -17,7 +18,12 @@ export declare class UpdateAppointmentDto implements Partial<CreateAppointmentDt
     scheduledTime?: string;
     duration?: number;
     status?: AppointmentStatus;
+    appointmentType?: AppointmentType;
     notes?: string;
+    paymentAmount?: number;
+    paymentBreakdown?: any;
+    paymentNotes?: string;
+    expectedAmount?: number;
     endTime?: string;
 }
 export declare class AppointmentQueryDto {

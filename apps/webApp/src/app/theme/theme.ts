@@ -91,6 +91,7 @@ const themeOptions: ThemeOptions = {
     },
   },
   typography: {
+    // Modern font stack with system fonts for better performance
     fontFamily: [
       'Inter',
       '-apple-system',
@@ -101,86 +102,94 @@ const themeOptions: ThemeOptions = {
       'Arial',
       'sans-serif',
     ].join(','),
+
+    // Base font size for accessibility - users can override in browser settings
+    htmlFontSize: 16,
+
+    // Fluid typography using clamp() for smooth scaling
+    // Pattern: clamp(min, preferred, max) where preferred = calc(base + viewport scaling)
+
     h1: {
-      fontSize: '3rem',
+      // Page titles - scales from 2rem (32px) to 3rem (48px)
+      fontSize: 'clamp(2rem, 1.5rem + 2vw, 3rem)',
       fontWeight: 700,
       lineHeight: 1.2,
-      '@media (max-width:600px)': {
-        fontSize: '2rem',
-      },
+      letterSpacing: '-0.02em', // Tighter spacing for large text
     },
     h2: {
-      fontSize: '2.5rem',
+      // Section titles - scales from 1.75rem (28px) to 2.5rem (40px)
+      fontSize: 'clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem)',
       fontWeight: 700,
       lineHeight: 1.3,
-      '@media (max-width:600px)': {
-        fontSize: '1.75rem',
-      },
+      letterSpacing: '-0.01em',
     },
     h3: {
-      fontSize: '2rem',
+      // Card titles - scales from 1.5rem (24px) to 2rem (32px)
+      fontSize: 'clamp(1.5rem, 1.3rem + 1vw, 2rem)',
       fontWeight: 600,
       lineHeight: 1.4,
-      '@media (max-width:600px)': {
-        fontSize: '1.5rem',
-      },
     },
     h4: {
-      fontSize: '1.75rem',
+      // Subsection headers - scales from 1.25rem (20px) to 1.75rem (28px)
+      fontSize: 'clamp(1.25rem, 1.1rem + 0.75vw, 1.75rem)',
       fontWeight: 600,
       lineHeight: 1.5,
-      '@media (max-width:600px)': {
-        fontSize: '1.25rem',
-      },
     },
     h5: {
-      fontSize: '1.5rem',
+      // Small headers - scales from 1.125rem (18px) to 1.5rem (24px)
+      fontSize: 'clamp(1.125rem, 1rem + 0.5vw, 1.5rem)',
       fontWeight: 500,
       lineHeight: 1.6,
-      '@media (max-width:600px)': {
-        fontSize: '1.15rem',
-      },
     },
     h6: {
-      fontSize: '1.25rem',
+      // Smallest headers - scales from 1rem (16px) to 1.25rem (20px)
+      fontSize: 'clamp(1rem, 0.93rem + 0.33vw, 1.25rem)',
       fontWeight: 500,
       lineHeight: 1.6,
-      '@media (max-width:600px)': {
-        fontSize: '1.1rem',
-      },
     },
     subtitle1: {
-      fontSize: '1.125rem',
+      // Large subtitle - scales from 1rem to 1.125rem
+      fontSize: 'clamp(1rem, 0.95rem + 0.25vw, 1.125rem)',
       fontWeight: 500,
       lineHeight: 1.75,
     },
     subtitle2: {
+      // Standard subtitle - fixed at 1rem for consistency
       fontSize: '1rem',
       fontWeight: 500,
       lineHeight: 1.57,
     },
     body1: {
+      // Primary body text - fixed at 1rem (16px) for optimal readability
       fontSize: '1rem',
       lineHeight: 1.75,
+      letterSpacing: '0.00938em',
     },
     body2: {
-      fontSize: '0.875rem',
+      // Secondary body text - scales from 0.813rem to 0.875rem
+      fontSize: 'clamp(0.813rem, 0.8rem + 0.125vw, 0.875rem)',
       lineHeight: 1.65,
     },
     button: {
+      // Button text - scales from 0.875rem to 1rem
+      fontSize: 'clamp(0.875rem, 0.85rem + 0.15vw, 1rem)',
       textTransform: 'none',
       fontWeight: 600,
-      fontSize: '1rem',
+      letterSpacing: '0.02em',
     },
     caption: {
-      fontSize: '0.75rem',
+      // Captions and helper text - scales from 0.7rem to 0.75rem
+      fontSize: 'clamp(0.7rem, 0.68rem + 0.1vw, 0.75rem)',
       lineHeight: 1.66,
+      letterSpacing: '0.03em',
     },
     overline: {
+      // Labels and overlines - fixed for consistency
       fontSize: '0.75rem',
       fontWeight: 600,
-      letterSpacing: '0.5px',
+      letterSpacing: '0.08em',
       textTransform: 'uppercase',
+      lineHeight: 2.66,
     },
   },
   shape: {

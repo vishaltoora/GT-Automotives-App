@@ -19,6 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[User Management](.claude/docs/user-management.md)** - Complete user management system documentation
 - **[API Documentation](.claude/docs/api-documentation.md)** - Comprehensive REST API reference
 - **[Grid Modernization](.claude/docs/grid-modernization.md)** - Material-UI Grid updates and best practices
+- **[Fluid Typography Implementation](.claude/docs/fluid-typography-implementation.md)** - Modern responsive typography with CSS clamp() ⭐ NEW
 - **[Tech Stack](.claude/docs/tech-stack.md)** - Technologies, frameworks, and architecture
 - **[Development Setup](.claude/docs/development-setup.md)** - Environment setup and commands
 - **[Development Guidelines](.claude/docs/development-guidelines.md)** - Code style, patterns, and best practices

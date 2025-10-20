@@ -156,11 +156,6 @@ export class AvailabilityService {
     const dateOnly = new Date(dto.date);
     dateOnly.setUTCHours(0, 0, 0, 0);
 
-    console.log('[CHECK AVAILABLE SLOTS] Checking for date:', {
-      input: dto.date,
-      normalized: dateOnly,
-      iso: dateOnly.toISOString(),
-    });
 
     // Get employees to check (specific employee or all)
     let employees;
@@ -215,7 +210,6 @@ export class AvailabilityService {
           ],
         },
       });
-
 
       // Calculate the day start and end times from the recurring slots
       let dayStart = '09:00';

@@ -81,7 +81,14 @@ export interface CreateAppointmentRequest {
   scheduledTime: string;
   duration: number;
   serviceType: string;
+  appointmentType: string;
   notes?: string;
+}
+
+export interface PaymentEntry {
+  id: string;
+  method: string;
+  amount: number;
 }
 
 export interface UpdateAppointmentRequest {
@@ -91,7 +98,12 @@ export interface UpdateAppointmentRequest {
   scheduledTime?: string;
   duration?: number;
   status?: AppointmentStatus;
+  appointmentType?: string;
   notes?: string;
+  paymentAmount?: number;
+  paymentBreakdown?: PaymentEntry[]; // Array of payment entries
+  paymentNotes?: string;
+  expectedAmount?: number; // Expected amount for tracking partial payments
 }
 
 export interface AppointmentQueryParams {
@@ -118,8 +130,13 @@ export interface Appointment {
   endTime?: string;
   duration: number;
   serviceType: string;
+  appointmentType?: string;
   status: AppointmentStatus;
   notes?: string;
+  paymentAmount?: number; // Total amount paid
+  paymentBreakdown?: PaymentEntry[]; // Breakdown of payment methods
+  paymentNotes?: string;
+  expectedAmount?: number; // Expected total amount for the service (for tracking partial payments)
   reminderSent: boolean;
   bookedBy?: string;
   createdAt: Date;

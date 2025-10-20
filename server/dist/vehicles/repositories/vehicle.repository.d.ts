@@ -20,10 +20,10 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             businessName: string | null;
         };
     } & {
+        customerId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         make: string;
         model: string;
         year: number;
@@ -37,10 +37,10 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             invoices: number;
         };
     } & {
+        customerId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         make: string;
         model: string;
         year: number;
@@ -50,19 +50,24 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
     })[]>;
     findOneWithDetails(id: string): Promise<({
         appointments: {
-            id: string;
-            employeeId: string | null;
-            endTime: string | null;
-            createdAt: Date;
-            updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
+            employeeId: string | null;
             scheduledDate: Date;
             scheduledTime: string;
             duration: number;
             serviceType: string;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
+            appointmentType: import("@prisma/client").$Enums.AppointmentType;
             notes: string | null;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            paymentAmount: number | null;
+            paymentBreakdown: Prisma.JsonValue | null;
+            paymentNotes: string | null;
+            expectedAmount: number | null;
+            id: string;
+            endTime: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             reminderSent: boolean;
             bookedBy: string | null;
         }[];
@@ -83,42 +88,42 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
                 createdAt: Date;
                 updatedAt: Date;
                 description: string;
-                tireId: string | null;
+                quantity: number;
+                total: Prisma.Decimal;
                 tireName: string | null;
                 itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                quantity: number;
                 unitPrice: Prisma.Decimal;
-                total: Prisma.Decimal;
+                tireId: string | null;
                 invoiceId: string;
             }[];
         } & {
+            customerId: string;
+            vehicleId: string | null;
+            notes: string | null;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
-            vehicleId: string | null;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            notes: string | null;
-            invoiceNumber: string;
-            invoiceDate: Date;
-            taxAmount: Prisma.Decimal;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             createdBy: string;
             total: Prisma.Decimal;
+            invoiceNumber: string;
             companyId: string;
             subtotal: Prisma.Decimal;
             taxRate: Prisma.Decimal;
-            gstRate: Prisma.Decimal | null;
-            gstAmount: Prisma.Decimal | null;
-            pstRate: Prisma.Decimal | null;
-            pstAmount: Prisma.Decimal | null;
+            taxAmount: Prisma.Decimal;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+            invoiceDate: Date;
             paidAt: Date | null;
+            gstAmount: Prisma.Decimal | null;
+            gstRate: Prisma.Decimal | null;
+            pstAmount: Prisma.Decimal | null;
+            pstRate: Prisma.Decimal | null;
         })[];
     } & {
+        customerId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         make: string;
         model: string;
         year: number;
@@ -139,10 +144,10 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             businessName: string | null;
         };
     } & {
+        customerId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         make: string;
         model: string;
         year: number;
@@ -167,10 +172,10 @@ export declare class VehicleRepository extends BaseRepository<Vehicle, Prisma.Ve
             businessName: string | null;
         };
     } & {
+        customerId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
         make: string;
         model: string;
         year: number;

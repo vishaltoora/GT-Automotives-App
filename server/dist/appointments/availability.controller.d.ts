@@ -5,11 +5,11 @@ export declare class AvailabilityController {
     constructor(availabilityService: AvailabilityService);
     /**
      * Set or update recurring availability for an employee
-     * Roles: ADMIN (any employee), STAFF (own availability only)
+     * Roles: ADMIN and STAFF can set availability for any employee
      */
     setRecurring(dto: SetAvailabilityDto, user: any): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         dayOfWeek: number;
         startTime: string;
         endTime: string;
@@ -22,8 +22,8 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF (staff can view their own)
      */
     getRecurring(employeeId: string): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         dayOfWeek: number;
         startTime: string;
         endTime: string;
@@ -36,8 +36,8 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF (staff can add their own overrides)
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         startTime: string;
         endTime: string;
         isAvailable: boolean;
@@ -51,8 +51,8 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF
      */
     getOverrides(employeeId: string, startDate: string, endDate: string): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         startTime: string;
         endTime: string;
         isAvailable: boolean;
@@ -66,8 +66,8 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF (staff can delete their own)
      */
     deleteRecurring(availabilityId: string, user: any): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         dayOfWeek: number;
         startTime: string;
         endTime: string;
@@ -80,8 +80,8 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF
      */
     deleteOverride(overrideId: string): Promise<{
-        id: string;
         employeeId: string;
+        id: string;
         startTime: string;
         endTime: string;
         isAvailable: boolean;

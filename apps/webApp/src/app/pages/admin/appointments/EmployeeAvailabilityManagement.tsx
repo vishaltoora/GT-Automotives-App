@@ -149,14 +149,11 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       setLoading(true);
       const allUsers = await userService.getUsers();
 
-      // If staff user, only show their own availability
-      // If admin user, show all staff and admin members
-      const staffUsers = isStaff
-        ? allUsers.filter((user) => user.id === currentUser?.id && user.isActive)
-        : allUsers.filter((user) =>
-            (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN') &&
-            user.isActive
-          );
+      // Both staff and admin users can see all staff and admin members
+      const staffUsers = allUsers.filter((user) =>
+        (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN') &&
+        user.isActive
+      );
 
       // Load availability and overrides for each employee
       const employeesWithData = await Promise.all(

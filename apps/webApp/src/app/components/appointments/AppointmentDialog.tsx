@@ -140,6 +140,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     scheduledTime: getCurrentTimeRounded(),
     duration: 60,
     serviceType: 'TIRE_CHANGE',
+    appointmentType: 'AT_GARAGE',
     notes: '',
   });
 
@@ -166,6 +167,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           scheduledTime: appointment.scheduledTime,
           duration: appointment.duration,
           serviceType: appointment.serviceType,
+          appointmentType: appointment.appointmentType || 'AT_GARAGE',
           notes: appointment.notes || '',
         });
 
@@ -326,6 +328,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           scheduledDate: formData.scheduledDate,
           scheduledTime: formData.scheduledTime,
           duration: formData.duration,
+          appointmentType: formData.appointmentType,
           notes: formData.notes || undefined,
         });
       } else {
@@ -337,6 +340,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           scheduledTime: formData.scheduledTime,
           duration: formData.duration,
           serviceType: formData.serviceType,
+          appointmentType: formData.appointmentType,
           notes: formData.notes || undefined,
         });
       }
@@ -370,6 +374,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       scheduledTime: getCurrentTimeRounded(),
       duration: 60,
       serviceType: 'TIRE_CHANGE',
+      appointmentType: 'AT_GARAGE',
       notes: '',
     });
     setSelectedCustomer(null);
@@ -671,7 +676,24 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               />
             </Grid>
 
-            {/* 6. Employee Assignment - Multi-select */}
+            {/* 6. Appointment Type */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth required>
+                <InputLabel>Appointment Type</InputLabel>
+                <Select
+                  value={formData.appointmentType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, appointmentType: e.target.value })
+                  }
+                  label="Appointment Type"
+                >
+                  <MenuItem value="AT_GARAGE">At Garage</MenuItem>
+                  <MenuItem value="MOBILE_SERVICE">Mobile Service</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* 7. Employee Assignment - Multi-select */}
             <Grid size={{ xs: 12 }}>
               <Autocomplete
                 multiple
@@ -689,29 +711,36 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   `${option.firstName} ${option.lastName}`
                 }
                 getOptionDisabled={(option) => {
-                  // Check if this employee is available at selected time
-                  const isAvailable = availableSlots.some(
+                  // If no availability data loaded yet, don't disable anyone
+                  if (availableSlots.length === 0) {
+                    return false;
+                  }
+
+                  // Check if this employee is available at the selected time
+                  const exactMatch = availableSlots.find(
                     (slot) =>
                       slot.employeeId === option.id &&
-                      slot.startTime === formData.scheduledTime &&
-                      slot.available
+                      slot.startTime === formData.scheduledTime
                   );
-                  const hasSlots = availableSlots.some(
+
+                  // If we have an exact time match in the availability data
+                  if (exactMatch) {
+                    // Disable if NOT available at this exact time
+                    return !exactMatch.available;
+                  }
+
+                  // If employee has slots but no exact match for this time, disable them
+                  const hasAnySlots = availableSlots.some(
                     (slot) => slot.employeeId === option.id
                   );
 
-                  // If the selected time matches a pre-generated slot, use strict checking
-                  // Otherwise (for times like 10:15), allow selection if employee has ANY slots
-                  // The backend will validate actual availability
-                  if (isAvailable) {
-                    return false; // Exact match - definitely available
+                  if (hasAnySlots) {
+                    // They have slots configured but not at this time - disable
+                    return true;
                   }
 
-                  // For non-standard times, allow if employee has any slots that day
-                  // Backend will perform the actual conflict check
-                  return hasSlots && !availableSlots.some(
-                    slot => slot.employeeId === option.id && slot.available
-                  );
+                  // No slots configured at all - allow selection (backend will validate)
+                  return false;
                 }}
                 renderTags={(value, getTagProps) =>
                   value.map((employee, index) => (
@@ -739,24 +768,42 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   />
                 )}
                 renderOption={(props, option) => {
-                  // Check if this employee is available at selected time
-                  const exactMatch = availableSlots.some(
+                  // If no availability data loaded yet
+                  if (availableSlots.length === 0) {
+                    return (
+                      <li {...props} key={option.id}>
+                        <Box display="flex" justifyContent="space-between" width="100%">
+                          <span>{option.firstName} {option.lastName}</span>
+                          <span style={{ color: '#757575', fontSize: '0.75rem' }}>
+                            No schedule set
+                          </span>
+                        </Box>
+                      </li>
+                    );
+                  }
+
+                  // Check if this employee is available at the selected time
+                  const exactMatch = availableSlots.find(
                     (slot) =>
                       slot.employeeId === option.id &&
-                      slot.startTime === formData.scheduledTime &&
-                      slot.available
+                      slot.startTime === formData.scheduledTime
                   );
-                  const hasAnyAvailableSlots = availableSlots.some(
-                    (slot) => slot.employeeId === option.id && slot.available
-                  );
-                  const hasSlots = availableSlots.some(
+
+                  const hasAnySlots = availableSlots.some(
                     (slot) => slot.employeeId === option.id
                   );
 
-                  // For non-standard times (like 10:15), show as available if they have any slots
-                  const isAvailable = exactMatch || hasAnyAvailableSlots;
-                  const isDisabled = hasSlots && !hasAnyAvailableSlots;
-                  const noAvailabilityData = availableSlots.length === 0;
+                  let isAvailable = false;
+                  let isDisabled = false;
+
+                  if (exactMatch) {
+                    // We have data for this exact time
+                    isAvailable = exactMatch.available;
+                    isDisabled = !exactMatch.available;
+                  } else if (hasAnySlots) {
+                    // Employee has slots but not at this time
+                    isDisabled = true;
+                  }
 
                   return (
                     <li {...props} key={option.id}>
@@ -771,16 +818,11 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                         </span>
                         {isDisabled && (
                           <span style={{ color: '#d32f2f', fontSize: '0.875rem' }}>
-                            Already booked
+                            Not available
                           </span>
                         )}
-                        {hasSlots && isAvailable && (
+                        {isAvailable && (
                           <span style={{ color: '#2e7d32' }}>✅</span>
-                        )}
-                        {noAvailabilityData && (
-                          <span style={{ color: '#757575', fontSize: '0.75rem' }}>
-                            No schedule set
-                          </span>
                         )}
                       </Box>
                     </li>
