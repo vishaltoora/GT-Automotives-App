@@ -74,9 +74,10 @@ export class AvailabilityService {
 
   /**
    * Delete a recurring availability slot
+   * Both ADMIN and STAFF can delete any availability
    */
   async deleteRecurringAvailability(availabilityId: string, user: any) {
-    // First, get the availability to check ownership
+    // First, get the availability to verify it exists
     const availability = await this.prisma.employeeAvailability.findUnique({
       where: { id: availabilityId },
     });
@@ -85,12 +86,7 @@ export class AvailabilityService {
       throw new NotFoundException(`Availability slot not found`);
     }
 
-    // STAFF users can only delete their own availability (ADMIN can delete any)
-    if (user.role?.name === 'STAFF' && availability.employeeId !== user.id) {
-      throw new BadRequestException('Staff users can only delete their own availability');
-    }
-
-    // Allow ADMIN to delete any availability (no restriction)
+    // Both ADMIN and STAFF can delete any availability (no restriction)
 
     return this.prisma.employeeAvailability.delete({
       where: { id: availabilityId },
@@ -234,11 +230,11 @@ export class AvailabilityService {
       }
 
 
-      // Generate time slots (every 30 minutes)
+      // Generate time slots (every 15 minutes)
       const slots = this.generateTimeSlots(
         dayStart,
         dayEnd,
-        30,
+        15,
         recurringSlots,
         overrides,
         appointments,
@@ -318,13 +314,23 @@ export class AvailabilityService {
       },
     });
 
+    console.log(`[AVAILABILITY] Checking time ${startTime} for ${duration} min (end: ${endTime})`);
+    console.log(`[AVAILABILITY] Found ${recurringSlots.length} recurring slots:`);
+    recurringSlots.forEach(slot => {
+      const fits = this.timeInRange(startTime, duration, slot.startTime, slot.endTime);
+      console.log(`  - Slot: ${slot.startTime} - ${slot.endTime}, Fits: ${fits}`);
+    });
+
     const withinRecurringSlot = recurringSlots.some((slot) =>
       this.timeInRange(startTime, duration, slot.startTime, slot.endTime)
     );
 
+    console.log(`[AVAILABILITY] Within recurring slot: ${withinRecurringSlot}`);
+
     // If no override and not in recurring slot, not available
     if (!hasAvailableOverride && !withinRecurringSlot) {
       const availableSlots = recurringSlots.map(s => `${s.startTime}-${s.endTime}`).join(', ');
+      console.log(`[AVAILABILITY] ❌ NOT AVAILABLE - No recurring slot match`);
       return {
         available: false,
         reason: `Employee's working hours on this day: ${availableSlots || 'Not scheduled to work'}`,
@@ -374,7 +380,9 @@ export class AvailabilityService {
     for (const appointment of conflictingAppointments) {
       const appointmentEnd = appointment.endTime || this.addMinutesToTime(appointment.scheduledTime, appointment.duration);
       console.log(`  - Existing appointment: ${appointment.scheduledTime} - ${appointmentEnd}`);
-      if (this.timeOverlaps(startTime, endTime, appointment.scheduledTime, appointmentEnd)) {
+      const overlaps = this.timeOverlaps(startTime, endTime, appointment.scheduledTime, appointmentEnd);
+      console.log(`  - Checking overlap: ${startTime}-${endTime} vs ${appointment.scheduledTime}-${appointmentEnd} = ${overlaps}`);
+      if (overlaps) {
         console.log(`  ❌ CONFLICT DETECTED! Overlaps with appointment ${appointment.id}`);
         return {
           available: false,
@@ -383,6 +391,8 @@ export class AvailabilityService {
         };
       }
     }
+
+    console.log(`  ✅ No conflicts found - employee is available!`);
 
     return true;
   }
@@ -447,9 +457,14 @@ export class AvailabilityService {
 
   /**
    * Helper: Check if two time ranges overlap
+   * Two appointments overlap if one starts before the other ends AND ends after the other starts
+   * However, if one ends exactly when the other starts, they DO NOT overlap (back-to-back is allowed)
    */
   private timeOverlaps(start1: string, end1: string, start2: string, end2: string): boolean {
-    return start1 < end2 && end1 > start2;
+    // Allow back-to-back appointments: 9:00-10:00 and 10:00-11:00 should NOT overlap
+    // Overlapping means: start1 < end2 (starts before the other ends) AND end1 > start2 (ends after the other starts)
+    // But we exclude the edge case where end1 === start2 or end2 === start1 (back-to-back)
+    return start1 < end2 && end1 > start2 && !(end1 === start2 || end2 === start1);
   }
 
   /**

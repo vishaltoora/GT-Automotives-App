@@ -42,9 +42,9 @@ interface AppointmentDialogProps {
 }
 
 const SERVICE_TYPES = [
-  { value: 'TIRE_CHANGE', label: 'Tire Change', duration: 30 },
-  { value: 'TIRE_ROTATION', label: 'Tire Rotation', duration: 45 },
-  { value: 'TIRE_REPAIR', label: 'Tire Repair', duration: 60 },
+  { value: 'TIRE_CHANGE', label: 'Tire Mount Balance', duration: 60 },
+  { value: 'TIRE_ROTATION', label: 'Tire Rotation', duration: 30 },
+  { value: 'TIRE_REPAIR', label: 'Tire Repair', duration: 30 },
   { value: 'WHEEL_ALIGNMENT', label: 'Wheel Alignment', duration: 60 },
   { value: 'TIRE_BALANCE', label: 'Tire Balance', duration: 30 },
   { value: 'INSPECTION', label: 'Inspection', duration: 30 },
@@ -98,6 +98,37 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       return getCurrentTimeRounded();
     }
     return undefined;
+  };
+
+  // Generate time slots in 15-minute intervals (9:00 AM to 11:00 PM)
+  const generateTimeOptions = () => {
+    const options: { value: string; label: string }[] = [];
+    const startHour = 9; // 9 AM
+    const endHour = 23; // 11 PM
+    const minTime = getMinTime();
+
+    for (let hour = startHour; hour <= endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        if (hour === endHour && minute > 0) break; // Stop at 11:00 PM
+
+        const timeValue = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+        // Skip times before current time if today
+        if (minTime && timeValue < minTime) {
+          continue;
+        }
+
+        // Format for display (12-hour format)
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayMinute = String(minute).padStart(2, '0');
+        const label = `${displayHour}:${displayMinute} ${period}`;
+
+        options.push({ value: timeValue, label });
+      }
+    }
+
+    return options;
   };
 
   const [formData, setFormData] = useState({
@@ -362,9 +393,30 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   };
 
   const getAvailableTimesForSelectedTime = () => {
-    return availableSlots.filter(
+    // If user selected a time that's not in the pre-generated 30-minute slots,
+    // we can't determine availability from the frontend alone.
+    // Return all employees as potentially available - the backend will validate.
+    const exactMatch = availableSlots.filter(
       (slot) => slot.startTime === formData.scheduledTime && slot.available
     );
+
+    // If there's an exact match in the 30-minute slots, use it
+    if (exactMatch.length > 0) {
+      return exactMatch;
+    }
+
+    // If the time doesn't match any pre-generated slot (e.g., 10:15),
+    // return all unique employees who have ANY available slots that day
+    // The backend will perform the actual availability check
+    const uniqueEmployees = Array.from(
+      new Map(
+        availableSlots
+          .filter(slot => slot.available)
+          .map(slot => [slot.employeeId, slot])
+      ).values()
+    );
+
+    return uniqueEmployees.length > 0 ? uniqueEmployees : [];
   };
 
   return (
@@ -558,20 +610,27 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
             {/* 3. Start Time */}
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Start Time"
-                type="time"
-                value={formData.scheduledTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, scheduledTime: e.target.value })
+              <Autocomplete
+                options={generateTimeOptions()}
+                getOptionLabel={(option) => option.label}
+                value={
+                  generateTimeOptions().find(
+                    (opt) => opt.value === formData.scheduledTime
+                  ) || undefined
                 }
-                InputLabelProps={{ shrink: true }}
-                inputProps={{
-                  step: 900,
-                  min: getMinTime()
+                onChange={(_, newValue) => {
+                  setFormData({
+                    ...formData,
+                    scheduledTime: newValue?.value || '',
+                  });
                 }}
-                required
+                isOptionEqualToValue={(option, value) =>
+                  option.value === value.value
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="Start Time" required />
+                )}
+                disableClearable
               />
             </Grid>
 
@@ -641,8 +700,18 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                     (slot) => slot.employeeId === option.id
                   );
 
-                  // Disable if we have availability data and they're unavailable
-                  return hasSlots && !isAvailable;
+                  // If the selected time matches a pre-generated slot, use strict checking
+                  // Otherwise (for times like 10:15), allow selection if employee has ANY slots
+                  // The backend will validate actual availability
+                  if (isAvailable) {
+                    return false; // Exact match - definitely available
+                  }
+
+                  // For non-standard times, allow if employee has any slots that day
+                  // Backend will perform the actual conflict check
+                  return hasSlots && !availableSlots.some(
+                    slot => slot.employeeId === option.id && slot.available
+                  );
                 }}
                 renderTags={(value, getTagProps) =>
                   value.map((employee, index) => (
@@ -671,17 +740,22 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 )}
                 renderOption={(props, option) => {
                   // Check if this employee is available at selected time
-                  const isAvailable = availableSlots.some(
+                  const exactMatch = availableSlots.some(
                     (slot) =>
                       slot.employeeId === option.id &&
                       slot.startTime === formData.scheduledTime &&
                       slot.available
                   );
+                  const hasAnyAvailableSlots = availableSlots.some(
+                    (slot) => slot.employeeId === option.id && slot.available
+                  );
                   const hasSlots = availableSlots.some(
                     (slot) => slot.employeeId === option.id
                   );
 
-                  const isDisabled = hasSlots && !isAvailable;
+                  // For non-standard times (like 10:15), show as available if they have any slots
+                  const isAvailable = exactMatch || hasAnyAvailableSlots;
+                  const isDisabled = hasSlots && !hasAnyAvailableSlots;
                   const noAvailabilityData = availableSlots.length === 0;
 
                   return (

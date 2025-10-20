@@ -1,9 +1,10 @@
-import { Box, Typography, Grid, Card, CardContent, Button, Paper, Chip, CircularProgress, Avatar, Divider, LinearProgress, Stack, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, Button, Paper, Chip, CircularProgress, Avatar, Divider, Stack, useTheme, useMediaQuery } from '@mui/material';
 import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning, Work, CalendarMonth, TireRepair, Event } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { dashboardService, DashboardStats } from '../../services/dashboard.service';
+import { appointmentService, Appointment } from '../../services/appointment.service';
 import { colors } from '../../theme/colors';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
@@ -18,6 +19,8 @@ export function StaffDashboard() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [myJobDialogOpen, setMyJobDialogOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
@@ -27,6 +30,7 @@ export function StaffDashboard() {
 
   useEffect(() => {
     loadStats();
+    loadTodayAppointments();
   }, []);
 
   const loadStats = async () => {
@@ -39,6 +43,64 @@ export function StaffDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadTodayAppointments = async () => {
+    try {
+      setAppointmentsLoading(true);
+      const data = await appointmentService.getTodayAppointments();
+
+      // Staff can see all appointments (no filtering)
+      setTodayAppointments(data);
+    } catch (error) {
+      console.error('Failed to load today appointments:', error);
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  };
+
+  const formatTime = (time: string) => {
+    // Convert 24-hour time to 12-hour format
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const formatTimeRange = (startTime: string, endTime?: string, duration?: number) => {
+    const start = formatTime(startTime);
+
+    // If endTime is provided, use it
+    if (endTime) {
+      const end = formatTime(endTime);
+      return `${start} - ${end}`;
+    }
+
+    // Otherwise calculate from duration
+    if (duration) {
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const totalMinutes = hours * 60 + minutes + duration;
+      const endHours = Math.floor(totalMinutes / 60) % 24;
+      const endMinutes = totalMinutes % 60;
+      const endTimeStr = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+      const end = formatTime(endTimeStr);
+      return `${start} - ${end}`;
+    }
+
+    return start;
+  };
+
+  const formatPhone = (phone: string) => {
+    // Remove all non-digit characters
+    const cleaned = phone.replace(/\D/g, '');
+
+    // Format as XXX-XXX-XXXX
+    if (cleaned.length === 10) {
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+
+    // Return original if not 10 digits
+    return phone;
   };
 
   return (
@@ -671,105 +733,6 @@ export function StaffDashboard() {
               </Paper>
             </Box>
           </Paper>
-
-          {/* Work Queue Widget */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 1.5, sm: 3 },
-              borderRadius: 2,
-              border: `1px solid ${colors.neutral[200]}`,
-              background: `linear-gradient(135deg, ${colors.neutral[50]} 0%, white 100%)`,
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
-              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.secondary.main }}>
-                Work Queue
-              </Typography>
-              <Chip
-                label="5 Active"
-                size="small"
-                sx={{
-                  backgroundColor: colors.secondary.main,
-                  color: 'white',
-                  fontWeight: 600,
-                }}
-              />
-            </Box>
-
-            <Stack spacing={2}>
-              {[
-                { status: 'In Progress', customer: 'John Smith', service: 'Tire Installation', vehicle: '2023 Honda Civic', time: '9:00 AM', progress: 75, color: colors.semantic.info },
-                { status: 'Waiting', customer: 'Sarah Johnson', service: 'Oil Change', vehicle: '2021 Toyota Camry', time: '2:00 PM', progress: 0, color: colors.semantic.warning },
-                { status: 'Completed', customer: 'Mike Davis', service: 'Brake Inspection', vehicle: '2020 Ford F-150', time: '8:00 AM', progress: 100, color: colors.semantic.success },
-              ].map((job, index) => (
-                <Paper
-                  key={index}
-                  sx={{
-                    p: 2,
-                    border: `1px solid ${colors.neutral[200]}`,
-                    borderLeft: `4px solid ${job.color}`,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      transform: 'translateX(4px)',
-                    },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 700, mb: 0.5 }}>
-                        {job.service}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                        {job.customer} • {job.vehicle}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        <AccessTime sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
-                        {job.time}
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={job.status}
-                      size="small"
-                      sx={{
-                        backgroundColor: job.color,
-                        color: 'white',
-                        fontWeight: 600,
-                      }}
-                    />
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={job.progress}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: colors.neutral[200],
-                      '& .MuiLinearProgress-bar': {
-                        backgroundColor: job.color,
-                        borderRadius: 3,
-                      }
-                    }}
-                  />
-                </Paper>
-              ))}
-            </Stack>
-
-            <Button
-              fullWidth
-              component={Link}
-              to="/staff/appointments"
-              sx={{
-                mt: 2,
-                color: colors.secondary.main,
-                fontWeight: 600,
-                textTransform: 'none',
-              }}
-            >
-              View All Jobs
-            </Button>
-          </Paper>
         </Grid>
 
         {/* Right Sidebar */}
@@ -783,124 +746,145 @@ export function StaffDashboard() {
               border: `1px solid ${colors.neutral[200]}`,
               mb: { xs: 1.5, sm: 3 },
               background: `linear-gradient(135deg, ${colors.semantic.info}10 0%, white 100%)`,
+              display: 'flex',
+              flexDirection: 'column',
+              height: { xs: 'auto', lg: '800px' },
+              maxHeight: { xs: 'none', lg: '800px' },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.semantic.info }}>
                 Today's Schedule
               </Typography>
-              <Schedule sx={{ color: colors.semantic.info }} />
+              {appointmentsLoading ? (
+                <CircularProgress size={20} sx={{ color: colors.semantic.info }} />
+              ) : (
+                <Chip
+                  label={`${todayAppointments.length} ${todayAppointments.length === 1 ? 'Appointment' : 'Appointments'}`}
+                  size="small"
+                  sx={{
+                    backgroundColor: colors.semantic.info,
+                    color: 'white',
+                    fontWeight: 600,
+                  }}
+                />
+              )}
             </Box>
 
-            <Stack spacing={2} divider={<Divider />}>
-              {[
-                { time: '9:00 AM', service: 'Tire Installation', customer: 'John Smith', vehicle: '2023 Honda Civic' },
-                { time: '2:00 PM', service: 'Oil Change', customer: 'Sarah Johnson', vehicle: '2021 Camry' },
-                { time: '4:30 PM', service: 'Brake Inspection', customer: 'Mike Davis', vehicle: '2020 F-150' },
-              ].map((appointment, index) => (
-                <Box key={index}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Avatar
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: colors.semantic.info,
-                        fontSize: '0.875rem',
-                        fontWeight: 700,
-                      }}
-                    >
-                      {appointment.customer.charAt(0)}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {appointment.time}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {appointment.service}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 5 }}>
-                    {appointment.customer} • {appointment.vehicle}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-
-            <Button
-              fullWidth
-              variant="outlined"
-              component={Link}
-              to="/staff/appointments"
+            <Box
               sx={{
-                mt: 3,
-                borderColor: colors.semantic.info,
-                color: colors.semantic.info,
-                fontWeight: 600,
-                textTransform: 'none',
-                '&:hover': {
+                flexGrow: 1,
+                overflowY: 'auto',
+                mb: 2,
+                pr: 1,
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: colors.neutral[100],
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb': {
                   backgroundColor: colors.semantic.info,
-                  color: 'white',
+                  borderRadius: '3px',
+                  '&:hover': {
+                    backgroundColor: colors.primary.main,
+                  },
                 },
               }}
             >
-              View Full Schedule
-            </Button>
-          </Paper>
+              {appointmentsLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress size={32} sx={{ color: colors.semantic.info }} />
+                </Box>
+              ) : todayAppointments.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Schedule sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No appointments scheduled for today
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={2} divider={<Divider />}>
+                  {todayAppointments.map((appointment) => {
+                  const customerName = `${appointment.customer.firstName} ${appointment.customer.lastName}`;
+                  const customerPhone = appointment.customer.phone ? formatPhone(appointment.customer.phone) : 'No phone';
+                  const vehicleInfo = appointment.vehicle
+                    ? `${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}`
+                    : null;
+                  const technicianName = appointment.employee
+                    ? `${appointment.employee.firstName} ${appointment.employee.lastName}`
+                    : 'Unassigned';
 
-          {/* Quick Stats */}
-          <Paper
-            elevation={0}
+                  return (
+                    <Box key={appointment.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            bgcolor: colors.semantic.info,
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {appointment.customer.firstName.charAt(0)}
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: colors.neutral[900] }}>
+                            {formatTimeRange(appointment.scheduledTime, appointment.endTime, appointment.duration)}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: colors.neutral[900] }}>
+                            {appointment.serviceType}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={appointment.status}
+                          size="small"
+                          sx={{
+                            fontSize: '0.65rem',
+                            height: 20,
+                            backgroundColor:
+                              appointment.status === 'CONFIRMED' ? colors.semantic.success :
+                              appointment.status === 'IN_PROGRESS' ? colors.semantic.warning :
+                              colors.semantic.info,
+                            color: 'white',
+                          }}
+                        />
+                      </Box>
+                      <Typography variant="body2" sx={{ ml: 5, color: colors.neutral[900] }}>
+                        {customerName} • {customerPhone}
+                      </Typography>
+                      <Typography variant="caption" sx={{ ml: 5, display: 'block', color: colors.neutral[900] }}>
+                        {vehicleInfo ? `${vehicleInfo} • ` : ''}Tech: {technicianName}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+
+          <Button
+            fullWidth
+            variant="outlined"
+            component={Link}
+            to="/staff/appointments"
             sx={{
-              p: { xs: 1.5, sm: 3 },
-              borderRadius: 2,
-              border: `1px solid ${colors.neutral[200]}`,
-              background: `linear-gradient(135deg, ${colors.semantic.success}10 0%, white 100%)`,
+              borderColor: colors.semantic.info,
+              color: colors.semantic.info,
+              fontWeight: 600,
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: colors.semantic.info,
+                color: 'white',
+              },
             }}
           >
-            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.semantic.success, mb: { xs: 2, sm: 3 } }}>
-              This Week
-            </Typography>
-
-            <Stack spacing={2}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Jobs Completed
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.semantic.success }}>
-                  23
-                </Typography>
-              </Box>
-              <Divider />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  New Customers
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                  7
-                </Typography>
-              </Box>
-              <Divider />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Quotes Sent
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.semantic.info }}>
-                  12
-                </Typography>
-              </Box>
-              <Divider />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Avg. Job Time
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.secondary.main }}>
-                  3.2h
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Grid>
+            View Full Schedule
+          </Button>
+        </Paper>
+      </Grid>
       </Grid>
 
       {/* My Job Dialog - For staff to add their own job */}
@@ -952,6 +936,7 @@ export function StaffDashboard() {
         onSuccess={() => {
           setAppointmentDialogOpen(false);
           loadStats();
+          loadTodayAppointments(); // Reload today's appointments
         }}
       />
 

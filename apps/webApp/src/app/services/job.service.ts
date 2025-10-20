@@ -24,39 +24,79 @@ class JobService {
 
     if (clerkTokenGetter) {
       try {
+        console.log('[JobService] Getting fresh Clerk token...');
         const clerkToken = await clerkTokenGetter();
-        token = clerkToken || '';
+
+        if (!clerkToken) {
+          console.error('[JobService] Clerk token is null or empty');
+          throw new Error('No authentication token available');
+        }
+
+        token = clerkToken;
+        console.log('[JobService] Token retrieved successfully, length:', token.length);
       } catch (error) {
-        console.error('Failed to get Clerk token:', error);
+        console.error('[JobService] Failed to get Clerk token:', error);
+        throw new Error('Authentication failed. Please try logging out and back in.');
       }
+    } else {
+      console.warn('[JobService] No clerkTokenGetter available');
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
-        ...options.headers,
-      },
-    });
+    try {
+      // Add timeout for mobile networks (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      console.log('[JobService] Making request to:', url, 'Method:', options.method || 'GET');
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+          ...options.headers,
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('[JobService] Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('[JobService] Error response:', errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // Handle empty responses (like DELETE operations)
+      const contentLength = response.headers.get('content-length');
+      if (contentLength === '0' || response.status === 204) {
+        console.log('[JobService] Empty response (204 or no content)');
+        return null as T;
+      }
+
+      const text = await response.text();
+      if (!text) {
+        console.log('[JobService] Empty response text');
+        return null as T;
+      }
+
+      const data = JSON.parse(text);
+      console.log('[JobService] Success, received data');
+      return data;
+    } catch (error: any) {
+      console.error('[JobService] Request failed:', error);
+      // Provide better error messages for common mobile/network issues
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout. Please try again.');
+      }
+      // Re-throw the original error if it's already formatted
+      throw error;
     }
-
-    // Handle empty responses (like DELETE operations)
-    const contentLength = response.headers.get('content-length');
-    if (contentLength === '0' || response.status === 204) {
-      return null as T;
-    }
-
-    const text = await response.text();
-    if (!text) {
-      return null as T;
-    }
-
-    return JSON.parse(text);
   }
 
   async createJob(jobData: CreateJobDto): Promise<JobResponseDto> {
