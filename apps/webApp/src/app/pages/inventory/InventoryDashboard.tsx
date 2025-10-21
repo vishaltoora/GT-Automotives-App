@@ -140,8 +140,8 @@ export function InventoryDashboard() {
               </Box>
             )}
           </Box>
-          <Avatar sx={{ bgcolor: `${color}.main`, color: `${color}.contrastText`, width: isMobile ? 36 : 40, height: isMobile ? 36 : 40 }}>
-            {React.cloneElement(icon as React.ReactElement, { sx: { fontSize: isMobile ? 18 : 24 } })}
+          <Avatar sx={{ bgcolor: `${color}.main`, color: `${color}.contrastText`, width: isMobile ? 36 : 40, height: isMobile ? 36 : 40, fontSize: isMobile ? 18 : 24 }}>
+            {icon}
           </Avatar>
         </Box>
       </CardContent>

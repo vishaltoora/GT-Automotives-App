@@ -116,6 +116,25 @@ const QuotationDetails: React.FC = () => {
     }
   };
 
+  const getStatusLabel = (status: Quote['status']) => {
+    switch (status) {
+      case 'CONVERTED':
+        return 'Converted to Invoice';
+      case 'SENT':
+        return 'Sent';
+      case 'ACCEPTED':
+        return 'Accepted';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'EXPIRED':
+        return 'Expired';
+      case 'DRAFT':
+        return 'Draft';
+      default:
+        return status;
+    }
+  };
+
   const isExpired = (validUntil?: string) => {
     if (!validUntil) return false;
     return new Date(validUntil) < new Date();
@@ -252,7 +271,7 @@ const QuotationDetails: React.FC = () => {
           </Grid>
           <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: 'right' }}>
             <Chip
-              label={quotation.status}
+              label={getStatusLabel(quotation.status)}
               color={getStatusColor(quotation.status)}
               size="medium"
             />

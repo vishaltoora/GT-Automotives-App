@@ -15,10 +15,6 @@ import {
   Alert,
   Skeleton,
   Pagination,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   ToggleButton,
   ToggleButtonGroup,
   Fab,
@@ -38,14 +34,12 @@ import {
   ViewList as ListViewIcon,
   ViewModule as GridViewIcon,
   Search as SearchIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
+import { useTires, useInvalidateTireQueries } from '../../hooks/useTires';
 import { ITireSearchParams, ITire } from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
@@ -102,8 +96,8 @@ export function TireListSimple({
   // State
   const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'grid' : 'list');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('updatedAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy] = useState<SortOption>('updatedAt'); // setSortBy removed - currently unused
+  const [sortOrder] = useState<'asc' | 'desc'>('desc'); // setSortOrder removed - currently unused
   const [page, setPage] = useState(1);
   const [pageSize] = useState(embedded ? 6 : 12);
   
@@ -137,7 +131,7 @@ export function TireListSimple({
     error 
   } = useTires(searchParams);
 
-  const exportMutation = useExportTires();
+  // const exportMutation = useExportTires(); // Unused - kept for future implementation
   const invalidateQueries = useInvalidateTireQueries();
   
   // Delete mutation
@@ -174,15 +168,16 @@ export function TireListSimple({
 
 
 
-  const handleSortChange = (newSortBy: SortOption) => {
-    if (newSortBy === sortBy) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(newSortBy);
-      setSortOrder('asc');
-    }
-    setPage(1);
-  };
+  // Unused for now - kept for future implementation
+  // const handleSortChange = (newSortBy: SortOption) => {
+  //   if (newSortBy === sortBy) {
+  //     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  //   } else {
+  //     setSortBy(newSortBy);
+  //     setSortOrder('asc');
+  //   }
+  //   setPage(1);
+  // };
 
   const handleTireView = (tireId: string) => {
     if (embedded) {
@@ -224,17 +219,18 @@ export function TireListSimple({
     setTireToDelete(null);
   };
 
-  const handleExport = async () => {
-    try {
-      await exportMutation.mutateAsync(searchParams);
-    } catch (error) {
-      console.error('Export failed:', error);
-    }
-  };
+  // Unused for now - kept for future implementation
+  // const handleExport = async () => {
+  //   try {
+  //     await exportMutation.mutateAsync(searchParams);
+  //   } catch (error) {
+  //     console.error('Export failed:', error);
+  //   }
+  // };
 
-  const handleRefresh = () => {
-    invalidateQueries();
-  };
+  // const handleRefresh = () => {
+  //   invalidateQueries();
+  // };
 
   const LoadingSkeleton = () => (
     <Grid container spacing={2}>

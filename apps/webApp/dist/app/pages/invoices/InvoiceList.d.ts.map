@@ -1,1 +1,1 @@
-{"version":3,"file":"InvoiceList.d.ts","sourceRoot":"","sources":["../../../../src/app/pages/invoices/InvoiceList.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAuC,MAAM,OAAO,CAAC;AA4C5D,QAAA,MAAM,WAAW,EAAE,KAAK,CAAC,EA8iBxB,CAAC;AAEF,eAAe,WAAW,CAAC"}
+{"version":3,"file":"InvoiceList.d.ts","sourceRoot":"","sources":["../../../../src/app/pages/invoices/InvoiceList.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAuC,MAAM,OAAO,CAAC;AA6C5D,QAAA,MAAM,WAAW,EAAE,KAAK,CAAC,EAqhBxB,CAAC;AAEF,eAAe,WAAW,CAAC"}

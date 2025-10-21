@@ -23,6 +23,7 @@ import { customerService } from '../../services/customer.service';
 import { vehicleService } from '../../services/vehicle.service';
 import TireService from '../../services/tire.service';
 import { serviceService } from '../../services/service.service';
+import { quotationService } from '../../services/quotation.service';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import InvoiceFormContent from './InvoiceFormContent';
@@ -43,6 +44,7 @@ interface InvoiceDialogProps {
   onClose: () => void;
   onSuccess: (invoice: any) => void;
   invoice?: any; // For edit mode
+  quotationId?: string; // For converting from quotation
 }
 
 export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
@@ -50,6 +52,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   onClose,
   onSuccess,
   invoice = null,
+  quotationId,
 }) => {
   const { } = useAuth();
   const theme = useTheme();
@@ -143,15 +146,25 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      loadData();
-      if (isEditMode && invoice) {
-        populateFormForEdit(invoice);
-      } else {
-        // Reset form when dialog opens for create mode
-        resetForm();
-      }
+      const initializeDialog = async () => {
+        // Always load data first (customers, tires, services, companies)
+        const loadedData = await loadData();
+
+        // Then populate the form based on mode
+        if (isEditMode && invoice) {
+          populateFormForEdit(invoice);
+        } else if (quotationId && loadedData) {
+          // Load quotation data to pre-fill the invoice
+          await loadQuotationData(quotationId, loadedData.companies);
+        } else {
+          // Reset form when dialog opens for create mode
+          resetForm();
+        }
+      };
+
+      initializeDialog();
     }
-  }, [open, isEditMode, invoice]);
+  }, [open, isEditMode, invoice, quotationId]);
 
   useEffect(() => {
     if (formData.customerId) {
@@ -260,8 +273,17 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         const defaultCompany = companiesData.find(c => c.isDefault) || companiesData[0];
         setFormData(prev => ({ ...prev, companyId: defaultCompany.id }));
       }
+
+      // Return loaded data for use in initialization
+      return {
+        customers: customersData,
+        tires: tiresResult.items || [],
+        services: servicesData,
+        companies: companiesData,
+      };
     } catch (error) {
       console.error('Error loading data:', error);
+      return null;
     }
   };
 
@@ -275,9 +297,61 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     }
   };
 
+  const loadQuotationData = async (quoteId: string, companiesList: Company[]) => {
+    try {
+      const quotation = await quotationService.getQuote(quoteId);
+
+      // Pre-fill customer form with quotation data
+      setCustomerForm({
+        firstName: quotation.customerName?.split(' ')[0] || '',
+        lastName: quotation.customerName?.split(' ').slice(1).join(' ') || '',
+        businessName: quotation.businessName || '',
+        address: quotation.address || 'Prince George, BC',
+        phone: quotation.phone || '',
+        email: quotation.email || '',
+      });
+
+      // Set to new customer mode since quotations don't have customerId
+      setIsNewCustomer(true);
+
+      // Set form data with companies passed as parameter
+      const defaultCompany = companiesList.find(c => c.isDefault) || companiesList[0];
+      setFormData(prev => ({
+        ...prev,
+        customerId: '', // Explicitly clear customerId for new customer
+        vehicleId: '', // Clear vehicle selection
+        companyId: defaultCompany?.id || '', // Use passed companies list
+        gstRate: quotation.gstRate ?? 0.05, // Use nullish coalescing to handle 0 values
+        pstRate: quotation.pstRate ?? 0.07,
+        notes: quotation.notes || '',
+        status: 'PENDING', // Ensure status is set
+      }));
+
+      // Convert quotation items to invoice items
+      const invoiceItems: InvoiceItem[] = quotation.items.map(item => ({
+        itemType: item.itemType as InvoiceItemType,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        tireId: item.tireId,
+        tireName: item.tireName,
+        discountType: 'amount',
+        discountValue: 0,
+        discountAmount: 0,
+        total: item.total,
+      }));
+
+      setItems(invoiceItems);
+    } catch (error) {
+      console.error('Error loading quotation:', error);
+      // Fall back to empty form
+      resetForm();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const customerId = formData.customerId;
 
     if (!customerId && (!customerForm.firstName || !customerForm.lastName)) {
@@ -290,9 +364,11 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       return;
     }
 
+    let invoiceData: any; // Declare outside try block for error logging
+
     try {
       setLoading(true);
-      
+
       // Calculate totals - separate regular items from discount items
       const subtotal = items.reduce((sum, item) => {
         const itemCalc = calculateItemTotal(item);
@@ -300,12 +376,16 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       }, 0);
 
       // GST and PST rates are already decimals (0.05, 0.07), so no need to divide by 100
-      const gstAmount = subtotal * formData.gstRate;
-      const pstAmount = subtotal * formData.pstRate;
+      // Convert to numbers in case they're strings from form inputs
+      const gstRate = Number(formData.gstRate ?? 0.05);
+      const pstRate = Number(formData.pstRate ?? 0.07);
+
+      const gstAmount = subtotal * gstRate;
+      const pstAmount = subtotal * pstRate;
       const taxAmount = gstAmount + pstAmount;
       const total = subtotal + taxAmount;
 
-      const invoiceData: any = {
+      invoiceData = {
         items: items.map((item) => {
           const { itemType, description, quantity, unitPrice, tireId, tireName } = item;
           const itemData: any = {
@@ -323,12 +403,12 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           return itemData;
         }),
         subtotal: Number(subtotal),
-        taxRate: Number(formData.gstRate + formData.pstRate),
+        taxRate: Number(gstRate + pstRate), // Use local variables instead of formData
         taxAmount: Number(taxAmount),
         total: Number(total),
-        gstRate: Number(formData.gstRate),
+        gstRate: Number(gstRate),
         gstAmount: Number(gstAmount),
-        pstRate: Number(formData.pstRate),
+        pstRate: Number(pstRate),
         pstAmount: Number(pstAmount),
       };
 
@@ -388,12 +468,12 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       onSuccess(result);
       onClose();
     } catch (error: any) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Error creating invoice:', error);
-      }
-      
+      console.error('Error creating invoice:', error);
+      console.error('Invoice data that failed:', invoiceData);
+
       if (error.response?.data) {
-        const errorMessage = Array.isArray(error.response.data.message) 
+        console.error('Backend error details:', error.response.data);
+        const errorMessage = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(', ')
           : error.response.data.message || 'Unknown error';
         alert(`Error creating invoice: ${errorMessage}`);

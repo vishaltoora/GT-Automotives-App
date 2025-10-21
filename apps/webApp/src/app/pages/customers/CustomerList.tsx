@@ -18,13 +18,11 @@ import {
   InputAdornment,
   Alert,
   CircularProgress,
-  Tooltip,
   Avatar,
   Stack,
   Grid,
   useTheme,
   useMediaQuery,
-  CardActions,
   Divider,
   Menu,
   MenuItem,
@@ -42,12 +40,10 @@ import {
   DirectionsCar as CarIcon,
   Receipt as ReceiptIcon,
   CalendarMonth as CalendarIcon,
-  Visibility as ViewIcon,
   Business as BusinessIcon,
   LocationOn as LocationIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 import { customerService, Customer } from '../../services/customer.service';
 import { useAuth } from '../../hooks/useAuth';
 import { CustomerDialog } from '../../components/customers/CustomerDialog';
@@ -55,7 +51,6 @@ import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { formatPhoneForDisplay } from '../../utils/phone';
 
 export function CustomerList() {
-  const navigate = useNavigate();
   const { role } = useAuth();
   const { confirmDelete } = useConfirmationHelpers();
   const theme = useTheme();

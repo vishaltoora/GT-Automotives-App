@@ -190,6 +190,25 @@ const QuoteList: React.FC = () => {
     }
   };
 
+  const getStatusLabel = (status: Quote['status']) => {
+    switch (status) {
+      case 'CONVERTED':
+        return 'Converted to Invoice';
+      case 'SENT':
+        return 'Sent';
+      case 'ACCEPTED':
+        return 'Accepted';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'EXPIRED':
+        return 'Expired';
+      case 'DRAFT':
+        return 'Draft';
+      default:
+        return status;
+    }
+  };
+
   const filteredQuotations = quotes.filter(quotation => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
@@ -296,7 +315,7 @@ const QuoteList: React.FC = () => {
                     <TableCell align="right">{formatCurrency(quotation.total)}</TableCell>
                     <TableCell>
                       <Chip
-                        label={quotation.status}
+                        label={getStatusLabel(quotation.status)}
                         color={getStatusColor(quotation.status)}
                         size="small"
                       />

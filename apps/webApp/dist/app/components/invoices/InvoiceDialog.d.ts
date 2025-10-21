@@ -4,6 +4,7 @@ interface InvoiceDialogProps {
     onClose: () => void;
     onSuccess: (invoice: any) => void;
     invoice?: any;
+    quotationId?: string;
 }
 export declare const InvoiceDialog: React.FC<InvoiceDialogProps>;
 export default InvoiceDialog;

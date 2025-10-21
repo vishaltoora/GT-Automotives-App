@@ -69,6 +69,7 @@ export interface UpdateQuoteDto {
     notes?: string;
     status?: Quote['status'];
     validUntil?: string;
+    convertedToInvoiceId?: string;
 }
 declare class QuoteService {
     private getAuthToken;

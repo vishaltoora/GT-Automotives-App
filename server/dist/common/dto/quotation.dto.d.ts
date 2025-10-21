@@ -51,6 +51,7 @@ export declare class UpdateQuoteDto {
     status?: QuotationStatus;
     notes?: string;
     validUntil?: string;
+    convertedToInvoiceId?: string;
 }
 export declare class QuotationResponseDto {
     id: string;

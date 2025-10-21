@@ -35,8 +35,6 @@ import {
   Description,
   Work,
   Payment,
-  ShoppingCart,
-  ReceiptLong,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';

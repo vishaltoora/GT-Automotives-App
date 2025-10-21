@@ -168,6 +168,10 @@ export class UpdateQuoteDto {
   @IsOptional()
   @IsString()
   validUntil?: string;
+
+  @IsOptional()
+  @IsString()
+  convertedToInvoiceId?: string;
 }
 
 export class QuotationResponseDto {

@@ -5,6 +5,10 @@ interface ProcessPaymentDialogProps {
     onClose: () => void;
     onSuccess: (payment: any) => void;
     job: JobResponseDto | null;
+    progressInfo?: {
+        current: number;
+        total: number;
+    };
 }
 export declare const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps>;
 export {};

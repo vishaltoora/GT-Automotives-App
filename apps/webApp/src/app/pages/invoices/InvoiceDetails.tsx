@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -24,22 +24,34 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
+import { quotationService } from '../../services/quotation.service';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
+import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 
 const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { role, isStaff, isAdmin } = useAuth();
   const { confirmCancel } = useConfirmationHelpers();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Check if this is a "new" invoice creation route
+  const isNewInvoice = id === 'new';
+  const quotationId = searchParams.get('fromQuotation');
 
   useEffect(() => {
-    if (id) {
+    if (isNewInvoice) {
+      // Open the create dialog when route is /invoices/new
+      setCreateDialogOpen(true);
+      setLoading(false);
+    } else if (id) {
       loadInvoice();
     }
-  }, [id]);
+  }, [id, isNewInvoice]);
 
   const loadInvoice = async () => {
     try {
@@ -53,6 +65,46 @@ const InvoiceDetails: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleCreateDialogClose = () => {
+    setCreateDialogOpen(false);
+    // Navigate back to invoices list
+    const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+    navigate(`${basePath}/invoices`);
+  };
+
+  const handleCreateSuccess = async (newInvoice: Invoice) => {
+    // If this invoice was created from a quotation, mark the quotation as converted
+    if (quotationId) {
+      try {
+        await quotationService.updateQuote(quotationId, {
+          status: 'CONVERTED',
+          convertedToInvoiceId: newInvoice.id,
+        });
+      } catch (error) {
+        console.error('Error updating quotation status:', error);
+        // Continue anyway - invoice was created successfully
+      }
+    }
+
+    // Navigate to the newly created invoice
+    const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+    navigate(`${basePath}/invoices/${newInvoice.id}`);
+  };
+
+  // Handle invoice creation route
+  if (isNewInvoice) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <InvoiceDialog
+          open={createDialogOpen}
+          onClose={handleCreateDialogClose}
+          onSuccess={handleCreateSuccess}
+          quotationId={quotationId || undefined}
+        />
+      </Box>
+    );
+  }
 
   const handlePrint = () => {
     if (invoice) {
