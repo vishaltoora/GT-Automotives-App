@@ -105,6 +105,7 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          NODE_ENV: production
         run: |
           echo "🌐 Building frontend and shared libraries in parallel..."
           yarn build:web &
@@ -123,11 +124,6 @@ jobs:
             exit 1
           fi
           echo "✅ Frontend and shared libraries built successfully"
-        env:
-          VITE_API_URL: https://gt-automotives.com
-          VITE_CLERK_PUBLISHABLE_KEY: pk_live_Y2xlcmsuZ3QtYXV0b21vdGl2ZXMuY29tJA
-          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
-          NODE_ENV: production
 
       - name: Prepare Frontend Artifact
         run: |
