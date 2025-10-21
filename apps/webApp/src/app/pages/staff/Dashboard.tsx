@@ -448,6 +448,29 @@ export function StaffDashboard() {
               </Paper>
 
               <Paper
+                component={Link}
+                to="/staff/appointments"
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.primary.lighter,
+                  },
+                }}
+              >
+                <CalendarMonth sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.lighter, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Appointments
+                </Typography>
+              </Paper>
+
+              <Paper
                 onClick={() => setMyJobDialogOpen(true)}
                 sx={{
                   p: { xs: 1.5, sm: 2 },
@@ -612,39 +635,10 @@ export function StaffDashboard() {
               gridTemplateColumns: {
                 xs: '1fr',
                 sm: 'repeat(2, 1fr)',
-                md: 'repeat(4, 1fr)',
+                md: 'repeat(3, 1fr)',
               },
               gap: { xs: 1, sm: 1.5, md: 2 }
             }}>
-              <Paper
-                component={Link}
-                to="/staff/appointments"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.primary.lighter}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.primary.lighter,
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.lighter, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.primary.lighter, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Appointments
-                </Typography>
-              </Paper>
-
               <Paper
                 component={Link}
                 to="/staff/inventory"
