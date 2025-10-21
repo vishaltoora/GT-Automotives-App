@@ -2,6 +2,92 @@
 
 ## October 21, 2025 Updates
 
+### User Management Phone Number Support & Role Management Fixes ✅
+
+**Phone Number Field Addition:**
+- **User Model Update:** Added optional phone field to User schema
+  - File: `libs/database/src/lib/prisma/schema.prisma`
+  - Database updated with `phone String?` field
+  - Frontend and backend DTOs synchronized for phone support
+  - Database migration applied with `db push`
+
+- **PhoneInput Component Integration:** Reused existing component for consistency
+  - File: `apps/webApp/src/app/components/common/PhoneInput.tsx`
+  - Replaced TextField with PhoneInput in CreateUserDialog
+  - Replaced TextField with PhoneInput in EditUserDialog
+  - Automatic phone formatting: XXX-XXX-XXXX for display
+  - Strips dashes when sending to backend (digits only)
+  - Consistent with customer phone number handling
+
+**Role Selection Bug Fix:**
+- **Root Cause:** Hardcoded role IDs didn't match database UUID role IDs
+- **Solution:** Switched from roleId to roleName approach
+  - Changed formData to use `roleName: 'ADMIN' | 'STAFF'`
+  - Created new backend endpoint `/api/users/:id/role-by-name`
+  - Backend looks up role by name instead of requiring hardcoded IDs
+  - Role dropdown now correctly shows selected role when opening EditUserDialog
+
+**Backend Changes:**
+- **users.controller.ts:** Added phone parameter to update DTO
+  - File: `server/src/users/users.controller.ts`
+  - New endpoint: `PUT /api/users/:id/role-by-name`
+  - Accepts roleName ('ADMIN' | 'STAFF') instead of role ID
+
+- **users.service.ts:** Enhanced Clerk error logging and phone support
+  - File: `server/src/users/users.service.ts`
+  - Added phone field handling in user updates
+  - Created `assignRoleByName` method for role lookups
+  - Comprehensive Clerk error logging with detailed validation messages
+  - Enhanced error extraction from Clerk API responses
+
+**Frontend Changes:**
+- **CreateUserDialog:** PhoneInput integration with proper formatting
+  - File: `apps/webApp/src/components/users/CreateUserDialog.tsx`
+  - Added PhoneInput component replacing TextField
+  - Phone field optional and validated
+  - Removed redundant phone formatting code
+
+- **EditUserDialog:** Fixed role selection and added phone support
+  - File: `apps/webApp/src/components/users/EditUserDialog.tsx`
+  - Role dropdown now uses `roleName` instead of `roleId`
+  - PhoneInput component for consistent formatting
+  - Role correctly set from `user.role.name` in useEffect
+  - Simplified role dropdown (ADMIN/STAFF only)
+
+**Error Handling Improvements:**
+- Enhanced Clerk error messages for user-friendly feedback
+- Detailed logging for debugging Clerk validation issues
+- Better error detection for duplicate emails and weak passwords
+- Password validation: uppercase, lowercase, number required
+
+**User Experience:**
+- Phone number field optional and can be updated later
+- Role dropdown shows correct selected role immediately
+- Consistent phone number formatting across customer and user management
+- Clear error messages for common Clerk validation issues
+
+**Production Environment Variable Fix:**
+- **GitHub Secret Update:** Changed VITE_API_URL to use reverse proxy
+  - Old value: `http://gt-backend.eastus.azurecontainer.io:3000`
+  - New value: `https://gt-automotives.com/api`
+  - Fixes `ERR_NAME_NOT_RESOLVED` errors in production
+  - Properly uses reverse proxy architecture for backend communication
+
+**Files Modified:**
+1. `libs/database/src/lib/prisma/schema.prisma` - Added phone field to User model
+2. `server/src/users/users.controller.ts` - Added phone parameter and role-by-name endpoint
+3. `server/src/users/users.service.ts` - Phone support and assignRoleByName method
+4. `apps/webApp/src/components/users/CreateUserDialog.tsx` - PhoneInput integration
+5. `apps/webApp/src/components/users/EditUserDialog.tsx` - Role fix and PhoneInput
+6. GitHub Secret `VITE_API_URL` - Updated to reverse proxy URL
+
+**Technical Details:**
+- Removed redundant TextField phone implementation
+- Reused existing PhoneInput component logic
+- Consistent phone handling: display "555-123-4567", store "5551234567"
+- All TypeScript type checks passing
+- Database schema updated successfully
+
 ### Mark as Paid Feature & Invoice DTO Validation Fixes ✅
 
 **Mark as Paid Feature:**

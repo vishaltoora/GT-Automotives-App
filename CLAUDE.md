@@ -165,6 +165,27 @@ git push origin main
   - `libs/data/src/lib/invoice.dto.ts` (companyId field)
 - 📝 **Impact**: Faster payment workflow, levy items supported, invoice validation errors resolved
 
+### October 21, 2025 - User Management Phone Support & Production API Fix ✅
+- ✅ **Phone Number Field**: Added optional phone field to User model with PhoneInput component integration
+- ✅ **PhoneInput Reuse**: Replaced redundant TextField with existing PhoneInput component for consistency
+- ✅ **Phone Formatting**: Display "555-123-4567", store "5551234567" (strips dashes for backend)
+- ✅ **Role Selection Fix**: Fixed EditUserDialog role dropdown not showing selected role
+- ✅ **Role Management Refactor**: Switched from roleId to roleName approach (eliminated hardcoded ID mismatch)
+- ✅ **New Backend Endpoint**: Added PUT /api/users/:id/role-by-name for role lookup by name
+- ✅ **Enhanced Error Logging**: Comprehensive Clerk error logging with detailed validation messages
+- ✅ **Database Schema**: Added phone String? field to User model via db push
+- ✅ **Production API Fix**: Updated GitHub secret VITE_API_URL from old Container Instance URL to reverse proxy
+- ✅ **Reverse Proxy URL**: Changed to https://gt-automotives.com/api (fixes ERR_NAME_NOT_RESOLVED)
+- ✅ **User Experience**: Phone field optional, role dropdown works correctly, consistent formatting
+- 🔧 **Files Updated**:
+  - `libs/database/src/lib/prisma/schema.prisma` (phone field)
+  - `server/src/users/users.controller.ts` (phone param + role-by-name endpoint)
+  - `server/src/users/users.service.ts` (phone support + assignRoleByName method)
+  - `apps/webApp/src/components/users/CreateUserDialog.tsx` (PhoneInput integration)
+  - `apps/webApp/src/components/users/EditUserDialog.tsx` (role fix + PhoneInput)
+  - GitHub Secret: VITE_API_URL → https://gt-automotives.com/api
+- 📝 **Impact**: Users can now have phone numbers, role editing works correctly, production backend connection restored
+
 ### October 20, 2025 - CORS Fix & Appointment Scheduling Enhancements ✅
 - ✅ **CORS PATCH Method Fix**: Added PATCH to allowed methods in reverse proxy CORS configuration
 - ✅ **Critical Mobile Bug Fixed**: Resolved "Method PATCH is not allowed" error preventing staff from marking jobs complete on iPhone
