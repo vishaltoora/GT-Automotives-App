@@ -147,6 +147,24 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### October 21, 2025 - Mark as Paid Feature & Invoice DTO Validation Fixes ✅
+- ✅ **Mark as Paid Feature**: Quick payment processing directly from invoice list
+- ✅ **PaymentMethodDialog Component**: Professional dialog for payment method selection
+- ✅ **Payment Methods**: Cash, Credit Card, Debit Card, Check, E-Transfer, Financing
+- ✅ **LEVY Item Type Support**: Added missing LEVY to backend InvoiceItemType enum
+- ✅ **CompanyId Validation Fix**: Added companyId field to frontend CreateInvoiceDto
+- ✅ **DTO Synchronization**: Frontend and backend DTOs now fully synchronized
+- ✅ **Improved Workflow**: Staff can mark invoices as paid without navigating to details page
+- ✅ **Levy Items**: Environmental levies and tire disposal fees can now be added to invoices
+- ✅ **Error Resolution**: Fixed "itemType must be one of the following values" validation error
+- ✅ **Error Resolution**: Fixed "companyId must be a string" validation error
+- 🔧 **Files Created**: PaymentMethodDialog.tsx (139 lines)
+- 🔧 **Files Updated**:
+  - `apps/webApp/src/app/pages/invoices/InvoiceList.tsx` (menu action integration)
+  - `server/src/common/dto/invoice.dto.ts` (LEVY enum value)
+  - `libs/data/src/lib/invoice.dto.ts` (companyId field)
+- 📝 **Impact**: Faster payment workflow, levy items supported, invoice validation errors resolved
+
 ### October 20, 2025 - CORS Fix & Appointment Scheduling Enhancements ✅
 - ✅ **CORS PATCH Method Fix**: Added PATCH to allowed methods in reverse proxy CORS configuration
 - ✅ **Critical Mobile Bug Fixed**: Resolved "Method PATCH is not allowed" error preventing staff from marking jobs complete on iPhone

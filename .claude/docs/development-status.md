@@ -87,6 +87,20 @@ This document provides a comprehensive overview of the current development statu
 - **Development Servers**: Reliable startup and hot reload
 - **CI/CD Ready**: GitHub Actions workflows updated
 
+### 5. Invoice Management System ✅
+- **Mark as Paid Feature**: Quick payment processing from invoice list (October 21, 2025)
+- **Payment Method Dialog**: Professional dialog for payment method selection
+- **LEVY Support**: Environmental levies and tire disposal fees on invoices
+- **DTO Validation**: Synchronized frontend/backend DTOs
+- **Quotation Conversion**: Convert quotations to invoices with auto-tracking
+- **Status Updates**: Automatic quotation status to "Converted to Invoice"
+
+**Components**:
+- `PaymentMethodDialog.tsx` - Payment method selection dialog
+- `InvoiceList.tsx` - Enhanced with Mark as Paid menu action
+- `InvoiceDialog.tsx` - Quotation conversion and tax calculation fixes
+- `InvoiceDetails.tsx` - Handles "new" route for invoice creation
+
 ## 🏗️ Technical Architecture
 
 ### Frontend Structure
@@ -218,6 +232,9 @@ server/src/
 - ✅ **Module Export Issues**: Fixed ESM/CommonJS compatibility
 - ✅ **Customer Data Duplication**: Prevented with better validation
 - ✅ **Quotation Creation Error**: Fixed variable name mismatch in QuotationsService
+- ✅ **Invoice LEVY Item Type**: Added LEVY to backend InvoiceItemType enum (October 21, 2025)
+- ✅ **Invoice CompanyId Validation**: Added companyId field to frontend CreateInvoiceDto (October 21, 2025)
+- ✅ **Quotation to Invoice Conversion**: Fixed 404 error and NaN taxRate issues (October 21, 2025)
 
 ### Current Known Issues
 - 🔍 **No major blocking issues currently identified**

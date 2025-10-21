@@ -1,5 +1,64 @@
 # Completed Work Log
 
+## October 21, 2025 Updates
+
+### Mark as Paid Feature & Invoice DTO Validation Fixes ✅
+
+**Mark as Paid Feature:**
+- **PaymentMethodDialog Component:** Created new dialog for quick payment processing
+  - File: `apps/webApp/src/app/components/invoices/PaymentMethodDialog.tsx`
+  - Payment method dropdown with 6 options: Cash, Credit Card, Debit Card, Check, E-Transfer, Financing
+  - Clean MUI Dialog with payment icon and clear title
+  - Auto-closes and resets after confirmation
+  - State management for selected payment method
+
+- **InvoiceList Integration:** Added "Mark as Paid" menu action
+  - File: `apps/webApp/src/app/pages/invoices/InvoiceList.tsx`
+  - New menu item visible only for PENDING invoices
+  - Payment icon (green color) for visual clarity
+  - State management for dialog open/close and selected invoice
+  - Success handler updates invoice and refreshes list
+  - Error handling with API error display
+
+**Invoice DTO Validation Fixes:**
+- **LEVY Item Type Support:** Added missing LEVY to backend enum
+  - File: `server/src/common/dto/invoice.dto.ts` line 10
+  - Fixed "itemType must be one of the following values" error
+  - Allows environmental levies and tire disposal fees on invoices
+  - Backend enum now matches frontend enum (7 types total)
+
+- **CompanyId Field Addition:** Added required companyId to frontend DTO
+  - File: `libs/data/src/lib/invoice.dto.ts` lines 86-87
+  - Fixed "companyId must be a string" validation error
+  - Frontend and backend DTOs now synchronized
+  - Invoice creation from quotations now works correctly
+
+**User Experience Improvements:**
+- Staff can mark invoices as paid without navigating to details page
+- One-click payment processing with method selection
+- Levy items can be added to invoices without validation errors
+- Invoice creation workflow fully functional
+- All TypeScript type checks passing
+
+**Technical Details:**
+- Frontend: New PaymentMethodDialog with MUI components
+- Frontend: Menu action integration with proper permissions
+- Backend: InvoiceItemType enum updated with LEVY
+- Frontend: CreateInvoiceDto updated with companyId
+- Validation: Both DTOs synchronized and passing
+
+**Files Modified:**
+- `apps/webApp/src/app/components/invoices/PaymentMethodDialog.tsx` (NEW - 139 lines)
+- `apps/webApp/src/app/pages/invoices/InvoiceList.tsx` (menu action + dialog integration)
+- `server/src/common/dto/invoice.dto.ts` (LEVY enum value)
+- `libs/data/src/lib/invoice.dto.ts` (companyId field)
+
+**Impact:**
+- ✅ Faster payment processing workflow
+- ✅ Levy items supported on invoices
+- ✅ Invoice creation validation errors resolved
+- ✅ Better UX for staff managing invoices
+
 ## October 20, 2025 Updates
 
 ### CORS Fix & Appointment Scheduling Enhancements ✅
