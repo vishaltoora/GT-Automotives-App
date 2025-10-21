@@ -414,7 +414,7 @@ export function AdminDashboard() {
                 xs: '1fr',
                 sm: 'repeat(2, 1fr)',
                 md: 'repeat(3, 1fr)',
-                lg: 'repeat(6, 1fr)',
+                lg: 'repeat(5, 1fr)',
               },
               gap: { xs: 1, sm: 1.5, md: 2 },
               mb: { xs: 1.5, sm: 2, md: 3 },
@@ -504,80 +504,6 @@ export function AdminDashboard() {
                 <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
                 <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   Payments
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/customers"
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.main,
-                  },
-                }}
-              >
-                <People sx={{ ...actionIconStyles, color: colors.primary.main }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  Customers
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setTireDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.semantic.success,
-                  },
-                }}
-              >
-                <TireRepair sx={{ ...actionIconStyles, color: colors.semantic.success }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  Add Tires
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/purchase-invoices"
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: '#ff5722',
-                  },
-                }}
-              >
-                <ShoppingCart sx={{ ...actionIconStyles, color: '#ff5722' }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  Purchase Invoices
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/admin/expense-invoices"
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: '#795548',
-                  },
-                }}
-              >
-                <ReceiptLong sx={{ ...actionIconStyles, color: '#795548' }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  Expense Invoices
                 </Typography>
               </Paper>
             </Box>

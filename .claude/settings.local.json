@@ -3,7 +3,9 @@
     "allow": [
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma db push --accept-data-loss --schema=libs/database/src/lib/prisma/schema.prisma)",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" psql -c \"SELECT id, \"\"scheduledDate\"\", \"\"scheduledTime\"\", duration, \"\"serviceType\"\", \"\"employeeId\"\" FROM \"\"Appointment\"\" WHERE \"\"scheduledTime\"\" = ''14:00'' AND status IN (''SCHEDULED'', ''CONFIRMED'', ''IN_PROGRESS'') ORDER BY \"\"scheduledDate\"\" DESC LIMIT 10;\")",
-      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" psql -c \"SELECT id, scheduled_date, scheduled_time, duration, service_type, employee_id FROM appointment WHERE scheduled_time = ''14:00'' AND status IN (''SCHEDULED'', ''CONFIRMED'', ''IN_PROGRESS'') ORDER BY scheduled_date DESC LIMIT 10;\")"
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" psql -c \"SELECT id, scheduled_date, scheduled_time, duration, service_type, employee_id FROM appointment WHERE scheduled_time = ''14:00'' AND status IN (''SCHEDULED'', ''CONFIRMED'', ''IN_PROGRESS'') ORDER BY scheduled_date DESC LIMIT 10;\")",
+      "Bash(yarn tsc --noEmit)",
+      "Bash(git add -A)"
     ],
     "deny": [],
     "ask": []

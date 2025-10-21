@@ -21,23 +21,24 @@ import {
   Stack,
   Divider,
   Pagination,
+  IconButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Visibility as ViewIcon,
   Print as PrintIcon,
   Search as SearchIcon,
-  Assessment as ReportIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Receipt as ReceiptIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { companyService, Company } from '../../services/company.service';
-import analyticsService, { AnalyticsData } from '../../services/analytics.service';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
-import { ActionsMenu, ActionItem, AnalyticsCards, AnalyticsCardData } from '../../components/common';
+import { ActionsMenu, ActionItem } from '../../components/common';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 
@@ -52,8 +53,6 @@ const InvoiceList: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [searchParams, setSearchParams] = useState({
     customerName: '',
     invoiceNumber: '',
@@ -62,6 +61,7 @@ const InvoiceList: React.FC = () => {
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -79,7 +79,6 @@ const InvoiceList: React.FC = () => {
   useEffect(() => {
     loadInvoices();
     loadCompanies();
-    loadAnalytics();
   }, []);
 
   const loadCompanies = async () => {
@@ -100,18 +99,6 @@ const InvoiceList: React.FC = () => {
       showApiError(error, 'Failed to load invoices');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadAnalytics = async () => {
-    try {
-      setAnalyticsLoading(true);
-      const data = await analyticsService.getAnalytics();
-      setAnalytics(data);
-    } catch (error) {
-      showApiError(error, 'Failed to load analytics');
-    } finally {
-      setAnalyticsLoading(false);
     }
   };
 
@@ -224,22 +211,7 @@ const InvoiceList: React.FC = () => {
 
   const canCreateInvoice = role === 'staff' || role === 'admin';
   const canManageInvoice = role === 'staff' || role === 'admin';
-  const canViewReports = role === 'staff' || role === 'admin';
   const canDeleteInvoice = role === 'admin';
-
-  const analyticsCards: AnalyticsCardData[] = analytics
-    ? [
-        {
-          title: 'Sales Invoices',
-          mtdValue: analytics.mtd.salesInvoices.total,
-          ytdValue: analytics.ytd.salesInvoices.total,
-          mtdCount: analytics.mtd.salesInvoices.count,
-          ytdCount: analytics.ytd.salesInvoices.count,
-          icon: <ReceiptIcon />,
-          color: '#2e7d32',
-        },
-      ]
-    : [];
 
   const getInvoiceActions = (invoice: Invoice): ActionItem[] => {
     const actions: ActionItem[] = [
@@ -295,111 +267,115 @@ const InvoiceList: React.FC = () => {
         <Typography variant={isMobile ? 'h5' : 'h4'} component="h1">
           Invoices
         </Typography>
-        <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, flexDirection: isMobile ? 'column' : 'row' }}>
-          {canViewReports && (
-            <Button
-              variant="outlined"
-              startIcon={!isMobile && <ReportIcon />}
-              onClick={() => {
-                const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
-                navigate(`${basePath}/invoices/cash-report`);
-              }}
-              fullWidth={isMobile}
-              size={isMobile ? 'medium' : 'medium'}
-            >
-              Cash Report
-            </Button>
-          )}
-          {canCreateInvoice && (
-            <Button
-              variant="contained"
-              startIcon={!isMobile && <AddIcon />}
-              onClick={() => setDialogOpen(true)}
-              fullWidth={isMobile}
-              size={isMobile ? 'medium' : 'medium'}
-            >
-              New Invoice
-            </Button>
-          )}
-        </Box>
+        {canCreateInvoice && (
+          <Button
+            variant="contained"
+            startIcon={!isMobile && <AddIcon />}
+            onClick={() => setDialogOpen(true)}
+            fullWidth={isMobile}
+            size={isMobile ? 'medium' : 'medium'}
+          >
+            New Invoice
+          </Button>
+        )}
       </Box>
 
-      {/* Analytics Cards */}
-      <AnalyticsCards cards={analyticsCards} loading={analyticsLoading} />
-
       <Paper sx={{ mb: { xs: 2, sm: 3 }, p: { xs: 1.5, sm: 2 } }}>
-        <Grid container spacing={{ xs: 1.5, sm: 2 }} alignItems="center">
-          <Grid size={{ xs: 12, sm: 3 }}>
-            <TextField
-              fullWidth
-              label="Invoice Number"
-              value={searchParams.invoiceNumber}
-              onChange={(e) => setSearchParams({ ...searchParams, invoiceNumber: e.target.value })}
-              size={isMobile ? 'small' : 'medium'}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            mb: isMobile && !filtersExpanded ? 0 : 2,
+            cursor: isMobile ? 'pointer' : 'default',
+          }}
+          onClick={() => isMobile && setFiltersExpanded(!filtersExpanded)}
+        >
+          <FilterListIcon sx={{ color: theme.palette.primary.main, fontSize: isMobile ? 20 : 24 }} />
+          <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+            Filters {isMobile && `(${[searchParams.status, searchParams.customerName, searchParams.invoiceNumber, searchParams.companyId].filter(Boolean).length})`}
+          </Typography>
+          {isMobile && (
+            <IconButton size="small" sx={{ ml: 'auto' }}>
+              {filtersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+          )}
+        </Box>
+
+        {(!isMobile || filtersExpanded) && (
+          <Grid container spacing={{ xs: 1.5, sm: 2 }} alignItems="center">
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <TextField
+                fullWidth
+                label="Invoice Number"
+                value={searchParams.invoiceNumber}
+                onChange={(e) => setSearchParams({ ...searchParams, invoiceNumber: e.target.value })}
+                size={isMobile ? 'small' : 'medium'}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <TextField
+                fullWidth
+                label="Customer Name"
+                value={searchParams.customerName}
+                onChange={(e) => setSearchParams({ ...searchParams, customerName: e.target.value })}
+                size={isMobile ? 'small' : 'medium'}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 2 }}>
+              <TextField
+                fullWidth
+                select
+                label="Status"
+                value={searchParams.status}
+                onChange={(e) => setSearchParams({ ...searchParams, status: e.target.value })}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="DRAFT">Draft</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="PAID">Paid</MenuItem>
+                <MenuItem value="CANCELLED">Cancelled</MenuItem>
+                <MenuItem value="REFUNDED">Refunded</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 2 }}>
+              <TextField
+                fullWidth
+                select
+                label="Company"
+                value={searchParams.companyId}
+                onChange={(e) => setSearchParams({ ...searchParams, companyId: e.target.value })}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                <MenuItem value="">All Companies</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 2 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleSearch}
+                startIcon={!isMobile && <SearchIcon />}
+                size={isMobile ? 'medium' : 'medium'}
+              >
+                Search
+              </Button>
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, sm: 3 }}>
-            <TextField
-              fullWidth
-              label="Customer Name"
-              value={searchParams.customerName}
-              onChange={(e) => setSearchParams({ ...searchParams, customerName: e.target.value })}
-              size={isMobile ? 'small' : 'medium'}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 2 }}>
-            <TextField
-              fullWidth
-              select
-              label="Status"
-              value={searchParams.status}
-              onChange={(e) => setSearchParams({ ...searchParams, status: e.target.value })}
-              size={isMobile ? 'small' : 'medium'}
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="DRAFT">Draft</MenuItem>
-              <MenuItem value="PENDING">Pending</MenuItem>
-              <MenuItem value="PAID">Paid</MenuItem>
-              <MenuItem value="CANCELLED">Cancelled</MenuItem>
-              <MenuItem value="REFUNDED">Refunded</MenuItem>
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 2 }}>
-            <TextField
-              fullWidth
-              select
-              label="Company"
-              value={searchParams.companyId}
-              onChange={(e) => setSearchParams({ ...searchParams, companyId: e.target.value })}
-              size={isMobile ? 'small' : 'medium'}
-            >
-              <MenuItem value="">All Companies</MenuItem>
-              {companies.map((company) => (
-                <MenuItem key={company.id} value={company.id}>
-                  {company.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 2 }}>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleSearch}
-              startIcon={!isMobile && <SearchIcon />}
-              size={isMobile ? 'medium' : 'medium'}
-            >
-              Search
-            </Button>
-          </Grid>
-        </Grid>
+        )}
       </Paper>
 
       {isMobile ? (

@@ -19,6 +19,8 @@ import {
   Stack,
   Chip,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -63,6 +65,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   appointmentId,
   defaultExpectedAmount = 0,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [payments, setPayments] = useState<PaymentEntry[]>([
     { id: crypto.randomUUID(), method: 'CASH', amount: 0 },
   ]);
@@ -156,9 +160,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: 2,
+          borderRadius: isMobile ? 0 : 2,
         },
       }}
     >
@@ -169,13 +174,14 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           alignItems: 'center',
           bgcolor: 'success.main',
           color: 'white',
-          py: 2,
+          py: isMobile ? 1.5 : 2,
+          px: isMobile ? 2 : 3,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MoneyIcon />
-          <Typography variant="h6" component="div">
-            Complete Appointment - Payment Details
+          <MoneyIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
+          <Typography variant={isMobile ? 'subtitle1' : 'h6'} component="div" sx={{ fontWeight: 600 }}>
+            {isMobile ? 'Payment Details' : 'Complete Appointment - Payment Details'}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} size="small" sx={{ color: 'white' }}>
@@ -183,7 +189,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ pt: 3 }}>
+      <DialogContent dividers sx={{ pt: isMobile ? 2 : 3, px: isMobile ? 2 : 3 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Expected Amount Field */}
           <TextField
@@ -263,18 +269,23 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: isMobile ? 'stretch' : 'center',
                 mb: 2,
+                gap: isMobile ? 1 : 0,
               }}
             >
-              <Typography variant="h6">Payment Breakdown</Typography>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+                Payment Breakdown
+              </Typography>
               <Button
                 startIcon={<AddIcon />}
                 onClick={handleAddPayment}
                 variant="outlined"
-                size="small"
+                size={isMobile ? 'medium' : 'small'}
                 color="primary"
+                fullWidth={isMobile}
               >
                 Add Payment Method
               </Button>
@@ -290,23 +301,37 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     borderColor: errors[payment.id] ? 'error.main' : 'divider',
                   }}
                 >
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                  <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
                     <Box
                       sx={{
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
+                        flexDirection: isMobile ? 'column' : 'row',
+                        alignItems: isMobile ? 'stretch' : 'center',
+                        gap: isMobile ? 1.5 : 2,
                       }}
                     >
-                      <Chip
-                        label={`#${index + 1}`}
-                        size="small"
-                        color="primary"
-                        sx={{ minWidth: 45 }}
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label={`#${index + 1}`}
+                          size="small"
+                          color="primary"
+                          sx={{ minWidth: 45 }}
+                        />
+                        {isMobile && payments.length > 1 && (
+                          <IconButton
+                            onClick={() => handleRemovePayment(payment.id)}
+                            disabled={payments.length === 1}
+                            size="small"
+                            color="error"
+                            sx={{ ml: 'auto' }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        )}
+                      </Box>
 
                       {/* Payment Method */}
-                      <FormControl sx={{ flex: 1 }} size="small">
+                      <FormControl sx={{ flex: 1 }} size="small" fullWidth={isMobile}>
                         <InputLabel>Payment Method</InputLabel>
                         <Select
                           value={payment.method}
@@ -334,7 +359,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         error={!!errors[payment.id]}
                         helperText={errors[payment.id]}
                         size="small"
-                        sx={{ width: 150 }}
+                        sx={{ width: isMobile ? '100%' : 150 }}
+                        fullWidth={isMobile}
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">$</InputAdornment>
@@ -346,15 +372,17 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         }}
                       />
 
-                      {/* Delete Button */}
-                      <IconButton
-                        onClick={() => handleRemovePayment(payment.id)}
-                        disabled={payments.length === 1}
-                        size="small"
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      {/* Delete Button - Desktop only */}
+                      {!isMobile && (
+                        <IconButton
+                          onClick={() => handleRemovePayment(payment.id)}
+                          disabled={payments.length === 1}
+                          size="small"
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
                     </Box>
                   </CardContent>
                 </Card>
@@ -374,29 +402,23 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             fullWidth
             placeholder="e.g., Invoice number, reference number, partial payment, etc."
           />
-
-          <Box
-            sx={{
-              mt: 1,
-              p: 2,
-              bgcolor: 'info.light',
-              borderRadius: 1,
-              borderLeft: 4,
-              borderColor: 'info.main',
-            }}
-          >
-            <Typography variant="body2" color="info.dark">
-              💡 <strong>Tip:</strong> You can split payments across multiple methods
-              (e.g., $50 Cash + $30 E-Transfer). Click "Add Payment Method" to break down
-              the payment. This will mark the appointment as completed and record all
-              payments for end-of-day tracking.
-            </Typography>
-          </Box>
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, gap: 1 }}>
-        <Button onClick={handleClose} variant="outlined" color="inherit">
+      <DialogActions
+        sx={{
+          p: isMobile ? 2 : 2,
+          gap: 1,
+          flexDirection: isMobile ? 'column-reverse' : 'row',
+        }}
+      >
+        <Button
+          onClick={handleClose}
+          variant="outlined"
+          color="inherit"
+          fullWidth={isMobile}
+          size={isMobile ? 'large' : 'medium'}
+        >
           Cancel
         </Button>
         <Button
@@ -405,6 +427,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           color="success"
           startIcon={<MoneyIcon />}
           disabled={totalAmount <= 0}
+          fullWidth={isMobile}
+          size={isMobile ? 'large' : 'medium'}
         >
           Complete & Record Payment
         </Button>

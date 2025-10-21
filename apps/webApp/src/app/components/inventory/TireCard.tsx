@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -11,6 +12,11 @@ import {
   Stack,
   Tooltip,
   useTheme,
+  useMediaQuery,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -18,6 +24,7 @@ import {
   Warning as WarningIcon,
   Visibility as ViewIcon,
   Inventory as InventoryIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { TireResponseDto as ITire } from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
@@ -104,8 +111,30 @@ export function TireCard({
   showActions = true,
 }: TireCardProps) {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isLowStock = tire.quantity <= (tire.minStock || 5);
   const isOutOfStock = tire.quantity === 0;
+  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(menuAnchor);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+  };
+
+  const handleEdit = () => {
+    handleMenuClose();
+    if (onEdit) onEdit();
+  };
+
+  const handleDelete = () => {
+    handleMenuClose();
+    if (onDelete) onDelete();
+  };
 
   const placeholderImage = `https://via.placeholder.com/300x200/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' ' + tire.size)}`;
 
@@ -143,10 +172,10 @@ export function TireCard({
           </Box>
         )}
 
-        <Box sx={{ position: 'relative', height: 140 }}>
+        <Box sx={{ position: 'relative', height: isMobile ? 100 : 140 }}>
           <CardMedia
             component="img"
-            height="140"
+            height={isMobile ? "100" : "140"}
             image={(tire as any).brandImageUrl || tire.imageUrl || placeholderImage}
             alt={`${tire.brand} ${tire.size}`}
             sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
@@ -168,7 +197,7 @@ export function TireCard({
                   align-items: center;
                   justify-content: center;
                   background: #f5f5f5;
-                  font-size: 40px;
+                  font-size: ${isMobile ? '30px' : '40px'};
                   border: 1px solid #e0e0e0;
                 `;
                 fallback.textContent = getTireEmoji(tire.type);
@@ -177,50 +206,54 @@ export function TireCard({
             }}
           />
         </Box>
-        
-        <CardContent sx={{ flexGrow: 1, p: 2 }}>
+
+        <CardContent sx={{ flexGrow: 1, p: isMobile ? 1 : 2 }}>
           {tire.name && (
-            <Typography variant="h6" component="h3" noWrap fontWeight="medium">
+            <Typography variant={isMobile ? 'body1' : 'h6'} component="h3" noWrap fontWeight="medium">
               {tire.name}
             </Typography>
           )}
-          <Typography variant={tire.name ? "body2" : "h6"} component={tire.name ? "p" : "h3"} color={tire.name ? "text.secondary" : "inherit"} noWrap>
+          <Typography variant={tire.name ? "caption" : (isMobile ? "body2" : "h6")} component={tire.name ? "p" : "h3"} color={tire.name ? "text.secondary" : "inherit"} noWrap>
             {tire.brand}
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" gutterBottom>
+          <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary" gutterBottom>
             {tire.size}
           </Typography>
 
-          {tire.sku && (
+          {!isMobile && tire.sku && (
             <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', display: 'block' }} gutterBottom>
               SKU: {tire.sku}
             </Typography>
           )}
 
-          {tire.location && (
+          {!isMobile && tire.location && (
             <Typography variant="body2" color="primary" gutterBottom sx={{ fontWeight: 500 }}>
               📍 {tire.location}
             </Typography>
           )}
 
-          <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
-            <Chip 
-              label={formatTireType(tire.type)} 
-              size="small" 
+          <Stack direction="row" spacing={0.5} sx={{ mb: isMobile ? 0.5 : 1 }}>
+            <Chip
+              label={formatTireType(tire.type)}
+              size="small"
               color={TIRE_TYPE_COLORS[tire.type]}
               variant="outlined"
+              sx={{
+                fontSize: isMobile ? '0.65rem' : undefined,
+                height: isMobile ? 20 : undefined,
+              }}
             />
           </Stack>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6" color="primary">
+            <Typography variant={isMobile ? 'body1' : 'h6'} color="primary" fontWeight="bold">
               ${tire.price.toFixed(2)}
             </Typography>
-            
+
             <Stack direction="row" alignItems="center" spacing={0.5}>
-              <InventoryIcon fontSize="small" color="action" />
-              <Typography variant="body2" color={isLowStock ? 'error' : 'text.secondary'}>
+              <InventoryIcon fontSize="small" color="action" sx={{ fontSize: isMobile ? 16 : undefined }} />
+              <Typography variant={isMobile ? 'caption' : 'body2'} color={isLowStock ? 'error' : 'text.secondary'} fontWeight={isLowStock ? 'bold' : 'normal'}>
                 {tire.quantity}
               </Typography>
             </Stack>
@@ -228,12 +261,12 @@ export function TireCard({
         </CardContent>
 
         {showActions && (
-          <CardActions sx={{ p: 1, pt: 0 }}>
-            <Button size="small" onClick={onView} startIcon={<ViewIcon />}>
+          <CardActions sx={{ p: isMobile ? 0.5 : 1, pt: 0, gap: 0.5 }}>
+            <Button size="small" onClick={onView} startIcon={!isMobile && <ViewIcon />} sx={{ fontSize: isMobile ? '0.7rem' : undefined }}>
               View
             </Button>
             {onEdit && (
-              <Button size="small" onClick={onEdit} startIcon={<EditIcon />}>
+              <Button size="small" onClick={onEdit} startIcon={!isMobile && <EditIcon />} sx={{ fontSize: isMobile ? '0.7rem' : undefined }}>
                 Edit
               </Button>
             )}
@@ -282,10 +315,10 @@ export function TireCard({
         </Box>
       )}
 
-      <Box sx={{ position: 'relative', height: 240 }}>
+      <Box sx={{ position: 'relative', height: isMobile ? 120 : 240 }}>
         <CardMedia
           component="img"
-          height="240"
+          height={isMobile ? "120" : "240"}
           image={(tire as any).brandImageUrl || tire.imageUrl || placeholderImage}
           alt={`${tire.brand} ${tire.size}`}
           sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
@@ -307,7 +340,7 @@ export function TireCard({
                 align-items: center;
                 justify-content: center;
                 background: #f5f5f5;
-                font-size: 60px;
+                font-size: ${isMobile ? '40px' : '60px'};
                 border: 1px solid #e0e0e0;
               `;
               fallback.textContent = getTireEmoji(tire.type);
@@ -316,69 +349,111 @@ export function TireCard({
           }}
         />
       </Box>
-      
-      <CardContent sx={{ flexGrow: 1 }}>
+
+      <CardContent sx={{ flexGrow: 1, p: isMobile ? 1.5 : 2 }}>
         {tire.name && (
-          <Typography variant="h5" component="h2" gutterBottom fontWeight="medium">
+          <Typography variant={isMobile ? 'body1' : 'h5'} component="h2" gutterBottom fontWeight="medium">
             {tire.name}
           </Typography>
         )}
-        <Typography variant={tire.name ? "h6" : "h5"} component={tire.name ? "h3" : "h2"} color={tire.name ? "text.secondary" : "inherit"} gutterBottom>
-          {tire.brand}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
+            <Typography variant={tire.name ? (isMobile ? 'body2' : 'h6') : (isMobile ? 'h6' : 'h5')} component={tire.name ? "h3" : "h2"} color={tire.name ? "text.secondary" : "inherit"}>
+              {tire.brand}
+            </Typography>
+            <Chip
+              label={formatCondition(tire.condition)}
+              color={CONDITION_COLORS[tire.condition]}
+              variant="outlined"
+              size="small"
+              sx={{
+                fontSize: isMobile ? '0.65rem' : '0.75rem',
+                height: isMobile ? 18 : 22,
+              }}
+            />
+          </Box>
+          {showActions && (onEdit || onDelete) && (
+            <>
+              <IconButton
+                size="small"
+                onClick={handleMenuClick}
+                aria-label="more actions"
+              >
+                <MoreVertIcon />
+              </IconButton>
+              <Menu
+                anchorEl={menuAnchor}
+                open={menuOpen}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                {onEdit && (
+                  <MenuItem onClick={handleEdit}>
+                    <ListItemIcon>
+                      <EditIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Edit</ListItemText>
+                  </MenuItem>
+                )}
+                {onDelete && (
+                  <MenuItem onClick={handleDelete}>
+                    <ListItemIcon>
+                      <DeleteIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText>Delete</ListItemText>
+                  </MenuItem>
+                )}
+              </Menu>
+            </>
+          )}
+        </Box>
+
+        <Typography variant={isMobile ? 'body2' : 'h6'} color="text.secondary" sx={{ mb: isMobile ? 1 : 2 }}>
+          {tire.size} • <Box component="span" sx={{ fontWeight: 'bold' }}>{formatTireType(tire.type)}</Box>
         </Typography>
 
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          {tire.size}
-        </Typography>
-
-        {tire.sku && (
+        {!isMobile && tire.sku && (
           <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', mb: 1 }}>
             SKU: {tire.sku}
           </Typography>
         )}
 
-        {tire.location && (
+        {!isMobile && tire.location && (
           <Typography variant="body1" color="primary" gutterBottom sx={{ fontWeight: 500, mb: 2 }}>
             📍 Location: {tire.location}
           </Typography>
         )}
 
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-          <Chip 
-            label={formatTireType(tire.type)} 
-            color={TIRE_TYPE_COLORS[tire.type]}
-            variant="outlined"
-          />
-          <Chip 
-            label={formatCondition(tire.condition)} 
-            color={CONDITION_COLORS[tire.condition]}
-            variant="outlined"
-          />
-        </Stack>
-
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: isMobile ? 1 : 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="h4" color="primary">
+            <Typography variant={isMobile ? 'h6' : 'h4'} color="primary" fontWeight="bold">
               ${tire.price.toFixed(2)}
             </Typography>
-            
+
             {showCost && tire.cost && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary">
                 Cost: ${tire.cost.toFixed(2)}
               </Typography>
             )}
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <InventoryIcon fontSize="small" color="action" />
-            <Typography variant="body1" color={isLowStock ? 'error' : 'text.primary'}>
+            <InventoryIcon fontSize="small" color="action" sx={{ fontSize: isMobile ? 16 : undefined }} />
+            <Typography variant={isMobile ? 'body2' : 'body1'} color={isLowStock ? 'error' : 'text.primary'} fontWeight={isLowStock ? 'bold' : 'normal'}>
               {tire.quantity} in stock
             </Typography>
           </Box>
         </Box>
 
-        {tire.notes && (
-          <Typography variant="body2" color="text.secondary" sx={{ 
+        {!isMobile && tire.notes && (
+          <Typography variant="body2" color="text.secondary" sx={{
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
@@ -389,42 +464,6 @@ export function TireCard({
           </Typography>
         )}
       </CardContent>
-
-      {showActions && (
-        <CardActions sx={{ justifyContent: 'space-between', p: 2, pt: 0 }}>
-          <Box>
-            <Button 
-              variant="outlined" 
-              onClick={onView} 
-              startIcon={<ViewIcon />}
-              sx={{ mr: 1 }}
-            >
-              View Details
-            </Button>
-          </Box>
-          
-          <Box>
-            {onEdit && (
-              <IconButton 
-                onClick={onEdit} 
-                color="primary"
-                sx={{ mr: 1 }}
-              >
-                <EditIcon />
-              </IconButton>
-            )}
-            
-            {onDelete && (
-              <IconButton 
-                onClick={onDelete} 
-                color="error"
-              >
-                <DeleteIcon />
-              </IconButton>
-            )}
-          </Box>
-        </CardActions>
-      )}
     </Card>
   );
 }

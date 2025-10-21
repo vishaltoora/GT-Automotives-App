@@ -18,6 +18,8 @@ import {
   Avatar,
   Divider,
   LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -53,6 +55,8 @@ const formatCurrency = (amount: number): string => {
 export function InventoryDashboard() {
   const navigate = useNavigate();
   const { isAdmin, isStaff } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [showRecentTires, setShowRecentTires] = useState(true);
 
@@ -92,11 +96,11 @@ export function InventoryDashboard() {
   const totalItems = inventoryReport?.totalItems || 0;
   const grossMargin = totalValue > 0 ? ((totalValue - totalCost) / totalValue) * 100 : 0;
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    subtitle, 
-    icon, 
+  const StatCard = ({
+    title,
+    value,
+    subtitle,
+    icon,
     color = 'primary',
     trend,
     isLoading = false
@@ -110,34 +114,34 @@ export function InventoryDashboard() {
     isLoading?: boolean;
   }) => (
     <Card>
-      <CardContent>
+      <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
               {title}
             </Typography>
             {isLoading ? (
-              <LinearProgress sx={{ width: 100, mb: 1 }} />
+              <LinearProgress sx={{ width: isMobile ? 60 : 100, mb: 1 }} />
             ) : (
-              <Typography variant="h4" component="div" color={`${color}.main`}>
+              <Typography variant={isMobile ? 'h5' : 'h4'} component="div" color={`${color}.main`} sx={{ fontWeight: 700 }}>
                 {value}
               </Typography>
             )}
             {subtitle && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 {trend && (
-                  trend === 'up' ? 
+                  trend === 'up' ?
                     <TrendingUpIcon fontSize="small" color="success" /> :
                     <TrendingDownIcon fontSize="small" color="error" />
                 )}
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? '0.65rem' : '0.75rem' }} noWrap>
                   {subtitle}
                 </Typography>
               </Box>
             )}
           </Box>
-          <Avatar sx={{ bgcolor: `${color}.main`, color: `${color}.contrastText` }}>
-            {icon}
+          <Avatar sx={{ bgcolor: `${color}.main`, color: `${color}.contrastText`, width: isMobile ? 36 : 40, height: isMobile ? 36 : 40 }}>
+            {React.cloneElement(icon as React.ReactElement, { sx: { fontSize: isMobile ? 18 : 24 } })}
           </Avatar>
         </Box>
       </CardContent>
@@ -145,36 +149,52 @@ export function InventoryDashboard() {
   );
 
   return (
-    <Box>
+    <Box sx={{ p: { xs: 0, sm: 3 } }}>
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{
+        mb: 3,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: 2,
+        px: { xs: 2, sm: 0 }
+      }}>
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Inventory Dashboard
+          <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" gutterBottom>
+            Inventory {isMobile ? '' : 'Dashboard'}
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Overview of tire inventory and stock levels
-          </Typography>
+          {!isMobile && (
+            <Typography variant="body1" color="text.secondary">
+              Overview of tire inventory and stock levels
+            </Typography>
+          )}
         </Box>
-        
-        <Stack direction="row" spacing={1}>
-          <IconButton onClick={handleRefresh} title="Refresh Data">
-            <RefreshIcon />
-          </IconButton>
-          
+
+        <Stack direction={isMobile ? 'column' : 'row'} spacing={1} sx={{ width: isMobile ? '100%' : 'auto' }}>
+          {!isMobile && (
+            <IconButton onClick={handleRefresh} title="Refresh Data">
+              <RefreshIcon />
+            </IconButton>
+          )}
+
           <Button
             variant="outlined"
             onClick={handleViewAllInventory}
-            startIcon={<ViewListIcon />}
+            startIcon={!isMobile && <ViewListIcon />}
+            fullWidth={isMobile}
+            size={isMobile ? 'medium' : 'medium'}
           >
             View All
           </Button>
-          
+
           {(isStaff || isAdmin) && (
             <Button
               variant="contained"
               onClick={handleAddTire}
-              startIcon={<AddIcon />}
+              startIcon={!isMobile && <AddIcon />}
+              fullWidth={isMobile}
+              size={isMobile ? 'medium' : 'medium'}
             >
               Add Tire
             </Button>
@@ -183,8 +203,8 @@ export function InventoryDashboard() {
       </Box>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+      <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mb: 3, px: { xs: 0.5, sm: 0 } }}>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
           <StatCard
             title="Total Items"
             value={totalItems.toLocaleString()}
@@ -194,8 +214,8 @@ export function InventoryDashboard() {
             isLoading={reportLoading}
           />
         </Grid>
-        
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
           <StatCard
             title="Inventory Value"
             value={formatCurrency(totalValue)}
@@ -205,9 +225,9 @@ export function InventoryDashboard() {
             isLoading={reportLoading}
           />
         </Grid>
-        
+
         {isAdmin && (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
             <StatCard
               title="Gross Margin"
               value={`${grossMargin.toFixed(1)}%`}
@@ -218,8 +238,8 @@ export function InventoryDashboard() {
             />
           </Grid>
         )}
-        
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
           <StatCard
             title="Low Stock Items"
             value={lowStockTires.length}
@@ -231,22 +251,24 @@ export function InventoryDashboard() {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={isMobile ? 1.5 : 3} sx={{ px: { xs: 0.5, sm: 0 } }}>
         {/* Low Stock Alert */}
         {lowStockTires.length > 0 && (
           <Grid size={{ xs: 12 }}>
-            <Alert 
-              severity="warning" 
+            <Alert
+              severity="warning"
               action={
-                <Button 
-                  color="inherit" 
-                  size="small" 
-                  onClick={handleViewLowStock}
-                >
-                  View All
-                </Button>
+                !isMobile && (
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={handleViewLowStock}
+                  >
+                    View All
+                  </Button>
+                )
               }
-              sx={{ mb: 3 }}
+              sx={{ mb: isMobile ? 2 : 3 }}
             >
               <Typography variant="subtitle2" gutterBottom>
                 {lowStockTires.length} items are running low on stock

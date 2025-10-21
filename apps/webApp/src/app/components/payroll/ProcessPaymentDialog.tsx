@@ -19,6 +19,8 @@ import {
   Card,
   CardContent,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -48,6 +50,10 @@ interface ProcessPaymentDialogProps {
   onClose: () => void;
   onSuccess: (payment: any) => void;
   job: JobResponseDto | null;
+  progressInfo?: {
+    current: number;
+    total: number;
+  };
 }
 
 export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
@@ -55,8 +61,11 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
   onClose,
   onSuccess,
   job,
+  progressInfo,
 }) => {
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProcessPaymentDto>({
@@ -129,10 +138,11 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
       TransitionComponent={Transition}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: 2,
-          boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+          borderRadius: isMobile ? 0 : 2,
+          boxShadow: isMobile ? 'none' : '0 20px 40px rgba(0,0,0,0.1)',
         },
       }}
     >
@@ -142,23 +152,31 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
           color: 'white',
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
-          py: 3,
+          gap: isMobile ? 1 : 2,
+          py: isMobile ? 2 : 3,
+          px: isMobile ? 2 : 3,
         }}
       >
-        <PaymentIcon />
-        <Typography variant="h5" component="div" sx={{ flex: 1 }}>
-          Process Payment
-        </Typography>
-        <IconButton onClick={onClose} sx={{ color: 'white' }}>
+        <PaymentIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
+        <Box sx={{ flex: 1 }}>
+          <Typography variant={isMobile ? 'h6' : 'h5'} component="div" sx={{ fontWeight: 600 }}>
+            Process Payment
+          </Typography>
+          {progressInfo && (
+            <Typography variant="caption" sx={{ opacity: 0.9 }}>
+              Job {progressInfo.current} of {progressInfo.total}
+            </Typography>
+          )}
+        </Box>
+        <IconButton onClick={onClose} sx={{ color: 'white' }} size={isMobile ? 'small' : 'medium'}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <DialogContent sx={{ p: isMobile ? 2 : 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 2 : 3 }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: isMobile ? 1 : 2 }}>
               {error}
             </Alert>
           )}
@@ -166,32 +184,32 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
           {/* Job Details Card */}
           {job && (
             <Card sx={{ backgroundColor: colors.neutral[50] }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <WorkIcon sx={{ color: colors.primary.main }} />
+              <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+                  <WorkIcon sx={{ color: colors.primary.main, fontSize: isMobile ? 18 : 24 }} />
                   Job Details
                 </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">Job Title:</Typography>
-                    <Typography variant="body2" fontWeight="medium">{job.title}</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 1 : 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Job Title:</Typography>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium">{job.title}</Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">Employee:</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon sx={{ fontSize: 16 }} />
-                      <Typography variant="body2" fontWeight="medium">
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Employee:</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <PersonIcon sx={{ fontSize: isMobile ? 14 : 16 }} />
+                      <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium">
                         {getEmployeeName(job.employee)}
                       </Typography>
                     </Box>
                   </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">Job Amount:</Typography>
-                    <Typography variant="body2" fontWeight="medium">${job.payAmount.toFixed(2)}</Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Job Amount:</Typography>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium">${job.payAmount.toFixed(2)}</Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">Remaining Balance:</Typography>
-                    <Typography variant="body2" fontWeight="medium" color={remainingBalance > 0 ? colors.semantic.warning : colors.semantic.success}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Remaining Balance:</Typography>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium" color={remainingBalance > 0 ? colors.semantic.warning : colors.semantic.success}>
                       ${remainingBalance.toFixed(2)}
                     </Typography>
                   </Box>
@@ -203,13 +221,13 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
           <Divider />
 
           {/* Payment Form */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PaymentIcon sx={{ color: colors.semantic.success }} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 2 : 3 }}>
+            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+              <PaymentIcon sx={{ color: colors.semantic.success, fontSize: isMobile ? 18 : 24 }} />
               Payment Information
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2 }}>
               <TextField
                 fullWidth
                 required
@@ -217,10 +235,11 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
                 label="Payment Amount"
                 value={formData.amount}
                 onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
+                size={isMobile ? 'small' : 'medium'}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <MoneyIcon sx={{ color: colors.semantic.success }} />
+                      <MoneyIcon sx={{ color: colors.semantic.success, fontSize: isMobile ? 18 : 24 }} />
                     </InputAdornment>
                   ),
                 }}
@@ -228,7 +247,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
                 helperText={remainingBalance > 0 ? `Remaining balance: $${remainingBalance.toFixed(2)}` : 'Job fully paid'}
               />
 
-              <FormControl fullWidth required>
+              <FormControl fullWidth required size={isMobile ? 'small' : 'medium'}>
                 <InputLabel>Payment Method</InputLabel>
                 <Select
                   value={formData.paymentMethod}
@@ -246,40 +265,33 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
 
             <TextField
               fullWidth
-              label="Reference Number (Optional)"
-              value={formData.reference}
-              onChange={(e) => handleInputChange('reference', e.target.value)}
-              placeholder="e.g., Check #1234, Transaction ID, etc."
-            />
-
-            <TextField
-              fullWidth
               multiline
-              rows={3}
+              rows={isMobile ? 2 : 3}
               label="Notes (Optional)"
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
               placeholder="Additional notes about this payment..."
+              size={isMobile ? 'small' : 'medium'}
             />
           </Box>
 
           {/* Payment Summary */}
           <Card sx={{ backgroundColor: colors.semantic.successLight + '20' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ color: colors.semantic.successDark }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} gutterBottom sx={{ color: colors.semantic.successDark, fontWeight: 600 }}>
                 Payment Summary
               </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography>Payment Amount:</Typography>
-                <Typography fontWeight="bold">${formData.amount?.toFixed(2) || '0.00'}</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: isMobile ? 0.5 : 1 }}>
+                <Typography variant={isMobile ? 'body2' : 'body1'}>Payment Amount:</Typography>
+                <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="bold">${formData.amount?.toFixed(2) || '0.00'}</Typography>
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography>Payment Method:</Typography>
-                <Typography fontWeight="medium">{formData.paymentMethod.replace('_', ' ')}</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: isMobile ? 0.5 : 1 }}>
+                <Typography variant={isMobile ? 'body2' : 'body1'}>Payment Method:</Typography>
+                <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="medium">{formData.paymentMethod.replace('_', ' ')}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography>New Balance:</Typography>
-                <Typography fontWeight="bold" color={remainingBalance - (formData.amount || 0) <= 0 ? colors.semantic.success : colors.semantic.warning}>
+                <Typography variant={isMobile ? 'body2' : 'body1'}>New Balance:</Typography>
+                <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="bold" color={remainingBalance - (formData.amount || 0) <= 0 ? colors.semantic.success : colors.semantic.warning}>
                   ${Math.max(0, remainingBalance - (formData.amount || 0)).toFixed(2)}
                 </Typography>
               </Box>
@@ -288,22 +300,24 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, pt: 0 }}>
+      <DialogActions sx={{ p: isMobile ? 2 : 3, pt: 0, gap: 1, flexDirection: isMobile ? 'column-reverse' : 'row' }}>
         <Button
           onClick={onClose}
           variant="outlined"
-          size="large"
-          sx={{ minWidth: 120 }}
+          size={isMobile ? 'large' : 'large'}
+          sx={{ minWidth: isMobile ? '100%' : 120 }}
+          fullWidth={isMobile}
         >
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
-          size="large"
+          size={isMobile ? 'large' : 'large'}
           disabled={loading || !formData.amount || formData.amount <= 0}
+          fullWidth={isMobile}
           sx={{
-            minWidth: 120,
+            minWidth: isMobile ? '100%' : 120,
             background: `linear-gradient(135deg, ${colors.semantic.success} 0%, ${colors.semantic.successDark} 100%)`,
           }}
         >

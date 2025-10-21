@@ -15,7 +15,14 @@ import {
   Alert,
   CircularProgress,
   Box,
+  useTheme,
+  useMediaQuery,
+  IconButton,
+  AppBar,
+  Toolbar,
+  Typography,
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { 
   TireDto, 
   CreateTireDto, 
@@ -76,6 +83,8 @@ const TIRE_CONDITIONS = [
 export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) {
   const queryClient = useQueryClient();
   useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isEditMode = !!tire;
 
   const [formData, setFormData] = useState<CreateTireDto>({
@@ -259,10 +268,50 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   const error = createMutation.error || updateMutation.error;
 
   return (
-    <Dialog open={open} disableEscapeKeyDown maxWidth="md" fullWidth>
-      <DialogTitle>{isEditMode ? 'Edit Tire' : 'Add New Tire'}</DialogTitle>
-      <DialogContent>
-        <Box sx={{ mt: 2 }}>
+    <Dialog
+      open={open}
+      disableEscapeKeyDown
+      maxWidth="md"
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          borderRadius: isMobile ? 0 : 2,
+        },
+      }}
+    >
+      {isMobile ? (
+        <AppBar
+          sx={{
+            position: 'relative',
+            bgcolor: 'primary.main',
+          }}
+        >
+          <Toolbar>
+            <Typography sx={{ flex: 1 }} variant="h6" component="div">
+              {isEditMode ? 'Edit Tire' : 'Add New Tire'}
+            </Typography>
+            <IconButton
+              edge="end"
+              color="inherit"
+              onClick={onClose}
+              disabled={isLoading}
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+      ) : (
+        <DialogTitle sx={{
+          bgcolor: 'primary.main',
+          color: 'white',
+        }}>
+          {isEditMode ? 'Edit Tire' : 'Add New Tire'}
+        </DialogTitle>
+      )}
+      <DialogContent sx={{ pt: isMobile ? 2 : 3 }}>
+        <Box sx={{ mt: isMobile ? 0 : 2 }}>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {(error as any)?.response?.data?.message || 'An error occurred'}
@@ -442,14 +491,24 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
           </Grid>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={isLoading}>
+      <DialogActions sx={{
+        p: isMobile ? 2 : 3,
+        gap: isMobile ? 1 : 0,
+        flexDirection: isMobile ? 'column-reverse' : 'row',
+      }}>
+        <Button
+          onClick={onClose}
+          disabled={isLoading}
+          fullWidth={isMobile}
+          variant={isMobile ? 'outlined' : 'text'}
+        >
           Cancel
         </Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
           disabled={isLoading}
+          fullWidth={isMobile}
           startIcon={isLoading ? <CircularProgress size={16} /> : null}
         >
           {isEditMode ? 'Update' : 'Add'} Tire

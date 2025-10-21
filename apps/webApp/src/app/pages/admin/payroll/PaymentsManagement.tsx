@@ -111,6 +111,9 @@ export function PaymentsManagement() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentResponseDto | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [processingAllJobs, setProcessingAllJobs] = useState(false);
+  const [currentEmployeeJobs, setCurrentEmployeeJobs] = useState<JobResponseDto[]>([]);
+  const [currentJobIndex, setCurrentJobIndex] = useState(0);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -210,8 +213,20 @@ export function PaymentsManagement() {
   };
 
   const handleProcessPayment = (payment: PaymentResponseDto) => {
+    // If processing jobs one by one, move to the next job
+    if (processingAllJobs && currentJobIndex < currentEmployeeJobs.length - 1) {
+      const nextIndex = currentJobIndex + 1;
+      setCurrentJobIndex(nextIndex);
+      setSelectedJob(currentEmployeeJobs[nextIndex]);
+      // Keep dialog open for next job
+    } else {
+      // All jobs processed or single job mode
+      setProcessDialogOpen(false);
+      setProcessingAllJobs(false);
+      setCurrentEmployeeJobs([]);
+      setCurrentJobIndex(0);
+    }
     fetchData(); // Refresh all data
-    setProcessDialogOpen(false);
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, payment: PaymentResponseDto) => {
@@ -322,10 +337,13 @@ export function PaymentsManagement() {
     return avatarColors[charCode % avatarColors.length];
   };
 
-  const handleProcessAllReadyJobs = async (employeeId: string) => {
+  const handleProcessJobsOneByOne = async (employeeId: string) => {
     const employeeReadyJobs = pendingJobs.filter(job => job.employee?.id === employeeId);
     if (employeeReadyJobs.length > 0) {
-      setSelectedJob(employeeReadyJobs[0]); // Open dialog with first job
+      setCurrentEmployeeJobs(employeeReadyJobs);
+      setCurrentJobIndex(0);
+      setSelectedJob(employeeReadyJobs[0]);
+      setProcessingAllJobs(true);
       setProcessDialogOpen(true);
     }
   };
@@ -352,9 +370,9 @@ export function PaymentsManagement() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: { xs: 1, sm: 3 } }}>
+      <Box sx={{ p: { xs: 0, sm: 3 } }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, px: { xs: 1.5, sm: 0 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
             <PaymentIcon sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success }} />
             <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold">
@@ -364,7 +382,7 @@ export function PaymentsManagement() {
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          <Alert severity="error" sx={{ mb: 3, mx: { xs: 1.5, sm: 0 }, borderRadius: { xs: 0, sm: 1 } }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
@@ -426,9 +444,9 @@ export function PaymentsManagement() {
 
           {/* Mobile: Always show Employees, Desktop: Use TabPanel */}
           {isMobile ? (
-            <Box sx={{ py: 1 }}>
+            <Box sx={{ py: 1, px: 0.5 }}>
               {/* Employee Cards - Compact Mobile View */}
-              <Grid container spacing={1}>
+              <Grid container spacing={1.5}>
               {employeePaymentSummaries.map((employee) => {
                 const isExpanded = expandedCards.has(employee.id);
                 return (
@@ -437,6 +455,7 @@ export function PaymentsManagement() {
                       sx={{
                         transition: 'all 0.2s ease-in-out',
                         border: `1px solid ${colors.neutral[200]}`,
+                        borderRadius: 2,
                         '&:hover': {
                           borderColor: colors.primary.main,
                           boxShadow: 2,
@@ -612,7 +631,7 @@ export function PaymentsManagement() {
                           size="small"
                           variant="contained"
                           startIcon={<PaymentIcon />}
-                          onClick={() => handleProcessAllReadyJobs(employee.id)}
+                          onClick={() => handleProcessJobsOneByOne(employee.id)}
                           disabled={employee.totalReadyJobs === 0}
                           sx={{
                             background: employee.totalReadyJobs > 0
@@ -640,7 +659,7 @@ export function PaymentsManagement() {
             </Grid>
 
               {employeePaymentSummaries.length === 0 && (
-                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <Paper sx={{ p: 4, textAlign: 'center', mx: 1.5, borderRadius: 0 }}>
                   <GroupIcon sx={{ fontSize: 64, color: colors.neutral[400], mb: 2 }} />
                   <Typography variant="h6" color="text.secondary">
                     No employees found
@@ -837,7 +856,7 @@ export function PaymentsManagement() {
                               size="small"
                               variant="contained"
                               startIcon={<PaymentIcon />}
-                              onClick={() => handleProcessAllReadyJobs(employee.id)}
+                              onClick={() => handleProcessJobsOneByOne(employee.id)}
                               disabled={employee.totalReadyJobs === 0}
                               sx={{
                                 background: employee.totalReadyJobs > 0
@@ -1141,9 +1160,18 @@ export function PaymentsManagement() {
         {/* Process Payment Dialog */}
         <ProcessPaymentDialog
           open={processDialogOpen}
-          onClose={() => setProcessDialogOpen(false)}
+          onClose={() => {
+            setProcessDialogOpen(false);
+            setProcessingAllJobs(false);
+            setCurrentEmployeeJobs([]);
+            setCurrentJobIndex(0);
+          }}
           onSuccess={handleProcessPayment}
           job={selectedJob}
+          progressInfo={processingAllJobs ? {
+            current: currentJobIndex + 1,
+            total: currentEmployeeJobs.length
+          } : undefined}
         />
 
         {/* Confirmation Dialog */}

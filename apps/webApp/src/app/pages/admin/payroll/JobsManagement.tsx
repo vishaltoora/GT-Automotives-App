@@ -92,6 +92,7 @@ export function JobsManagement() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedJob, setSelectedJob] = useState<JobResponseDto | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Filters for jobs view
   const [filters, setFilters] = useState({
@@ -242,8 +243,27 @@ export function JobsManagement() {
 
     try {
       await jobService.markJobComplete(selectedJob.id);
-      fetchEmployeeJobs();
       handleMenuClose();
+
+      // Refresh data without showing loading state
+      if (!selectedEmployee) return;
+
+      const filterParams = {
+        employeeId: selectedEmployee.id,
+        status: filters.status ? (filters.status as JobStatus) : undefined,
+        jobType: filters.jobType ? (filters.jobType as JobType) : undefined,
+        startDate: filters.startDate?.toISOString() || undefined,
+        endDate: filters.endDate?.toISOString() || undefined,
+      };
+
+      const [jobsData, summaryData] = await Promise.all([
+        jobService.getJobs(filterParams),
+        jobService.getJobSummary(selectedEmployee.id),
+      ]);
+
+      setJobs(jobsData);
+      setSummary(summaryData);
+      setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to mark job as complete');
     }
@@ -360,7 +380,7 @@ export function JobsManagement() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 0, sm: 3 } }}>
         {/* Loading states */}
         {loading && !employeeId && !employeeSummaries.length && (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -377,7 +397,7 @@ export function JobsManagement() {
         {/* Employee List View */}
         {!employeeId && !loading && (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, px: { xs: 2, sm: 0 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
                 <GroupIcon sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.main }} />
                 <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold">
@@ -387,16 +407,16 @@ export function JobsManagement() {
             </Box>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+              <Alert severity="error" sx={{ mb: 3, mx: { xs: 2, sm: 0 } }} onClose={() => setError(null)}>
                 {error}
               </Alert>
             )}
 
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, px: { xs: 2, sm: 0 } }}>
               Select an employee to view and manage their jobs and payments
             </Typography>
 
-            <Grid container spacing={2}>
+            <Grid container spacing={2} sx={{ px: { xs: 0.5, sm: 0 } }}>
               {employeeSummaries.map((employee) => {
                 const isExpanded = expandedCards.has(employee.id);
                 const completedJobs = employee.totalJobs - employee.pendingJobs - employee.readyJobs;
@@ -577,7 +597,7 @@ export function JobsManagement() {
             </Grid>
 
             {employeeSummaries.length === 0 && (
-              <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Paper sx={{ p: 4, textAlign: 'center', mx: { xs: 0.5, sm: 0 } }}>
                 <GroupIcon sx={{ fontSize: 64, color: colors.neutral[400], mb: 2 }} />
                 <Typography variant="h6" color="text.secondary">
                   No employees found
@@ -591,7 +611,7 @@ export function JobsManagement() {
         {employeeId && selectedEmployee && !loading && (
           <>
             {/* Header with Breadcrumbs */}
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3, px: { xs: 2, sm: 0 } }}>
           <Breadcrumbs sx={{ mb: 2 }}>
             <MuiLink
               component="button"
@@ -709,54 +729,54 @@ export function JobsManagement() {
 
         {/* Summary Cards */}
         {summary && (
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mb: 3, px: { xs: 0.5, sm: 0 } }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.primary.light} 0%, ${colors.primary.main} 100%)`, color: 'white' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WorkIcon />
-                    <Typography variant="h6">Total Jobs</Typography>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                    <WorkIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Total Jobs</Typography>
                   </Box>
-                  <Typography variant="h3" fontWeight="bold">
+                  <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
                     {summary.totalJobs}
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.warningLight} 0%, ${colors.semantic.warning} 100%)`, color: 'white' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ScheduleIcon />
-                    <Typography variant="h6">Pending</Typography>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                    <ScheduleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Pending</Typography>
                   </Box>
-                  <Typography variant="h3" fontWeight="bold">
+                  <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
                     {summary.pendingJobs}
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.infoLight} 0%, ${colors.semantic.info} 100%)`, color: 'white' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CheckCircleIcon />
-                    <Typography variant="h6">Ready</Typography>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                    <CheckCircleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Ready</Typography>
                   </Box>
-                  <Typography variant="h3" fontWeight="bold">
+                  <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
                     {summary.readyJobs}
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.successLight} 0%, ${colors.semantic.success} 100%)`, color: 'white' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <MoneyIcon />
-                    <Typography variant="h6">Total Pay</Typography>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                    <MoneyIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600, fontSize: isMobile ? '0.7rem' : undefined }}>Total Pay</Typography>
                   </Box>
-                  <Typography variant="h3" fontWeight="bold">
+                  <Typography variant={isMobile ? 'h5' : 'h3'} fontWeight="bold" sx={{ fontSize: isMobile ? '1.5rem' : undefined }}>
                     ${summary.totalPayAmount.toFixed(2)}
                   </Typography>
                 </CardContent>
@@ -766,81 +786,109 @@ export function JobsManagement() {
         )}
 
         {/* Filters */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <FilterIcon sx={{ color: colors.primary.main }} />
-            <Typography variant="h6">Filters</Typography>
-            <Button size="small" onClick={clearFilters}>Clear All</Button>
+        <Paper sx={{ p: isMobile ? 1.5 : 3, mb: 3, mx: { xs: 0.5, sm: 0 }, borderRadius: { xs: 0, sm: 1 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              mb: isMobile && !filtersExpanded ? 0 : 2,
+              flexWrap: 'wrap',
+              cursor: isMobile ? 'pointer' : 'default',
+            }}
+            onClick={() => isMobile && setFiltersExpanded(!filtersExpanded)}
+          >
+            <FilterIcon sx={{ color: colors.primary.main, fontSize: isMobile ? 20 : 24 }} />
+            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+              Filters {isMobile && `(${[filters.status, filters.jobType, filters.startDate, filters.endDate].filter(Boolean).length})`}
+            </Typography>
+            {isMobile ? (
+              <IconButton size="small" sx={{ ml: 'auto' }}>
+                {filtersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            ) : (
+              <Button size="small" onClick={clearFilters} sx={{ ml: 'auto' }}>Clear All</Button>
+            )}
           </Box>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filters.status}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                  label="Status"
-                >
-                  <MenuItem value="">All Statuses</MenuItem>
-                  {Object.values(JobStatus).map((status) => (
-                    <MenuItem key={status} value={status}>
-                      {status}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Job Type</InputLabel>
-                <Select
-                  value={filters.jobType}
-                  onChange={(e) => setFilters(prev => ({ ...prev, jobType: e.target.value }))}
-                  label="Job Type"
-                >
-                  <MenuItem value="">All Types</MenuItem>
-                  {Object.values(JobType).map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <DatePicker
-                label="Start Date"
-                value={filters.startDate}
-                onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
-                slotProps={{ textField: { size: 'small', fullWidth: true } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <DatePicker
-                label="End Date"
-                value={filters.endDate}
-                onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
-                slotProps={{ textField: { size: 'small', fullWidth: true } }}
-              />
-            </Grid>
-          </Grid>
+
+          {(!isMobile || filtersExpanded) && (
+            <>
+              {isMobile && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                  <Button size="small" onClick={clearFilters}>Clear All</Button>
+                </Box>
+              )}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={filters.status}
+                      onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                      label="Status"
+                    >
+                      <MenuItem value="">All Statuses</MenuItem>
+                      {Object.values(JobStatus).map((status) => (
+                        <MenuItem key={status} value={status}>
+                          {status}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Job Type</InputLabel>
+                    <Select
+                      value={filters.jobType}
+                      onChange={(e) => setFilters(prev => ({ ...prev, jobType: e.target.value }))}
+                      label="Job Type"
+                    >
+                      <MenuItem value="">All Types</MenuItem>
+                      {Object.values(JobType).map((type) => (
+                        <MenuItem key={type} value={type}>
+                          {type}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <DatePicker
+                    label="Start Date"
+                    value={filters.startDate}
+                    onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                    slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <DatePicker
+                    label="End Date"
+                    value={filters.endDate}
+                    onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                    slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                  />
+                </Grid>
+              </Grid>
+            </>
+          )}
         </Paper>
 
         {/* Jobs Table/Cards */}
         {isMobile ? (
           /* Mobile: Card View */
-          <Box>
+          <Box sx={{ px: 0.5 }}>
             {jobs.length === 0 ? (
-              <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Paper sx={{ p: 4, textAlign: 'center', mx: 0.5, borderRadius: 0 }}>
                 <WorkIcon sx={{ fontSize: 48, color: colors.neutral[400], mb: 1 }} />
                 <Typography variant="body1" color="text.secondary">
                   No jobs found for this employee
                 </Typography>
               </Paper>
             ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {jobs.map((job) => (
-                  <Card key={job.id} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
+                  <Card key={job.id} sx={{ border: `1px solid ${colors.neutral[200]}`, borderRadius: 2 }}>
                     <CardContent sx={{ p: 2 }}>
                       {/* Header with title and actions */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>

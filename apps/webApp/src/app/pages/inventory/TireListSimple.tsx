@@ -403,78 +403,66 @@ export function TireListSimple({
 
       {/* Toolbar */}
       <Card sx={{ mb: 3 }}>
-        <Toolbar sx={{ gap: 2, flexWrap: 'wrap' }}>
-          {/* Search */}
-          <TextField
-            placeholder="Search tires..."
-            variant="outlined"
-            size="small"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
-            }}
-            sx={{ minWidth: 200, flexGrow: 1, maxWidth: 400 }}
-          />
-
-          {/* Sort */}
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Sort by</InputLabel>
-            <Select
-              value={sortBy}
-              label="Sort by"
-              onChange={(e) => handleSortChange(e.target.value as SortOption)}
-            >
-              <MenuItem value="brand">Brand</MenuItem>
-              <MenuItem value="size">Size</MenuItem>
-              <MenuItem value="price">Price</MenuItem>
-              <MenuItem value="quantity">Stock</MenuItem>
-              <MenuItem value="updatedAt">Updated</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* View Mode Toggle */}
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(_, newViewMode) => newViewMode && setViewMode(newViewMode)}
-            size="small"
-          >
-            <ToggleButton value="grid">
-              <GridViewIcon />
-            </ToggleButton>
-            <ToggleButton value="list">
-              <ListViewIcon />
-            </ToggleButton>
-          </ToggleButtonGroup>
-
-
-          {/* Actions */}
-          {showActions && (isStaff || isAdmin) && (
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
+        <Toolbar sx={{ gap: isMobile ? 1 : 2, flexWrap: 'wrap', px: isMobile ? 1.5 : 2 }}>
+          {/* Search with floating Add button on mobile */}
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1 }}>
+            <TextField
+              placeholder="Search tires..."
+              variant="outlined"
+              size="small"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
+              }}
+              sx={{ flexGrow: 1 }}
+            />
+            {showActions && (isStaff || isAdmin) && isMobile && (
+              <IconButton
+                color="primary"
                 onClick={handleTireCreate}
-                sx={{ whiteSpace: 'nowrap' }}
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                  width: 40,
+                  height: 40,
+                }}
               >
-                Add New Tire
-              </Button>
-              
-              <IconButton onClick={handleRefresh} title="Refresh">
-                <RefreshIcon />
+                <AddIcon />
               </IconButton>
-              
-              {isAdmin && (
-                <IconButton 
-                  onClick={handleExport} 
-                  disabled={exportMutation.isPending}
-                  title="Export to CSV"
-                >
-                  <DownloadIcon />
-                </IconButton>
-              )}
-            </Stack>
+            )}
+          </Box>
+
+          {/* View Mode Toggle - Hide on mobile */}
+          {!isMobile && (
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, newViewMode) => newViewMode && setViewMode(newViewMode)}
+              size="small"
+            >
+              <ToggleButton value="grid">
+                <GridViewIcon />
+              </ToggleButton>
+              <ToggleButton value="list">
+                <ListViewIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
+
+          {/* Actions - Desktop only */}
+          {showActions && (isStaff || isAdmin) && !isMobile && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleTireCreate}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              Add New Tire
+            </Button>
           )}
         </Toolbar>
       </Card>
