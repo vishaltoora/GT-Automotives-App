@@ -10,6 +10,11 @@ export enum AppointmentStatus {
   NO_SHOW = 'NO_SHOW'
 }
 
+export enum AppointmentType {
+  AT_GARAGE = 'AT_GARAGE',
+  MOBILE_SERVICE = 'MOBILE_SERVICE'
+}
+
 export class CreateAppointmentDto {
   @IsString()
   customerId!: string;
