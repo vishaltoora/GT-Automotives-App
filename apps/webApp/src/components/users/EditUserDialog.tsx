@@ -56,14 +56,8 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
     lastName: '',
     phone: '',
     isActive: true,
-    roleId: '',
+    roleName: 'STAFF' as 'ADMIN' | 'STAFF',
   });
-
-  const availableRoles = [
-    { id: '1', name: 'ADMIN' },
-    { id: '2', name: 'STAFF' },
-    { id: '3', name: 'CUSTOMER' },
-  ];
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -76,7 +70,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
         lastName: user.lastName,
         phone: user.phone || '',
         isActive: user.isActive,
-        roleId: user.role.id,
+        roleName: user.role.name as 'ADMIN' | 'STAFF',
       });
     }
   }, [user]);
@@ -142,7 +136,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
   };
 
   const handleUpdateRole = async () => {
-    if (formData.roleId === user.role.id) {
+    if (formData.roleName === user.role.name) {
       showInfo('No role change detected');
       return;
     }
@@ -151,14 +145,14 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
 
     try {
       const token = await getToken();
-      const response = await fetch(`/api/users/${user.id}/role`, {
+      const response = await fetch(`/api/users/${user.id}/role-by-name`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          roleId: formData.roleId,
+          roleName: formData.roleName,
         }),
       });
 
@@ -179,12 +173,12 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Update basic info first
     await handleUpdateBasicInfo();
-    
+
     // Then update role if changed
-    if (formData.roleId !== user.role.id) {
+    if (formData.roleName !== user.role.name) {
       await handleUpdateRole();
     }
   };
@@ -249,18 +243,15 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>
               <Select
-                value={formData.roleId || user.role.id}
+                value={formData.roleName}
                 label="Role"
-                onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, roleName: e.target.value as 'ADMIN' | 'STAFF' })}
               >
-                {availableRoles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
-                  </MenuItem>
-                ))}
+                <MenuItem value="STAFF">Staff</MenuItem>
+                <MenuItem value="ADMIN">Admin</MenuItem>
               </Select>
               <FormHelperText>
-                Current: {user.role.name}. Changing role will affect user permissions.
+                Changing role will affect user permissions
               </FormHelperText>
             </FormControl>
 

@@ -108,6 +108,16 @@ export class UsersController {
     return this.usersService.assignRole(id, roleId, currentUser.id);
   }
 
+  @Put(':id/role-by-name')
+  @Roles('ADMIN')
+  async assignRoleByName(
+    @Param('id') id: string,
+    @Body('roleName') roleName: 'ADMIN' | 'STAFF',
+    @CurrentUser() currentUser: any,
+  ) {
+    return this.usersService.assignRoleByName(id, roleName, currentUser.id);
+  }
+
   @Delete(':id')
   @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)

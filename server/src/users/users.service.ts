@@ -233,7 +233,7 @@ export class UsersService {
   async assignRole(userId: string, roleId: string, assignedBy: string) {
     const user = await this.findById(userId);
     const role = await this.roleRepository.findById(roleId);
-    
+
     if (!role) {
       throw new NotFoundException('Role not found');
     }
@@ -253,9 +253,41 @@ export class UsersService {
       action: 'ROLE_ASSIGNED',
       entityType: 'user',
       entityId: userId,
-      details: { 
-        oldRole: user.role.name, 
-        newRole: role.name 
+      details: {
+        oldRole: user.role.name,
+        newRole: role.name
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async assignRoleByName(userId: string, roleName: 'ADMIN' | 'STAFF', assignedBy: string) {
+    const user = await this.findById(userId);
+    const role = await this.roleRepository.findByName(roleName);
+
+    if (!role) {
+      throw new NotFoundException(`Role ${roleName} not found`);
+    }
+
+    // Prevent changing admin users by non-admins
+    if (user.role.name === 'ADMIN') {
+      const assigningUser = await this.userRepository.findById(assignedBy);
+      if (assigningUser?.role.name !== 'ADMIN') {
+        throw new ForbiddenException('Only admins can modify admin users');
+      }
+    }
+
+    const updatedUser = await this.userRepository.assignRole(userId, role.id);
+
+    await this.auditRepository.create({
+      userId: assignedBy,
+      action: 'ROLE_ASSIGNED',
+      entityType: 'user',
+      entityId: userId,
+      details: {
+        oldRole: user.role.name,
+        newRole: roleName
       },
     });
 
