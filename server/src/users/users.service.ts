@@ -113,6 +113,16 @@ export class UsersService {
           apiUrl: this.configService.get<string>('CLERK_API_URL') || 'https://api.clerk.com'
         });
 
+        console.log('Creating Clerk user with data:', {
+          email: data.email,
+          username: data.username,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          hasPassword: !!data.password,
+          passwordLength: data.password?.length,
+        });
+
+        // Create user in Clerk with proper v5 API format
         const clerkUser = await clerkClient.users.createUser({
           emailAddress: [data.email],
           username: data.username,
@@ -122,6 +132,7 @@ export class UsersService {
         });
 
         clerkUserId = clerkUser.id;
+        console.log('Clerk user created successfully:', clerkUserId);
 
         // Set metadata for role
         await clerkClient.users.updateUserMetadata(clerkUserId, {
@@ -132,8 +143,25 @@ export class UsersService {
 
       } catch (clerkError: any) {
         console.error('Failed to create user in Clerk:', clerkError);
+        console.error('Clerk error type:', typeof clerkError);
+        console.error('Clerk error keys:', Object.keys(clerkError));
+        console.error('Clerk error full object:', JSON.stringify(clerkError, null, 2));
+
+        // Extract detailed error information
+        let errorMessage = 'Unprocessable Entity';
+
+        if (clerkError.errors && Array.isArray(clerkError.errors)) {
+          errorMessage = clerkError.errors.map((e: any) => `${e.message} (${e.longMessage || e.code})`).join(', ');
+        } else if (clerkError.message) {
+          errorMessage = clerkError.message;
+        } else if (clerkError.status) {
+          errorMessage = `Status ${clerkError.status}`;
+        }
+
+        console.error('Extracted error message:', errorMessage);
+
         throw new InternalServerErrorException(
-          `Failed to create user in Clerk: ${clerkError.message}`
+          `Failed to create user in Clerk: ${errorMessage}`
         );
       }
     }
@@ -170,6 +198,7 @@ export class UsersService {
     email?: string;
     firstName?: string;
     lastName?: string;
+    phone?: string;
     isActive?: boolean;
     updatedBy: string;
   }) {
@@ -186,6 +215,7 @@ export class UsersService {
       email: data.email,
       firstName: data.firstName,
       lastName: data.lastName,
+      phone: data.phone,
       isActive: data.isActive,
     });
 

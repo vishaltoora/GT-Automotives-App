@@ -19,12 +19,14 @@ import {
 } from '@mui/material';
 import { useAuth } from '@clerk/clerk-react';
 import { useError } from '../../app/contexts/ErrorContext';
+import { PhoneInput } from '../../app/components/common/PhoneInput';
 
 interface User {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string;
   role: {
     id: string;
     name: string;
@@ -52,6 +54,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
     email: '',
     firstName: '',
     lastName: '',
+    phone: '',
     isActive: true,
     roleId: '',
   });
@@ -71,6 +74,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        phone: user.phone || '',
         isActive: user.isActive,
         roleId: user.role.id,
       });
@@ -117,6 +121,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
           email: formData.email,
           firstName: formData.firstName,
           lastName: formData.lastName,
+          phone: formData.phone || undefined,
           isActive: formData.isActive,
         }),
       });
@@ -215,7 +220,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
                 fullWidth
                 required
               />
-              
+
               <TextField
                 label="Last Name"
                 value={formData.lastName}
@@ -227,6 +232,14 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
               />
             </Stack>
 
+            <PhoneInput
+              value={formData.phone}
+              onChange={(value) => setFormData({ ...formData, phone: value })}
+              label="Phone Number"
+              placeholder="555-123-4567"
+              fullWidth
+            />
+
             <Divider />
 
             <Typography variant="subtitle2" color="text.secondary">
@@ -236,7 +249,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>
               <Select
-                value={formData.roleId}
+                value={formData.roleId || user.role.id}
                 label="Role"
                 onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
               >
@@ -247,7 +260,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
                 ))}
               </Select>
               <FormHelperText>
-                Changing role will affect user permissions
+                Current: {user.role.name}. Changing role will affect user permissions.
               </FormHelperText>
             </FormControl>
 

@@ -87,6 +87,7 @@ export class UsersController {
       email?: string;
       firstName?: string;
       lastName?: string;
+      phone?: string;
       isActive?: boolean;
     },
     @CurrentUser() currentUser: any,

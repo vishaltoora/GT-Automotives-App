@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '@clerk/clerk-react';
 import { useError } from '../../app/contexts/ErrorContext';
+import { PhoneInput } from '../../app/components/common/PhoneInput';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     username: '',
     firstName: '',
     lastName: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     roleName: 'STAFF' as 'ADMIN' | 'STAFF',
@@ -73,6 +75,8 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -105,6 +109,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           username: formData.username,
           firstName: formData.firstName,
           lastName: formData.lastName,
+          phone: formData.phone || undefined,
           roleName: formData.roleName,
           password: formData.password,
         }),
@@ -112,7 +117,21 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to create user');
+        console.error('Server error response:', error);
+
+        // Extract more detailed error message
+        let errorMessage = error.message || 'Failed to create user';
+
+        // Check for specific Clerk errors
+        if (errorMessage.includes('already exists') || errorMessage.includes('identifier_already_exists')) {
+          errorMessage = 'A user with this email or username already exists';
+        } else if (errorMessage.includes('password')) {
+          errorMessage = 'Password does not meet security requirements. Please use a stronger password with uppercase, lowercase, and numbers.';
+        } else if (errorMessage.includes('username')) {
+          errorMessage = 'Username is invalid or already taken. Please try a different username.';
+        }
+
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -139,6 +158,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       username: '',
       firstName: '',
       lastName: '',
+      phone: '',
       password: '',
       confirmPassword: '',
       roleName: 'STAFF',
@@ -188,7 +208,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                 fullWidth
                 required
               />
-              
+
               <TextField
                 label="Last Name"
                 value={formData.lastName}
@@ -199,6 +219,14 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                 required
               />
             </Stack>
+
+            <PhoneInput
+              value={formData.phone}
+              onChange={(value) => setFormData({ ...formData, phone: value })}
+              label="Phone Number"
+              placeholder="555-123-4567"
+              fullWidth
+            />
 
             <FormControl fullWidth required>
               <InputLabel>Role</InputLabel>
