@@ -33,14 +33,17 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   FilterList as FilterListIcon,
+  Payment as PaymentIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { companyService, Company } from '../../services/company.service';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
+import PaymentMethodDialog from '../../components/invoices/PaymentMethodDialog';
 import { ActionsMenu, ActionItem } from '../../components/common';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { PaymentMethod } from '../../../enums';
 
 
 const InvoiceList: React.FC = () => {
@@ -62,6 +65,8 @@ const InvoiceList: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState<Invoice | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -157,6 +162,22 @@ const InvoiceList: React.FC = () => {
     setDialogOpen(true);
   };
 
+  const handleMarkAsPaid = (invoice: Invoice) => {
+    setInvoiceToMarkPaid(invoice);
+    setPaymentDialogOpen(true);
+  };
+
+  const handlePaymentConfirm = async (paymentMethod: PaymentMethod) => {
+    if (!invoiceToMarkPaid) return;
+
+    try {
+      await invoiceService.markInvoiceAsPaid(invoiceToMarkPaid.id, paymentMethod);
+      loadInvoices(); // Refresh the list
+      setInvoiceToMarkPaid(null);
+    } catch (error) {
+      showApiError(error, 'Failed to mark invoice as paid');
+    }
+  };
 
   const handleInvoiceSuccess = (invoice: any) => {
     // Refresh the invoice list to show the new/updated invoice
@@ -231,6 +252,14 @@ const InvoiceList: React.FC = () => {
         icon: <PrintIcon />,
         onClick: () => handlePrint(invoice),
         show: true,
+      },
+      {
+        id: 'markPaid',
+        label: 'Mark as Paid',
+        icon: <PaymentIcon />,
+        onClick: () => handleMarkAsPaid(invoice),
+        show: canManageInvoice && invoice.status === 'PENDING',
+        color: 'success',
       },
       {
         id: 'edit',
@@ -573,6 +602,17 @@ const InvoiceList: React.FC = () => {
           setEditingInvoice(null);
         }}
         onSuccess={handleInvoiceSuccess}
+      />
+
+      {/* Payment Method Dialog - For marking invoice as paid */}
+      <PaymentMethodDialog
+        open={paymentDialogOpen}
+        onClose={() => {
+          setPaymentDialogOpen(false);
+          setInvoiceToMarkPaid(null);
+        }}
+        onConfirm={handlePaymentConfirm}
+        invoiceNumber={invoiceToMarkPaid?.invoiceNumber || ''}
       />
     </Box>
   );

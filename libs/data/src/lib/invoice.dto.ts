@@ -83,6 +83,9 @@ export class CreateInvoiceDto {
   @IsString()
   vehicleId?: string;
 
+  @IsString()
+  companyId!: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => InvoiceItemDto)
