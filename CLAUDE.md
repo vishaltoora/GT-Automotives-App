@@ -175,8 +175,10 @@ git push origin main
 - ✅ **Enhanced Error Logging**: Comprehensive Clerk error logging with detailed validation messages
 - ✅ **Database Schema**: Added phone String? field to User model via db push
 - ✅ **Production API Fix**: Updated GitHub secrets for proper reverse proxy communication
-- ✅ **VITE_API_URL**: Changed to https://gt-automotives.com (without /api suffix to avoid double /api/api)
+- ✅ **VITE_API_URL**: Set to https://gt-automotives.com (base domain without /api suffix)
 - ✅ **VITE_CLERK_PUBLISHABLE_KEY**: Verified production live key (pk_live_...) for custom domain
+- ⚠️ **Critical Discovery**: VITE_* variables are statically baked into build at compile time via Vite
+- 🔄 **Rebuild Required**: Changed VITE_API_URL from `/api` suffix to base domain - requires new build
 - ✅ **User Experience**: Phone field optional, role dropdown works correctly, consistent formatting
 - 🔧 **Files Updated**:
   - `libs/database/src/lib/prisma/schema.prisma` (phone field)
