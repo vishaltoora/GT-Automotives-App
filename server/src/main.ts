@@ -7,7 +7,7 @@ import 'reflect-metadata';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
-import { InternalApiGuard } from './common/guards/internal-api.guard';
+// import { InternalApiGuard } from './common/guards/internal-api.guard'; // Disabled for Build 135 config
 
 async function bootstrap() {
   try {
