@@ -16,62 +16,42 @@ export class InternalApiGuard implements CanActivate {
       return true;
     }
 
-    // Skip in development if no API key is set
-    if (process.env.NODE_ENV !== 'production' && !this.internalApiKey) {
+    // In development, allow all requests
+    if (process.env.NODE_ENV !== 'production') {
       return true;
     }
 
-    // Get API key from header
+    // Get API key from header (sent by reverse proxy)
     const providedApiKey = request.headers['x-internal-api-key'];
 
-    // Check if request is from our proxy (has the special header)
-    const isFromProxy = request.headers['x-proxy-signature'] === 'gt-automotive-proxy';
+    // Check if INTERNAL_API_KEY is configured
+    if (!this.internalApiKey) {
+      this.logger.error('🚨 SECURITY: INTERNAL_API_KEY not configured in production!');
+      throw new UnauthorizedException('Server configuration error - API key not set');
+    }
 
-    // Log the request origin for monitoring
+    // Validate the API key
+    if (providedApiKey === this.internalApiKey) {
+      // Valid API key from reverse proxy
+      return true;
+    }
+
+    // Log the request for security monitoring
     const origin = request.headers.origin || request.headers.referer || 'unknown';
     const userAgent = request.headers['user-agent'] || 'unknown';
+    const forwardedFor = request.headers['x-forwarded-for'] || request.ip;
 
-    // In production, require either valid API key or proxy signature
-    if (process.env.NODE_ENV === 'production') {
-      // Allow requests from proxy with valid signature (even without INTERNAL_API_KEY)
-      if (isFromProxy) {
-        return true;
-      }
+    // Log blocked attempt with details
+    this.logger.warn(`🚫 SECURITY: Blocked unauthorized API access attempt`, {
+      path: request.path,
+      method: request.method,
+      origin,
+      userAgent: userAgent.substring(0, 100),
+      ip: forwardedFor,
+      hasApiKey: !!providedApiKey,
+      apiKeyMatch: providedApiKey === this.internalApiKey,
+    });
 
-      // If INTERNAL_API_KEY is configured, also allow valid API key
-      if (this.internalApiKey && providedApiKey === this.internalApiKey) {
-        return true;
-      }
-
-      // If neither proxy signature nor valid API key, reject
-      if (!this.internalApiKey && !isFromProxy) {
-        this.logger.error('INTERNAL_API_KEY not configured and no proxy signature found!');
-        throw new UnauthorizedException('Server configuration error');
-      }
-
-      // Log blocked attempt
-      this.logger.warn(`🚫 Blocked direct API access attempt`, {
-        path: request.path,
-        method: request.method,
-        origin,
-        userAgent: userAgent.substring(0, 50),
-        ip: request.ip,
-        hasApiKey: !!providedApiKey,
-        hasProxySignature: isFromProxy,
-      });
-
-      throw new UnauthorizedException('Direct API access not allowed. Please use the application interface.');
-    }
-
-    // In development, be more permissive but still validate if API key is set
-    if (this.internalApiKey && providedApiKey !== this.internalApiKey && !isFromProxy) {
-      this.logger.warn(`⚠️ Development: Invalid API key attempt`, {
-        path: request.path,
-        origin,
-      });
-      throw new UnauthorizedException('Invalid API key');
-    }
-
-    return true;
+    throw new UnauthorizedException('Direct API access not allowed. Please use the application interface.');
   }
 }

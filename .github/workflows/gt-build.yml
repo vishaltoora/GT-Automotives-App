@@ -99,15 +99,39 @@ jobs:
       #     echo "🧪 Running tests..."
       #     yarn test
 
+      # Fetch VITE environment variables from Azure Web App
+      - name: Fetch VITE Environment Variables from Azure
+        run: |
+          echo "🔐 Fetching VITE environment variables from Azure Web App..."
+
+          # Fetch settings from Azure Web App
+          VITE_SETTINGS=$(az webapp config appsettings list \
+            --name gt-automotives-frontend \
+            --resource-group gt-automotives-prod \
+            --query "[?starts_with(name, 'VITE_')].{name:name, value:value}" \
+            -o json)
+
+          # Extract individual values
+          export VITE_API_URL=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_API_URL") | .value')
+          export VITE_CLERK_PUBLISHABLE_KEY=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_CLERK_PUBLISHABLE_KEY") | .value')
+          export VITE_GOOGLE_MAPS_API_KEY=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_GOOGLE_MAPS_API_KEY") | .value')
+
+          # Save to GITHUB_ENV for subsequent steps
+          echo "VITE_API_URL=$VITE_API_URL" >> $GITHUB_ENV
+          echo "VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY" >> $GITHUB_ENV
+          echo "VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY" >> $GITHUB_ENV
+
+          echo "✅ VITE environment variables loaded from Azure"
+          echo "   VITE_API_URL: $VITE_API_URL"
+
       # Parallel frontend and shared library builds
       - name: Build Frontend and Shared Libraries
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           NODE_ENV: production
         run: |
           echo "🌐 Building frontend and shared libraries in parallel..."
+          echo "   Using VITE_API_URL: $VITE_API_URL"
+
           yarn build:web &
           FRONTEND_PID=$!
           yarn nx build data &
@@ -191,15 +215,24 @@ jobs:
             changeOrigin: true,
             timeout: 30000,
             onProxyReq: (proxyReq, req, res) => {
-              // Add internal API key and proxy signature
-              proxyReq.setHeader('X-Internal-API-Key', process.env.INTERNAL_API_KEY || 'gt-automotive-internal-2700d761d1268b0ba736298d8dc3978ff2ba1d8ab3ef1c006fd080c02612eac8');
-              proxyReq.setHeader('X-Proxy-Signature', 'gt-automotive-proxy');
+              // SECURITY: Add internal API key for backend authentication
+              // This key is fetched from Azure App Settings at runtime
+              const internalApiKey = process.env.INTERNAL_API_KEY;
+
+              if (!internalApiKey) {
+                console.error('🚨 CRITICAL: INTERNAL_API_KEY not set in environment!');
+              } else {
+                proxyReq.setHeader('X-Internal-API-Key', internalApiKey);
+              }
+
+              // Add proxy headers for request tracking
               proxyReq.setHeader('X-Forwarded-For', req.ip || req.connection.remoteAddress);
               proxyReq.setHeader('X-Real-IP', req.ip || req.connection.remoteAddress);
               proxyReq.setHeader('X-Original-Host', req.headers.host);
+              proxyReq.setHeader('X-Forwarded-Proto', 'https');
 
               // Log proxied requests for monitoring
-              console.log(`[PROXY] ${req.method} ${req.path} from ${req.ip}`);
+              console.log(`[PROXY] ${req.method} ${req.path} from ${req.ip} [Key: ${internalApiKey ? 'SET' : 'MISSING'}]`);
             },
             onError: (err, req, res) => {
               console.error('Proxy error:', err.message);
