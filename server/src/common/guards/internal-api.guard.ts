@@ -33,14 +33,20 @@ export class InternalApiGuard implements CanActivate {
 
     // In production, require either valid API key or proxy signature
     if (process.env.NODE_ENV === 'production') {
-      if (!this.internalApiKey) {
-        this.logger.error('INTERNAL_API_KEY not configured in production!');
-        throw new UnauthorizedException('Server configuration error');
+      // Allow requests from proxy with valid signature (even without INTERNAL_API_KEY)
+      if (isFromProxy) {
+        return true;
       }
 
-      // Check if request has valid API key or is from our proxy
-      if (providedApiKey === this.internalApiKey || isFromProxy) {
+      // If INTERNAL_API_KEY is configured, also allow valid API key
+      if (this.internalApiKey && providedApiKey === this.internalApiKey) {
         return true;
+      }
+
+      // If neither proxy signature nor valid API key, reject
+      if (!this.internalApiKey && !isFromProxy) {
+        this.logger.error('INTERNAL_API_KEY not configured and no proxy signature found!');
+        throw new UnauthorizedException('Server configuration error');
       }
 
       // Log blocked attempt
