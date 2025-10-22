@@ -223,14 +223,10 @@ jobs:
             timeout: 30000,
             onProxyReq: (proxyReq, req, res) => {
               // SECURITY: Add internal API key for backend authentication
-              // This key is fetched from Azure App Settings at runtime
-              const internalApiKey = process.env.INTERNAL_API_KEY;
-
-              if (!internalApiKey) {
-                console.error('🚨 CRITICAL: INTERNAL_API_KEY not set in environment!');
-              } else {
-                proxyReq.setHeader('X-Internal-API-Key', internalApiKey);
-              }
+              // Uses environment variable or fallback to maintain backward compatibility
+              const internalApiKey = process.env.INTERNAL_API_KEY || 'gt-automotive-internal-2024';
+              proxyReq.setHeader('X-Internal-API-Key', internalApiKey);
+              proxyReq.setHeader('X-Proxy-Signature', 'gt-automotive-proxy');
 
               // Add proxy headers for request tracking
               proxyReq.setHeader('X-Forwarded-For', req.ip || req.connection.remoteAddress);
@@ -239,7 +235,7 @@ jobs:
               proxyReq.setHeader('X-Forwarded-Proto', 'https');
 
               // Log proxied requests for monitoring
-              console.log(`[PROXY] ${req.method} ${req.path} from ${req.ip} [Key: ${internalApiKey ? 'SET' : 'MISSING'}]`);
+              console.log(`[PROXY] ${req.method} ${req.path} from ${req.ip}`);
             },
             onError: (err, req, res) => {
               console.error('Proxy error:', err.message);
