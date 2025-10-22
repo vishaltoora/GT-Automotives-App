@@ -9,8 +9,11 @@ ENV DISABLE_ERD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NX_DAEMON=false
 
-# Install dependencies
-RUN yarn install --frozen-lockfile --network-timeout 1000000
+# Install dependencies with retry logic for transient network errors
+RUN yarn install --frozen-lockfile --network-timeout 1000000 || \
+    (echo "Retry 1/3..." && sleep 5 && yarn install --frozen-lockfile --network-timeout 1000000) || \
+    (echo "Retry 2/3..." && sleep 10 && yarn install --frozen-lockfile --network-timeout 1000000) || \
+    (echo "Retry 3/3..." && sleep 15 && yarn install --frozen-lockfile --network-timeout 1000000)
 
 # Generate Prisma client
 RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
