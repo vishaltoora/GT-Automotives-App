@@ -76,8 +76,10 @@ async function bootstrap() {
     Logger.log(`📋 Allowed origins: ${allowedOrigins.join(', ')}`);
 
     // Global Internal API Guard - Validates X-Internal-API-Key header
-    app.useGlobalGuards(new InternalApiGuard());
-    Logger.log('🔒 Internal API guard enabled');
+    // DISABLED: Reverting to Build 135 working config (CORS-only protection)
+    // app.useGlobalGuards(new InternalApiGuard());
+    // Logger.log('🔒 Internal API guard enabled');
+    Logger.log('⚠️  Internal API guard DISABLED - using CORS-only protection');
 
     // Global validation pipe
     app.useGlobalPipes(new ValidationPipe({
