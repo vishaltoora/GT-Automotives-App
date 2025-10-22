@@ -128,7 +128,8 @@ jobs:
           echo "VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY" >> $GITHUB_ENV
 
           echo "✅ VITE environment variables loaded from Azure"
-          echo "   VITE_API_URL: $VITE_API_URL"
+          echo "   VITE_API_URL: '$VITE_API_URL' (empty = use reverse proxy)"
+          echo "   VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:0:20}..."
 
       # Parallel frontend and shared library builds
       - name: Build Frontend and Shared Libraries
