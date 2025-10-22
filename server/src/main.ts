@@ -75,9 +75,9 @@ async function bootstrap() {
     Logger.log(`✅ CORS configured (${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode)`);
     Logger.log(`📋 Allowed origins: ${allowedOrigins.join(', ')}`);
 
-    // Global Internal API Guard - Protect against direct access
-    app.useGlobalGuards(new InternalApiGuard());
-    Logger.log('🔒 Internal API guard enabled');
+    // Global Internal API Guard - DISABLED (using CORS only)
+    // app.useGlobalGuards(new InternalApiGuard());
+    // Logger.log('🔒 Internal API guard enabled');
 
     // Global validation pipe
     app.useGlobalPipes(new ValidationPipe({
