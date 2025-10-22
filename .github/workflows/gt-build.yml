@@ -99,6 +99,12 @@ jobs:
       #     echo "🧪 Running tests..."
       #     yarn test
 
+      # Azure CLI Login
+      - name: Azure CLI Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       # Fetch VITE environment variables from Azure Web App
       - name: Fetch VITE Environment Variables from Azure
         run: |
