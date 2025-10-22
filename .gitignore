@@ -61,3 +61,8 @@ azure-credentials.json
 # Production environment files with secrets
 .env.production
 azure-backend/
+
+# Log files and Azure diagnostics
+LogFiles/
+*.zip
+backend-logs.zip
