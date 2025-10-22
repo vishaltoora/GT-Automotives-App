@@ -7,7 +7,7 @@ import 'reflect-metadata';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
-// import { InternalApiGuard } from './common/guards/internal-api.guard'; // Disabled for Build 135 config
+import { InternalApiGuard } from './common/guards/internal-api.guard';
 
 async function bootstrap() {
   try {
@@ -76,10 +76,8 @@ async function bootstrap() {
     Logger.log(`📋 Allowed origins: ${allowedOrigins.join(', ')}`);
 
     // Global Internal API Guard - Validates X-Internal-API-Key header
-    // DISABLED: Reverting to Build 135 working config (CORS-only protection)
-    // app.useGlobalGuards(new InternalApiGuard());
-    // Logger.log('🔒 Internal API guard enabled');
-    Logger.log('⚠️  Internal API guard DISABLED - using CORS-only protection');
+    app.useGlobalGuards(new InternalApiGuard());
+    Logger.log('🔒 Internal API guard enabled');
 
     // Global validation pipe
     app.useGlobalPipes(new ValidationPipe({
