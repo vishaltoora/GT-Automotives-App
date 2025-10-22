@@ -174,8 +174,9 @@ git push origin main
 - ✅ **New Backend Endpoint**: Added PUT /api/users/:id/role-by-name for role lookup by name
 - ✅ **Enhanced Error Logging**: Comprehensive Clerk error logging with detailed validation messages
 - ✅ **Database Schema**: Added phone String? field to User model via db push
-- ✅ **Production API Fix**: Updated GitHub secret VITE_API_URL from old Container Instance URL to reverse proxy
-- ✅ **Reverse Proxy URL**: Changed to https://gt-automotives.com/api (fixes ERR_NAME_NOT_RESOLVED)
+- ✅ **Production API Fix**: Updated GitHub secrets for proper reverse proxy communication
+- ✅ **VITE_API_URL**: Changed to https://gt-automotives.com (without /api suffix to avoid double /api/api)
+- ✅ **VITE_CLERK_PUBLISHABLE_KEY**: Verified production live key (pk_live_...) for custom domain
 - ✅ **User Experience**: Phone field optional, role dropdown works correctly, consistent formatting
 - 🔧 **Files Updated**:
   - `libs/database/src/lib/prisma/schema.prisma` (phone field)
