@@ -75,8 +75,6 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -126,7 +124,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         if (errorMessage.includes('already exists') || errorMessage.includes('identifier_already_exists')) {
           errorMessage = 'A user with this email or username already exists';
         } else if (errorMessage.includes('password')) {
-          errorMessage = 'Password does not meet security requirements. Please use a stronger password with uppercase, lowercase, and numbers.';
+          errorMessage = 'Password does not meet minimum requirements. Please use a different password.';
         } else if (errorMessage.includes('username')) {
           errorMessage = 'Username is invalid or already taken. Please try a different username.';
         }
@@ -249,7 +247,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               error={!!errors.password}
-              helperText={errors.password || 'Minimum 8 characters'}
+              helperText={errors.password || 'Minimum 8 characters (any combination)'}
               fullWidth
               required
             />
