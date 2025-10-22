@@ -192,7 +192,7 @@ jobs:
             timeout: 30000,
             onProxyReq: (proxyReq, req, res) => {
               // Add internal API key and proxy signature
-              proxyReq.setHeader('X-Internal-API-Key', process.env.INTERNAL_API_KEY || 'gt-automotive-internal-2024');
+              proxyReq.setHeader('X-Internal-API-Key', process.env.INTERNAL_API_KEY || 'gt-automotive-internal-2700d761d1268b0ba736298d8dc3978ff2ba1d8ab3ef1c006fd080c02612eac8');
               proxyReq.setHeader('X-Proxy-Signature', 'gt-automotive-proxy');
               proxyReq.setHeader('X-Forwarded-For', req.ip || req.connection.remoteAddress);
               proxyReq.setHeader('X-Real-IP', req.ip || req.connection.remoteAddress);
