@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 @Injectable()
 export class InternalApiGuard implements CanActivate {
   private readonly logger = new Logger(InternalApiGuard.name);
-  private readonly internalApiKey = process.env.INTERNAL_API_KEY || 'gt-automotive-internal-2024';
+  private readonly internalApiKey = process.env.INTERNAL_API_KEY || '7bf4b1da149eec37a7f733fd84d4a7eead6b65e119770f554de36ecce932c3a4c46e20bb03ef075c86fa7b067ea2b3c50b59d5d1dbfd74594505ca50b6da180d';
 
   canActivate(
     context: ExecutionContext,

@@ -223,8 +223,8 @@ jobs:
             timeout: 30000,
             onProxyReq: (proxyReq, req, res) => {
               // SECURITY: Add internal API key for backend authentication
-              // Uses environment variable or fallback to maintain backward compatibility
-              const internalApiKey = process.env.INTERNAL_API_KEY || 'gt-automotive-internal-2024';
+              // Uses environment variable or fallback (128-character cryptographically secure key)
+              const internalApiKey = process.env.INTERNAL_API_KEY || '7bf4b1da149eec37a7f733fd84d4a7eead6b65e119770f554de36ecce932c3a4c46e20bb03ef075c86fa7b067ea2b3c50b59d5d1dbfd74594505ca50b6da180d';
               proxyReq.setHeader('X-Internal-API-Key', internalApiKey);
               proxyReq.setHeader('X-Proxy-Signature', 'gt-automotive-proxy');
 
