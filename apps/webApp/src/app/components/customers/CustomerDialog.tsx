@@ -15,6 +15,12 @@ import {
   Slide,
   useTheme,
   useMediaQuery,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  FormControlLabel,
+  Switch,
+  Divider,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -22,8 +28,10 @@ import {
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  ExpandMore as ExpandMoreIcon,
+  Sms as SmsIcon,
 } from '@mui/icons-material';
-import { TransitionProps } from '@mui/material/transitions';
+import { TransitionProps} from '@mui/material/transitions';
 import { customerService, Customer, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
 import { colors } from '../../theme/colors';
 import { PhoneInput } from '../common/PhoneInput';
@@ -66,6 +74,10 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     phone: '',
     address: 'Prince George, BC',
     businessName: '',
+    smsOptedIn: true,
+    smsAppointmentReminders: true,
+    smsServiceUpdates: true,
+    smsPromotional: false,
   });
 
   useEffect(() => {
@@ -79,6 +91,10 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           phone: initialCustomer.phone || '',
           address: initialCustomer.address || '',
           businessName: initialCustomer.businessName || '',
+          smsOptedIn: initialCustomer.smsPreference?.optedIn ?? true,
+          smsAppointmentReminders: initialCustomer.smsPreference?.appointmentReminders ?? true,
+          smsServiceUpdates: initialCustomer.smsPreference?.serviceUpdates ?? true,
+          smsPromotional: initialCustomer.smsPreference?.promotional ?? false,
         });
       } else if (customerId) {
         // Load customer data if only ID is provided
@@ -92,6 +108,10 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           phone: '',
           address: 'Prince George, BC',
           businessName: '',
+          smsOptedIn: true,
+          smsAppointmentReminders: true,
+          smsServiceUpdates: true,
+          smsPromotional: false,
         });
       }
       setError(null);
@@ -109,6 +129,10 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         phone: customer.phone || '',
         address: customer.address || '',
         businessName: customer.businessName || '',
+        smsOptedIn: customer.smsPreference?.optedIn ?? true,
+        smsAppointmentReminders: customer.smsPreference?.appointmentReminders ?? true,
+        smsServiceUpdates: customer.smsPreference?.serviceUpdates ?? true,
+        smsPromotional: customer.smsPreference?.promotional ?? false,
       });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load customer');
@@ -119,7 +143,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
@@ -152,6 +176,13 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       phone: value,
+    }));
+  };
+
+  const handleSmsToggle = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: e.target.checked,
     }));
   };
 
@@ -227,7 +258,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 {error}
               </Alert>
             )}
-            
+
             <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mt: 0 }}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
@@ -291,6 +322,123 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   helperText="Start typing to search addresses"
                 />
               </Grid>
+
+              {/* SMS Preferences Section */}
+              {formData.phone && (
+                <Grid size={{ xs: 12 }}>
+                  <Accordion defaultExpanded sx={{ mt: 1 }}>
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      sx={{
+                        backgroundColor: colors.neutral[50],
+                        '&:hover': {
+                          backgroundColor: colors.neutral[100],
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <SmsIcon sx={{ color: colors.primary[600] }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          SMS Preferences
+                        </Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 2 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Configure SMS notifications for this customer
+                      </Typography>
+
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.smsOptedIn}
+                              onChange={handleSmsToggle('smsOptedIn')}
+                              disabled={saving}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                Enable SMS Notifications
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Master switch for all SMS notifications
+                              </Typography>
+                            </Box>
+                          }
+                        />
+
+                        <Divider sx={{ my: 0.5 }} />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.smsAppointmentReminders}
+                              onChange={handleSmsToggle('smsAppointmentReminders')}
+                              disabled={saving || !formData.smsOptedIn}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body2">
+                                Appointment Reminders
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Send reminders for upcoming appointments
+                              </Typography>
+                            </Box>
+                          }
+                        />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.smsServiceUpdates}
+                              onChange={handleSmsToggle('smsServiceUpdates')}
+                              disabled={saving || !formData.smsOptedIn}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body2">
+                                Service Updates
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Notifications about service progress and completion
+                              </Typography>
+                            </Box>
+                          }
+                        />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.smsPromotional}
+                              onChange={handleSmsToggle('smsPromotional')}
+                              disabled={saving || !formData.smsOptedIn}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body2">
+                                Promotional Messages
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Special offers and marketing messages
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
+              )}
             </Grid>
           </form>
         )}

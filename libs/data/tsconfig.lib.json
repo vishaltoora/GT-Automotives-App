@@ -8,9 +8,7 @@
     "emitDeclarationOnly": false,
     "types": ["node"],
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "module": "es2022",
-    "moduleResolution": "bundler"
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*.ts"],
   "references": []

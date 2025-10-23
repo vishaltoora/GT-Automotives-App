@@ -27,6 +27,8 @@ model User {
   appointmentEmployees  AppointmentEmployee[]   @relation("AppointmentEmployees") // Multiple appointment assignments
   availability          EmployeeAvailability[]  // Weekly recurring schedule
   timeSlotOverrides     TimeSlotOverride[]      // Date-specific exceptions (time-off, extra shifts)
+  smsMessages           SmsMessage[]            // SMS messages sent to this user (staff/admin notifications)
+  smsPreference         SmsPreference?          // SMS notification preferences for staff/admin
 }
 
 model Role {
@@ -62,18 +64,20 @@ model RolePermission {
 }
 
 model Customer {
-  id           String        @id @default(cuid())
+  id           String          @id @default(cuid())
   firstName    String
   lastName     String
   email        String?
   phone        String?
   address      String?
   businessName String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   appointments Appointment[]
   invoices     Invoice[]
   vehicles     Vehicle[]
+  smsMessages  SmsMessage[]
+  smsPreference SmsPreference?
 }
 
 model Vehicle {
@@ -287,6 +291,7 @@ model Appointment {
   vehicle         Vehicle?                @relation(fields: [vehicleId], references: [id])
   employee        User?                   @relation(fields: [employeeId], references: [id])
   employees       AppointmentEmployee[]   // Multiple employees assigned to this appointment
+  smsMessages     SmsMessage[]            // SMS messages related to this appointment
 
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
@@ -645,4 +650,100 @@ enum RecurringPeriod {
   MONTHLY
   QUARTERLY
   YEARLY
+}
+
+// ============================================
+// SMS Messaging System
+// ============================================
+
+model SmsMessage {
+  id            String        @id @default(cuid())
+  to            String        // Phone number in E.164 format (+1XXXXXXXXXX)
+  from          String        // Telnyx phone number
+  body          String        // Message content
+  status        SmsStatus     @default(PENDING)
+  type          SmsType       // APPOINTMENT_REMINDER, STATUS_UPDATE, etc.
+
+  // Telnyx specific fields
+  telnyxMessageId String?     @unique
+  cost          Decimal?      @db.Decimal(10, 6)
+  segments      Int?          @default(1)
+  errorMessage  String?
+
+  // Relationships - can be sent to either Customer or User (staff/admin)
+  appointmentId String?
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+
+  // Timestamps
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([appointmentId])
+  @@index([customerId])
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("sms_messages")
+}
+
+enum SmsStatus {
+  PENDING      // Queued for sending
+  QUEUED       // Accepted by Telnyx
+  SENT         // Sent to carrier
+  DELIVERED    // Delivered to phone
+  FAILED       // Failed to send
+  UNDELIVERED  // Carrier couldn't deliver
+}
+
+enum SmsType {
+  APPOINTMENT_REMINDER     // 7-day, 3-day, 24-hour reminders (to customers)
+  APPOINTMENT_CONFIRMATION // Immediate booking confirmation (to customers)
+  APPOINTMENT_CANCELLATION // Appointment cancelled notification (to customers)
+  SERVICE_STATUS           // Service started, in progress, etc. (to customers)
+  SERVICE_COMPLETE         // Ready for pickup (to customers)
+  PROMOTIONAL              // Marketing messages (to customers)
+  EMERGENCY                // Urgent notifications (to customers)
+  STAFF_APPOINTMENT_ALERT  // New appointment assigned to staff
+  STAFF_SCHEDULE_REMINDER  // Daily schedule summary to staff
+  ADMIN_DAILY_SUMMARY      // End of day summary to admin
+  ADMIN_URGENT_ALERT       // Urgent issues requiring admin attention
+}
+
+model SmsPreference {
+  id                  String    @id @default(cuid())
+
+  // Can be associated with either Customer or User (staff/admin)
+  customerId          String?   @unique
+  customer            Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  userId              String?   @unique
+  user                User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Opt-in/out tracking
+  optedIn             Boolean   @default(false)
+  optedInAt           DateTime?
+  optedOutAt          DateTime?
+
+  // Customer preference toggles
+  appointmentReminders Boolean  @default(true)
+  serviceUpdates       Boolean  @default(true)
+  promotional          Boolean  @default(false)
+
+  // Staff/Admin preference toggles
+  appointmentAlerts    Boolean  @default(true)  // Staff: new appointments assigned
+  scheduleReminders    Boolean  @default(true)  // Staff: daily schedule summary
+  dailySummary         Boolean  @default(true)  // Admin: end of day summary
+  urgentAlerts         Boolean  @default(true)  // Admin: urgent issues
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("sms_preferences")
 }

@@ -75,6 +75,9 @@ import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoice
 import { AppointmentsManagement } from './pages/admin/appointments/AppointmentsManagement';
 import { EmployeeAvailabilityManagement } from './pages/admin/appointments/EmployeeAvailabilityManagement';
 
+// SMS Pages
+import { SmsHistory } from './pages/admin/sms/SmsHistory';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -188,6 +191,7 @@ export function App() {
           {/* Expense invoices merged into purchase-invoices */}
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="appointments/availability" element={<EmployeeAvailabilityManagement />} />
+          <Route path="sms-history" element={<SmsHistory />} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />

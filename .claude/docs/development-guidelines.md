@@ -439,6 +439,234 @@ Always test features with all three roles:
 - Record price changes
 - Monitor failed login attempts
 
+## SMS/Text Messaging Best Practices (Added October 23, 2025)
+
+### Phone Number Format
+**Always use E.164 format**: `+1XXXXXXXXXX` (Canada/US)
+
+```typescript
+// ✅ CORRECT: E.164 validation
+const phoneRegex = /^\+1\d{10}$/;
+if (!phoneRegex.test(phoneNumber)) {
+  throw new Error('Invalid phone format');
+}
+
+// ✅ CORRECT: Storage with +1 prefix
+customer.phone = '+12506499699';
+
+// ❌ INCORRECT: Missing +1 prefix
+customer.phone = '2506499699';
+```
+
+### Opt-In Compliance (TCPA)
+**Never send SMS without explicit opt-in**:
+
+```typescript
+// ✅ CORRECT: Always check opt-in before sending
+const prefs = await prisma.smsPreference.findUnique({
+  where: { customerId: customer.id },
+});
+
+if (!prefs?.optedIn) {
+  return { success: false, error: 'Customer has not opted in' };
+}
+
+// ✅ CORRECT: Check specific preference categories
+if (type === 'PROMOTIONAL' && !prefs.promotional) {
+  return { success: false, error: 'Customer opted out of promotional messages' };
+}
+```
+
+### Non-Blocking SMS
+**SMS failures should NEVER block critical operations**:
+
+```typescript
+// ✅ CORRECT: Non-blocking SMS with error handling
+const appointment = await this.prisma.appointment.create({ ... });
+
+// Send SMS but don't fail if SMS service is down
+await this.smsService.sendAppointmentConfirmation(appointment.id).catch(err => {
+  console.error('Failed to send SMS:', err);
+  // Don't throw - appointment was created successfully
+});
+
+return appointment;
+
+// ❌ INCORRECT: Blocks appointment creation if SMS fails
+await this.smsService.sendAppointmentConfirmation(appointment.id);
+```
+
+### Message Templates
+**Keep messages clear, branded, and concise**:
+
+```typescript
+// ✅ CORRECT: Clear, branded message under 160 chars
+const message =
+  `Hi ${customer.firstName}, your appointment at GT Automotive is confirmed!\n\n` +
+  `Service: ${serviceType}\n` +
+  `Date: ${formattedDate} at ${time}\n\n` +
+  `Call (250) 555-0100 to reschedule.\n\n` +
+  `GT Automotive\nPrince George, BC`;
+
+// ✅ CORRECT: Personalization with first name
+`Hi ${customer.firstName}, ...`
+
+// ❌ INCORRECT: Generic, no branding
+`Your appointment is confirmed for ${date}.`
+```
+
+### Cost Optimization
+**Keep messages under 160 characters when possible**:
+
+```typescript
+// ✅ CORRECT: Single segment (160 chars max) = $0.004
+const message = `Hi ${name}, apt confirmed for ${date} at ${time}. Call us at (250) 555-0100. - GT Automotive`;
+
+// ⚠️ WARNING: Multiple segments = $0.004 per segment
+// Unicode emojis force 70-char segments
+const message = `Hi ${name} 👋, your appointment is confirmed! 🚗...`; // 2-3 segments = $0.008-$0.012
+```
+
+### Error Handling & Logging
+**Track all SMS attempts in database**:
+
+```typescript
+// ✅ CORRECT: Create database record before sending
+const smsRecord = await this.prisma.smsMessage.create({
+  data: {
+    to: phoneNumber,
+    from: this.fromNumber,
+    body: message,
+    type: SmsType.APPOINTMENT_CONFIRMATION,
+    status: SmsStatus.PENDING,
+    customerId: customer.id,
+  },
+});
+
+try {
+  // Send via Telnyx
+  const response = await this.telnyx.messages.create({ ... });
+
+  // Update with success
+  await this.prisma.smsMessage.update({
+    where: { id: smsRecord.id },
+    data: {
+      status: SmsStatus.QUEUED,
+      telnyxMessageId: response.data.id,
+      sentAt: new Date(),
+    },
+  });
+} catch (error) {
+  // Update with failure
+  await this.prisma.smsMessage.update({
+    where: { id: smsRecord.id },
+    data: {
+      status: SmsStatus.FAILED,
+      errorMessage: error.message,
+    },
+  });
+}
+```
+
+### Module Integration
+**Import SmsModule for SMS functionality**:
+
+```typescript
+// feature.module.ts
+import { SmsModule } from '../sms/sms.module';
+
+@Module({
+  imports: [SmsModule], // ✅ Add to imports
+  controllers: [FeatureController],
+  providers: [FeatureService],
+})
+export class FeatureModule {}
+
+// feature.service.ts
+import { SmsService } from '../sms/sms.service';
+
+export class FeatureService {
+  constructor(
+    private smsService: SmsService, // ✅ Inject service
+  ) {}
+
+  async createFeature() {
+    // Create feature
+    const result = await this.prisma.feature.create({ ... });
+
+    // Send SMS notification
+    await this.smsService.sendFeatureNotification(result.id).catch(console.error);
+
+    return result;
+  }
+}
+```
+
+### Testing SMS Locally
+**Use your own cell phone for testing**:
+
+```bash
+# 1. Set environment variables
+cat server/.env | grep SMS
+SMS_ENABLED=true
+TELNYX_API_KEY=KEY...
+TELNYX_PHONE_NUMBER=+12366015757
+
+# 2. Create test customer with your phone
+customer.phone = '+1YOUR_CELL_NUMBER'
+
+# 3. Manually set opt-in for testing
+psql $DATABASE_URL
+INSERT INTO sms_preferences (id, customer_id, opted_in, opted_in_at)
+VALUES (gen_random_uuid(), 'CUSTOMER_ID', true, NOW());
+
+# 4. Trigger SMS action (e.g., create appointment)
+# Should receive SMS on your phone
+
+# 5. Check database for SMS record
+SELECT * FROM sms_messages ORDER BY created_at DESC LIMIT 5;
+```
+
+### Common SMS Errors
+
+**Error: "Invalid phone number format"**
+```typescript
+// Fix: Ensure +1 prefix
+phoneNumber = '+1' + phoneNumber.replace(/\D/g, '');
+```
+
+**Error: "Customer has not opted in"**
+```typescript
+// Fix: Create opt-in preference
+await prisma.smsPreference.create({
+  data: {
+    customerId: customer.id,
+    optedIn: true,
+    optedInAt: new Date(),
+    appointmentReminders: true,
+  },
+});
+```
+
+**Error: "SMS service is disabled"**
+```bash
+# Fix: Enable in environment
+SMS_ENABLED=true
+```
+
+**Error: "Phone number not linked to messaging profile"**
+```bash
+# Fix: Link phone to profile via Telnyx API
+curl -X PATCH https://api.telnyx.com/v2/phone_numbers/{id}/messaging \
+  -H "Authorization: Bearer $TELNYX_API_KEY" \
+  -d '{"messaging_profile_id": "YOUR_PROFILE_ID"}'
+```
+
+### Related Documentation
+- [SMS Feature Manager Agent](.claude/agents/sms-feature-manager.md) - Complete SMS management guide
+- [SMS Integration Plan](.claude/docs/sms-integration-plan.md) - Implementation timeline
+- [Telnyx Setup Guide](.claude/docs/telnyx-setup-guide.md) - Provider configuration
+
 ## TypeScript Best Practices (Updated September 29, 2025)
 
 ### Material-UI Component Props

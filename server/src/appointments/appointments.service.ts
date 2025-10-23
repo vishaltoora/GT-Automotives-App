@@ -8,6 +8,7 @@ import {
   CalendarQueryDto,
 } from '../common/dto/appointment.dto';
 import { AvailabilityService } from './availability.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -39,7 +40,8 @@ export class AppointmentsService {
 
   constructor(
     private prisma: PrismaService,
-    private availabilityService: AvailabilityService
+    private availabilityService: AvailabilityService,
+    private smsService: SmsService
   ) {}
 
   /**
@@ -169,6 +171,20 @@ export class AppointmentsService {
         },
       },
     });
+
+    // Send SMS confirmation to customer
+    await this.smsService.sendAppointmentConfirmation(appointment.id).catch(err => {
+      console.error('Failed to send customer confirmation SMS:', err);
+      // Don't throw error - appointment was created successfully
+    });
+
+    // Send SMS alert to assigned employees
+    for (const empId of finalEmployeeIds) {
+      await this.smsService.sendStaffAppointmentAlert(appointment.id, empId).catch(err => {
+        console.error(`Failed to send staff alert SMS to employee ${empId}:`, err);
+        // Don't throw error - appointment was created successfully
+      });
+    }
 
     return appointment;
   }
@@ -395,7 +411,7 @@ export class AppointmentsService {
       throw new BadRequestException(`Cannot cancel appointment with status: ${appointment.status}`);
     }
 
-    return this.prisma.appointment.update({
+    const updatedAppointment = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CANCELLED,
@@ -414,6 +430,14 @@ export class AppointmentsService {
         },
       },
     });
+
+    // Send cancellation SMS to customer (non-blocking)
+    await this.smsService.sendAppointmentCancellation(id).catch(err => {
+      console.error('Failed to send cancellation SMS:', err);
+      // Don't throw error - appointment was cancelled successfully
+    });
+
+    return updatedAppointment;
   }
 
   /**

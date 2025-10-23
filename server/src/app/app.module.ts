@@ -21,6 +21,7 @@ import { PurchaseInvoicesModule } from '../purchase-invoices/purchase-invoices.m
 import { ExpenseInvoicesModule } from '../expense-invoices/expense-invoices.module';
 import { ReportsModule } from '../reports/reports.module';
 import { AppointmentsModule } from '../appointments/appointments.module';
+import { SmsModule } from '../sms/sms.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -48,6 +49,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     ExpenseInvoicesModule,
     ReportsModule,
     AppointmentsModule,
+    SmsModule,
   ],
   controllers: [AppController],
   providers: [

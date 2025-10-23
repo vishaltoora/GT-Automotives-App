@@ -626,6 +626,118 @@ curl -X POST http://localhost:3000/api/invoices \
 
 ---
 
-**Last Updated**: August 27, 2025  
-**Version**: 2.0  
+## SMS/Text Messaging Endpoints
+
+### Send SMS Webhook (Telnyx)
+**POST** `/sms/webhook`
+
+Receives delivery status updates from Telnyx.
+
+**Access**: Public (no authentication required)
+
+**Request Body** (Telnyx webhook format):
+```json
+{
+  "data": {
+    "event_type": "message.delivered",
+    "payload": {
+      "id": "msg_abc123"
+    }
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "success": true
+}
+```
+
+### Get SMS History
+**GET** `/sms/history`
+
+Retrieves SMS message history with filtering.
+
+**Access**: Admin only
+
+**Query Parameters**:
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20)
+- `type` (optional): Filter by message type
+- `status` (optional): Filter by status
+- `startDate` (optional): Start date filter (ISO-8601)
+- `endDate` (optional): End date filter (ISO-8601)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "messages": [
+      {
+        "id": "sms_123",
+        "to": "+12506499699",
+        "from": "+12366015757",
+        "body": "Hi John, your appointment is confirmed!",
+        "type": "APPOINTMENT_CONFIRMATION",
+        "status": "DELIVERED",
+        "cost": 0.004,
+        "segments": 1,
+        "sentAt": "2025-10-23T10:00:00Z",
+        "deliveredAt": "2025-10-23T10:00:05Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 50
+    }
+  }
+}
+```
+
+### Get/Update SMS Preferences
+**GET/POST** `/sms/preferences/customer` - Customer preferences
+**GET/POST** `/sms/preferences/user` - Staff/Admin preferences
+
+**Access**: Authenticated user (own preferences only)
+
+**Request Body** (POST):
+```json
+{
+  "optedIn": true,
+  "appointmentReminders": true,
+  "serviceUpdates": true,
+  "promotional": false
+}
+```
+
+### Get SMS Statistics
+**GET** `/sms/statistics`
+
+**Access**: Admin only
+
+**Response**:
+```json
+{
+  "totalMessages": 250,
+  "delivered": 240,
+  "deliveryRate": 96.0,
+  "totalCost": 1.00,
+  "optInRate": 80.0
+}
+```
+
+### SMS Types
+- `APPOINTMENT_CONFIRMATION` - Immediate booking confirmation
+- `APPOINTMENT_REMINDER` - 1-hour before reminder
+- `STAFF_APPOINTMENT_ALERT` - New assignment alert
+- `ADMIN_DAILY_SUMMARY` - End-of-day metrics
+- And more (see SMS Feature Manager agent)
+
+---
+
+**Last Updated**: October 23, 2025
+**Version**: 2.1
 **API Version**: v1

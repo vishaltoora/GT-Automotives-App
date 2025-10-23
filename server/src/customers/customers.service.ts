@@ -33,6 +33,25 @@ export class CustomersService {
       },
     });
 
+    // Auto-create SMS preferences if customer has a phone number
+    // Use provided preferences or default to opted-in for better user experience
+    if (customer.phone) {
+      await this.prisma.smsPreference.create({
+        data: {
+          customer: {
+            connect: { id: customer.id },
+          },
+          optedIn: createCustomerDto.smsOptedIn ?? true,
+          appointmentReminders: createCustomerDto.smsAppointmentReminders ?? true,
+          serviceUpdates: createCustomerDto.smsServiceUpdates ?? true,
+          promotional: createCustomerDto.smsPromotional ?? false,
+        },
+      }).catch(err => {
+        console.error('Failed to create SMS preferences for customer:', err);
+        // Don't throw error - customer was created successfully
+      });
+    }
+
     // Log the action
     await this.auditRepository.create({
       userId: createdBy,
@@ -88,6 +107,49 @@ export class CustomersService {
         vehicles: true,
       },
     });
+
+    // Update SMS preferences if provided and customer has phone
+    if (updatedCustomer.phone && (
+      updateCustomerDto.smsOptedIn !== undefined ||
+      updateCustomerDto.smsAppointmentReminders !== undefined ||
+      updateCustomerDto.smsServiceUpdates !== undefined ||
+      updateCustomerDto.smsPromotional !== undefined
+    )) {
+      // Check if SMS preferences exist
+      const existingPrefs = await this.prisma.smsPreference.findUnique({
+        where: { customerId: id },
+      });
+
+      if (existingPrefs) {
+        // Update existing preferences
+        await this.prisma.smsPreference.update({
+          where: { customerId: id },
+          data: {
+            ...(updateCustomerDto.smsOptedIn !== undefined && { optedIn: updateCustomerDto.smsOptedIn }),
+            ...(updateCustomerDto.smsAppointmentReminders !== undefined && { appointmentReminders: updateCustomerDto.smsAppointmentReminders }),
+            ...(updateCustomerDto.smsServiceUpdates !== undefined && { serviceUpdates: updateCustomerDto.smsServiceUpdates }),
+            ...(updateCustomerDto.smsPromotional !== undefined && { promotional: updateCustomerDto.smsPromotional }),
+          },
+        }).catch(err => {
+          console.error('Failed to update SMS preferences:', err);
+        });
+      } else {
+        // Create new preferences
+        await this.prisma.smsPreference.create({
+          data: {
+            customer: {
+              connect: { id },
+            },
+            optedIn: updateCustomerDto.smsOptedIn ?? true,
+            appointmentReminders: updateCustomerDto.smsAppointmentReminders ?? true,
+            serviceUpdates: updateCustomerDto.smsServiceUpdates ?? true,
+            promotional: updateCustomerDto.smsPromotional ?? false,
+          },
+        }).catch(err => {
+          console.error('Failed to create SMS preferences:', err);
+        });
+      }
+    }
 
     // Log the action
     await this.auditRepository.create({

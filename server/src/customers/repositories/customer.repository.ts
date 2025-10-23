@@ -75,6 +75,7 @@ export class CustomerRepository extends BaseRepository<
             vehicle: true,
           },
         },
+        smsPreference: true,
       },
     });
   }

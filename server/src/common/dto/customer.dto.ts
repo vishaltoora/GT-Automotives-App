@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail, ValidateIf, Matches } from 'class-validator';
+import { IsString, IsOptional, IsEmail, ValidateIf, Matches, IsBoolean } from 'class-validator';
 
 export class CreateCustomerDto {
   @IsString()
@@ -23,6 +23,23 @@ export class CreateCustomerDto {
   @ValidateIf((o) => o.businessName !== '' && o.businessName !== null && o.businessName !== undefined)
   @IsString()
   businessName?: string;
+
+  // SMS Preferences
+  @IsOptional()
+  @IsBoolean()
+  smsOptedIn?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  smsAppointmentReminders?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  smsServiceUpdates?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  smsPromotional?: boolean;
 }
 
 export class UpdateCustomerDto {
@@ -50,6 +67,23 @@ export class UpdateCustomerDto {
   @ValidateIf((o) => o.businessName !== '' && o.businessName !== null && o.businessName !== undefined)
   @IsString()
   businessName?: string;
+
+  // SMS Preferences
+  @IsOptional()
+  @IsBoolean()
+  smsOptedIn?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  smsAppointmentReminders?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  smsServiceUpdates?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  smsPromotional?: boolean;
 }
 
 export class CustomerResponseDto {

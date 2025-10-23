@@ -72,6 +72,13 @@ apiClient.interceptors.response.use(
   }
 );
 
+export interface SmsPreference {
+  optedIn: boolean;
+  appointmentReminders: boolean;
+  serviceUpdates: boolean;
+  promotional: boolean;
+}
+
 export interface Customer {
   id: string;
   firstName: string;
@@ -81,6 +88,7 @@ export interface Customer {
   address?: string;
   businessName?: string;
   vehicles?: Vehicle[];
+  smsPreference?: SmsPreference;
   _count?: {
     invoices: number;
     appointments: number;
@@ -120,6 +128,10 @@ export interface CreateCustomerDto {
   phone?: string;
   address?: string;
   businessName?: string;
+  smsOptedIn?: boolean;
+  smsAppointmentReminders?: boolean;
+  smsServiceUpdates?: boolean;
+  smsPromotional?: boolean;
 }
 
 export interface UpdateCustomerDto {
@@ -129,6 +141,10 @@ export interface UpdateCustomerDto {
   phone?: string;
   address?: string;
   businessName?: string;
+  smsOptedIn?: boolean;
+  smsAppointmentReminders?: boolean;
+  smsServiceUpdates?: boolean;
+  smsPromotional?: boolean;
 }
 
 class CustomerService {
