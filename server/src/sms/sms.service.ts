@@ -7,7 +7,7 @@ import { SmsStatus, SmsType } from '@prisma/client';
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
   private readonly telnyx: any;
-  private readonly fromNumber: string;
+  private readonly fromNumber!: string;
   private readonly enabled: boolean;
 
   constructor(private readonly prisma: PrismaService) {
@@ -21,14 +21,17 @@ export class SmsService {
         throw new Error('TELNYX_API_KEY environment variable is required');
       }
 
-      // Telnyx SDK initialization
-      this.telnyx = new Telnyx(apiKey);
-      this.fromNumber = process.env.TELNYX_PHONE_NUMBER;
+      // Telnyx SDK initialization - Telnyx constructor expects ClientOptions
+      this.telnyx = new Telnyx({ apiKey });
+      const fromNumber = process.env.TELNYX_PHONE_NUMBER;
 
-      if (!this.fromNumber) {
+      if (!fromNumber) {
         this.logger.error('TELNYX_PHONE_NUMBER is not set');
         throw new Error('TELNYX_PHONE_NUMBER environment variable is required');
       }
+
+      // Use type assertion to assign to readonly property in constructor
+      (this as any).fromNumber = fromNumber;
 
       this.logger.log('SMS Service initialized with Telnyx');
       this.logger.log(`From number: ${this.fromNumber}`);
@@ -179,18 +182,20 @@ export class SmsService {
       return { success: true, messageId: response.data.id };
 
     } catch (error) {
-      this.logger.error(`Failed to send SMS: ${error.message}`, error.stack);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`Failed to send SMS: ${errorMessage}`, errorStack);
 
       // Update record with error
       await this.prisma.smsMessage.update({
         where: { id: smsRecord.id },
         data: {
           status: SmsStatus.FAILED,
-          errorMessage: error.message,
+          errorMessage,
         },
       });
 
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     }
   }
 

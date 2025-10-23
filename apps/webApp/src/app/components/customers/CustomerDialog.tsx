@@ -337,7 +337,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <SmsIcon sx={{ color: colors.primary[600] }} />
+                        <SmsIcon sx={{ color: colors.primary.main }} />
                         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                           SMS Preferences
                         </Typography>
