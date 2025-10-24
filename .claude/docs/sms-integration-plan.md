@@ -62,7 +62,7 @@ Reminder: Your appointment for {serviceType} is scheduled for {date} at {time}.
 
 Vehicle: {year} {make} {model}
 
-Reply CONFIRM to confirm or call us at (250) 986-9191 to reschedule.
+Call us at (250) 986-9191 to reschedule if needed.
 
 GT Automotive
 Prince George, BC
@@ -467,7 +467,7 @@ export class SmsService {
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nReply CONFIRM to confirm or call us at (250) 986-9191 to reschedule.\n\n`;
+    message += `\nCall us at (250) 986-9191 to reschedule if needed.\n\n`;
     message += `GT Automotive\nPrince George, BC`;
 
     await this.sendSms({
