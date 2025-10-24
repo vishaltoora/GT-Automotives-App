@@ -368,11 +368,11 @@ curl https://gt-automotives.com/api/sms/history \
 # Enable/disable SMS system
 SMS_ENABLED=true
 
-# Telnyx credentials
-TELNYX_API_KEY=KEY019A12E58E404F383F416E54C3A081B3_8GaswjMEGBYxiSUzNTDI2p
-TELNYX_PHONE_NUMBER=+12366015757
-TELNYX_MESSAGING_PROFILE_ID=40019a12-d618-4140-9066-cea635fbd4a9
-TELNYX_PUBLIC_KEY=f6DmNwLKKN6yBzlEg76RozABbpZpf2XRCldCzuyED7o=
+# Telnyx credentials (stored in GitHub Secrets)
+TELNYX_API_KEY=your_telnyx_api_key_here
+TELNYX_PHONE_NUMBER=+1XXXXXXXXXX
+TELNYX_MESSAGING_PROFILE_ID=your_messaging_profile_id_here
+TELNYX_PUBLIC_KEY=your_public_key_here
 ```
 
 **Files**:
