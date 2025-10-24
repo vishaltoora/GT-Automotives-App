@@ -73,7 +73,7 @@ export function PublicLayout() {
           >
             <img
               src={gtLogo}
-              alt="GT Automotives Logo"
+              alt="GT Automotivess Logo"
               style={{
                 width: '90%',
                 height: '90%',
@@ -88,7 +88,7 @@ export function PublicLayout() {
               color: colors.primary.main,
             }}
           >
-            GT Automotives
+            GT Automotivess
           </Typography>
         </Box>
         <IconButton onClick={handleDrawerToggle}>
@@ -187,7 +187,7 @@ export function PublicLayout() {
             >
               <img
                 src={gtLogo}
-                alt="GT Automotives Logo"
+                alt="GT Automotivess Logo"
                 style={{
                   width: '90%',
                   height: '90%',
@@ -203,7 +203,7 @@ export function PublicLayout() {
                 display: { xs: 'none', sm: 'block' },
               }}
             >
-              GT Automotives
+              GT Automotivess
             </Typography>
           </Box>
 
@@ -318,7 +318,7 @@ export function PublicLayout() {
             {/* Company Info */}
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                GT Automotives
+                GT Automotivess
               </Typography>
               <Typography variant="body2" sx={{ mb: 1, opacity: 0.9 }}>
                 Your trusted partner for quality tires and professional automotive services.
@@ -432,7 +432,7 @@ export function PublicLayout() {
           <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', my: 2 }} />
           
           <Typography variant="body2" align="center" sx={{ opacity: 0.8 }}>
-            © {new Date().getFullYear()} GT Automotives. All rights reserved.
+            © {new Date().getFullYear()} GT Automotivess. All rights reserved.
           </Typography>
         </Container>
       </Box>

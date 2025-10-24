@@ -83,7 +83,7 @@ export function CustomerLayout() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            GT Automotive - Customer Portal
+            GT Automotives - Customer Portal
           </Typography>
           <Typography sx={{ mr: 2 }}>
             Welcome, {user?.firstName} {user?.lastName}

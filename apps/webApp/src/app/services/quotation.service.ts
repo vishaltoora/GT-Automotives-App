@@ -186,7 +186,7 @@ class QuoteService {
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
 
     // GT Logo - using actual logo.png
-    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
 
     return `
       <!DOCTYPE html>
@@ -297,7 +297,7 @@ class QuoteService {
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55;">GT Automotives</h1>
+                <h1 style="margin: 0; color: #243c55;">GT Automotivess</h1>
                 <p style="margin: 0; font-size: 14px; color: #666;">Professional Tire & Auto Services</p>
                 <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
               </div>
@@ -398,7 +398,7 @@ class QuoteService {
         </div>
 
         <div class="footer">
-          <p>Thank you for considering GT Automotives for your automotive needs!</p>
+          <p>Thank you for considering GT Automotivess for your automotive needs!</p>
           <p style="font-size: 0.8em;">This quote was generated on ${formatDate(quote.createdAt)}</p>
         </div>
       </body>

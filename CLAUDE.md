@@ -1,6 +1,6 @@
-# CLAUDE.md - GT Automotive Documentation Index
+# CLAUDE.md - GT Automotives Documentation Index
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the GT Automotive application. Documentation has been modularized for better performance.
+This file provides guidance to Claude Code (claude.ai/code) when working with the GT Automotives application. Documentation has been modularized for better performance.
 
 ## Quick Reference
 
@@ -351,7 +351,7 @@ git push origin main
 - ✅ **GitHub Workflow Fix**: Removed `--target production` flag from Docker build command
 - ✅ **Critical Path Discovery**: Found server build outputs to `server/dist/main.js` not `dist/server/main.js`
 - ✅ **Container CMD Correction**: Fixed Dockerfile CMD path to use actual build output location
-- ✅ **Project Structure Analysis**: Documented difference between MyPersn (`apps/server/`) vs GT Automotives (`server/`) structure
+- ✅ **Project Structure Analysis**: Documented difference between MyPersn (`apps/server/`) vs GT Automotivess (`server/`) structure
 - ✅ **Build Process Verification**: Added debug logging to verify container build output and file locations
 - ✅ **Documentation Enhancement**: Updated container deployment learnings with project structure patterns
 - ✅ **MyPersn Pattern Research**: Analyzed webpack configuration and build patterns for container compatibility
@@ -485,7 +485,7 @@ git push origin main
 - ✅ **Complete User Management**: Full admin interface for creating/managing staff and admin users
 - ✅ **Professional User Dialogs**: CreateUserDialog and EditUserDialog with validation and Clerk integration
 - ✅ **Username Support**: Dual login capability (username or email) with enhanced authentication flow
-- ✅ **Branded Login UI**: Professional GT Automotive login page with logo, colors, and responsive design
+- ✅ **Branded Login UI**: Professional GT Automotives login page with logo, colors, and responsive design
 - ✅ **Admin-only Registration**: Disabled public signup for enhanced security
 - ✅ **Material-UI Grid Modernization**: Updated all Grid components to modern `size` prop syntax
 - ✅ **Deprecation Warning Fixes**: Eliminated all Grid deprecation warnings with proper item props

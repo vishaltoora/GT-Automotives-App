@@ -120,7 +120,7 @@ export const SmsPreferences: React.FC<SmsPreferencesProps> = ({ customerId, user
               <Box>
                 <Typography variant="body1">Enable SMS Notifications</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Receive text messages from GT Automotive
+                  Receive text messages from GT Automotives
                 </Typography>
               </Box>
             }

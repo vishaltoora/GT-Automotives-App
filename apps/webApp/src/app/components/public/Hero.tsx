@@ -97,7 +97,7 @@ export const Hero: React.FC<HeroProps> = ({
             >
               <img
                 src={logo}
-                alt="GT Automotives Logo"
+                alt="GT Automotivess Logo"
                 style={{
                   width: '100%',
                   height: '100%',

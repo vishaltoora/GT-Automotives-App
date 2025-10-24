@@ -1,4 +1,4 @@
-# SMS Integration Plan for GT Automotive
+# SMS Integration Plan for GT Automotives
 
 **Created**: October 16, 2025
 **Last Updated**: October 23, 2025
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-This plan outlines the integration of SMS/text messaging capabilities into the GT Automotive application using **Telnyx** as the service provider. Telnyx offers the most cost-effective solution at $0.004 per message (47% cheaper than Twilio) while maintaining enterprise-grade reliability and features.
+This plan outlines the integration of SMS/text messaging capabilities into the GT Automotives application using **Telnyx** as the service provider. Telnyx offers the most cost-effective solution at $0.004 per message (47% cheaper than Twilio) while maintaining enterprise-grade reliability and features.
 
 ### ROI Analysis
 - **Cost**: $48/year for 500 messages/month
@@ -48,7 +48,7 @@ This plan outlines the integration of SMS/text messaging capabilities into the G
 
 ---
 
-## 2. Use Cases for GT Automotive
+## 2. Use Cases for GT Automotives
 
 ### A. Appointment Reminders (High Priority)
 **Problem**: No-shows cost time and revenue
@@ -56,7 +56,7 @@ This plan outlines the integration of SMS/text messaging capabilities into the G
 
 **Message Template**:
 ```
-Hi {firstName}, this is GT Automotive.
+Hi {firstName}, this is GT Automotives.
 
 Reminder: Your appointment for {serviceType} is scheduled for {date} at {time}.
 
@@ -64,7 +64,7 @@ Vehicle: {year} {make} {model}
 
 Call us at (250) 986-9191 to reschedule if needed.
 
-GT Automotive
+GT Automotives
 Prince George, BC
 ```
 
@@ -80,10 +80,10 @@ Prince George, BC
 **Message Templates**:
 ```
 Service Started:
-Hi {firstName}, we've started working on your {year} {make} {model}. Estimated completion: {time}. We'll text you when it's ready! - GT Automotive
+Hi {firstName}, we've started working on your {year} {make} {model}. Estimated completion: {time}. We'll text you when it's ready! - GT Automotives
 
 Service Complete:
-Great news {firstName}! Your {year} {make} {model} is ready for pickup at GT Automotive. Total: ${amount}. We're open until {closingTime}. See you soon!
+Great news {firstName}! Your {year} {make} {model} is ready for pickup at GT Automotives. Total: ${amount}. We're open until {closingTime}. See you soon!
 ```
 
 **Expected Impact**:
@@ -103,7 +103,7 @@ Service: {serviceType}
 Date/Time: {date} at {time}
 Vehicle: {year} {make} {model}
 
-GT Automotive - Prince George, BC
+GT Automotives - Prince George, BC
 (250) 986-9191
 ```
 
@@ -115,7 +115,7 @@ GT Automotive - Prince George, BC
 ```
 Hi {firstName}, it's time for your seasonal tire change!
 
-Book this week at GT Automotive and get:
+Book this week at GT Automotives and get:
 - Free tire rotation
 - Complimentary vehicle inspection
 
@@ -135,7 +135,7 @@ Reply STOP to opt-out
 
 **Message Template**:
 ```
-URGENT: GT Automotive will be closed tomorrow {date} due to {reason}.
+URGENT: GT Automotives will be closed tomorrow {date} due to {reason}.
 
 If you have an appointment, please call (250) 986-9191 to reschedule.
 
@@ -150,7 +150,7 @@ We apologize for any inconvenience.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     GT Automotive App                        │
+│                     GT Automotives App                        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌────────────────────┐      ┌──────────────────────┐      │
@@ -453,7 +453,7 @@ export class SmsService {
     const serviceType = appointment.job?.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
 
-    let message = `Hi ${appointment.customer.firstName}, this is GT Automotive.\n\n`;
+    let message = `Hi ${appointment.customer.firstName}, this is GT Automotives.\n\n`;
 
     if (daysAhead === 7) {
       message += `Reminder: Your appointment for ${serviceType} is coming up next week.\n\n`;
@@ -468,7 +468,7 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nCall us at (250) 986-9191 to reschedule if needed.\n\n`;
-    message += `GT Automotive\nPrince George, BC`;
+    message += `GT Automotives\nPrince George, BC`;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -848,7 +848,7 @@ export const SmsPreferences: React.FC<{ customerId: string }> = ({ customerId })
               <Box>
                 <Typography variant="body1">Enable SMS Notifications</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Receive text messages from GT Automotive
+                  Receive text messages from GT Automotives
                 </Typography>
               </Box>
             }
@@ -1252,7 +1252,7 @@ SMS_ENABLED=true
 **Requirements**:
 1. **Explicit Consent**: Customers must opt-in before receiving messages
 2. **Opt-Out Mechanism**: Must honor "STOP" replies immediately
-3. **Identification**: All messages must identify GT Automotive
+3. **Identification**: All messages must identify GT Automotives
 4. **Timing**: No messages before 8 AM or after 9 PM local time
 5. **Rate Limiting**: Maximum 4 promotional messages per month
 
@@ -1266,7 +1266,7 @@ SMS_ENABLED=true
 ### Message Content Best Practices
 
 **Do**:
-- Include business name (GT Automotive)
+- Include business name (GT Automotives)
 - Provide opt-out instructions for promotional
 - Keep messages under 160 characters when possible
 - Use clear, professional language
@@ -1479,7 +1479,7 @@ ORDER BY total_cost DESC;
 - **Lowest Cost**: $0.004/message (47% cheaper than Twilio)
 - **Reliable**: 99.999% uptime SLA
 - **Developer-Friendly**: Excellent API and documentation
-- **Scalable**: Can grow with GT Automotive
+- **Scalable**: Can grow with GT Automotives
 
 **Expected Outcomes**:
 - **60-80% reduction in no-shows** within 3 months

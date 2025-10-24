@@ -240,7 +240,7 @@ function HeroLogo() {
           >
             <img
               src={gtLogo}
-              alt="GT Automotive"
+              alt="GT Automotives"
               style={{
                 width: '100%',
                 height: '100%',

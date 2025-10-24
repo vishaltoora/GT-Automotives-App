@@ -89,7 +89,7 @@ export const Logo: React.FC<LogoProps> = ({
             letterSpacing: '-0.5px',
           }}
         >
-          GT Automotives
+          GT Automotivess
         </Typography>
         {size !== 'small' && (
           <Typography

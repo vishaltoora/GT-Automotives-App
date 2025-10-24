@@ -182,7 +182,7 @@ export function AuthLoading({ message = "Loading..." }: AuthLoadingProps) {
               animation: `${pulseAnimation} 2s ease-in-out infinite`,
             }}
           >
-            GT Automotive
+            GT Automotives
           </Typography>
           <Typography
             variant="body1"

@@ -115,7 +115,7 @@ export function Login() {
             >
               <img
                 src={gtLogo}
-                alt="GT Automotive Logo"
+                alt="GT Automotives Logo"
                 style={{
                   width: '75%',
                   height: '75%',
@@ -132,7 +132,7 @@ export function Login() {
                 mb: 1,
               }}
             >
-              GT Automotive
+              GT Automotives
             </Typography>
             <Typography
               variant="subtitle1"

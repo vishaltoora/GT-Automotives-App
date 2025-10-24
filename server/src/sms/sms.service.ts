@@ -226,7 +226,7 @@ export class SmsService {
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
 
-    let message = `Hi ${appointment.customer.firstName}, your appointment at GT Automotive is confirmed!\n\n`;
+    let message = `Hi ${appointment.customer.firstName}, your appointment at GT Automotives is confirmed!\n\n`;
     message += `Service: ${serviceType}\n`;
     message += `Date: ${formattedDate} at ${time}\n`;
     if (vehicle) {
@@ -234,7 +234,7 @@ export class SmsService {
     }
     message += `\nWe'll send you a reminder 1 hour before your appointment.\n\n`;
     message += `Need to reschedule? Call us at (250) 986-9191\n\n`;
-    message += `GT Automotive\nPrince George, BC`;
+    message += `GT Automotives\nPrince George, BC`;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -272,14 +272,14 @@ export class SmsService {
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
 
-    let message = `Hi ${appointment.customer.firstName}, your appointment at GT Automotive has been cancelled.\n\n`;
+    let message = `Hi ${appointment.customer.firstName}, your appointment at GT Automotives has been cancelled.\n\n`;
     message += `Service: ${serviceType}\n`;
     message += `Date: ${formattedDate} at ${time}\n`;
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nNeed to reschedule? Call us at (250) 986-9191 or book online.\n\n`;
-    message += `GT Automotive\nPrince George, BC`;
+    message += `GT Automotives\nPrince George, BC`;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -317,7 +317,7 @@ export class SmsService {
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
 
-    let message = `Hi ${appointment.customer.firstName}, this is GT Automotive.\n\n`;
+    let message = `Hi ${appointment.customer.firstName}, this is GT Automotives.\n\n`;
 
     if (daysAhead === 7) {
       message += `Reminder: Your appointment for ${serviceType} is coming up next week.\n\n`;
@@ -332,7 +332,7 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nCall us at (250) 986-9191 to reschedule if needed.\n\n`;
-    message += `GT Automotive\nPrince George, BC`;
+    message += `GT Automotives\nPrince George, BC`;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -377,7 +377,7 @@ export class SmsService {
       `Service: ${serviceType}\n` +
       `Customer: ${customerName}\n` +
       `Date: ${formattedDate} at ${time}\n\n` +
-      `GT Automotive`;
+      `GT Automotives`;
 
     await this.sendSms({
       to: staff.phone,
@@ -416,7 +416,7 @@ export class SmsService {
     });
 
     message += `\nTotal: ${appointments.length} appointment${appointments.length > 1 ? 's' : ''}\n\n`;
-    message += `GT Automotive`;
+    message += `GT Automotives`;
 
     await this.sendSms({
       to: staff.phone,
@@ -448,7 +448,7 @@ export class SmsService {
       `❌ Cancelled: ${summary.appointmentsCancelled}\n` +
       `💰 Revenue: $${summary.revenue.toFixed(2)}\n` +
       `⏳ Pending Payments: ${summary.pendingPayments}\n\n` +
-      `GT Automotive`;
+      `GT Automotives`;
 
     await this.sendSms({
       to: admin.phone,

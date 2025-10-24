@@ -1,5 +1,5 @@
 /**
- * GT Automotives Color Palette
+ * GT Automotivess Color Palette
  * Raw color definitions used to build the semantic color system
  */
 

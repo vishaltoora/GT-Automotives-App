@@ -71,7 +71,7 @@ export const About: React.FC = () => {
   ];
 
   const milestones = [
-    { year: '2010', event: 'GT Automotives founded with a vision to provide honest, quality service' },
+    { year: '2010', event: 'GT Automotivess founded with a vision to provide honest, quality service' },
     { year: '2012', event: 'Expanded services to include complete mechanical repairs' },
     { year: '2015', event: 'Moved to larger facility to better serve our growing customer base' },
     { year: '2018', event: 'Added state-of-the-art diagnostic equipment and alignment system' },
@@ -106,7 +106,7 @@ export const About: React.FC = () => {
     <>
       {/* Hero Section */}
       <Hero
-        title="About GT Automotives"
+        title="About GT Automotivess"
         subtitle="Our Story"
         description="Family-owned and operated since 2010, serving our community with pride and dedication."
         primaryAction={{
@@ -154,7 +154,7 @@ export const About: React.FC = () => {
                 mb: 3,
               }}
             >
-              GT Automotives started with a simple mission: to provide honest, reliable automotive
+              GT Automotivess started with a simple mission: to provide honest, reliable automotive
               service at fair prices. Founded by John Anderson, a master technician with over 25
               years of experience, we began in a small two-bay garage with just three employees.
             </Typography>
@@ -506,7 +506,7 @@ export const About: React.FC = () => {
       {/* CTA Section */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
         <CTASection
-          title="Experience the GT Automotives Difference"
+          title="Experience the GT Automotivess Difference"
           description="Join thousands of satisfied customers who trust us with their vehicles"
           primaryAction={{
             label: 'Schedule Service',

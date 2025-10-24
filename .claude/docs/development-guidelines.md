@@ -502,11 +502,11 @@ await this.smsService.sendAppointmentConfirmation(appointment.id);
 ```typescript
 // ✅ CORRECT: Clear, branded message under 160 chars
 const message =
-  `Hi ${customer.firstName}, your appointment at GT Automotive is confirmed!\n\n` +
+  `Hi ${customer.firstName}, your appointment at GT Automotives is confirmed!\n\n` +
   `Service: ${serviceType}\n` +
   `Date: ${formattedDate} at ${time}\n\n` +
   `Call (250) 986-9191 to reschedule.\n\n` +
-  `GT Automotive\nPrince George, BC`;
+  `GT Automotives\nPrince George, BC`;
 
 // ✅ CORRECT: Personalization with first name
 `Hi ${customer.firstName}, ...`
@@ -520,7 +520,7 @@ const message =
 
 ```typescript
 // ✅ CORRECT: Single segment (160 chars max) = $0.004
-const message = `Hi ${name}, apt confirmed for ${date} at ${time}. Call us at (250) 986-9191. - GT Automotive`;
+const message = `Hi ${name}, apt confirmed for ${date} at ${time}. Call us at (250) 986-9191. - GT Automotives`;
 
 // ⚠️ WARNING: Multiple segments = $0.004 per segment
 // Unicode emojis force 70-char segments

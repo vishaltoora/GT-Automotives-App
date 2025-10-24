@@ -1,5 +1,5 @@
 /**
- * GT Automotives Brand Colors
+ * GT Automotivess Brand Colors
  * Centralized color palette for consistent theming across the application
  */
 

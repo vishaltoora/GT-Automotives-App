@@ -134,7 +134,7 @@ export const ProductsHero: React.FC<ProductsHeroProps> = ({ searchTerm, onSearch
                   >
                     <img
                       src={gtLogo}
-                      alt="GT Automotive"
+                      alt="GT Automotives"
                       style={{
                         width: '100%',
                         height: '100%',

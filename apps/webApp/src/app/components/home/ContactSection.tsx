@@ -221,7 +221,7 @@ function WhyGTAutomotives() {
           textAlign: 'center',
         }}
       >
-        Why GT Automotives?
+        Why GT Automotivess?
       </Typography>
       <Box 
         sx={{ 

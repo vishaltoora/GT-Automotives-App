@@ -199,7 +199,7 @@ class InvoiceService {
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
 
     // GT Logo - using actual logo.png
-    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
 
     return `
       <!DOCTYPE html>
@@ -299,7 +299,7 @@ class InvoiceService {
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55;">${invoice.company?.name || 'GT Automotives'}</h1>
+                <h1 style="margin: 0; color: #243c55;">${invoice.company?.name || 'GT Automotivess'}</h1>
                 <p style="margin: 0; font-size: 14px; color: #666;">${invoice.company?.businessType || 'Professional Tire & Auto Services'}</p>
                 <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${invoice.company?.registrationNumber || '16472991'} Canada INC.</p>
               </div>
@@ -406,7 +406,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
         <div class="footer">
           <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 40px;">
             <p style="font-weight: bold; color: #1976d2; margin-bottom: 5px;">Thank you for your business!</p>
-            <p style="margin: 0;">GT Automotive - Your trusted automotive partner</p>
+            <p style="margin: 0;">GT Automotives - Your trusted automotive partner</p>
             <p style="margin: 5px 0; font-size: 12px; color: #666;">
               Mobile Service Available | Licensed & Insured | Satisfaction Guaranteed
             </p>
@@ -426,7 +426,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
 
     // GT Logo - using actual logo.png
-    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotives Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
+    const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
 
     return `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: #333; padding: 10px; max-width: 800px; margin: 0 auto;">
@@ -435,7 +435,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55; font-size: 26px;">${invoice.company?.name || 'GT Automotives'}</h1>
+                <h1 style="margin: 0; color: #243c55; font-size: 26px;">${invoice.company?.name || 'GT Automotivess'}</h1>
                 <p style="margin: 0; font-size: 14px; color: #666;">${invoice.company?.businessType || 'Professional Tire & Auto Services'}</p>
                 <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${invoice.company?.registrationNumber || '16472991'} Canada INC.</p>
               </div>
@@ -545,7 +545,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
         <div style="margin-top: 25px; text-align: center; color: #666; font-size: 0.85em;">
           <div style="border-top: 1px solid #ddd; padding-top: 12px; margin-top: 20px;">
             <p style="font-weight: bold; color: #1976d2; margin: 0 0 3px 0;">Thank you for your business!</p>
-            <p style="margin: 0; font-size: 12px;">GT Automotive - Your trusted automotive partner</p>
+            <p style="margin: 0; font-size: 12px;">GT Automotives - Your trusted automotive partner</p>
             <p style="margin: 2px 0; font-size: 10px; color: #666;">
               Mobile Service Available | Licensed & Insured | Satisfaction Guaranteed
             </p>

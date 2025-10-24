@@ -151,7 +151,7 @@ export function AdminLayout() {
           {!drawerCollapsed && (
             <Box>
               <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, lineHeight: 1 }}>
-                GT Automotives
+                GT Automotivess
               </Typography>
               <Typography variant="caption" sx={{ color: colors.neutral[100], fontWeight: 500 }}>
                 16472991 Canada INC.
