@@ -18,6 +18,11 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormLabel,
+  Typography,
 } from '@mui/material';
 import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -481,9 +486,36 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           )}
 
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            {/* 1. Customer Selection */}
+            {/* 1. Appointment Type */}
             <Grid size={{ xs: 12 }}>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+              <FormControl component="fieldset" required>
+                <FormLabel component="legend">Appointment Type</FormLabel>
+                <RadioGroup
+                  row
+                  value={formData.appointmentType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, appointmentType: e.target.value })
+                  }
+                >
+                  <FormControlLabel
+                    value="AT_GARAGE"
+                    control={<Radio />}
+                    label="At Garage"
+                  />
+                  <FormControlLabel
+                    value="MOBILE_SERVICE"
+                    control={<Radio />}
+                    label="Mobile Service"
+                  />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+
+            {/* 2. Customer Selection */}
+            <Grid size={{ xs: 12 }} sx={{ mt: -1 }}>
+              <FormControl component="fieldset" required fullWidth>
+                <FormLabel component="legend">Search or Add Customer</FormLabel>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
                 <Autocomplete
                   fullWidth
                   options={customers}
@@ -567,6 +599,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   </Tooltip>
                 )}
               </Box>
+              </FormControl>
             </Grid>
 
             {/* Vehicle Selection (if customer has vehicles) */}
@@ -596,7 +629,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 </Grid>
               )}
 
-            {/* 2. Date */}
+            {/* 3. Date */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <DatePicker
                 label="Date"
@@ -613,7 +646,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               />
             </Grid>
 
-            {/* 3. Start Time */}
+            {/* 4. Start Time */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
                 options={generateTimeOptions()}
@@ -639,7 +672,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               />
             </Grid>
 
-            {/* 4. Service Type */}
+            {/* 5. Service Type */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth required>
                 <InputLabel>Service Type</InputLabel>
@@ -658,7 +691,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               </FormControl>
             </Grid>
 
-            {/* 5. Duration */}
+            {/* 6. Duration */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
@@ -674,23 +707,6 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 inputProps={{ min: 15, max: 480, step: 15 }}
                 required
               />
-            </Grid>
-
-            {/* 6. Appointment Type */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth required>
-                <InputLabel>Appointment Type</InputLabel>
-                <Select
-                  value={formData.appointmentType}
-                  onChange={(e) =>
-                    setFormData({ ...formData, appointmentType: e.target.value })
-                  }
-                  label="Appointment Type"
-                >
-                  <MenuItem value="AT_GARAGE">At Garage</MenuItem>
-                  <MenuItem value="MOBILE_SERVICE">Mobile Service</MenuItem>
-                </Select>
-              </FormControl>
             </Grid>
 
             {/* 7. Employee Assignment - Multi-select */}
@@ -878,7 +894,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               </Grid>
             )}
 
-            {/* Notes */}
+            {/* 8. Notes */}
             <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
