@@ -152,7 +152,7 @@ export function App() {
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="jobs" element={<MyJobs />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
-          <Route path="appointments/availability" element={<EmployeeAvailabilityManagement />} />
+          <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -190,7 +190,7 @@ export function App() {
           <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
           {/* Expense invoices merged into purchase-invoices */}
           <Route path="appointments" element={<AppointmentsManagement />} />
-          <Route path="appointments/availability" element={<EmployeeAvailabilityManagement />} />
+          <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="sms-history" element={<SmsHistory />} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="jobs" element={<JobsManagement />} />

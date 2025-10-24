@@ -550,24 +550,6 @@ export const AppointmentsManagement: React.FC = () => {
               mb={3}
             >
               <Typography variant="h4">Appointments</Typography>
-              <Box display="flex" gap={1}>
-                {!isStaff && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<ScheduleIcon />}
-                    onClick={() => navigate('/admin/appointments/availability')}
-                  >
-                    Manage Availability
-                  </Button>
-                )}
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={handleCreate}
-                >
-                  New Appointment
-                </Button>
-              </Box>
             </Box>
 
             {/* View Toggle */}

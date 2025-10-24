@@ -23,6 +23,8 @@ import {
   Radio,
   FormLabel,
   Typography,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -110,18 +112,12 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     const options: { value: string; label: string }[] = [];
     const startHour = 9; // 9 AM
     const endHour = 23; // 11 PM
-    const minTime = getMinTime();
 
     for (let hour = startHour; hour <= endHour; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
         if (hour === endHour && minute > 0) break; // Stop at 11:00 PM
 
         const timeValue = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-
-        // Skip times before current time if today
-        if (minTime && timeValue < minTime) {
-          continue;
-        }
 
         // Format for display (12-hour format)
         const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
