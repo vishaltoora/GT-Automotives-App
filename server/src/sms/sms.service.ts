@@ -233,7 +233,7 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nWe'll send you a reminder 1 hour before your appointment.\n\n`;
-    message += `Need to reschedule? Call us at (250) 555-0100\n\n`;
+    message += `Need to reschedule? Call us at (250) 986-9191\n\n`;
     message += `GT Automotive\nPrince George, BC`;
 
     await this.sendSms({
@@ -278,7 +278,7 @@ export class SmsService {
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nNeed to reschedule? Call us at (250) 555-0100 or book online.\n\n`;
+    message += `\nNeed to reschedule? Call us at (250) 986-9191 or book online.\n\n`;
     message += `GT Automotive\nPrince George, BC`;
 
     await this.sendSms({
@@ -331,7 +331,7 @@ export class SmsService {
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nReply CONFIRM to confirm or call us at (250) 555-0100 to reschedule.\n\n`;
+    message += `\nReply CONFIRM to confirm or call us at (250) 986-9191 to reschedule.\n\n`;
     message += `GT Automotive\nPrince George, BC`;
 
     await this.sendSms({

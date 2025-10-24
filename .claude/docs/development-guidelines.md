@@ -505,7 +505,7 @@ const message =
   `Hi ${customer.firstName}, your appointment at GT Automotive is confirmed!\n\n` +
   `Service: ${serviceType}\n` +
   `Date: ${formattedDate} at ${time}\n\n` +
-  `Call (250) 555-0100 to reschedule.\n\n` +
+  `Call (250) 986-9191 to reschedule.\n\n` +
   `GT Automotive\nPrince George, BC`;
 
 // ✅ CORRECT: Personalization with first name
@@ -520,7 +520,7 @@ const message =
 
 ```typescript
 // ✅ CORRECT: Single segment (160 chars max) = $0.004
-const message = `Hi ${name}, apt confirmed for ${date} at ${time}. Call us at (250) 555-0100. - GT Automotive`;
+const message = `Hi ${name}, apt confirmed for ${date} at ${time}. Call us at (250) 986-9191. - GT Automotive`;
 
 // ⚠️ WARNING: Multiple segments = $0.004 per segment
 // Unicode emojis force 70-char segments

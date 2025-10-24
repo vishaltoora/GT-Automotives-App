@@ -44,7 +44,7 @@ This agent provides guidance and automation for all SMS-related tasks including:
 
 ### 5. **Message Templates**
 - **Branding**: Always include "GT Automotive" and location (Prince George, BC)
-- **Contact Info**: Include phone number (250) 555-0100 for reschedules
+- **Contact Info**: Include phone number (250) 986-9191 for reschedules
 - **Personalization**: Use customer/staff first name
 - **Clear CTAs**: Tell recipient what to do (CONFIRM, call, etc.)
 
@@ -185,7 +185,7 @@ async sendPaymentReminder(invoiceId: string): Promise<void> {
     return;
   }
 
-  const message = `Hi ${invoice.customer.firstName}, friendly reminder that invoice #${invoice.invoiceNumber} for $${invoice.total.toFixed(2)} is due on ${invoice.dueDate.toLocaleDateString()}. Pay online or call us at (250) 555-0100.\n\nGT Automotive\nPrince George, BC`;
+  const message = `Hi ${invoice.customer.firstName}, friendly reminder that invoice #${invoice.invoiceNumber} for $${invoice.total.toFixed(2)} is due on ${invoice.dueDate.toLocaleDateString()}. Pay online or call us at (250) 986-9191.\n\nGT Automotive\nPrince George, BC`;
 
   await this.sendSms({
     to: invoice.customer.phone,

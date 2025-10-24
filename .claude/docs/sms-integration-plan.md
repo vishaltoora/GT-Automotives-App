@@ -62,7 +62,7 @@ Reminder: Your appointment for {serviceType} is scheduled for {date} at {time}.
 
 Vehicle: {year} {make} {model}
 
-Reply CONFIRM to confirm or call us at (250) 555-0100 to reschedule.
+Reply CONFIRM to confirm or call us at (250) 986-9191 to reschedule.
 
 GT Automotive
 Prince George, BC
@@ -104,7 +104,7 @@ Date/Time: {date} at {time}
 Vehicle: {year} {make} {model}
 
 GT Automotive - Prince George, BC
-(250) 555-0100
+(250) 986-9191
 ```
 
 ### D. Promotional Messages (Low Priority)
@@ -119,7 +119,7 @@ Book this week at GT Automotive and get:
 - Free tire rotation
 - Complimentary vehicle inspection
 
-Call (250) 555-0100 or book online at gt-automotives.com
+Call (250) 986-9191 or book online at gt-automotives.com
 
 Reply STOP to opt-out
 ```
@@ -137,7 +137,7 @@ Reply STOP to opt-out
 ```
 URGENT: GT Automotive will be closed tomorrow {date} due to {reason}.
 
-If you have an appointment, please call (250) 555-0100 to reschedule.
+If you have an appointment, please call (250) 986-9191 to reschedule.
 
 We apologize for any inconvenience.
 ```
@@ -467,7 +467,7 @@ export class SmsService {
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nReply CONFIRM to confirm or call us at (250) 555-0100 to reschedule.\n\n`;
+    message += `\nReply CONFIRM to confirm or call us at (250) 986-9191 to reschedule.\n\n`;
     message += `GT Automotive\nPrince George, BC`;
 
     await this.sendSms({
