@@ -22,9 +22,6 @@ import {
   FormControlLabel,
   Radio,
   FormLabel,
-  Typography,
-  ToggleButton,
-  ToggleButtonGroup,
 } from '@mui/material';
 import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -97,14 +94,6 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear()
     );
-  };
-
-  // Get minimum time based on selected date
-  const getMinTime = () => {
-    if (isToday(formData.scheduledDate)) {
-      return getCurrentTimeRounded();
-    }
-    return undefined;
   };
 
   // Generate time slots in 15-minute intervals (9:00 AM to 11:00 PM)
