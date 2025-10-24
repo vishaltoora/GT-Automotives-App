@@ -550,4 +550,162 @@ export class SmsService {
 
     this.logger.log(`Updated message ${messageId} status to ${status}`);
   }
+
+  /**
+   * Send End of Day (EOD) summary to admin users
+   */
+  async sendEODSummary(data: {
+    date: string;
+    totalPayments: number;
+    totalOwed: number;
+    paymentsByMethod: Record<string, number>;
+    atGaragePayments: number;
+    atGarageCount: number;
+    atGaragePaymentsByMethod: Record<string, number>;
+    mobileServicePayments: number;
+    mobileServiceCount: number;
+    mobileServicePaymentsByMethod: Record<string, number>;
+  }) {
+    // Find all admin users with SMS enabled
+    const adminUsers = await this.prisma.user.findMany({
+      where: {
+        role: {
+          name: 'ADMIN',
+        },
+        phone: { not: null },
+        isActive: true,
+      },
+      include: {
+        smsPreference: true,
+      },
+    });
+
+    // Filter to only users who opted in and have dailySummary enabled
+    const eligibleAdmins = adminUsers.filter(
+      (user) => user.smsPreference?.optedIn && user.smsPreference?.dailySummary
+    );
+
+    if (eligibleAdmins.length === 0) {
+      this.logger.warn('No admin users opted in for EOD summary');
+      return { success: false, message: 'No admin users opted in for EOD summary' };
+    }
+
+    // Format payment methods helper
+    const formatPaymentMethods = (methods: Record<string, number>) => {
+      const methodLabels: Record<string, string> = {
+        CASH: '💵 Cash',
+        E_TRANSFER: '📱 E-Transfer',
+        CREDIT_CARD: '💳 Credit',
+        DEBIT_CARD: '💳 Debit',
+        CHEQUE: '📝 Cheque',
+      };
+
+      return Object.entries(methods)
+        .filter(([_, amount]) => amount > 0)
+        .map(([method, amount]) => `${methodLabels[method] || method}: $${amount.toFixed(2)}`)
+        .join('\n');
+    };
+
+    // Format date
+    const formattedDate = new Date(data.date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    // Build EOD message
+    const atGarageBreakdown = formatPaymentMethods(data.atGaragePaymentsByMethod);
+    const mobileServiceBreakdown = formatPaymentMethods(data.mobileServicePaymentsByMethod);
+
+    // Helper function to build message for each admin
+    const buildMessage = (adminName: string) => {
+      let msg = `Hello ${adminName},\n\n`;
+      msg += `📊 Here is the EOD Summary for ${formattedDate}\n\n`;
+      msg += `💰 TOTAL COLLECTED: $${data.totalPayments.toFixed(2)}\n`;
+
+      if (data.totalOwed > 0) {
+        msg += `⚠️ Outstanding: $${data.totalOwed.toFixed(2)}\n`;
+      }
+
+      msg += `\n📍 AT GARAGE (${data.atGarageCount} jobs):\n`;
+      msg += `Total: $${data.atGaragePayments.toFixed(2)}\n`;
+      if (atGarageBreakdown) {
+        msg += `${atGarageBreakdown}\n`;
+      }
+
+      msg += `\n🚗 MOBILE SERVICE (${data.mobileServiceCount} jobs):\n`;
+      msg += `Total: $${data.mobileServicePayments.toFixed(2)}\n`;
+      if (mobileServiceBreakdown) {
+        msg += `${mobileServiceBreakdown}\n`;
+      }
+
+      msg += `\n\nGT Automotives`;
+      return msg;
+    };
+
+    // Keep old message building for reference (will be replaced per admin below)
+    let message = `📊 EOD Summary - ${formattedDate}\n\n`;
+    message += `💰 TOTAL COLLECTED: $${data.totalPayments.toFixed(2)}\n`;
+
+    if (data.totalOwed > 0) {
+      message += `⚠️ Outstanding: $${data.totalOwed.toFixed(2)}\n`;
+    }
+
+    message += `\n📍 AT GARAGE (${data.atGarageCount} jobs):\n`;
+    message += `Total: $${data.atGaragePayments.toFixed(2)}\n`;
+    if (atGarageBreakdown) {
+      message += `${atGarageBreakdown}\n`;
+    }
+
+    message += `\n🚗 MOBILE SERVICE (${data.mobileServiceCount} jobs):\n`;
+    message += `Total: $${data.mobileServicePayments.toFixed(2)}\n`;
+    if (mobileServiceBreakdown) {
+      message += `${mobileServiceBreakdown}\n`;
+    }
+
+    message += `\n\nGT Automotives`;
+
+    // Send SMS to each eligible admin
+    this.logger.log(`Sending EOD summary to ${eligibleAdmins.length} admin users`);
+
+    const results = await Promise.all(
+      eligibleAdmins.map(async (admin) => {
+        try {
+          this.logger.log(`Attempting to send EOD SMS to admin ${admin.id} (${admin.email}) at phone ${admin.phone}`);
+
+          // Build personalized message with admin's first name
+          const adminName = admin.firstName || admin.email.split('@')[0];
+          const personalizedMessage = buildMessage(adminName);
+
+          const result = await this.sendSms({
+            to: admin.phone!,
+            body: personalizedMessage,
+            type: 'ADMIN_DAILY_SUMMARY' as SmsType,
+            userId: admin.id,
+          });
+
+          if (result.success) {
+            this.logger.log(`EOD SMS sent successfully to admin ${admin.id}, messageId: ${result.messageId}`);
+            return { userId: admin.id, success: true, messageId: result.messageId };
+          } else {
+            this.logger.error(`EOD SMS failed for admin ${admin.id}: ${result.error}`);
+            return { userId: admin.id, success: false, error: result.error };
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          this.logger.error(`Exception sending EOD summary to admin ${admin.id}:`, error);
+          return { userId: admin.id, success: false, error: errorMessage };
+        }
+      })
+    );
+
+    const successCount = results.filter((r) => r.success).length;
+
+    return {
+      success: true,
+      message: `EOD summary sent to ${successCount} of ${eligibleAdmins.length} admin users`,
+      results,
+    };
+  }
 }

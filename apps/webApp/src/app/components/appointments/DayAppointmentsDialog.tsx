@@ -22,6 +22,9 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -42,10 +45,16 @@ import {
   AttachMoney as MoneyIcon,
   MoreVert as MoreVertIcon,
   Delete as DeleteIcon,
+  Send as SendIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { useAuth } from '@clerk/clerk-react';
+import axios from 'axios';
 import { formatTimeRange } from '../../utils/timeFormat';
 import { PaymentDialog } from './PaymentDialog';
+
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface PaymentEntry {
   id: string;
@@ -477,9 +486,16 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   onStatusChange,
   onAddAppointment,
 }) => {
+  const { getToken } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [sendingEOD, setSendingEOD] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   // Sort appointments by time
   const sortedAppointments = useMemo(() => {
@@ -695,6 +711,57 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     setSelectedAppointment(null);
   };
 
+  const handleSendEOD = async () => {
+    try {
+      setSendingEOD(true);
+      const token = await getToken();
+
+      // Prepare EOD summary data
+      const eodData = {
+        date: format(date, 'yyyy-MM-dd'),
+        totalPayments: stats.totalPayments,
+        totalOwed: stats.totalOwed,
+        paymentsByMethod: stats.paymentsByMethod,
+        atGaragePayments: stats.atGaragePayments,
+        atGarageCount: stats.completedAtGarage,
+        atGaragePaymentsByMethod: stats.atGaragePaymentsByMethod,
+        mobileServicePayments: stats.mobileServicePayments,
+        mobileServiceCount: stats.completedMobileService,
+        mobileServicePaymentsByMethod: stats.mobileServicePaymentsByMethod,
+      };
+
+      await axios.post(
+        `${API_URL}/api/sms/send-eod-summary`,
+        eodData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      setSnackbar({
+        open: true,
+        message: 'EOD summary sent successfully to admin users!',
+        severity: 'success',
+      });
+    } catch (error: any) {
+      console.error('Error sending EOD summary:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Failed to send EOD summary',
+        severity: 'error',
+      });
+    } finally {
+      setSendingEOD(false);
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   return (
     <Dialog
       open={open}
@@ -876,13 +943,26 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                 }}
               >
                 {/* Header */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    Payment Summary
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {stats.completedWithPayment} completed {stats.completedWithPayment === 1 ? 'appointment' : 'appointments'}
-                  </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                      Payment Summary
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {stats.completedWithPayment} completed {stats.completedWithPayment === 1 ? 'appointment' : 'appointments'}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={sendingEOD ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+                    onClick={handleSendEOD}
+                    disabled={sendingEOD || stats.totalPayments === 0}
+                    sx={{ minWidth: 100 }}
+                  >
+                    {sendingEOD ? 'Sending...' : 'Send EOD'}
+                  </Button>
                 </Box>
 
                 {/* Total Amount and Outstanding Balance */}
@@ -1041,7 +1121,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                     </Typography>
                     <Grid container spacing={2}>
                       {stats.atGaragePaymentsByMethod['CASH'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1055,7 +1135,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['E_TRANSFER'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1069,7 +1149,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['CREDIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1083,7 +1163,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['DEBIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1097,7 +1177,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['CHEQUE'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1151,7 +1231,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                     </Typography>
                     <Grid container spacing={2}>
                       {stats.mobileServicePaymentsByMethod['CASH'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1165,7 +1245,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['E_TRANSFER'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1179,7 +1259,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['CREDIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1193,7 +1273,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['DEBIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1207,7 +1287,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['CHEQUE'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1665,6 +1745,18 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
           }
         />
       )}
+
+      {/* Success/Error Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 };

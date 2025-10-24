@@ -253,4 +253,28 @@ export class SmsController {
       optedInUsers,
     };
   }
+
+  /**
+   * Send EOD (End of Day) summary to admin users
+   */
+  @Post('send-eod-summary')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('ADMIN', 'STAFF')
+  async sendEODSummary(
+    @Body() data: {
+      date: string;
+      totalPayments: number;
+      totalOwed: number;
+      paymentsByMethod: Record<string, number>;
+      atGaragePayments: number;
+      atGarageCount: number;
+      atGaragePaymentsByMethod: Record<string, number>;
+      mobileServicePayments: number;
+      mobileServiceCount: number;
+      mobileServicePaymentsByMethod: Record<string, number>;
+    },
+  ) {
+    const result = await this.smsService.sendEODSummary(data);
+    return result;
+  }
 }
