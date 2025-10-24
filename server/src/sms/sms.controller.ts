@@ -217,11 +217,14 @@ export class SmsController {
       where: { status: 'FAILED' },
     });
 
-    const totalCostResult = await this.prisma.smsMessage.aggregate({
-      _sum: { cost: true },
+    // Calculate cost based on segments since Telnyx doesn't return cost in API
+    // Telnyx charges $0.0025 per SMS segment for Canada
+    const segmentsResult = await this.prisma.smsMessage.aggregate({
+      _sum: { segments: true },
     });
 
-    const totalCost = totalCostResult._sum.cost ? parseFloat(totalCostResult._sum.cost.toString()) : 0;
+    const totalSegments = segmentsResult._sum.segments || 0;
+    const totalCost = totalSegments * 0.0025; // $0.0025 per segment
 
     const messagesByType = await this.prisma.smsMessage.groupBy({
       by: ['type'],

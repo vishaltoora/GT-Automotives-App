@@ -17,6 +17,7 @@ import {
   TextField,
   MenuItem,
 } from '@mui/material';
+import { useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 
 interface SmsMessage {
@@ -50,6 +51,7 @@ interface SmsStatistics {
 }
 
 export const SmsHistory: React.FC = () => {
+  const { getToken } = useAuth();
   const [messages, setMessages] = useState<SmsMessage[]>([]);
   const [statistics, setStatistics] = useState<SmsStatistics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,9 +63,19 @@ export const SmsHistory: React.FC = () => {
 
   const loadData = async () => {
     try {
+      const token = await getToken();
+
       const [messagesResponse, statsResponse] = await Promise.all([
-        axios.get('/api/sms/history?limit=100'),
-        axios.get('/api/sms/statistics'),
+        axios.get('/api/sms/history?limit=100', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        axios.get('/api/sms/statistics', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
       ]);
 
       setMessages(messagesResponse.data);
@@ -260,7 +272,7 @@ export const SmsHistory: React.FC = () => {
                   </TableCell>
                   <TableCell align="right">{message.segments || 1}</TableCell>
                   <TableCell align="right">
-                    ${(message.cost || 0).toFixed(4)}
+                    ${((message.segments || 1) * 0.0025).toFixed(4)}
                   </TableCell>
                 </TableRow>
               ))
