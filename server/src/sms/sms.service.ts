@@ -200,6 +200,21 @@ export class SmsService {
   }
 
   /**
+   * Get time-based greeting (Good morning/afternoon/evening)
+   */
+  private getTimeBasedGreeting(customerName: string): string {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) {
+      return `Good morning ${customerName}`;
+    } else if (hour >= 12 && hour < 17) {
+      return `Good afternoon ${customerName}`;
+    } else {
+      return `Good evening ${customerName}`;
+    }
+  }
+
+  /**
    * Send appointment confirmation to customer (immediately after booking)
    */
   async sendAppointmentConfirmation(appointmentId: string): Promise<void> {
@@ -226,7 +241,8 @@ export class SmsService {
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
 
-    let message = `Hi ${appointment.customer.firstName}, your appointment at GT Automotives is confirmed!\n\n`;
+    const greeting = this.getTimeBasedGreeting(appointment.customer.firstName);
+    let message = `${greeting}, your appointment at GT Automotives is confirmed!\n\n`;
     message += `Service: ${serviceType}\n`;
     message += `Date: ${formattedDate} at ${time}\n`;
     if (vehicle) {
@@ -234,6 +250,7 @@ export class SmsService {
     }
     message += `\nWe'll send you a reminder 1 hour before your appointment.\n\n`;
     message += `Need to reschedule? Call us at (250) 986-9191\n\n`;
+    message += `Have a great day!\n\n`;
     message += `GT Automotives\nPrince George, BC`;
 
     await this.sendSms({
@@ -249,6 +266,8 @@ export class SmsService {
    * Send appointment cancellation notification to customer
    */
   async sendAppointmentCancellation(appointmentId: string): Promise<void> {
+    this.logger.log(`📱 sendAppointmentCancellation called for appointment: ${appointmentId}`);
+
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
@@ -257,9 +276,17 @@ export class SmsService {
       },
     });
 
-    if (!appointment || !appointment.customer.phone) {
+    if (!appointment) {
+      this.logger.warn(`❌ Appointment not found: ${appointmentId}`);
       return;
     }
+
+    if (!appointment.customer.phone) {
+      this.logger.warn(`❌ Customer ${appointment.customer.firstName} ${appointment.customer.lastName} has no phone number`);
+      return;
+    }
+
+    this.logger.log(`✅ Sending cancellation SMS to ${appointment.customer.phone}`);
 
     const date = new Date(appointment.scheduledDate);
     const formattedDate = date.toLocaleDateString('en-US', {
@@ -272,13 +299,15 @@ export class SmsService {
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
 
-    let message = `Hi ${appointment.customer.firstName}, your appointment at GT Automotives has been cancelled.\n\n`;
+    const greeting = this.getTimeBasedGreeting(appointment.customer.firstName);
+    let message = `${greeting}, your appointment at GT Automotives has been cancelled.\n\n`;
     message += `Service: ${serviceType}\n`;
     message += `Date: ${formattedDate} at ${time}\n`;
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nNeed to reschedule? Call us at (250) 986-9191 or book online.\n\n`;
+    message += `Have a great day!\n\n`;
     message += `GT Automotives\nPrince George, BC`;
 
     await this.sendSms({
@@ -317,21 +346,21 @@ export class SmsService {
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
 
-    let message = `Hi ${appointment.customer.firstName}, this is GT Automotives.\n\n`;
+    const greeting = this.getTimeBasedGreeting(appointment.customer.firstName);
+    let message = `${greeting}, this is GT Automotives.\n\n`;
 
-    if (daysAhead === 7) {
-      message += `Reminder: Your appointment for ${serviceType} is coming up next week.\n\n`;
-    } else if (daysAhead === 3) {
-      message += `Reminder: Your appointment for ${serviceType} is in 3 days.\n\n`;
+    if (daysAhead === 0) {
+      message += `Your appointment for ${serviceType} is in 1 HOUR!\n\n`;
     } else if (daysAhead === 1) {
-      message += `Reminder: Your appointment for ${serviceType} is TOMORROW!\n\n`;
+      message += `Reminder: Your appointment for ${serviceType} is TODAY!\n\n`;
     }
 
     message += `Date: ${formattedDate} at ${time}\n`;
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nCall us at (250) 986-9191 to reschedule if needed.\n\n`;
+    message += `\nCall us at (250) 986-9191 if you need to reschedule.\n\n`;
+    message += `Have a great day!\n\n`;
     message += `GT Automotives\nPrince George, BC`;
 
     await this.sendSms({
@@ -372,12 +401,24 @@ export class SmsService {
     const time = appointment.scheduledTime;
     const serviceType = appointment.serviceType || 'service';
     const customerName = `${appointment.customer.firstName} ${appointment.customer.lastName}`;
+    const staffName = staff.firstName;
+    const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
 
-    const message = `New appointment assigned!\n\n` +
-      `Service: ${serviceType}\n` +
+    // Different heading for mobile service vs garage service
+    let message = isMobileService
+      ? `Hi ${staffName}! New mobile service assigned to you!\n\n`
+      : `Hi ${staffName}! New service assigned to you!\n\n`;
+
+    message += `Service: ${serviceType}\n` +
       `Customer: ${customerName}\n` +
-      `Date: ${formattedDate} at ${time}\n\n` +
-      `GT Automotives`;
+      `Date: ${formattedDate} at ${time}\n`;
+
+    // Add customer address for mobile service appointments
+    if (isMobileService && appointment.customer.address) {
+      message += `Location: ${appointment.customer.address}\n`;
+    }
+
+    message += `\nGT Automotives`;
 
     await this.sendSms({
       to: staff.phone,

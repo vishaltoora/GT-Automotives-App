@@ -1,9 +1,30 @@
 # SMS Integration Plan for GT Automotives
 
 **Created**: October 16, 2025
-**Last Updated**: October 23, 2025
+**Last Updated**: October 24, 2025
 **Status**: Phase 1-3 Complete ✅ | Phase 4 Pending
-**Estimated Cost**: $48/year (Year 1 with 500 messages/month)
+**Estimated Cost**: $45.60/year (Year 1 with 450 messages/month)
+
+## 🎉 Recent Updates (October 24, 2025)
+
+### Enhanced SMS Templates with Time-Based Greetings
+All customer SMS messages now use intelligent time-based greetings:
+- **Morning (5am-12pm)**: "Good morning {firstName}"
+- **Afternoon (12pm-5pm)**: "Good afternoon {firstName}"
+- **Evening (5pm-5am)**: "Good evening {firstName}"
+
+### Simplified Reminder System
+- ✅ **1-Hour Reminder**: Automated cron job sends reminder 1 hour before appointment
+- ✅ **Tomorrow Reminder**: Optional day-before reminder
+- ❌ **Removed**: 7-day and 3-day reminders (unnecessary complexity)
+
+### Staff Appointment Alerts
+- ✅ **Garage Services**: Instant notification to assigned staff
+- ✅ **Mobile Services**: Includes customer address for mobile service appointments
+- ✅ **Personalized**: Uses staff first name for friendly communication
+
+### Professional Closing
+All customer messages now include: "Have a great day!" before signature
 
 ## Executive Summary
 
@@ -37,41 +58,73 @@ This plan outlines the integration of SMS/text messaging capabilities into the G
 ### Volume Projections
 
 **Year 1** (Conservative):
-- Appointment Reminders: 300 messages/month
-- Status Updates: 150 messages/month
-- Promotional: 50 messages/month
-- **Total: 500 messages/month = $2/month + $2 number = $4/month = $48/year**
+- Appointment Confirmations: 100 messages/month (immediate booking confirmation)
+- 1-Hour Reminders: 100 messages/month (automated cron job)
+- Tomorrow Reminders: 50 messages/month (optional manual send)
+- Staff Alerts: 100 messages/month (appointment assignments)
+- Appointment Cancellations: 20 messages/month
+- Status Updates: 50 messages/month (future implementation)
+- Promotional: 30 messages/month (optional, future)
+- **Total: 450 messages/month = $1.80/month + $2 number = $3.80/month = $45.60/year**
 
 **Year 2** (Growth):
-- As business grows to 1,000 messages/month
-- Cost: $4/month messages + $2 number = $6/month = $72/year
+- As business grows to 800-1,000 messages/month
+- Cost: $3.20-4.00/month messages + $2 number = $5.20-6.00/month = $62.40-72.00/year
 
 ---
 
 ## 2. Use Cases for GT Automotives
 
-### A. Appointment Reminders (High Priority)
+### A. Appointment Reminders (High Priority) ✅ IMPLEMENTED
 **Problem**: No-shows cost time and revenue
-**Solution**: Automated SMS reminders at 7 days, 3 days, and 24 hours before appointment
+**Solution**: Automated SMS reminders at 1 day and 1 hour before appointment
 
-**Message Template**:
+**Message Templates** (Time-based greetings):
+
+**1-Hour Before Reminder** (Automated via cron job):
 ```
-Hi {firstName}, this is GT Automotives.
+Good morning {firstName}, this is GT Automotives.
 
-Reminder: Your appointment for {serviceType} is scheduled for {date} at {time}.
+Your appointment for {serviceType} is in 1 HOUR!
 
+Date: {date} at {time}
 Vehicle: {year} {make} {model}
 
-Call us at (250) 986-9191 to reschedule if needed.
+Call us at (250) 986-9191 if you need to reschedule.
+
+Have a great day!
 
 GT Automotives
 Prince George, BC
 ```
 
+**Tomorrow Reminder**:
+```
+Good evening {firstName}, this is GT Automotives.
+
+Reminder: Your appointment for {serviceType} is TOMORROW!
+
+Date: {date} at {time}
+Vehicle: {year} {make} {model}
+
+Call us at (250) 986-9191 if you need to reschedule.
+
+Have a great day!
+
+GT Automotives
+Prince George, BC
+```
+
+**Greeting Logic**:
+- **5:00 AM - 11:59 AM**: "Good morning {firstName}"
+- **12:00 PM - 4:59 PM**: "Good afternoon {firstName}"
+- **5:00 PM - 4:59 AM**: "Good evening {firstName}"
+
 **Expected Impact**:
 - Reduce no-shows by 60-80%
 - Save 2-3 hours/week in wasted labor
 - Improve customer satisfaction
+- More personal with time-appropriate greetings
 
 ### B. Service Status Updates (High Priority)
 **Problem**: Customers call repeatedly asking "Is my car ready?"
@@ -91,23 +144,79 @@ Great news {firstName}! Your {year} {make} {model} is ready for pickup at GT Aut
 - Free up staff time
 - Improve customer experience
 
-### C. Appointment Confirmations (Medium Priority)
+### C. Appointment Confirmations (Medium Priority) ✅ IMPLEMENTED
 **Problem**: Need confirmation that appointment was booked correctly
 **Solution**: Immediate SMS confirmation when appointment is created
 
-**Message Template**:
+**Message Template** (Time-based greeting):
 ```
-Appointment Confirmed!
+Good afternoon {firstName}, your appointment at GT Automotives is confirmed!
 
 Service: {serviceType}
-Date/Time: {date} at {time}
+Date: {date} at {time}
 Vehicle: {year} {make} {model}
 
-GT Automotives - Prince George, BC
-(250) 986-9191
+We'll send you a reminder 1 hour before your appointment.
+
+Need to reschedule? Call us at (250) 986-9191
+
+Have a great day!
+
+GT Automotives
+Prince George, BC
 ```
 
-### D. Promotional Messages (Low Priority)
+**Cancellation Template** (Time-based greeting):
+```
+Good evening {firstName}, your appointment at GT Automotives has been cancelled.
+
+Service: {serviceType}
+Date: {date} at {time}
+Vehicle: {year} {make} {model}
+
+Need to reschedule? Call us at (250) 986-9191 or book online.
+
+Have a great day!
+
+GT Automotives
+Prince George, BC
+```
+
+### D. Staff Appointment Alerts ✅ IMPLEMENTED
+**Problem**: Staff need immediate notification when assigned to appointments
+**Solution**: Real-time SMS alerts to staff when new appointments are assigned
+
+**Message Templates**:
+
+**Garage Service Alert**:
+```
+Hi {staffFirstName}! New service assigned to you!
+
+Service: {serviceType}
+Customer: {customerFirstName} {customerLastName}
+Date: {shortDate} at {time}
+
+GT Automotives
+```
+
+**Mobile Service Alert** (includes customer address):
+```
+Hi {staffFirstName}! New mobile service assigned to you!
+
+Service: {serviceType}
+Customer: {customerFirstName} {customerLastName}
+Date: {shortDate} at {time}
+Location: {customerAddress}
+
+GT Automotives
+```
+
+**Expected Impact**:
+- Instant staff notification
+- Better coordination for mobile services
+- Improved staff awareness and preparation
+
+### E. Promotional Messages (Low Priority)
 **Problem**: Limited customer retention and repeat business
 **Solution**: Occasional promotions (max 4 per month to stay compliant)
 

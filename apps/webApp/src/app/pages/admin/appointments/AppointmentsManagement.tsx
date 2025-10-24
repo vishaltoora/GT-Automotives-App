@@ -181,6 +181,14 @@ export const AppointmentsManagement: React.FC = () => {
 
   const handleStatusChange = async (appointmentId: string, newStatus: string, paymentData?: any) => {
     try {
+      // If status is being changed to CANCELLED, use the cancel endpoint to send SMS
+      if (newStatus === 'CANCELLED') {
+        await appointmentService.cancelAppointment(appointmentId);
+        loadAppointments();
+        loadTodayAppointments();
+        return;
+      }
+
       const updateData: any = {
         status: newStatus as AppointmentStatus,
       };

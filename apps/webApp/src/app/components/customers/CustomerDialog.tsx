@@ -15,12 +15,8 @@ import {
   Slide,
   useTheme,
   useMediaQuery,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   FormControlLabel,
   Switch,
-  Divider,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -28,14 +24,16 @@ import {
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
-  ExpandMore as ExpandMoreIcon,
-  Sms as SmsIcon,
 } from '@mui/icons-material';
 import { TransitionProps} from '@mui/material/transitions';
 import { customerService, Customer, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
 import { colors } from '../../theme/colors';
 import { PhoneInput } from '../common/PhoneInput';
 import { AddressAutocomplete } from '../common/AddressAutocomplete';
+import axios from 'axios';
+
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -74,10 +72,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     phone: '',
     address: 'Prince George, BC',
     businessName: '',
-    smsOptedIn: true,
-    smsAppointmentReminders: true,
-    smsServiceUpdates: true,
-    smsPromotional: false,
+    smsEnabled: true,
   });
 
   useEffect(() => {
@@ -91,10 +86,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           phone: initialCustomer.phone || '',
           address: initialCustomer.address || '',
           businessName: initialCustomer.businessName || '',
-          smsOptedIn: initialCustomer.smsPreference?.optedIn ?? true,
-          smsAppointmentReminders: initialCustomer.smsPreference?.appointmentReminders ?? true,
-          smsServiceUpdates: initialCustomer.smsPreference?.serviceUpdates ?? true,
-          smsPromotional: initialCustomer.smsPreference?.promotional ?? false,
+          smsEnabled: initialCustomer.smsPreference?.optedIn ?? true,
         });
       } else if (customerId) {
         // Load customer data if only ID is provided
@@ -108,10 +100,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           phone: '',
           address: 'Prince George, BC',
           businessName: '',
-          smsOptedIn: true,
-          smsAppointmentReminders: true,
-          smsServiceUpdates: true,
-          smsPromotional: false,
+          smsEnabled: true,
         });
       }
       setError(null);
@@ -129,10 +118,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         phone: customer.phone || '',
         address: customer.address || '',
         businessName: customer.businessName || '',
-        smsOptedIn: customer.smsPreference?.optedIn ?? true,
-        smsAppointmentReminders: customer.smsPreference?.appointmentReminders ?? true,
-        smsServiceUpdates: customer.smsPreference?.serviceUpdates ?? true,
-        smsPromotional: customer.smsPreference?.promotional ?? false,
+        smsEnabled: customer.smsPreference?.optedIn ?? true,
       });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load customer');
@@ -148,12 +134,55 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
       setSaving(true);
       setError(null);
 
+      let customerId_local = customerId;
+
       if (isEdit && customerId) {
-        const updateData: UpdateCustomerDto = { ...formData };
+        const updateData: UpdateCustomerDto = {
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          address: formData.address,
+          businessName: formData.businessName,
+        };
         await customerService.updateCustomer(customerId, updateData);
       } else {
-        const createData: CreateCustomerDto = { ...formData };
-        await customerService.createCustomer(createData);
+        const createData: CreateCustomerDto = {
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          address: formData.address,
+          businessName: formData.businessName,
+        };
+        const newCustomer = await customerService.createCustomer(createData);
+        customerId_local = newCustomer.id;
+      }
+
+      // Save SMS preferences - enable ALL preferences when SMS is enabled
+      if (customerId_local && formData.phone) {
+        try {
+          const token = await window.Clerk?.session?.getToken();
+          await axios.post(
+            `${API_URL}/api/sms/preferences/customer`,
+            {
+              customerId: customerId_local,
+              optedIn: formData.smsEnabled,
+              appointmentReminders: formData.smsEnabled,
+              serviceUpdates: formData.smsEnabled,
+              promotional: formData.smsEnabled,
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token && { Authorization: `Bearer ${token}` }),
+              },
+            }
+          );
+        } catch (smsError) {
+          console.error('Failed to save SMS preferences:', smsError);
+          // Don't fail the whole operation if SMS preferences fail
+        }
       }
 
       onSuccess();
@@ -176,13 +205,6 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       phone: value,
-    }));
-  };
-
-  const handleSmsToggle = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.checked,
     }));
   };
 
@@ -323,122 +345,31 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 />
               </Grid>
 
-              {/* SMS Preferences Section */}
-              {formData.phone && (
-                <Grid size={{ xs: 12 }}>
-                  <Accordion defaultExpanded sx={{ mt: 1 }}>
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon />}
-                      sx={{
-                        backgroundColor: colors.neutral[50],
-                        '&:hover': {
-                          backgroundColor: colors.neutral[100],
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <SmsIcon sx={{ color: colors.primary.main }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          SMS Preferences
+              {/* SMS Notifications Toggle */}
+              <Grid size={{ xs: 12 }}>
+                <Box sx={{ mt: 1 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.smsEnabled}
+                        onChange={(e) => setFormData({ ...formData, smsEnabled: e.target.checked })}
+                        disabled={saving || !formData.phone}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body1">Enable SMS Notifications</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formData.phone
+                            ? 'Receive appointment reminders, service updates, and promotional messages'
+                            : 'Add a phone number to enable SMS'}
                         </Typography>
                       </Box>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ pt: 2 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Configure SMS notifications for this customer
-                      </Typography>
-
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={formData.smsOptedIn}
-                              onChange={handleSmsToggle('smsOptedIn')}
-                              disabled={saving}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                Enable SMS Notifications
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Master switch for all SMS notifications
-                              </Typography>
-                            </Box>
-                          }
-                        />
-
-                        <Divider sx={{ my: 0.5 }} />
-
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={formData.smsAppointmentReminders}
-                              onChange={handleSmsToggle('smsAppointmentReminders')}
-                              disabled={saving || !formData.smsOptedIn}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box>
-                              <Typography variant="body2">
-                                Appointment Reminders
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Send reminders for upcoming appointments
-                              </Typography>
-                            </Box>
-                          }
-                        />
-
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={formData.smsServiceUpdates}
-                              onChange={handleSmsToggle('smsServiceUpdates')}
-                              disabled={saving || !formData.smsOptedIn}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box>
-                              <Typography variant="body2">
-                                Service Updates
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Notifications about service progress and completion
-                              </Typography>
-                            </Box>
-                          }
-                        />
-
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={formData.smsPromotional}
-                              onChange={handleSmsToggle('smsPromotional')}
-                              disabled={saving || !formData.smsOptedIn}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box>
-                              <Typography variant="body2">
-                                Promotional Messages
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Special offers and marketing messages
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </Box>
-                    </AccordionDetails>
-                  </Accordion>
-                </Grid>
-              )}
+                    }
+                  />
+                </Box>
+              </Grid>
             </Grid>
           </form>
         )}

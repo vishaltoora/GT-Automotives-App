@@ -16,10 +16,15 @@ import {
   FormControlLabel,
   Divider,
   Typography,
+  Box,
 } from '@mui/material';
 import { useAuth } from '@clerk/clerk-react';
 import { useError } from '../../app/contexts/ErrorContext';
 import { PhoneInput } from '../../app/components/common/PhoneInput';
+import axios from 'axios';
+
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface User {
   id: string;
@@ -57,10 +62,30 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
     phone: '',
     isActive: true,
     roleName: 'STAFF' as 'ADMIN' | 'STAFF',
+    smsEnabled: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  // Load existing SMS preferences when user data loads
+  const loadSmsPreferences = async (userId: string) => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(
+        `${API_URL}/api/sms/preferences/user?userId=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setFormData(prev => ({ ...prev, smsEnabled: response.data.optedIn || false }));
+    } catch (error) {
+      console.error('Failed to load SMS preferences:', error);
+      // Don't show error to user - just default to disabled
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -71,7 +96,13 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
         phone: user.phone || '',
         isActive: user.isActive,
         roleName: user.role.name as 'ADMIN' | 'STAFF',
+        smsEnabled: false, // Will be updated by loadSmsPreferences
       });
+
+      // Load SMS preferences for this user
+      if (user.phone) {
+        loadSmsPreferences(user.id);
+      }
     }
   }, [user]);
 
@@ -123,6 +154,33 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to update user');
+      }
+
+      // Save SMS preferences if phone number is provided
+      if (formData.phone) {
+        try {
+          const token = await getToken();
+          await axios.post(
+            `${API_URL}/api/sms/preferences/user`,
+            {
+              userId: user.id,
+              optedIn: formData.smsEnabled,
+              appointmentAlerts: formData.smsEnabled,
+              scheduleReminders: formData.smsEnabled,
+              dailySummary: formData.smsEnabled,
+              urgentAlerts: formData.smsEnabled,
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+        } catch (smsError) {
+          console.error('Failed to save SMS preferences:', smsError);
+          // Don't fail the whole operation if SMS preferences fail
+        }
       }
 
       showInfo('User updated successfully');
@@ -233,6 +291,29 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
               placeholder="555-123-4567"
               fullWidth
             />
+
+            <Box sx={{ mt: 1 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.smsEnabled}
+                    onChange={(e) => setFormData({ ...formData, smsEnabled: e.target.checked })}
+                    disabled={!formData.phone}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body1">Enable SMS Notifications</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formData.phone
+                        ? 'Receive appointment alerts, schedule reminders, and urgent notifications'
+                        : 'Add a phone number to enable SMS'}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
 
             <Divider />
 

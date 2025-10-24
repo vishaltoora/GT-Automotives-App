@@ -9,20 +9,29 @@ import {
   Grid,
   Alert,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
 import { customerService, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
 import { PhoneInput } from '../../components/common/PhoneInput';
+import axios from 'axios';
+
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export function CustomerForm() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { getToken } = useAuth();
   const isEdit = !!id;
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [smsEnabled, setSmsEnabled] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -50,6 +59,24 @@ export function CustomerForm() {
         address: customer.address || '',
         businessName: customer.businessName || '',
       });
+
+      // Load SMS preferences
+      try {
+        const token = await getToken();
+        const prefsResponse = await axios.get(
+          `${API_URL}/api/sms/preferences/customer?customerId=${customerId}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            }
+          }
+        );
+        setSmsEnabled(prefsResponse.data.optedIn || false);
+      } catch (err) {
+        // If preferences don't exist, default to false
+        setSmsEnabled(false);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load customer');
     } finally {
@@ -59,17 +86,41 @@ export function CustomerForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
+
+      let customerId = id;
 
       if (isEdit && id) {
         const updateData: UpdateCustomerDto = { ...formData };
         await customerService.updateCustomer(id, updateData);
       } else {
         const createData: CreateCustomerDto = { ...formData };
-        await customerService.createCustomer(createData);
+        const newCustomer = await customerService.createCustomer(createData);
+        customerId = newCustomer.id;
+      }
+
+      // Save SMS preferences - enable ALL preferences when SMS is enabled
+      if (customerId) {
+        const token = await getToken();
+        await axios.post(
+          `${API_URL}/api/sms/preferences/customer`,
+          {
+            customerId,
+            optedIn: smsEnabled,
+            appointmentReminders: smsEnabled,
+            serviceUpdates: smsEnabled,
+            promotional: smsEnabled,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            }
+          }
+        );
       }
 
       navigate('/customers');
@@ -155,6 +206,30 @@ export function CustomerForm() {
                   onChange={handlePhoneChange}
                   disabled={saving}
                 />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box sx={{ mt: 1 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={smsEnabled}
+                        onChange={(e) => setSmsEnabled(e.target.checked)}
+                        disabled={saving || !formData.phone}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body1">Enable SMS Notifications</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formData.phone
+                            ? 'Receive appointment reminders, service updates, and promotional messages'
+                            : 'Add a phone number to enable SMS'}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField

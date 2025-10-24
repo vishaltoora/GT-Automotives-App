@@ -563,6 +563,68 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       }
     });
 
+    // Calculate At Garage statistics
+    const completedAtGarage = atGarageAppointments.filter(
+      (apt) => apt.status === 'COMPLETED' && apt.paymentAmount
+    );
+    const atGaragePayments = completedAtGarage.reduce(
+      (sum, apt) => sum + (apt.paymentAmount || 0),
+      0
+    );
+
+    // Calculate At Garage payment methods
+    const atGaragePaymentsByMethod: Record<string, number> = {};
+    completedAtGarage.forEach((apt) => {
+      let breakdown = apt.paymentBreakdown;
+      if (typeof breakdown === 'string') {
+        try {
+          breakdown = JSON.parse(breakdown);
+        } catch (e) {
+          breakdown = undefined;
+        }
+      }
+
+      if (breakdown && Array.isArray(breakdown)) {
+        breakdown.forEach((payment: PaymentEntry) => {
+          const method = payment.method || 'CASH';
+          atGaragePaymentsByMethod[method] = (atGaragePaymentsByMethod[method] || 0) + (payment.amount || 0);
+        });
+      } else if (apt.paymentAmount) {
+        atGaragePaymentsByMethod['CASH'] = (atGaragePaymentsByMethod['CASH'] || 0) + apt.paymentAmount;
+      }
+    });
+
+    // Calculate Mobile Service statistics
+    const completedMobileService = mobileServiceAppointments.filter(
+      (apt) => apt.status === 'COMPLETED' && apt.paymentAmount
+    );
+    const mobileServicePayments = completedMobileService.reduce(
+      (sum, apt) => sum + (apt.paymentAmount || 0),
+      0
+    );
+
+    // Calculate Mobile Service payment methods
+    const mobileServicePaymentsByMethod: Record<string, number> = {};
+    completedMobileService.forEach((apt) => {
+      let breakdown = apt.paymentBreakdown;
+      if (typeof breakdown === 'string') {
+        try {
+          breakdown = JSON.parse(breakdown);
+        } catch (e) {
+          breakdown = undefined;
+        }
+      }
+
+      if (breakdown && Array.isArray(breakdown)) {
+        breakdown.forEach((payment: PaymentEntry) => {
+          const method = payment.method || 'CASH';
+          mobileServicePaymentsByMethod[method] = (mobileServicePaymentsByMethod[method] || 0) + (payment.amount || 0);
+        });
+      } else if (apt.paymentAmount) {
+        mobileServicePaymentsByMethod['CASH'] = (mobileServicePaymentsByMethod['CASH'] || 0) + apt.paymentAmount;
+      }
+    });
+
     return {
       total: sortedAppointments.length,
       atGarage: atGarageAppointments.length,
@@ -575,6 +637,12 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       totalOwed,
       paymentsByMethod,
       completedWithPayment: completedAppointments.length,
+      atGaragePayments,
+      completedAtGarage: completedAtGarage.length,
+      atGaragePaymentsByMethod,
+      mobileServicePayments,
+      completedMobileService: completedMobileService.length,
+      mobileServicePaymentsByMethod,
     };
   }, [sortedAppointments, atGarageAppointments, mobileServiceAppointments]);
 
@@ -856,7 +924,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                   <Grid container spacing={2}>
                     {/* Cash */}
                     {stats.paymentsByMethod['CASH'] !== undefined && (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Grid size={{ xs: 6, sm: 6, md: 4 }}>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -872,7 +940,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
                     {/* E-Transfer */}
                     {stats.paymentsByMethod['E_TRANSFER'] !== undefined && (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Grid size={{ xs: 6, sm: 6, md: 4 }}>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -888,7 +956,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
                     {/* Credit Card */}
                     {stats.paymentsByMethod['CREDIT_CARD'] !== undefined && (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Grid size={{ xs: 6, sm: 6, md: 4 }}>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -904,7 +972,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
                     {/* Debit Card */}
                     {stats.paymentsByMethod['DEBIT_CARD'] !== undefined && (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Grid size={{ xs: 6, sm: 6, md: 4 }}>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -920,7 +988,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
                     {/* Cheque */}
                     {stats.paymentsByMethod['CHEQUE'] !== undefined && (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Grid size={{ xs: 6, sm: 6, md: 4 }}>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -934,6 +1002,226 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                       </Grid>
                     )}
                   </Grid>
+                )}
+              </Paper>
+            </Grid>
+
+            {/* At Garage Breakdown Card */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper
+                elevation={1}
+                sx={{
+                  p: 3,
+                  border: 1,
+                  borderColor: 'divider',
+                  height: '100%',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <LocationOnIcon color="primary" />
+                  <Typography variant="h6" fontWeight="bold">
+                    At Garage
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {stats.completedAtGarage} completed {stats.completedAtGarage === 1 ? 'appointment' : 'appointments'}
+                </Typography>
+                <Typography variant="h4" fontWeight="bold" color="primary.main" sx={{ mt: 2 }}>
+                  ${stats.atGaragePayments.toFixed(2)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', mb: 2 }}>
+                  Total payments collected
+                </Typography>
+
+                {/* Payment Method Breakdown */}
+                {Object.keys(stats.atGaragePaymentsByMethod).length > 0 && (
+                  <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight="medium" display="block" sx={{ mb: 1 }}>
+                      Payment Methods:
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {stats.atGaragePaymentsByMethod['CASH'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                💵 Cash
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.atGaragePaymentsByMethod['CASH'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.atGaragePaymentsByMethod['E_TRANSFER'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                📱 E-Transfer
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.atGaragePaymentsByMethod['E_TRANSFER'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.atGaragePaymentsByMethod['CREDIT_CARD'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                💳 Credit Card
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.atGaragePaymentsByMethod['CREDIT_CARD'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.atGaragePaymentsByMethod['DEBIT_CARD'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                💳 Debit Card
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.atGaragePaymentsByMethod['DEBIT_CARD'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.atGaragePaymentsByMethod['CHEQUE'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                📝 Cheque
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.atGaragePaymentsByMethod['CHEQUE'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+
+            {/* Mobile Service Breakdown Card */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper
+                elevation={1}
+                sx={{
+                  p: 3,
+                  border: 1,
+                  borderColor: 'divider',
+                  height: '100%',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <DriveEtaIcon color="primary" />
+                  <Typography variant="h6" fontWeight="bold">
+                    Mobile Service
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {stats.completedMobileService} completed {stats.completedMobileService === 1 ? 'appointment' : 'appointments'}
+                </Typography>
+                <Typography variant="h4" fontWeight="bold" color="primary.main" sx={{ mt: 2 }}>
+                  ${stats.mobileServicePayments.toFixed(2)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', mb: 2 }}>
+                  Total payments collected
+                </Typography>
+
+                {/* Payment Method Breakdown */}
+                {Object.keys(stats.mobileServicePaymentsByMethod).length > 0 && (
+                  <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight="medium" display="block" sx={{ mb: 1 }}>
+                      Payment Methods:
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {stats.mobileServicePaymentsByMethod['CASH'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                💵 Cash
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.mobileServicePaymentsByMethod['CASH'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.mobileServicePaymentsByMethod['E_TRANSFER'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                📱 E-Transfer
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.mobileServicePaymentsByMethod['E_TRANSFER'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.mobileServicePaymentsByMethod['CREDIT_CARD'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                💳 Credit Card
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.mobileServicePaymentsByMethod['CREDIT_CARD'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.mobileServicePaymentsByMethod['DEBIT_CARD'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                💳 Debit Card
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.mobileServicePaymentsByMethod['DEBIT_CARD'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                      {stats.mobileServicePaymentsByMethod['CHEQUE'] !== undefined && (
+                        <Grid size={{ xs: 6, sm: 6, md: 12 }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                📝 Cheque
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold">
+                              ${stats.mobileServicePaymentsByMethod['CHEQUE'].toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </Box>
                 )}
               </Paper>
             </Grid>

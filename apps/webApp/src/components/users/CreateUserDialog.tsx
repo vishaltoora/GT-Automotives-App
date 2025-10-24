@@ -13,10 +13,18 @@ import {
   InputLabel,
   Select,
   FormHelperText,
+  FormControlLabel,
+  Switch,
+  Box,
+  Typography,
 } from '@mui/material';
 import { useAuth } from '@clerk/clerk-react';
 import { useError } from '../../app/contexts/ErrorContext';
 import { PhoneInput } from '../../app/components/common/PhoneInput';
+import axios from 'axios';
+
+// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -41,6 +49,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     password: '',
     confirmPassword: '',
     roleName: 'STAFF' as 'ADMIN' | 'STAFF',
+    smsEnabled: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -133,13 +142,40 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       }
 
       const result = await response.json();
-      
+
+      // Save SMS preferences if phone number is provided
+      if (result.id && formData.phone) {
+        try {
+          const token = await getToken();
+          await axios.post(
+            `${API_URL}/api/sms/preferences/user`,
+            {
+              userId: result.id,
+              optedIn: formData.smsEnabled,
+              appointmentAlerts: formData.smsEnabled,
+              scheduleReminders: formData.smsEnabled,
+              dailySummary: formData.smsEnabled,
+              urgentAlerts: formData.smsEnabled,
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+        } catch (smsError) {
+          console.error('Failed to save SMS preferences:', smsError);
+          // Don't fail the whole operation
+        }
+      }
+
       if (result.clerkCreated) {
         showInfo('User created successfully with Clerk authentication');
       } else {
         showWarning('User created successfully (Clerk not configured)');
       }
-      
+
       onUserCreated();
       handleClose();
     } catch (error: any) {
@@ -160,6 +196,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       password: '',
       confirmPassword: '',
       roleName: 'STAFF',
+      smsEnabled: true,
     });
     setErrors({});
     onClose();
@@ -225,6 +262,29 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               placeholder="555-123-4567"
               fullWidth
             />
+
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.smsEnabled}
+                    onChange={(e) => setFormData({ ...formData, smsEnabled: e.target.checked })}
+                    disabled={!formData.phone}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body1">Enable SMS Notifications</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formData.phone
+                        ? 'Receive appointment alerts, schedule reminders, and urgent notifications'
+                        : 'Add a phone number to enable SMS'}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
 
             <FormControl fullWidth required>
               <InputLabel>Role</InputLabel>

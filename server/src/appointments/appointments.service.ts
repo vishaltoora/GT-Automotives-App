@@ -432,10 +432,12 @@ export class AppointmentsService {
     });
 
     // Send cancellation SMS to customer (non-blocking)
+    console.log(`📱 [APPOINTMENTS SERVICE] Calling SMS cancellation for appointment: ${id}`);
     await this.smsService.sendAppointmentCancellation(id).catch(err => {
-      console.error('Failed to send cancellation SMS:', err);
+      console.error('❌ [APPOINTMENTS SERVICE] Failed to send cancellation SMS:', err);
       // Don't throw error - appointment was cancelled successfully
     });
+    console.log(`✅ [APPOINTMENTS SERVICE] SMS cancellation call completed for appointment: ${id}`);
 
     return updatedAppointment;
   }
@@ -561,3 +563,4 @@ export class AppointmentsService {
     return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
   }
 }
+
