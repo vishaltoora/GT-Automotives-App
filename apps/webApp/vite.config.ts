@@ -1,6 +1,7 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig(() => ({
   root: __dirname,
@@ -35,6 +36,10 @@ export default defineConfig(() => ({
   resolve: {
     conditions: ['development', 'import', 'module', 'browser', 'default'],
     // Module resolution handled by symlinks in node_modules
+    alias: {
+      // Force Vite to use source files instead of dist (CommonJS) for shared library
+      '@gt-automotive/data': path.resolve(__dirname, '../../libs/data/src/index.ts'),
+    },
   },
   build: {
     outDir: './dist',

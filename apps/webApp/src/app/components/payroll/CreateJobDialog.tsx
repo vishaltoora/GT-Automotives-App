@@ -28,7 +28,7 @@ import { TransitionProps } from '@mui/material/transitions';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { CreateJobDto, JobType } from '@gt-automotive/data';
+import { CreateJobDto, JobType } from '../../types/job.types';
 import { jobService } from '../../services/job.service';
 import { userService } from '../../services/user.service';
 import { useAuth } from '../../hooks/useAuth';
