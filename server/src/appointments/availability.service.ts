@@ -212,7 +212,7 @@ export class AvailabilityService {
       });
 
       // Calculate the day start and end times from the recurring slots
-      let dayStart = '09:00';
+      let dayStart = '06:00';
       let dayEnd = '17:00';
 
       if (recurringSlots.length > 0) {
