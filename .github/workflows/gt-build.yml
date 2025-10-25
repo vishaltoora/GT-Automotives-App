@@ -131,30 +131,21 @@ jobs:
           echo "   VITE_API_URL: '$VITE_API_URL' (empty = use reverse proxy)"
           echo "   VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:0:20}..."
 
-      # Parallel frontend and shared library builds
-      - name: Build Frontend and Shared Libraries
+      # Build shared library first, then frontend (sequential to avoid dependency issues)
+      - name: Build Shared Libraries
+        run: |
+          echo "📚 Building shared data library..."
+          yarn nx build data
+          echo "✅ Shared library built successfully"
+
+      - name: Build Frontend
         env:
           NODE_ENV: production
         run: |
-          echo "🌐 Building frontend and shared libraries in parallel..."
+          echo "🌐 Building frontend..."
           echo "   Using VITE_API_URL: $VITE_API_URL"
-
-          yarn build:web &
-          FRONTEND_PID=$!
-          yarn nx build data &
-          SHARED_PID=$!
-
-          # Wait for both builds
-          wait $FRONTEND_PID
-          FRONTEND_EXIT=$?
-          wait $SHARED_PID
-          SHARED_EXIT=$?
-
-          if [ $FRONTEND_EXIT -ne 0 ] || [ $SHARED_EXIT -ne 0 ]; then
-            echo "❌ Build failed"
-            exit 1
-          fi
-          echo "✅ Frontend and shared libraries built successfully"
+          yarn build:web
+          echo "✅ Frontend built successfully"
 
       - name: Prepare Frontend Artifact
         run: |
