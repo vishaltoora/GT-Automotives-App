@@ -167,6 +167,9 @@ export function Login() {
               <SignIn
                 routing="virtual"
                 signUpUrl={undefined}
+                afterSignInUrl="/"
+                afterSignUpUrl="/"
+                redirectUrl="/"
                 appearance={{
                   elements: {
                     rootBox: {
