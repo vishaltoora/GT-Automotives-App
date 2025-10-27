@@ -5,7 +5,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { SmsService } from './sms.service';
 import { PrismaService } from '@gt-automotive/database';
 
-@Controller('api/sms')
+@Controller('sms')
 export class SmsController {
   constructor(
     private readonly smsService: SmsService,

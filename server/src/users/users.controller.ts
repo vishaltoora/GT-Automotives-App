@@ -18,7 +18,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
-@Controller('api/users')
+@Controller('users')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class UsersController {
   constructor(private usersService: UsersService) {}

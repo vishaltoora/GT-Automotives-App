@@ -4,7 +4,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { DashboardService } from './dashboard.service';
 
-@Controller('api/dashboard')
+@Controller('dashboard')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}

@@ -79,6 +79,10 @@ async function bootstrap() {
     app.useGlobalGuards(new InternalApiGuard());
     Logger.log('🔒 Internal API guard enabled');
 
+    // Global API prefix
+    app.setGlobalPrefix('api');
+    Logger.log('✅ Global API prefix set to: /api');
+
     // Global validation pipe
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,

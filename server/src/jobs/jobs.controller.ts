@@ -18,7 +18,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JobStatus, JobType } from '@prisma/client';
 
-@Controller('api/jobs')
+@Controller('jobs')
 @UseGuards(JwtAuthGuard)
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}

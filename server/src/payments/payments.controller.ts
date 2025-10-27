@@ -23,7 +23,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaymentStatus, PaymentMethod } from '@prisma/client';
 
-@Controller('api/payments')
+@Controller('payments')
 @UseGuards(JwtAuthGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}

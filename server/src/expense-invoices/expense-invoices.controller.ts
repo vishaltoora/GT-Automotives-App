@@ -25,7 +25,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
-@Controller('api/expense-invoices')
+@Controller('expense-invoices')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class ExpenseInvoicesController {
   constructor(private readonly expenseInvoicesService: ExpenseInvoicesService) {}

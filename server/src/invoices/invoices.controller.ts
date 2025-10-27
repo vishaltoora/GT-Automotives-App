@@ -19,7 +19,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { InvoiceStatus, PaymentMethod } from '@prisma/client';
 
-@Controller('api/invoices')
+@Controller('invoices')
 @UseGuards(JwtAuthGuard)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}

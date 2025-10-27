@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator';
 
-@Controller('api/tires-test')
+@Controller('tires-test')
 export class TiresTestController {
 
   @Get()

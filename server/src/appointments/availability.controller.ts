@@ -20,7 +20,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
-@Controller('api/availability')
+@Controller('availability')
 @UseGuards(JwtAuthGuard)
 export class AvailabilityController {
   constructor(private readonly availabilityService: AvailabilityService) {}

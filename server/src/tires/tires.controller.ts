@@ -27,7 +27,7 @@ import { CreateTireBrandDto, UpdateTireBrandDto, TireBrandDto } from '../common/
 import { CreateTireSizeDto, UpdateTireSizeDto, TireSizeDto } from '../common/dto/tire-size.dto';
 import { CreateLocationDto, UpdateLocationDto, LocationDto } from '../common/dto/location.dto';
 
-@Controller('api/tires')
+@Controller('tires')
 export class TiresController {
   constructor(private tiresService: TiresService) {}
 

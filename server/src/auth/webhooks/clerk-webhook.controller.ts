@@ -12,7 +12,7 @@ import { Webhook } from 'svix';
 import { AuthService } from '../auth.service';
 import { Public } from '../decorators/public.decorator';
 
-@Controller('api/webhooks')
+@Controller('webhooks')
 export class ClerkWebhookController {
   constructor(
     private authService: AuthService,

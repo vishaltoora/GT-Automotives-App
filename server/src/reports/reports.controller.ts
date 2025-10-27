@@ -5,7 +5,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
-@Controller('api/reports')
+@Controller('reports')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
