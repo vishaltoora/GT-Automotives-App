@@ -7,53 +7,53 @@ export declare class AvailabilityService {
      * Set or update recurring weekly availability for an employee
      */
     setRecurringAvailability(dto: SetAvailabilityDto): Promise<{
-        employeeId: string;
         id: string;
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
     }>;
     /**
      * Get all recurring availability for an employee
      */
     getEmployeeAvailability(employeeId: string): Promise<{
-        employeeId: string;
         id: string;
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
     }[]>;
     /**
      * Delete a recurring availability slot
      * Both ADMIN and STAFF can delete any availability
      */
     deleteRecurringAvailability(availabilityId: string, user: any): Promise<{
-        employeeId: string;
         id: string;
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
     }>;
     /**
      * Add a time slot override (vacation, sick day, extra shift)
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
-        employeeId: string;
         id: string;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
         date: Date;
         reason: string | null;
     }>;
@@ -61,13 +61,13 @@ export declare class AvailabilityService {
      * Get all overrides for an employee within a date range
      */
     getOverrides(employeeId: string, startDate: Date, endDate: Date): Promise<{
-        employeeId: string;
         id: string;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
         date: Date;
         reason: string | null;
     }[]>;
@@ -75,13 +75,13 @@ export declare class AvailabilityService {
      * Delete an override
      */
     deleteOverride(overrideId: string): Promise<{
-        employeeId: string;
         id: string;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
         date: Date;
         reason: string | null;
     }>;

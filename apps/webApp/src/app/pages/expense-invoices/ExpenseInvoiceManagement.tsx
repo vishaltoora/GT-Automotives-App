@@ -33,6 +33,7 @@ import expenseInvoiceService, {
 import analyticsService, { AnalyticsData } from '../../services/analytics.service';
 import ExpenseInvoiceDialog from '../../components/expense-invoices/ExpenseInvoiceDialog';
 import { AnalyticsCards, AnalyticsCardData } from '../../components/common';
+import PdfViewer from '../../components/common/PdfViewer';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -47,6 +48,9 @@ const ExpenseInvoiceManagement: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ExpenseInvoice | null>(null);
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState<string>('');
+  const [selectedPdfTitle, setSelectedPdfTitle] = useState<string>('');
   const [filters, setFilters] = useState({
     category: '',
     status: '',
@@ -101,6 +105,14 @@ const ExpenseInvoiceManagement: React.FC = () => {
   const handleEdit = (invoice: ExpenseInvoice) => {
     setSelectedInvoice(invoice);
     setDialogOpen(true);
+  };
+
+  const handleViewPdf = (invoice: ExpenseInvoice) => {
+    if (invoice.imageUrl) {
+      setSelectedPdfUrl(invoice.imageUrl);
+      setSelectedPdfTitle(`Expense Invoice - ${invoice.vendorName} - ${invoice.invoiceNumber || 'N/A'}`);
+      setPdfViewerOpen(true);
+    }
   };
 
   const handleDelete = async (invoice: ExpenseInvoice) => {
@@ -321,7 +333,7 @@ const ExpenseInvoiceManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     {invoice.imageUrl ? (
-                      <IconButton size="small" color="primary" href={invoice.imageUrl} target="_blank">
+                      <IconButton size="small" color="primary" onClick={() => handleViewPdf(invoice)}>
                         <ImageIcon />
                       </IconButton>
                     ) : (
@@ -349,6 +361,13 @@ const ExpenseInvoiceManagement: React.FC = () => {
         onClose={() => setDialogOpen(false)}
         onSave={handleSave}
         onImageUpload={handleImageUpload}
+      />
+
+      <PdfViewer
+        open={pdfViewerOpen}
+        onClose={() => setPdfViewerOpen(false)}
+        pdfUrl={selectedPdfUrl}
+        title={selectedPdfTitle}
       />
     </Box>
   );

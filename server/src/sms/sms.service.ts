@@ -240,6 +240,8 @@ export class SmsService {
 
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
+    const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
 
     const greeting = this.getTimeBasedGreeting(appointment.customer.firstName);
     let message = `${greeting}, your appointment at GT Automotives is confirmed!\n\n`;
@@ -249,7 +251,7 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nWe'll send you a reminder 1 hour before your appointment.\n\n`;
-    message += `Need to reschedule? Call us at (250) 986-9191\n\n`;
+    message += `To reschedule, call/text at ${contactPhone}\n\n`;
     message += `Have a great day!\n\n`;
     message += `GT Automotives\nPrince George, BC`;
 
@@ -298,6 +300,8 @@ export class SmsService {
 
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
+    const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
 
     const greeting = this.getTimeBasedGreeting(appointment.customer.firstName);
     let message = `${greeting}, your appointment at GT Automotives has been cancelled.\n\n`;
@@ -306,7 +310,7 @@ export class SmsService {
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nNeed to reschedule? Call us at (250) 986-9191 or book online.\n\n`;
+    message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
     message += `Have a great day!\n\n`;
     message += `GT Automotives\nPrince George, BC`;
 
@@ -345,6 +349,8 @@ export class SmsService {
 
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
+    const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
 
     const greeting = this.getTimeBasedGreeting(appointment.customer.firstName);
     let message = `${greeting}, this is GT Automotives.\n\n`;
@@ -359,7 +365,7 @@ export class SmsService {
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nCall us at (250) 986-9191 if you need to reschedule.\n\n`;
+    message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
     message += `Have a great day!\n\n`;
     message += `GT Automotives\nPrince George, BC`;
 

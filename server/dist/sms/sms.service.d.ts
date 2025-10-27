@@ -28,6 +28,10 @@ export declare class SmsService {
         error?: string;
     }>;
     /**
+     * Get time-based greeting (Good morning/afternoon/evening)
+     */
+    private getTimeBasedGreeting;
+    /**
      * Send appointment confirmation to customer (immediately after booking)
      */
     sendAppointmentConfirmation(appointmentId: string): Promise<void>;
@@ -60,5 +64,38 @@ export declare class SmsService {
      * Handle webhook from Telnyx for delivery status
      */
     handleWebhook(payload: any): Promise<void>;
+    /**
+     * Send End of Day (EOD) summary to admin users
+     */
+    sendEODSummary(data: {
+        date: string;
+        totalPayments: number;
+        totalOwed: number;
+        paymentsByMethod: Record<string, number>;
+        atGaragePayments: number;
+        atGarageCount: number;
+        atGaragePaymentsByMethod: Record<string, number>;
+        mobileServicePayments: number;
+        mobileServiceCount: number;
+        mobileServicePaymentsByMethod: Record<string, number>;
+    }): Promise<{
+        success: boolean;
+        message: string;
+        results?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        results: ({
+            userId: string;
+            success: boolean;
+            messageId: string | undefined;
+            error?: undefined;
+        } | {
+            userId: string;
+            success: boolean;
+            error: string | undefined;
+            messageId?: undefined;
+        })[];
+    }>;
 }
 //# sourceMappingURL=sms.service.d.ts.map

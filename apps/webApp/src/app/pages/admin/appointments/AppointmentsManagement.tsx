@@ -28,24 +28,18 @@ import {
   Menu,
   MenuItem,
   Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { AppointmentStatus } from '@gt-automotive/data';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppointmentDialog } from '../../../components/appointments/AppointmentDialog';
 import { DayAppointmentsDialog } from '../../../components/appointments/DayAppointmentsDialog';
+import { AppointmentCard } from '../../../components/appointments/AppointmentCard';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { useError } from '../../../contexts/ErrorContext';
 import { useAuth } from '../../../hooks/useAuth';
@@ -53,7 +47,7 @@ import {
   Appointment,
   appointmentService,
 } from '../../../services/appointment.service';
-import { format12Hour, formatTimeRange, formatDateLocal } from '../../../utils/timeFormat';
+import { format12Hour, formatTimeRange } from '../../../utils/timeFormat';
 
 const STATUS_COLORS: Record<
   AppointmentStatus,
@@ -87,19 +81,14 @@ export const AppointmentsManagement: React.FC = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<
     Appointment | undefined
   >();
-  const [view, setView] = useState<'calendar' | 'all'>('calendar');
+  const [view, setView] = useState<'calendar' | 'list'>('calendar'); // Default to calendar view
+  const [currentTab, setCurrentTab] = useState(0); // 0: At Garage, 1: Mobile Service, 2: Day Summary
   const [calendarView, setCalendarView] = useState<'month' | 'today'>('month');
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // Default to today
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [menuAppointmentId, setMenuAppointmentId] = useState<string | null>(null);
-
-  const [filters, setFilters] = useState({
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-    status: '' as AppointmentStatus | '',
-  });
 
   const { showError } = useError();
   const { confirm } = useConfirmation();
@@ -110,17 +99,49 @@ export const AppointmentsManagement: React.FC = () => {
   const isStaff = currentUser?.role?.name?.toUpperCase() === 'STAFF';
 
   useEffect(() => {
-    loadAppointments();
-    loadTodayAppointments();
-  }, [filters]);
+    if (view === 'list') {
+      loadAllAppointments();
+    } else {
+      loadMonthAppointments();
+      loadTodayAppointments();
+    }
+  }, [view, currentMonth]);
 
-  const loadAppointments = async () => {
+  const loadAllAppointments = async () => {
     try {
       setLoading(true);
-      const params: any = {};
-      if (filters.startDate) params.startDate = filters.startDate;
-      if (filters.endDate) params.endDate = filters.endDate;
-      if (filters.status) params.status = filters.status;
+      // Load all appointments without date filter
+      const data = await appointmentService.getAppointments({});
+      // Sort in descending order (newest first)
+      const sortedData = data.sort((a, b) => {
+        const dateA = new Date(a.scheduledDate + 'T' + a.scheduledTime);
+        const dateB = new Date(b.scheduledDate + 'T' + b.scheduledTime);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setAppointments(sortedData);
+    } catch (err: any) {
+      showError({
+        title: 'Failed to load appointments',
+        message: err.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMonthAppointments = async () => {
+    try {
+      setLoading(true);
+      // Get first and last day of the current month
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const firstDay = new Date(year, month, 1, 0, 0, 0, 0);
+      const lastDay = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+      const params: any = {
+        startDate: firstDay,
+        endDate: lastDay,
+      };
 
       const data = await appointmentService.getAppointments(params);
       setAppointments(data);
@@ -141,6 +162,16 @@ export const AppointmentsManagement: React.FC = () => {
     } catch (err: any) {
       console.error("Failed to load today's appointments:", err);
     }
+  };
+
+  // Unified reload function that loads data based on current view
+  const loadAppointments = () => {
+    if (view === 'list') {
+      loadAllAppointments();
+    } else {
+      loadMonthAppointments();
+    }
+    loadTodayAppointments();
   };
 
   const handleCreate = () => {
@@ -344,7 +375,6 @@ export const AppointmentsManagement: React.FC = () => {
 
   const handleCloseDayDialog = () => {
     setDayDialogOpen(false);
-    setSelectedDate(null);
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, appointmentId: string) => {
@@ -388,97 +418,21 @@ export const AppointmentsManagement: React.FC = () => {
     return selectedDate ? getAppointmentsForDay(selectedDate) : [];
   };
 
-  const renderAppointmentRow = (appointment: Appointment) => (
-    <TableRow key={appointment.id} hover>
-      <TableCell>
-        {formatDateLocal(appointment.scheduledDate)}
-        <br />
-        <Typography variant="caption" color="text.secondary">
-          {formatTime(appointment.scheduledTime, appointment.endTime)}
-        </Typography>
-      </TableCell>
-      <TableCell>
-        {appointment.customer.businessName && (
-          <>
-            <strong>{appointment.customer.businessName}</strong>
-            <br />
-          </>
-        )}
-        {appointment.customer.firstName} {appointment.customer.lastName}
-        {appointment.customer.phone && (
-          <>
-            <br />
-            <Typography variant="caption" color="text.secondary">
-              {appointment.customer.phone}
-            </Typography>
-          </>
-        )}
-      </TableCell>
-      <TableCell>
-        {appointment.vehicle
-          ? `${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}`
-          : '—'}
-        {appointment.vehicle?.licensePlate && (
-          <>
-            <br />
-            <Typography variant="caption" color="text.secondary">
-              {appointment.vehicle.licensePlate}
-            </Typography>
-          </>
-        )}
-      </TableCell>
-      <TableCell>{appointment.serviceType.replace(/_/g, ' ')}</TableCell>
-      <TableCell>
-        <Chip
-          icon={getAppointmentTypeIcon(appointment.appointmentType || 'AT_GARAGE')}
-          label={getAppointmentTypeLabel(appointment.appointmentType || 'AT_GARAGE')}
-          color={getAppointmentTypeColor(appointment.appointmentType || 'AT_GARAGE') as any}
-          size="small"
-        />
-      </TableCell>
-      <TableCell>{appointment.duration} min</TableCell>
-      <TableCell>
-        {appointment.employee
-          ? `${appointment.employee.firstName} ${appointment.employee.lastName}`
-          : 'Unassigned'}
-      </TableCell>
-      <TableCell>
-        <Chip
-          label={appointment.status}
-          color={STATUS_COLORS[appointment.status]}
-          size="small"
-        />
-      </TableCell>
-      <TableCell>
-        <IconButton
-          size="small"
-          onClick={() => handleEdit(appointment)}
-          title="Edit"
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-        {appointment.status !== AppointmentStatus.CANCELLED &&
-          appointment.status !== AppointmentStatus.COMPLETED && (
-            <IconButton
-              size="small"
-              onClick={() => handleCancel(appointment)}
-              color="warning"
-              title="Cancel"
-            >
-              <CancelIcon fontSize="small" />
-            </IconButton>
-          )}
-        <IconButton
-          size="small"
-          onClick={() => handleDelete(appointment)}
-          color="error"
-          title="Delete"
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
-      </TableCell>
-    </TableRow>
+  // Filter appointments by type (including all appointments - past and future)
+  const atGarageAppointments = appointments.filter(
+    (apt) => apt.appointmentType !== 'MOBILE_SERVICE'
   );
+  const mobileServiceAppointments = appointments.filter(
+    (apt) => apt.appointmentType === 'MOBILE_SERVICE'
+  );
+
+  // Get appointments based on current tab (0: At Garage, 1: Mobile Service)
+  const getDisplayedAppointments = () => {
+    if (currentTab === 0) return atGarageAppointments;
+    return mobileServiceAppointments;
+  };
+
+  const displayedAppointments = getDisplayedAppointments();
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -532,8 +486,8 @@ export const AppointmentsManagement: React.FC = () => {
               <Chip
                 icon={<ViewListIcon sx={{ fontSize: '0.875rem !important' }} />}
                 label="List"
-                onClick={() => setView('all')}
-                color={view === 'all' ? 'primary' : 'default'}
+                onClick={() => setView('list')}
+                color={view === 'list' ? 'primary' : 'default'}
                 size="small"
                 clickable
                 sx={{ fontSize: '0.75rem', height: '32px', flex: 1, minWidth: '80px' }}
@@ -563,9 +517,9 @@ export const AppointmentsManagement: React.FC = () => {
                 Calendar
               </Button>
               <Button
-                variant={view === 'all' ? 'contained' : 'outlined'}
+                variant={view === 'list' ? 'contained' : 'outlined'}
                 startIcon={<ViewListIcon />}
-                onClick={() => setView('all')}
+                onClick={() => setView('list')}
               >
                 List View
               </Button>
@@ -1143,318 +1097,187 @@ export const AppointmentsManagement: React.FC = () => {
           </Paper>
         )}
 
-        {/* All Appointments */}
-        {view === 'all' && (
+        {/* List View with Tabs */}
+        {view === 'list' && (
           <Paper>
-            {/* Filters */}
-            <Box p={2}>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <DatePicker
-                    label="Start Date"
-                    value={filters.startDate}
-                    onChange={(date) =>
-                      setFilters({ ...filters, startDate: date })
-                    }
-                    slotProps={{
-                      textField: { fullWidth: true, size: 'small' },
-                    }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <DatePicker
-                    label="End Date"
-                    value={filters.endDate}
-                    onChange={(date) =>
-                      setFilters({ ...filters, endDate: date })
-                    }
-                    slotProps={{
-                      textField: { fullWidth: true, size: 'small' },
-                    }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
-                    fullWidth
-                    select
-                    size="small"
-                    label="Status"
-                    value={filters.status}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        status: e.target.value as AppointmentStatus | '',
-                      })
-                    }
-                  >
-                    <MenuItem value="">All Statuses</MenuItem>
-                    {Object.values(AppointmentStatus).map((status) => (
-                      <MenuItem key={status} value={status}>
-                        {status}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-              </Grid>
+            {/* Tabs - Mobile Optimized */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs
+                value={currentTab}
+                onChange={(_e, newValue) => setCurrentTab(newValue)}
+                variant="fullWidth"
+                sx={{
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontSize: { xs: '0.85rem', sm: '1rem' },
+                    fontWeight: 500,
+                    minHeight: { xs: '48px', sm: '64px' },
+                    px: { xs: 1, sm: 2 },
+                  },
+                  '& .MuiSvgIcon-root': {
+                    fontSize: { xs: '1.1rem', sm: '1.5rem' },
+                  },
+                }}
+              >
+                <Tab
+                  icon={<LocationOnIcon />}
+                  iconPosition="start"
+                  label={`At Garage (${atGarageAppointments.length})`}
+                  sx={{
+                    '& .MuiTab-iconWrapper': {
+                      mr: { xs: 0.5, sm: 1 },
+                    },
+                  }}
+                />
+                <Tab
+                  icon={<DriveEtaIcon />}
+                  iconPosition="start"
+                  label={`Mobile Service (${mobileServiceAppointments.length})`}
+                  sx={{
+                    '& .MuiTab-iconWrapper': {
+                      mr: { xs: 0.5, sm: 1 },
+                    },
+                  }}
+                />
+              </Tabs>
             </Box>
 
-            <Divider />
-
-            {/* Desktop Table View */}
-            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date & Time</TableCell>
-                      <TableCell>Customer</TableCell>
-                      <TableCell>Vehicle</TableCell>
-                      <TableCell>Service</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Duration</TableCell>
-                      <TableCell>Employee</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={9} align="center">
-                          Loading...
-                        </TableCell>
-                      </TableRow>
-                    ) : appointments.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={9} align="center">
-                          No appointments found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      appointments.map(renderAppointmentRow)
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-
-            {/* Mobile Card View */}
-            <Box sx={{ display: { xs: 'block', md: 'none' }, px: 2, py: 2 }}>
+            {/* Card View - All Screen Sizes */}
+            <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
               {loading ? (
                 <Typography align="center" color="text.secondary" fontSize="0.875rem">
                   Loading...
                 </Typography>
-              ) : appointments.length === 0 ? (
-                <Typography align="center" color="text.secondary" fontSize="0.875rem">
-                  No appointments found
-                </Typography>
+              ) : displayedAppointments.length === 0 ? (
+                <Box textAlign="center" py={4}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No appointments found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {currentTab === 0 ? 'No at-garage appointments found' : 'No mobile service appointments found'}
+                  </Typography>
+                </Box>
               ) : (
-                <Stack spacing={2}>
-                  {appointments.map((appointment) => {
-                    // Get time-based status for the appointment
-                    const timeStatus = getAppointmentTimeStatus(appointment);
+                <>
+                  {/* Group appointments by date */}
+                  {(() => {
+                    // Group appointments by date
+                    const appointmentsByDate = displayedAppointments.reduce((acc, appointment) => {
+                      const dateStr = new Date(appointment.scheduledDate).toISOString().split('T')[0];
+                      if (!acc[dateStr]) {
+                        acc[dateStr] = [];
+                      }
+                      acc[dateStr].push(appointment);
+                      return acc;
+                    }, {} as Record<string, typeof displayedAppointments>);
 
-                    // Don't show time-based status for cancelled or no-show appointments
-                    const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW';
-                    const isManuallyCompleted = appointment.status === 'COMPLETED';
+                    // Sort dates in descending order
+                    const sortedDates = Object.keys(appointmentsByDate).sort((a, b) => b.localeCompare(a));
 
-                    // Determine visual styling based on status
-                    const isCurrent = timeStatus === 'current' && !isCancelled && !isManuallyCompleted;
-                    const isCompleted = (timeStatus === 'past' || isManuallyCompleted) && !isCancelled;
-                    const isUpcoming = timeStatus === 'future' && !isCancelled && !isManuallyCompleted;
-                    const isPast = timeStatus === 'past';
+                    return sortedDates.map((dateStr) => {
+                      const date = new Date(dateStr + 'T00:00:00');
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const appointmentDate = new Date(date);
+                      appointmentDate.setHours(0, 0, 0, 0);
 
-                    // Background colors
-                    const getBgColor = () => {
-                      if (isCancelled) return '#ffebee'; // Very light red
-                      if (isCurrent) return '#e3f2fd'; // Very light blue
-                      if (isCompleted) return '#e8f5e9'; // Light green
-                      // No background color for upcoming
-                      return 'background.paper';
-                    };
+                      const isToday = appointmentDate.getTime() === today.getTime();
+                      const isPast = appointmentDate < today;
+                      const isFuture = appointmentDate > today;
 
-                    const getBorderColor = () => {
-                      if (isCancelled) return 'error.light';
-                      if (isCurrent) return 'info.main';
-                      if (isCompleted) return 'success.light';
-                      if (isUpcoming) return 'warning.light';
-                      return 'divider';
-                    };
+                      // Format date label
+                      let dateLabel = date.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      });
 
-                    return (
-                      <Card
-                        key={appointment.id}
-                        variant="outlined"
-                        sx={{
-                          bgcolor: getBgColor(),
-                          border: 1,
-                          borderColor: getBorderColor(),
-                        }}
-                      >
-                        <CardContent sx={{ p: 2, pb: '16px !important' }}>
-                          {/* Header: Date/Time and Status */}
-                          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
-                            <Box flex={1}>
-                              <Typography variant="subtitle2" fontWeight="bold" fontSize="0.9375rem" color="text.primary">
-                                {formatDateLocal(appointment.scheduledDate)}
-                              </Typography>
-                              <Typography variant="body2" fontSize="0.8125rem" fontWeight={500} color="text.secondary">
-                                {formatTime(appointment.scheduledTime, appointment.endTime)}
+                      if (isToday) {
+                        dateLabel = `Today - ${dateLabel}`;
+                      } else if (isPast) {
+                        const daysAgo = Math.floor((today.getTime() - appointmentDate.getTime()) / (1000 * 60 * 60 * 24));
+                        if (daysAgo === 1) {
+                          dateLabel = `Yesterday - ${dateLabel}`;
+                        } else {
+                          dateLabel = `${daysAgo} days ago - ${dateLabel}`;
+                        }
+                      } else if (isFuture) {
+                        const daysAhead = Math.floor((appointmentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        if (daysAhead === 1) {
+                          dateLabel = `Tomorrow - ${dateLabel}`;
+                        } else {
+                          dateLabel = `In ${daysAhead} days - ${dateLabel}`;
+                        }
+                      }
+
+                      return (
+                        <Box key={dateStr} mb={{ xs: 3, sm: 4 }}>
+                          {/* Date Header - Mobile Optimized */}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: { xs: 'column', sm: 'row' },
+                              alignItems: { xs: 'flex-start', sm: 'center' },
+                              gap: { xs: 1, sm: 0 },
+                              mb: { xs: 1.5, sm: 2 },
+                              pb: { xs: 1, sm: 1 },
+                              borderBottom: 2,
+                              borderColor: isToday ? 'primary.main' : 'divider',
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                              <CalendarIcon
+                                sx={{
+                                  mr: { xs: 1, sm: 1.5 },
+                                  color: isToday ? 'primary.main' : 'text.secondary',
+                                  fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                                }}
+                              />
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: isToday ? 'primary.main' : 'text.primary',
+                                  fontSize: { xs: '0.95rem', sm: '1.25rem' },
+                                  lineHeight: 1.2,
+                                }}
+                              >
+                                {dateLabel}
                               </Typography>
                             </Box>
                             <Chip
-                              label={appointment.status}
-                              color={STATUS_COLORS[appointment.status]}
+                              label={`${appointmentsByDate[dateStr].length} ${appointmentsByDate[dateStr].length === 1 ? 'appointment' : 'appointments'}`}
                               size="small"
-                              sx={{ fontSize: '0.75rem', height: '24px', ml: 1 }}
+                              sx={{
+                                ml: { xs: 4, sm: 2 },
+                                fontWeight: 600,
+                                fontSize: { xs: '0.7rem', sm: '0.8125rem' },
+                                height: { xs: '22px', sm: '24px' },
+                              }}
+                              color={isToday ? 'primary' : 'default'}
                             />
                           </Box>
 
-                          <Divider sx={{ mb: 1.5 }} />
-
-                          {/* Customer and Employee Info */}
-                          <Box mb={1.5}>
-                            <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
-                              <Box flex={1} minWidth={0}>
-                                <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
-                                  CUSTOMER
-                                </Typography>
-                                {appointment.customer.businessName && (
-                                  <Typography variant="body2" fontWeight={600} fontSize="0.875rem" color="text.primary">
-                                    {appointment.customer.businessName}
-                                  </Typography>
-                                )}
-                                <Typography variant="body2" fontWeight={600} fontSize="0.875rem" color="text.primary">
-                                  {appointment.customer.firstName} {appointment.customer.lastName}
-                                </Typography>
-                                {appointment.customer.phone && (
-                                  <Typography variant="caption" fontSize="0.75rem" fontWeight={500} color="text.secondary">
-                                    {appointment.customer.phone}
-                                  </Typography>
-                                )}
-                              </Box>
-                              <Box textAlign="right" minWidth={0}>
-                                <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
-                                  EMPLOYEE
-                                </Typography>
-                                <Typography variant="body2" fontWeight={600} fontSize="0.875rem" noWrap color="text.primary">
-                                  {appointment.employee
-                                    ? `${appointment.employee.firstName} ${appointment.employee.lastName}`
-                                    : 'Unassigned'}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </Box>
-
-                          {/* Vehicle Info */}
-                          {appointment.vehicle && (
-                            <Box mb={1.5}>
-                              <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
-                                VEHICLE
-                              </Typography>
-                              <Typography variant="body2" fontSize="0.875rem" fontWeight={600} color="text.primary">
-                                {appointment.vehicle.year} {appointment.vehicle.make} {appointment.vehicle.model}
-                              </Typography>
-                              {appointment.vehicle.licensePlate && (
-                                <Typography variant="caption" fontSize="0.75rem" fontWeight={500} color="text.secondary">
-                                  {appointment.vehicle.licensePlate}
-                                </Typography>
-                              )}
-                            </Box>
-                          )}
-
-                          {/* Service and Duration */}
-                          <Box display="flex" gap={2} mb={1.5} flexWrap="wrap">
-                            <Box flex={1} minWidth="120px">
-                              <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
-                                SERVICE
-                              </Typography>
-                              <Typography variant="body2" fontSize="0.875rem" fontWeight={600} color="text.primary">
-                                {appointment.serviceType.replace(/_/g, ' ')}
-                              </Typography>
-                            </Box>
-                            <Box minWidth="80px">
-                              <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
-                                DURATION
-                              </Typography>
-                              <Typography variant="body2" fontSize="0.875rem" fontWeight={600} color="text.primary">
-                                {appointment.duration} min
-                              </Typography>
-                            </Box>
-                            <Box minWidth="120px">
-                              <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
-                                TYPE
-                              </Typography>
-                              <Chip
-                                icon={getAppointmentTypeIcon(appointment.appointmentType || 'AT_GARAGE')}
-                                label={getAppointmentTypeLabel(appointment.appointmentType || 'AT_GARAGE')}
-                                color={getAppointmentTypeColor(appointment.appointmentType || 'AT_GARAGE') as any}
-                                size="small"
-                                sx={{ height: '22px', fontSize: '0.75rem' }}
-                              />
-                            </Box>
-                          </Box>
-
-                          {/* Notes */}
-                          {appointment.notes && (
-                            <Box mb={1.5}>
-                              <Typography variant="caption" color="primary.main" fontWeight="bold" fontSize="0.7rem" display="block" mb={0.5}>
-                                NOTES
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                fontSize="0.875rem"
-                                fontWeight={500}
-                                fontStyle="italic"
-                                color={isPast ? 'warning.dark' : 'info.dark'}
-                              >
-                                {appointment.notes}
-                              </Typography>
-                            </Box>
-                          )}
-
-                          <Divider sx={{ mb: 1.5 }} />
-
-                          {/* Actions */}
-                          <Box display="flex" gap={1}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<EditIcon />}
-                              onClick={() => handleEdit(appointment)}
-                              fullWidth
-                              sx={{ fontSize: '0.8125rem', py: 0.75 }}
-                            >
-                              Edit
-                            </Button>
-                            {appointment.status !== AppointmentStatus.CANCELLED &&
-                              appointment.status !== AppointmentStatus.COMPLETED && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  color="warning"
-                                  startIcon={<CancelIcon />}
-                                  onClick={() => handleCancel(appointment)}
-                                  fullWidth
-                                  sx={{ fontSize: '0.8125rem', py: 0.75 }}
-                                >
-                                  Cancel
-                                </Button>
-                              )}
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDelete(appointment)}
-                              color="error"
-                              sx={{ minWidth: '40px' }}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
+                          {/* Appointments Grid */}
+                          <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
+                            {appointmentsByDate[dateStr].map((appointment) => (
+                              <Grid size={{ xs: 12, lg: 6 }} key={appointment.id}>
+                                <AppointmentCard
+                                  appointment={appointment}
+                                  onEdit={handleEdit}
+                                  onDelete={handleDeleteById}
+                                  onStatusChange={handleStatusChange}
+                                  showActions={true}
+                                />
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+                      );
+                    });
+                  })()}
+                </>
               )}
             </Box>
           </Paper>

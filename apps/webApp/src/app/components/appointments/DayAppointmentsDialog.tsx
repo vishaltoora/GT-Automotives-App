@@ -18,10 +18,6 @@ import {
   Tab,
   Grid,
   Paper,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
   Snackbar,
   Alert,
   CircularProgress,
@@ -33,18 +29,11 @@ import {
   Schedule as ScheduleIcon,
   Build as BuildIcon,
   Edit as EditIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  HourglassEmpty as HourglassEmptyIcon,
-  EventAvailable as EventAvailableIcon,
   Block as BlockIcon,
-  EventBusy as EventBusyIcon,
   LocationOn as LocationOnIcon,
   DriveEta as DriveEtaIcon,
   Assignment as AssignmentIcon,
   AttachMoney as MoneyIcon,
-  MoreVert as MoreVertIcon,
-  Delete as DeleteIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
@@ -52,6 +41,14 @@ import { useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 import { formatTimeRange } from '../../utils/timeFormat';
 import { PaymentDialog } from './PaymentDialog';
+import {
+  AppointmentCard,
+  formatPhoneNumber,
+  getStatusColor,
+  getStatusIcon,
+  formatStatusLabel,
+  formatServiceType,
+} from './AppointmentCard';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -115,41 +112,6 @@ interface DayAppointmentsDialogProps {
   onAddAppointment?: () => void;
 }
 
-// Service type label mapping
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-  TIRE_CHANGE: 'Tire Mount Balance',
-  TIRE_ROTATION: 'Tire Rotation',
-  TIRE_REPAIR: 'Tire Repair',
-  OIL_CHANGE: 'Oil Change',
-  BRAKE_SERVICE: 'Brake Service',
-  WHEEL_ALIGNMENT: 'Wheel Alignment',
-  ENGINE_DIAGNOSTIC: 'Engine Diagnostic',
-  INSPECTION: 'Inspection',
-  OTHER: 'Other Service',
-};
-
-const formatServiceType = (serviceType: string): string => {
-  return SERVICE_TYPE_LABELS[serviceType] || serviceType.replace(/_/g, ' ');
-};
-
-// Format phone number to dash format (123-456-7890)
-const formatPhoneNumber = (phone: string): string => {
-  // Remove all non-digit characters
-  const cleaned = phone.replace(/\D/g, '');
-
-  // Format based on length
-  if (cleaned.length === 10) {
-    // US/Canada format: XXX-XXX-XXXX
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-  } else if (cleaned.length === 11 && cleaned[0] === '1') {
-    // US/Canada with country code: 1-XXX-XXX-XXXX
-    return `${cleaned[0]}-${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
-  }
-
-  // Return original if format doesn't match
-  return phone;
-};
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -169,313 +131,6 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
   );
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'SCHEDULED':
-      return 'info';
-    case 'CONFIRMED':
-      return 'success';
-    case 'IN_PROGRESS':
-      return 'warning';
-    case 'COMPLETED':
-      return 'success';
-    case 'CANCELLED':
-      return 'error';
-    case 'NO_SHOW':
-      return 'default';
-    default:
-      return 'default';
-  }
-};
-
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'SCHEDULED':
-      return <ScheduleIcon fontSize="small" />;
-    case 'CONFIRMED':
-      return <EventAvailableIcon fontSize="small" />;
-    case 'IN_PROGRESS':
-      return <HourglassEmptyIcon fontSize="small" />;
-    case 'COMPLETED':
-      return <CheckCircleIcon fontSize="small" />;
-    case 'CANCELLED':
-      return <CancelIcon fontSize="small" />;
-    case 'NO_SHOW':
-      return <EventBusyIcon fontSize="small" />;
-    default:
-      return <ScheduleIcon fontSize="small" />;
-  }
-};
-
-const formatStatusLabel = (status: string) => {
-  return status
-    .split('_')
-    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-};
-
-const AppointmentCard: React.FC<{
-  appointment: Appointment;
-  onEdit?: (appointment: Appointment) => void;
-  onDelete?: (appointmentId: string) => void;
-  onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void;
-}> = ({ appointment, onEdit, onDelete, onStatusChange }) => {
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleComplete = () => {
-    setPaymentDialogOpen(true);
-  };
-
-  const handlePaymentSubmit = (paymentData: any) => {
-    if (onStatusChange) {
-      onStatusChange(appointment.id, 'COMPLETED', paymentData);
-    }
-  };
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null);
-  };
-
-  const handleEdit = () => {
-    handleMenuClose();
-    if (onEdit) {
-      onEdit(appointment);
-    }
-  };
-
-  const handleDelete = () => {
-    handleMenuClose();
-    if (onDelete) {
-      onDelete(appointment.id);
-    }
-  };
-
-  return (
-    <>
-      <PaymentDialog
-        open={paymentDialogOpen}
-        onClose={() => setPaymentDialogOpen(false)}
-        onSubmit={handlePaymentSubmit}
-        appointmentId={appointment.id}
-      />
-    <Card
-      variant="outlined"
-      sx={{
-        borderRadius: 2,
-        transition: 'all 0.2s',
-        '&:hover': {
-          boxShadow: 2,
-          borderColor: 'primary.main',
-        },
-      }}
-    >
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        {/* Header: Time and Status */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            mb: 2,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ScheduleIcon color="action" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
-            <Typography variant="h6" sx={{ fontSize: { xs: '0.938rem', sm: '1.25rem' }, fontWeight: { xs: 700, sm: 500 } }}>
-              {formatTimeRange(
-                appointment.scheduledTime,
-                appointment.endTime || ''
-              )}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Chip
-              icon={getStatusIcon(appointment.status)}
-              label={formatStatusLabel(appointment.status)}
-              color={getStatusColor(appointment.status) as any}
-              size="small"
-            />
-            {(onEdit || onDelete) && (
-              <IconButton
-                size="small"
-                onClick={handleMenuOpen}
-                sx={{ ml: 1 }}
-              >
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
-        </Box>
-
-        {/* Action Menu */}
-        <Menu
-          anchorEl={menuAnchorEl}
-          open={Boolean(menuAnchorEl)}
-          onClose={handleMenuClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-        >
-          {onEdit && (
-            <MenuItem onClick={handleEdit}>
-              <ListItemIcon>
-                <EditIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Edit</ListItemText>
-            </MenuItem>
-          )}
-          {onDelete && (
-            <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-              <ListItemIcon>
-                <DeleteIcon fontSize="small" color="error" />
-              </ListItemIcon>
-              <ListItemText>Delete</ListItemText>
-            </MenuItem>
-          )}
-        </Menu>
-
-        {/* Service Type */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-          <BuildIcon fontSize="small" color="action" />
-          <Typography variant="body1" fontWeight={500}>
-            {formatServiceType(appointment.serviceType)}
-          </Typography>
-        </Box>
-
-        <Divider sx={{ my: 1.5 }} />
-
-        {/* Customer Info */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: 'primary.main',
-              fontSize: '0.875rem',
-            }}
-          >
-            {appointment.customer.firstName[0]}
-            {appointment.customer.lastName[0]}
-          </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" fontWeight={500}>
-              {appointment.customer.businessName ||
-                `${appointment.customer.firstName} ${appointment.customer.lastName}`}
-            </Typography>
-            {appointment.customer.businessName && (
-              <Typography variant="caption" color="text.secondary">
-                {appointment.customer.firstName} {appointment.customer.lastName}
-              </Typography>
-            )}
-            {appointment.customer.phone && (
-              <Typography variant="caption" color="text.primary" sx={{ display: 'block', fontWeight: 600 }}>
-                {formatPhoneNumber(appointment.customer.phone)}
-              </Typography>
-            )}
-          </Box>
-        </Box>
-
-        {/* Vehicle Info */}
-        {appointment.vehicle && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <CarIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {appointment.vehicle.year} {appointment.vehicle.make}{' '}
-              {appointment.vehicle.model}
-              {appointment.vehicle.licensePlate &&
-                ` (${appointment.vehicle.licensePlate})`}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Assigned Employees */}
-        {appointment.employees && appointment.employees.length > 0 && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <PersonIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              Assigned to:{' '}
-              {appointment.employees
-                .map(
-                  (ae) => `${ae.employee.firstName} ${ae.employee.lastName}`
-                )
-                .join(', ')}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Notes */}
-        {appointment.notes && (
-          <Box
-            sx={{
-              mt: 1.5,
-              p: 1,
-              bgcolor: 'grey.100',
-              borderRadius: 1,
-              borderLeft: 3,
-              borderColor: 'primary.main',
-            }}
-          >
-            <Typography variant="caption" color="text.secondary" display="block">
-              Notes:
-            </Typography>
-            <Typography variant="body2">{appointment.notes}</Typography>
-          </Box>
-        )}
-
-        {/* Quick Actions */}
-        {onStatusChange && appointment.status !== 'COMPLETED' && (
-          <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-            {(appointment.status === 'SCHEDULED' || appointment.status === 'CONFIRMED') && (
-              <Button
-                size="small"
-                variant="outlined"
-                color="warning"
-                startIcon={<HourglassEmptyIcon />}
-                onClick={() => onStatusChange(appointment.id, 'IN_PROGRESS')}
-              >
-                Start
-              </Button>
-            )}
-            {appointment.status === 'IN_PROGRESS' && (
-              <Button
-                size="small"
-                variant="outlined"
-                color="success"
-                startIcon={<CheckCircleIcon />}
-                onClick={handleComplete}
-              >
-                Complete
-              </Button>
-            )}
-            {['SCHEDULED', 'CONFIRMED'].includes(appointment.status) && (
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                startIcon={<CancelIcon />}
-                onClick={() => onStatusChange(appointment.id, 'CANCELLED')}
-              >
-                Cancel
-              </Button>
-            )}
-          </Box>
-        )}
-      </CardContent>
-    </Card>
-    </>
-  );
-};
-
 export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   open,
   onClose,
@@ -489,6 +144,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   const { getToken } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [sendingEOD, setSendingEOD] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -662,6 +318,14 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     };
   }, [sortedAppointments, atGarageAppointments, mobileServiceAppointments]);
 
+  // Check if current time is within EOD send window (9 PM to 7 AM)
+  const isEODSendAllowed = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    // Allow between 9 PM (21:00) and 11:59 PM, or between 12 AM and 7 AM
+    return currentHour >= 21 || currentHour < 7;
+  };
+
   // Early return AFTER all hooks have been called
   if (!date) return null;
 
@@ -679,35 +343,47 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   const handlePaymentSubmit = async (paymentData: any) => {
     if (!selectedAppointment || !onStatusChange) return;
 
-    // Calculate new total payment
-    const currentTotal = selectedAppointment.paymentAmount || 0;
-    const newTotal = currentTotal + paymentData.totalAmount;
+    let updateData;
 
-    // Merge existing and new payment breakdown
-    let existingBreakdown = selectedAppointment.paymentBreakdown;
-    if (typeof existingBreakdown === 'string') {
-      try {
-        existingBreakdown = JSON.parse(existingBreakdown);
-      } catch (e) {
-        existingBreakdown = [];
+    if (isEditMode) {
+      // Edit mode: Replace existing payment data
+      updateData = {
+        totalAmount: paymentData.totalAmount,
+        payments: paymentData.payments,
+        paymentNotes: paymentData.paymentNotes,
+        expectedAmount: paymentData.expectedAmount,
+      };
+    } else {
+      // Add mode: Merge with existing payment data
+      const currentTotal = selectedAppointment.paymentAmount || 0;
+      const newTotal = currentTotal + paymentData.totalAmount;
+
+      // Merge existing and new payment breakdown
+      let existingBreakdown = selectedAppointment.paymentBreakdown;
+      if (typeof existingBreakdown === 'string') {
+        try {
+          existingBreakdown = JSON.parse(existingBreakdown);
+        } catch (e) {
+          existingBreakdown = [];
+        }
       }
-    }
-    const mergedBreakdown = [...(existingBreakdown || []), ...paymentData.payments];
+      const mergedBreakdown = [...(existingBreakdown || []), ...paymentData.payments];
 
-    // Create update data
-    const updateData = {
-      totalAmount: newTotal,
-      payments: mergedBreakdown,
-      paymentNotes: paymentData.paymentNotes
-        ? `${selectedAppointment.paymentNotes || ''}\n${paymentData.paymentNotes}`.trim()
-        : selectedAppointment.paymentNotes,
-      expectedAmount: selectedAppointment.expectedAmount,
-    };
+      updateData = {
+        totalAmount: newTotal,
+        payments: mergedBreakdown,
+        paymentNotes: paymentData.paymentNotes
+          ? `${selectedAppointment.paymentNotes || ''}\n${paymentData.paymentNotes}`.trim()
+          : selectedAppointment.paymentNotes,
+        expectedAmount: selectedAppointment.expectedAmount,
+      };
+    }
 
     // Call the status change handler (it won't change status, just update payment)
     await onStatusChange(selectedAppointment.id, selectedAppointment.status, updateData);
 
     setPaymentDialogOpen(false);
+    setIsEditMode(false);
     setSelectedAppointment(null);
   };
 
@@ -760,6 +436,12 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleEditPayment = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsEditMode(true);
+    setPaymentDialogOpen(true);
   };
 
   return (
@@ -953,15 +635,32 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                     </Typography>
                   </Box>
                   <Button
-                    variant="contained"
+                    variant={sendingEOD || stats.totalPayments === 0 || !isEODSendAllowed() ? "outlined" : "contained"}
                     color="primary"
                     size="small"
                     startIcon={sendingEOD ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
                     onClick={handleSendEOD}
-                    disabled={sendingEOD || stats.totalPayments === 0}
-                    sx={{ minWidth: 100 }}
+                    disabled={sendingEOD || stats.totalPayments === 0 || !isEODSendAllowed()}
+                    sx={{
+                      minWidth: 120,
+                      '&.Mui-disabled': {
+                        borderColor: 'action.disabled',
+                        color: 'text.disabled',
+                      }
+                    }}
+                    title={
+                      !isEODSendAllowed()
+                        ? 'EOD summary can only be sent between 9 PM and 7 AM'
+                        : stats.totalPayments === 0
+                        ? 'No payments to send'
+                        : ''
+                    }
                   >
-                    {sendingEOD ? 'Sending...' : 'Send EOD'}
+                    {sendingEOD
+                      ? 'Sending...'
+                      : !isEODSendAllowed()
+                      ? 'Available at 9PM'
+                      : 'Send EOD'}
                   </Button>
                 </Box>
 
@@ -1121,7 +820,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                     </Typography>
                     <Grid container spacing={2}>
                       {stats.atGaragePaymentsByMethod['CASH'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1135,7 +834,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['E_TRANSFER'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1149,7 +848,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['CREDIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1163,7 +862,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['DEBIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1177,7 +876,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.atGaragePaymentsByMethod['CHEQUE'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1231,7 +930,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                     </Typography>
                     <Grid container spacing={2}>
                       {stats.mobileServicePaymentsByMethod['CASH'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1245,7 +944,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['E_TRANSFER'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1259,7 +958,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['CREDIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1273,7 +972,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['DEBIT_CARD'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1287,7 +986,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                         </Grid>
                       )}
                       {stats.mobileServicePaymentsByMethod['CHEQUE'] !== undefined && (
-                        <Grid size={{ xs: 6, sm: 6, md: 6 }}>
+                        <Grid size={{ xs: 6, sm: 4 }}>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" color="text.secondary">
@@ -1687,6 +1386,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                           variant="outlined"
                           size="small"
                           startIcon={<EditIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />}
+                          onClick={() => handleEditPayment(appointment)}
                           sx={{
                             position: 'absolute',
                             bottom: { xs: 12, sm: 16 },
@@ -1728,21 +1428,33 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
         </Button>
       </DialogActions>
 
-      {/* Payment Dialog for Receiving Outstanding Balance */}
+      {/* Payment Dialog for Receiving Outstanding Balance or Editing Payment */}
       {selectedAppointment && (
         <PaymentDialog
           open={paymentDialogOpen}
           onClose={() => {
             setPaymentDialogOpen(false);
+            setIsEditMode(false);
             setSelectedAppointment(null);
           }}
           onSubmit={handlePaymentSubmit}
           appointmentId={selectedAppointment.id}
           defaultExpectedAmount={
-            selectedAppointment.expectedAmount
+            isEditMode
+              ? selectedAppointment.expectedAmount || 0
+              : selectedAppointment.expectedAmount
               ? selectedAppointment.expectedAmount - (selectedAppointment.paymentAmount || 0)
               : 0
           }
+          existingPayments={
+            isEditMode && selectedAppointment.paymentBreakdown
+              ? typeof selectedAppointment.paymentBreakdown === 'string'
+                ? JSON.parse(selectedAppointment.paymentBreakdown)
+                : selectedAppointment.paymentBreakdown
+              : undefined
+          }
+          existingNotes={isEditMode ? selectedAppointment.paymentNotes : ''}
+          isEditMode={isEditMode}
         />
       )}
 

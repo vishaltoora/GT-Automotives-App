@@ -42,5 +42,6 @@ export declare class ReportsController {
             };
         };
     }>;
+    getPurchaseReport(filterDto: ExpenseReportFilterDto): Promise<ExpenseReportResponseDto>;
 }
 //# sourceMappingURL=reports.controller.d.ts.map

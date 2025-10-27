@@ -8,41 +8,41 @@ export declare class AvailabilityController {
      * Roles: ADMIN and STAFF can set availability for any employee
      */
     setRecurring(dto: SetAvailabilityDto, user: any): Promise<{
-        employeeId: string;
         id: string;
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
     }>;
     /**
      * Get employee's recurring availability
      * Roles: ADMIN, STAFF (staff can view their own)
      */
     getRecurring(employeeId: string): Promise<{
-        employeeId: string;
         id: string;
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
     }[]>;
     /**
      * Add a time slot override (vacation, sick day, extra shift)
      * Roles: ADMIN, STAFF (staff can add their own overrides)
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
-        employeeId: string;
         id: string;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
         date: Date;
         reason: string | null;
     }>;
@@ -51,13 +51,13 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF
      */
     getOverrides(employeeId: string, startDate: string, endDate: string): Promise<{
-        employeeId: string;
         id: string;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
         date: Date;
         reason: string | null;
     }[]>;
@@ -66,27 +66,27 @@ export declare class AvailabilityController {
      * Roles: ADMIN, STAFF (staff can delete their own)
      */
     deleteRecurring(availabilityId: string, user: any): Promise<{
-        employeeId: string;
         id: string;
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
     }>;
     /**
      * Delete an override
      * Roles: ADMIN, STAFF
      */
     deleteOverride(overrideId: string): Promise<{
-        employeeId: string;
         id: string;
-        startTime: string;
-        endTime: string;
-        isAvailable: boolean;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
         date: Date;
         reason: string | null;
     }>;

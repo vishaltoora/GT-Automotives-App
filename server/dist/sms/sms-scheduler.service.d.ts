@@ -6,6 +6,11 @@ export declare class SmsSchedulerService {
     private readonly logger;
     constructor(prisma: PrismaService, smsService: SmsService);
     /**
+     * Run daily at 8:00 AM to send daily schedule to staff members
+     * Sends list of today's appointments to each assigned staff member
+     */
+    sendDailyScheduleToStaff(): Promise<void>;
+    /**
      * Run every 15 minutes to check for appointments that need 1-hour reminders
      * Sends reminder to customer 1 hour before appointment
      */

@@ -5,12 +5,12 @@ export declare class PaymentsController {
     private readonly paymentsService;
     constructor(paymentsService: PaymentsService);
     create(createPaymentDto: CreatePaymentDto, user: any): Promise<{
-        employeeId: string;
-        notes: string | null;
-        status: import("@prisma/client").$Enums.PaymentStatus;
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        status: import("@prisma/client").$Enums.PaymentStatus;
+        notes: string | null;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         paidAt: Date | null;
         amount: import(".prisma/client/runtime/library").Decimal;
@@ -19,12 +19,12 @@ export declare class PaymentsController {
         reference: string | null;
     }>;
     processPayment(processPaymentDto: ProcessPaymentDto, user: any): Promise<{
-        employeeId: string;
-        notes: string | null;
-        status: import("@prisma/client").$Enums.PaymentStatus;
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        status: import("@prisma/client").$Enums.PaymentStatus;
+        notes: string | null;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         paidAt: Date | null;
         amount: import(".prisma/client/runtime/library").Decimal;
@@ -40,12 +40,12 @@ export declare class PaymentsController {
     findByJob(jobId: string): Promise<PaymentResponseDto[]>;
     findOne(id: string): Promise<PaymentResponseDto>;
     update(id: string, updatePaymentDto: UpdatePaymentDto, user: any): Promise<{
-        employeeId: string;
-        notes: string | null;
-        status: import("@prisma/client").$Enums.PaymentStatus;
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        status: import("@prisma/client").$Enums.PaymentStatus;
+        notes: string | null;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         paidAt: Date | null;
         amount: import(".prisma/client/runtime/library").Decimal;
@@ -54,12 +54,12 @@ export declare class PaymentsController {
         reference: string | null;
     }>;
     revertPaymentStatus(id: string, user: any): Promise<{
-        employeeId: string;
-        notes: string | null;
-        status: import("@prisma/client").$Enums.PaymentStatus;
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        status: import("@prisma/client").$Enums.PaymentStatus;
+        notes: string | null;
         paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         paidAt: Date | null;
         amount: import(".prisma/client/runtime/library").Decimal;

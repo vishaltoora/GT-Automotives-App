@@ -68,8 +68,12 @@ const FileViewer: React.FC<FileViewerProps> = ({ url, fileName }) => {
   if (fileType === 'pdf') {
     return (
       <Box sx={{ height: '100%', width: '100%', minHeight: '500px' }}>
+        {/*
+          Removed #toolbar=0 to enable native PDF controls (zoom, download, print, etc.)
+          The browser's built-in PDF viewer will now show all controls.
+        */}
         <iframe
-          src={`${url}#toolbar=0`}
+          src={url}
           width="100%"
           height="100%"
           style={{ border: 'none' }}

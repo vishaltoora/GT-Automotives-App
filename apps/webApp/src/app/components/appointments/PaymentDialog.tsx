@@ -48,6 +48,9 @@ interface PaymentDialogProps {
   onSubmit: (paymentData: PaymentData) => void;
   appointmentId: string;
   defaultExpectedAmount?: number;
+  existingPayments?: PaymentEntry[];
+  existingNotes?: string;
+  isEditMode?: boolean;
 }
 
 const PAYMENT_METHODS = [
@@ -64,13 +67,18 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   onSubmit,
   appointmentId,
   defaultExpectedAmount = 0,
+  existingPayments,
+  existingNotes = '',
+  isEditMode = false,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [payments, setPayments] = useState<PaymentEntry[]>([
-    { id: crypto.randomUUID(), method: 'CASH', amount: 0 },
-  ]);
-  const [paymentNotes, setPaymentNotes] = useState('');
+  const [payments, setPayments] = useState<PaymentEntry[]>(
+    existingPayments && existingPayments.length > 0
+      ? existingPayments
+      : [{ id: crypto.randomUUID(), method: 'CASH', amount: 0 }]
+  );
+  const [paymentNotes, setPaymentNotes] = useState(existingNotes);
   const [expectedAmount, setExpectedAmount] = useState(defaultExpectedAmount);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -181,7 +189,9 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <MoneyIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
           <Typography variant={isMobile ? 'subtitle1' : 'h6'} component="div" sx={{ fontWeight: 600 }}>
-            {isMobile ? 'Payment Details' : 'Complete Appointment - Payment Details'}
+            {isEditMode
+              ? isMobile ? 'Edit Payment' : 'Edit Payment Details'
+              : isMobile ? 'Payment Details' : 'Complete Appointment - Payment Details'}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} size="small" sx={{ color: 'white' }}>
@@ -430,7 +440,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           fullWidth={isMobile}
           size={isMobile ? 'large' : 'medium'}
         >
-          Complete & Record Payment
+          {isEditMode ? 'Save Changes' : 'Complete & Record Payment'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -78,6 +78,9 @@ import { EmployeeAvailabilityManagement } from './pages/admin/appointments/Emplo
 // SMS Pages
 import { SmsHistory } from './pages/admin/sms/SmsHistory';
 
+// Reports Pages
+import Reports from './pages/admin/Reports';
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -196,7 +199,7 @@ export function App() {
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
           <Route path="payments" element={<PaymentsManagement />} />
-          <Route path="reports" element={<div>Financial Reports</div>} />
+          <Route path="reports" element={<Reports />} />
           <Route path="analytics" element={<div>Analytics</div>} />
           <Route path="security" element={<div>Security Settings</div>} />
           <Route path="settings" element={<div>System Settings</div>} />

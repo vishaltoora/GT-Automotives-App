@@ -5,6 +5,10 @@ export declare class CreateCustomerDto {
     phone?: string;
     address?: string;
     businessName?: string;
+    smsOptedIn?: boolean;
+    smsAppointmentReminders?: boolean;
+    smsServiceUpdates?: boolean;
+    smsPromotional?: boolean;
 }
 export declare class UpdateCustomerDto {
     firstName?: string;
@@ -13,6 +17,10 @@ export declare class UpdateCustomerDto {
     phone?: string;
     address?: string;
     businessName?: string;
+    smsOptedIn?: boolean;
+    smsAppointmentReminders?: boolean;
+    smsServiceUpdates?: boolean;
+    smsPromotional?: boolean;
 }
 export declare class CustomerResponseDto {
     id: string;

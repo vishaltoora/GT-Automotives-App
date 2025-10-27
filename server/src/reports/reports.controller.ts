@@ -23,4 +23,13 @@ export class ReportsController {
   async getAnalytics() {
     return this.reportsService.getAnalytics();
   }
+
+  @Get('purchase-report')
+  @Roles('ADMIN')
+  async getPurchaseReport(
+    @Query(ValidationPipe) filterDto: ExpenseReportFilterDto,
+  ): Promise<ExpenseReportResponseDto> {
+    // Reuse the expense report service (it includes both purchase and expense invoices)
+    return this.reportsService.getExpenseReport(filterDto);
+  }
 }
