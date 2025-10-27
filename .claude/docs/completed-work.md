@@ -1,5 +1,82 @@
 # Completed Work Log
 
+## October 27, 2025 Updates
+
+### VITE_API_URL Configuration Fix - Build 164 ✅
+
+**Problem Resolution:**
+- **Build 162 Issue:** Production deployment had all API calls failing with 401 Unauthorized errors
+- **Root Cause:** `VITE_API_URL=https://gt-automotives-backend-api.azurewebsites.net` (direct backend URL)
+- **Impact:** Frontend bypassed reverse proxy, no `X-Internal-API-Key` header added, `InternalApiGuard` blocked all requests
+
+**Investigation Process:**
+1. Analyzed console errors showing 401 on `/api/auth/me`, `/api/customers`, etc.
+2. Checked `InternalApiGuard` implementation in backend
+3. Verified reverse proxy configuration adds `X-Internal-API-Key` header
+4. Compared Build 146 (working) vs Build 162 (broken) logs
+5. Discovered VITE_API_URL mismatch between builds
+
+**Solution Implemented (Build 164):**
+- **Azure Setting Update:** Changed `VITE_API_URL` from backend URL to `https://gt-automotives.com`
+- **New Build Trigger:** Created Build 164 with correct VITE configuration
+- **Build Identifier:** `build-20251027-142413-1cdc689`
+- **Architecture Restored:** Frontend → Reverse Proxy → Backend (with security header)
+
+**Configuration Comparison:**
+```bash
+# Build 146 (Working) ✅
+VITE_API_URL=https://gt-automotives.com
+→ Requests go through reverse proxy
+→ X-Internal-API-Key header added
+→ Backend accepts requests
+
+# Build 162 (Broken) ❌
+VITE_API_URL=https://gt-automotives-backend-api.azurewebsites.net
+→ Direct backend calls bypass proxy
+→ No X-Internal-API-Key header
+→ Backend rejects with 401
+
+# Build 164 (Fixed) ✅
+VITE_API_URL=https://gt-automotives.com
+→ Same as Build 146, fully restored
+```
+
+**Key Learnings:**
+- VITE environment variables are baked into builds at build time (not runtime)
+- Changing Azure settings requires a rebuild to take effect
+- Always verify VITE settings match working builds before deploying
+- `VITE_API_URL` must use frontend domain (with reverse proxy), not backend URL
+
+**Files Updated:**
+- Azure Web App Setting: `VITE_API_URL` in gt-automotives-frontend
+- Documentation: `troubleshooting.md` - Added VITE_API_URL section
+- Documentation: `completed-work.md` - Added this entry
+- Build Trigger: `TRIGGER_BUILD.md` - Documented Build 163 and 164
+
+**Testing Required After Deployment:**
+```bash
+# Verify frontend uses correct API URL
+curl -s https://gt-automotives.com/health | jq
+
+# Test API calls work without 401 errors
+# Login to https://gt-automotives.com
+# Verify dashboard loads
+# Verify customer list loads
+# Check browser console for no 401 errors
+```
+
+**Prevention Commands:**
+```bash
+# Check VITE settings before building
+az webapp config appsettings list \
+  --name gt-automotives-frontend \
+  --resource-group gt-automotives-prod \
+  --query "[?starts_with(name, 'VITE_')].{name:name, value:value}" -o table
+
+# Verify in build logs
+gh run view <run-id> --log | grep "VITE_API_URL:"
+```
+
 ## October 21, 2025 Updates
 
 ### User Management Phone Number Support & Role Management Fixes ✅

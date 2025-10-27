@@ -1,5 +1,79 @@
 # Troubleshooting Guide
 
+## VITE_API_URL Configuration Issues (October 27, 2025)
+
+### 401 Unauthorized Errors on All API Calls ✅ RESOLVED
+**Problem:** Build 162 deployed to production with all API calls failing with 401 Unauthorized errors
+```
+Failed to load resource: the server responded with a status of 401 ()
+gt-automotives-backend-api.azurewebsites.net/api/auth/me:1  401 (Unauthorized)
+gt-automotives-backend-api.azurewebsites.net/api/customers:1  401 (Unauthorized)
+```
+
+**Root Cause:** `VITE_API_URL` was set to direct backend URL instead of frontend domain with reverse proxy
+- Build 146 (working): `VITE_API_URL=https://gt-automotives.com` ✅
+- Build 162 (broken): `VITE_API_URL=https://gt-automotives-backend-api.azurewebsites.net` ❌
+
+**Why This Broke:**
+1. Frontend bypassed reverse proxy and called backend directly
+2. Reverse proxy was not invoked, so `X-Internal-API-Key` header was never added
+3. Backend's `InternalApiGuard` blocked all requests without the security header
+4. Result: 401 Unauthorized on every API call
+
+**Architecture Explanation:**
+```
+✅ CORRECT (Build 146, 164):
+Browser → https://gt-automotives.com/api/*
+        ↓ Reverse Proxy adds X-Internal-API-Key header
+        ↓ Forwards to backend
+Backend ✅ InternalApiGuard validates header → Allow request
+
+❌ BROKEN (Build 162):
+Browser → https://gt-automotives-backend-api.azurewebsites.net/api/*
+        ❌ No reverse proxy, no X-Internal-API-Key header
+Backend ❌ InternalApiGuard blocks → 401 Unauthorized
+```
+
+**Solution (Build 164):**
+1. Changed Azure Web App setting:
+   ```bash
+   az webapp config appsettings set \
+     --name gt-automotives-frontend \
+     --resource-group gt-automotives-prod \
+     --settings VITE_API_URL="https://gt-automotives.com"
+   ```
+2. Triggered new build to bake in correct `VITE_API_URL`
+3. Frontend now routes through reverse proxy
+4. Reverse proxy adds `X-Internal-API-Key` header
+5. Backend accepts authenticated requests ✅
+
+**Key Learning:**
+- VITE environment variables are **baked into the build at build time**
+- Changing Azure settings requires a **rebuild** to take effect
+- `VITE_API_URL` must point to the **frontend domain** (with reverse proxy), not the backend URL
+- Always verify VITE settings match working builds before deploying
+
+**Prevention:**
+```bash
+# Check current Azure settings before building
+az webapp config appsettings list \
+  --name gt-automotives-frontend \
+  --resource-group gt-automotives-prod \
+  --query "[?starts_with(name, 'VITE_')].{name:name, value:value}" \
+  -o table
+
+# Verify VITE_API_URL in build logs
+gh run view <run-id> --log | grep "VITE_API_URL:"
+
+# Compare with last working build (Build 146)
+# VITE_API_URL should be: https://gt-automotives.com
+```
+
+**Related Files:**
+- Azure Setting: `VITE_API_URL` in gt-automotives-frontend Web App
+- Backend Guard: [server/src/common/guards/internal-api.guard.ts](../../server/src/common/guards/internal-api.guard.ts)
+- Reverse Proxy: [.github/workflows/gt-build.yml](../../.github/workflows/gt-build.yml) (lines 156-236)
+
 ## Mobile CORS Issues (October 20, 2025)
 
 ### PATCH Method Blocked by CORS Policy ✅ RESOLVED

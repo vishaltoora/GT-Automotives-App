@@ -149,6 +149,24 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### October 27, 2025 - VITE_API_URL Configuration Fix - Build 164 ✅
+- ✅ **Production 401 Errors Resolved**: Fixed all API calls failing with 401 Unauthorized in Build 162
+- ✅ **Root Cause Identified**: `VITE_API_URL` was set to backend URL instead of frontend domain
+- ✅ **Architecture Restored**: Frontend now routes through reverse proxy with security headers
+- ✅ **Build 164 Created**: `build-20251027-142413-1cdc689` with correct configuration
+- 🔧 **Configuration Fix**:
+  - Build 146 (working): `VITE_API_URL=https://gt-automotives.com` ✅
+  - Build 162 (broken): `VITE_API_URL=https://gt-automotives-backend-api.azurewebsites.net` ❌
+  - Build 164 (restored): `VITE_API_URL=https://gt-automotives.com` ✅
+- 📋 **Key Learning**: VITE environment variables are baked into builds at build time, not runtime
+- 🔒 **Security Flow**: Browser → Reverse Proxy (adds X-Internal-API-Key) → Backend → Allow
+- 📝 **Documentation Updated**:
+  - `troubleshooting.md` - Added VITE_API_URL troubleshooting section
+  - `completed-work.md` - Added detailed investigation and fix documentation
+  - `TRIGGER_BUILD.md` - Documented Build 163 and 164 reasoning
+- ⚠️ **Critical Rule**: Always verify VITE_API_URL matches working builds before deploying
+- 🚀 **Ready for Deployment**: Build 164 available for manual deployment via GitHub Actions
+
 ### October 23, 2025 - SMS/Text Messaging Integration Complete (Phase 1-3) ✅
 - ✅ **SMS Feature Fully Operational**: Complete Telnyx integration with immediate booking confirmations
 - ✅ **Immediate Appointment Confirmation**: Customer receives SMS when appointment is booked
