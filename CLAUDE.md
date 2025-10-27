@@ -149,6 +149,31 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### October 27, 2025 - API Route Structure Standardization ✅
+- ✅ **Production DELETE/POST/PATCH 404 Fixed**: Resolved all 404 errors on production for DELETE, PATCH, POST operations
+- ✅ **Root Cause**: Global API prefix `/api` combined with controller-level `api/` prefixes caused route duplication
+- ✅ **Global Prefix Added**: Centralized API prefix in main.ts with `app.setGlobalPrefix('api')`
+- ✅ **Controller Updates**: Removed 'api/' prefix from ALL 21 controller decorators
+- 🔧 **Architecture Benefits**:
+  - Single source of truth for API prefix in main.ts
+  - Easier to implement API versioning (e.g., /api/v2)
+  - Cleaner controller code without prefix repetition
+  - Follows NestJS best practices
+- 🔧 **Route Structure**:
+  - Before: `@Controller('api/users')` → `/api/api/users` ❌
+  - After: `@Controller('users')` + global prefix → `/api/users` ✅
+- 📋 **Controllers Updated (21 files)**:
+  - reports, jobs, companies, payments, tires, vendors, invoices
+  - dashboard, quotations, auth, webhooks, vehicles, customers
+  - appointments, users, availability, purchase-invoices
+  - expense-invoices, sms, tires-test
+- 📝 **Documentation Updated**:
+  - `development-guidelines.md` - Added NestJS controller best practices section
+  - `troubleshooting.md` - Added API route structure troubleshooting
+  - `completed-work.md` - Detailed problem resolution documentation
+- ⚠️ **Critical Rule**: Set global prefix in main.ts ONLY, use resource names in controller decorators
+- 🚀 **Production Impact**: All DELETE, PATCH, POST operations now work correctly
+
 ### October 27, 2025 - VITE_API_URL Configuration Fix - Build 164 ✅
 - ✅ **Production 401 Errors Resolved**: Fixed all API calls failing with 401 Unauthorized in Build 162
 - ✅ **Root Cause Identified**: `VITE_API_URL` was set to backend URL instead of frontend domain

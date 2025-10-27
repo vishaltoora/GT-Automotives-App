@@ -1,5 +1,57 @@
 # Development Guidelines
 
+## NestJS Controller Best Practices (October 27, 2025)
+
+### Global API Prefix Pattern (Critical)
+⚠️ **Use global prefix in main.ts, NOT in controller decorators**
+
+```typescript
+// ✅ CORRECT - Global prefix in main.ts
+// server/src/main.ts
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api');  // All routes now /api/*
+  await app.listen(3000);
+}
+
+// ✅ CORRECT - Controller without 'api/' prefix
+@Controller('users')  // Results in /api/users
+export class UsersController {}
+
+@Controller('purchase-invoices')  // Results in /api/purchase-invoices
+export class PurchaseInvoicesController {}
+```
+
+```typescript
+// ❌ WRONG - Mixing global prefix with controller prefix
+// server/src/main.ts
+app.setGlobalPrefix('api');
+
+// ❌ WRONG - Controller with 'api/' prefix
+@Controller('api/users')  // Results in /api/api/users (duplicated!)
+export class UsersController {}
+```
+
+**Why This Matters:**
+- Prevents route duplication (`/api/api/*` instead of `/api/*`)
+- Avoids 404 errors on DELETE, PATCH, POST operations
+- Makes API versioning easier (change prefix in one place)
+- Follows NestJS best practices
+
+**Common Issues:**
+- DELETE operations return 404 errors
+- PATCH operations return 404 errors
+- Frontend calls `/api/users` but backend expects `/api/api/users`
+
+**Prevention:**
+```bash
+# Check for controller prefix duplication (should return 0)
+grep -r "@Controller('api/" server/src --include="*.ts"
+
+# Verify global prefix is set
+grep "setGlobalPrefix" server/src/main.ts
+```
+
 ## API Endpoint Patterns
 ```javascript
 // Public endpoints

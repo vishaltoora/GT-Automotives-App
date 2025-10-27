@@ -2,6 +2,107 @@
 
 ## October 27, 2025 Updates
 
+### API Route Structure Standardization ✅
+
+**Problem Resolution:**
+- **Production Issue:** DELETE, PATCH, and POST operations returning 404 errors on production
+- **Root Cause:** Global API prefix `/api` in main.ts combined with `@Controller('api/...')` decorators caused route duplication
+- **Impact:** Routes became `/api/api/purchase-invoices/:id` instead of `/api/purchase-invoices/:id`
+
+**Investigation Process:**
+1. User reported: "DELETE https://gt-automotives.com/api/purchase-invoices/[id] 404 (Not Found)"
+2. Checked frontend service calls - found they use `baseURL: ${API_URL}/api`
+3. Checked backend controllers - found all have `@Controller('api/...')` decorators
+4. Checked main.ts - found newly added global prefix `app.setGlobalPrefix('api')`
+5. Identified route duplication issue
+
+**Solution Implemented:**
+- **main.ts Enhancement:** Added `app.setGlobalPrefix('api')` for centralized API prefix
+- **Controller Updates:** Removed 'api/' prefix from ALL 21 controller decorators
+- **Standardization:** Routes now defined as `@Controller('users')` instead of `@Controller('api/users')`
+
+**Controllers Updated (21 files):**
+```typescript
+// Before: @Controller('api/reports')
+// After:  @Controller('reports')
+
+✅ reports.controller.ts
+✅ jobs.controller.ts
+✅ companies.controller.ts
+✅ payments.controller.ts
+✅ tires.controller.ts
+✅ vendors.controller.ts
+✅ tires-test.controller.ts
+✅ invoices.controller.ts
+✅ dashboard.controller.ts
+✅ quotations.controller.ts
+✅ clerk-webhook.controller.ts
+✅ auth.controller.ts
+✅ vehicles.controller.ts
+✅ customers.controller.ts
+✅ appointments.controller.ts
+✅ users.controller.ts
+✅ availability.controller.ts
+✅ purchase-invoices.controller.ts
+✅ expense-invoices.controller.ts
+✅ sms.controller.ts
+✅ app.controller.ts (no change - already empty)
+```
+
+**Architecture Benefits:**
+- **Single Source of Truth:** API prefix managed in one location (main.ts)
+- **API Versioning Ready:** Easy to implement `/api/v2` or `/api/v3` later
+- **Cleaner Code:** Controller decorators without prefix repetition
+- **NestJS Best Practice:** Follows recommended global prefix pattern
+
+**Route Structure:**
+```typescript
+// main.ts
+app.setGlobalPrefix('api');
+
+// Any controller
+@Controller('users')  // Results in /api/users
+
+// Frontend
+baseURL: 'https://gt-automotives.com/api'
+// Calls to /users → https://gt-automotives.com/api/users ✅
+```
+
+**Production Impact:**
+- ✅ Resolves 404 errors for DELETE operations on purchase/expense invoices
+- ✅ Resolves 404 errors for PATCH operations on appointments/jobs
+- ✅ Frontend correctly calls `/api/*` routes
+- ✅ Backend serves all routes under `/api/*` prefix
+- ✅ No more `/api/api/*` route duplication
+
+**Key Learnings:**
+- Global prefix should be set in main.ts, NOT in controller decorators
+- Controller decorators should define resource name only (e.g., 'users', 'invoices')
+- Mixing global prefix with controller-level prefixes causes duplication
+- Always verify route structure when adding global prefixes
+
+**Files Updated:**
+- `server/src/main.ts` - Added global prefix
+- 20 controller files - Removed 'api/' prefix
+- TypeScript checks: ✅ All passing
+
+**Testing Checklist:**
+```bash
+# Verify endpoints respond correctly
+curl https://gt-automotives.com/api/health
+curl https://gt-automotives.com/api/companies
+curl -X DELETE https://gt-automotives.com/api/purchase-invoices/[id]
+
+# Should all return 200/proper responses, NOT 404
+```
+
+**Prevention:**
+- Document global prefix in main.ts with clear comments
+- Code review checklist: verify controllers don't include 'api/' prefix
+- Automated test: check no controllers have global prefix in decorator
+
+## October 27, 2025 Updates
+
 ### VITE_API_URL Configuration Fix - Build 164 ✅
 
 **Problem Resolution:**

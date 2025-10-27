@@ -1,5 +1,98 @@
 # Troubleshooting Guide
 
+## API Route Structure Issues (October 27, 2025)
+
+### DELETE/PATCH/POST Operations Return 404 ✅ RESOLVED
+**Problem:** Production DELETE, PATCH, and POST operations failing with 404 errors
+```
+DELETE https://gt-automotives.com/api/purchase-invoices/cmh4c34wh00bio401jajvjqfu 404 (Not Found)
+DELETE https://gt-automotives.com/api/expense-invoices/[id] 404 (Not Found)
+```
+
+**Root Cause:** Route duplication from mixing global API prefix with controller-level prefixes
+- Global prefix in main.ts: `app.setGlobalPrefix('api')`
+- Controller decorators: `@Controller('api/users')`
+- Result: Routes became `/api/api/users` instead of `/api/users`
+
+**Why This Broke:**
+1. Frontend calls: `https://gt-automotives.com/api/purchase-invoices/:id`
+2. Backend expects route: `/api/api/purchase-invoices/:id` (due to duplication)
+3. Route mismatch causes 404 error
+
+**Architecture Explanation:**
+```
+✅ CORRECT (After Fix):
+Frontend: baseURL = 'https://gt-automotives.com/api'
+          Calls /purchase-invoices/:id
+          Full URL: https://gt-automotives.com/api/purchase-invoices/:id
+
+Backend:  app.setGlobalPrefix('api')
+          @Controller('purchase-invoices')
+          Results in: /api/purchase-invoices/:id ✅ MATCH
+
+❌ BROKEN (Before Fix):
+Frontend: baseURL = 'https://gt-automotives.com/api'
+          Calls /purchase-invoices/:id
+          Full URL: https://gt-automotives.com/api/purchase-invoices/:id
+
+Backend:  app.setGlobalPrefix('api')
+          @Controller('api/purchase-invoices')
+          Results in: /api/api/purchase-invoices/:id ❌ MISMATCH
+```
+
+**Solution:**
+1. Added global prefix in main.ts:
+   ```typescript
+   app.setGlobalPrefix('api');
+   Logger.log('✅ Global API prefix set to: /api');
+   ```
+
+2. Removed 'api/' from ALL controller decorators (21 files):
+   ```typescript
+   // Before: @Controller('api/purchase-invoices')
+   // After:  @Controller('purchase-invoices')
+   ```
+
+3. Controllers updated:
+   - reports, jobs, companies, payments, tires, vendors
+   - invoices, dashboard, quotations, auth, webhooks
+   - vehicles, customers, appointments, users, availability
+   - purchase-invoices, expense-invoices, sms, tires-test
+
+**Testing:**
+```bash
+# Verify TypeScript compilation
+yarn typecheck
+
+# Test DELETE endpoint
+curl -X DELETE https://gt-automotives.com/api/purchase-invoices/[id] \
+  -H "Authorization: Bearer [token]"
+
+# Should return 200, NOT 404
+```
+
+**Key Learning:**
+- **DO:** Set global prefix in main.ts ONLY
+- **DO:** Use resource names in controller decorators (e.g., `@Controller('users')`)
+- **DON'T:** Mix global prefix with controller-level 'api/' prefix
+- **DON'T:** Duplicate prefix across main.ts and controller decorators
+
+**Prevention:**
+```bash
+# Check for controller prefix duplication
+grep -r "@Controller('api/" server/src --include="*.ts"
+# Should return 0 results
+
+# Verify global prefix is set
+grep "setGlobalPrefix" server/src/main.ts
+# Should show: app.setGlobalPrefix('api');
+```
+
+**Related Files:**
+- Global prefix: [server/src/main.ts](../../server/src/main.ts) (line 83)
+- All controllers: `server/src/*/*.controller.ts` (21 files)
+- NestJS docs: https://docs.nestjs.com/faq/global-prefix
+
 ## VITE_API_URL Configuration Issues (October 27, 2025)
 
 ### 401 Unauthorized Errors on All API Calls ✅ RESOLVED
