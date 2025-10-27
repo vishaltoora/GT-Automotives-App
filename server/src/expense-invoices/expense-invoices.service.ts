@@ -128,8 +128,19 @@ export class ExpenseInvoicesService {
       throw new NotFoundException(`No image found for expense invoice ${id}`);
     }
 
-    // If imageUrl is a mock URL (development mode), return as-is
-    if (invoice.imageUrl.includes('localhost') || invoice.imageUrl.includes('/uploads/mock/')) {
+    // Check if it's a mock URL (development/seeded data)
+    const isMockUrl = invoice.imageUrl.includes('localhost') || invoice.imageUrl.includes('/uploads/mock/');
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // In production, if we have mock URLs, throw a helpful error
+    if (isProduction && isMockUrl) {
+      throw new NotFoundException(
+        `This is test/seeded data. The PDF file was not uploaded to Azure Blob Storage. Please re-upload the document or delete this test invoice.`
+      );
+    }
+
+    // In development, return mock URL as-is
+    if (isMockUrl) {
       return invoice.imageUrl;
     }
 
