@@ -14,29 +14,36 @@ export class SmsService {
     this.enabled = process.env.SMS_ENABLED === 'true';
 
     if (this.enabled) {
-      // Initialize Telnyx SDK correctly with API key
-      const apiKey = process.env.TELNYX_API_KEY;
-      if (!apiKey) {
-        this.logger.error('TELNYX_API_KEY is not set');
-        throw new Error('TELNYX_API_KEY environment variable is required');
+      try {
+        // Initialize Telnyx SDK correctly with API key
+        const apiKey = process.env.TELNYX_API_KEY;
+        if (!apiKey) {
+          this.logger.error('TELNYX_API_KEY is not set - SMS will be disabled');
+          (this as any).enabled = false;
+          return;
+        }
+
+        const fromNumber = process.env.TELNYX_PHONE_NUMBER;
+        if (!fromNumber) {
+          this.logger.error('TELNYX_PHONE_NUMBER is not set - SMS will be disabled');
+          (this as any).enabled = false;
+          return;
+        }
+
+        // Telnyx SDK initialization - Telnyx constructor expects ClientOptions
+        this.telnyx = new Telnyx({ apiKey });
+
+        // Use type assertion to assign to readonly property in constructor
+        (this as any).fromNumber = fromNumber;
+
+        this.logger.log('SMS Service initialized successfully with Telnyx');
+        this.logger.log(`From number: ${this.fromNumber}`);
+      } catch (error) {
+        this.logger.error('Failed to initialize Telnyx SDK - SMS will be disabled:', error);
+        (this as any).enabled = false;
       }
-
-      // Telnyx SDK initialization - Telnyx constructor expects ClientOptions
-      this.telnyx = new Telnyx({ apiKey });
-      const fromNumber = process.env.TELNYX_PHONE_NUMBER;
-
-      if (!fromNumber) {
-        this.logger.error('TELNYX_PHONE_NUMBER is not set');
-        throw new Error('TELNYX_PHONE_NUMBER environment variable is required');
-      }
-
-      // Use type assertion to assign to readonly property in constructor
-      (this as any).fromNumber = fromNumber;
-
-      this.logger.log('SMS Service initialized with Telnyx');
-      this.logger.log(`From number: ${this.fromNumber}`);
     } else {
-      this.logger.warn('SMS Service is disabled');
+      this.logger.warn('SMS Service is disabled (SMS_ENABLED is not true)');
     }
   }
 
