@@ -692,7 +692,7 @@ export const AppointmentsManagement: React.FC = () => {
                 <>
                   {/* Day Headers */}
                   <Grid container spacing={{ xs: 0.5, sm: 1 }} mb={{ xs: 0.5, sm: 1 }}>
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                       <Grid size={{ xs: 12 / 7 }} key={day}>
                         <Box
                           textAlign="center"
@@ -713,7 +713,7 @@ export const AppointmentsManagement: React.FC = () => {
                   </Grid>
 
                   {/* Calendar Days */}
-                  <Grid container spacing={{ xs: 0.5, sm: 1 }}>
+                  <Grid container spacing={{ xs: 0.75, sm: 1 }}>
                     {getMonthDays(currentMonth).map((date, index) => {
                       const dayAppointments = getAppointmentsForDay(date);
                       const isToday =
@@ -721,28 +721,78 @@ export const AppointmentsManagement: React.FC = () => {
                         date.toDateString() === new Date().toDateString();
                       const isPast = date && date < new Date() && !isToday;
 
+                      // Check for appointments needing attention (IN_PROGRESS or pending payment)
+                      const appointmentsNeedingAttention = dayAppointments.filter(
+                        (apt) =>
+                          apt.status === 'IN_PROGRESS' ||
+                          (apt.status === 'COMPLETED' && (!apt.paymentAmount || apt.paymentAmount < (apt.expectedAmount || 0)))
+                      );
+                      const hasAttentionNeeded = appointmentsNeedingAttention.length > 0;
+
                       return (
                         <Grid size={{ xs: 12 / 7 }} key={index}>
                           <Box
                             sx={{
-                              minHeight: { xs: '70px', sm: '100px', md: '120px' },
+                              minHeight: { xs: '75px', sm: '100px', md: '120px' },
                               border: 1,
-                              borderColor: isToday ? 'primary.main' : 'divider',
-                              borderWidth: isToday ? 2 : 1,
+                              borderColor: hasAttentionNeeded
+                                ? 'warning.main'
+                                : isToday
+                                ? 'primary.main'
+                                : 'divider',
+                              borderWidth: hasAttentionNeeded ? { xs: 3, sm: 2 } : isToday ? 2 : 1,
                               bgcolor: date
                                 ? isPast
                                   ? 'action.hover'
+                                  : hasAttentionNeeded
+                                  ? { xs: 'warning.light', sm: 'warning.lighter' }
                                   : 'background.paper'
                                 : 'action.disabledBackground',
-                              borderRadius: { xs: 0.5, sm: 1 },
-                              p: { xs: 0.5, sm: 0.5, md: 1 },
+                              borderRadius: { xs: 1, sm: 1 },
+                              p: { xs: 0.75, sm: 0.5, md: 1 },
                               display: 'flex',
                               flexDirection: 'column',
                               position: 'relative',
+                              // Mobile: Add touch feedback
+                              '&:active': date
+                                ? {
+                                    transform: { xs: 'scale(0.95)', sm: 'none' },
+                                    transition: 'transform 0.1s ease',
+                                  }
+                                : {},
                               '&:hover': date
                                 ? {
                                     boxShadow: 1,
                                     cursor: 'pointer',
+                                  }
+                                : {},
+                              // Add a small attention indicator in the top-right corner
+                              '&::before': hasAttentionNeeded
+                                ? {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: { xs: 3, sm: 4 },
+                                    right: { xs: 3, sm: 4 },
+                                    width: { xs: '8px', sm: '8px' },
+                                    height: { xs: '8px', sm: '8px' },
+                                    borderRadius: '50%',
+                                    bgcolor: 'warning.dark',
+                                    boxShadow: {
+                                      xs: '0 0 0 3px rgba(255, 152, 0, 0.3)',
+                                      sm: '0 0 0 2px rgba(255, 152, 0, 0.2)'
+                                    },
+                                    animation: 'pulse 2s ease-in-out infinite',
+                                    '@keyframes pulse': {
+                                      '0%, 100%': {
+                                        opacity: 1,
+                                        transform: 'scale(1)',
+                                      },
+                                      '50%': {
+                                        opacity: 0.6,
+                                        transform: 'scale(1.2)',
+                                      },
+                                    },
+                                    zIndex: 1,
                                   }
                                 : {},
                             }}
@@ -752,17 +802,19 @@ export const AppointmentsManagement: React.FC = () => {
                               <>
                                 <Typography
                                   variant="body2"
-                                  fontWeight={isToday ? 'bold' : 'normal'}
+                                  fontWeight={isToday || hasAttentionNeeded ? 'bold' : 'normal'}
                                   color={
-                                    isToday
+                                    hasAttentionNeeded
+                                      ? 'warning.dark'
+                                      : isToday
                                       ? 'primary.main'
                                       : isPast
                                       ? 'text.disabled'
                                       : 'text.primary'
                                   }
-                                  mb={{ xs: 0.25, sm: 0.5 }}
+                                  mb={{ xs: 0.5, sm: 0.5 }}
                                   sx={{
-                                    fontSize: { xs: '0.7rem', sm: '0.875rem' },
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                     textAlign: 'center'
                                   }}
                                 >
@@ -770,19 +822,19 @@ export const AppointmentsManagement: React.FC = () => {
                                 </Typography>
                                 {dayAppointments.length > 0 && (
                                   <Box flex={1} overflow="auto">
-                                    {/* Mobile: Show small count badge */}
+                                    {/* Mobile: Show simple badge with color indicator */}
                                     <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
                                       <Box
                                         sx={{
-                                          bgcolor: 'primary.main',
-                                          color: 'primary.contrastText',
-                                          borderRadius: '50%',
-                                          width: '20px',
-                                          height: '20px',
+                                          bgcolor: hasAttentionNeeded ? 'warning.main' : 'primary.main',
+                                          color: hasAttentionNeeded ? 'warning.contrastText' : 'primary.contrastText',
+                                          borderRadius: '6px',
+                                          width: '24px',
+                                          height: '24px',
                                           display: 'flex',
                                           alignItems: 'center',
                                           justifyContent: 'center',
-                                          fontSize: '0.65rem',
+                                          fontSize: '0.7rem',
                                           fontWeight: 'bold',
                                           margin: '0 auto',
                                         }}
@@ -793,38 +845,46 @@ export const AppointmentsManagement: React.FC = () => {
 
                                     {/* Tablet: Show appointment details */}
                                     <Box sx={{ display: { xs: 'none', sm: 'block', lg: 'none' } }}>
-                                      {dayAppointments.slice(0, 2).map((apt) => (
-                                        <Box
-                                          key={apt.id}
-                                          sx={{
-                                            fontSize: { sm: '0.65rem', md: '0.7rem' },
-                                            mb: 0.5,
-                                            p: { sm: 0.25, md: 0.5 },
-                                            bgcolor: 'primary.light',
-                                            color: 'primary.contrastText',
-                                            borderRadius: 0.5,
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                            cursor: 'pointer',
-                                            '&:hover': {
-                                              bgcolor: 'primary.main',
-                                            },
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleEdit(apt);
-                                          }}
-                                        >
-                                          <Box sx={{ display: { sm: 'none', md: 'block' } }}>
-                                            {formatTime(apt.scheduledTime, apt.endTime)} - {apt.customer.firstName}{' '}
-                                            {apt.customer.lastName}
+                                      {dayAppointments.slice(0, 2).map((apt) => {
+                                        const needsAttention =
+                                          apt.status === 'IN_PROGRESS' ||
+                                          (apt.status === 'COMPLETED' &&
+                                            (!apt.paymentAmount || apt.paymentAmount < (apt.expectedAmount || 0)));
+                                        return (
+                                          <Box
+                                            key={apt.id}
+                                            sx={{
+                                              fontSize: { sm: '0.65rem', md: '0.7rem' },
+                                              mb: 0.5,
+                                              p: { sm: 0.25, md: 0.5 },
+                                              bgcolor: needsAttention ? 'warning.light' : 'primary.light',
+                                              color: needsAttention ? 'warning.contrastText' : 'primary.contrastText',
+                                              borderRadius: 0.5,
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                              whiteSpace: 'nowrap',
+                                              cursor: 'pointer',
+                                              border: needsAttention ? '1px solid' : 'none',
+                                              borderColor: 'warning.main',
+                                              '&:hover': {
+                                                bgcolor: needsAttention ? 'warning.main' : 'primary.main',
+                                              },
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEdit(apt);
+                                            }}
+                                          >
+                                            <Box sx={{ display: { sm: 'none', md: 'block' } }}>
+                                              {formatTime(apt.scheduledTime, apt.endTime)} - {apt.customer.firstName}{' '}
+                                              {apt.customer.lastName}
+                                            </Box>
+                                            <Box sx={{ display: { sm: 'block', md: 'none' } }}>
+                                              {formatTime(apt.scheduledTime, apt.endTime)}
+                                            </Box>
                                           </Box>
-                                          <Box sx={{ display: { sm: 'block', md: 'none' } }}>
-                                            {formatTime(apt.scheduledTime, apt.endTime)}
-                                          </Box>
-                                        </Box>
-                                      ))}
+                                        );
+                                      })}
                                       {dayAppointments.length > 2 && (
                                         <Typography
                                           variant="caption"
@@ -843,7 +903,7 @@ export const AppointmentsManagement: React.FC = () => {
                                           width: '44px',
                                           height: '44px',
                                           borderRadius: '10px',
-                                          bgcolor: 'primary.main',
+                                          bgcolor: hasAttentionNeeded ? 'warning.main' : 'primary.main',
                                           display: 'flex',
                                           alignItems: 'center',
                                           justifyContent: 'center',
@@ -856,7 +916,7 @@ export const AppointmentsManagement: React.FC = () => {
                                           sx={{
                                             fontSize: '1.5rem',
                                             fontWeight: 700,
-                                            color: 'primary.contrastText',
+                                            color: hasAttentionNeeded ? 'warning.contrastText' : 'primary.contrastText',
                                             lineHeight: 1,
                                           }}
                                         >
@@ -868,7 +928,7 @@ export const AppointmentsManagement: React.FC = () => {
                                         sx={{
                                           fontSize: '0.75rem',
                                           fontWeight: 600,
-                                          color: 'primary.main',
+                                          color: hasAttentionNeeded ? 'warning.main' : 'primary.main',
                                           textTransform: 'uppercase',
                                           letterSpacing: '0.5px',
                                         }}
