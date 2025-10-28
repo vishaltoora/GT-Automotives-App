@@ -76,8 +76,11 @@ export class SmsService {
     customerId?: string;
     userId?: string;
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    this.logger.log(`[SMS] sendSms called - enabled: ${this.enabled}, to: ${params.to}, type: ${params.type}`);
+
     if (!this.enabled) {
-      this.logger.warn('SMS disabled - would send:', params);
+      this.logger.warn('[SMS] SMS Service is DISABLED. Set SMS_ENABLED=true to enable.');
+      this.logger.warn('[SMS] Would send:', { to: params.to, type: params.type, appointmentId: params.appointmentId });
       return { success: false, error: 'SMS service is disabled' };
     }
 
@@ -218,6 +221,9 @@ export class SmsService {
    * Send appointment confirmation to customer (immediately after booking)
    */
   async sendAppointmentConfirmation(appointmentId: string): Promise<void> {
+    this.logger.log(`[SMS] sendAppointmentConfirmation called for appointment: ${appointmentId}`);
+    this.logger.log(`[SMS] SMS Service enabled: ${this.enabled}`);
+
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
@@ -226,9 +232,17 @@ export class SmsService {
       },
     });
 
-    if (!appointment || !appointment.customer.phone) {
+    if (!appointment) {
+      this.logger.warn(`[SMS] Appointment ${appointmentId} not found`);
       return;
     }
+
+    if (!appointment.customer.phone) {
+      this.logger.warn(`[SMS] Customer ${appointment.customer.id} (${appointment.customer.firstName} ${appointment.customer.lastName}) has no phone number. Skipping SMS.`);
+      return;
+    }
+
+    this.logger.log(`[SMS] Sending confirmation to: ${appointment.customer.phone}`);
 
     const date = new Date(appointment.scheduledDate);
     const formattedDate = date.toLocaleDateString('en-US', {
