@@ -1,5 +1,97 @@
 # Troubleshooting Guide
 
+## SMS Not Sending in Production (October 28, 2025)
+
+### No SMS Messages Being Sent ✅ RESOLVED
+**Problem:** Production deployment running, but no SMS messages being sent
+```
+✅ Environment variables configured (TELNYX_API_KEY, SMS_ENABLED=true)
+✅ SMS service code properly integrated
+✅ Appointments being created
+❌ No SMS confirmations or alerts sent
+```
+
+**Root Cause:** Database tables missing - schema drift
+- SMS models (`SmsMessage`, `SmsPreference`) existed in schema.prisma
+- Migration was never created during development
+- Production database had no `sms_messages` or `sms_preferences` tables
+- SMS service failed silently when checking preferences (table didn't exist)
+
+**Investigation Steps:**
+1. ✅ Verified environment variables in Azure Web App
+2. ✅ Checked SMS service initialization code
+3. ✅ Verified appointments service SMS integration
+4. ❌ Checked database for SMS tables - **NOT FOUND**
+
+**Why This Happened:**
+- Schema changes were made using `prisma db push` in development
+- No migration file was created with `prisma migrate dev`
+- Production database was not updated with SMS schema
+- Prisma said "database is up to date" but was checking migration history, not actual schema
+
+**Solution:**
+1. Deploy schema to production:
+   ```bash
+   DATABASE_URL="postgresql://..." npx prisma db push --accept-data-loss
+   ```
+
+2. Create default SMS preferences:
+   ```sql
+   -- 106 customers with phone numbers (opted-in)
+   INSERT INTO sms_preferences (customerId, optedIn=true, appointmentReminders=true)
+
+   -- 7 staff/admin users (opted-in)
+   INSERT INTO sms_preferences (userId, optedIn=true, appointmentAlerts=true)
+   ```
+
+3. Create migration for version control:
+   ```bash
+   # Create migration file manually
+   libs/database/src/lib/prisma/migrations/20251028230000_add_sms_tables/migration.sql
+
+   # Mark as applied in both databases
+   prisma migrate resolve --applied 20251028230000_add_sms_tables
+   ```
+
+4. Restart backend:
+   ```bash
+   az webapp restart --name gt-automotives-backend-api
+   ```
+
+**Database State After Fix:**
+- ✅ `sms_messages` table created with indexes
+- ✅ `sms_preferences` table created with indexes
+- ✅ 113 SMS preferences created (106 customers + 7 users)
+- ✅ All users opted-in by default
+- ✅ Foreign keys to Customer, User, and Appointment tables
+
+**Testing:**
+```bash
+# Check if tables exist
+SELECT table_name FROM information_schema.tables
+WHERE table_name IN ('sms_messages', 'sms_preferences');
+
+# Check preferences count
+SELECT COUNT(*) FROM sms_preferences WHERE "optedIn" = true;
+
+# Book a test appointment - should send SMS
+```
+
+**Key Learnings:**
+- **ALWAYS create migrations** when schema changes are made
+- Use `prisma migrate dev` instead of `prisma db push` for production-ready changes
+- Schema drift causes silent failures - validate database state not just migration history
+- Default opt-in preferences needed for immediate functionality
+- `prisma migrate status` checks migration history, not actual schema
+
+**Prevention:**
+- Use the Migration Manager agent before schema changes
+- Run `/migration check` before modifying schema.prisma
+- Always create migration with `/migration create "name"`
+- Verify migration deployed with `/migration status`
+
+---
+
 ## API Route Structure Issues (October 27, 2025)
 
 ### DELETE/PATCH/POST Operations Return 404 ✅ RESOLVED

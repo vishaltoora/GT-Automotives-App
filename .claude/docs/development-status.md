@@ -157,6 +157,7 @@ server/src/
 - **Customer Management**: Enhanced with business name support
 - **Invoice System**: Complete with printing and PDF support
 - **Quotation System**: Full quote creation, management, and conversion to invoices
+- **SMS/Text Messaging**: Telnyx integration with appointment confirmations, reminders, and staff alerts ✅ (October 28, 2025)
 - **Tire Inventory**: Full management with visual indicators
 - **Admin Dashboard**: Comprehensive with quick actions
 - **Staff Dashboard**: Operational interface
@@ -235,6 +236,7 @@ server/src/
 - ✅ **Invoice LEVY Item Type**: Added LEVY to backend InvoiceItemType enum (October 21, 2025)
 - ✅ **Invoice CompanyId Validation**: Added companyId field to frontend CreateInvoiceDto (October 21, 2025)
 - ✅ **Quotation to Invoice Conversion**: Fixed 404 error and NaN taxRate issues (October 21, 2025)
+- ✅ **SMS Not Sending**: Missing database tables - deployed migration 20251028230000_add_sms_tables (October 28, 2025)
 
 ### Current Known Issues
 - 🔍 **No major blocking issues currently identified**
