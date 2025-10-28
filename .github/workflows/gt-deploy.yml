@@ -121,6 +121,10 @@ jobs:
               INTERNAL_API_KEY="${{ secrets.INTERNAL_API_KEY }}" \
               AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
               AZURE_STORAGE_ACCOUNT_NAME="${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}" \
+              TELNYX_API_KEY="${{ secrets.TELNYX_API_KEY }}" \
+              TELNYX_PUBLIC_KEY="${{ secrets.TELNYX_PUBLIC_KEY }}" \
+              TELNYX_PHONE_NUMBER="${{ secrets.TELNYX_PHONE_NUMBER }}" \
+              TELNYX_MESSAGING_PROFILE_ID="${{ secrets.TELNYX_MESSAGING_PROFILE_ID }}" \
               HOST="0.0.0.0" \
               PORT="8080" \
               NODE_ENV="production" \

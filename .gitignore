@@ -58,8 +58,18 @@ azure-credentials.json
 *.credentials.json
 *.credentials.txt
 
-# Production environment files with secrets
+# Environment files with secrets (NEVER commit these!)
+.env
+.env.*
+.env.local
 .env.production
+.env.development
+server/.env
+apps/webApp/.env
+apps/webApp/.env.local
+# Exception: Allow .env.example files
+!.env.example
+!**/.env.example
 azure-backend/
 
 # Log files and Azure diagnostics
