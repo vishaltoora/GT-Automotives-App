@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+  <!-- Header -->
+  <div style="background-color: #1976d2; padding: 20px; text-align: center;">
+    <!-- This is a base64 encoded image - Gmail may block it for security -->
+    <p style="color: white;">⚠️ If you see a placeholder icon instead of the logo below, your email client is blocking base64 images for security reasons.</p>
+    <img src="data:image/png;base64,iVBORw0KGgo..." alt="GT Automotives Logo" style="max-width: 180px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" />
+    <h1 style="color: white; margin: 0;">GT Automotives</h1>
+  </div>
+
+  <!-- Content -->
+  <div style="padding: 30px; max-width: 600px; margin: 0 auto;">
+    <h2>Email Logo Issue Explanation</h2>
+    <p><strong>Why you're seeing a placeholder:</strong></p>
+    <ul>
+      <li>Gmail and many email clients block data URI (base64) images for security reasons</li>
+      <li>The logo is embedded correctly, but blocked by your email client</li>
+      <li>This is expected behavior for security</li>
+    </ul>
+
+    <h3>Solutions:</h3>
+    <ol>
+      <li><strong>For Production:</strong> Deploy logo.png to https://gt-automotives.com/logo.png</li>
+      <li><strong>For Testing:</strong> Use a public image hosting service (Imgur, CloudFlare, etc.)</li>
+      <li><strong>Alternative:</strong> Use CID attachments (more complex but better supported)</li>
+    </ol>
+
+    <p><strong>Recommendation:</strong> When you deploy the next build, make sure logo-email.png is copied to the public directory and accessible at https://gt-automotives.com/logo.png</p>
+  </div>
+</body>
+</html>

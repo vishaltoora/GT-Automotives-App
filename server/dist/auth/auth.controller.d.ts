@@ -33,10 +33,10 @@ export declare class AuthController {
         firstName: string | null;
         lastName: string | null;
         role: {
-            name: import("@prisma/client").$Enums.RoleName;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            name: import("@prisma/client").$Enums.RoleName;
             displayName: string;
             description: string | null;
         };

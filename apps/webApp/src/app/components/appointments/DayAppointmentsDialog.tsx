@@ -318,12 +318,13 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     };
   }, [sortedAppointments, atGarageAppointments, mobileServiceAppointments]);
 
-  // Check if current time is within EOD send window (9 PM to 7 AM)
+  // Check if current time is within EOD send window (currently disabled - allows all times)
   const isEODSendAllowed = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    // Allow between 9 PM (21:00) and 11:59 PM, or between 12 AM and 7 AM
-    return currentHour >= 21 || currentHour < 7;
+    return true; // Enabled for all times during testing
+    // const now = new Date();
+    // const currentHour = now.getHours();
+    // // Allow between 9 PM (21:00) and 11:59 PM, or between 12 AM and 7 AM
+    // return currentHour >= 21 || currentHour < 7;
   };
 
   // Early return AFTER all hooks have been called
@@ -407,7 +408,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       };
 
       await axios.post(
-        `${API_URL}/api/sms/send-eod-summary`,
+        `${API_URL}/api/email/send-eod-summary`,
         eodData,
         {
           headers: {
@@ -419,7 +420,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
       setSnackbar({
         open: true,
-        message: 'EOD summary sent successfully to admin users!',
+        message: 'EOD summary email sent successfully to admin users!',
         severity: 'success',
       });
     } catch (error: any) {

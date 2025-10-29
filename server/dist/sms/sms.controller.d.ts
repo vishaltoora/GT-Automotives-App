@@ -14,45 +14,21 @@ export declare class SmsController {
      * Get SMS history (admin only)
      */
     getHistory(customerId?: string, userId?: string, limit?: string): Promise<({
-        user: {
-            id: string;
-            clerkId: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-            phone: string | null;
-            roleId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            lastLogin: Date | null;
-            isActive: boolean;
-        } | null;
-        customer: {
-            id: string;
-            email: string | null;
-            firstName: string;
-            lastName: string;
-            phone: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            address: string | null;
-            businessName: string | null;
-        } | null;
         appointment: {
             id: string;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
-            scheduledDate: Date;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
             vehicleId: string | null;
-            notes: string | null;
             employeeId: string | null;
+            scheduledDate: Date;
             scheduledTime: string;
             endTime: string | null;
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
+            notes: string | null;
             paymentAmount: number | null;
             paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
             paymentNotes: string | null;
@@ -60,33 +36,57 @@ export declare class SmsController {
             reminderSent: boolean;
             bookedBy: string | null;
         } | null;
+        customer: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+            businessName: string | null;
+        } | null;
+        user: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string | null;
+            lastName: string | null;
+            email: string;
+            phone: string | null;
+            clerkId: string;
+            roleId: string;
+            lastLogin: Date | null;
+            isActive: boolean;
+        } | null;
     } & {
+        to: string;
+        type: import("@prisma/client").$Enums.SmsType;
         id: string;
+        from: string;
+        status: import("@prisma/client").$Enums.SmsStatus;
+        appointmentId: string | null;
+        customerId: string | null;
+        sentAt: Date | null;
+        deliveredAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
-        type: import("@prisma/client").$Enums.SmsType;
-        customerId: string | null;
-        status: import("@prisma/client").$Enums.SmsStatus;
         userId: string | null;
         cost: import(".prisma/client/runtime/library").Decimal | null;
-        appointmentId: string | null;
-        to: string;
-        from: string;
         body: string;
         telnyxMessageId: string | null;
         segments: number | null;
         errorMessage: string | null;
-        sentAt: Date | null;
-        deliveredAt: Date | null;
     })[]>;
     /**
      * Get customer preferences
      */
     getCustomerPreferences(customerId: string): Promise<{
         id: string;
+        customerId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string | null;
         userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
@@ -104,9 +104,9 @@ export declare class SmsController {
      */
     getUserPreferences(userId: string): Promise<{
         id: string;
+        customerId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string | null;
         userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
@@ -130,9 +130,9 @@ export declare class SmsController {
         promotional?: boolean;
     }): Promise<{
         id: string;
+        customerId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string | null;
         userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
@@ -157,9 +157,9 @@ export declare class SmsController {
         urgentAlerts?: boolean;
     }): Promise<{
         id: string;
+        customerId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string | null;
         userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;

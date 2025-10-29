@@ -9,41 +9,41 @@ export declare class CustomersService {
     constructor(customerRepository: CustomerRepository, auditRepository: AuditRepository, prisma: PrismaService);
     create(createCustomerDto: CreateCustomerDto, createdBy: string): Promise<{
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     }>;
     findAll(userId: string, userRole: string): Promise<({
-        vehicles: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            customerId: string;
-            make: string;
-            model: string;
-            year: number;
-            vin: string | null;
-            licensePlate: string | null;
-            mileage: number | null;
-        }[];
         _count: {
             appointments: number;
             invoices: number;
             vehicles: number;
         };
+        vehicles: {
+            id: string;
+            customerId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            year: number;
+            make: string;
+            model: string;
+            vin: string | null;
+            licensePlate: string | null;
+            mileage: number | null;
+        }[];
     } & {
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     })[]>;
@@ -57,30 +57,30 @@ export declare class CustomersService {
         appointments: ({
             vehicle: {
                 id: string;
+                customerId: string;
                 createdAt: Date;
                 updatedAt: Date;
-                customerId: string;
+                year: number;
                 make: string;
                 model: string;
-                year: number;
                 vin: string | null;
                 licensePlate: string | null;
                 mileage: number | null;
             } | null;
         } & {
             id: string;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
-            scheduledDate: Date;
             vehicleId: string | null;
             employeeId: string | null;
+            scheduledDate: Date;
             scheduledTime: string;
             endTime: string | null;
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
             paymentAmount: number | null;
             paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
@@ -92,70 +92,70 @@ export declare class CustomersService {
         invoices: ({
             vehicle: {
                 id: string;
+                customerId: string;
                 createdAt: Date;
                 updatedAt: Date;
-                customerId: string;
+                year: number;
                 make: string;
                 model: string;
-                year: number;
                 vin: string | null;
                 licensePlate: string | null;
                 mileage: number | null;
             } | null;
             items: {
                 id: string;
+                invoiceId: string;
                 createdAt: Date;
                 updatedAt: Date;
                 description: string;
-                total: import(".prisma/client/runtime/library").Decimal;
-                invoiceId: string;
                 tireId: string | null;
                 tireName: string | null;
                 itemType: import("@prisma/client").$Enums.InvoiceItemType;
                 quantity: number;
                 unitPrice: import(".prisma/client/runtime/library").Decimal;
+                total: import(".prisma/client/runtime/library").Decimal;
             }[];
         } & {
             id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
             vehicleId: string | null;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
             notes: string | null;
             invoiceNumber: string;
+            invoiceDate: Date;
+            taxAmount: import(".prisma/client/runtime/library").Decimal;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+            createdBy: string;
+            total: import(".prisma/client/runtime/library").Decimal;
             companyId: string;
             subtotal: import(".prisma/client/runtime/library").Decimal;
             taxRate: import(".prisma/client/runtime/library").Decimal;
-            taxAmount: import(".prisma/client/runtime/library").Decimal;
-            total: import(".prisma/client/runtime/library").Decimal;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-            invoiceDate: Date;
-            createdBy: string;
-            paidAt: Date | null;
-            gstAmount: import(".prisma/client/runtime/library").Decimal | null;
             gstRate: import(".prisma/client/runtime/library").Decimal | null;
-            pstAmount: import(".prisma/client/runtime/library").Decimal | null;
+            gstAmount: import(".prisma/client/runtime/library").Decimal | null;
             pstRate: import(".prisma/client/runtime/library").Decimal | null;
+            pstAmount: import(".prisma/client/runtime/library").Decimal | null;
+            paidAt: Date | null;
         })[];
         vehicles: {
             id: string;
+            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
+            year: number;
             make: string;
             model: string;
-            year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
         }[];
         smsPreference: {
             id: string;
+            customerId: string | null;
             createdAt: Date;
             updatedAt: Date;
             userId: string | null;
-            customerId: string | null;
             optedIn: boolean;
             optedInAt: Date | null;
             optedOutAt: Date | null;
@@ -168,36 +168,36 @@ export declare class CustomersService {
             urgentAlerts: boolean;
         } | null;
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     }>;
     update(id: string, updateCustomerDto: UpdateCustomerDto, userId: string, userRole: string): Promise<{
         vehicles: {
             id: string;
+            customerId: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
+            year: number;
             make: string;
             model: string;
-            year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
         }[];
     } & {
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     }>;
@@ -205,31 +205,31 @@ export declare class CustomersService {
         message: string;
     }>;
     search(searchTerm: string, userId: string, userRole: string): Promise<({
-        vehicles: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            customerId: string;
-            make: string;
-            model: string;
-            year: number;
-            vin: string | null;
-            licensePlate: string | null;
-            mileage: number | null;
-        }[];
         _count: {
             appointments: number;
             invoices: number;
             vehicles: number;
         };
+        vehicles: {
+            id: string;
+            customerId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            year: number;
+            make: string;
+            model: string;
+            vin: string | null;
+            licensePlate: string | null;
+            mileage: number | null;
+        }[];
     } & {
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     })[]>;

@@ -41,9 +41,9 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }>;
     /**
@@ -56,9 +56,9 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -85,9 +85,9 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }>;
     /**

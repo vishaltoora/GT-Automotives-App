@@ -26,7 +26,8 @@
       "Bash(az webapp config appsettings set:*)",
       "Bash(az webapp restart:*)",
       "Bash(az webapp log download:*)",
-      "Bash(yarn typecheck:*)"
+      "Bash(yarn typecheck:*)",
+      "Bash(yarn dev:server)"
     ],
     "deny": [],
     "ask": []
