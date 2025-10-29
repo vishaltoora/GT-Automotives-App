@@ -78,6 +78,7 @@ model Customer {
   vehicles     Vehicle[]
   smsMessages  SmsMessage[]
   smsPreference SmsPreference?
+  emailLogs    EmailLog[]     // Email logs related to this customer
 }
 
 model Vehicle {
@@ -196,6 +197,7 @@ model Invoice {
   vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
   company       Company        @relation(fields: [companyId], references: [id])
   items         InvoiceItem[]
+  emailLogs     EmailLog[]     // Email logs related to this invoice
 
   @@index([customerId])
   @@index([status])
@@ -245,6 +247,7 @@ model Quotation {
   updatedAt        DateTime         @updatedAt
   convertedToInvoiceId String?      @unique
   items            QuotationItem[]
+  emailLogs        EmailLog[]       // Email logs related to this quotation
 
   @@index([status])
   @@index([customerName])
@@ -292,6 +295,7 @@ model Appointment {
   employee        User?                   @relation(fields: [employeeId], references: [id])
   employees       AppointmentEmployee[]   // Multiple employees assigned to this appointment
   smsMessages     SmsMessage[]            // SMS messages related to this appointment
+  emailLogs       EmailLog[]              // Email logs related to this appointment
 
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
@@ -746,4 +750,69 @@ model SmsPreference {
   updatedAt           DateTime  @updatedAt
 
   @@map("sms_preferences")
+}
+
+// ==========================================
+// EMAIL MODELS
+// ==========================================
+
+model EmailLog {
+  id            String        @id @default(cuid())
+  to            String        // Recipient email
+  from          String        // Sender email
+  subject       String        // Email subject
+  type          EmailType     // Type of email
+  status        EmailStatus   @default(PENDING)
+
+  // Brevo specific
+  brevoMessageId String?      @unique
+
+  // Relationships
+  appointmentId String?
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+  invoiceId     String?
+  invoice       Invoice?      @relation(fields: [invoiceId], references: [id])
+  quotationId   String?
+  quotation     Quotation?    @relation(fields: [quotationId], references: [id])
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+
+  // Timestamps
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  openedAt      DateTime?     // If tracking enabled
+  clickedAt     DateTime?     // If tracking enabled
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([appointmentId])
+  @@index([invoiceId])
+  @@index([quotationId])
+  @@index([customerId])
+  @@index([status])
+  @@index([type])
+  @@map("email_logs")
+}
+
+enum EmailStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  COMPLAINED
+  FAILED
+}
+
+enum EmailType {
+  APPOINTMENT_CONFIRMATION
+  APPOINTMENT_REMINDER
+  APPOINTMENT_CANCELLATION
+  INVOICE_DELIVERY
+  QUOTATION
+  PAYMENT_RECEIPT
+  SERVICE_COMPLETE
+  PROMOTIONAL
 }
