@@ -9,6 +9,7 @@ import {
 } from '../common/dto/appointment.dto';
 import { AvailabilityService } from './availability.service';
 import { SmsService } from '../sms/sms.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -41,7 +42,8 @@ export class AppointmentsService {
   constructor(
     private prisma: PrismaService,
     private availabilityService: AvailabilityService,
-    private smsService: SmsService
+    private smsService: SmsService,
+    private emailService: EmailService
   ) {}
 
   /**
@@ -178,10 +180,39 @@ export class AppointmentsService {
       // Don't throw error - appointment was created successfully
     });
 
-    // Send SMS alert to assigned employees
-    for (const empId of finalEmployeeIds) {
-      await this.smsService.sendStaffAppointmentAlert(appointment.id, empId).catch(err => {
-        console.error(`Failed to send staff alert SMS to employee ${empId}:`, err);
+    // Send EMAIL alert to assigned employees (replacing SMS)
+    for (const assignedEmployee of appointment.employees) {
+      const employee = assignedEmployee.employee;
+
+      // Only send email if employee has an email address
+      if (!employee.email) {
+        console.warn(`Employee ${employee.firstName} ${employee.lastName} has no email address. Skipping notification.`);
+        continue;
+      }
+
+      // Prepare email data
+      const vehicleInfo = appointment.vehicle
+        ? `${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}`
+        : 'No vehicle specified';
+
+      const customerName = `${appointment.customer.firstName} ${appointment.customer.lastName}`;
+
+      await this.emailService.sendAppointmentAssignment({
+        employeeEmail: employee.email,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        appointmentId: appointment.id,
+        customerName: customerName,
+        customerPhone: appointment.customer.phone || undefined,
+        vehicleInfo: vehicleInfo,
+        serviceType: appointment.serviceType,
+        scheduledDate: appointment.scheduledDate.toISOString(),
+        scheduledTime: appointment.scheduledTime,
+        duration: appointment.duration,
+        appointmentType: appointment.appointmentType as 'AT_GARAGE' | 'MOBILE_SERVICE',
+        address: appointment.appointmentType === 'MOBILE_SERVICE' ? (appointment.customer.address || undefined) : undefined,
+        notes: appointment.notes || undefined,
+      }).catch(err => {
+        console.error(`Failed to send appointment assignment email to ${employee.email}:`, err);
         // Don't throw error - appointment was created successfully
       });
     }

@@ -271,10 +271,8 @@ export class SmsService {
     if (vehicle) {
       message += `Vehicle: ${vehicle}\n`;
     }
-    message += `\nWe'll send you a reminder 1 hour before your appointment.\n\n`;
-    message += `To reschedule, call/text at ${contactPhone}\n\n`;
-    message += `Have a great day!\n\n`;
-    message += `GT Automotives\nPrince George, BC`;
+    message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
+    message += `Have a great day!`;
 
     await this.sendSms({
       to: appointment.customer.phone,

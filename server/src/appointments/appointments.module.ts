@@ -5,9 +5,10 @@ import { AvailabilityController } from './availability.controller';
 import { AppointmentsService } from './appointments.service';
 import { AvailabilityService } from './availability.service';
 import { SmsModule } from '../sms/sms.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [SmsModule],
+  imports: [SmsModule, EmailModule],
   controllers: [AppointmentsController, AvailabilityController],
   providers: [AppointmentsService, AvailabilityService, PrismaService],
   exports: [AppointmentsService, AvailabilityService],
