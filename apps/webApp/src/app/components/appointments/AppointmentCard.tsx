@@ -27,6 +27,7 @@ import {
   EventAvailable as EventAvailableIcon,
   EventBusy as EventBusyIcon,
   MoreVert as MoreVertIcon,
+  LocationOn as LocationOnIcon,
 } from '@mui/icons-material';
 import { formatTimeRange } from '../../utils/timeFormat';
 import { PaymentDialog } from './PaymentDialog';
@@ -123,6 +124,7 @@ export interface AppointmentCardProps {
       phone?: string;
       email?: string;
       businessName?: string;
+      address?: string;
     };
     vehicle?: {
       id: string;
@@ -292,19 +294,20 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           <Divider sx={{ my: 1.5 }} />
 
           {/* Customer Info */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
             <Avatar
               sx={{
                 width: 32,
                 height: 32,
                 bgcolor: 'primary.main',
                 fontSize: '0.875rem',
+                mt: 0.5,
               }}
             >
               {appointment.customer.firstName[0]}
               {appointment.customer.lastName[0]}
             </Avatar>
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="body2" fontWeight={500}>
                 {appointment.customer.businessName ||
                   `${appointment.customer.firstName} ${appointment.customer.lastName}`}
@@ -318,6 +321,38 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 <Typography variant="caption" color="text.primary" sx={{ display: 'block', fontWeight: 600 }}>
                   {formatPhoneNumber(appointment.customer.phone)}
                 </Typography>
+              )}
+              {appointment.customer.address && (
+                <Box
+                  component="a"
+                  href={`https://maps.google.com/?q=${encodeURIComponent(appointment.customer.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 0.5,
+                    mt: 0.5,
+                    textDecoration: 'none',
+                    color: 'primary.main',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  <LocationOnIcon sx={{ fontSize: '0.875rem', mt: 0.25, flexShrink: 0 }} />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {appointment.customer.address}
+                  </Typography>
+                </Box>
               )}
             </Box>
           </Box>

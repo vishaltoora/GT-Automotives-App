@@ -103,10 +103,11 @@ export class SmsSchedulerService {
   }
 
   /**
+   * DISABLED: One-hour reminder functionality
    * Run every 15 minutes to check for appointments that need 1-hour reminders
    * Sends reminder to customer 1 hour before appointment
    */
-  @Cron('*/15 * * * *') // Every 15 minutes
+  // @Cron('*/15 * * * *') // Every 15 minutes - DISABLED
   async sendOneHourReminders() {
     this.logger.log('Checking for appointments needing 1-hour reminders');
 
