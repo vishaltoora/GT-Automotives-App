@@ -858,7 +858,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           </Typography>
                         </TableCell>
                         <TableCell align="center">{item.quantity}</TableCell>
-                        <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
+                        <TableCell align="right">
+                          {item.itemType === 'DISCOUNT_PERCENTAGE'
+                            ? `${item.unitPrice}%`
+                            : formatCurrency(item.unitPrice)}
+                        </TableCell>
                         <TableCell align="right">
                           {item.discountValue && item.discountValue > 0 ? (
                             item.discountType === 'percentage'

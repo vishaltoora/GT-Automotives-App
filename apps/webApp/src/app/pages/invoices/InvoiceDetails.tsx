@@ -345,28 +345,47 @@ const InvoiceDetails: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {invoice.items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Chip label={item.itemType} size="small" />
-                      </TableCell>
-                      <TableCell>
-                        {(item as any).tireName && (
-                          <Typography variant="body2" fontWeight="medium">
-                            {(item as any).tireName}
+                  {invoice.items.map((item) => {
+                    // Calculate display total - handle DISCOUNT_PERCENTAGE items
+                    let displayTotal = item.total || item.quantity * item.unitPrice;
+                    if (item.itemType === 'DISCOUNT_PERCENTAGE') {
+                      // Recalculate percentage discount based on other items
+                      const otherItemsSubtotal = invoice.items
+                        .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
+                        .reduce((sum, i) => sum + (i.total || i.quantity * i.unitPrice), 0);
+                      displayTotal = -(otherItemsSubtotal * item.unitPrice) / 100;
+                    } else if (item.itemType === 'DISCOUNT') {
+                      // Ensure discount is negative
+                      displayTotal = -Math.abs(displayTotal);
+                    }
+
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <Chip label={item.itemType} size="small" />
+                        </TableCell>
+                        <TableCell>
+                          {(item as any).tireName && (
+                            <Typography variant="body2" fontWeight="medium">
+                              {(item as any).tireName}
+                            </Typography>
+                          )}
+                          <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                            {item.description}
                           </Typography>
-                        )}
-                        <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
-                          {item.description}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">{item.quantity}</TableCell>
-                      <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(item.total || item.quantity * item.unitPrice)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell align="right">{item.quantity}</TableCell>
+                        <TableCell align="right">
+                          {item.itemType === 'DISCOUNT_PERCENTAGE'
+                            ? `${item.unitPrice}%`
+                            : formatCurrency(item.unitPrice)}
+                        </TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(displayTotal)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

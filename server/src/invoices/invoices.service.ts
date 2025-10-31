@@ -49,10 +49,25 @@ export class InvoicesService {
       throw new BadRequestException('Either customerId or customerData must be provided');
     }
 
-    // Calculate totals
+    // Calculate totals - handle discount items specially
     let subtotal = 0;
     const items = createInvoiceDto.items.map(item => {
-      const total = item.quantity * item.unitPrice;
+      // For DISCOUNT items, the total should be negative
+      // For DISCOUNT_PERCENTAGE items, calculate percentage of other items
+      let total = item.quantity * item.unitPrice;
+
+      if (item.itemType === 'DISCOUNT') {
+        // DISCOUNT items should be negative
+        total = -Math.abs(total);
+      } else if (item.itemType === 'DISCOUNT_PERCENTAGE') {
+        // DISCOUNT_PERCENTAGE: unitPrice is the percentage value
+        // Calculate percentage of non-discount items
+        const otherItemsSubtotal = createInvoiceDto.items
+          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
+          .reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
+        total = -(otherItemsSubtotal * item.unitPrice) / 100;
+      }
+
       subtotal += total;
       return {
         ...item,
@@ -192,10 +207,23 @@ export class InvoicesService {
         unitPrice: new Decimal(item.unitPrice),
       }));
 
-      // Recalculate totals based on new items
+      // Recalculate totals based on new items - handle discount items specially
       let subtotal = 0;
       items.forEach(item => {
-        const total = item.quantity * Number(item.unitPrice);
+        let total = item.quantity * Number(item.unitPrice);
+
+        if (item.itemType === 'DISCOUNT') {
+          // DISCOUNT items should be negative
+          total = -Math.abs(total);
+        } else if (item.itemType === 'DISCOUNT_PERCENTAGE') {
+          // DISCOUNT_PERCENTAGE: unitPrice is the percentage value
+          // Calculate percentage of non-discount items
+          const otherItemsSubtotal = items
+            .filter((i: any) => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
+            .reduce((sum: number, i: any) => sum + (i.quantity * Number(i.unitPrice)), 0);
+          total = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
+        }
+
         subtotal += total;
       });
 
