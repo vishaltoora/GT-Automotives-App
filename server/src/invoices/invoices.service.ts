@@ -218,7 +218,7 @@ export class InvoicesService {
         } else if (item.itemType === 'DISCOUNT_PERCENTAGE') {
           // DISCOUNT_PERCENTAGE: unitPrice is the percentage value
           // Calculate percentage of non-discount items
-          const otherItemsSubtotal = items
+          const otherItemsSubtotal = (items || [])
             .filter((i: any) => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
             .reduce((sum: number, i: any) => sum + (i.quantity * Number(i.unitPrice)), 0);
           total = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
