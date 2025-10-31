@@ -345,12 +345,12 @@ const InvoiceDetails: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {invoice.items.map((item) => {
+                  {invoice.items?.map((item) => {
                     // Calculate display total - handle DISCOUNT_PERCENTAGE items
                     let displayTotal = item.total || item.quantity * item.unitPrice;
                     if (item.itemType === 'DISCOUNT_PERCENTAGE') {
                       // Recalculate percentage discount based on other items
-                      const otherItemsSubtotal = invoice.items
+                      const otherItemsSubtotal = (invoice.items || [])
                         .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
                         .reduce((sum, i) => sum + (i.total || i.quantity * i.unitPrice), 0);
                       displayTotal = -(otherItemsSubtotal * item.unitPrice) / 100;
