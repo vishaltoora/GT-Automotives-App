@@ -12,7 +12,7 @@ export class InternalApiGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
 
     // Allow health checks without API key
-    if (request.path === '/health' || request.path === '/') {
+    if (request.path === '/health' || request.path === '/api/health' || request.path === '/') {
       return true;
     }
 
