@@ -1,5 +1,117 @@
 # Troubleshooting Guide
 
+## Backend Completely Unresponsive - Environment Variables Not Passed to Docker Container (October 31, 2025)
+
+### Production Backend Timing Out on All Requests ✅ RESOLVED
+**Problem:** Backend API completely unresponsive after deployment, timing out on all endpoints
+```
+❌ https://gt-automotives-backend-api.azurewebsites.net/api/health - timeout after 60+ seconds
+❌ All API endpoints timing out
+✅ Frontend website working (https://gt-automotives.com)
+✅ Azure Web App status: "Running"
+✅ Container image works perfectly locally
+```
+
+**Root Cause:** Azure Managed Identity blocking environment variable injection
+- Azure Web App had `acrUseManagedIdentityCreds: true` enabled
+- This setting prevents App Settings from being passed as environment variables to Docker containers
+- Container started successfully but couldn't read:
+  - `CLERK_SECRET_KEY` (showed as "NOT SET" in logs)
+  - `INTERNAL_API_KEY` (showed as "NOT SET" in logs)
+  - All other critical environment variables
+- Internal API Guard blocked ALL requests due to missing INTERNAL_API_KEY
+- Connection reset/timeout on every request
+
+**Investigation Steps:**
+1. ✅ Verified Azure Web App state: "Running" with "Normal" availability
+2. ✅ Checked frontend website: Working (HTTP 200)
+3. ✅ Tested backend endpoint: Complete timeout
+4. ❌ Checked container logs: Unable to tail (app unresponsive)
+5. ✅ Pulled container image and tested locally: **WORKS PERFECTLY**
+6. ✅ Local container logs showed: `CLERK_SECRET_KEY: 'NOT SET'` and `INTERNAL_API_KEY: 'NOT SET'`
+7. ✅ Verified Azure App Settings: Both keys ARE configured
+8. ✅ Identified issue: Managed Identity preventing env var injection
+
+**Why This Happened:**
+- Azure Managed Identity (`acrUseManagedIdentityCreds: true`) was enabled during previous troubleshooting
+- This setting is meant for Azure Container Registry with Managed Identity authentication
+- We use GitHub Container Registry (GHCR), not Azure Container Registry
+- Azure Web App with Managed Identity doesn't pass App Settings to custom Docker containers
+- This is by design for security with Azure resources, but breaks GHCR deployments
+
+**What Was Working Before:**
+- Email integration code is NOT the problem (container works perfectly)
+- Azure configuration was changed independently (likely during previous deployment)
+- Build 178 and earlier worked because Managed Identity wasn't enabled
+
+**Solution:**
+1. Disable Managed Identity for container registry:
+   ```bash
+   az webapp config set --name gt-automotives-backend-api \
+     --resource-group gt-automotives-prod \
+     --generic-configurations '{"acrUseManagedIdentityCreds": false}'
+   ```
+
+2. Enable app settings injection for Docker containers:
+   ```bash
+   az webapp config appsettings set \
+     --name gt-automotives-backend-api \
+     --resource-group gt-automotives-prod \
+     --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=false
+   ```
+
+3. Restart the backend:
+   ```bash
+   az webapp restart --name gt-automotives-backend-api \
+     --resource-group gt-automotives-prod
+   ```
+
+**Verification:**
+```bash
+# Direct backend test (should return HTTP 401 - guard working)
+curl -I https://gt-automotives-backend-api.azurewebsites.net/api/health
+# Expected: HTTP/2 401 (correct - needs X-Internal-API-Key header)
+
+# Through reverse proxy (should work)
+curl https://gt-automotives.com/api/health
+# Expected: {"status":"ok","timestamp":"...","uptime":...,"environment":"production"}
+```
+
+**Testing Container Locally:**
+```bash
+# Pull production container
+docker pull ghcr.io/vishaltoora/gt-backend:build-XXXXXXX-XXXXXXX
+
+# Run with minimal env vars to test
+docker run --rm -p 3000:8080 \
+  -e PORT=8080 \
+  -e NODE_ENV=production \
+  -e DATABASE_URL='postgresql://...' \
+  ghcr.io/vishaltoora/gt-backend:build-XXXXXXX-XXXXXXX
+
+# Check logs for "CLERK_SECRET_KEY: 'SET'" (not 'NOT SET')
+```
+
+**Key Learnings:**
+- **Azure Managed Identity is ONLY for Azure Container Registry** - don't enable for GHCR
+- Always test container locally when Azure deployment fails
+- Environment variable issues show as "NOT SET" in local container logs
+- Container works locally = Azure configuration problem, not code problem
+- Direct backend access should return HTTP 401 (Internal API Guard working)
+- Reverse proxy access should return HTTP 200 (adds X-Internal-API-Key header)
+
+**Prevention:**
+- Document Azure Web App configuration settings (managed identity, app storage, etc.)
+- Test any Azure configuration changes in staging first
+- Always verify environment variables are passed to container
+- Use local Docker testing to isolate Azure vs. code issues
+
+**Related Issues:**
+- Email integration deployment: No issues - container works perfectly
+- Schema migrations: Separate issue - resolved with proper migration workflow
+
+---
+
 ## SMS Not Sending in Production (October 28, 2025)
 
 ### No SMS Messages Being Sent ✅ RESOLVED
