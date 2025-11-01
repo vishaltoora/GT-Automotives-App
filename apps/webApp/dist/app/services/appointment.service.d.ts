@@ -31,8 +31,8 @@ export interface UpdateAppointmentRequest {
     expectedAmount?: number;
 }
 export interface AppointmentQueryParams {
-    startDate?: Date;
-    endDate?: Date;
+    startDate?: Date | string;
+    endDate?: Date | string;
     employeeId?: string;
     customerId?: string;
     status?: AppointmentStatus;

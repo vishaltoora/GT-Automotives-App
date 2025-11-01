@@ -77,6 +77,10 @@ declare class InvoiceService {
     getInvoice(id: string): Promise<Invoice>;
     updateInvoice(id: string, data: UpdateInvoiceDto): Promise<Invoice>;
     markInvoiceAsPaid(id: string, paymentMethod: Invoice['paymentMethod']): Promise<Invoice>;
+    sendInvoiceEmail(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     deleteInvoice(id: string): Promise<void>;
     searchInvoices(params: {
         customerName?: string;

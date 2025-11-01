@@ -87,6 +87,10 @@ declare class QuoteService {
         status?: Quote['status'];
     }): Promise<Quote[]>;
     convertToInvoice(quoteId: string, customerId: string, vehicleId?: string): Promise<any>;
+    sendQuotationEmail(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     generatePrintHTML(quote: Quote): string;
     printQuote(quote: Quote): void;
     private printUsingBlob;

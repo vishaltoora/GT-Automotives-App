@@ -7,7 +7,13 @@ export declare class EmailService {
     private readonly enabled;
     private readonly senderEmail;
     private readonly senderName;
+    private readonly logoBase64;
     constructor(prisma: PrismaService);
+    /**
+     * Get logo src for email templates
+     * Uses base64 embedding for maximum compatibility
+     */
+    private getLogoSrc;
     /**
      * Send an email via Brevo
      */
@@ -98,6 +104,20 @@ export declare class EmailService {
         address?: string;
         notes?: string;
     }): Promise<{
+        success: boolean;
+        messageId?: string;
+    }>;
+    /**
+     * Send invoice email with PDF attachment
+     */
+    sendInvoiceEmail(customerEmail: string, invoiceNumber: string, pdfBase64: string): Promise<{
+        success: boolean;
+        messageId?: string;
+    }>;
+    /**
+     * Send quotation email with PDF attachment
+     */
+    sendQuotationEmail(customerEmail: string, quotationNumber: string, pdfBase64: string): Promise<{
         success: boolean;
         messageId?: string;
     }>;

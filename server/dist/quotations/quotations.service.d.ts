@@ -3,10 +3,14 @@ import { CreateQuoteDto } from '../common/dto/quotation.dto';
 import { UpdateQuoteDto } from '../common/dto/quotation.dto';
 import { Quotation } from '@prisma/client';
 import { PrismaService } from '@gt-automotive/database';
+import { PdfService } from '../pdf/pdf.service';
+import { EmailService } from '../email/email.service';
 export declare class QuotationsService {
     private quotationRepository;
     private prisma;
-    constructor(quotationRepository: QuotationRepository, prisma: PrismaService);
+    private pdfService;
+    private emailService;
+    constructor(quotationRepository: QuotationRepository, prisma: PrismaService, pdfService: PdfService, emailService: EmailService);
     create(createQuoteDto: CreateQuoteDto, userId: string): Promise<Quotation>;
     findAll(): Promise<Quotation[]>;
     findOne(id: string): Promise<Quotation>;
@@ -20,5 +24,9 @@ export declare class QuotationsService {
         endDate?: string;
     }): Promise<Quotation[]>;
     convertToInvoice(quotationId: string, customerId: string, vehicleId?: string): Promise<any>;
+    sendQuotationEmail(quotationId: string, userId: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }
 //# sourceMappingURL=quotations.service.d.ts.map

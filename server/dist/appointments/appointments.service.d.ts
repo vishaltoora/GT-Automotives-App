@@ -2,12 +2,14 @@ import { PrismaService } from '@gt-automotive/database';
 import { CreateAppointmentDto, UpdateAppointmentDto, AppointmentQueryDto, CalendarQueryDto } from '../common/dto/appointment.dto';
 import { AvailabilityService } from './availability.service';
 import { SmsService } from '../sms/sms.service';
+import { EmailService } from '../email/email.service';
 export declare class AppointmentsService {
     private prisma;
     private availabilityService;
     private smsService;
+    private emailService;
     private readonly appointmentInclude;
-    constructor(prisma: PrismaService, availabilityService: AvailabilityService, smsService: SmsService);
+    constructor(prisma: PrismaService, availabilityService: AvailabilityService, smsService: SmsService, emailService: EmailService);
     /**
      * Create a new appointment
      */

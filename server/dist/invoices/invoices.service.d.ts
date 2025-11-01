@@ -6,12 +6,16 @@ import { Invoice, InvoiceStatus, PaymentMethod } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
 import { ServiceRepository } from './repositories/service.repository';
+import { PdfService } from '../pdf/pdf.service';
+import { EmailService } from '../email/email.service';
 export declare class InvoicesService {
     private readonly invoiceRepository;
     private readonly auditRepository;
     private readonly customerRepository;
     private readonly serviceRepository;
-    constructor(invoiceRepository: InvoiceRepository, auditRepository: AuditRepository, customerRepository: CustomerRepository, serviceRepository: ServiceRepository);
+    private readonly pdfService;
+    private readonly emailService;
+    constructor(invoiceRepository: InvoiceRepository, auditRepository: AuditRepository, customerRepository: CustomerRepository, serviceRepository: ServiceRepository, pdfService: PdfService, emailService: EmailService);
     create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice>;
     findAll(user: any): Promise<Invoice[]>;
     findOne(id: string, user: any): Promise<Invoice>;
@@ -59,6 +63,10 @@ export declare class InvoicesService {
         name: string;
         description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
+    }>;
+    sendInvoiceEmail(invoiceId: string, userId: string): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }
 //# sourceMappingURL=invoices.service.d.ts.map

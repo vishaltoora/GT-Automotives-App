@@ -1,1 +1,1 @@
-{"version":3,"file":"QuotationList.d.ts","sourceRoot":"","sources":["../../../../src/app/pages/quotations/QuotationList.tsx"],"names":[],"mappings":"AAAA,OAAO,KAA8B,MAAM,OAAO,CAAC;AAwCnD,QAAA,MAAM,SAAS,EAAE,KAAK,CAAC,EAwXtB,CAAC;AAEF,eAAe,SAAS,CAAC"}
+{"version":3,"file":"QuotationList.d.ts","sourceRoot":"","sources":["../../../../src/app/pages/quotations/QuotationList.tsx"],"names":[],"mappings":"AAAA,OAAO,KAA8B,MAAM,OAAO,CAAC;AAyCnD,QAAA,MAAM,SAAS,EAAE,KAAK,CAAC,EAgatB,CAAC;AAEF,eAAe,SAAS,CAAC"}

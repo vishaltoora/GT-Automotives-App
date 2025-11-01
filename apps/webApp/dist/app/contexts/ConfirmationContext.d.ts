@@ -14,6 +14,7 @@ export declare const useConfirmationHelpers: () => {
     confirmCancel: (itemName: string) => Promise<boolean>;
     confirmSave: (message?: string) => Promise<boolean>;
     confirmAction: (title: string, message: string) => Promise<boolean>;
+    confirm: (options: ConfirmOptions) => Promise<boolean>;
 };
 export {};
 //# sourceMappingURL=ConfirmationContext.d.ts.map

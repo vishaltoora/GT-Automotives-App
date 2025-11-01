@@ -11,6 +11,7 @@ export declare class SmsSchedulerService {
      */
     sendDailyScheduleToStaff(): Promise<void>;
     /**
+     * DISABLED: One-hour reminder functionality
      * Run every 15 minutes to check for appointments that need 1-hour reminders
      * Sends reminder to customer 1 hour before appointment
      */
