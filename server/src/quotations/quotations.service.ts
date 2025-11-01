@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { QuotationRepository } from './repositories/quotation.repository';
 import { CreateQuoteDto } from '../common/dto/quotation.dto';
 import { UpdateQuoteDto } from '../common/dto/quotation.dto';
 import { Quotation, QuotationItem, Tire } from '@prisma/client';
 import { PrismaService } from '@gt-automotive/database';
+import { PdfService } from '../pdf/pdf.service';
+import { EmailService } from '../email/email.service';
 
 type QuotationWithItems = Quotation & {
   items: (QuotationItem & {
@@ -15,7 +17,9 @@ type QuotationWithItems = Quotation & {
 export class QuotationsService {
   constructor(
     private quotationRepository: QuotationRepository,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private pdfService: PdfService,
+    private emailService: EmailService,
   ) {}
 
   async create(createQuoteDto: CreateQuoteDto, userId: string): Promise<Quotation> {
@@ -235,5 +239,41 @@ export class QuotationsService {
     await this.quotationRepository.convertToInvoice(quotationId, invoice.id);
 
     return invoice;
+  }
+
+  async sendQuotationEmail(quotationId: string, userId: string) {
+    // Get quotation with all items
+    const quotation = await this.quotationRepository.findOne(quotationId);
+    if (!quotation) {
+      throw new NotFoundException(`Quotation with ID "${quotationId}" not found`);
+    }
+
+    // Check if quotation has customer email
+    if (!quotation.email) {
+      throw new BadRequestException('Customer does not have an email address');
+    }
+
+    try {
+      // Generate PDF
+      const pdfBase64 = await this.pdfService.generateQuotationPdf(quotation);
+
+      // Send email
+      const emailResult = await this.emailService.sendQuotationEmail(
+        quotation.email,
+        quotation.quotationNumber,
+        pdfBase64,
+      );
+
+      // Check if email was sent successfully
+      if (!emailResult.success) {
+        throw new Error('Email service returned failure status');
+      }
+
+      return { success: true, message: 'Quotation email sent successfully' };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to send quotation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 }

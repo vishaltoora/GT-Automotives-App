@@ -8,6 +8,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
 import { ServiceRepository } from './repositories/service.repository';
+import { PdfService } from '../pdf/pdf.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class InvoicesService {
@@ -16,6 +18,8 @@ export class InvoicesService {
     private readonly auditRepository: AuditRepository,
     private readonly customerRepository: CustomerRepository,
     private readonly serviceRepository: ServiceRepository,
+    private readonly pdfService: PdfService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
@@ -441,5 +445,57 @@ export class InvoicesService {
       throw new NotFoundException(`Service with ID "${id}" not found`);
     }
     return this.serviceRepository.delete(id);
+  }
+
+  async sendInvoiceEmail(invoiceId: string, userId: string) {
+    // Get invoice with all relations including customer
+    const invoice = await this.invoiceRepository.findWithDetails(invoiceId);
+    if (!invoice) {
+      throw new NotFoundException(`Invoice with ID "${invoiceId}" not found`);
+    }
+
+    // Get customer separately to ensure proper typing
+    const customer = await this.customerRepository.findById(invoice.customerId);
+
+    // Check if customer has email
+    if (!customer?.email) {
+      throw new BadRequestException('Customer does not have an email address');
+    }
+
+    try {
+      // Generate PDF
+      const pdfBase64 = await this.pdfService.generateInvoicePdf(invoice);
+
+      // Send email
+      const emailResult = await this.emailService.sendInvoiceEmail(
+        customer.email,
+        invoice.invoiceNumber,
+        pdfBase64,
+      );
+
+      // Check if email was sent successfully
+      if (!emailResult.success) {
+        throw new Error('Email service returned failure status');
+      }
+
+      // Log audit trail
+      await this.auditRepository.create({
+        userId,
+        action: 'SEND_INVOICE_EMAIL',
+        entityType: 'Invoice',
+        entityId: invoiceId,
+        details: {
+          email: customer.email,
+          invoiceNumber: invoice.invoiceNumber,
+          messageId: emailResult.messageId
+        },
+      });
+
+      return { success: true, message: 'Invoice email sent successfully' };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to send invoice email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 }

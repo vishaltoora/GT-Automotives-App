@@ -104,5 +104,8 @@ export const useConfirmationHelpers = () => {
         cancelText: 'Cancel',
         severity: 'warning',
       }),
+
+    // Expose the raw confirm function for custom use cases
+    confirm,
   };
 };

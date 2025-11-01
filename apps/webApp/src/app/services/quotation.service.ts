@@ -177,6 +177,17 @@ class QuoteService {
     return response.data;
   }
 
+  async sendQuotationEmail(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await axios.post(
+      `${API_URL}/api/quotations/${id}/send-email`,
+      {},
+      {
+        headers: await this.getHeaders(),
+      }
+    );
+    return response.data;
+  }
+
   // Helper method to generate print-friendly HTML
   generatePrintHTML(quote: Quote): string {
     const formatCurrency = (amount: number | string) => {

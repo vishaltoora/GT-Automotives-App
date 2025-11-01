@@ -1011,4 +1011,240 @@ export class EmailService {
       return { success: false };
     }
   }
+
+  /**
+   * Send invoice email with PDF attachment
+   */
+  async sendInvoiceEmail(
+    customerEmail: string,
+    invoiceNumber: string,
+    pdfBase64: string,
+  ): Promise<{ success: boolean; messageId?: string }> {
+    if (!this.enabled) {
+      this.logger.warn('[EMAIL] Email service disabled - skipping invoice email');
+      return { success: false };
+    }
+
+    try {
+      this.logger.log(`[EMAIL] Sending invoice ${invoiceNumber} to ${customerEmail}`);
+
+      const logoImg = this.logoBase64
+        ? `<img src="${this.logoBase64}" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`
+        : `<img src="https://gt-automotives.com/logo.png" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`;
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 40px 20px; text-align: center;">
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); border-radius: 8px 8px 0 0;">
+                      ${logoImg}
+                      <h1 style="margin: 20px 0 0; color: #ffffff; font-size: 28px; font-weight: 600;">Invoice from GT Automotives</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px;">
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        Thank you for your business! Please find your invoice <strong>${invoiceNumber}</strong> attached to this email.
+                      </p>
+
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        The invoice is attached as a PDF file. If you have any questions or concerns, please don't hesitate to contact us.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                      <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
+                        <strong style="color: #1976d2;">GT Automotives</strong><br>
+                        Prince George, BC<br>
+                        Phone: 250-570-2333 / 250-986-9191<br>
+                        Email: gt-automotives@outlook.com
+                      </p>
+                      <p style="margin: 20px 0 0; font-size: 12px; color: #999999;">
+                        This is an automated email. Please do not reply to this message.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const sendSmtpEmail: SendSmtpEmail = {
+        sender: { name: this.senderName, email: this.senderEmail },
+        to: [{ email: customerEmail }],
+        subject: `Invoice ${invoiceNumber} - GT Automotives`,
+        htmlContent,
+        attachment: [
+          {
+            name: `Invoice-${invoiceNumber}.pdf`,
+            content: pdfBase64,
+          },
+        ],
+      };
+
+      const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      const messageId = (response as any)?.messageId || 'unknown';
+
+      this.logger.log(`[EMAIL] Invoice email sent successfully. Message ID: ${messageId}`);
+
+      // Log to database
+      try {
+        await this.prisma.emailLog.create({
+          data: {
+            type: EmailType.INVOICE_DELIVERY,
+            to: customerEmail,
+            from: this.senderEmail,
+            subject: `Invoice ${invoiceNumber} - GT Automotives`,
+            status: EmailStatus.SENT,
+            sentAt: new Date(),
+          },
+        });
+      } catch (dbError) {
+        this.logger.error('[EMAIL] Failed to log invoice email to database:', dbError);
+      }
+
+      return { success: true, messageId };
+    } catch (error) {
+      this.logger.error('[EMAIL] Failed to send invoice email:', error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * Send quotation email with PDF attachment
+   */
+  async sendQuotationEmail(
+    customerEmail: string,
+    quotationNumber: string,
+    pdfBase64: string,
+  ): Promise<{ success: boolean; messageId?: string }> {
+    if (!this.enabled) {
+      this.logger.warn('[EMAIL] Email service disabled - skipping quotation email');
+      return { success: false };
+    }
+
+    try {
+      this.logger.log(`[EMAIL] Sending quotation ${quotationNumber} to ${customerEmail}`);
+
+      const logoImg = this.logoBase64
+        ? `<img src="${this.logoBase64}" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`
+        : `<img src="https://gt-automotives.com/logo.png" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`;
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 40px 20px; text-align: center;">
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); border-radius: 8px 8px 0 0;">
+                      ${logoImg}
+                      <h1 style="margin: 20px 0 0; color: #ffffff; font-size: 28px; font-weight: 600;">Quotation from GT Automotives</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px;">
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        Thank you for your interest in our services! Please find your quotation <strong>${quotationNumber}</strong> attached to this email.
+                      </p>
+
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        The quotation is attached as a PDF file. If you have any questions or would like to proceed with the services, please don't hesitate to contact us.
+                      </p>
+
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        This quotation is valid for 30 days from the date shown. We look forward to serving you!
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                      <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
+                        <strong style="color: #1976d2;">GT Automotives</strong><br>
+                        Prince George, BC<br>
+                        Phone: 250-570-2333 / 250-986-9191<br>
+                        Email: gt-automotives@outlook.com
+                      </p>
+                      <p style="margin: 20px 0 0; font-size: 12px; color: #999999;">
+                        This is an automated email. Please do not reply to this message.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const sendSmtpEmail: SendSmtpEmail = {
+        sender: { name: this.senderName, email: this.senderEmail },
+        to: [{ email: customerEmail }],
+        subject: `Quotation ${quotationNumber} - GT Automotives`,
+        htmlContent,
+        attachment: [
+          {
+            name: `Quotation-${quotationNumber}.pdf`,
+            content: pdfBase64,
+          },
+        ],
+      };
+
+      const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      const messageId = (response as any)?.messageId || 'unknown';
+
+      this.logger.log(`[EMAIL] Quotation email sent successfully. Message ID: ${messageId}`);
+
+      // Log to database
+      try {
+        await this.prisma.emailLog.create({
+          data: {
+            type: EmailType.QUOTATION,
+            to: customerEmail,
+            from: this.senderEmail,
+            subject: `Quotation ${quotationNumber} - GT Automotives`,
+            status: EmailStatus.SENT,
+            sentAt: new Date(),
+          },
+        });
+      } catch (dbError) {
+        this.logger.error('[EMAIL] Failed to log quotation email to database:', dbError);
+      }
+
+      return { success: true, messageId };
+    } catch (error) {
+      this.logger.error('[EMAIL] Failed to send quotation email:', error);
+      return { success: false };
+    }
+  }
 }

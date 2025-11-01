@@ -31,6 +31,7 @@ import {
   Search as SearchIcon,
   SwapHoriz as ConvertIcon,
   MoreVert as MoreVertIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../services/quotation.service';
 import QuoteDialog from '../../components/quotations/QuotationDialog';
@@ -41,7 +42,7 @@ import { useErrorHelpers } from '../../contexts/ErrorContext';
 const QuoteList: React.FC = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { confirmDelete } = useConfirmationHelpers();
+  const { confirmDelete, confirm } = useConfirmationHelpers();
   const { showApiError } = useErrorHelpers();
   
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -127,6 +128,34 @@ const QuoteList: React.FC = () => {
     navigate(`${basePath}/invoices/new?fromQuotation=${quotation.id}`);
   };
 
+  const handleSendEmail = async (quotation: Quote) => {
+    if (!quotation.email) {
+      showApiError(new Error('Customer does not have an email address'), 'Cannot send email');
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Send Quotation Email',
+      message: `Send quotation ${quotation.quotationNumber} to ${quotation.email}?\n\nThis will generate a PDF and send it via email to the customer.`,
+      confirmText: 'Send Email',
+      cancelText: 'Cancel',
+    });
+
+    if (confirmed) {
+      try {
+        await quotationService.sendQuotationEmail(quotation.id);
+        await confirm({
+          title: 'Quotation Sent Successfully!',
+          message: `Quotation ${quotation.quotationNumber} has been emailed to ${quotation.email}`,
+          confirmText: 'OK',
+          showCancelButton: false,
+        });
+      } catch (error) {
+        showApiError(error, 'Failed to send quotation email');
+      }
+    }
+  };
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quotation: Quote) => {
     setAnchorEl(event.currentTarget);
     setSelectedQuote(quotation);
@@ -139,9 +168,9 @@ const QuoteList: React.FC = () => {
 
   const handleMenuAction = (action: string) => {
     if (!selectedQuote) return;
-    
+
     handleMenuClose();
-    
+
     switch (action) {
       case 'view':
         handleView(selectedQuote.id);
@@ -151,6 +180,9 @@ const QuoteList: React.FC = () => {
         break;
       case 'print':
         handlePrint(selectedQuote);
+        break;
+      case 'sendEmail':
+        handleSendEmail(selectedQuote);
         break;
       case 'convert':
         handleConvert(selectedQuote);
@@ -392,6 +424,15 @@ const QuoteList: React.FC = () => {
           </ListItemIcon>
           <ListItemText>Print</ListItemText>
         </MenuItem>
+
+        {selectedQuote?.email && (
+          <MenuItem onClick={() => handleMenuAction('sendEmail')}>
+            <ListItemIcon>
+              <EmailIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Send Email</ListItemText>
+          </MenuItem>
+        )}
 
         {selectedQuote?.status !== 'CONVERTED' && (
           <MenuItem onClick={() => handleMenuAction('convert')}>

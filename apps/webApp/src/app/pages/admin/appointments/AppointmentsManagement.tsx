@@ -99,12 +99,24 @@ export const AppointmentsManagement: React.FC = () => {
   const isStaff = currentUser?.role?.name?.toUpperCase() === 'STAFF';
 
   useEffect(() => {
-    if (view === 'list') {
-      loadAllAppointments();
-    } else {
-      loadMonthAppointments();
-      loadTodayAppointments();
-    }
+    let cancelled = false;
+
+    const loadData = async () => {
+      if (view === 'list') {
+        await loadAllAppointments();
+      } else {
+        await loadMonthAppointments();
+        if (!cancelled) {
+          loadTodayAppointments(); // Non-blocking
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [view, currentMonth]);
 
   const loadAllAppointments = async () => {
@@ -138,9 +150,17 @@ export const AppointmentsManagement: React.FC = () => {
       const firstDay = new Date(year, month, 1, 0, 0, 0, 0);
       const lastDay = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
+      // Format dates as YYYY-MM-DD strings to avoid timezone issues
+      const formatDateOnly = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const params: any = {
-        startDate: firstDay,
-        endDate: lastDay,
+        startDate: formatDateOnly(firstDay),
+        endDate: formatDateOnly(lastDay),
       };
 
       const data = await appointmentService.getAppointments(params);

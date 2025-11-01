@@ -34,6 +34,7 @@ import {
   ExpandLess as ExpandLessIcon,
   FilterList as FilterListIcon,
   Payment as PaymentIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../services/invoice.service';
 import { companyService, Company } from '../../services/company.service';
@@ -179,6 +180,34 @@ const InvoiceList: React.FC = () => {
     }
   };
 
+  const handleSendEmail = async (invoice: Invoice) => {
+    if (!invoice.customer?.email) {
+      showApiError(new Error('Customer does not have an email address'), 'Cannot send email');
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Send Invoice Email',
+      message: `Send invoice ${invoice.invoiceNumber} to ${invoice.customer.email}?\n\nThis will generate a PDF and send it via email to the customer.`,
+      confirmText: 'Send Email',
+      cancelText: 'Cancel',
+    });
+
+    if (confirmed) {
+      try {
+        await invoiceService.sendInvoiceEmail(invoice.id);
+        await confirm({
+          title: 'Invoice Sent Successfully!',
+          message: `Invoice ${invoice.invoiceNumber} has been emailed to ${invoice.customer.email}`,
+          confirmText: 'OK',
+          showCancelButton: false,
+        });
+      } catch (error) {
+        showApiError(error, 'Failed to send invoice email');
+      }
+    }
+  };
+
   const handleInvoiceSuccess = (invoice: any) => {
     // Refresh the invoice list to show the new/updated invoice
     loadInvoices();
@@ -260,6 +289,14 @@ const InvoiceList: React.FC = () => {
         onClick: () => handleMarkAsPaid(invoice),
         show: canManageInvoice && invoice.status === 'PENDING',
         color: 'success',
+      },
+      {
+        id: 'sendEmail',
+        label: 'Send Email',
+        icon: <EmailIcon />,
+        onClick: () => handleSendEmail(invoice),
+        show: canManageInvoice && !!invoice.customer?.email,
+        color: 'info',
       },
       {
         id: 'edit',

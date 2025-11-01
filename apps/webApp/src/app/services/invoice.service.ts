@@ -153,6 +153,17 @@ class InvoiceService {
     return response.data;
   }
 
+  async sendInvoiceEmail(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/${id}/send-email`,
+      {},
+      {
+        headers: await this.getHeaders(),
+      }
+    );
+    return response.data;
+  }
+
   async deleteInvoice(id: string): Promise<void> {
     await axios.delete(`${API_URL}/api/invoices/${id}`, {
       headers: await this.getHeaders(),

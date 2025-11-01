@@ -107,8 +107,8 @@ export interface UpdateAppointmentRequest {
 }
 
 export interface AppointmentQueryParams {
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: Date | string; // Allow string to avoid timezone issues
+  endDate?: Date | string; // Allow string to avoid timezone issues
   employeeId?: string;
   customerId?: string;
   status?: AppointmentStatus;
@@ -210,8 +210,18 @@ export const appointmentService = {
    */
   async getAppointments(params?: AppointmentQueryParams): Promise<Appointment[]> {
     const queryParams = new URLSearchParams();
-    if (params?.startDate) queryParams.append('startDate', params.startDate.toISOString());
-    if (params?.endDate) queryParams.append('endDate', params.endDate.toISOString());
+    if (params?.startDate) {
+      const startDateStr = typeof params.startDate === 'string'
+        ? params.startDate
+        : params.startDate.toISOString();
+      queryParams.append('startDate', startDateStr);
+    }
+    if (params?.endDate) {
+      const endDateStr = typeof params.endDate === 'string'
+        ? params.endDate
+        : params.endDate.toISOString();
+      queryParams.append('endDate', endDateStr);
+    }
     if (params?.employeeId) queryParams.append('employeeId', params.employeeId);
     if (params?.customerId) queryParams.append('customerId', params.customerId);
     if (params?.status) queryParams.append('status', params.status);

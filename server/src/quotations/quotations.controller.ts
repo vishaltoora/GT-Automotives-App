@@ -16,6 +16,7 @@ import { UpdateQuoteDto } from '../common/dto/quotation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('quotations')
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -76,6 +77,12 @@ export class QuotationsController {
   @Roles('ADMIN', 'STAFF')
   remove(@Param('id') id: string) {
     return this.quotationsService.remove(id);
+  }
+
+  @Post(':id/send-email')
+  @Roles('STAFF', 'ADMIN')
+  sendEmail(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.quotationsService.sendQuotationEmail(id, user.id);
   }
 
   @Post(':id/convert')

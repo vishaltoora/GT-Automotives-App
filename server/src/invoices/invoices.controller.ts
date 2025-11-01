@@ -99,6 +99,13 @@ export class InvoicesController {
     return this.invoicesService.markAsPaid(id, paymentMethod, user.id);
   }
 
+  @Post(':id/send-email')
+  @UseGuards(RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  sendEmail(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.invoicesService.sendInvoiceEmail(id, user.id);
+  }
+
   @Delete(':id')
   @UseGuards(RoleGuard)
   @Roles('ADMIN')
