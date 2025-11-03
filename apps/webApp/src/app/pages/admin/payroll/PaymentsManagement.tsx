@@ -213,19 +213,11 @@ export function PaymentsManagement() {
   };
 
   const handleProcessPayment = (payment: PaymentResponseDto) => {
-    // If processing jobs one by one, move to the next job
-    if (processingAllJobs && currentJobIndex < currentEmployeeJobs.length - 1) {
-      const nextIndex = currentJobIndex + 1;
-      setCurrentJobIndex(nextIndex);
-      setSelectedJob(currentEmployeeJobs[nextIndex]);
-      // Keep dialog open for next job
-    } else {
-      // All jobs processed or single job mode
-      setProcessDialogOpen(false);
-      setProcessingAllJobs(false);
-      setCurrentEmployeeJobs([]);
-      setCurrentJobIndex(0);
-    }
+    // Close dialog and reset state after successful payment(s)
+    setProcessDialogOpen(false);
+    setProcessingAllJobs(false);
+    setCurrentEmployeeJobs([]);
+    setCurrentJobIndex(0);
     fetchData(); // Refresh all data
   };
 
@@ -1168,6 +1160,7 @@ export function PaymentsManagement() {
           }}
           onSuccess={handleProcessPayment}
           job={selectedJob}
+          allJobs={processingAllJobs ? currentEmployeeJobs : undefined}
           progressInfo={processingAllJobs ? {
             current: currentJobIndex + 1,
             total: currentEmployeeJobs.length

@@ -15,6 +15,7 @@ import {
   UpdateAppointmentDto,
   AppointmentQueryDto,
   CalendarQueryDto,
+  PaymentDateQueryDto,
 } from '../common/dto/appointment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -68,6 +69,17 @@ export class AppointmentsController {
   @Roles('ADMIN', 'STAFF')
   async getToday(@CurrentUser() user: any) {
     return this.appointmentsService.getTodayAppointments(user);
+  }
+
+  /**
+   * Get appointments by payment date (for daily cash reports)
+   * Roles: ADMIN only
+   */
+  @Get('by-payment-date')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN')
+  async getByPaymentDate(@Query() query: PaymentDateQueryDto) {
+    return this.appointmentsService.getByPaymentDate(query.paymentDate);
   }
 
   /**

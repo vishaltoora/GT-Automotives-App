@@ -26,6 +26,7 @@ import {
   Close as CloseIcon,
   Person as PersonIcon,
   DirectionsCar as CarIcon,
+  DirectionsCar as DirectionsCarIcon,
   Schedule as ScheduleIcon,
   Build as BuildIcon,
   Edit as EditIcon,
@@ -34,6 +35,7 @@ import {
   DriveEta as DriveEtaIcon,
   Assignment as AssignmentIcon,
   AttachMoney as MoneyIcon,
+  AttachMoney as AttachMoneyIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
@@ -41,6 +43,7 @@ import { useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 import { formatTimeRange } from '../../utils/timeFormat';
 import { PaymentDialog } from './PaymentDialog';
+import { appointmentService } from '../../services/appointment.service';
 import {
   AppointmentCard,
   formatPhoneNumber,
@@ -147,13 +150,33 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [sendingEOD, setSendingEOD] = useState(false);
+  const [paymentsProcessed, setPaymentsProcessed] = useState<Appointment[]>([]);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
   });
 
-  // Sort appointments by time
+  // Fetch payments processed on this date
+  React.useEffect(() => {
+    if (open && date) {
+      fetchPaymentsProcessed();
+    }
+  }, [open, date]);
+
+  const fetchPaymentsProcessed = async () => {
+    if (!date) return;
+
+    try {
+      const payments = await appointmentService.getByPaymentDate(date);
+      setPaymentsProcessed(payments);
+    } catch (error) {
+      console.error('Error fetching payments processed:', error);
+      setPaymentsProcessed([]);
+    }
+  };
+
+  // Sort scheduled appointments by time
   const sortedAppointments = useMemo(() => {
     if (!appointments || appointments.length === 0) return [];
     return [...appointments].sort((a, b) => {
@@ -161,7 +184,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     });
   }, [appointments]);
 
-  // Filter appointments by type
+  // Filter scheduled appointments by location type
   const atGarageAppointments = useMemo(() => {
     return sortedAppointments.filter(
       (apt) => !apt.appointmentType || apt.appointmentType === 'AT_GARAGE'
@@ -174,8 +197,30 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     );
   }, [sortedAppointments]);
 
-  // Calculate statistics
+  // Sort payments processed by time
+  const sortedPayments = useMemo(() => {
+    if (!paymentsProcessed || paymentsProcessed.length === 0) return [];
+    return [...paymentsProcessed].sort((a, b) => {
+      return a.scheduledTime.localeCompare(b.scheduledTime);
+    });
+  }, [paymentsProcessed]);
+
+  // Filter payments by type
+  const atGaragePayments = useMemo(() => {
+    return sortedPayments.filter(
+      (apt) => !apt.appointmentType || apt.appointmentType === 'AT_GARAGE'
+    );
+  }, [sortedPayments]);
+
+  const mobileServicePayments = useMemo(() => {
+    return sortedPayments.filter(
+      (apt) => apt.appointmentType === 'MOBILE_SERVICE'
+    );
+  }, [sortedPayments]);
+
+  // Calculate statistics - SAME AS DaySummary page
   const stats = useMemo(() => {
+    // Scheduled appointments stats
     const totalDuration = sortedAppointments.reduce(
       (sum, apt) => sum + apt.duration,
       0
@@ -185,23 +230,18 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate payment statistics
-    const completedAppointments = sortedAppointments.filter(
-      (apt) => apt.status === 'COMPLETED' && apt.paymentAmount
-    );
-
-    const totalPayments = completedAppointments.reduce(
+    // Payment statistics - based on payments PROCESSED today (not scheduled)
+    const totalPayments = sortedPayments.reduce(
       (sum, apt) => sum + (apt.paymentAmount || 0),
       0
     );
 
-    // Calculate total expected amount and total owed
-    const totalExpected = completedAppointments.reduce(
+    const totalExpected = sortedPayments.reduce(
       (sum, apt) => sum + (apt.expectedAmount || apt.paymentAmount || 0),
       0
     );
 
-    const totalOwed = completedAppointments.reduce(
+    const totalOwed = sortedPayments.reduce(
       (sum, apt) => {
         const expected = apt.expectedAmount || 0;
         const paid = apt.paymentAmount || 0;
@@ -210,16 +250,14 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       0
     );
 
-    // Calculate payments by method from breakdown
+    // Calculate payments by method from breakdown - FROM PAYMENTS PROCESSED TODAY
     const paymentsByMethod: Record<string, number> = {};
-    completedAppointments.forEach((apt) => {
-      // Parse paymentBreakdown if it's a string (from JSON field)
+    sortedPayments.forEach((apt) => {
       let breakdown = apt.paymentBreakdown;
       if (typeof breakdown === 'string') {
         try {
           breakdown = JSON.parse(breakdown);
         } catch (e) {
-          console.error('Failed to parse paymentBreakdown:', e);
           breakdown = undefined;
         }
       }
@@ -230,23 +268,18 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
           paymentsByMethod[method] = (paymentsByMethod[method] || 0) + (payment.amount || 0);
         });
       } else if (apt.paymentAmount) {
-        // Fallback for old payments without breakdown - treat as CASH
         paymentsByMethod['CASH'] = (paymentsByMethod['CASH'] || 0) + apt.paymentAmount;
       }
     });
 
-    // Calculate At Garage statistics
-    const completedAtGarage = atGarageAppointments.filter(
-      (apt) => apt.status === 'COMPLETED' && apt.paymentAmount
-    );
-    const atGaragePayments = completedAtGarage.reduce(
+    // Calculate At Garage payment statistics - FROM PAYMENTS PROCESSED TODAY
+    const atGarageTotalPayments = atGaragePayments.reduce(
       (sum, apt) => sum + (apt.paymentAmount || 0),
       0
     );
 
-    // Calculate At Garage payment methods
     const atGaragePaymentsByMethod: Record<string, number> = {};
-    completedAtGarage.forEach((apt) => {
+    atGaragePayments.forEach((apt) => {
       let breakdown = apt.paymentBreakdown;
       if (typeof breakdown === 'string') {
         try {
@@ -266,18 +299,14 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       }
     });
 
-    // Calculate Mobile Service statistics
-    const completedMobileService = mobileServiceAppointments.filter(
-      (apt) => apt.status === 'COMPLETED' && apt.paymentAmount
-    );
-    const mobileServicePayments = completedMobileService.reduce(
+    // Calculate Mobile Service payment statistics - FROM PAYMENTS PROCESSED TODAY
+    const mobileServiceTotalPayments = mobileServicePayments.reduce(
       (sum, apt) => sum + (apt.paymentAmount || 0),
       0
     );
 
-    // Calculate Mobile Service payment methods
     const mobileServicePaymentsByMethod: Record<string, number> = {};
-    completedMobileService.forEach((apt) => {
+    mobileServicePayments.forEach((apt) => {
       let breakdown = apt.paymentBreakdown;
       if (typeof breakdown === 'string') {
         try {
@@ -298,25 +327,30 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     });
 
     return {
+      // Scheduled appointments info
       total: sortedAppointments.length,
-      atGarage: atGarageAppointments.length,
-      mobileService: mobileServiceAppointments.length,
       totalDuration,
       totalHours: (totalDuration / 60).toFixed(1),
       statusCounts,
+
+      // Tab counts for scheduled appointments
+      atGarage: atGarageAppointments.length,
+      mobileService: mobileServiceAppointments.length,
+
+      // Payments processed today info
+      paymentsProcessedCount: sortedPayments.length,
       totalPayments,
       totalExpected,
       totalOwed,
       paymentsByMethod,
-      completedWithPayment: completedAppointments.length,
-      atGaragePayments,
-      completedAtGarage: completedAtGarage.length,
+      atGaragePayments: atGarageTotalPayments,
+      completedAtGarage: atGaragePayments.length,
       atGaragePaymentsByMethod,
-      mobileServicePayments,
-      completedMobileService: completedMobileService.length,
+      mobileServicePayments: mobileServiceTotalPayments,
+      completedMobileService: mobileServicePayments.length,
       mobileServicePaymentsByMethod,
     };
-  }, [sortedAppointments, atGarageAppointments, mobileServiceAppointments]);
+  }, [sortedAppointments, sortedPayments, atGarageAppointments, mobileServiceAppointments, atGaragePayments, mobileServicePayments]);
 
   // Check if current time is within EOD send window (currently disabled - allows all times)
   const isEODSendAllowed = () => {
@@ -455,12 +489,14 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 2 },
-          height: { xs: '100vh', sm: '85vh' },
-          maxHeight: { xs: '100vh', sm: '85vh' },
+          height: { xs: '100dvh', sm: '85vh' }, // Use dvh for better mobile viewport handling
+          maxHeight: { xs: '100dvh', sm: '85vh' },
           m: { xs: 0, sm: 2 },
           width: { xs: '100vw', sm: '100%' },
           display: 'flex',
           flexDirection: 'column',
+          // Add safe area padding for iPhone notch and home indicator
+          paddingBottom: { xs: 'env(safe-area-inset-bottom)', sm: 0 },
         },
       }}
       sx={{
@@ -629,10 +665,10 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                   <Box>
                     <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Payment Summary
+                      Payment Summary - Collected Today
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {stats.completedWithPayment} completed {stats.completedWithPayment === 1 ? 'appointment' : 'appointments'}
+                      {stats.paymentsProcessedCount} payment{stats.paymentsProcessedCount === 1 ? '' : 's'} processed today
                     </Typography>
                   </Box>
                   <Button
@@ -1006,10 +1042,220 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
               </Paper>
             </Grid>
 
+            {/* Payments Processed Today */}
+            <Grid size={12}>
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                Payments Processed Today ({sortedPayments.length})
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              {sortedPayments.length === 0 ? (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    py: 6,
+                    color: 'text.secondary',
+                  }}
+                >
+                  <AttachMoneyIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
+                  <Typography variant="h6" gutterBottom>
+                    No payments processed
+                  </Typography>
+                  <Typography variant="body2">
+                    No payments were collected on this date.
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={2}>
+                  {sortedPayments.map((appointment) => {
+                    // Check if appointment was scheduled today or in the past
+                    const scheduledDate = new Date(appointment.scheduledDate);
+                    const selectedDateOnly = new Date(date);
+                    selectedDateOnly.setHours(0, 0, 0, 0);
+                    scheduledDate.setHours(0, 0, 0, 0);
+
+                    const isScheduledToday = scheduledDate.getTime() === selectedDateOnly.getTime();
+                    const scheduledDateDisplay = isScheduledToday
+                      ? 'Today'
+                      : format(scheduledDate, 'MMM dd, yyyy');
+
+                    return (
+                      <Card
+                        key={appointment.id}
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 2,
+                          borderLeft: 4,
+                          borderColor:
+                            appointment.status === 'COMPLETED'
+                              ? 'success.main'
+                              : appointment.status === 'IN_PROGRESS'
+                              ? 'info.main'
+                              : 'grey.400',
+                        }}
+                      >
+                        <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
+                          {/* Customer Header */}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: { xs: 'column', sm: 'row' },
+                              justifyContent: 'space-between',
+                              alignItems: { xs: 'stretch', sm: 'flex-start' },
+                              gap: { xs: 1.5, sm: 0 },
+                              mb: 2,
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
+                              <Avatar
+                                sx={{
+                                  width: { xs: 40, sm: 48 },
+                                  height: { xs: 40, sm: 48 },
+                                  bgcolor: 'primary.main',
+                                  fontSize: { xs: '1rem', sm: '1.2rem' },
+                                }}
+                              >
+                                {appointment.customer.firstName[0]}
+                                {appointment.customer.lastName[0]}
+                              </Avatar>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                                  {appointment.customer.firstName}{' '}
+                                  {appointment.customer.lastName}
+                                </Typography>
+                                {appointment.customer.businessName && (
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                    {appointment.customer.businessName}
+                                  </Typography>
+                                )}
+                                <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                                  {appointment.customer.phone && (
+                                    <Chip
+                                      label={formatPhoneNumber(appointment.customer.phone)}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ height: { xs: 24, sm: 28 }, fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
+                                    />
+                                  )}
+                                  <Chip
+                                    icon={getStatusIcon(appointment.status)}
+                                    label={formatStatusLabel(appointment.status)}
+                                    color={getStatusColor(appointment.status) as any}
+                                    size="small"
+                                    sx={{ height: { xs: 24, sm: 28 }, fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
+                                  />
+                                </Box>
+                              </Box>
+                            </Box>
+                            <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, pl: { xs: 7, sm: 0 } }}>
+                              <Typography variant="h6" color="primary.main" fontWeight="bold" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                                {formatTimeRange(
+                                  appointment.scheduledTime,
+                                  appointment.endTime || ''
+                                )}
+                              </Typography>
+                              {/* Scheduled Date - "Today" or past date in warning color */}
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontSize: { xs: '0.75rem', sm: '0.813rem' },
+                                  color: isScheduledToday ? 'text.secondary' : 'warning.main',
+                                  fontWeight: isScheduledToday ? 400 : 600,
+                                }}
+                              >
+                                Scheduled: {scheduledDateDisplay}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          <Divider sx={{ my: 2 }} />
+
+                          {/* Appointment Details */}
+                          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                textTransform="uppercase"
+                                sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, fontWeight: 600 }}
+                              >
+                                Service Details
+                              </Typography>
+                              <Box sx={{ mt: { xs: 0.5, sm: 1 } }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  <BuildIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                  <Typography variant="body2" fontWeight="medium" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                    {formatServiceType(appointment.serviceType)}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  {appointment.appointmentType === 'MOBILE_SERVICE' ? (
+                                    <DriveEtaIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                  ) : (
+                                    <LocationOnIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                  )}
+                                  <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                    {appointment.appointmentType === 'MOBILE_SERVICE'
+                                      ? 'Mobile Service'
+                                      : 'At Garage'}
+                                  </Typography>
+                                </Box>
+                                {appointment.vehicle && (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <DirectionsCarIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                    <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                      {appointment.vehicle.year} {appointment.vehicle.make}{' '}
+                                      {appointment.vehicle.model}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                textTransform="uppercase"
+                                sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, fontWeight: 600 }}
+                              >
+                                Payment Details
+                              </Typography>
+                              <Box sx={{ mt: { xs: 0.5, sm: 1 } }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                    Amount Paid:
+                                  </Typography>
+                                  <Typography variant="body1" fontWeight="bold" color="success.main" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                                    ${(appointment.paymentAmount || 0).toFixed(2)}
+                                  </Typography>
+                                </Box>
+                                {appointment.expectedAmount && appointment.expectedAmount > (appointment.paymentAmount || 0) && (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                      Balance Owed:
+                                    </Typography>
+                                    <Typography variant="body1" fontWeight="bold" color="warning.main" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                                      ${(appointment.expectedAmount - (appointment.paymentAmount || 0)).toFixed(2)}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Grid>
+                          </Grid>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Stack>
+              )}
+            </Grid>
+
             {/* Customer Cards */}
             <Grid size={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Customer Details
+                Customer Details (Scheduled Today)
               </Typography>
               <Divider sx={{ mb: 2 }} />
               {sortedAppointments.length === 0 ? (
@@ -1411,20 +1657,39 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
       <Divider />
 
-      <DialogActions sx={{ p: 2 }}>
+      <DialogActions
+        sx={{
+          p: 2,
+          gap: 1,
+          flexShrink: 0, // Prevent shrinking on mobile
+          minHeight: { xs: 64, sm: 'auto' }, // Ensure minimum touch target height on mobile
+          // Add safe area padding for iPhone home indicator
+          paddingBottom: { xs: 'max(16px, env(safe-area-inset-bottom))', sm: 2 },
+        }}
+      >
         <Button
           onClick={onAddAppointment}
           variant="contained"
           color="primary"
           disabled={!onAddAppointment}
           sx={{
-            minWidth: 150,
+            minWidth: { xs: 120, sm: 150 },
             fontWeight: 'bold',
+            flex: { xs: 1, sm: 0 }, // Full width on mobile for easier tapping
+            fontSize: { xs: '0.813rem', sm: '0.875rem' }, // Smaller text on mobile
+            whiteSpace: 'nowrap', // Prevent text wrapping
           }}
         >
           Add Appointment
         </Button>
-        <Button onClick={onClose} variant="outlined">
+        <Button
+          onClick={onClose}
+          variant="outlined"
+          sx={{
+            flex: { xs: 1, sm: 0 }, // Full width on mobile for easier tapping
+            fontSize: { xs: '0.813rem', sm: '0.875rem' }, // Smaller text on mobile
+          }}
+        >
           Close
         </Button>
       </DialogActions>

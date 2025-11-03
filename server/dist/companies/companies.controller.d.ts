@@ -3,10 +3,10 @@ export declare class CompaniesController {
     private readonly companiesService;
     constructor(companiesService: CompaniesService);
     findAll(): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         email: string | null;
         phone: string | null;
         address: string | null;
@@ -15,10 +15,10 @@ export declare class CompaniesController {
         isDefault: boolean;
     }[]>;
     findDefault(): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         email: string | null;
         phone: string | null;
         address: string | null;

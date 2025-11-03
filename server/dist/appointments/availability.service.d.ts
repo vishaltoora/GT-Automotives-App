@@ -8,9 +8,9 @@ export declare class AvailabilityService {
      */
     setRecurringAvailability(dto: SetAvailabilityDto): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -21,9 +21,9 @@ export declare class AvailabilityService {
      */
     getEmployeeAvailability(employeeId: string): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -35,9 +35,9 @@ export declare class AvailabilityService {
      */
     deleteRecurringAvailability(availabilityId: string, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -48,9 +48,9 @@ export declare class AvailabilityService {
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         startTime: string;
         isAvailable: boolean;
@@ -62,9 +62,9 @@ export declare class AvailabilityService {
      */
     getOverrides(employeeId: string, startDate: Date, endDate: Date): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         startTime: string;
         isAvailable: boolean;
@@ -76,9 +76,9 @@ export declare class AvailabilityService {
      */
     deleteOverride(overrideId: string): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         startTime: string;
         isAvailable: boolean;

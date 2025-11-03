@@ -73,9 +73,25 @@ export class JobsController {
     return this.jobsService.findReadyForPayment();
   }
 
-  @Get('employee/:employeeId')
+  @Get('my-jobs')
   @UseGuards(RoleGuard)
   @Roles('STAFF', 'ADMIN')
+  findMyJobs(@CurrentUser() user: any): Promise<JobResponseDto[]> {
+    // Always use the authenticated user's ID from token - staff can only see their own
+    return this.jobsService.findByEmployee(user.id);
+  }
+
+  @Get('my-summary')
+  @UseGuards(RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  getMyJobSummary(@CurrentUser() user: any): Promise<JobSummaryDto> {
+    // Always use the authenticated user's ID from token - staff can only see their own
+    return this.jobsService.getJobSummary(user.id);
+  }
+
+  @Get('employee/:employeeId')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN')
   findByEmployee(@Param('employeeId') employeeId: string): Promise<JobResponseDto[]> {
     return this.jobsService.findByEmployee(employeeId);
   }

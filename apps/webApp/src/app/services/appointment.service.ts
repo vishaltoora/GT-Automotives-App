@@ -332,4 +332,17 @@ export const appointmentService = {
     );
     return response.data;
   },
+
+  /**
+   * Get appointments by payment date (for daily cash reports)
+   */
+  async getByPaymentDate(paymentDate: Date): Promise<Appointment[]> {
+    const queryParams = new URLSearchParams({
+      paymentDate: paymentDate.toISOString(),
+    });
+    const response = await apiClient.get(
+      `/api/appointments/by-payment-date?${queryParams.toString()}`
+    );
+    return response.data;
+  },
 };

@@ -33,9 +33,11 @@ import { CustomerDashboard } from './pages/customer/Dashboard';
 // Staff Pages
 import { StaffDashboard } from './pages/staff/Dashboard';
 import { MyJobs } from './pages/staff/MyJobs';
+import { MyEarnings } from './pages/staff/MyEarnings';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/Dashboard';
+import { DaySummary } from './pages/admin/DaySummary';
 import UserManagement from '../pages/admin/UserManagement';
 
 // Payroll Pages
@@ -154,6 +156,7 @@ export function App() {
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="jobs" element={<MyJobs />} />
+          <Route path="earnings" element={<MyEarnings />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="reports" element={<div>Reports</div>} />
@@ -173,6 +176,7 @@ export function App() {
           }
         >
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="day-summary" element={<DaySummary />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="customers" element={<CustomerList />} />
           <Route path="customers/new" element={<CustomerForm />} />

@@ -151,6 +151,16 @@ class JobService {
     return this.makeRequest<JobResponseDto[]>(`${this.baseUrl}/employee/${employeeId}`);
   }
 
+  // Secure endpoint for staff to get their own jobs (uses token)
+  async getMyJobs(): Promise<JobResponseDto[]> {
+    return this.makeRequest<JobResponseDto[]>(`${this.baseUrl}/my-jobs`);
+  }
+
+  // Secure endpoint for staff to get their own job summary (uses token)
+  async getMyJobSummary(): Promise<JobSummaryDto> {
+    return this.makeRequest<JobSummaryDto>(`${this.baseUrl}/my-summary`);
+  }
+
   async getPendingJobs(): Promise<JobResponseDto[]> {
     return this.makeRequest<JobResponseDto[]>(`${this.baseUrl}/pending`);
   }

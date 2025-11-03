@@ -16,6 +16,8 @@ declare class JobService {
     deleteJob(id: string): Promise<void>;
     markJobComplete(id: string): Promise<JobResponseDto>;
     getJobsByEmployee(employeeId: string): Promise<JobResponseDto[]>;
+    getMyJobs(): Promise<JobResponseDto[]>;
+    getMyJobSummary(): Promise<JobSummaryDto>;
     getPendingJobs(): Promise<JobResponseDto[]>;
     getJobsReadyForPayment(): Promise<JobResponseDto[]>;
     getJobSummary(employeeId?: string): Promise<JobSummaryDto>;

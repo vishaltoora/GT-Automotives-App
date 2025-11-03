@@ -134,6 +134,16 @@ class PaymentService {
     return this.makeRequest<PaymentSummaryDto>(url);
   }
 
+  // Secure endpoint for staff to get their own summary (uses token)
+  async getMyPaymentSummary(): Promise<PaymentSummaryDto> {
+    return this.makeRequest<PaymentSummaryDto>(`${this.baseUrl}/my-summary`);
+  }
+
+  // Secure endpoint for staff to get their own payments (uses token)
+  async getMyPayments(): Promise<PaymentResponseDto[]> {
+    return this.makeRequest<PaymentResponseDto[]>(`${this.baseUrl}/my-payments`);
+  }
+
   async getPayrollReport(startDate: string, endDate: string, employeeId?: string): Promise<any> {
     const searchParams = new URLSearchParams({ startDate, endDate });
     if (employeeId) searchParams.append('employeeId', employeeId);

@@ -155,5 +155,9 @@ export declare const appointmentService: {
     checkEmployeeAvailability(employeeId: string, date: Date, startTime: string, duration: number): Promise<{
         available: boolean;
     }>;
+    /**
+     * Get appointments by payment date (for daily cash reports)
+     */
+    getByPaymentDate(paymentDate: Date): Promise<Appointment[]>;
 };
 //# sourceMappingURL=appointment.service.d.ts.map

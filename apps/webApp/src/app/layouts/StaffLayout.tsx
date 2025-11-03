@@ -34,7 +34,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Work,
-  EventAvailable
+  EventAvailable,
+  AttachMoney
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -66,6 +67,7 @@ export function StaffLayout() {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/staff/dashboard' },
     { text: 'My Jobs', icon: <Work />, path: '/staff/jobs' },
+    { text: 'My Earnings', icon: <AttachMoney />, path: '/staff/earnings' },
     { divider: true },
     { text: 'Customers', icon: <People />, path: '/staff/customers' },
     { text: 'Vehicles', icon: <DirectionsCar />, path: '/staff/vehicles' },
@@ -73,7 +75,7 @@ export function StaffLayout() {
     { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
     { text: 'Quotations', icon: <Description />, path: '/staff/quotations' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
-    { text: 'My Availability', icon: <EventAvailable />, path: '/staff/appointments/availability' },
+    { text: 'My Availability', icon: <EventAvailable />, path: '/staff/availability' },
     { divider: true },
     { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
     { divider: true },

@@ -38,4 +38,7 @@ export declare class CalendarQueryDto {
     endDate: Date;
     employeeId?: string;
 }
+export declare class PaymentDateQueryDto {
+    paymentDate: Date;
+}
 //# sourceMappingURL=appointment.dto.d.ts.map

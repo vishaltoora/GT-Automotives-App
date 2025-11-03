@@ -50,7 +50,7 @@ import {
   EmployeeAvailability,
   TimeSlotOverride,
 } from '../../../services/availability.service';
-import { userService, User } from '../../../services/user.service';
+import { userService } from '../../../services/user.service';
 import { useError } from '../../../contexts/ErrorContext';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { useAuth } from '../../../hooks/useAuth';
@@ -73,7 +73,13 @@ const QUICK_SCHEDULES = {
   EXTENDED: { days: [0, 1, 2, 3, 4, 5, 6], start: '09:00', end: '22:00' },
 };
 
-interface EmployeeWithAvailability extends User {
+interface EmployeeWithAvailability {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role?: any; // Can be UserRole from different sources with different structures
+  isActive: boolean;
   availability: EmployeeAvailability[];
   upcomingOverrides: TimeSlotOverride[];
   totalSlots: number;
@@ -145,57 +151,118 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
   }, [currentUser]);
 
   const loadAllData = async () => {
+    // Don't proceed if user data isn't loaded yet
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const allUsers = await userService.getUsers();
 
-      // Both staff and admin users can see all staff and admin members
-      const staffUsers = allUsers.filter((user) =>
-        (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN') &&
-        user.isActive
-      );
+      // If staff user, only load their own availability using secure endpoints
+      if (isStaff && currentUser) {
+        try {
+          // Use secure endpoints that fetch based on token
+          const availability = await availabilityService.getMyRecurringAvailability();
 
-      // Load availability and overrides for each employee
-      const employeesWithData = await Promise.all(
-        staffUsers.map(async (user) => {
-          try {
-            const availability = await availabilityService.getEmployeeAvailability(user.id);
+          const startDate = new Date();
+          const endDate = new Date();
+          endDate.setMonth(endDate.getMonth() + 3);
+          const upcomingOverrides = await availabilityService.getMyOverrides(startDate, endDate);
 
-            const startDate = new Date();
-            const endDate = new Date();
-            endDate.setMonth(endDate.getMonth() + 3);
-            const upcomingOverrides = await availabilityService.getOverrides(user.id, startDate, endDate);
+          // Calculate metrics
+          const uniqueDays = new Set(availability.map((a: any) => a.dayOfWeek));
+          const activeDays = uniqueDays.size;
+          const totalSlots = availability.length;
 
-            // Calculate metrics
-            const uniqueDays = new Set(availability.map((a) => a.dayOfWeek));
-            const activeDays = uniqueDays.size;
-            const totalSlots = availability.length;
+          setEmployees([{
+            id: currentUser.id,
+            email: currentUser.email,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+            role: currentUser.role,
+            isActive: currentUser.isActive,
+            availability,
+            upcomingOverrides,
+            totalSlots,
+            activeDays,
+          }]);
 
-            return {
-              ...user,
-              availability,
-              upcomingOverrides,
-              totalSlots,
-              activeDays,
-            };
-          } catch (err) {
-            // Return user with empty data if loading fails
-            return {
-              ...user,
-              availability: [],
-              upcomingOverrides: [],
-              totalSlots: 0,
-              activeDays: 0,
-            };
-          }
-        })
-      );
+          // Automatically expand staff user's own card
+          setExpandedCards(new Set([currentUser.id]));
+        } catch (err) {
+          console.error('Failed to load own availability:', err);
+          // Show user card with empty data if loading fails
+          setEmployees([{
+            id: currentUser.id,
+            email: currentUser.email,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+            role: currentUser.role,
+            isActive: currentUser.isActive,
+            availability: [],
+            upcomingOverrides: [],
+            totalSlots: 0,
+            activeDays: 0,
+          }]);
+        }
+      } else {
+        // Admin users can see all staff and admin members
+        const allUsers = await userService.getUsers();
 
-      setEmployees(employeesWithData);
+        const staffUsers = allUsers.filter((user) =>
+          (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN') &&
+          user.isActive
+        );
 
-      // If staff user, automatically expand their own card
-      if (isStaff && employeesWithData.length > 0 && currentUser?.id) {
-        setExpandedCards(new Set([currentUser.id]));
+        // Load availability and overrides for each employee (ADMIN endpoints)
+        const employeesWithData = await Promise.all(
+          staffUsers.map(async (user) => {
+            try {
+              const availability = await availabilityService.getEmployeeAvailability(user.id);
+
+              const startDate = new Date();
+              const endDate = new Date();
+              endDate.setMonth(endDate.getMonth() + 3);
+              const upcomingOverrides = await availabilityService.getOverrides(user.id, startDate, endDate);
+
+              // Calculate metrics
+              const uniqueDays = new Set(availability.map((a) => a.dayOfWeek));
+              const activeDays = uniqueDays.size;
+              const totalSlots = availability.length;
+
+              return {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                isActive: user.isActive,
+                availability,
+                upcomingOverrides,
+                totalSlots,
+                activeDays,
+              };
+            } catch (err) {
+              // Return user with empty data if loading fails
+              return {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                isActive: user.isActive,
+                availability: [],
+                upcomingOverrides: [],
+                totalSlots: 0,
+                activeDays: 0,
+              };
+            }
+          })
+        );
+
+        setEmployees(employeesWithData);
       }
     } catch (err: any) {
       showError({
@@ -279,13 +346,23 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       // Add all slots for all days
       for (const [dayOfWeek, slots] of Object.entries(weeklySlots)) {
         for (const slot of slots) {
-          await availabilityService.setRecurringAvailability({
-            employeeId: selectedEmployeeId,
-            dayOfWeek: Number(dayOfWeek),
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            isAvailable: true,
-          });
+          // Use secure endpoint if staff user is editing their own availability
+          if (isStaff && selectedEmployeeId === currentUser?.id) {
+            await availabilityService.setMyRecurringAvailability({
+              dayOfWeek: Number(dayOfWeek),
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              isAvailable: true,
+            });
+          } else {
+            await availabilityService.setRecurringAvailability({
+              employeeId: selectedEmployeeId,
+              dayOfWeek: Number(dayOfWeek),
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              isAvailable: true,
+            });
+          }
         }
       }
 
@@ -387,10 +464,17 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     try {
       if (!selectedEmployeeId) return;
 
-      await availabilityService.addOverride({
-        employeeId: selectedEmployeeId,
-        ...overrideForm,
-      });
+      // Use secure endpoint if staff user is adding their own override
+      if (isStaff && selectedEmployeeId === currentUser?.id) {
+        await availabilityService.addMyOverride({
+          ...overrideForm,
+        });
+      } else {
+        await availabilityService.addOverride({
+          employeeId: selectedEmployeeId,
+          ...overrideForm,
+        });
+      }
 
       await loadAllData();
       setOverrideDialogOpen(false);
@@ -442,13 +526,23 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       try {
         const schedule = QUICK_SCHEDULES[scheduleType];
         for (const day of schedule.days) {
-          await availabilityService.setRecurringAvailability({
-            employeeId,
-            dayOfWeek: day,
-            startTime: schedule.start,
-            endTime: schedule.end,
-            isAvailable: true,
-          });
+          // Use secure endpoint if staff user is setting their own availability
+          if (isStaff && employeeId === currentUser?.id) {
+            await availabilityService.setMyRecurringAvailability({
+              dayOfWeek: day,
+              startTime: schedule.start,
+              endTime: schedule.end,
+              isAvailable: true,
+            });
+          } else {
+            await availabilityService.setRecurringAvailability({
+              employeeId,
+              dayOfWeek: day,
+              startTime: schedule.start,
+              endTime: schedule.end,
+              isAvailable: true,
+            });
+          }
         }
         await loadAllData();
       } catch (err: any) {

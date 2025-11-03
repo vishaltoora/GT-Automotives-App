@@ -1,5 +1,5 @@
 import { Box, Typography, Grid, Card, CardContent, Button, Paper, Chip, CircularProgress, Avatar, Divider, Stack, useTheme, useMediaQuery } from '@mui/material';
-import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning, Work, CalendarMonth, TireRepair, Event } from '@mui/icons-material';
+import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning, Work, CalendarMonth, TireRepair, Event, AttachMoney } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
@@ -515,6 +515,29 @@ export function StaffDashboard() {
               </Paper>
 
               <Paper
+                component={Link}
+                to="/staff/earnings"
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.semantic.success,
+                  },
+                }}
+              >
+                <AttachMoney sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  My Earnings
+                </Typography>
+              </Paper>
+
+              <Paper
                 onClick={() => setInvoiceDialogOpen(true)}
                 sx={{
                   p: { xs: 1.5, sm: 2 },
@@ -602,7 +625,7 @@ export function StaffDashboard() {
 
               <Paper
                 component={Link}
-                to="/staff/appointments/availability"
+                to="/staff/availability"
                 sx={{
                   p: { xs: 1.5, sm: 2 },
                   textAlign: 'center',

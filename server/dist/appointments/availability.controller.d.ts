@@ -4,42 +4,70 @@ export declare class AvailabilityController {
     private readonly availabilityService;
     constructor(availabilityService: AvailabilityService);
     /**
-     * Set or update recurring availability for an employee
-     * Roles: ADMIN and STAFF can set availability for any employee
+     * Set or update recurring availability for an employee (ADMIN only)
+     * Roles: ADMIN
      */
     setRecurring(dto: SetAvailabilityDto, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
         isAvailable: boolean;
     }>;
     /**
-     * Get employee's recurring availability
-     * Roles: ADMIN, STAFF (staff can view their own)
+     * Set or update own recurring availability (STAFF secure endpoint)
+     * Uses authenticated user's ID from token
+     */
+    setMyRecurring(dto: Omit<SetAvailabilityDto, 'employeeId'>, user: any): Promise<{
+        id: string;
+        employeeId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
+    }>;
+    /**
+     * Get employee's recurring availability (ADMIN only)
+     * Roles: ADMIN
      */
     getRecurring(employeeId: string): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
         isAvailable: boolean;
     }[]>;
     /**
-     * Add a time slot override (vacation, sick day, extra shift)
-     * Roles: ADMIN, STAFF (staff can add their own overrides)
+     * Get own recurring availability (STAFF secure endpoint)
+     * Uses authenticated user's ID from token
+     */
+    getMyRecurring(user: any): Promise<{
+        id: string;
+        employeeId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        endTime: string;
+        dayOfWeek: number;
+        startTime: string;
+        isAvailable: boolean;
+    }[]>;
+    /**
+     * Add a time slot override (ADMIN only)
+     * Roles: ADMIN
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         startTime: string;
         isAvailable: boolean;
@@ -47,14 +75,29 @@ export declare class AvailabilityController {
         reason: string | null;
     }>;
     /**
-     * Get overrides for an employee within a date range
-     * Roles: ADMIN, STAFF
+     * Add own time slot override (STAFF secure endpoint)
+     * Uses authenticated user's ID from token
+     */
+    addMyOverride(dto: Omit<TimeSlotOverrideDto, 'employeeId'>, user: any): Promise<{
+        id: string;
+        employeeId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
+        date: Date;
+        reason: string | null;
+    }>;
+    /**
+     * Get overrides for an employee within a date range (ADMIN only)
+     * Roles: ADMIN
      */
     getOverrides(employeeId: string, startDate: string, endDate: string): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         startTime: string;
         isAvailable: boolean;
@@ -62,28 +105,43 @@ export declare class AvailabilityController {
         reason: string | null;
     }[]>;
     /**
-     * Delete a recurring availability slot
-     * Roles: ADMIN, STAFF (staff can delete their own)
+     * Get own overrides within a date range (STAFF secure endpoint)
+     * Uses authenticated user's ID from token
+     */
+    getMyOverrides(startDate: string, endDate: string, user: any): Promise<{
+        id: string;
+        employeeId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        endTime: string;
+        startTime: string;
+        isAvailable: boolean;
+        date: Date;
+        reason: string | null;
+    }[]>;
+    /**
+     * Delete a recurring availability slot (ADMIN or owner only)
+     * Roles: ADMIN, STAFF
      */
     deleteRecurring(availabilityId: string, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
         isAvailable: boolean;
     }>;
     /**
-     * Delete an override
+     * Delete an override (ADMIN or owner only)
      * Roles: ADMIN, STAFF
      */
-    deleteOverride(overrideId: string): Promise<{
+    deleteOverride(overrideId: string, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         startTime: string;
         isAvailable: boolean;

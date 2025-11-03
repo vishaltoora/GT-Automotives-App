@@ -20,6 +20,8 @@ declare class PaymentService {
     getPaymentsByJob(jobId: string): Promise<PaymentResponseDto[]>;
     getPendingPayments(): Promise<PaymentResponseDto[]>;
     getPaymentSummary(employeeId?: string): Promise<PaymentSummaryDto>;
+    getMyPaymentSummary(): Promise<PaymentSummaryDto>;
+    getMyPayments(): Promise<PaymentResponseDto[]>;
     getPayrollReport(startDate: string, endDate: string, employeeId?: string): Promise<any>;
 }
 export declare const paymentService: PaymentService;

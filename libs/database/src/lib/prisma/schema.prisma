@@ -286,6 +286,7 @@ model Appointment {
   paymentBreakdown Json?                  // Array of payment entries: [{id: 'uuid', method: 'CASH', amount: 50}, {id: 'uuid', method: 'E_TRANSFER', amount: 30}]
   paymentNotes    String?                 // Additional payment notes
   expectedAmount  Float?                  // Expected total amount for tracking partial payments
+  paymentDate     DateTime?               // Date when payment was actually processed/collected (for accurate daily cash reporting)
   reminderSent    Boolean                 @default(false)
   bookedBy        String?                 // User ID who created the booking
   createdAt       DateTime                @default(now())
@@ -300,6 +301,7 @@ model Appointment {
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
   @@index([customerId])
+  @@index([paymentDate])
 }
 
 model AppointmentEmployee {

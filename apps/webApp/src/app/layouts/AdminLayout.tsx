@@ -72,6 +72,8 @@ export function AdminLayout() {
 
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
+    { text: 'Day Summary', icon: <Assessment />, path: '/admin/day-summary' },
+    { divider: true },
     { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
     { text: 'Customers', icon: <People />, path: '/admin/customers' },
     { text: 'Vehicles', icon: <DirectionsCar />, path: '/admin/vehicles' },
@@ -87,7 +89,7 @@ export function AdminLayout() {
     { text: 'Jobs', icon: <Work />, path: '/admin/jobs' },
     { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
     { divider: true },
-    { text: 'Reports', icon: <Assessment />, path: '/admin/reports' },
+    { text: 'Reports', icon: <Analytics />, path: '/admin/reports' },
     { text: 'Analytics', icon: <Analytics />, path: '/admin/analytics' },
     { divider: true },
     { text: 'Security', icon: <Security />, path: '/admin/security' },

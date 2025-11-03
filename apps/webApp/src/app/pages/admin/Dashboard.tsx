@@ -35,6 +35,7 @@ import {
   Description,
   Work,
   Payment,
+  Assignment,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';
@@ -654,6 +655,33 @@ export function AdminDashboard() {
                 <Description sx={{ ...actionIconStyles, color: colors.semantic.info }} />
                 <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
                   Quotations
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/admin/day-summary"
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.semantic.success}`,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.semantic.success,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
+                  Day Summary
                 </Typography>
               </Paper>
             </Box>

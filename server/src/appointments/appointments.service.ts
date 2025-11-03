@@ -405,6 +405,16 @@ export class AppointmentsService {
       updatedAt: new Date(),
     };
 
+    // If payment is being processed (paymentAmount is set and wasn't set before, or is being increased),
+    // set paymentDate to current date for accurate daily cash reporting
+    if (dto.paymentAmount !== undefined && dto.paymentAmount > 0) {
+      const currentPayment = appointment.paymentAmount || 0;
+      if (dto.paymentAmount !== currentPayment) {
+        // Payment is being added or changed - record the processing date
+        updateData.paymentDate = new Date();
+      }
+    }
+
     // Remove employeeIds from direct update (will be handled separately)
     delete updateData.employeeIds;
 
@@ -481,6 +491,32 @@ export class AppointmentsService {
     await this.findOne(id);
     return this.prisma.appointment.delete({
       where: { id },
+    });
+  }
+
+  /**
+   * Get appointments by payment date (for daily cash reports)
+   * Returns appointments where payment was processed on the specified date
+   */
+  async getByPaymentDate(paymentDate: Date) {
+    const startOfDay = new Date(paymentDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(paymentDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    return this.prisma.appointment.findMany({
+      where: {
+        paymentDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        paymentAmount: {
+          gt: 0, // Only include appointments with payments
+        },
+      },
+      include: this.appointmentInclude,
+      orderBy: [{ paymentDate: 'asc' }, { scheduledTime: 'asc' }],
     });
   }
 

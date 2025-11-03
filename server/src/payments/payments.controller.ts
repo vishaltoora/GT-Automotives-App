@@ -68,6 +68,14 @@ export class PaymentsController {
     return this.paymentsService.getPaymentSummary(employeeId);
   }
 
+  @Get('my-summary')
+  @UseGuards(RoleGuard)
+  @Roles('STAFF', 'ADMIN')
+  getMyPaymentSummary(@CurrentUser() user: any): Promise<PaymentSummaryDto> {
+    // Always use the authenticated user's ID from token - staff can only see their own
+    return this.paymentsService.getPaymentSummary(user.id);
+  }
+
   @Get('pending')
   @UseGuards(RoleGuard)
   @Roles('ADMIN')
@@ -86,9 +94,17 @@ export class PaymentsController {
     return this.paymentsService.getPayrollReport(startDate, endDate, employeeId);
   }
 
-  @Get('employee/:employeeId')
+  @Get('my-payments')
   @UseGuards(RoleGuard)
   @Roles('STAFF', 'ADMIN')
+  findMyPayments(@CurrentUser() user: any): Promise<PaymentResponseDto[]> {
+    // Always use the authenticated user's ID from token - staff can only see their own
+    return this.paymentsService.findByEmployee(user.id);
+  }
+
+  @Get('employee/:employeeId')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN')
   findByEmployee(@Param('employeeId') employeeId: string): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findByEmployee(employeeId);
   }

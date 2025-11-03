@@ -21,13 +21,20 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Payment as PaymentIcon,
   AttachMoney as MoneyIcon,
-  Person as PersonIcon,
   Work as WorkIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { ProcessPaymentDto, JobResponseDto } from '@gt-automotive/data';
@@ -50,6 +57,7 @@ interface ProcessPaymentDialogProps {
   onClose: () => void;
   onSuccess: (payment: any) => void;
   job: JobResponseDto | null;
+  allJobs?: JobResponseDto[]; // All ready jobs for the employee
   progressInfo?: {
     current: number;
     total: number;
@@ -61,6 +69,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
   onClose,
   onSuccess,
   job,
+  allJobs = [],
   progressInfo,
 }) => {
   const { user } = useAuth();
@@ -68,6 +77,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<ProcessPaymentDto>({
     jobId: '',
     amount: 0,
@@ -79,6 +89,8 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
 
   useEffect(() => {
     if (open && job) {
+      // Initialize with current job selected
+      setSelectedJobIds(new Set([job.id]));
       setFormData({
         jobId: job.id,
         amount: job.payAmount,
@@ -91,6 +103,42 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
     }
   }, [open, job, user]);
 
+  // Calculate total amount for selected jobs
+  const selectedJobs = allJobs.filter(j => selectedJobIds.has(j.id));
+  const totalSelectedAmount = selectedJobs.reduce((sum, j) => sum + j.payAmount, 0);
+
+  const handleJobToggle = (jobId: string) => {
+    setSelectedJobIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(jobId)) {
+        newSet.delete(jobId);
+      } else {
+        newSet.add(jobId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedJobIds.size === allJobs.length) {
+      // Deselect all
+      setSelectedJobIds(new Set());
+    } else {
+      // Select all
+      setSelectedJobIds(new Set(allJobs.map(j => j.id)));
+    }
+  };
+
+  // Update amount when selection changes
+  useEffect(() => {
+    if (selectedJobIds.size > 0) {
+      const total = allJobs
+        .filter(j => selectedJobIds.has(j.id))
+        .reduce((sum, j) => sum + j.payAmount, 0);
+      setFormData(prev => ({ ...prev, amount: total }));
+    }
+  }, [selectedJobIds, allJobs]);
+
   const handleInputChange = (field: keyof ProcessPaymentDto, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -99,8 +147,13 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!formData.jobId || !formData.paymentMethod) {
-      setError('Please fill in all required fields');
+    if (selectedJobIds.size === 0) {
+      setError('Please select at least one job to process');
+      return;
+    }
+
+    if (!formData.paymentMethod) {
+      setError('Please select a payment method');
       return;
     }
 
@@ -113,11 +166,33 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
     setError(null);
 
     try {
-      const payment = await paymentService.processPayment(formData);
-      onSuccess(payment);
+      // Process payments for all selected jobs
+      const paymentPromises = Array.from(selectedJobIds).map(jobId => {
+        const selectedJob = allJobs.find(j => j.id === jobId);
+        if (!selectedJob) return Promise.resolve(null);
+
+        return paymentService.processPayment({
+          jobId,
+          amount: selectedJob.payAmount,
+          paymentMethod: formData.paymentMethod,
+          notes: formData.notes,
+          reference: formData.reference,
+          paidBy: user?.id || '',
+        });
+      });
+
+      const payments = await Promise.all(paymentPromises);
+
+      // Call onSuccess with the first payment (for compatibility)
+      if (payments.length > 0 && payments[0]) {
+        onSuccess(payments[0]);
+      }
+
+      // Reset selection
+      setSelectedJobIds(new Set());
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to process payment');
+      setError(err.message || 'Failed to process payments');
     } finally {
       setLoading(false);
     }
@@ -128,8 +203,6 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
     const name = [employee.firstName, employee.lastName].filter(Boolean).join(' ');
     return name || employee.email;
   };
-
-  const remainingBalance = job ? job.payAmount - (job.payments?.reduce((sum, p) => sum + p.amount, 0) || 0) : 0;
 
   return (
     <Dialog
@@ -160,11 +233,11 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
         <PaymentIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
         <Box sx={{ flex: 1 }}>
           <Typography variant={isMobile ? 'h6' : 'h5'} component="div" sx={{ fontWeight: 600 }}>
-            Process Payment
+            Process Payment{selectedJobIds.size > 1 ? 's' : ''}
           </Typography>
-          {progressInfo && (
+          {selectedJobIds.size > 0 && (
             <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Job {progressInfo.current} of {progressInfo.total}
+              {selectedJobIds.size} job{selectedJobIds.size > 1 ? 's' : ''} selected
             </Typography>
           )}
         </Box>
@@ -181,44 +254,117 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
             </Alert>
           )}
 
-          {/* Job Details Card */}
-          {job && (
-            <Card sx={{ backgroundColor: colors.neutral[50] }}>
+          {/* All Jobs List - Show when processing multiple jobs */}
+          {allJobs.length > 0 && (
+            <Card sx={{ backgroundColor: colors.primary.light + '10', border: `1px solid ${colors.primary.light}` }}>
               <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
-                <Typography variant={isMobile ? 'subtitle1' : 'h6'} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                  <WorkIcon sx={{ color: colors.primary.main, fontSize: isMobile ? 18 : 24 }} />
-                  Job Details
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 1 : 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Job Title:</Typography>
-                    <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium">{job.title}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Employee:</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <PersonIcon sx={{ fontSize: isMobile ? 14 : 16 }} />
-                      <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium">
-                        {getEmployeeName(job.employee)}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600, color: colors.primary.main }}>
+                    <WorkIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                    Jobs Ready for Payment ({allJobs.length})
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectedJobIds.size === allJobs.length && allJobs.length > 0}
+                        indeterminate={selectedJobIds.size > 0 && selectedJobIds.size < allJobs.length}
+                        onChange={handleSelectAll}
+                        size={isMobile ? 'small' : 'medium'}
+                      />
+                    }
+                    label={
+                      <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight={600}>
+                        Select All
                       </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Job Amount:</Typography>
-                    <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium">${job.payAmount.toFixed(2)}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-                    <Typography variant={isMobile ? 'caption' : 'body2'} color="textSecondary">Remaining Balance:</Typography>
-                    <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight="medium" color={remainingBalance > 0 ? colors.semantic.warning : colors.semantic.success}>
-                      ${remainingBalance.toFixed(2)}
-                    </Typography>
-                  </Box>
+                    }
+                    sx={{ m: 0 }}
+                  />
                 </Box>
+
+                {selectedJobIds.size > 0 && (
+                  <Alert severity="info" sx={{ mb: 1.5, py: isMobile ? 0.5 : 1 }}>
+                    <Typography variant={isMobile ? 'caption' : 'body2'} fontWeight={600}>
+                      {selectedJobIds.size} job{selectedJobIds.size > 1 ? 's' : ''} selected • Total: ${totalSelectedAmount.toFixed(2)}
+                    </Typography>
+                  </Alert>
+                )}
+
+                <List dense sx={{ py: 0 }}>
+                  {allJobs.map((listJob, index) => {
+                    const isSelected = selectedJobIds.has(listJob.id);
+                    const isPastJob = index < (progressInfo?.current ? progressInfo.current - 1 : 0);
+                    return (
+                      <ListItem
+                        key={listJob.id}
+                        sx={{
+                          px: isMobile ? 1 : 2,
+                          py: isMobile ? 0.5 : 1,
+                          borderRadius: 1,
+                          mb: 0.5,
+                          backgroundColor: isSelected ? colors.semantic.successLight + '20' : 'transparent',
+                          border: isSelected ? `2px solid ${colors.semantic.success}` : '1px solid ' + colors.neutral[200],
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: isSelected ? colors.semantic.successLight + '30' : colors.neutral[50],
+                          },
+                        }}
+                        onClick={() => handleJobToggle(listJob.id)}
+                      >
+                        <ListItemIcon sx={{ minWidth: isMobile ? 32 : 40 }}>
+                          <Checkbox
+                            checked={isSelected}
+                            size={isMobile ? 'small' : 'medium'}
+                            sx={{
+                              color: colors.primary.main,
+                              '&.Mui-checked': {
+                                color: colors.semantic.success,
+                              },
+                            }}
+                          />
+                        </ListItemIcon>
+                        <ListItemIcon sx={{ minWidth: isMobile ? 32 : 40 }}>
+                          {isPastJob ? (
+                            <CheckCircleIcon sx={{ color: colors.semantic.success, fontSize: isMobile ? 18 : 24 }} />
+                          ) : (
+                            <PaymentIcon sx={{ color: isSelected ? colors.semantic.success : colors.neutral[400], fontSize: isMobile ? 18 : 24 }} />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                              <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight={isSelected ? 600 : 500}>
+                                {listJob.title}
+                              </Typography>
+                              {isPastJob && (
+                                <Chip
+                                  label="Paid"
+                                  size="small"
+                                  sx={{
+                                    height: isMobile ? 18 : 20,
+                                    fontSize: isMobile ? '0.6rem' : '0.7rem',
+                                    fontWeight: 600,
+                                    bgcolor: colors.neutral[200],
+                                    color: colors.neutral[600],
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          }
+                          secondary={
+                            <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary">
+                              ${listJob.payAmount.toFixed(2)} • {getEmployeeName(listJob.employee)}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    );
+                  })}
+                </List>
               </CardContent>
             </Card>
           )}
 
-          <Divider />
+          {allJobs.length === 0 && <Divider />}
 
           {/* Payment Form */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 2 : 3 }}>
@@ -236,6 +382,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
                 value={formData.amount}
                 onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
                 size={isMobile ? 'small' : 'medium'}
+                disabled
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -244,7 +391,7 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
                   ),
                 }}
                 inputProps={{ min: 0, step: 0.01 }}
-                helperText={remainingBalance > 0 ? `Remaining balance: $${remainingBalance.toFixed(2)}` : 'Job fully paid'}
+                helperText={`Total amount for ${selectedJobIds.size} selected job${selectedJobIds.size > 1 ? 's' : ''}`}
               />
 
               <FormControl fullWidth required size={isMobile ? 'small' : 'medium'}>
@@ -281,19 +428,21 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
               <Typography variant={isMobile ? 'subtitle1' : 'h6'} gutterBottom sx={{ color: colors.semantic.successDark, fontWeight: 600 }}>
                 Payment Summary
               </Typography>
+              {selectedJobIds.size > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: isMobile ? 0.5 : 1 }}>
+                  <Typography variant={isMobile ? 'body2' : 'body1'}>Jobs Selected:</Typography>
+                  <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="bold">{selectedJobIds.size}</Typography>
+                </Box>
+              )}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: isMobile ? 0.5 : 1 }}>
-                <Typography variant={isMobile ? 'body2' : 'body1'}>Payment Amount:</Typography>
-                <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="bold">${formData.amount?.toFixed(2) || '0.00'}</Typography>
+                <Typography variant={isMobile ? 'body2' : 'body1'}>Total Payment Amount:</Typography>
+                <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="bold" color={colors.semantic.success}>
+                  ${totalSelectedAmount.toFixed(2)}
+                </Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: isMobile ? 0.5 : 1 }}>
                 <Typography variant={isMobile ? 'body2' : 'body1'}>Payment Method:</Typography>
                 <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="medium">{formData.paymentMethod.replace('_', ' ')}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant={isMobile ? 'body2' : 'body1'}>New Balance:</Typography>
-                <Typography variant={isMobile ? 'body2' : 'body1'} fontWeight="bold" color={remainingBalance - (formData.amount || 0) <= 0 ? colors.semantic.success : colors.semantic.warning}>
-                  ${Math.max(0, remainingBalance - (formData.amount || 0)).toFixed(2)}
-                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -314,14 +463,17 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
           onClick={handleSubmit}
           variant="contained"
           size={isMobile ? 'large' : 'large'}
-          disabled={loading || !formData.amount || formData.amount <= 0}
+          disabled={loading || selectedJobIds.size === 0 || !formData.amount || formData.amount <= 0}
           fullWidth={isMobile}
           sx={{
             minWidth: isMobile ? '100%' : 120,
             background: `linear-gradient(135deg, ${colors.semantic.success} 0%, ${colors.semantic.successDark} 100%)`,
           }}
         >
-          {loading ? 'Processing...' : 'Process Payment'}
+          {loading
+            ? 'Processing...'
+            : `Process ${selectedJobIds.size} Payment${selectedJobIds.size > 1 ? 's' : ''}`
+          }
         </Button>
       </DialogActions>
     </Dialog>

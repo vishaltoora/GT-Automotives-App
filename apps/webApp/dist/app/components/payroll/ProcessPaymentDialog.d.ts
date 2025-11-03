@@ -5,6 +5,7 @@ interface ProcessPaymentDialogProps {
     onClose: () => void;
     onSuccess: (payment: any) => void;
     job: JobResponseDto | null;
+    allJobs?: JobResponseDto[];
     progressInfo?: {
         current: number;
         total: number;

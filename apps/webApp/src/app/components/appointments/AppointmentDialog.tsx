@@ -96,10 +96,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     );
   };
 
-  // Generate time slots in 15-minute intervals (9:00 AM to 11:00 PM)
+  // Generate time slots in 15-minute intervals (7:00 AM to 11:00 PM)
   const generateTimeOptions = () => {
     const options: { value: string; label: string }[] = [];
-    const startHour = 9; // 9 AM
+    const startHour = 7; // 7 AM
     const endHour = 23; // 11 PM
 
     for (let hour = startHour; hour <= endHour; hour++) {

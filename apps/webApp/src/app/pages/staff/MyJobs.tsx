@@ -74,10 +74,10 @@ export function MyJobs() {
       setLoading(true);
       setError(null);
 
-      // Fetch only the current staff member's jobs
+      // Fetch only the current staff member's jobs using secure token-based endpoints
       const [jobsData, summaryData] = await Promise.all([
-        jobService.getJobsByEmployee(user!.id),
-        jobService.getJobSummary(user!.id),
+        jobService.getMyJobs(),
+        jobService.getMyJobSummary(),
       ]);
 
       setJobs(jobsData);

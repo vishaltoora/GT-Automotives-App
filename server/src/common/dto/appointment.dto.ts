@@ -133,3 +133,9 @@ export class CalendarQueryDto {
   @IsString()
   employeeId?: string; // If null, return all employees
 }
+
+export class PaymentDateQueryDto {
+  @Type(() => Date)
+  @IsDate()
+  paymentDate!: Date; // Filter by payment processing date (for daily cash reports)
+}

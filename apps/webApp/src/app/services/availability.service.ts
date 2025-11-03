@@ -113,7 +113,7 @@ export interface TimeSlotOverride {
 
 export const availabilityService = {
   /**
-   * Set or update recurring availability for an employee
+   * Set or update recurring availability for an employee (ADMIN only)
    */
   async setRecurringAvailability(data: SetAvailabilityRequest): Promise<EmployeeAvailability> {
     const response = await apiClient.post(`/api/availability/recurring`, data);
@@ -121,10 +121,28 @@ export const availabilityService = {
   },
 
   /**
-   * Get employee's recurring availability
+   * Set or update own recurring availability (STAFF secure endpoint)
+   * Uses authenticated user's ID from token
+   */
+  async setMyRecurringAvailability(data: Omit<SetAvailabilityRequest, 'employeeId'>): Promise<EmployeeAvailability> {
+    const response = await apiClient.post(`/api/availability/my-recurring`, data);
+    return response.data;
+  },
+
+  /**
+   * Get employee's recurring availability (ADMIN only)
    */
   async getEmployeeAvailability(employeeId: string): Promise<EmployeeAvailability[]> {
     const response = await apiClient.get(`/api/availability/recurring/${employeeId}`);
+    return response.data;
+  },
+
+  /**
+   * Get own recurring availability (STAFF secure endpoint)
+   * Uses authenticated user's ID from token
+   */
+  async getMyRecurringAvailability(): Promise<EmployeeAvailability[]> {
+    const response = await apiClient.get(`/api/availability/my-recurring`);
     return response.data;
   },
 
@@ -136,7 +154,7 @@ export const availabilityService = {
   },
 
   /**
-   * Add a time slot override (vacation, sick day, extra shift)
+   * Add a time slot override (ADMIN only)
    */
   async addOverride(data: TimeSlotOverrideRequest): Promise<TimeSlotOverride> {
     const response = await apiClient.post(`/api/availability/override`, data);
@@ -144,7 +162,16 @@ export const availabilityService = {
   },
 
   /**
-   * Get overrides for an employee within a date range
+   * Add own time slot override (STAFF secure endpoint)
+   * Uses authenticated user's ID from token
+   */
+  async addMyOverride(data: Omit<TimeSlotOverrideRequest, 'employeeId'>): Promise<TimeSlotOverride> {
+    const response = await apiClient.post(`/api/availability/my-override`, data);
+    return response.data;
+  },
+
+  /**
+   * Get overrides for an employee within a date range (ADMIN only)
    */
   async getOverrides(
     employeeId: string,
@@ -157,6 +184,24 @@ export const availabilityService = {
     });
     const response = await apiClient.get(
       `/api/availability/override/${employeeId}?${params.toString()}`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get own overrides within a date range (STAFF secure endpoint)
+   * Uses authenticated user's ID from token
+   */
+  async getMyOverrides(
+    startDate: Date,
+    endDate: Date
+  ): Promise<TimeSlotOverride[]> {
+    const params = new URLSearchParams({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    });
+    const response = await apiClient.get(
+      `/api/availability/my-overrides?${params.toString()}`
     );
     return response.data;
   },
