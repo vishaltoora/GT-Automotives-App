@@ -889,38 +889,6 @@ export function DaySummary() {
                                 appointment.endTime || ''
                               )}
                             </Typography>
-                            {/* Scheduled Date - "Today" or past date in warning color */}
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                fontSize: { xs: '0.75rem', sm: '0.813rem' },
-                                color: (() => {
-                                  const scheduledDate = new Date(appointment.scheduledDate);
-                                  const selectedDateOnly = new Date(selectedDate);
-                                  selectedDateOnly.setHours(0, 0, 0, 0);
-                                  scheduledDate.setHours(0, 0, 0, 0);
-                                  const isScheduledToday = scheduledDate.getTime() === selectedDateOnly.getTime();
-                                  return isScheduledToday ? 'text.secondary' : 'warning.main';
-                                })(),
-                                fontWeight: (() => {
-                                  const scheduledDate = new Date(appointment.scheduledDate);
-                                  const selectedDateOnly = new Date(selectedDate);
-                                  selectedDateOnly.setHours(0, 0, 0, 0);
-                                  scheduledDate.setHours(0, 0, 0, 0);
-                                  const isScheduledToday = scheduledDate.getTime() === selectedDateOnly.getTime();
-                                  return isScheduledToday ? 400 : 600;
-                                })(),
-                              }}
-                            >
-                              Scheduled: {(() => {
-                                const scheduledDate = new Date(appointment.scheduledDate);
-                                const selectedDateOnly = new Date(selectedDate);
-                                selectedDateOnly.setHours(0, 0, 0, 0);
-                                scheduledDate.setHours(0, 0, 0, 0);
-                                const isScheduledToday = scheduledDate.getTime() === selectedDateOnly.getTime();
-                                return isScheduledToday ? 'Today' : format(scheduledDate, 'MMM dd, yyyy');
-                              })()}
-                            </Typography>
                           </Box>
                         </Box>
 
