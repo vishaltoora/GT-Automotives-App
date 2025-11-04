@@ -1156,17 +1156,6 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                                   appointment.endTime || ''
                                 )}
                               </Typography>
-                              {/* Scheduled Date - "Today" or past date in warning color */}
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.813rem' },
-                                  color: isScheduledToday ? 'text.secondary' : 'warning.main',
-                                  fontWeight: isScheduledToday ? 400 : 600,
-                                }}
-                              >
-                                Scheduled: {scheduledDateDisplay}
-                              </Typography>
                             </Box>
                           </Box>
 
