@@ -357,7 +357,7 @@ jobs:
         with:
           name: ${{ steps.build-info.outputs.frontend-artifact }}
           path: ${{ steps.build-info.outputs.frontend-artifact }}.zip
-          retention-days: 7
+          retention-days: 15
 
       - name: Upload Build Information
         uses: actions/upload-artifact@v4
@@ -365,7 +365,7 @@ jobs:
           name: build-info-${{ steps.build-info.outputs.build-number }}
           path: build-info.txt
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 15
 
       - name: Upload Repository Artifact (for deployment)
         uses: actions/upload-artifact@v4
@@ -378,7 +378,7 @@ jobs:
             !.nx/cache
           if-no-files-found: error
           include-hidden-files: true
-          retention-days: 7
+          retention-days: 15
 
       - name: Create Build Summary
         run: |
