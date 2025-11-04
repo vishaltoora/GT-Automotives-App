@@ -364,6 +364,8 @@ export function DaySummary() {
   };
 
   const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
+  const isViewingToday = isToday(selectedDate);
+  const dateLabel = isViewingToday ? 'Today' : format(selectedDate, 'MMMM d, yyyy');
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -443,13 +445,13 @@ export function DaySummary() {
                 }}
               >
                 {/* Header */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                   <Box>
                     <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Payment Summary - Collected Today
+                      Payment Summary - Collected {isViewingToday ? 'Today' : `on ${dateLabel}`}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {stats.paymentsProcessedCount} payment{stats.paymentsProcessedCount === 1 ? '' : 's'} processed today
+                      {stats.paymentsProcessedCount} payment{stats.paymentsProcessedCount === 1 ? '' : 's'} {isViewingToday ? 'processed today' : `on this date`}
                     </Typography>
                   </Box>
                   <Button
@@ -695,10 +697,10 @@ export function DaySummary() {
               </Paper>
             </Grid>
 
-            {/* Payments Processed Today */}
+            {/* Payments Processed */}
             <Grid size={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Payments Processed Today ({sortedPayments.length})
+                Payments {isViewingToday ? 'Processed Today' : 'on ' + dateLabel} ({sortedPayments.length})
               </Typography>
               <Divider sx={{ mb: 2 }} />
               {sortedPayments.length === 0 ? (
@@ -714,10 +716,10 @@ export function DaySummary() {
                 >
                   <MoneyIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
                   <Typography variant="h6" gutterBottom>
-                    No payments processed
+                    No payments {isViewingToday ? 'processed' : 'recorded'}
                   </Typography>
                   <Typography variant="body2">
-                    No payments were collected on this date.
+                    No payments were {isViewingToday ? 'collected today' : 'collected on this date'}.
                   </Typography>
                 </Box>
               ) : (

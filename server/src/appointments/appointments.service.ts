@@ -405,14 +405,30 @@ export class AppointmentsService {
       updatedAt: new Date(),
     };
 
-    // If payment is being processed (paymentAmount is set and wasn't set before, or is being increased),
-    // set paymentDate to current date for accurate daily cash reporting
-    if (dto.paymentAmount !== undefined && dto.paymentAmount > 0) {
-      const currentPayment = appointment.paymentAmount || 0;
-      if (dto.paymentAmount !== currentPayment) {
-        // Payment is being added or changed - record the processing date
-        updateData.paymentDate = new Date();
-      }
+    // CRITICAL FIX FOR DAY SUMMARY:
+    // If payment information is being updated (amount, breakdown, or notes),
+    // ALWAYS update paymentDate to current date for accurate daily cash reporting
+    // This ensures:
+    // 1. New payments appear in today's Day Summary
+    // 2. Past appointments processed today appear in today's Day Summary (not the appointment's original date)
+    // 3. Re-processed payments update to today's date
+    const isPaymentUpdate =
+      dto.paymentAmount !== undefined ||
+      dto.paymentBreakdown !== undefined ||
+      dto.paymentNotes !== undefined;
+
+    if (isPaymentUpdate && dto.paymentAmount && dto.paymentAmount > 0) {
+      // ALWAYS set paymentDate to NOW when processing a payment
+      // This makes "processed today" logic work correctly
+      updateData.paymentDate = new Date();
+      console.log('[UPDATE APPOINTMENT] Setting paymentDate to current date:', {
+        appointmentId: id,
+        oldPayment: appointment.paymentAmount || 0,
+        newPayment: dto.paymentAmount,
+        paymentDate: updateData.paymentDate.toISOString(),
+        scheduledDate: appointment.scheduledDate,
+        isReprocess: (appointment.paymentAmount || 0) > 0,
+      });
     }
 
     // Remove employeeIds from direct update (will be handled separately)
@@ -497,6 +513,10 @@ export class AppointmentsService {
   /**
    * Get appointments by payment date (for daily cash reports)
    * Returns appointments where payment was processed on the specified date
+   *
+   * BACKWARDS COMPATIBILITY:
+   * - If paymentDate exists: Use paymentDate (new behavior - accurate processing date)
+   * - If paymentDate is NULL: Fall back to scheduledDate + COMPLETED status (old appointments)
    */
   async getByPaymentDate(paymentDate: Date) {
     // Use local timezone to match the payment date
@@ -516,18 +536,37 @@ export class AppointmentsService {
       endOfDay: endOfDay.toISOString(),
     });
 
+    // Query for appointments with payments processed on this date
+    // Uses OR logic to handle both new and old appointments:
+    // 1. New appointments: paymentDate matches the selected date
+    // 2. Old appointments (before paymentDate was added): scheduledDate matches + COMPLETED status
     return this.prisma.appointment.findMany({
       where: {
-        paymentDate: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
         paymentAmount: {
           gt: 0, // Only include appointments with payments
         },
+        OR: [
+          // New behavior: Payment was processed on this date (paymentDate is set)
+          {
+            paymentDate: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+          },
+          // Old behavior: Appointment was scheduled on this date and completed (paymentDate is NULL)
+          // This ensures historical data shows up in Day Summary
+          {
+            paymentDate: null,
+            scheduledDate: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+            status: 'COMPLETED',
+          },
+        ],
       },
       include: this.appointmentInclude,
-      orderBy: [{ paymentDate: 'asc' }, { scheduledTime: 'asc' }],
+      orderBy: [{ scheduledTime: 'asc' }],
     });
   }
 
