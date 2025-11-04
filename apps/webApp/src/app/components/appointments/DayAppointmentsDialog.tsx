@@ -1241,13 +1241,13 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
               )}
             </Grid>
 
-            {/* Customer Cards */}
+            {/* Customer Cards - Outstanding Balances Only */}
             <Grid size={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Customer Details (Scheduled Today)
+              <Typography variant="h6" gutterBottom sx={{ mt: 2, color: 'warning.main' }}>
+                Customer Details (Outstanding Balance)
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              {sortedAppointments.length === 0 ? (
+              {sortedPayments.filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0)).length === 0 ? (
                 <Box
                   sx={{
                     display: 'flex',
@@ -1260,15 +1260,17 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                 >
                   <BlockIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
                   <Typography variant="h6" gutterBottom>
-                    No appointments scheduled
+                    No outstanding balances
                   </Typography>
                   <Typography variant="body2">
-                    There are no appointments for this date.
+                    All payments have been collected in full.
                   </Typography>
                 </Box>
               ) : (
                 <Stack spacing={2}>
-                  {sortedAppointments.map((appointment) => (
+                  {sortedPayments
+                    .filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0))
+                    .map((appointment) => (
                     <Card
                       key={appointment.id}
                       variant="outlined"
