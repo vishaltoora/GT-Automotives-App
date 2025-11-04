@@ -41,7 +41,8 @@ import { paymentService } from '../../services/payment.service';
 import { jobService } from '../../services/job.service';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
-import { JobStatus, PaymentStatus } from '@prisma/client';
+import { JobStatus } from '@gt-automotive/data';
+import { PaymentStatus } from '@gt-automotive/data';
 
 interface TabPanelProps {
   children?: React.ReactNode;

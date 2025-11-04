@@ -1,1 +1,0 @@
-{"version":3,"file":"QueryProvider.d.ts","sourceRoot":"","sources":["../../../src/app/providers/QueryProvider.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAI1B,UAAU,kBAAkB;IAC1B,QAAQ,EAAE,KAAK,CAAC,SAAS,CAAC;CAC3B;AAwBD,wBAAgB,aAAa,CAAC,EAAE,QAAQ,EAAE,EAAE,kBAAkB,2CAS7D;AAED,eAAe,aAAa,CAAC"}
