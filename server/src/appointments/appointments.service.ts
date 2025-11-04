@@ -226,28 +226,74 @@ export class AppointmentsService {
    * Uses DATE-only comparison to avoid timezone issues
    */
   async findAll(query: AppointmentQueryDto, user?: any) {
-    const where: any = {};
-
-    // Date range filtering - convert to date-only strings to avoid timezone issues
+    // If date filtering is needed, use raw SQL with DATE() comparison
     if (query.startDate || query.endDate) {
-      where.scheduledDate = {};
+      // Build date conditions for raw SQL
+      const dateConditions: string[] = [];
+      const params: any[] = [];
 
       if (query.startDate) {
-        // Create start of day in UTC
-        const startDate = new Date(query.startDate);
-        startDate.setUTCHours(0, 0, 0, 0);
-        where.scheduledDate.gte = startDate;
+        const inputDate = new Date(query.startDate);
+        const dateOnly = `${inputDate.getFullYear()}-${String(inputDate.getMonth() + 1).padStart(2, '0')}-${String(inputDate.getDate()).padStart(2, '0')}`;
+        dateConditions.push(`DATE(a."scheduledDate") >= DATE($${params.length + 1})`);
+        params.push(dateOnly);
       }
 
       if (query.endDate) {
-        // Create end of day in UTC
-        const endDate = new Date(query.endDate);
-        endDate.setUTCHours(23, 59, 59, 999);
-        where.scheduledDate.lte = endDate;
+        const inputDate = new Date(query.endDate);
+        const dateOnly = `${inputDate.getFullYear()}-${String(inputDate.getMonth() + 1).padStart(2, '0')}-${String(inputDate.getDate()).padStart(2, '0')}`;
+        dateConditions.push(`DATE(a."scheduledDate") <= DATE($${params.length + 1})`);
+        params.push(dateOnly);
       }
+
+      // Build additional filters
+      const additionalConditions: string[] = [];
+      if (query.employeeId) {
+        additionalConditions.push(`a."employeeId" = $${params.length + 1}`);
+        params.push(query.employeeId);
+      }
+      if (query.customerId) {
+        additionalConditions.push(`a."customerId" = $${params.length + 1}`);
+        params.push(query.customerId);
+      }
+      if (query.status) {
+        additionalConditions.push(`a."status" = $${params.length + 1}`);
+        params.push(query.status);
+      }
+
+      // Combine all conditions
+      const allConditions = [...dateConditions, ...additionalConditions];
+      const whereClause = allConditions.length > 0 ? `WHERE ${allConditions.join(' AND ')}` : '';
+
+      console.log('[FIND ALL] Using DATE() comparison:', {
+        startDate: query.startDate,
+        endDate: query.endDate,
+        whereClause,
+        params,
+      });
+
+      // Get appointment IDs using raw SQL
+      const appointments = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT a."id" FROM "Appointment" a ${whereClause} ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
+        ...params
+      );
+
+      const appointmentIds = appointments.map(a => a.id);
+      if (appointmentIds.length === 0) {
+        return [];
+      }
+
+      // Fetch full appointments with relations
+      return this.prisma.appointment.findMany({
+        where: { id: { in: appointmentIds } },
+        include: this.appointmentInclude,
+        orderBy: [{ scheduledDate: 'asc' }, { scheduledTime: 'asc' }],
+      });
     }
 
-    // Apply employeeId filter from query if provided
+    // No date filtering - use standard Prisma query
+    const where: any = {};
+
     if (query.employeeId) {
       where.employeeId = query.employeeId;
     }
@@ -259,12 +305,6 @@ export class AppointmentsService {
     if (query.status) {
       where.status = query.status;
     }
-
-    console.log('[FIND ALL] Query dates:', {
-      startDate: query.startDate,
-      endDate: query.endDate,
-      whereClause: JSON.stringify(where.scheduledDate),
-    });
 
     return this.prisma.appointment.findMany({
       where,
@@ -279,31 +319,49 @@ export class AppointmentsService {
    * Uses DATE-only comparison to avoid timezone issues
    */
   async getCalendar(query: CalendarQueryDto, user?: any) {
-    // Create start of day in UTC
-    const startDate = new Date(query.startDate);
-    startDate.setUTCHours(0, 0, 0, 0);
+    // Extract date-only strings
+    const startInputDate = new Date(query.startDate);
+    const startDateOnly = `${startInputDate.getFullYear()}-${String(startInputDate.getMonth() + 1).padStart(2, '0')}-${String(startInputDate.getDate()).padStart(2, '0')}`;
 
-    // Create end of day in UTC
-    const endDate = new Date(query.endDate);
-    endDate.setUTCHours(23, 59, 59, 999);
+    const endInputDate = new Date(query.endDate);
+    const endDateOnly = `${endInputDate.getFullYear()}-${String(endInputDate.getMonth() + 1).padStart(2, '0')}-${String(endInputDate.getDate()).padStart(2, '0')}`;
 
-    const where: any = {
-      scheduledDate: {
-        gte: startDate,
-        lte: endDate,
-      },
-      status: {
-        in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS],
-      },
-    };
+    // Build conditions
+    const conditions: string[] = [
+      `DATE(a."scheduledDate") >= DATE($1)`,
+      `DATE(a."scheduledDate") <= DATE($2)`,
+      `a."status" IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS')`,
+    ];
+    const params: any[] = [startDateOnly, endDateOnly];
 
-    // Apply employeeId filter from query if provided
     if (query.employeeId) {
-      where.employeeId = query.employeeId;
+      conditions.push(`a."employeeId" = $${params.length + 1}`);
+      params.push(query.employeeId);
     }
 
+    const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+    console.log('[GET CALENDAR] Using DATE() comparison:', {
+      startDate: query.startDate,
+      endDate: query.endDate,
+      whereClause,
+      params,
+    });
+
+    // Get appointment IDs using raw SQL
+    const appointmentRecords = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT a."id" FROM "Appointment" a ${whereClause} ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
+      ...params
+    );
+
+    const appointmentIds = appointmentRecords.map(a => a.id);
+    if (appointmentIds.length === 0) {
+      return {};
+    }
+
+    // Fetch full appointments with relations
     const appointments = await this.prisma.appointment.findMany({
-      where,
+      where: { id: { in: appointmentIds } },
       include: this.appointmentInclude,
       orderBy: [{ scheduledDate: 'asc' }, { scheduledTime: 'asc' }],
     });
@@ -616,32 +674,34 @@ export class AppointmentsService {
       roleName: user?.role?.name,
     });
 
-    // Create start of day in UTC (00:00:00.000)
+    // Get today's date as YYYY-MM-DD string
     const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const todayDateOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    // Create end of day in UTC (23:59:59.999)
-    const endOfToday = new Date(today);
-    endOfToday.setUTCHours(23, 59, 59, 999);
-
-    const where: any = {
-      scheduledDate: {
-        gte: today,
-        lte: endOfToday,
-      },
-      status: {
-        in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS],
-      },
-    };
-
-    console.log('[GET TODAY APPOINTMENTS] Query dates:', {
-      today: today.toISOString(),
-      endOfToday: endOfToday.toISOString(),
+    console.log('[GET TODAY APPOINTMENTS] Using DATE() comparison:', {
+      todayDateOnly,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
+    // Use raw SQL with DATE() comparison to avoid timezone issues
+    const appointmentRecords = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT a."id"
+       FROM "Appointment" a
+       WHERE DATE(a."scheduledDate") = DATE($1)
+         AND a."status" IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS')
+       ORDER BY a."scheduledTime" ASC`,
+      todayDateOnly
+    );
+
+    const appointmentIds = appointmentRecords.map(a => a.id);
+    if (appointmentIds.length === 0) {
+      console.log('[GET TODAY APPOINTMENTS] Found appointments: 0');
+      return [];
+    }
+
+    // Fetch full appointments with relations
     const result = await this.prisma.appointment.findMany({
-      where,
+      where: { id: { in: appointmentIds } },
       include: this.appointmentInclude,
       orderBy: { scheduledTime: 'asc' },
     });
@@ -664,20 +724,36 @@ export class AppointmentsService {
    * Uses DATE-only comparison to avoid timezone issues
    */
   async getCustomerUpcoming(customerId: string) {
-    // Get start of today in UTC
+    // Get today's date as YYYY-MM-DD string
     const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const todayDateOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+    console.log('[GET CUSTOMER UPCOMING] Using DATE() comparison:', {
+      customerId,
+      todayDateOnly,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+
+    // Use raw SQL with DATE() comparison to avoid timezone issues
+    const appointmentRecords = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT a."id"
+       FROM "Appointment" a
+       WHERE a."customerId" = $1
+         AND DATE(a."scheduledDate") >= DATE($2)
+         AND a."status" IN ('SCHEDULED', 'CONFIRMED')
+       ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
+      customerId,
+      todayDateOnly
+    );
+
+    const appointmentIds = appointmentRecords.map(a => a.id);
+    if (appointmentIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full appointments with relations
     return this.prisma.appointment.findMany({
-      where: {
-        customerId,
-        scheduledDate: {
-          gte: today,
-        },
-        status: {
-          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
-        },
-      },
+      where: { id: { in: appointmentIds } },
       include: this.appointmentInclude,
       orderBy: [{ scheduledDate: 'asc' }, { scheduledTime: 'asc' }],
     });
