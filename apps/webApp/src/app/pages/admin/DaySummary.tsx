@@ -697,6 +697,96 @@ export function DaySummary() {
               </Paper>
             </Grid>
 
+            {/* Outstanding Balances Section */}
+            {sortedPayments.filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0)).length > 0 && (
+              <Grid size={12}>
+                <Typography variant="h6" gutterBottom sx={{ mt: 2, color: 'warning.main', fontWeight: 600 }}>
+                  Customers with Outstanding Balance ({sortedPayments.filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0)).length})
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Stack spacing={2}>
+                  {sortedPayments
+                    .filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0))
+                    .map((appointment) => {
+                      const outstandingBalance = (appointment.expectedAmount || 0) - (appointment.paymentAmount || 0);
+                      return (
+                        <Card
+                          key={appointment.id}
+                          variant="outlined"
+                          sx={{
+                            borderRadius: 2,
+                            borderLeft: 4,
+                            borderColor: 'warning.main',
+                            bgcolor: 'warning.lighter',
+                          }}
+                        >
+                          <CardContent sx={{ p: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Avatar sx={{ bgcolor: 'warning.main' }}>
+                                  {appointment.customer.firstName[0]}
+                                  {appointment.customer.lastName[0]}
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="h6" fontWeight="bold">
+                                    {appointment.customer.firstName} {appointment.customer.lastName}
+                                  </Typography>
+                                  {appointment.customer.businessName && (
+                                    <Typography variant="body2" color="text.secondary">
+                                      {appointment.customer.businessName}
+                                    </Typography>
+                                  )}
+                                  {appointment.customer.phone && (
+                                    <Chip
+                                      label={formatPhoneNumber(appointment.customer.phone)}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ mt: 0.5 }}
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+                              <Box sx={{ textAlign: 'right' }}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Outstanding Balance
+                                </Typography>
+                                <Typography variant="h5" color="warning.main" fontWeight="bold">
+                                  ${outstandingBalance.toFixed(2)}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Divider sx={{ my: 1.5 }} />
+                            <Grid container spacing={2}>
+                              <Grid size={6}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Expected Amount
+                                </Typography>
+                                <Typography variant="body1" fontWeight="medium">
+                                  ${(appointment.expectedAmount || 0).toFixed(2)}
+                                </Typography>
+                              </Grid>
+                              <Grid size={6}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Amount Paid
+                                </Typography>
+                                <Typography variant="body1" fontWeight="medium" color="success.main">
+                                  ${(appointment.paymentAmount || 0).toFixed(2)}
+                                </Typography>
+                              </Grid>
+                            </Grid>
+                            <Box sx={{ mt: 1.5 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                Service: {formatServiceType(appointment.serviceType)} • {formatTimeRange(appointment.scheduledTime, appointment.endTime || '')}
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </Stack>
+              </Grid>
+            )}
+
             {/* Payments Processed */}
             <Grid size={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
