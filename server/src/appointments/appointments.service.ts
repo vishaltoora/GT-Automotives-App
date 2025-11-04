@@ -523,51 +523,55 @@ export class AppointmentsService {
    * - If paymentDate is NULL: Fall back to scheduledDate + COMPLETED status (old appointments)
    */
   async getByPaymentDate(paymentDate: Date) {
-    // Use local timezone to match the payment date
-    // Frontend sends date in ISO format, we need to treat it as a local date
+    // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
     const inputDate = new Date(paymentDate);
-
-    // Create start and end of day in local timezone (not UTC)
-    const startOfDay = new Date(inputDate);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(inputDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const year = inputDate.getFullYear();
+    const month = String(inputDate.getMonth() + 1).padStart(2, '0');
+    const day = String(inputDate.getDate()).padStart(2, '0');
+    const dateOnly = `${year}-${month}-${day}`;
 
     console.log('[GET BY PAYMENT DATE] Query:', {
       input: paymentDate,
-      startOfDay: startOfDay.toISOString(),
-      endOfDay: endOfDay.toISOString(),
+      dateOnly,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
-    // Query for appointments with payments processed on this date
-    // Uses OR logic to handle both new and old appointments:
-    // 1. New appointments: paymentDate matches the selected date
-    // 2. Old appointments (before paymentDate was added): scheduledDate matches + COMPLETED status
+    // Use raw SQL with DATE_TRUNC to compare dates at database level
+    // This avoids timezone conversion issues between JavaScript and PostgreSQL
+    const appointments = await this.prisma.$queryRaw<any[]>`
+      SELECT a.*
+      FROM "Appointment" a
+      WHERE a."paymentAmount" > 0
+        AND (
+          -- New behavior: Payment was processed on this date (paymentDate is set)
+          (
+            a."paymentDate" IS NOT NULL
+            AND DATE(a."paymentDate") = DATE(${dateOnly})
+          )
+          OR
+          -- Old behavior: Appointment was scheduled on this date and completed (paymentDate is NULL)
+          (
+            a."paymentDate" IS NULL
+            AND DATE(a."scheduledDate") = DATE(${dateOnly})
+            AND a."status" = 'COMPLETED'
+          )
+        )
+      ORDER BY a."scheduledTime" ASC
+    `;
+
+    // Manually fetch relations since we used raw SQL
+    const appointmentIds = appointments.map(a => a.id);
+
+    if (appointmentIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full appointments with relations
     return this.prisma.appointment.findMany({
       where: {
-        paymentAmount: {
-          gt: 0, // Only include appointments with payments
+        id: {
+          in: appointmentIds,
         },
-        OR: [
-          // New behavior: Payment was processed on this date (paymentDate is set)
-          {
-            paymentDate: {
-              gte: startOfDay,
-              lte: endOfDay,
-            },
-          },
-          // Old behavior: Appointment was scheduled on this date and completed (paymentDate is NULL)
-          // This ensures historical data shows up in Day Summary
-          {
-            paymentDate: null,
-            scheduledDate: {
-              gte: startOfDay,
-              lte: endOfDay,
-            },
-            status: 'COMPLETED',
-          },
-        ],
       },
       include: this.appointmentInclude,
       orderBy: [{ scheduledTime: 'asc' }],

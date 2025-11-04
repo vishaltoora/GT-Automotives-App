@@ -1641,8 +1641,8 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                   ))}
                 </Stack>
               )}
-            </Grid>
-          </Grid>
+            </Grid> {/* Close Grid size={12} for Customer Details */}
+          </Grid> {/* Close outer payment grid */}
         </TabPanel>
       </DialogContent>
 
