@@ -1,42 +1,28 @@
-# Ultra-minimal production Docker image
-# Uses pre-built artifacts from GitHub Actions, only installs runtime deps
-
-FROM node:20-slim
+# Simplified Dockerfile - MyPersn pattern without shared-dto complexity
+FROM node:20
 
 WORKDIR /app
+COPY . .
 
-# Install OpenSSL for Prisma
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-
-# Copy ONLY the files needed for production runtime
-COPY package.json yarn.lock ./
-COPY libs/database/src/lib/prisma/schema.prisma ./libs/database/src/lib/prisma/
-
-# Environment variables
-ENV NODE_ENV=production
+# Environment variables for build
+ENV DISABLE_ERD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV NX_DAEMON=false
 
-# Install ONLY production dependencies (no dev deps, no build tools)
-RUN yarn install --production --frozen-lockfile --ignore-optional --network-timeout 1000000 && \
-    yarn cache clean && \
-    rm -rf /root/.cache /tmp/*
+# Install dependencies with retry logic for transient network errors
+RUN yarn install --frozen-lockfile --network-timeout 1000000 || \
+    (echo "Retry 1/3..." && sleep 5 && yarn install --frozen-lockfile --network-timeout 1000000) || \
+    (echo "Retry 2/3..." && sleep 10 && yarn install --frozen-lockfile --network-timeout 1000000) || \
+    (echo "Retry 3/3..." && sleep 15 && yarn install --frozen-lockfile --network-timeout 1000000)
 
-# Generate Prisma client (small, needed at runtime)
+# Generate Prisma client
 RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 
-# Copy pre-built server from GitHub Actions
-# This is built during GitHub Actions workflow and will be copied here
-COPY dist ./dist
-
-# Copy shared libs source (needed for shared-dto imports)
-COPY libs/data ./libs/data
-
-# Clean up
-RUN rm -rf /root/.cache /tmp/* /root/.npm
+# Build server (simplified - no shared library complications)
+RUN yarn nx build server --configuration=production
 
 # Expose port
 EXPOSE 3000
 
-# Run the application
+# Run the application (simple path)
 CMD ["node", "./dist/apps/server/main.js"]
