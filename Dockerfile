@@ -1,5 +1,5 @@
 # Simplified Dockerfile - MyPersn pattern without shared-dto complexity
-FROM node:20
+FROM node:20-slim
 
 WORKDIR /app
 COPY . .
@@ -20,6 +20,12 @@ RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 
 # Build server (simplified - no shared library complications)
 RUN yarn nx build server --configuration=production
+
+# Remove dev dependencies and clean cache to reduce image size
+RUN rm -rf node_modules && \
+    yarn install --production --frozen-lockfile --network-timeout 1000000 && \
+    yarn cache clean && \
+    rm -rf .nx /tmp/* /root/.cache
 
 # Expose port
 EXPOSE 3000
