@@ -67,7 +67,7 @@ yarn dev
 - **Backend API:** https://gt-automotives.com/api ✅ (Reverse Proxy to Internal HTTP)
 - **Backend Direct:** https://gt-automotives-backend-api.azurewebsites.net ✅
 - **Frontend Hosting:** Azure Web App B1 with integrated reverse proxy ✅
-- **Backend Hosting:** Azure Web App B1 (Docker container) ✅
+- **Backend Hosting:** Azure Web App B2 (Docker container) ✅
 - **Authentication:** Clerk Custom Domain (clerk.gt-automotives.com) ✅
 - **Security:** Mixed Content errors resolved ✅
 - **Progress:** 6 of 8 Epics Complete (75%)
@@ -78,7 +78,7 @@ yarn dev
 - **SSL/DNS:** Namecheap DNS + Azure SSL + Clerk Certificates
 - **Deployment:** Two-Step GitHub Actions CI/CD ✅
 - **Container Registry:** GitHub Container Registry (FREE) ✅
-- **Monthly Cost:** $42-47 (down from $109-129, 62% reduction) 💰
+- **Monthly Cost:** $55-60 (Frontend B1 $13 + Backend B2 $26 + DB $16-21) 💰
 
 ## 🔑 Key Information
 
@@ -148,6 +148,20 @@ git push origin main
 ---
 
 ## 🔄 Recent Updates
+
+### November 4, 2025 - Azure App Service Plan Upgrade to B2 ✅
+- ✅ **Backend Plan Upgraded**: B1 → B2 for Docker container support
+- ✅ **Root Cause**: Docker images (10.5-11.6GB) exceeded B1 10GB storage limit
+- ✅ **B2 Specifications**: 3.5GB RAM, unlimited storage, $26/month
+- ✅ **Backend Now Operational**: Production backend running successfully at https://gt-automotives-backend-api.azurewebsites.net
+- ✅ **Health Check Configured**: Proper /api/health endpoint for Azure monitoring
+- 📊 **New Monthly Cost**: $55-60/month (Frontend B1 $13 + Backend B2 $26 + PostgreSQL DB $16-21)
+- 🔧 **Image Size Analysis**:
+  - Build 187: 10.5GB uncompressed (working on B2)
+  - Build 189-192: Failed optimization attempts (ENOSPC errors)
+  - Solution: Upgraded infrastructure instead of image optimization
+- ⚠️ **Key Learning**: Large monorepo Docker images need B2 or higher for Azure App Service
+- 📝 **Impact**: Production fully operational, backend stable with 12+ hours uptime
 
 ### October 29, 2025 - Email Logo Integration Complete ✅
 - ✅ **Professional Email Branding**: GT Automotives logo added to all email templates
