@@ -499,11 +499,22 @@ export class AppointmentsService {
    * Returns appointments where payment was processed on the specified date
    */
   async getByPaymentDate(paymentDate: Date) {
-    const startOfDay = new Date(paymentDate);
-    startOfDay.setUTCHours(0, 0, 0, 0);
+    // Use local timezone to match the payment date
+    // Frontend sends date in ISO format, we need to treat it as a local date
+    const inputDate = new Date(paymentDate);
 
-    const endOfDay = new Date(paymentDate);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    // Create start and end of day in local timezone (not UTC)
+    const startOfDay = new Date(inputDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(inputDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    console.log('[GET BY PAYMENT DATE] Query:', {
+      input: paymentDate,
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+    });
 
     return this.prisma.appointment.findMany({
       where: {
