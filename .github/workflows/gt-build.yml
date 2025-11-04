@@ -291,6 +291,31 @@ jobs:
         id: branch-name
         uses: tj-actions/branch-names@v6
 
+      # Free up disk space before Docker build
+      - name: Free Disk Space
+        run: |
+          echo "🧹 Freeing up disk space before Docker build..."
+          df -h
+
+          # Remove unnecessary files to free up space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+
+          # Clean apt cache
+          sudo apt-get clean
+
+          # Clean Docker images and containers that might exist
+          docker system prune -af --volumes || true
+
+          # Remove unnecessary node_modules from runner (frontend build is done)
+          rm -rf node_modules/.cache
+          rm -rf apps/webApp/node_modules
+
+          echo "📊 Disk space after cleanup:"
+          df -h
+
       # Optimized Docker build with caching
       - name: Build, Tag & Push Docker image to GitHub Container Registry
         env:

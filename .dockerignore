@@ -1,29 +1,93 @@
+# Git and GitHub
 .git
 .github
-.vscode
-.nx
-.cache
-*.log
+.gitignore
+.gitattributes
+
+# Documentation (reduces ~50MB)
 *.md
+docs/
+.claude/
+README.md
+CLAUDE.md
+
+# Node modules - will be installed fresh (saves most space)
+node_modules
+.pnp
+.pnp.js
+
+# Nx cache (can be 1-2GB)
+.nx/cache
+.nx/workspace-data
+
+# Frontend build artifacts (not needed for backend container)
+apps/webApp/dist
+apps/webApp/node_modules
+apps/webApp/.next
+apps/webApp/build
+
+# Build outputs (will be rebuilt)
+dist
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test files (saves space)
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+**/__tests__
+**/__mocks__
+coverage
+.nyc_output
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Archives
 *.zip
 *.tar.gz
-.env*
+*.tgz
+*.rar
 
-# Exclude everything that will be rebuilt inside Docker
-node_modules/
-dist/
-apps/webApp/dist/
-apps/webApp/node_modules/
+# Deployment files
+.deployment
+deploy*.sh
+.azure
 
-# Exclude development files
-*.test.ts
-*.spec.ts
-coverage/
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Misc
+*.bak
+*.backup
+.cache
+.eslintcache
 .prettierrc
 .eslintrc.json
-
-# Include only essential files
-!package.json
-!yarn.lock
-!nx.json
-!tsconfig*.json
