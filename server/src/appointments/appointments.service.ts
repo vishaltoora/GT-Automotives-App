@@ -223,17 +223,27 @@ export class AppointmentsService {
   /**
    * Find all appointments with optional filters
    * All users (STAFF and ADMIN) can see all appointments
+   * Uses DATE-only comparison to avoid timezone issues
    */
   async findAll(query: AppointmentQueryDto, user?: any) {
     const where: any = {};
 
+    // Date range filtering - convert to date-only strings to avoid timezone issues
     if (query.startDate || query.endDate) {
       where.scheduledDate = {};
+
       if (query.startDate) {
-        where.scheduledDate.gte = query.startDate;
+        // Create start of day in UTC
+        const startDate = new Date(query.startDate);
+        startDate.setUTCHours(0, 0, 0, 0);
+        where.scheduledDate.gte = startDate;
       }
+
       if (query.endDate) {
-        where.scheduledDate.lte = query.endDate;
+        // Create end of day in UTC
+        const endDate = new Date(query.endDate);
+        endDate.setUTCHours(23, 59, 59, 999);
+        where.scheduledDate.lte = endDate;
       }
     }
 
@@ -250,6 +260,12 @@ export class AppointmentsService {
       where.status = query.status;
     }
 
+    console.log('[FIND ALL] Query dates:', {
+      startDate: query.startDate,
+      endDate: query.endDate,
+      whereClause: JSON.stringify(where.scheduledDate),
+    });
+
     return this.prisma.appointment.findMany({
       where,
       include: this.appointmentInclude,
@@ -260,12 +276,21 @@ export class AppointmentsService {
   /**
    * Get calendar view data
    * All users (STAFF and ADMIN) can see all appointments
+   * Uses DATE-only comparison to avoid timezone issues
    */
   async getCalendar(query: CalendarQueryDto, user?: any) {
+    // Create start of day in UTC
+    const startDate = new Date(query.startDate);
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    // Create end of day in UTC
+    const endDate = new Date(query.endDate);
+    endDate.setUTCHours(23, 59, 59, 999);
+
     const where: any = {
       scheduledDate: {
-        gte: query.startDate,
-        lte: query.endDate,
+        gte: startDate,
+        lte: endDate,
       },
       status: {
         in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS],
@@ -581,6 +606,7 @@ export class AppointmentsService {
   /**
    * Get today's appointments for printing/display
    * All users (STAFF and ADMIN) can see all appointments
+   * Uses DATE-only comparison to avoid timezone issues
    */
   async getTodayAppointments(user?: any) {
     console.log('[GET TODAY APPOINTMENTS] User:', {
@@ -590,24 +616,29 @@ export class AppointmentsService {
       roleName: user?.role?.name,
     });
 
+    // Create start of day in UTC (00:00:00.000)
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Create end of day in UTC (23:59:59.999)
+    const endOfToday = new Date(today);
+    endOfToday.setUTCHours(23, 59, 59, 999);
 
     const where: any = {
       scheduledDate: {
         gte: today,
-        lt: tomorrow,
+        lte: endOfToday,
       },
       status: {
         in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS],
       },
     };
 
-    console.log('[GET TODAY APPOINTMENTS] No filtering - showing all appointments');
-    console.log('[GET TODAY APPOINTMENTS] Query where:', where);
+    console.log('[GET TODAY APPOINTMENTS] Query dates:', {
+      today: today.toISOString(),
+      endOfToday: endOfToday.toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
 
     const result = await this.prisma.appointment.findMany({
       where,
@@ -630,15 +661,18 @@ export class AppointmentsService {
 
   /**
    * Get upcoming appointments for a customer
+   * Uses DATE-only comparison to avoid timezone issues
    */
   async getCustomerUpcoming(customerId: string) {
-    const now = new Date();
+    // Get start of today in UTC
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
 
     return this.prisma.appointment.findMany({
       where: {
         customerId,
         scheduledDate: {
-          gte: now,
+          gte: today,
         },
         status: {
           in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
