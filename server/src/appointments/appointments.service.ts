@@ -419,13 +419,17 @@ export class AppointmentsService {
 
     if (isPaymentUpdate && dto.paymentAmount && dto.paymentAmount > 0) {
       // ALWAYS set paymentDate to NOW when processing a payment
-      // This makes "processed today" logic work correctly
-      updateData.paymentDate = new Date();
-      console.log('[UPDATE APPOINTMENT] Setting paymentDate to current date:', {
+      // Store as local date at midnight to avoid timezone issues
+      // This ensures payments appear on the correct date in Day Summary
+      const now = new Date();
+      const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      updateData.paymentDate = localDate;
+      console.log('[UPDATE APPOINTMENT] Setting paymentDate to current local date:', {
         appointmentId: id,
         oldPayment: appointment.paymentAmount || 0,
         newPayment: dto.paymentAmount,
         paymentDate: updateData.paymentDate.toISOString(),
+        localDateString: updateData.paymentDate.toLocaleDateString(),
         scheduledDate: appointment.scheduledDate,
         isReprocess: (appointment.paymentAmount || 0) > 0,
       });
