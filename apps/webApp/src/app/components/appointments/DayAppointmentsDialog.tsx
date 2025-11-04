@@ -1070,17 +1070,6 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
               ) : (
                 <Stack spacing={2}>
                   {sortedPayments.map((appointment) => {
-                    // Check if appointment was scheduled today or in the past
-                    const scheduledDate = new Date(appointment.scheduledDate);
-                    const selectedDateOnly = new Date(date);
-                    selectedDateOnly.setHours(0, 0, 0, 0);
-                    scheduledDate.setHours(0, 0, 0, 0);
-
-                    const isScheduledToday = scheduledDate.getTime() === selectedDateOnly.getTime();
-                    const scheduledDateDisplay = isScheduledToday
-                      ? 'Today'
-                      : format(scheduledDate, 'MMM dd, yyyy');
-
                     return (
                       <Card
                         key={appointment.id}

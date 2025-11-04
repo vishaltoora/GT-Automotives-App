@@ -27,7 +27,8 @@
       "Bash(az webapp restart:*)",
       "Bash(az webapp log download:*)",
       "Bash(yarn typecheck:*)",
-      "Bash(yarn dev:server)"
+      "Bash(yarn dev:server)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
