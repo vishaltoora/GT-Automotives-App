@@ -23,6 +23,13 @@ import {
   Tooltip,
   Alert,
   Avatar,
+  Card,
+  CardContent,
+  Menu,
+  ListItemIcon,
+  ListItemText,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -36,6 +43,7 @@ import {
   CheckCircle as ActiveIcon,
   Email as EmailIcon,
   Refresh as RefreshIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@clerk/clerk-react';
 import { useError } from '../../app/contexts/ErrorContext';
@@ -61,6 +69,8 @@ const UserManagement: React.FC = () => {
   const { getToken } = useAuth();
   const { showError, showInfo } = useError();
   const { confirm } = useConfirmation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +82,8 @@ const UserManagement: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuUser, setMenuUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -135,6 +147,30 @@ const UserManagement: React.FC = () => {
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
     setEditDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: User) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuUser(user);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuUser(null);
+  };
+
+  const handleMenuEdit = () => {
+    if (menuUser) {
+      handleEditUser(menuUser);
+    }
+  };
+
+  const handleMenuDelete = () => {
+    if (menuUser) {
+      handleDeleteUser(menuUser);
+      handleMenuClose();
+    }
   };
 
   const getRoleIcon = (role: string) => {
@@ -192,34 +228,128 @@ const UserManagement: React.FC = () => {
     page * rowsPerPage + rowsPerPage
   );
 
+  const renderMobileCards = () => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {paginatedUsers.map((user) => (
+        <Card key={user.id} sx={{ position: 'relative' }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+              <Avatar
+                sx={{
+                  width: 48,
+                  height: 48,
+                  fontSize: '1rem',
+                  bgcolor: getAvatarColor(user.firstName + user.lastName),
+                  flexShrink: 0,
+                }}
+              >
+                {getAvatarInitials(user.firstName, user.lastName)}
+              </Avatar>
+
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ wordBreak: 'break-word' }}>
+                    {user.firstName} {user.lastName}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, user)}
+                    sx={{ ml: 1, flexShrink: 0 }}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                </Box>
+
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
+                  <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {user.email}
+                  </Typography>
+                </Stack>
+
+                <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: 'wrap', gap: 1 }}>
+                  <Chip
+                    icon={getRoleIcon(user.role.name)}
+                    label={user.role.name}
+                    variant="outlined"
+                    color={getRoleColor(user.role.name)}
+                    size="small"
+                  />
+                  <Chip
+                    icon={user.isActive ? <ActiveIcon /> : <BlockIcon />}
+                    label={user.isActive ? 'Active' : 'Inactive'}
+                    variant="outlined"
+                    color={user.isActive ? 'success' : 'default'}
+                    size="small"
+                  />
+                </Stack>
+
+                <Typography variant="caption" color="text.secondary">
+                  Created {new Date(user.createdAt).toLocaleDateString()}
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+  );
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{
+        mb: { xs: 2, sm: 3 },
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between',
+        alignItems: { xs: 'flex-start', sm: 'center' },
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
+        >
           User Management
         </Typography>
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={{ xs: 1, sm: 2 }} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             color="primary"
-            startIcon={<RefreshIcon />}
+            startIcon={!isMobile && <RefreshIcon />}
             onClick={fetchUsers}
+            size={isMobile ? 'small' : 'medium'}
+            sx={{ flex: { xs: 1, sm: 0 } }}
           >
             Refresh
           </Button>
           <Button
             variant="contained"
             color="primary"
-            startIcon={<AddIcon />}
+            startIcon={!isMobile && <AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
+            size={isMobile ? 'small' : 'medium'}
+            sx={{ flex: { xs: 1, sm: 0 } }}
           >
             Add User
           </Button>
         </Stack>
       </Box>
 
-      <Paper sx={{ mb: 2, p: 2 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
+      <Paper sx={{ mb: 2, p: { xs: 1.5, sm: 2 } }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={{ xs: 1.5, sm: 2 }}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+        >
           <TextField
             placeholder="Search users..."
             variant="outlined"
@@ -233,10 +363,10 @@ const UserManagement: React.FC = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ flexGrow: 1, maxWidth: 400 }}
+            sx={{ flexGrow: 1, maxWidth: { sm: 400 } }}
           />
-          
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+
+          <FormControl size="small" sx={{ minWidth: { xs: 'auto', sm: 120 } }}>
             <InputLabel>Role</InputLabel>
             <Select
               value={roleFilter}
@@ -249,7 +379,7 @@ const UserManagement: React.FC = () => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: 'auto', sm: 120 } }}>
             <InputLabel>Status</InputLabel>
             <Select
               value={statusFilter}
@@ -268,6 +398,23 @@ const UserManagement: React.FC = () => {
         <Alert severity="info">Loading users...</Alert>
       ) : filteredUsers.length === 0 ? (
         <Alert severity="info">No users found</Alert>
+      ) : isMobile ? (
+        <>
+          {renderMobileCards()}
+          <Paper sx={{ mt: 2 }}>
+            <TablePagination
+              component="div"
+              count={filteredUsers.length}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+            />
+          </Paper>
+        </>
       ) : (
         <TableContainer component={Paper}>
           <Table>
@@ -395,6 +542,36 @@ const UserManagement: React.FC = () => {
           }}
         />
       )}
+
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={handleMenuEdit}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" color="primary" />
+          </ListItemIcon>
+          <ListItemText>Edit</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={handleMenuDelete}
+          disabled={menuUser ? !menuUser.isActive : false}
+        >
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Deactivate</ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };
