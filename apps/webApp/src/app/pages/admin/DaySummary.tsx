@@ -960,6 +960,23 @@ export function DaySummary() {
                               </Grid>
                             </Grid>
                             <Box sx={{ mt: { xs: 1, sm: 1.5 } }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                {appointment.appointmentType === 'MOBILE_SERVICE' ? (
+                                  <DriveEtaIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} color="action" />
+                                ) : (
+                                  <LocationOnIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} color="action" />
+                                )}
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{
+                                    fontSize: { xs: '0.688rem', sm: '0.75rem' },
+                                    fontWeight: 600
+                                  }}
+                                >
+                                  {appointment.appointmentType === 'MOBILE_SERVICE' ? 'Mobile Service' : 'At Garage'}
+                                </Typography>
+                              </Box>
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
