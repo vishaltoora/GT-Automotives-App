@@ -815,7 +815,7 @@ export function DaySummary() {
                   Customers with Outstanding Balance ({sortedPayments.filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0)).length})
                 </Typography>
                 <Divider sx={{ mb: { xs: 1.5, sm: 2 } }} />
-                <Stack spacing={2}>
+                <Stack spacing={{ xs: 1.5, sm: 2 }}>
                   {sortedPayments
                     .filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0))
                     .map((appointment) => {
@@ -825,25 +825,60 @@ export function DaySummary() {
                           key={appointment.id}
                           variant="outlined"
                           sx={{
-                            borderRadius: 2,
+                            borderRadius: { xs: 1.5, sm: 2 },
                             borderLeft: 4,
                             borderColor: 'warning.main',
                             bgcolor: 'warning.lighter',
                           }}
                         >
-                          <CardContent sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Avatar sx={{ bgcolor: 'warning.main' }}>
+                          <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                justifyContent: 'space-between',
+                                alignItems: { xs: 'stretch', sm: 'flex-start' },
+                                mb: { xs: 1.5, sm: 2 },
+                                gap: { xs: 1.5, sm: 0 }
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
+                                <Avatar
+                                  sx={{
+                                    bgcolor: 'warning.main',
+                                    width: { xs: 36, sm: 40 },
+                                    height: { xs: 36, sm: 40 },
+                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                  }}
+                                >
                                   {appointment.customer.firstName[0]}
                                   {appointment.customer.lastName[0]}
                                 </Avatar>
-                                <Box>
-                                  <Typography variant="h6" fontWeight="bold">
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="h6"
+                                    fontWeight="bold"
+                                    sx={{
+                                      fontSize: { xs: '0.938rem', sm: '1.125rem' },
+                                      lineHeight: 1.2,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
                                     {appointment.customer.firstName} {appointment.customer.lastName}
                                   </Typography>
                                   {appointment.customer.businessName && (
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      sx={{
+                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                    >
                                       {appointment.customer.businessName}
                                     </Typography>
                                   )}
@@ -852,41 +887,80 @@ export function DaySummary() {
                                       label={formatPhoneNumber(appointment.customer.phone)}
                                       size="small"
                                       variant="outlined"
-                                      sx={{ mt: 0.5 }}
+                                      sx={{
+                                        mt: 0.5,
+                                        height: { xs: 20, sm: 24 },
+                                        fontSize: { xs: '0.688rem', sm: '0.813rem' },
+                                        '& .MuiChip-label': { px: { xs: 0.75, sm: 1 } }
+                                      }}
                                     />
                                   )}
                                 </Box>
                               </Box>
-                              <Box sx={{ textAlign: 'right' }}>
-                                <Typography variant="caption" color="text.secondary">
+                              <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, pl: { xs: 6.5, sm: 0 } }}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: { xs: '0.688rem', sm: '0.75rem' } }}
+                                >
                                   Outstanding Balance
                                 </Typography>
-                                <Typography variant="h5" color="warning.main" fontWeight="bold">
+                                <Typography
+                                  variant="h5"
+                                  color="warning.main"
+                                  fontWeight="bold"
+                                  sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+                                >
                                   ${outstandingBalance.toFixed(2)}
                                 </Typography>
                               </Box>
                             </Box>
-                            <Divider sx={{ my: 1.5 }} />
-                            <Grid container spacing={2}>
+                            <Divider sx={{ my: { xs: 1, sm: 1.5 } }} />
+                            <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                               <Grid size={6}>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: { xs: '0.688rem', sm: '0.75rem' } }}
+                                >
                                   Expected Amount
                                 </Typography>
-                                <Typography variant="body1" fontWeight="medium">
+                                <Typography
+                                  variant="body1"
+                                  fontWeight="medium"
+                                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                                >
                                   ${(appointment.expectedAmount || 0).toFixed(2)}
                                 </Typography>
                               </Grid>
                               <Grid size={6}>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: { xs: '0.688rem', sm: '0.75rem' } }}
+                                >
                                   Amount Paid
                                 </Typography>
-                                <Typography variant="body1" fontWeight="medium" color="success.main">
+                                <Typography
+                                  variant="body1"
+                                  fontWeight="medium"
+                                  color="success.main"
+                                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                                >
                                   ${(appointment.paymentAmount || 0).toFixed(2)}
                                 </Typography>
                               </Grid>
                             </Grid>
-                            <Box sx={{ mt: 1.5 }}>
-                              <Typography variant="caption" color="text.secondary">
+                            <Box sx={{ mt: { xs: 1, sm: 1.5 } }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                  fontSize: { xs: '0.688rem', sm: '0.75rem' },
+                                  lineHeight: 1.4,
+                                  display: 'block'
+                                }}
+                              >
                                 Service: {formatServiceType(appointment.serviceType)} • {formatTimeRange(appointment.scheduledTime, appointment.endTime || '')}
                               </Typography>
                             </Box>
@@ -928,7 +1002,7 @@ export function DaySummary() {
                   </Typography>
                 </Box>
               ) : (
-                <Stack spacing={2}>
+                <Stack spacing={{ xs: 1.5, sm: 2 }}>
                   {sortedPayments.map((appointment) => (
                     <Card
                       key={appointment.id}
