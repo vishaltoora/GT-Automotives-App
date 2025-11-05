@@ -82,6 +82,7 @@ export declare class AppointmentsService {
     /**
      * Find all appointments with optional filters
      * All users (STAFF and ADMIN) can see all appointments
+     * Uses DATE-only comparison to avoid timezone issues
      */
     findAll(query: AppointmentQueryDto, user?: any): Promise<({
         customer: {
@@ -152,6 +153,7 @@ export declare class AppointmentsService {
     /**
      * Get calendar view data
      * All users (STAFF and ADMIN) can see all appointments
+     * Uses DATE-only comparison to avoid timezone issues
      */
     getCalendar(query: CalendarQueryDto, user?: any): Promise<Record<string, any[]>>;
     /**
@@ -378,6 +380,10 @@ export declare class AppointmentsService {
      * Get appointments by payment date (for daily cash reports)
      * Returns appointments where payment was processed on the specified date
      *
+     * TIMEZONE HANDLING:
+     * - All date comparisons use Pacific Time (PST/PDT) via AT TIME ZONE
+     * - This ensures payments show on the correct business day regardless of server timezone
+     *
      * BACKWARDS COMPATIBILITY:
      * - If paymentDate exists: Use paymentDate (new behavior - accurate processing date)
      * - If paymentDate is NULL: Fall back to scheduledDate + COMPLETED status (old appointments)
@@ -451,6 +457,7 @@ export declare class AppointmentsService {
     /**
      * Get today's appointments for printing/display
      * All users (STAFF and ADMIN) can see all appointments
+     * Uses DATE-only comparison to avoid timezone issues
      */
     getTodayAppointments(user?: any): Promise<({
         customer: {
@@ -520,6 +527,7 @@ export declare class AppointmentsService {
     })[]>;
     /**
      * Get upcoming appointments for a customer
+     * Uses Pacific Time DATE comparison to ensure correct business day
      */
     getCustomerUpcoming(customerId: string): Promise<({
         customer: {
