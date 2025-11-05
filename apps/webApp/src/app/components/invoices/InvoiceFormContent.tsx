@@ -1017,29 +1017,13 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 No items added yet. Add items to create the invoice.
               </Alert>
             )}
-          </CardContent>
-        </Card>
-      </Box>
 
-      {/* THIRD ROW: Invoice Summary */}
-      <Card sx={{
-        borderRadius: 2,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        border: `1px solid ${colors.neutral[200]}`,
-        background: `linear-gradient(135deg, ${colors.primary.main}05 0%, ${colors.primary.light}10 100%)`
-      }}>
-        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
-            {!isMobile && <AttachMoneyIcon sx={{ color: colors.primary.main }} />}
-            <Typography
-              variant={isMobile ? 'subtitle1' : 'h6'}
-              sx={{ fontWeight: 600, color: colors.text.primary }}
-            >
-              Invoice Summary
-            </Typography>
-          </Box>
+            {/* Invoice Summary Section */}
+            {items.length > 0 && (
+              <>
+                <Divider sx={{ my: 3 }} />
 
-          <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+                <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: isMobile ? '100%' : 400 }}>
             {/* Subtotal */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1127,16 +1111,19 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 {formatCurrency(total)}
               </Typography>
             </Box>
-          </Box>
-          </Box>
-
-          {items.length > 0 && (
-            <Alert severity="success" sx={{ mt: 3 }}>
-              {items.length} item{items.length > 1 ? 's' : ''} added
-            </Alert>
+            </Box>
+            </Box>
+            </>
           )}
-        </CardContent>
-      </Card>
+
+            {items.length > 0 && (
+              <Alert severity="success" sx={{ mt: 3 }}>
+                {items.length} item{items.length > 1 ? 's' : ''} added
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
 
       <Menu
         anchorEl={menuAnchorEl}
