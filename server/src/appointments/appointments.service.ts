@@ -10,6 +10,7 @@ import {
 import { AvailabilityService } from './availability.service';
 import { SmsService } from '../sms/sms.service';
 import { EmailService } from '../email/email.service';
+import { getCurrentBusinessDateTime, getCurrentBusinessDate, extractBusinessDate, POSTGRES_TIMEZONE } from '../config/timezone.config';
 
 @Injectable()
 export class AppointmentsService {
@@ -226,23 +227,25 @@ export class AppointmentsService {
    * Uses DATE-only comparison to avoid timezone issues
    */
   async findAll(query: AppointmentQueryDto, user?: any) {
-    // If date filtering is needed, use raw SQL with DATE() comparison
+    // If date filtering is needed, use raw SQL with DATE() comparison in Pacific Time
     if (query.startDate || query.endDate) {
       // Build date conditions for raw SQL
       const dateConditions: string[] = [];
       const params: any[] = [];
 
       if (query.startDate) {
-        const inputDate = new Date(query.startDate);
-        const dateOnly = `${inputDate.getFullYear()}-${String(inputDate.getMonth() + 1).padStart(2, '0')}-${String(inputDate.getDate()).padStart(2, '0')}`;
-        dateConditions.push(`DATE(a."scheduledDate") >= DATE($${params.length + 1})`);
+        const dateOnly = extractBusinessDate(query.startDate);
+        // Compare in Pacific Time to ensure correct business day
+        dateConditions.push(`DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $${params.length + 1}) >= DATE($${params.length + 2})`);
+        params.push(POSTGRES_TIMEZONE);
         params.push(dateOnly);
       }
 
       if (query.endDate) {
-        const inputDate = new Date(query.endDate);
-        const dateOnly = `${inputDate.getFullYear()}-${String(inputDate.getMonth() + 1).padStart(2, '0')}-${String(inputDate.getDate()).padStart(2, '0')}`;
-        dateConditions.push(`DATE(a."scheduledDate") <= DATE($${params.length + 1})`);
+        const dateOnly = extractBusinessDate(query.endDate);
+        // Compare in Pacific Time to ensure correct business day
+        dateConditions.push(`DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $${params.length + 1}) <= DATE($${params.length + 2})`);
+        params.push(POSTGRES_TIMEZONE);
         params.push(dateOnly);
       }
 
@@ -319,20 +322,17 @@ export class AppointmentsService {
    * Uses DATE-only comparison to avoid timezone issues
    */
   async getCalendar(query: CalendarQueryDto, user?: any) {
-    // Extract date-only strings
-    const startInputDate = new Date(query.startDate);
-    const startDateOnly = `${startInputDate.getFullYear()}-${String(startInputDate.getMonth() + 1).padStart(2, '0')}-${String(startInputDate.getDate()).padStart(2, '0')}`;
+    // Extract date-only strings in Pacific Time
+    const startDateOnly = extractBusinessDate(query.startDate);
+    const endDateOnly = extractBusinessDate(query.endDate);
 
-    const endInputDate = new Date(query.endDate);
-    const endDateOnly = `${endInputDate.getFullYear()}-${String(endInputDate.getMonth() + 1).padStart(2, '0')}-${String(endInputDate.getDate()).padStart(2, '0')}`;
-
-    // Build conditions
+    // Build conditions with Pacific Time comparison
     const conditions: string[] = [
-      `DATE(a."scheduledDate") >= DATE($1)`,
-      `DATE(a."scheduledDate") <= DATE($2)`,
+      `DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $1) >= DATE($2)`,
+      `DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $1) <= DATE($3)`,
       `a."status" IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS')`,
     ];
-    const params: any[] = [startDateOnly, endDateOnly];
+    const params: any[] = [POSTGRES_TIMEZONE, startDateOnly, endDateOnly];
 
     if (query.employeeId) {
       conditions.push(`a."employeeId" = $${params.length + 1}`);
@@ -502,17 +502,25 @@ export class AppointmentsService {
 
     if (isPaymentUpdate && dto.paymentAmount && dto.paymentAmount > 0) {
       // ALWAYS set paymentDate to NOW when processing a payment
-      // Store as local date at midnight to avoid timezone issues
-      // This ensures payments appear on the correct date in Day Summary
-      const now = new Date();
-      const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      updateData.paymentDate = localDate;
-      console.log('[UPDATE APPOINTMENT] Setting paymentDate to current local date:', {
+      // Use business timezone (PST/PDT) to ensure correct day for EOD reports
+      // Store the actual current time, not midnight, for accurate timestamping
+      // Date comparisons in queries will use AT TIME ZONE to extract correct business day
+      const businessDateTime = getCurrentBusinessDateTime();
+      updateData.paymentDate = businessDateTime;
+
+      console.log('[UPDATE APPOINTMENT] Setting paymentDate to current business time:', {
         appointmentId: id,
         oldPayment: appointment.paymentAmount || 0,
         newPayment: dto.paymentAmount,
         paymentDate: updateData.paymentDate.toISOString(),
-        localDateString: updateData.paymentDate.toLocaleDateString(),
+        businessTimezone: POSTGRES_TIMEZONE,
+        businessDateString: extractBusinessDate(businessDateTime),
+        businessTimeString: businessDateTime.toLocaleString('en-US', {
+          timeZone: POSTGRES_TIMEZONE,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        }),
         scheduledDate: appointment.scheduledDate,
         isReprocess: (appointment.paymentAmount || 0) > 0,
       });
@@ -601,41 +609,53 @@ export class AppointmentsService {
    * Get appointments by payment date (for daily cash reports)
    * Returns appointments where payment was processed on the specified date
    *
+   * TIMEZONE HANDLING:
+   * - All date comparisons use Pacific Time (PST/PDT) via AT TIME ZONE
+   * - This ensures payments show on the correct business day regardless of server timezone
+   *
    * BACKWARDS COMPATIBILITY:
    * - If paymentDate exists: Use paymentDate (new behavior - accurate processing date)
    * - If paymentDate is NULL: Fall back to scheduledDate + COMPLETED status (old appointments)
    */
   async getByPaymentDate(paymentDate: Date) {
-    // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
-    const inputDate = new Date(paymentDate);
-    const year = inputDate.getFullYear();
-    const month = String(inputDate.getMonth() + 1).padStart(2, '0');
-    const day = String(inputDate.getDate()).padStart(2, '0');
-    const dateOnly = `${year}-${month}-${day}`;
+    // Extract date in business timezone (PST/PDT)
+    const dateOnly = extractBusinessDate(paymentDate);
 
     console.log('[GET BY PAYMENT DATE] Query:', {
       input: paymentDate,
       dateOnly,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      businessTimezone: POSTGRES_TIMEZONE,
+      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
-    // Use raw SQL with DATE_TRUNC to compare dates at database level
-    // This avoids timezone conversion issues between JavaScript and PostgreSQL
+    // Use raw SQL with AT TIME ZONE to compare dates in Pacific Time
+    // This ensures morning/evening payments appear on the correct business day
+    //
+    // CRITICAL: PostgreSQL AT TIME ZONE works as follows:
+    // 1. "paymentDate" AT TIME ZONE 'UTC' - treats the timestamp as if it's in UTC
+    // 2. AT TIME ZONE 'America/Vancouver' - converts to Pacific Time
+    // 3. DATE() - extracts the date portion in Pacific Time
+    //
+    // This prevents timezone issues where:
+    // - Morning payments (8am PST = 4pm UTC previous day) would show on wrong day
+    // - Evening payments (8pm PST = 4am UTC next day) would show on wrong day
     const appointments = await this.prisma.$queryRaw<any[]>`
       SELECT a.*
       FROM "Appointment" a
       WHERE a."paymentAmount" > 0
         AND (
           -- New behavior: Payment was processed on this date (paymentDate is set)
+          -- Compare in Pacific Time to ensure correct business day
           (
             a."paymentDate" IS NOT NULL
-            AND DATE(a."paymentDate") = DATE(${dateOnly})
+            AND DATE(a."paymentDate" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) = DATE(${dateOnly})
           )
           OR
           -- Old behavior: Appointment was scheduled on this date and completed (paymentDate is NULL)
+          -- Also compare in Pacific Time for consistency
           (
             a."paymentDate" IS NULL
-            AND DATE(a."scheduledDate") = DATE(${dateOnly})
+            AND DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) = DATE(${dateOnly})
             AND a."status" = 'COMPLETED'
           )
         )
@@ -674,22 +694,23 @@ export class AppointmentsService {
       roleName: user?.role?.name,
     });
 
-    // Get today's date as YYYY-MM-DD string
-    const today = new Date();
-    const todayDateOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // Get today's date in Pacific Time
+    const todayDateOnly = getCurrentBusinessDate();
 
-    console.log('[GET TODAY APPOINTMENTS] Using DATE() comparison:', {
+    console.log('[GET TODAY APPOINTMENTS] Using Pacific Time DATE() comparison:', {
       todayDateOnly,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      businessTimezone: POSTGRES_TIMEZONE,
+      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
-    // Use raw SQL with DATE() comparison to avoid timezone issues
+    // Use raw SQL with Pacific Time comparison to ensure correct business day
     const appointmentRecords = await this.prisma.$queryRawUnsafe<any[]>(
       `SELECT a."id"
        FROM "Appointment" a
-       WHERE DATE(a."scheduledDate") = DATE($1)
+       WHERE DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $1) = DATE($2)
          AND a."status" IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS')
        ORDER BY a."scheduledTime" ASC`,
+      POSTGRES_TIMEZONE,
       todayDateOnly
     );
 
@@ -721,28 +742,29 @@ export class AppointmentsService {
 
   /**
    * Get upcoming appointments for a customer
-   * Uses DATE-only comparison to avoid timezone issues
+   * Uses Pacific Time DATE comparison to ensure correct business day
    */
   async getCustomerUpcoming(customerId: string) {
-    // Get today's date as YYYY-MM-DD string
-    const today = new Date();
-    const todayDateOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // Get today's date in Pacific Time
+    const todayDateOnly = getCurrentBusinessDate();
 
-    console.log('[GET CUSTOMER UPCOMING] Using DATE() comparison:', {
+    console.log('[GET CUSTOMER UPCOMING] Using Pacific Time DATE() comparison:', {
       customerId,
       todayDateOnly,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      businessTimezone: POSTGRES_TIMEZONE,
+      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
-    // Use raw SQL with DATE() comparison to avoid timezone issues
+    // Use raw SQL with Pacific Time comparison to ensure correct business day
     const appointmentRecords = await this.prisma.$queryRawUnsafe<any[]>(
       `SELECT a."id"
        FROM "Appointment" a
        WHERE a."customerId" = $1
-         AND DATE(a."scheduledDate") >= DATE($2)
+         AND DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $2) >= DATE($3)
          AND a."status" IN ('SCHEDULED', 'CONFIRMED')
        ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
       customerId,
+      POSTGRES_TIMEZONE,
       todayDateOnly
     );
 
