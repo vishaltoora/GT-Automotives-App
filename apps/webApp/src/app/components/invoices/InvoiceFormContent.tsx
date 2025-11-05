@@ -832,75 +832,109 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
             {/* Items List */}
             {items.length > 0 && (
               isMobile ? (
-                // Mobile Card View
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                // Mobile Card View - Compact Design
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   {items.map((item, index) => (
                     <Card key={index} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
-                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        {/* Header Row: Type + Description + Action */}
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
                           <Chip
                             label={item.itemType}
                             size="small"
                             sx={{
+                              height: 20,
+                              fontSize: '0.688rem',
                               background: item.itemType === 'TIRE'
                                 ? colors.tire?.new || colors.primary.main
                                 : item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE'
                                   ? '#f44336'
                                   : colors.service?.maintenance || colors.secondary.main,
-                              color: 'white'
+                              color: 'white',
+                              flexShrink: 0,
                             }}
                           />
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            {(item as any).tireName && (
+                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.813rem', lineHeight: 1.3, mb: 0.25 }}>
+                                {(item as any).tireName}
+                              </Typography>
+                            )}
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontSize: '0.813rem',
+                                lineHeight: 1.3,
+                                color: (item as any).tireName ? 'text.secondary' : 'text.primary',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                              }}
+                            >
+                              {item.description}
+                            </Typography>
+                          </Box>
                           <IconButton
                             size="small"
                             onClick={(e) => handleMenuOpen(e, index)}
+                            sx={{ p: 0.5, flexShrink: 0 }}
                           >
-                            <MoreVertIcon />
+                            <MoreVertIcon fontSize="small" />
                           </IconButton>
                         </Box>
 
-                        {(item as any).tireName && (
-                          <Typography variant="body2" fontWeight="medium" sx={{ mb: 0.5 }}>
-                            {(item as any).tireName}
-                          </Typography>
-                        )}
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                          {item.description}
-                        </Typography>
-
-                        <Stack spacing={0.5}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" color="text.secondary">Quantity:</Typography>
-                            <Typography variant="body2">{item.quantity}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" color="text.secondary">Unit Price:</Typography>
-                            <Typography variant="body2">
-                              {item.itemType === 'DISCOUNT_PERCENTAGE'
-                                ? `${item.unitPrice}%`
-                                : formatCurrency(item.unitPrice)}
-                            </Typography>
-                          </Box>
-                          {item.discountValue && item.discountValue > 0 && (
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Typography variant="body2" color="text.secondary">Discount:</Typography>
-                              <Typography variant="body2">
-                                {item.discountType === 'percentage'
-                                  ? `${item.discountValue}% (${formatCurrency(item.discountAmount || 0)})`
-                                  : formatCurrency(item.discountAmount || 0)}
+                        {/* Compact Info Row */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
+                                Qty
+                              </Typography>
+                              <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.813rem' }}>
+                                {item.quantity}
                               </Typography>
                             </Box>
-                          )}
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: `1px solid ${colors.neutral[200]}` }}>
-                            <Typography variant="body2" fontWeight={600}>Total:</Typography>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
+                                Price
+                              </Typography>
+                              <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.813rem' }}>
+                                {item.itemType === 'DISCOUNT_PERCENTAGE'
+                                  ? `${item.unitPrice}%`
+                                  : formatCurrency(item.unitPrice)}
+                              </Typography>
+                            </Box>
+                            {item.discountValue && item.discountValue > 0 && (
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
+                                  Disc
+                                </Typography>
+                                <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.813rem', color: '#f44336' }}>
+                                  {item.discountType === 'percentage'
+                                    ? `${item.discountValue}%`
+                                    : formatCurrency(item.discountAmount || 0)}
+                                </Typography>
+                              </Box>
+                            )}
+                          </Box>
+                          <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
+                              Total
+                            </Typography>
                             <Typography
                               variant="body2"
                               fontWeight={600}
-                              sx={{ color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : 'inherit' }}
+                              sx={{
+                                fontSize: '0.938rem',
+                                color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : colors.primary.main
+                              }}
                             >
                               {formatCurrency(item.total || (item.quantity * item.unitPrice))}
                             </Typography>
                           </Box>
-                        </Stack>
+                        </Box>
                       </CardContent>
                     </Card>
                   ))}
