@@ -369,52 +369,75 @@ export function DaySummary() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary.main, mb: 1 }}>
+        <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              color: colors.primary.main,
+              mb: 1,
+              fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+            }}
+          >
             Day Summary
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
             Daily appointment and payment summary
           </Typography>
         </Box>
 
         {/* Date Navigation */}
-        <Card sx={{ mb: 3, border: `1px solid ${colors.neutral[200]}` }}>
-          <CardContent>
+        <Card sx={{ mb: { xs: 2, sm: 3 }, border: `1px solid ${colors.neutral[200]}` }}>
+          <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
             <Grid container spacing={2} alignItems="center">
               <Grid size={{ xs: 12, md: 6 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconButton onClick={handlePreviousDay} color="primary">
-                    <ChevronLeft />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+                  <IconButton onClick={handlePreviousDay} color="primary" size="small">
+                    <ChevronLeft fontSize="small" />
                   </IconButton>
                   <Box sx={{ flex: 1, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      sx={{ fontSize: { xs: '0.938rem', sm: '1rem', md: '1.25rem' } }}
+                    >
                       {formattedDate}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.75rem', sm: '0.813rem', md: '0.875rem' } }}
+                    >
                       {stats.total} {stats.total === 1 ? 'appointment' : 'appointments'} •{' '}
                       {stats.totalHours} hours
                     </Typography>
                   </Box>
-                  <IconButton onClick={handleNextDay} color="primary">
-                    <ChevronRight />
+                  <IconButton onClick={handleNextDay} color="primary" size="small">
+                    <ChevronRight fontSize="small" />
                   </IconButton>
                 </Box>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-end' } }}>
+                <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-end' } }}>
                   <DatePicker
                     label="Select Date"
                     value={selectedDate}
                     onChange={(newValue) => newValue && setSelectedDate(newValue)}
-                    slotProps={{ textField: { size: 'small' } }}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        sx: { minWidth: { xs: '140px', sm: '180px' } }
+                      }
+                    }}
                   />
                   <Button
                     variant="outlined"
                     onClick={handleToday}
                     disabled={isToday(selectedDate)}
+                    size="small"
+                    sx={{ minWidth: { xs: '60px', sm: '80px' } }}
                   >
                     Today
                   </Button>
@@ -433,24 +456,42 @@ export function DaySummary() {
             {error}
           </Alert>
         ) : (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }}>
             {/* Payment Summary */}
             <Grid size={12}>
               <Paper
                 elevation={1}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 2.5, md: 3 },
                   border: 1,
                   borderColor: 'divider',
                 }}
               >
                 {/* Header */}
-<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                  <Box>
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    justifyContent: 'space-between',
+                    mb: { xs: 2, sm: 2.5, md: 3 },
+                    gap: { xs: 2, sm: 0 }
+                  }}
+                >
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      gutterBottom
+                      sx={{ fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}
+                    >
                       Payment Summary - Collected {isViewingToday ? 'Today' : `on ${dateLabel}`}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+                    >
                       {stats.paymentsProcessedCount} payment{stats.paymentsProcessedCount === 1 ? '' : 's'} {isViewingToday ? 'processed today' : `on this date`}
                     </Typography>
                   </Box>
@@ -461,8 +502,9 @@ export function DaySummary() {
                     startIcon={sendingEOD ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
                     onClick={handleSendEOD}
                     disabled={sendingEOD || stats.totalPayments === 0}
+                    fullWidth={false}
                     sx={{
-                      minWidth: 120,
+                      minWidth: { xs: '100%', sm: 120 },
                       '&.Mui-disabled': {
                         borderColor: 'action.disabled',
                         color: 'text.disabled',
@@ -476,30 +518,54 @@ export function DaySummary() {
                 {/* Total Amount and Outstanding Balance */}
                 <Box
                   sx={{
-                    mb: 3,
-                    pb: 3,
+                    mb: { xs: 2, sm: 2.5, md: 3 },
+                    pb: { xs: 2, sm: 2.5, md: 3 },
                     borderBottom: 1,
                     borderColor: 'divider',
                   }}
                 >
-                  <Grid container spacing={3}>
+                  <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }}>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+                      >
                         Total Amount Collected
                       </Typography>
-                      <Typography variant="h3" fontWeight="bold" color="success.main">
+                      <Typography
+                        variant="h3"
+                        fontWeight="bold"
+                        color="success.main"
+                        sx={{ fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}
+                      >
                         ${stats.totalPayments.toFixed(2)}
                       </Typography>
                     </Grid>
                     {stats.totalOwed > 0 && (
                       <Grid size={{ xs: 12, sm: 6 }}>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          gutterBottom
+                          sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+                        >
                           Outstanding Balance
                         </Typography>
-                        <Typography variant="h3" fontWeight="bold" color="warning.main">
+                        <Typography
+                          variant="h3"
+                          fontWeight="bold"
+                          color="warning.main"
+                          sx={{ fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}
+                        >
                           ${stats.totalOwed.toFixed(2)}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
+                        >
                           Partial payments owed
                         </Typography>
                       </Grid>
@@ -590,25 +656,43 @@ export function DaySummary() {
               <Paper
                 elevation={1}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 2.5, md: 3 },
                   border: 1,
                   borderColor: 'divider',
                   height: '100%',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <LocationOnIcon color="primary" />
-                  <Typography variant="h6" fontWeight="bold">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1.5, sm: 2 } }}>
+                  <LocationOnIcon color="primary" fontSize="small" />
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{ fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}
+                  >
                     At Garage
                   </Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  gutterBottom
+                  sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+                >
                   {stats.completedAtGarage} completed {stats.completedAtGarage === 1 ? 'appointment' : 'appointments'}
                 </Typography>
-                <Typography variant="h4" fontWeight="bold" color="primary.main" sx={{ mt: 2 }}>
+                <Typography
+                  variant="h4"
+                  fontWeight="bold"
+                  color="primary.main"
+                  sx={{ mt: { xs: 1.5, sm: 2 }, fontSize: { xs: '1.75rem', sm: '2rem', md: '2.125rem' } }}
+                >
                   ${stats.atGaragePayments.toFixed(2)}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', mb: 2 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 0.5, display: 'block', mb: { xs: 1.5, sm: 2 }, fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
+                >
                   Total payments collected
                 </Typography>
 
@@ -646,25 +730,43 @@ export function DaySummary() {
               <Paper
                 elevation={1}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 2.5, md: 3 },
                   border: 1,
                   borderColor: 'divider',
                   height: '100%',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <DriveEtaIcon color="primary" />
-                  <Typography variant="h6" fontWeight="bold">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1.5, sm: 2 } }}>
+                  <DriveEtaIcon color="primary" fontSize="small" />
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{ fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}
+                  >
                     Mobile Service
                   </Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  gutterBottom
+                  sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+                >
                   {stats.completedMobileService} completed {stats.completedMobileService === 1 ? 'appointment' : 'appointments'}
                 </Typography>
-                <Typography variant="h4" fontWeight="bold" color="primary.main" sx={{ mt: 2 }}>
+                <Typography
+                  variant="h4"
+                  fontWeight="bold"
+                  color="primary.main"
+                  sx={{ mt: { xs: 1.5, sm: 2 }, fontSize: { xs: '1.75rem', sm: '2rem', md: '2.125rem' } }}
+                >
                   ${stats.mobileServicePayments.toFixed(2)}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', mb: 2 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 0.5, display: 'block', mb: { xs: 1.5, sm: 2 }, fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
+                >
                   Total payments collected
                 </Typography>
 
@@ -700,10 +802,19 @@ export function DaySummary() {
             {/* Outstanding Balances Section */}
             {sortedPayments.filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0)).length > 0 && (
               <Grid size={12}>
-                <Typography variant="h6" gutterBottom sx={{ mt: 2, color: 'warning.main', fontWeight: 600 }}>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    mt: { xs: 1.5, sm: 2 },
+                    color: 'warning.main',
+                    fontWeight: 600,
+                    fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' }
+                  }}
+                >
                   Customers with Outstanding Balance ({sortedPayments.filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0)).length})
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: { xs: 1.5, sm: 2 } }} />
                 <Stack spacing={2}>
                   {sortedPayments
                     .filter(apt => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0))
@@ -789,10 +900,14 @@ export function DaySummary() {
 
             {/* Payments Processed */}
             <Grid size={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ mt: { xs: 1.5, sm: 2 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}
+              >
                 Payments {isViewingToday ? 'Processed Today' : 'on ' + dateLabel} ({sortedPayments.length})
               </Typography>
-              <Divider sx={{ mb: 2 }} />
+              <Divider sx={{ mb: { xs: 1.5, sm: 2 } }} />
               {sortedPayments.length === 0 ? (
                 <Box
                   sx={{
@@ -800,15 +915,15 @@ export function DaySummary() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    py: 6,
+                    py: { xs: 4, sm: 5, md: 6 },
                     color: 'text.secondary',
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
-                  <Typography variant="h6" gutterBottom>
+                  <MoneyIcon sx={{ fontSize: { xs: 48, sm: 56, md: 64 }, mb: 2, opacity: 0.3 }} />
+                  <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
                     No payments {isViewingToday ? 'processed' : 'recorded'}
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
                     No payments were {isViewingToday ? 'collected today' : 'collected on this date'}.
                   </Typography>
                 </Box>
