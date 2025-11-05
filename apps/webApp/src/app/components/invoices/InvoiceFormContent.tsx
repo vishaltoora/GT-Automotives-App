@@ -1039,7 +1039,8 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: isMobile ? '100%' : 400 }}>
+          <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: isMobile ? '100%' : 400 }}>
             {/* Subtotal */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body1" color="text.secondary">
@@ -1126,6 +1127,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 {formatCurrency(total)}
               </Typography>
             </Box>
+          </Box>
           </Box>
 
           {items.length > 0 && (
