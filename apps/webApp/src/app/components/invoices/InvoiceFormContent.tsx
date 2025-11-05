@@ -906,7 +906,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                                   : formatCurrency(item.unitPrice)}
                               </Typography>
                             </Box>
-                            {item.discountValue && item.discountValue > 0 && (
+                            {item.discountValue && item.discountValue > 0 && item.discountAmount && item.discountAmount > 0 && (
                               <Box>
                                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
                                   Disc
@@ -914,7 +914,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                                 <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.813rem', color: '#f44336' }}>
                                   {item.discountType === 'percentage'
                                     ? `${item.discountValue}%`
-                                    : formatCurrency(item.discountAmount || 0)}
+                                    : formatCurrency(item.discountAmount)}
                                 </Typography>
                               </Box>
                             )}
