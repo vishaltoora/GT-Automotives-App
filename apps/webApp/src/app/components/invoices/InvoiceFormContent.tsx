@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   TextField,
@@ -26,6 +26,10 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
+  Menu,
+  ListItemIcon,
+  ListItemText,
+  Stack,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -39,6 +43,7 @@ import {
   Extension as ExtensionIcon,
   Category as CategoryIcon,
   AccountBalance as AccountBalanceIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { InvoiceItem } from '../../services/invoice.service';
 import { Company } from '../../services/company.service';
@@ -112,9 +117,28 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuItemIndex, setMenuItemIndex] = useState<number | null>(null);
 
   const formatTireType = (type: string) => {
     return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuItemIndex(index);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuItemIndex(null);
+  };
+
+  const handleMenuDelete = () => {
+    if (menuItemIndex !== null) {
+      onRemoveItem(menuItemIndex);
+      handleMenuClose();
+    }
   };
 
   const handleServiceChange = (serviceId: string, serviceName: string, unitPrice: number) => {
@@ -805,35 +829,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
               </Grid>
             </Box>
 
-            {/* Items Table */}
+            {/* Items List */}
             {items.length > 0 && (
-              <TableContainer sx={{ 
-                borderRadius: 2,
-                border: `1px solid ${colors.neutral[200]}`,
-                overflow: 'hidden'
-              }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ background: colors.neutral[100] }}>
-                      <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 600 }}>Qty</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>Discount</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 600 }}>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {items.map((item, index) => (
-                      <TableRow 
-                        key={index}
-                        sx={{ 
-                          '&:hover': { background: colors.neutral[50] },
-                          '&:last-child td': { border: 0 }
-                        }}
-                      >
-                        <TableCell>
+              isMobile ? (
+                // Mobile Card View
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {items.map((item, index) => (
+                    <Card key={index} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
+                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
                           <Chip
                             label={item.itemType}
                             size="small"
@@ -846,55 +850,152 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                               color: 'white'
                             }}
                           />
-                        </TableCell>
-                        <TableCell>
-                          {(item as any).tireName && (
-                            <Typography variant="body2" fontWeight="medium">
-                              {(item as any).tireName}
-                            </Typography>
-                          )}
-                          <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
-                            {item.description}
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, index)}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        </Box>
+
+                        {(item as any).tireName && (
+                          <Typography variant="body2" fontWeight="medium" sx={{ mb: 0.5 }}>
+                            {(item as any).tireName}
                           </Typography>
-                        </TableCell>
-                        <TableCell align="center">{item.quantity}</TableCell>
-                        <TableCell align="right">
-                          {item.itemType === 'DISCOUNT_PERCENTAGE'
-                            ? `${item.unitPrice}%`
-                            : formatCurrency(item.unitPrice)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {item.discountValue && item.discountValue > 0 ? (
-                            item.discountType === 'percentage'
-                              ? `${item.discountValue}% (${formatCurrency(item.discountAmount || 0)})`
-                              : formatCurrency(item.discountAmount || 0)
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell align="right" sx={{
-                          fontWeight: 600,
-                          color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : 'inherit'
-                        }}>
-                          {formatCurrency(item.total || (item.quantity * item.unitPrice))}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Remove item">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => onRemoveItem(index)}
-                              sx={{ 
-                                color: colors.semantic?.error || 'red',
-                                '&:hover': { background: 'rgba(255,0,0,0.1)' }
-                              }}
+                        )}
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                          {item.description}
+                        </Typography>
+
+                        <Stack spacing={0.5}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">Quantity:</Typography>
+                            <Typography variant="body2">{item.quantity}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">Unit Price:</Typography>
+                            <Typography variant="body2">
+                              {item.itemType === 'DISCOUNT_PERCENTAGE'
+                                ? `${item.unitPrice}%`
+                                : formatCurrency(item.unitPrice)}
+                            </Typography>
+                          </Box>
+                          {item.discountValue && item.discountValue > 0 && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">Discount:</Typography>
+                              <Typography variant="body2">
+                                {item.discountType === 'percentage'
+                                  ? `${item.discountValue}% (${formatCurrency(item.discountAmount || 0)})`
+                                  : formatCurrency(item.discountAmount || 0)}
+                              </Typography>
+                            </Box>
+                          )}
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: `1px solid ${colors.neutral[200]}` }}>
+                            <Typography variant="body2" fontWeight={600}>Total:</Typography>
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                              sx={{ color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : 'inherit' }}
                             >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
+                              {formatCurrency(item.total || (item.quantity * item.unitPrice))}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              ) : (
+                // Desktop Table View
+                <TableContainer sx={{
+                  borderRadius: 2,
+                  border: `1px solid ${colors.neutral[200]}`,
+                  overflow: 'hidden'
+                }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ background: colors.neutral[100] }}>
+                        <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>Qty</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Discount</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>Action</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {items.map((item, index) => (
+                        <TableRow
+                          key={index}
+                          sx={{
+                            '&:hover': { background: colors.neutral[50] },
+                            '&:last-child td': { border: 0 }
+                          }}
+                        >
+                          <TableCell>
+                            <Chip
+                              label={item.itemType}
+                              size="small"
+                              sx={{
+                                background: item.itemType === 'TIRE'
+                                  ? colors.tire?.new || colors.primary.main
+                                  : item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE'
+                                    ? '#f44336'
+                                    : colors.service?.maintenance || colors.secondary.main,
+                                color: 'white'
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {(item as any).tireName && (
+                              <Typography variant="body2" fontWeight="medium">
+                                {(item as any).tireName}
+                              </Typography>
+                            )}
+                            <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                              {item.description}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">{item.quantity}</TableCell>
+                          <TableCell align="right">
+                            {item.itemType === 'DISCOUNT_PERCENTAGE'
+                              ? `${item.unitPrice}%`
+                              : formatCurrency(item.unitPrice)}
+                          </TableCell>
+                          <TableCell align="right">
+                            {item.discountValue && item.discountValue > 0 ? (
+                              item.discountType === 'percentage'
+                                ? `${item.discountValue}% (${formatCurrency(item.discountAmount || 0)})`
+                                : formatCurrency(item.discountAmount || 0)
+                            ) : '-'}
+                          </TableCell>
+                          <TableCell align="right" sx={{
+                            fontWeight: 600,
+                            color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : 'inherit'
+                          }}>
+                            {formatCurrency(item.total || (item.quantity * item.unitPrice))}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Tooltip title="Remove item">
+                              <IconButton
+                                size="small"
+                                onClick={() => onRemoveItem(index)}
+                                sx={{
+                                  color: colors.semantic?.error || 'red',
+                                  '&:hover': { background: 'rgba(255,0,0,0.1)' }
+                                }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )
             )}
 
             {items.length === 0 && (
@@ -1020,6 +1121,27 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
           )}
         </CardContent>
       </Card>
+
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={handleMenuDelete}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Remove Item</ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };
