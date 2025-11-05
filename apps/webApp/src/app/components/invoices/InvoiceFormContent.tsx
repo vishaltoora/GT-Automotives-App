@@ -906,18 +906,6 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                                   : formatCurrency(item.unitPrice)}
                               </Typography>
                             </Box>
-                            {item.discountValue && item.discountValue > 0 && item.discountAmount && item.discountAmount > 0 && (
-                              <Box>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
-                                  Disc
-                                </Typography>
-                                <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.813rem', color: '#f44336' }}>
-                                  {item.discountType === 'percentage'
-                                    ? `${item.discountValue}%`
-                                    : formatCurrency(item.discountAmount)}
-                                </Typography>
-                              </Box>
-                            )}
                           </Box>
                           <Box sx={{ textAlign: 'right' }}>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
@@ -953,7 +941,6 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
                         <TableCell align="center" sx={{ fontWeight: 600 }}>Qty</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Discount</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
                         <TableCell align="center" sx={{ fontWeight: 600 }}>Action</TableCell>
                       </TableRow>
@@ -996,13 +983,6 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             {item.itemType === 'DISCOUNT_PERCENTAGE'
                               ? `${item.unitPrice}%`
                               : formatCurrency(item.unitPrice)}
-                          </TableCell>
-                          <TableCell align="right">
-                            {item.discountValue && item.discountValue > 0 ? (
-                              item.discountType === 'percentage'
-                                ? `${item.discountValue}% (${formatCurrency(item.discountAmount || 0)})`
-                                : formatCurrency(item.discountAmount || 0)
-                            ) : '-'}
                           </TableCell>
                           <TableCell align="right" sx={{
                             fontWeight: 600,
