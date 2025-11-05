@@ -1080,19 +1080,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 {formatCurrency(pstAmount)}
               </Typography>
             </Box>
-            
-            <Divider sx={{ my: 1 }} />
-            
-            {/* Total Tax */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body1" color="text.secondary">
-                Total Tax:
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                {formatCurrency(totalTax)}
-              </Typography>
-            </Box>
-            
+
             <Divider sx={{ my: 1 }} />
             
             {/* Grand Total */}
