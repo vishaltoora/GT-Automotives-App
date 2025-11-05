@@ -29,7 +29,6 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
-  Stack,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -181,7 +180,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
     }).format(amount);
   };
 
-  const { subtotal, gstAmount, pstAmount, totalTax, total } = calculateTotals();
+  const { subtotal, gstAmount, pstAmount, total } = calculateTotals();
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
