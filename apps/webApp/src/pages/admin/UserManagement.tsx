@@ -44,6 +44,9 @@ import {
   Email as EmailIcon,
   Refresh as RefreshIcon,
   MoreVert as MoreVertIcon,
+  FilterList as FilterListIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@clerk/clerk-react';
 import { useError } from '../../app/contexts/ErrorContext';
@@ -84,6 +87,7 @@ const UserManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [menuUser, setMenuUser] = useState<User | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -345,53 +349,113 @@ const UserManagement: React.FC = () => {
       </Box>
 
       <Paper sx={{ mb: 2, p: { xs: 1.5, sm: 2 } }}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={{ xs: 1.5, sm: 2 }}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <TextField
-            placeholder="Search users..."
-            variant="outlined"
-            size="small"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ flexGrow: 1, maxWidth: { sm: 400 } }}
-          />
-
-          <FormControl size="small" sx={{ minWidth: { xs: 'auto', sm: 120 } }}>
-            <InputLabel>Role</InputLabel>
-            <Select
-              value={roleFilter}
-              label="Role"
-              onChange={(e) => setRoleFilter(e.target.value)}
+        {isMobile ? (
+          <>
+            <Button
+              variant="text"
+              fullWidth
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              startIcon={<FilterListIcon />}
+              endIcon={filtersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              sx={{
+                justifyContent: 'space-between',
+                textTransform: 'none',
+                color: 'text.primary',
+                mb: filtersExpanded ? 1.5 : 0,
+              }}
             >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="ADMIN">Admin</MenuItem>
-              <MenuItem value="STAFF">Staff</MenuItem>
-            </Select>
-          </FormControl>
+              Filters
+            </Button>
+            {filtersExpanded && (
+              <Stack spacing={1.5}>
+                <TextField
+                  placeholder="Search users..."
+                  variant="outlined"
+                  size="small"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
 
-          <FormControl size="small" sx={{ minWidth: { xs: 'auto', sm: 120 } }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              label="Status"
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
+                <FormControl size="small">
+                  <InputLabel>Role</InputLabel>
+                  <Select
+                    value={roleFilter}
+                    label="Role"
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="ADMIN">Admin</MenuItem>
+                    <MenuItem value="STAFF">Staff</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl size="small">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    label="Status"
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+            )}
+          </>
+        ) : (
+          <Stack direction="row" spacing={2} alignItems="center">
+            <TextField
+              placeholder="Search users..."
+              variant="outlined"
+              size="small"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ flexGrow: 1, maxWidth: 400 }}
+            />
+
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={roleFilter}
+                label="Role"
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="ADMIN">Admin</MenuItem>
+                <MenuItem value="STAFF">Staff</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        )}
       </Paper>
 
       {loading ? (
