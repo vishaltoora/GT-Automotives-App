@@ -65,6 +65,12 @@ export function toBusinessDateMidnight(date: Date | string): Date {
  * Returns YYYY-MM-DD string
  */
 export function extractBusinessDate(date: Date | string): string {
+  // If input is already a YYYY-MM-DD string, treat it as a date in business timezone
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    // Already in YYYY-MM-DD format - return as-is since it represents a business date
+    return date;
+  }
+
   const inputDate = typeof date === 'string' ? new Date(date) : date;
   // Convert to business timezone
   const pstDate = new Date(
