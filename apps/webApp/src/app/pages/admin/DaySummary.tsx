@@ -15,6 +15,8 @@ import {
   Stack,
   Avatar,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -97,6 +99,8 @@ interface Appointment {
 
 export function DaySummary() {
   const { getToken } = useAuth(); // Still needed for EOD email endpoint
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [scheduledAppointments, setScheduledAppointments] = useState<Appointment[]>([]); // Appointments scheduled for this date
   const [paymentsProcessed, setPaymentsProcessed] = useState<Appointment[]>([]); // Payments processed on this date
@@ -397,21 +401,25 @@ export function DaySummary() {
                   <IconButton onClick={handlePreviousDay} color="primary" size="small">
                     <ChevronLeft fontSize="small" />
                   </IconButton>
-                  <Box sx={{ flex: 1, textAlign: 'center' }}>
+                  <Box sx={{ flex: 1, textAlign: 'center', minWidth: 0, overflow: 'hidden' }}>
                     <Typography
                       variant="h6"
                       fontWeight={600}
-                      sx={{ fontSize: { xs: '0.938rem', sm: '1rem', md: '1.25rem' } }}
+                      sx={{
+                        fontSize: { xs: '0.813rem', sm: '1rem', md: '1.25rem' },
+                        lineHeight: { xs: 1.3, sm: 1.4 },
+                        wordBreak: 'break-word',
+                        hyphens: 'auto'
+                      }}
                     >
-                      {formattedDate}
+                      {isMobile ? format(selectedDate, 'MMM d, yyyy') : formattedDate}
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ fontSize: { xs: '0.75rem', sm: '0.813rem', md: '0.875rem' } }}
+                      sx={{ fontSize: { xs: '0.688rem', sm: '0.813rem', md: '0.875rem' } }}
                     >
-                      {stats.total} {stats.total === 1 ? 'appointment' : 'appointments'} •{' '}
-                      {stats.totalHours} hours
+                      {stats.total} {stats.total === 1 ? (isMobile ? 'appt' : 'appointment') : (isMobile ? 'appts' : 'appointments')} • {stats.totalHours} {isMobile ? 'hrs' : 'hours'}
                     </Typography>
                   </Box>
                   <IconButton onClick={handleNextDay} color="primary" size="small">
