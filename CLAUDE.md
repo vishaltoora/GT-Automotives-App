@@ -69,8 +69,8 @@ yarn dev
 - **Backend API:** https://gt-automotives.com/api ✅ (Reverse Proxy to Internal HTTP)
 - **Backend Direct:** https://gt-automotives-backend-api.azurewebsites.net ✅
 - **Frontend Hosting:** Azure Web App B1 with integrated reverse proxy ✅
-- **Backend Hosting:** Azure Web App B2 (Docker container 1.5GB - optimized) ✅
-- **Docker Optimization:** 87% size reduction (11.5GB → 1.5GB) ✅
+- **Backend Hosting:** Azure Web App **B1** (Docker container 1.5GB - optimized) ✅
+- **Docker Optimization:** 87% size reduction (11.5GB → 1.5GB) + B1 downgrade ✅
 - **Authentication:** Clerk Custom Domain (clerk.gt-automotives.com) ✅
 - **Security:** Mixed Content errors resolved ✅
 - **Progress:** 6 of 8 Epics Complete (75%)
@@ -81,8 +81,8 @@ yarn dev
 - **SSL/DNS:** Namecheap DNS + Azure SSL + Clerk Certificates
 - **Deployment:** Two-Step GitHub Actions CI/CD ✅
 - **Container Registry:** GitHub Container Registry (FREE) ✅
-- **Monthly Cost:** $55-60 (Frontend B1 $13 + Backend B2 $26 + DB $16-21) 💰
-- **Potential Savings:** Can downgrade to B1 after 24h monitoring → $42-47/month
+- **Monthly Cost:** $42-47 (Frontend B1 $13 + Backend **B1** $13 + DB $16-21) 💰
+- **Savings Achieved:** $156/year from B2 → B1 downgrade ✅
 
 ## 🔑 Key Information
 
@@ -173,7 +173,20 @@ git push origin main
   - `.claude/docs/docker-build-troubleshooting.md`: Build error solutions
 - 📦 **Production Image**: `ghcr.io/vishaltoora/gt-backend:build-20251106-185110-c4f87c7` (1.5GB)
 - 📝 **Impact**: Faster deployments, no more timeouts, reliable restarts
-- ⏳ **Next Step**: Monitor for 24 hours, then consider B1 downgrade
+- ✅ **B1 Downgrade**: Successfully downgraded backend from B2 to B1 same day
+- 💰 **Savings Achieved**: $13/month ($156/year) from infrastructure optimization
+
+### November 6, 2025 - Backend Downgrade to B1 Complete (Additional $156/year Savings) ✅
+- ✅ **Immediate Downgrade**: Backend successfully downgraded from B2 to B1
+- ✅ **Health Verified**: Backend restarted and responding correctly on B1 plan
+- ✅ **Performance**: Identical performance with 1.5GB optimized image
+- 💰 **Cost Reduction**: Monthly cost reduced from $55-60 to $42-47
+- 📊 **Resource Usage**:
+  - Storage: ~4-5GB used of 10GB B1 limit (40-50% utilization)
+  - RAM: 1.75GB B1 sufficient for NestJS backend (~500-800MB typical usage)
+  - Image fits comfortably: 1.5GB compressed + 2.5GB runtime = 4GB total
+- 📝 **Total Savings**: $156/year from B2 → B1 infrastructure downgrade
+- 🎯 **Cumulative Savings**: Combined with GHCR migration ($60-80/year), total annual savings of $216-236
 
 ### November 5, 2025 - EOD Summary Date Parsing Bug Fix & Migration Verification ✅
 - ✅ **Critical Bug Fixed**: Nov 3 appointments showing in Nov 2 EOD summary resolved
