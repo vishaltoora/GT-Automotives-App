@@ -149,6 +149,18 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### November 5, 2025 - EOD Summary Date Parsing Bug Fix & Migration Verification ✅
+- ✅ **Critical Bug Fixed**: Nov 3 appointments showing in Nov 2 EOD summary resolved
+- ✅ **Root Cause**: `extractBusinessDate()` parsing YYYY-MM-DD strings as midnight UTC causing 8-hour timezone shift
+- ✅ **Solution**: Added regex check to detect YYYY-MM-DD strings and return as-is (6 lines of code)
+- ✅ **Build 218 Testing**: Docker image downloaded from GHCR and tested locally with production database
+- ✅ **Container Verification**: Timezone fix regex pattern confirmed in webpack bundle
+- ✅ **Migration Sync**: Verified local and production databases have identical schemas (36 migrations each)
+- ✅ **Impact**: All future EOD summaries will display correct dates in PST timezone
+- 🔧 **Files Changed**: `server/src/config/timezone.config.ts` (+6 lines)
+- 🚀 **Status**: Build 218 ready for production deployment after working hours
+- 📦 **Docker Image**: `ghcr.io/vishaltoora/gt-backend:build-20251105-210819-3c0747a` (11.5GB)
+
 ### November 4, 2025 - Azure App Service Plan Upgrade to B2 ✅
 - ✅ **Backend Plan Upgraded**: B1 → B2 for Docker container support
 - ✅ **Root Cause**: Docker images (10.5-11.6GB) exceeded B1 10GB storage limit

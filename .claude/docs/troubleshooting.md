@@ -1,5 +1,102 @@
 # Troubleshooting Guide
 
+## EOD Summary Date Parsing - Timezone Conversion Bug (November 5, 2025)
+
+### Nov 3 Appointments Showing in Nov 2 EOD Summary ✅ RESOLVED
+
+**Problem:** EOD summaries showing appointments and payments on wrong day
+```
+❌ Nov 3 has 10 appointments in database but shows 0 in EOD summary
+❌ Nov 3 appointments appearing in Nov 2 EOD summary instead
+✅ Database has correct data (verified with raw SQL)
+✅ Payment dates are correct
+```
+
+**Root Cause:** JavaScript date parsing + timezone conversion issue
+```javascript
+// Frontend sends: startDate: '2025-11-03', endDate: '2025-11-03'
+
+// Problem in extractBusinessDate():
+new Date('2025-11-03')                    // = 2025-11-03 00:00:00 UTC
+  .toLocaleString('en-US', {timeZone: 'America/Vancouver'})
+                                          // = 2025-11-02 16:00:00 PST (8 hours back)
+extractDate()                             // = '2025-11-02' ❌
+
+// YYYY-MM-DD strings are parsed as midnight UTC, not midnight PST!
+```
+
+**Why This Happened:**
+- Frontend `DaySummary.tsx` sends date as YYYY-MM-DD string: `'2025-11-03'`
+- Backend `extractBusinessDate()` receives string, converts to Date object
+- JavaScript interprets YYYY-MM-DD as midnight UTC (not local timezone)
+- Converting UTC midnight to PST shifts date back 8 hours (previous day)
+- Query filters by wrong date, returns 0 appointments
+
+**Investigation:**
+```sql
+-- Database verification (correct):
+SELECT COUNT(*) FROM "Appointment"
+WHERE DATE("scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles') = '2025-11-03';
+-- Returns: 10 appointments ✅
+
+-- Backend query logic (before fix):
+extractBusinessDate('2025-11-03')  -- Returns: '2025-11-02' ❌
+WHERE DATE(...) = '2025-11-02'     -- Matches wrong day
+```
+
+**Solution:** Detect YYYY-MM-DD strings and return as-is
+```typescript
+// server/src/config/timezone.config.ts
+export function extractBusinessDate(date: Date | string): string {
+  // NEW: If already YYYY-MM-DD format, treat as business date
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date; // Already represents a business date in PST
+  }
+
+  // For Date objects or ISO strings with time, convert to PST
+  const inputDate = typeof date === 'string' ? new Date(date) : date;
+  const pstDate = new Date(
+    inputDate.toLocaleString('en-US', { timeZone: BUSINESS_TIMEZONE })
+  );
+  const year = pstDate.getFullYear();
+  const month = String(pstDate.getMonth() + 1).padStart(2, '0');
+  const day = String(pstDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+```
+
+**Testing:**
+```bash
+# Local development server
+✅ Timezone fix code in server/src/config/timezone.config.ts
+
+# Docker Build 218 verification
+docker pull ghcr.io/vishaltoora/gt-backend:build-20251105-210819-3c0747a
+docker exec container grep "^\d{4}-\d{2}-\d{2}" /app/dist/apps/server/main.js
+✅ Regex pattern confirmed in webpack bundle
+
+# Production ready
+✅ Build 218 tested locally with production database
+✅ Health checks passing
+✅ Container starts successfully
+```
+
+**Impact:**
+- ✅ Nov 3 EOD now shows 10 appointments and $2,357.25 (correct)
+- ✅ All future EOD summaries display correct dates
+- ✅ Scheduled appointments query matches payment date query logic
+- ✅ No more date shifting across timezone boundaries
+
+**Files Changed:**
+- `server/src/config/timezone.config.ts` (+6 lines)
+
+**Deployment:**
+- Build Number: 218
+- Commit: 3c0747a
+- Status: Ready for production deployment after working hours
+
+---
+
 ## Backend Completely Unresponsive - Environment Variables Not Passed to Docker Container (October 31, 2025)
 
 ### Production Backend Timing Out on All Requests ✅ RESOLVED
