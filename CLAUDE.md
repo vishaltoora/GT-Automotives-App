@@ -33,6 +33,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[MyPersn Monorepo Learnings](.claude/docs/mypersn-monorepo-learnings.md)** - Architecture patterns and solutions from mypersn project ⭐ NEW
 - **[Container Deployment Learnings](.claude/docs/container-deployment-learnings.md)** - Critical lessons from shared library container issues and MyPersn pattern resolution ⭐ NEW
 - **[GHCR Migration Guide](.claude/docs/ghcr-migration.md)** - Migration from Azure Container Registry to GitHub Container Registry (saves $5-7/mo) ⭐ NEW
+- **[Docker Optimization](.claude/docs/docker-optimization.md)** - Docker image optimization strategy (87% size reduction) ⭐ NEW
+- **[Docker Build Troubleshooting](.claude/docs/docker-build-troubleshooting.md)** - Docker build errors and solutions ⭐ NEW
 - **[Production Deployment Checklist](.claude/docs/production-deployment-checklist.md)** - Complete deployment verification checklist
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
@@ -67,7 +69,8 @@ yarn dev
 - **Backend API:** https://gt-automotives.com/api ✅ (Reverse Proxy to Internal HTTP)
 - **Backend Direct:** https://gt-automotives-backend-api.azurewebsites.net ✅
 - **Frontend Hosting:** Azure Web App B1 with integrated reverse proxy ✅
-- **Backend Hosting:** Azure Web App B2 (Docker container) ✅
+- **Backend Hosting:** Azure Web App B2 (Docker container 1.5GB - optimized) ✅
+- **Docker Optimization:** 87% size reduction (11.5GB → 1.5GB) ✅
 - **Authentication:** Clerk Custom Domain (clerk.gt-automotives.com) ✅
 - **Security:** Mixed Content errors resolved ✅
 - **Progress:** 6 of 8 Epics Complete (75%)
@@ -79,6 +82,7 @@ yarn dev
 - **Deployment:** Two-Step GitHub Actions CI/CD ✅
 - **Container Registry:** GitHub Container Registry (FREE) ✅
 - **Monthly Cost:** $55-60 (Frontend B1 $13 + Backend B2 $26 + DB $16-21) 💰
+- **Potential Savings:** Can downgrade to B1 after 24h monitoring → $42-47/month
 
 ## 🔑 Key Information
 
@@ -148,6 +152,28 @@ git push origin main
 ---
 
 ## 🔄 Recent Updates
+
+### November 6, 2025 - Docker Image Optimization Complete (87% Size Reduction) ✅
+- ✅ **Massive Size Reduction**: Docker image optimized from 11.5GB to 1.5GB (87% reduction)
+- ✅ **Deployment Speed**: Image pull time reduced from 56 minutes to ~5-10 minutes (80-90% faster)
+- ✅ **Multi-Stage Alpine Build**: Implemented production-ready Dockerfile with builder and production stages
+- ✅ **Nx Dependency Pruning**: Added `generatePackageJson: true` to server/project.json for minimal dependencies
+- ✅ **Production Deployment**: Optimized image deployed and running successfully in production
+- ✅ **Health Verified**: Backend responding correctly with 1.5GB image (14+ minutes stable uptime)
+- 💰 **Cost Savings Opportunity**: Can now downgrade backend from B2 ($26/mo) to B1 ($13/mo) - saves $156/year
+- 🔧 **Technical Implementation**:
+  - Stage 1 (Builder): Full monorepo build with all dependencies (13.5 min)
+  - Stage 2 (Production): Minimal runtime with pruned dependencies (2.9 min)
+  - Alpine base image: 180MB vs 1.1GB standard Node.js
+  - Pruned package.json: 71 lines vs thousands
+- 🔧 **Files Changed**:
+  - `Dockerfile`: Complete multi-stage Alpine rewrite
+  - `server/project.json`: Added generatePackageJson flag
+  - `.claude/docs/docker-optimization.md`: Strategy documentation
+  - `.claude/docs/docker-build-troubleshooting.md`: Build error solutions
+- 📦 **Production Image**: `ghcr.io/vishaltoora/gt-backend:build-20251106-185110-c4f87c7` (1.5GB)
+- 📝 **Impact**: Faster deployments, no more timeouts, reliable restarts
+- ⏳ **Next Step**: Monitor for 24 hours, then consider B1 downgrade
 
 ### November 5, 2025 - EOD Summary Date Parsing Bug Fix & Migration Verification ✅
 - ✅ **Critical Bug Fixed**: Nov 3 appointments showing in Nov 2 EOD summary resolved
