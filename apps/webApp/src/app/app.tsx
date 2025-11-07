@@ -80,6 +80,9 @@ import { EmployeeAvailabilityManagement } from './pages/admin/appointments/Emplo
 // SMS Pages
 import { SmsHistory } from './pages/admin/sms/SmsHistory';
 
+// Email Pages
+import EmployeeSchedule from './pages/admin/EmployeeSchedule';
+
 // Reports Pages
 import Reports from './pages/admin/Reports';
 
@@ -199,6 +202,7 @@ export function App() {
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="sms-history" element={<SmsHistory />} />
+          <Route path="employee-schedule" element={<EmployeeSchedule />} />
           <Route path="payroll" element={<PayrollDashboard />} />
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />

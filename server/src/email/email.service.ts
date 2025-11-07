@@ -4,6 +4,7 @@ import { PrismaService } from '@gt-automotive/database';
 import { EmailStatus, EmailType } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { extractBusinessDate } from '../config/timezone.config';
 
 @Injectable()
 export class EmailService {
@@ -248,6 +249,27 @@ export class EmailService {
       .map(ae => `${ae.employee.firstName} ${ae.employee.lastName}`)
       .join(', ') || 'TBD';
 
+    // Format date correctly using timezone-aware utility
+    const businessDate = extractBusinessDate(appointment.scheduledDate);
+    const [year, month, day] = businessDate.split('-').map(Number);
+    const appointmentDate = new Date(year, month - 1, day);
+    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Format time in 12-hour format
+    const [hours, minutes] = appointment.scheduledTime.split(':');
+    const timeDate = new Date();
+    timeDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    const formattedTime = timeDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -271,8 +293,8 @@ export class EmailService {
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3 style="margin-top: 0;">Appointment Details:</h3>
             <p><strong>Service:</strong> ${appointment.serviceType}</p>
-            <p><strong>Date:</strong> ${new Date(appointment.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <p><strong>Time:</strong> ${appointment.scheduledTime}</p>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Time:</strong> ${formattedTime}</p>
             ${appointment.vehicle ? `<p><strong>Vehicle:</strong> ${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}</p>` : ''}
             <p><strong>Technician(s):</strong> ${employeeNames}</p>
             <p><strong>Location:</strong> ${appointment.appointmentType === 'AT_GARAGE' ? 'GT Automotives Shop' : 'Mobile Service'}</p>
@@ -509,8 +531,11 @@ export class EmailService {
     }
 
     try {
-      // Format date nicely
-      const formattedDate = new Date(data.date).toLocaleDateString('en-US', {
+      // Format date correctly using timezone-aware utility
+      const businessDate = extractBusinessDate(data.date);
+      const [year, month, day] = businessDate.split('-').map(Number);
+      const scheduleDate = new Date(year, month - 1, day);
+      const formattedDate = scheduleDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -754,8 +779,10 @@ export class EmailService {
     }
 
     try {
-      // Format date nicely
-      const appointmentDate = new Date(data.scheduledDate);
+      // Format date correctly using timezone-aware utility
+      const businessDate = extractBusinessDate(data.scheduledDate);
+      const [year, month, day] = businessDate.split('-').map(Number);
+      const appointmentDate = new Date(year, month - 1, day);
       const formattedDate = appointmentDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -763,10 +790,15 @@ export class EmailService {
         day: 'numeric',
       });
 
-      // Calculate end time
+      // Calculate start and end time in 12-hour format
       const [hours, minutes] = data.scheduledTime.split(':');
       const startTime = new Date();
       startTime.setHours(parseInt(hours), parseInt(minutes), 0);
+      const startTimeStr = startTime.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
       const endTime = new Date(startTime.getTime() + data.duration * 60000);
       const endTimeStr = endTime.toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -837,7 +869,7 @@ export class EmailService {
                               <span style="font-size: 24px; margin-right: 12px;">📅</span>
                               <div>
                                 <div style="font-weight: 600; color: #333; font-size: 18px; margin-bottom: 4px;">${formattedDate}</div>
-                                <div style="color: #1976d2; font-size: 16px; font-weight: 500;">${data.scheduledTime} - ${endTimeStr} (${data.duration} minutes)</div>
+                                <div style="color: #1976d2; font-size: 16px; font-weight: 500;">${startTimeStr} - ${endTimeStr} (${data.duration} minutes)</div>
                               </div>
                             </div>
                           </td>

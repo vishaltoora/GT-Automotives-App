@@ -35,7 +35,7 @@ import {
 import { customerService, Customer } from '../../services/customer.service';
 import { userService, User } from '../../services/user.service';
 import { CustomerDialog } from '../customers/CustomerDialog';
-import { format12Hour } from '../../utils/timeFormat';
+// import { format12Hour } from '../../utils/timeFormat'; // Removed - not needed after availability UI changes
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -49,11 +49,11 @@ const SERVICE_TYPES = [
   { value: 'TIRE_CHANGE', label: 'Tire Mount Balance', duration: 60 },
   { value: 'TIRE_ROTATION', label: 'Tire Rotation', duration: 30 },
   { value: 'TIRE_REPAIR', label: 'Tire Repair', duration: 30 },
-  { value: 'WHEEL_ALIGNMENT', label: 'Wheel Alignment', duration: 60 },
+  { value: 'TIRE_SWAP', label: 'Tire Swap', duration: 30 },
   { value: 'TIRE_BALANCE', label: 'Tire Balance', duration: 30 },
-  { value: 'INSPECTION', label: 'Inspection', duration: 30 },
   { value: 'OIL_CHANGE', label: 'Oil Change', duration: 45 },
   { value: 'BRAKE_SERVICE', label: 'Brake Service', duration: 90 },
+  { value: 'MECHANICAL_WORK', label: 'Mechanical Work', duration: 60 },
   { value: 'OTHER', label: 'Other Service', duration: 60 },
 ];
 
@@ -71,7 +71,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [employees, setEmployees] = useState<User[]>([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  // const [checkingAvailability, setCheckingAvailability] = useState(false); // Removed - not needed after availability UI changes
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
 
   // Helper function to get current time rounded to next 15-minute interval
@@ -243,7 +243,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
   const checkAvailability = async () => {
     try {
-      setCheckingAvailability(true);
+      // setCheckingAvailability(true); // Removed - not needed after availability UI changes
       const slots = await appointmentService.checkAvailability({
         date: formData.scheduledDate,
         duration: formData.duration,
@@ -251,7 +251,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       });
       setAvailableSlots(slots);
     } finally {
-      setCheckingAvailability(false);
+      // setCheckingAvailability(false); // Removed - not needed after availability UI changes
     }
   };
 
@@ -385,33 +385,6 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const handleCustomerCreated = async () => {
     setCustomerDialogOpen(false);
     await loadCustomers();
-  };
-
-  const getAvailableTimesForSelectedTime = () => {
-    // If user selected a time that's not in the pre-generated 30-minute slots,
-    // we can't determine availability from the frontend alone.
-    // Return all employees as potentially available - the backend will validate.
-    const exactMatch = availableSlots.filter(
-      (slot) => slot.startTime === formData.scheduledTime && slot.available
-    );
-
-    // If there's an exact match in the 30-minute slots, use it
-    if (exactMatch.length > 0) {
-      return exactMatch;
-    }
-
-    // If the time doesn't match any pre-generated slot (e.g., 10:15),
-    // return all unique employees who have ANY available slots that day
-    // The backend will perform the actual availability check
-    const uniqueEmployees = Array.from(
-      new Map(
-        availableSlots
-          .filter(slot => slot.available)
-          .map(slot => [slot.employeeId, slot])
-      ).values()
-    );
-
-    return uniqueEmployees.length > 0 ? uniqueEmployees : [];
   };
 
   return (
@@ -694,190 +667,152 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               />
             </Grid>
 
-            {/* 7. Employee Assignment - Multi-select */}
+            {/* 7. Employee Assignment - Chip Selection */}
             <Grid size={{ xs: 12 }}>
-              <Autocomplete
-                multiple
-                options={employees}
-                value={selectedEmployees}
-                onChange={(_, newValue) => {
-                  setSelectedEmployees(newValue);
-                  setFormData({
-                    ...formData,
-                    employeeIds: newValue.map((e) => e.id),
-                    employeeId: newValue.length > 0 ? newValue[0].id : '',
-                  });
-                }}
-                getOptionLabel={(option) =>
-                  `${option.firstName} ${option.lastName}`
-                }
-                getOptionDisabled={(option) => {
-                  // If no availability data loaded yet, don't disable anyone
-                  if (availableSlots.length === 0) {
-                    return false;
-                  }
+              <FormControl component="fieldset" fullWidth>
+                <FormLabel component="legend" sx={{ mb: 1 }}>
+                  Assign to Employee(s) (Optional)
+                </FormLabel>
+                {employeesLoading ? (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CircularProgress size={20} />
+                    <span>Loading employees...</span>
+                  </Box>
+                ) : employees.length === 0 ? (
+                  <Alert severity="info">No employees available</Alert>
+                ) : (
+                  <Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                      {employees.map((employee) => {
+                        const isSelected = selectedEmployees.some(
+                          (e) => e.id === employee.id
+                        );
 
-                  // Check if this employee is available at the selected time
-                  const exactMatch = availableSlots.find(
-                    (slot) =>
-                      slot.employeeId === option.id &&
-                      slot.startTime === formData.scheduledTime
-                  );
+                        // Determine availability status
+                        let isAvailable = true;
+                        let isDisabled = false;
+                        let statusText = '';
 
-                  // If we have an exact time match in the availability data
-                  if (exactMatch) {
-                    // Disable if NOT available at this exact time
-                    return !exactMatch.available;
-                  }
+                        if (availableSlots.length > 0) {
+                          const exactMatch = availableSlots.find(
+                            (slot) =>
+                              slot.employeeId === employee.id &&
+                              slot.startTime === formData.scheduledTime
+                          );
 
-                  // If employee has slots but no exact match for this time, disable them
-                  const hasAnySlots = availableSlots.some(
-                    (slot) => slot.employeeId === option.id
-                  );
+                          const hasAnySlots = availableSlots.some(
+                            (slot) => slot.employeeId === employee.id
+                          );
 
-                  if (hasAnySlots) {
-                    // They have slots configured but not at this time - disable
-                    return true;
-                  }
+                          if (exactMatch) {
+                            isAvailable = exactMatch.available;
+                            isDisabled = !exactMatch.available;
+                            statusText = isAvailable ? '✅' : '❌';
+                          } else if (hasAnySlots) {
+                            isDisabled = true;
+                            statusText = '❌';
+                          } else {
+                            statusText = '⚠️';
+                          }
+                        }
 
-                  // No slots configured at all - allow selection (backend will validate)
-                  return false;
-                }}
-                renderTags={(value, getTagProps) =>
-                  value.map((employee, index) => (
-                    <Chip
-                      label={`${employee.firstName} ${employee.lastName}`}
-                      {...getTagProps({ index })}
-                      key={employee.id}
-                    />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Assign to Employee(s) (Optional)"
-                    placeholder={
-                      selectedEmployees.length === 0
-                        ? 'Auto-assign or select employees...'
-                        : ''
-                    }
-                    helperText={
-                      selectedEmployees.length === 0
-                        ? 'Leave empty for auto-assignment'
-                        : `${selectedEmployees.length} employee${selectedEmployees.length > 1 ? 's' : ''} selected`
-                    }
-                  />
-                )}
-                renderOption={(props, option) => {
-                  // If no availability data loaded yet
-                  if (availableSlots.length === 0) {
-                    return (
-                      <li {...props} key={option.id}>
-                        <Box display="flex" justifyContent="space-between" width="100%">
-                          <span>{option.firstName} {option.lastName}</span>
-                          <span style={{ color: '#757575', fontSize: '0.75rem' }}>
-                            No schedule set
-                          </span>
+                        return (
+                          <Chip
+                            key={employee.id}
+                            label={`${employee.firstName} ${employee.lastName} ${statusText}`}
+                            onClick={() => {
+                              if (isDisabled) return;
+
+                              if (isSelected) {
+                                // Remove employee
+                                const newSelected = selectedEmployees.filter(
+                                  (e) => e.id !== employee.id
+                                );
+                                setSelectedEmployees(newSelected);
+                                setFormData({
+                                  ...formData,
+                                  employeeIds: newSelected.map((e) => e.id),
+                                  employeeId:
+                                    newSelected.length > 0 ? newSelected[0].id : '',
+                                });
+                              } else {
+                                // Add employee
+                                const newSelected = [...selectedEmployees, employee];
+                                setSelectedEmployees(newSelected);
+                                setFormData({
+                                  ...formData,
+                                  employeeIds: newSelected.map((e) => e.id),
+                                  employeeId:
+                                    newSelected.length > 0 ? newSelected[0].id : '',
+                                });
+                              }
+                            }}
+                            color={isSelected ? 'primary' : 'default'}
+                            variant={isSelected ? 'filled' : 'outlined'}
+                            disabled={isDisabled}
+                            sx={{
+                              cursor: isDisabled ? 'not-allowed' : 'pointer',
+                              opacity: isDisabled ? 0.5 : 1,
+                              borderWidth: isSelected ? 2 : 1,
+                              fontWeight: isSelected ? 600 : 500,
+                              color: isSelected
+                                ? undefined
+                                : isAvailable && availableSlots.length > 0
+                                ? 'success.dark'
+                                : 'text.primary',
+                              backgroundColor: isSelected
+                                ? undefined
+                                : isAvailable && availableSlots.length > 0
+                                ? 'rgba(46, 125, 50, 0.08)'
+                                : undefined,
+                              borderColor: isAvailable && !isSelected && availableSlots.length > 0
+                                ? 'success.main'
+                                : 'divider',
+                              '& .MuiChip-label': {
+                                color: isSelected
+                                  ? 'white'
+                                  : isAvailable && availableSlots.length > 0
+                                  ? 'success.dark'
+                                  : 'text.primary',
+                              },
+                              '&:hover': {
+                                backgroundColor: isDisabled
+                                  ? undefined
+                                  : isSelected
+                                  ? 'primary.dark'
+                                  : isAvailable
+                                  ? 'rgba(46, 125, 50, 0.15)'
+                                  : 'action.hover',
+                                transform: !isDisabled ? 'scale(1.02)' : undefined,
+                                boxShadow: !isDisabled ? 1 : undefined,
+                              },
+                              transition: 'all 0.2s ease-in-out',
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                    <Box
+                      sx={{
+                        fontSize: '0.875rem',
+                        color: 'text.secondary',
+                        mt: 1,
+                      }}
+                    >
+                      {selectedEmployees.length === 0
+                        ? 'Click to select employees or leave empty for auto-assignment'
+                        : `${selectedEmployees.length} employee${selectedEmployees.length > 1 ? 's' : ''} selected`}
+                      {availableSlots.length > 0 && (
+                        <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
+                          Status: ✅ Available | ❌ Not Available | ⚠️ No Schedule Set
                         </Box>
-                      </li>
-                    );
-                  }
-
-                  // Check if this employee is available at the selected time
-                  const exactMatch = availableSlots.find(
-                    (slot) =>
-                      slot.employeeId === option.id &&
-                      slot.startTime === formData.scheduledTime
-                  );
-
-                  const hasAnySlots = availableSlots.some(
-                    (slot) => slot.employeeId === option.id
-                  );
-
-                  let isAvailable = false;
-                  let isDisabled = false;
-
-                  if (exactMatch) {
-                    // We have data for this exact time
-                    isAvailable = exactMatch.available;
-                    isDisabled = !exactMatch.available;
-                  } else if (hasAnySlots) {
-                    // Employee has slots but not at this time
-                    isDisabled = true;
-                  }
-
-                  return (
-                    <li {...props} key={option.id}>
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        width="100%"
-                        sx={{ opacity: isDisabled ? 0.5 : 1 }}
-                      >
-                        <span>
-                          {option.firstName} {option.lastName}
-                        </span>
-                        {isDisabled && (
-                          <span style={{ color: '#d32f2f', fontSize: '0.875rem' }}>
-                            Not available
-                          </span>
-                        )}
-                        {isAvailable && (
-                          <span style={{ color: '#2e7d32' }}>✅</span>
-                        )}
-                      </Box>
-                    </li>
-                  );
-                }}
-                disabled={employeesLoading}
-                disableCloseOnSelect
-              />
-            </Grid>
-
-            {/* Available Slots */}
-            {checkingAvailability ? (
-              <Grid size={{ xs: 12 }}>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CircularProgress size={20} />
-                  <span>Checking availability...</span>
-                </Box>
-              </Grid>
-            ) : availableSlots.length === 0 ? (
-              <Grid size={{ xs: 12 }}>
-                <Alert severity="info">
-                  No availability configured yet. You can still create appointments and assign employees manually, or leave unassigned for auto-assignment.
-                </Alert>
-              </Grid>
-            ) : (
-              <Grid size={{ xs: 12 }}>
-                <Alert
-                  severity={
-                    getAvailableTimesForSelectedTime().length > 0
-                      ? 'success'
-                      : 'warning'
-                  }
-                >
-                  {getAvailableTimesForSelectedTime().length > 0
-                    ? `${
-                        getAvailableTimesForSelectedTime().length
-                      } employee(s) available at ${format12Hour(formData.scheduledTime)}`
-                    : 'No employees available at this time. Please select a different time.'}
-                </Alert>
-                {getAvailableTimesForSelectedTime().length > 0 && (
-                  <Box mt={1}>
-                    {getAvailableTimesForSelectedTime().map((slot) => (
-                      <Chip
-                        key={slot.employeeId}
-                        label={slot.employeeName}
-                        color="primary"
-                        size="small"
-                        sx={{ mr: 0.5, mb: 0.5 }}
-                      />
-                    ))}
+                      )}
+                    </Box>
                   </Box>
                 )}
-              </Grid>
-            )}
+              </FormControl>
+            </Grid>
+
 
             {/* 8. Notes */}
             <Grid size={{ xs: 12 }}>

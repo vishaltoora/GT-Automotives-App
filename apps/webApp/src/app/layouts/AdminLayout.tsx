@@ -41,7 +41,8 @@ import {
   AttachMoney,
   ShoppingCart,
   Sms,
-  Schedule
+  Schedule,
+  Email
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -84,6 +85,7 @@ export function AdminLayout() {
     { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
     { text: 'Availability', icon: <Schedule />, path: '/admin/availability' },
     { text: 'SMS History', icon: <Sms />, path: '/admin/sms-history' },
+    { text: 'Schedule', icon: <Email />, path: '/admin/employee-schedule' },
     { divider: true },
     { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
     { text: 'Jobs', icon: <Work />, path: '/admin/jobs' },

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import Telnyx from 'telnyx';
 import { PrismaService } from '@gt-automotive/database';
 import { SmsStatus, SmsType } from '@prisma/client';
+import { extractBusinessDate } from '../config/timezone.config';
 
 @Injectable()
 export class SmsService {
@@ -251,13 +252,25 @@ export class SmsService {
 
     this.logger.log(`[SMS] Sending confirmation to: ${appointment.customer.phone}`);
 
-    const date = new Date(appointment.scheduledDate);
+    // Format date correctly using timezone-aware utility
+    const businessDate = extractBusinessDate(appointment.scheduledDate);
+    const [year, month, day] = businessDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const formattedDate = date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric'
     });
-    const time = appointment.scheduledTime;
+
+    // Format time in 12-hour format
+    const [hours, minutes] = appointment.scheduledTime.split(':');
+    const timeDate = new Date();
+    timeDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    const time = timeDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
 
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
@@ -309,13 +322,25 @@ export class SmsService {
 
     this.logger.log(`✅ Sending cancellation SMS to ${appointment.customer.phone}`);
 
-    const date = new Date(appointment.scheduledDate);
+    // Format date correctly using timezone-aware utility
+    const businessDate = extractBusinessDate(appointment.scheduledDate);
+    const [year, month, day] = businessDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const formattedDate = date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric'
     });
-    const time = appointment.scheduledTime;
+
+    // Format time in 12-hour format
+    const [hours, minutes] = appointment.scheduledTime.split(':');
+    const timeDate = new Date();
+    timeDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    const time = timeDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
 
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
@@ -358,13 +383,25 @@ export class SmsService {
       return;
     }
 
-    const date = new Date(appointment.scheduledDate);
+    // Format date correctly using timezone-aware utility
+    const businessDate = extractBusinessDate(appointment.scheduledDate);
+    const [year, month, day] = businessDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const formattedDate = date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric'
     });
-    const time = appointment.scheduledTime;
+
+    // Format time in 12-hour format
+    const [hours, minutes] = appointment.scheduledTime.split(':');
+    const timeDate = new Date();
+    timeDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    const time = timeDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
 
     const serviceType = appointment.serviceType || 'service';
     const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
@@ -417,13 +454,26 @@ export class SmsService {
       return;
     }
 
-    const date = new Date(appointment.scheduledDate);
+    // Format date correctly using timezone-aware utility
+    const businessDate = extractBusinessDate(appointment.scheduledDate);
+    const [year, month, day] = businessDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const formattedDate = date.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric'
     });
-    const time = appointment.scheduledTime;
+
+    // Format time in 12-hour format
+    const [hours, minutes] = appointment.scheduledTime.split(':');
+    const timeDate = new Date();
+    timeDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    const time = timeDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
     const serviceType = appointment.serviceType || 'service';
     const customerName = `${appointment.customer.firstName} ${appointment.customer.lastName}`;
     const staffName = staff.firstName;

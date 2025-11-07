@@ -37,11 +37,12 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   TIRE_CHANGE: 'Tire Mount Balance',
   TIRE_ROTATION: 'Tire Rotation',
   TIRE_REPAIR: 'Tire Repair',
+  TIRE_SWAP: 'Tire Swap',
+  TIRE_BALANCE: 'Tire Balance',
   OIL_CHANGE: 'Oil Change',
   BRAKE_SERVICE: 'Brake Service',
-  WHEEL_ALIGNMENT: 'Wheel Alignment',
+  MECHANICAL_WORK: 'Mechanical Work',
   ENGINE_DIAGNOSTIC: 'Engine Diagnostic',
-  INSPECTION: 'Inspection',
   OTHER: 'Other Service',
 };
 
@@ -376,11 +377,17 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               <PersonIcon fontSize="small" color="action" />
               <Typography variant="body2" color="text.secondary">
                 Assigned to:{' '}
-                {appointment.employee
+                {appointment.employees && appointment.employees.length > 0
+                  ? appointment.employees
+                      .map((ae) => `${ae.employee.firstName} ${ae.employee.lastName}`)
+                      .reduce((acc, name, index, array) => {
+                        if (index === 0) return name;
+                        if (index === array.length - 1) return `${acc} and ${name}`;
+                        return `${acc}, ${name}`;
+                      }, '')
+                  : appointment.employee
                   ? `${appointment.employee.firstName} ${appointment.employee.lastName}`
-                  : appointment.employees
-                    ?.map((ae) => `${ae.employee.firstName} ${ae.employee.lastName}`)
-                    .join(', ')}
+                  : ''}
               </Typography>
             </Box>
           )}

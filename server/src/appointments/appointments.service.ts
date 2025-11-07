@@ -120,9 +120,24 @@ export class AppointmentsService {
       }
     }
 
-    // Normalize scheduledDate to midnight UTC for consistent date comparison
-    const normalizedDate = new Date(dto.scheduledDate);
-    normalizedDate.setUTCHours(0, 0, 0, 0);
+    // Handle scheduledDate properly to avoid timezone issues
+    // If dto.scheduledDate is already a Date object from the DTO transformer, it was parsed as UTC
+    // We need to extract the date components and create a new Date in local time
+    let normalizedDate: Date;
+
+    if (dto.scheduledDate instanceof Date) {
+      // DTO transformer already converted string to Date (as UTC)
+      // Extract the UTC date components and create local date
+      const year = dto.scheduledDate.getUTCFullYear();
+      const month = dto.scheduledDate.getUTCMonth();
+      const day = dto.scheduledDate.getUTCDate();
+      normalizedDate = new Date(year, month, day, 0, 0, 0, 0);
+    } else {
+      // Shouldn't happen, but handle string just in case
+      const dateStr = String(dto.scheduledDate);
+      const [year, month, day] = dateStr.split('-').map(Number);
+      normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    }
 
     // Calculate end time
     const endTime = this.calculateEndTime(dto.scheduledTime, dto.duration);
@@ -198,6 +213,9 @@ export class AppointmentsService {
 
       const customerName = `${appointment.customer.firstName} ${appointment.customer.lastName}`;
 
+      // Format date as YYYY-MM-DD to avoid timezone issues in email
+      const scheduledDateStr = extractBusinessDate(appointment.scheduledDate);
+
       await this.emailService.sendAppointmentAssignment({
         employeeEmail: employee.email,
         employeeName: `${employee.firstName} ${employee.lastName}`,
@@ -206,7 +224,7 @@ export class AppointmentsService {
         customerPhone: appointment.customer.phone || undefined,
         vehicleInfo: vehicleInfo,
         serviceType: appointment.serviceType,
-        scheduledDate: appointment.scheduledDate.toISOString(),
+        scheduledDate: scheduledDateStr,
         scheduledTime: appointment.scheduledTime,
         duration: appointment.duration,
         appointmentType: appointment.appointmentType as 'AT_GARAGE' | 'MOBILE_SERVICE',
@@ -409,10 +427,24 @@ export class AppointmentsService {
     // Support both old employeeId and new employeeIds
     const employeeIds = dto.employeeIds || (dto.employeeId ? [dto.employeeId] : undefined);
 
-    // Normalize scheduledDate if provided
+    // Normalize scheduledDate if provided (handle UTC parsing issue)
     if (dto.scheduledDate) {
-      const normalizedDate = new Date(dto.scheduledDate);
-      normalizedDate.setUTCHours(0, 0, 0, 0);
+      let normalizedDate: Date;
+
+      if (dto.scheduledDate instanceof Date) {
+        // DTO transformer already converted string to Date (as UTC)
+        // Extract the UTC date components and create local date
+        const year = dto.scheduledDate.getUTCFullYear();
+        const month = dto.scheduledDate.getUTCMonth();
+        const day = dto.scheduledDate.getUTCDate();
+        normalizedDate = new Date(year, month, day, 0, 0, 0, 0);
+      } else {
+        // Shouldn't happen, but handle string just in case
+        const dateStr = String(dto.scheduledDate);
+        const [year, month, day] = dateStr.split('-').map(Number);
+        normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      }
+
       dto.scheduledDate = normalizedDate;
     }
 

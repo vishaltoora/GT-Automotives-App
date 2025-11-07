@@ -153,8 +153,13 @@ export class AvailabilityService {
    */
   async checkAvailableSlots(dto: CheckAvailabilityDto): Promise<AvailableSlot[]> {
     const dayOfWeek = dto.date.getDay();
-    const dateOnly = new Date(dto.date);
-    dateOnly.setUTCHours(0, 0, 0, 0);
+
+    // Normalize date to start of day in LOCAL time to match appointment creation logic
+    // Extract UTC components and create local date (same as appointments.service.ts)
+    const year = dto.date.getUTCFullYear();
+    const month = dto.date.getUTCMonth();
+    const day = dto.date.getUTCDate();
+    const dateOnly = new Date(year, month, day, 0, 0, 0, 0);
 
 
     // Get employees to check (specific employee or all)
@@ -261,14 +266,20 @@ export class AvailabilityService {
   ): Promise<boolean | { available: false; reason: string; suggestion: string }> {
     const dayOfWeek = date.getDay();
 
-    // Normalize date to start of day in UTC to match Prisma DateTime storage
-    const dateOnly = new Date(date);
-    dateOnly.setUTCHours(0, 0, 0, 0);
+    // Normalize date to start of day in LOCAL time to match appointment creation logic
+    // Extract UTC components and create local date (same as appointments.service.ts)
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const day = date.getUTCDate();
+    const dateOnly = new Date(year, month, day, 0, 0, 0, 0);
 
     console.log('[AVAILABILITY] Date normalization:', {
       inputDate: date,
       normalized: dateOnly,
       iso: dateOnly.toISOString(),
+      year,
+      month,
+      day,
     });
 
     // Calculate end time
