@@ -5,6 +5,10 @@ dist
 # Allow production builds for deployment
 !server/dist
 !apps/webApp/dist
+# But ignore TypeScript build artifacts in dist folders
+**/*.d.ts
+**/*.d.ts.map
+**/*.tsbuildinfo
 tmp
 out-tsc
 
