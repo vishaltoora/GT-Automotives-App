@@ -376,8 +376,8 @@ const InvoiceDetails: React.FC = () => {
                         </TableCell>
                         <TableCell align="right">{item.quantity}</TableCell>
                         <TableCell align="right">
-                          {item.itemType === 'DISCOUNT_PERCENTAGE'
-                            ? `${item.unitPrice}%`
+                          {String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
+                            ? `${Number(item.unitPrice)}%`
                             : formatCurrency(item.unitPrice)}
                         </TableCell>
                         <TableCell align="right">
