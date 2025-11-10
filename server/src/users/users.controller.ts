@@ -68,7 +68,7 @@ export class UsersController {
       firstName: string;
       lastName: string;
       phone?: string;
-      roleName: 'ADMIN' | 'STAFF';
+      roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF';
       password: string;
     },
     @CurrentUser() currentUser: any,
@@ -112,7 +112,7 @@ export class UsersController {
   @Roles('ADMIN')
   async assignRoleByName(
     @Param('id') id: string,
-    @Body('roleName') roleName: 'ADMIN' | 'STAFF',
+    @Body('roleName') roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF',
     @CurrentUser() currentUser: any,
   ) {
     return this.usersService.assignRoleByName(id, roleName, currentUser.id);

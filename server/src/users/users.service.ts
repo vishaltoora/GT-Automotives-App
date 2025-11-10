@@ -83,7 +83,7 @@ export class UsersService {
     firstName: string;
     lastName: string;
     phone?: string;
-    roleName: 'ADMIN' | 'STAFF';
+    roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF';
     createdBy: string;
     password: string;
   }) {
@@ -262,7 +262,7 @@ export class UsersService {
     return updatedUser;
   }
 
-  async assignRoleByName(userId: string, roleName: 'ADMIN' | 'STAFF', assignedBy: string) {
+  async assignRoleByName(userId: string, roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF', assignedBy: string) {
     const user = await this.findById(userId);
     const role = await this.roleRepository.findByName(roleName);
 

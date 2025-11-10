@@ -13,14 +13,14 @@ export declare class UsersService {
         isActive?: boolean;
     }): Promise<({
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -28,14 +28,14 @@ export declare class UsersService {
     })[]>;
     findById(id: string): Promise<{
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -43,14 +43,14 @@ export declare class UsersService {
     }>;
     findByEmail(email: string): Promise<({
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -65,14 +65,14 @@ export declare class UsersService {
         createdBy: string;
     }): Promise<{
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -84,20 +84,20 @@ export declare class UsersService {
         firstName: string;
         lastName: string;
         phone?: string;
-        roleName: 'ADMIN' | 'STAFF';
+        roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF';
         createdBy: string;
         password: string;
     }): Promise<{
         clerkCreated: boolean;
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
         role: import("@prisma/client").Role;
@@ -111,14 +111,14 @@ export declare class UsersService {
         updatedBy: string;
     }): Promise<{
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -126,29 +126,29 @@ export declare class UsersService {
     }>;
     assignRole(userId: string, roleId: string, assignedBy: string): Promise<{
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }>;
-    assignRoleByName(userId: string, roleName: 'ADMIN' | 'STAFF', assignedBy: string): Promise<{
+    assignRoleByName(userId: string, roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF', assignedBy: string): Promise<{
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {
@@ -156,14 +156,14 @@ export declare class UsersService {
     }>;
     delete(id: string, deletedBy: string): Promise<{
         id: string;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
     } & {

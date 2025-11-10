@@ -48,7 +48,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     phone: '',
     password: '',
     confirmPassword: '',
-    roleName: 'STAFF' as 'ADMIN' | 'STAFF',
+    roleName: 'STAFF' as 'ADMIN' | 'SUPERVISOR' | 'STAFF',
     smsEnabled: true,
   });
 
@@ -291,13 +291,14 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               <Select
                 value={formData.roleName}
                 label="Role"
-                onChange={(e) => setFormData({ ...formData, roleName: e.target.value as 'ADMIN' | 'STAFF' })}
+                onChange={(e) => setFormData({ ...formData, roleName: e.target.value as 'ADMIN' | 'SUPERVISOR' | 'STAFF' })}
               >
                 <MenuItem value="STAFF">Staff</MenuItem>
+                <MenuItem value="SUPERVISOR">Supervisor</MenuItem>
                 <MenuItem value="ADMIN">Admin</MenuItem>
               </Select>
               <FormHelperText>
-                Admins have full system access, Staff have limited access
+                Admins have full system access, Supervisors have elevated operational access, Staff have limited access
               </FormHelperText>
             </FormControl>
 
