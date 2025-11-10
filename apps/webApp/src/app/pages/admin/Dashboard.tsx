@@ -49,7 +49,10 @@ import { dashboardService, DashboardStats } from '../../services/dashboard.servi
 
 export function AdminDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+
+  // Determine base path based on user role
+  const basePath = role === 'supervisor' ? '/supervisor' : '/admin';
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
@@ -131,7 +134,7 @@ export function AdminDashboard() {
 
   const handleInvoiceSuccess = (invoice: any) => {
     // Navigate to the newly created invoice details
-    navigate(`/admin/invoices/${invoice.id}`);
+    navigate(`${basePath}/invoices/${invoice.id}`);
   };
 
   const getStatusIcon = (status: string) => {
@@ -489,7 +492,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/payments"
+                to={`${basePath}/payments`}
                 sx={{
                   ...actionItemStyles,
                   textDecoration: 'none',
@@ -508,7 +511,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/day-summary"
+                to={`${basePath}/day-summary`}
                 sx={{
                   ...actionItemStyles,
                   textDecoration: 'none',
@@ -552,7 +555,7 @@ export function AdminDashboard() {
             }}>
               <Paper
                 component={Link}
-                to="/admin/appointments"
+                to={`${basePath}/appointments`}
                 sx={{
                   ...actionItemStyles,
                   textDecoration: 'none',
@@ -579,7 +582,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/jobs"
+                to={`${basePath}/jobs`}
                 sx={{
                   ...actionItemStyles,
                   textDecoration: 'none',
@@ -606,7 +609,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/inventory"
+                to={`${basePath}/inventory`}
                 sx={{
                   ...actionItemStyles,
                   textDecoration: 'none',
@@ -633,7 +636,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/invoices"
+                to={`${basePath}/invoices`}
                 sx={{
                   ...actionItemStyles,
                   textDecoration: 'none',
@@ -660,7 +663,7 @@ export function AdminDashboard() {
 
               <Paper
                 component={Link}
-                to="/admin/quotations"
+                to={`${basePath}/quotations`}
                 sx={{
                   ...actionItemStyles,
                   textDecoration: 'none',
