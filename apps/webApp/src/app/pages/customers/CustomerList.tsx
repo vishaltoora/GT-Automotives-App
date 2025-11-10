@@ -169,7 +169,7 @@ export function CustomerList() {
             horizontal: 'right',
           }}
         >
-          {(role === 'staff' || role === 'admin') && (
+          {(role === 'staff' || role === 'supervisor' || role === 'admin') && (
             <MenuItem onClick={handleEdit}>
               <ListItemIcon>
                 <EditIcon fontSize="small" />
@@ -238,7 +238,7 @@ export function CustomerList() {
                 </Box>
               )}
             </Box>
-            {(role === 'staff' || role === 'admin') && (
+            {(role === 'staff' || role === 'supervisor' || role === 'admin') && (
               <>
                 <IconButton
                   size="small"
@@ -385,7 +385,7 @@ export function CustomerList() {
         <Typography variant={isMobile ? 'h5' : 'h4'} component="h1">
           Customers
         </Typography>
-        {(role === 'staff' || role === 'admin') && !isMobile && (
+        {(role === 'staff' || role === 'supervisor' || role === 'admin') && !isMobile && (
           <Button
             variant="contained"
             color="primary"
@@ -417,7 +417,7 @@ export function CustomerList() {
                 ),
               }}
             />
-            {(role === 'staff' || role === 'admin') && isMobile && (
+            {(role === 'staff' || role === 'supervisor' || role === 'admin') && isMobile && (
               <IconButton
                 color="primary"
                 onClick={handleAddClick}

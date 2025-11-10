@@ -215,7 +215,7 @@ const InvoiceList: React.FC = () => {
     setEditingInvoice(null);
     // Optionally navigate to the invoice details (only for new invoices)
     if (!editingInvoice) {
-      const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+      const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
       navigate(`${basePath}/invoices/${invoice.id}`);
     }
   };
@@ -259,8 +259,8 @@ const InvoiceList: React.FC = () => {
     return new Date(dateStr).toLocaleDateString();
   };
 
-  const canCreateInvoice = role === 'staff' || role === 'admin';
-  const canManageInvoice = role === 'staff' || role === 'admin';
+  const canCreateInvoice = role === 'staff' || role === 'supervisor' || role === 'admin';
+  const canManageInvoice = role === 'staff' || role === 'supervisor' || role === 'admin';
   const canDeleteInvoice = role === 'admin';
 
   const getInvoiceActions = (invoice: Invoice): ActionItem[] => {
@@ -270,7 +270,7 @@ const InvoiceList: React.FC = () => {
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => {
-          const basePath = role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/customer';
+          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
           navigate(`${basePath}/invoices/${invoice.id}`);
         },
         show: true,
