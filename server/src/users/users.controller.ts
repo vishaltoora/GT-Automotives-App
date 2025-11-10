@@ -24,7 +24,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async findAll(
     @Query('roleId') roleId?: string,
     @Query('isActive') isActive?: string,
@@ -37,7 +37,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async findById(@Param('id') id: string) {
     return this.usersService.findById(id);
   }
