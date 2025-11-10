@@ -182,22 +182,22 @@ export class AvailabilityController {
 
   /**
    * Check available time slots for a specific date and duration
-   * Roles: ADMIN, STAFF, CUSTOMER (for booking)
+   * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER (for booking)
    */
   @Post('check')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'STAFF', 'CUSTOMER')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async checkAvailability(@Body() dto: CheckAvailabilityDto) {
     return this.availabilityService.checkAvailableSlots(dto);
   }
 
   /**
    * Check if specific employee is available at a specific time
-   * Roles: ADMIN, STAFF
+   * Roles: ADMIN, SUPERVISOR, STAFF
    */
   @Get('check/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async checkEmployeeAvailability(
     @Param('employeeId') employeeId: string,
     @Query('date') date: string,
