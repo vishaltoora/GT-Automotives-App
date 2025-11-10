@@ -496,7 +496,21 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             </tr>
           </thead>
           <tbody>
-            ${invoice.items.map(item => `
+            ${invoice.items.map(item => {
+              // Calculate display total - handle DISCOUNT_PERCENTAGE items
+              let displayTotal = item.total || item.quantity * Number(item.unitPrice);
+              if (String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE') {
+                // Recalculate percentage discount based on other items
+                const otherItemsSubtotal = invoice.items
+                  .filter((i: any) => String(i.itemType).toUpperCase() !== 'DISCOUNT' && String(i.itemType).toUpperCase() !== 'DISCOUNT_PERCENTAGE')
+                  .reduce((sum: number, i: any) => sum + (Number(i.total) || Number(i.quantity) * Number(i.unitPrice)), 0);
+                displayTotal = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
+              } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
+                // Ensure discount is negative
+                displayTotal = -Math.abs(displayTotal);
+              }
+
+              return `
               <tr>
                 <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">
                   ${(item as any).tireName ? `<div style="font-weight: 600; margin-bottom: 2px;">${(item as any).tireName}</div>` : ''}
@@ -504,10 +518,11 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
                 </td>
                 <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.itemType}</td>
                 <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.quantity}</td>
-                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(item.unitPrice)}</td>
-                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(item.total || item.quantity * item.unitPrice)}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE' ? `${Number(item.unitPrice)}%` : formatCurrency(item.unitPrice)}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(displayTotal)}</td>
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
         </table>
 
