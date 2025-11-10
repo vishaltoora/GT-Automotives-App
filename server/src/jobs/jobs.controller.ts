@@ -25,7 +25,7 @@ export class JobsController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   create(@Body() createJobDto: CreateJobDto, @CurrentUser() user: any) {
     if (!user || !user.id) {
       throw new UnauthorizedException('User not authenticated properly');
@@ -35,7 +35,7 @@ export class JobsController {
 
   @Get()
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   findAll(
     @Query('employeeId') employeeId?: string,
     @Query('status') status?: JobStatus,
@@ -54,28 +54,28 @@ export class JobsController {
 
   @Get('summary')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   getJobSummary(@Query('employeeId') employeeId?: string): Promise<JobSummaryDto> {
     return this.jobsService.getJobSummary(employeeId);
   }
 
   @Get('pending')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   findPendingJobs(): Promise<JobResponseDto[]> {
     return this.jobsService.findPendingJobs();
   }
 
   @Get('ready-for-payment')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   findReadyForPayment(): Promise<JobResponseDto[]> {
     return this.jobsService.findReadyForPayment();
   }
 
   @Get('my-jobs')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   findMyJobs(@CurrentUser() user: any): Promise<JobResponseDto[]> {
     // Always use the authenticated user's ID from token - staff can only see their own
     return this.jobsService.findByEmployee(user.id);
@@ -83,7 +83,7 @@ export class JobsController {
 
   @Get('my-summary')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   getMyJobSummary(@CurrentUser() user: any): Promise<JobSummaryDto> {
     // Always use the authenticated user's ID from token - staff can only see their own
     return this.jobsService.getJobSummary(user.id);
@@ -91,21 +91,21 @@ export class JobsController {
 
   @Get('employee/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   findByEmployee(@Param('employeeId') employeeId: string): Promise<JobResponseDto[]> {
     return this.jobsService.findByEmployee(employeeId);
   }
 
   @Get(':id')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   findOne(@Param('id') id: string): Promise<JobResponseDto> {
     return this.jobsService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   update(
     @Param('id') id: string,
     @Body() updateJobDto: UpdateJobDto,
@@ -116,14 +116,14 @@ export class JobsController {
 
   @Patch(':id/complete')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   markAsComplete(@Param('id') id: string, @CurrentUser() user: any) {
     return this.jobsService.markAsComplete(id, user.id);
   }
 
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.jobsService.remove(id, user.id);
   }

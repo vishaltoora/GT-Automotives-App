@@ -23,7 +23,7 @@ export class CustomersController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   create(
     @Body() createCustomerDto: CreateCustomerDto,
     @CurrentUser() user: any,
@@ -38,7 +38,7 @@ export class CustomersController {
 
   @Get('search')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   search(
     @Query('q') searchTerm: string,
     @CurrentUser() user: any,
@@ -66,7 +66,7 @@ export class CustomersController {
 
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   remove(
     @Param('id') id: string,
     @CurrentUser() user: any,

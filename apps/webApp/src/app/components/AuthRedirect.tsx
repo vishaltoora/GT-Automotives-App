@@ -33,6 +33,9 @@ export function AuthRedirect() {
           case 'admin':
             redirectPath = '/admin/dashboard';
             break;
+          case 'supervisor':
+            redirectPath = '/supervisor/dashboard';
+            break;
           case 'staff':
             redirectPath = '/staff/dashboard';
             break;
@@ -65,14 +68,15 @@ export function AuthRedirect() {
   const shouldShowLoading = isRedirecting || (isAuthenticated && isOnPublicPage);
   
   if (shouldShowLoading) {
-    const roleDisplayName = role === 'admin' ? 'Admin Panel' : 
-                           role === 'staff' ? 'Staff Dashboard' : 
+    const roleDisplayName = role === 'admin' ? 'Admin Panel' :
+                           role === 'supervisor' ? 'Supervisor Dashboard' :
+                           role === 'staff' ? 'Staff Dashboard' :
                            'Customer Portal';
-    
-    const message = isRedirecting ? 
-      `Redirecting to ${roleDisplayName}...` : 
+
+    const message = isRedirecting ?
+      `Redirecting to ${roleDisplayName}...` :
       role ? `Loading ${roleDisplayName}...` : 'Verifying your account...';
-    
+
     return <AuthLoading message={message} />;
   }
 

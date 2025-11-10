@@ -59,6 +59,7 @@ export interface Appointment {
     paymentBreakdown?: PaymentEntry[];
     paymentNotes?: string;
     expectedAmount?: number;
+    paymentDate?: Date;
     reminderSent: boolean;
     bookedBy?: string;
     createdAt: Date;

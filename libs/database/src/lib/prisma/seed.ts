@@ -105,6 +105,20 @@ async function main() {
     },
   });
 
+  // Supervisor Role
+  const supervisorRole = await prisma.role.upsert({
+    where: { name: RoleName.SUPERVISOR },
+    update: {
+      displayName: 'Supervisor',
+      description: 'Supervisors with elevated access to appointments and expenses',
+    },
+    create: {
+      name: RoleName.SUPERVISOR,
+      displayName: 'Supervisor',
+      description: 'Supervisors with elevated access to appointments and expenses',
+    },
+  });
+
   // Admin Role
   const adminRole = await prisma.role.upsert({
     where: { name: RoleName.ADMIN },
@@ -119,7 +133,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Created 3 roles');
+  console.log('✅ Created 4 roles');
 
   // Assign permissions to roles
   console.log('Assigning permissions to roles...');
@@ -173,6 +187,50 @@ async function main() {
       await prisma.rolePermission.create({
         data: {
           roleId: staffRole.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+  }
+
+  // Supervisor permissions (elevated access, but not full admin)
+  // Can do everything except: process payments, manage payroll, delete invoices, view reports, view SMS history, manage users
+  const supervisorPermissions = [
+    // Customer management - Full access
+    'customers:create',
+    'customers:read',
+    'customers:update',
+    'customers:delete',
+    // Vehicle management - Full access
+    'vehicles:create',
+    'vehicles:read',
+    'vehicles:update',
+    'vehicles:delete',
+    // Tire inventory - Full access
+    'tires:create',
+    'tires:read',
+    'tires:update',
+    'tires:delete',
+    // Invoice management - Create, Read, Update only (NO DELETE)
+    'invoices:create',
+    'invoices:read',
+    'invoices:update',
+    'invoices:approve',
+    // Appointment management - Full access including DELETE
+    'appointments:create',
+    'appointments:read',
+    'appointments:update',
+    'appointments:delete',
+    // Settings - Read only
+    'settings:read',
+  ];
+
+  for (const permKey of supervisorPermissions) {
+    const permission = permissionMap.get(permKey);
+    if (permission) {
+      await prisma.rolePermission.create({
+        data: {
+          roleId: supervisorRole.id,
           permissionId: permission.id,
         },
       });

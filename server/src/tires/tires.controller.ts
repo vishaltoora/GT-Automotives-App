@@ -58,7 +58,7 @@ export class TiresController {
   // Get all tire brands (CRUD endpoint - must come before generic 'brands' route)
   @Get('brands/all')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getAllTireBrands(): Promise<TireBrandDto[]> {
     return this.tiresService.getAllTireBrands();
   }
@@ -76,7 +76,7 @@ export class TiresController {
   // Create new tire brand
   @Post('brands')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createTireBrand(
     @Body() createTireBrandDto: CreateTireBrandDto,
@@ -99,7 +99,7 @@ export class TiresController {
   // Update tire brand
   @Put('brands/:id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async updateTireBrand(
     @Param('id') id: string,
@@ -112,7 +112,7 @@ export class TiresController {
   // Delete tire brand
   @Delete('brands/:id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTireBrand(
     @Param('id') id: string,
@@ -126,7 +126,7 @@ export class TiresController {
   // Get all tire sizes (CRUD endpoint - must come before generic 'sizes' route)
   @Get('sizes/all')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getAllTireSizes(): Promise<TireSizeDto[]> {
     return this.tiresService.getAllTireSizes();
   }
@@ -144,7 +144,7 @@ export class TiresController {
   // Create new tire size
   @Post('sizes')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createTireSize(
     @Body() createTireSizeDto: CreateTireSizeDto,
@@ -156,7 +156,7 @@ export class TiresController {
   // Update tire size
   @Put('sizes/:id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async updateTireSize(
     @Param('id') id: string,
@@ -169,7 +169,7 @@ export class TiresController {
   // Delete tire size
   @Delete('sizes/:id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTireSize(
     @Param('id') id: string,
@@ -183,7 +183,7 @@ export class TiresController {
   // Get all locations (CRUD endpoint - must come before generic 'locations' route)
   @Get('locations/all')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getAllLocations(): Promise<LocationDto[]> {
     return this.tiresService.getAllLocations();
   }
@@ -201,7 +201,7 @@ export class TiresController {
   // Create new location
   @Post('locations')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createLocation(
     @Body() createLocationDto: CreateLocationDto,
@@ -213,7 +213,7 @@ export class TiresController {
   // Update location
   @Put('locations/:id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async updateLocation(
     @Param('id') id: string,
@@ -226,7 +226,7 @@ export class TiresController {
   // Delete location
   @Delete('locations/:id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteLocation(
     @Param('id') id: string,
@@ -249,7 +249,7 @@ export class TiresController {
   // Staff and Admin - Create new tire
   @Post()
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async create(
     @Body() createTireDto: CreateTireDto,
@@ -265,7 +265,7 @@ export class TiresController {
   // Staff and Admin - Update tire
   @Put(':id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async update(
     @Param('id') id: string,
@@ -283,7 +283,7 @@ export class TiresController {
   // Admin only - Delete tire
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(
     @Param('id') id: string,
@@ -295,7 +295,7 @@ export class TiresController {
   // Staff and Admin - Adjust stock
   @Post(':id/adjust-stock')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UsePipes(new ValidationPipe({ transform: true }))
   async adjustStock(
     @Param('id') id: string,
@@ -313,7 +313,7 @@ export class TiresController {
   // Staff and Admin - Get low stock items
   @Get('reports/low-stock')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getLowStock(
     @CurrentUser() user: any,
   ): Promise<TireResponseDto[]> {
@@ -323,7 +323,7 @@ export class TiresController {
   // Admin only - Get inventory report
   @Get('reports/inventory')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   async getInventoryReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -339,7 +339,7 @@ export class TiresController {
   // Staff and Admin - Search by brand and model
   @Get('search/brand/:brand/model/:model')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async findByBrandAndModel(
     @Param('brand') brand: string,
     @Param('model') model: string,
@@ -367,7 +367,7 @@ export class TiresController {
   // Staff and Admin - Get stock alerts
   @Get('alerts/low-stock')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getStockAlerts(): Promise<TireResponseDto[]> {
     return this.tiresService.checkLowStockAlerts();
   }

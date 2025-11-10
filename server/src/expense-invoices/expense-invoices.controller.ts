@@ -99,7 +99,7 @@ export class ExpenseInvoicesController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   async remove(@Param('id') id: string): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.remove(id);
   }

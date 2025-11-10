@@ -5,27 +5,27 @@ export declare class AppointmentsController {
     constructor(appointmentsService: AppointmentsService);
     /**
      * Create a new appointment
-     * Roles: ADMIN, STAFF, CUSTOMER
+     * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER
      */
     create(createAppointmentDto: CreateAppointmentDto, user: any): Promise<{
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -33,36 +33,38 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
         employees: ({
             employee: {
                 id: string;
-                email: string;
                 firstName: string | null;
                 lastName: string | null;
+                email: string;
             };
         } & {
             id: string;
-            employeeId: string;
             createdAt: Date;
+            employeeId: string;
             appointmentId: string;
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -70,32 +72,30 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     /**
      * Get all appointments with filters
-     * Roles: ADMIN, STAFF (staff see only their assigned appointments)
+     * Roles: ADMIN, SUPERVISOR, STAFF (staff see only their assigned appointments)
      */
     findAll(query: AppointmentQueryDto, user: any): Promise<({
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -103,36 +103,38 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
         employees: ({
             employee: {
                 id: string;
-                email: string;
                 firstName: string | null;
                 lastName: string | null;
+                email: string;
             };
         } & {
             id: string;
-            employeeId: string;
             createdAt: Date;
+            employeeId: string;
             appointmentId: string;
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -140,37 +142,35 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     })[]>;
     /**
      * Get calendar view
-     * Roles: ADMIN, STAFF (staff see only their assigned appointments)
+     * Roles: ADMIN, SUPERVISOR, STAFF (staff see only their assigned appointments)
      */
     getCalendar(query: CalendarQueryDto, user: any): Promise<Record<string, any[]>>;
     /**
      * Get today's appointments
-     * Roles: ADMIN, STAFF (staff see only their assigned appointments)
+     * Roles: ADMIN, SUPERVISOR, STAFF (staff see only their assigned appointments)
      */
     getToday(user: any): Promise<({
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -178,36 +178,38 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
         employees: ({
             employee: {
                 id: string;
-                email: string;
                 firstName: string | null;
                 lastName: string | null;
+                email: string;
             };
         } & {
             id: string;
-            employeeId: string;
             createdAt: Date;
+            employeeId: string;
             appointmentId: string;
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -215,32 +217,30 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     })[]>;
     /**
-     * Get appointments by payment date (for daily cash reports)
-     * Roles: ADMIN only
+     * Get appointments by payment date (for daily cash reports / day summary)
+     * Roles: ADMIN, SUPERVISOR, STAFF
      */
     getByPaymentDate(query: PaymentDateQueryDto): Promise<({
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -248,36 +248,38 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
         employees: ({
             employee: {
                 id: string;
-                email: string;
                 firstName: string | null;
                 lastName: string | null;
+                email: string;
             };
         } & {
             id: string;
-            employeeId: string;
             createdAt: Date;
+            employeeId: string;
             appointmentId: string;
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -285,32 +287,30 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     })[]>;
     /**
      * Get customer's upcoming appointments
-     * Roles: ADMIN, STAFF, CUSTOMER (customers can only see their own)
+     * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER (customers can only see their own)
      */
     getCustomerAppointments(customerId: string, user: any): Promise<({
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -318,36 +318,38 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
         employees: ({
             employee: {
                 id: string;
-                email: string;
                 firstName: string | null;
                 lastName: string | null;
+                email: string;
             };
         } & {
             id: string;
-            employeeId: string;
             createdAt: Date;
+            employeeId: string;
             appointmentId: string;
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -355,32 +357,30 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     })[]>;
     /**
      * Get a single appointment by ID
-     * Roles: ADMIN, STAFF, CUSTOMER
+     * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER
      */
     findOne(id: string): Promise<{
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -388,36 +388,38 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
         employees: ({
             employee: {
                 id: string;
-                email: string;
                 firstName: string | null;
                 lastName: string | null;
+                email: string;
             };
         } & {
             id: string;
-            employeeId: string;
             createdAt: Date;
+            employeeId: string;
             appointmentId: string;
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -425,32 +427,30 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     /**
      * Update an appointment
-     * Roles: ADMIN, STAFF
+     * Roles: ADMIN, SUPERVISOR, STAFF
      */
     update(id: string, updateAppointmentDto: UpdateAppointmentDto): Promise<{
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -458,36 +458,38 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
         employees: ({
             employee: {
                 id: string;
-                email: string;
                 firstName: string | null;
                 lastName: string | null;
+                email: string;
             };
         } & {
             id: string;
-            employeeId: string;
             createdAt: Date;
+            employeeId: string;
             appointmentId: string;
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -495,32 +497,30 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     /**
      * Cancel an appointment
-     * Roles: ADMIN, STAFF, CUSTOMER
+     * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER
      */
     cancel(id: string): Promise<{
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         vehicle: {
             id: string;
-            customerId: string;
+            model: string;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
             make: string;
-            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -528,23 +528,25 @@ export declare class AppointmentsController {
         } | null;
         employee: {
             id: string;
-            email: string;
             firstName: string | null;
             lastName: string | null;
+            email: string;
         } | null;
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -552,26 +554,26 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     /**
      * Delete an appointment (hard delete)
-     * Roles: ADMIN only
+     * Roles: ADMIN, SUPERVISOR
      */
     remove(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         customerId: string;
-        vehicleId: string | null;
-        employeeId: string | null;
         scheduledDate: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        vehicleId: string | null;
+        notes: string | null;
+        employeeId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -579,8 +581,6 @@ export declare class AppointmentsController {
         paymentDate: Date | null;
         reminderSent: boolean;
         bookedBy: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }
 //# sourceMappingURL=appointments.controller.d.ts.map

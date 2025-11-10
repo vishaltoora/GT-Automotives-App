@@ -26,7 +26,7 @@ export class InvoicesController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   create(@Body() createInvoiceDto: CreateInvoiceDto, @CurrentUser() user: any) {
     return this.invoicesService.create(createInvoiceDto, user.id);
   }
@@ -61,7 +61,7 @@ export class InvoicesController {
 
   @Get('cash-report')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   getDailyCashReport(@Query('date') date: string, @CurrentUser() user: any) {
     const reportDate = date || new Date().toISOString().split('T')[0];
     return this.invoicesService.getDailyCashReport(reportDate, user);
@@ -79,7 +79,7 @@ export class InvoicesController {
 
   @Patch(':id')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   update(
     @Param('id') id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
@@ -90,7 +90,7 @@ export class InvoicesController {
 
   @Post(':id/pay')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'STAFF')
   markAsPaid(
     @Param('id') id: string,
     @Body('paymentMethod') paymentMethod: PaymentMethod,
@@ -101,7 +101,7 @@ export class InvoicesController {
 
   @Post(':id/send-email')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   sendEmail(@Param('id') id: string, @CurrentUser() user: any) {
     return this.invoicesService.sendInvoiceEmail(id, user.id);
   }
@@ -121,14 +121,14 @@ export class InvoicesController {
 
   @Post('services')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   createService(@Body() createServiceDto: CreateServiceDto) {
     return this.invoicesService.createService(createServiceDto);
   }
 
   @Patch('services/:id')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   updateService(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
     return this.invoicesService.updateService(id, updateServiceDto);
   }

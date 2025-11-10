@@ -8,6 +8,7 @@ import { ErrorProvider } from './contexts/ErrorContext';
 import { PublicLayout } from './layouts/PublicLayout';
 import { CustomerLayout } from './layouts/CustomerLayout';
 import { StaffLayout } from './layouts/StaffLayout';
+import { SupervisorLayout } from './layouts/SupervisorLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
 // Guards
@@ -164,6 +165,44 @@ export function App() {
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
+
+        {/* Supervisor Routes */}
+        <Route
+          path="/supervisor/*"
+          element={
+            <AuthGuard>
+              <RoleGuard allowedRoles={['supervisor', 'admin']}>
+                <SupervisorLayout />
+              </RoleGuard>
+            </AuthGuard>
+          }
+        >
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="day-summary" element={<DaySummary />} />
+          <Route path="customers" element={<CustomerList />} />
+          <Route path="customers/new" element={<CustomerForm />} />
+          <Route path="customers/:id/edit" element={<CustomerForm />} />
+          <Route path="vehicles" element={<VehicleList />} />
+          <Route path="vehicles/new" element={<VehicleForm />} />
+          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+          <Route path="inventory" element={<TireListSimple />} />
+          <Route path="inventory/new" element={<TireFormSimple />} />
+          <Route path="inventory/:id" element={<TireDetails />} />
+          <Route path="inventory/:id/edit" element={<TireFormSimple />} />
+          <Route path="inventory/dashboard" element={<InventoryDashboard />} />
+          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="invoices/:id" element={<InvoiceDetails />} />
+          <Route path="invoices/cash-report" element={<CashReport />} />
+          <Route path="quotations" element={<QuoteList />} />
+          <Route path="quotations/:id" element={<QuotationDetails />} />
+          <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
+          <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="availability" element={<EmployeeAvailabilityManagement />} />
+          <Route path="employee-schedule" element={<EmployeeSchedule />} />
+          <Route path="jobs" element={<JobsManagement />} />
+          <Route path="jobs/:employeeId" element={<JobsManagement />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

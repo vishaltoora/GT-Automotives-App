@@ -13,7 +13,7 @@ export class EmailController {
    */
   @Post('send-eod-summary')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async sendEODSummary(
     @Body() data: {
       date: string;
@@ -37,7 +37,7 @@ export class EmailController {
    */
   @Post('send-employee-schedule')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async sendEmployeeSchedule(
     @Body() data: {
       employeeEmail: string;

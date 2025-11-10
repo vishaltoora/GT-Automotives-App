@@ -1,7 +1,7 @@
 import React from 'react';
 export declare const formatServiceType: (serviceType: string) => string;
 export declare const formatPhoneNumber: (phone: string) => string;
-export declare const getStatusColor: (status: string) => "success" | "error" | "default" | "info" | "warning";
+export declare const getStatusColor: (status: string) => "default" | "warning" | "success" | "error" | "info";
 export declare const getStatusIcon: (status: string) => import("react/jsx-runtime").JSX.Element;
 export declare const formatStatusLabel: (status: string) => string;
 export interface AppointmentCardProps {

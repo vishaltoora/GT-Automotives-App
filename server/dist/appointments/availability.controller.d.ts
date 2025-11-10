@@ -9,9 +9,9 @@ export declare class AvailabilityController {
      */
     setRecurring(dto: SetAvailabilityDto, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -23,9 +23,9 @@ export declare class AvailabilityController {
      */
     setMyRecurring(dto: Omit<SetAvailabilityDto, 'employeeId'>, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -37,9 +37,9 @@ export declare class AvailabilityController {
      */
     getRecurring(employeeId: string): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -51,9 +51,9 @@ export declare class AvailabilityController {
      */
     getMyRecurring(user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -65,13 +65,13 @@ export declare class AvailabilityController {
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**
@@ -80,13 +80,13 @@ export declare class AvailabilityController {
      */
     addMyOverride(dto: Omit<TimeSlotOverrideDto, 'employeeId'>, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**
@@ -95,13 +95,13 @@ export declare class AvailabilityController {
      */
     getOverrides(employeeId: string, startDate: string, endDate: string): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -110,13 +110,13 @@ export declare class AvailabilityController {
      */
     getMyOverrides(startDate: string, endDate: string, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -125,9 +125,9 @@ export declare class AvailabilityController {
      */
     deleteRecurring(availabilityId: string, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -139,13 +139,13 @@ export declare class AvailabilityController {
      */
     deleteOverride(overrideId: string, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**

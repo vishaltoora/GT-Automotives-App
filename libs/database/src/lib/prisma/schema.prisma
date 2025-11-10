@@ -457,6 +457,7 @@ enum PeriodType {
 enum RoleName {
   CUSTOMER
   STAFF
+  SUPERVISOR
   ADMIN
 }
 

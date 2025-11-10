@@ -14,30 +14,29 @@ export declare class SmsController {
      * Get SMS history (admin only)
      */
     getHistory(customerId?: string, userId?: string, limit?: string): Promise<({
-        user: {
+        customer: {
             id: string;
+            firstName: string;
+            lastName: string;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+            businessName: string | null;
             createdAt: Date;
             updatedAt: Date;
-            clerkId: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-            phone: string | null;
-            roleId: string;
-            lastLogin: Date | null;
-            isActive: boolean;
         } | null;
         appointment: {
             id: string;
-            employeeId: string | null;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
             createdAt: Date;
             updatedAt: Date;
-            notes: string | null;
             customerId: string;
-            vehicleId: string | null;
             scheduledDate: Date;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            vehicleId: string | null;
+            notes: string | null;
+            employeeId: string | null;
             scheduledTime: string;
+            endTime: string | null;
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
@@ -46,35 +45,36 @@ export declare class SmsController {
             paymentNotes: string | null;
             expectedAmount: number | null;
             paymentDate: Date | null;
-            endTime: string | null;
             reminderSent: boolean;
             bookedBy: string | null;
         } | null;
-        customer: {
+        user: {
             id: string;
+            firstName: string | null;
+            lastName: string | null;
+            email: string;
+            phone: string | null;
             createdAt: Date;
             updatedAt: Date;
-            email: string | null;
-            firstName: string;
-            lastName: string;
-            phone: string | null;
-            address: string | null;
-            businessName: string | null;
+            clerkId: string;
+            roleId: string;
+            lastLogin: Date | null;
+            isActive: boolean;
         } | null;
     } & {
         id: string;
-        status: import("@prisma/client").$Enums.SmsStatus;
+        type: import("@prisma/client").$Enums.SmsType;
         createdAt: Date;
         updatedAt: Date;
         customerId: string | null;
-        appointmentId: string | null;
+        status: import("@prisma/client").$Enums.SmsStatus;
         userId: string | null;
-        type: import("@prisma/client").$Enums.SmsType;
-        cost: import(".prisma/client/runtime/library").Decimal | null;
         to: string;
         from: string;
+        appointmentId: string | null;
         sentAt: Date | null;
         deliveredAt: Date | null;
+        cost: import(".prisma/client/runtime/library").Decimal | null;
         body: string;
         telnyxMessageId: string | null;
         segments: number | null;
