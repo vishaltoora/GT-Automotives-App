@@ -73,11 +73,11 @@ export class AppointmentsController {
 
   /**
    * Get appointments by payment date (for daily cash reports)
-   * Roles: ADMIN only
+   * Roles: ADMIN, STAFF
    */
   @Get('by-payment-date')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'STAFF')
   async getByPaymentDate(@Query() query: PaymentDateQueryDto) {
     return this.appointmentsService.getByPaymentDate(query.paymentDate);
   }

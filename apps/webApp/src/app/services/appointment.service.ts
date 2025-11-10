@@ -137,6 +137,7 @@ export interface Appointment {
   paymentBreakdown?: PaymentEntry[]; // Breakdown of payment methods
   paymentNotes?: string;
   expectedAmount?: number; // Expected total amount for the service (for tracking partial payments)
+  paymentDate?: Date; // Date when payment was actually processed/collected (for accurate daily cash reporting)
   reminderSent: boolean;
   bookedBy?: string;
   createdAt: Date;

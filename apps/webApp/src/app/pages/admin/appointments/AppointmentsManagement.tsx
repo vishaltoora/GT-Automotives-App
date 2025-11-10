@@ -368,7 +368,21 @@ export const AppointmentsManagement: React.FC = () => {
     const dateStr = date.toISOString().split('T')[0];
     return appointments.filter((apt) => {
       const aptDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
-      return aptDate === dateStr;
+
+      // Include if scheduled on this date
+      if (aptDate === dateStr) {
+        return true;
+      }
+
+      // Include if payment was processed on this date (for EOD highlighting)
+      if (apt.paymentDate) {
+        const paymentDateStr = new Date(apt.paymentDate).toISOString().split('T')[0];
+        if (paymentDateStr === dateStr) {
+          return true;
+        }
+      }
+
+      return false;
     });
   };
 
@@ -736,16 +750,36 @@ export const AppointmentsManagement: React.FC = () => {
                   <Grid container spacing={{ xs: 0.75, sm: 1 }}>
                     {getMonthDays(currentMonth).map((date, index) => {
                       const dayAppointments = getAppointmentsForDay(date);
+                      const dateStr = date ? date.toISOString().split('T')[0] : '';
                       const isToday =
                         date &&
                         date.toDateString() === new Date().toDateString();
                       const isPast = date && date < new Date() && !isToday;
 
-                      // Check for appointments needing attention (IN_PROGRESS or pending payment)
+                      // Check for appointments needing attention:
+                      // 1. Appointments with IN_PROGRESS status on this date
+                      // 2. Appointments with payments processed on this date that have outstanding balance
                       const appointmentsNeedingAttention = dayAppointments.filter(
-                        (apt) =>
-                          apt.status === 'IN_PROGRESS' ||
-                          (apt.status === 'COMPLETED' && (!apt.paymentAmount || apt.paymentAmount < (apt.expectedAmount || 0)))
+                        (apt) => {
+                          const aptScheduledDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
+
+                          // Case 1: Appointment scheduled on this date and is IN_PROGRESS
+                          if (aptScheduledDate === dateStr && apt.status === 'IN_PROGRESS') {
+                            return true;
+                          }
+
+                          // Case 2: Payment was processed on this date and has outstanding balance
+                          if (apt.paymentDate) {
+                            const paymentDateStr = new Date(apt.paymentDate).toISOString().split('T')[0];
+                            const hasOutstandingBalance = apt.expectedAmount && apt.paymentAmount && apt.paymentAmount < apt.expectedAmount;
+
+                            if (paymentDateStr === dateStr && hasOutstandingBalance) {
+                              return true;
+                            }
+                          }
+
+                          return false;
+                        }
                       );
                       const hasAttentionNeeded = appointmentsNeedingAttention.length > 0;
 
