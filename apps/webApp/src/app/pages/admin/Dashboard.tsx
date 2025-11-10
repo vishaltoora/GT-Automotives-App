@@ -490,24 +490,27 @@ export function AdminDashboard() {
                 </Typography>
               </Paper>
 
-              <Paper
-                component={Link}
-                to={`${basePath}/payments`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: '#00bcd4',
-                  },
-                }}
-              >
-                <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  Payments
-                </Typography>
-              </Paper>
+              {/* Payments - Admin only, not Supervisor */}
+              {role === 'admin' && (
+                <Paper
+                  component={Link}
+                  to={`${basePath}/payments`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: '#00bcd4',
+                    },
+                  }}
+                >
+                  <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    Payments
+                  </Typography>
+                </Paper>
+              )}
 
               <Paper
                 component={Link}
