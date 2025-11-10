@@ -34,6 +34,9 @@ export function Login() {
           case 'admin':
             redirectPath = from?.startsWith('/admin') ? from : '/admin/dashboard';
             break;
+          case 'supervisor':
+            redirectPath = from?.startsWith('/supervisor') ? from : '/supervisor/dashboard';
+            break;
           case 'staff':
             redirectPath = from?.startsWith('/staff') ? from : '/staff/dashboard';
             break;
@@ -56,6 +59,8 @@ export function Login() {
     const roleDisplayName =
       role === 'admin'
         ? 'Admin Panel'
+        : role === 'supervisor'
+        ? 'Supervisor Dashboard'
         : role === 'staff'
         ? 'Staff Dashboard'
         : 'Customer Portal';
