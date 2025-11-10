@@ -31,7 +31,7 @@ export class ExpenseInvoicesController {
   constructor(private readonly expenseInvoicesService: ExpenseInvoicesService) {}
 
   @Post()
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async create(
     @Body(ValidationPipe) createDto: CreateExpenseInvoiceDto,
   ): Promise<ExpenseInvoiceResponseDto> {
@@ -39,7 +39,7 @@ export class ExpenseInvoicesController {
   }
 
   @Get()
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async findAll(
     @Query(ValidationPipe) filterDto: ExpenseInvoiceFilterDto,
   ): Promise<{
@@ -52,13 +52,13 @@ export class ExpenseInvoicesController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async findOne(@Param('id') id: string): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.findOne(id);
   }
 
   @Put(':id')
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async update(
     @Param('id') id: string,
     @Body(ValidationPipe) updateDto: UpdateExpenseInvoiceDto,
@@ -67,7 +67,7 @@ export class ExpenseInvoicesController {
   }
 
   @Post(':id/upload')
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(
     @Param('id') id: string,
@@ -86,13 +86,13 @@ export class ExpenseInvoicesController {
   }
 
   @Delete(':id/image')
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async deleteImage(@Param('id') id: string): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.deleteImage(id);
   }
 
   @Get(':id/image-url')
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getImageUrl(@Param('id') id: string): Promise<{ imageUrl: string }> {
     const imageUrl = await this.expenseInvoicesService.getImageUrl(id);
     return { imageUrl };
