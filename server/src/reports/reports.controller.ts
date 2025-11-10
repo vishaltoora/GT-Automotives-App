@@ -19,7 +19,7 @@ export class ReportsController {
   }
 
   @Get('analytics')
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getAnalytics() {
     return this.reportsService.getAnalytics();
   }

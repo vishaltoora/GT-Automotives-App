@@ -73,11 +73,8 @@ const PurchaseInvoiceManagement: React.FC = () => {
 
   useEffect(() => {
     loadInvoices();
-    // Only load analytics for ADMIN users (not SUPERVISOR)
-    if (user?.role === 'ADMIN') {
-      loadAnalytics();
-    }
-  }, [filters, user?.role]);
+    loadAnalytics();
+  }, [filters]);
 
   const loadInvoices = async () => {
     try {
@@ -111,12 +108,6 @@ const PurchaseInvoiceManagement: React.FC = () => {
   };
 
   const loadAnalytics = async () => {
-    // Skip analytics for non-ADMIN users
-    if (user?.role !== 'ADMIN') {
-      setAnalyticsLoading(false);
-      return;
-    }
-
     try {
       setAnalyticsLoading(true);
       const data = await analyticsService.getAnalytics();
@@ -276,10 +267,8 @@ const PurchaseInvoiceManagement: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Analytics Cards - ADMIN only */}
-      {user?.role === 'ADMIN' && (
-        <AnalyticsCards cards={analyticsCards} loading={analyticsLoading} />
-      )}
+      {/* Analytics Cards */}
+      <AnalyticsCards cards={analyticsCards} loading={analyticsLoading} />
 
       <Paper sx={{ mb: 3, p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
