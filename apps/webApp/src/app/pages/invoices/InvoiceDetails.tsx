@@ -347,14 +347,14 @@ const InvoiceDetails: React.FC = () => {
                 <TableBody>
                   {invoice.items?.map((item) => {
                     // Calculate display total - handle DISCOUNT_PERCENTAGE items
-                    let displayTotal = item.total || item.quantity * item.unitPrice;
-                    if (item.itemType === 'DISCOUNT_PERCENTAGE') {
+                    let displayTotal = item.total || item.quantity * Number(item.unitPrice);
+                    if (String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE') {
                       // Recalculate percentage discount based on other items
                       const otherItemsSubtotal = (invoice.items || [])
-                        .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
-                        .reduce((sum, i) => sum + (i.total || i.quantity * i.unitPrice), 0);
-                      displayTotal = -(otherItemsSubtotal * item.unitPrice) / 100;
-                    } else if (item.itemType === 'DISCOUNT') {
+                        .filter(i => String(i.itemType).toUpperCase() !== 'DISCOUNT' && String(i.itemType).toUpperCase() !== 'DISCOUNT_PERCENTAGE')
+                        .reduce((sum, i) => sum + (Number(i.total) || i.quantity * Number(i.unitPrice)), 0);
+                      displayTotal = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
+                    } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
                       // Ensure discount is negative
                       displayTotal = -Math.abs(displayTotal);
                     }
