@@ -26,12 +26,12 @@ export class AvailabilityController {
   constructor(private readonly availabilityService: AvailabilityService) {}
 
   /**
-   * Set or update recurring availability for an employee (ADMIN only)
-   * Roles: ADMIN
+   * Set or update recurring availability for an employee (ADMIN and SUPERVISOR)
+   * Roles: ADMIN, SUPERVISOR
    */
   @Post('recurring')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   async setRecurring(@Body() dto: SetAvailabilityDto, @CurrentUser() user: any) {
     console.log('[SET RECURRING AVAILABILITY] User:', {
       id: user?.id,
@@ -62,12 +62,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Get employee's recurring availability (ADMIN only)
-   * Roles: ADMIN
+   * Get employee's recurring availability (ADMIN and SUPERVISOR)
+   * Roles: ADMIN, SUPERVISOR
    */
   @Get('recurring/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   async getRecurring(@Param('employeeId') employeeId: string) {
     return this.availabilityService.getEmployeeAvailability(employeeId);
   }
@@ -84,12 +84,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Add a time slot override (ADMIN only)
-   * Roles: ADMIN
+   * Add a time slot override (ADMIN and SUPERVISOR)
+   * Roles: ADMIN, SUPERVISOR
    */
   @Post('override')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   async addOverride(@Body() dto: TimeSlotOverrideDto) {
     return this.availabilityService.addOverride(dto);
   }
@@ -111,12 +111,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Get overrides for an employee within a date range (ADMIN only)
-   * Roles: ADMIN
+   * Get overrides for an employee within a date range (ADMIN and SUPERVISOR)
+   * Roles: ADMIN, SUPERVISOR
    */
   @Get('override/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   async getOverrides(
     @Param('employeeId') employeeId: string,
     @Query('startDate') startDate: string,
