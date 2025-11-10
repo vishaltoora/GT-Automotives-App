@@ -24,7 +24,6 @@ class JobService {
 
     if (clerkTokenGetter) {
       try {
-        console.log('[JobService] Getting fresh Clerk token...');
         const clerkToken = await clerkTokenGetter();
 
         if (!clerkToken) {
@@ -33,7 +32,6 @@ class JobService {
         }
 
         token = clerkToken;
-        console.log('[JobService] Token retrieved successfully, length:', token.length);
       } catch (error) {
         console.error('[JobService] Failed to get Clerk token:', error);
         throw new Error('Authentication failed. Please try logging out and back in.');
@@ -47,8 +45,6 @@ class JobService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      console.log('[JobService] Making request to:', url, 'Method:', options.method || 'GET');
-
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
@@ -61,8 +57,6 @@ class JobService {
 
       clearTimeout(timeoutId);
 
-      console.log('[JobService] Response status:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error('[JobService] Error response:', errorData);
@@ -72,18 +66,15 @@ class JobService {
       // Handle empty responses (like DELETE operations)
       const contentLength = response.headers.get('content-length');
       if (contentLength === '0' || response.status === 204) {
-        console.log('[JobService] Empty response (204 or no content)');
         return null as T;
       }
 
       const text = await response.text();
       if (!text) {
-        console.log('[JobService] Empty response text');
         return null as T;
       }
 
       const data = JSON.parse(text);
-      console.log('[JobService] Success, received data');
       return data;
     } catch (error: any) {
       console.error('[JobService] Request failed:', error);
