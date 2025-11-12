@@ -343,6 +343,7 @@ export class EmailService {
     employeePaymentsCount?: number;
     employeePaymentsByMethod?: Record<string, number>;
     employeePaymentsByPerson?: Record<string, { name: string; amount: number; count: number }>;
+    totalCashCollected?: number;
     adjustedCash?: number;
   }): Promise<{ success: boolean; sent: number; failed: number }> {
     this.logger.log('[EMAIL] sendEODSummary called');
@@ -496,11 +497,11 @@ export class EmailService {
             <h3 style="margin-top: 0; color: #2e7d32;">💰 Net Cash Position (Adjusted)</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0;"><strong>Customer Payments Collected:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">+$${data.totalPayments.toFixed(2)}</td>
+                <td style="padding: 8px 0;"><strong>Cash from Customers:</strong></td>
+                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">+$${(data.totalCashCollected || 0).toFixed(2)}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0;"><strong>Employee Payments Given:</strong></td>
+                <td style="padding: 8px 0;"><strong>Cash to Employees:</strong></td>
                 <td style="padding: 8px 0; text-align: right; color: #f44336; font-weight: bold;">-$${data.totalEmployeePayments?.toFixed(2) || '0.00'}</td>
               </tr>
               <tr style="border-top: 2px solid #4caf50;">
@@ -509,7 +510,7 @@ export class EmailService {
               </tr>
             </table>
             <p style="color: #666; margin-top: 10px; font-size: 12px;">
-              This is the expected cash that should be in the cash drawer at the end of the day.
+              This is the expected cash that should be in the cash drawer at the end of the day (CASH payments only).
             </p>
           </div>
           ` : ''}

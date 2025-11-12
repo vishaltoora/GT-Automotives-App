@@ -239,8 +239,9 @@ export function DaySummary() {
       employeePaymentsByPerson[empId].count += 1;
     });
 
-    // Calculate adjusted cash (cash collected from customers - cash given to employees)
-    const adjustedCash = totalPayments - totalEmployeePayments;
+    // Calculate adjusted cash (CASH collected from customers - cash given to employees)
+    // NOTE: This is calculated AFTER paymentsByMethod is populated below
+    let adjustedCash = 0; // Will be calculated after paymentsByMethod
 
     // Calculate payments by method from breakdown - FROM PAYMENTS PROCESSED TODAY
     const paymentsByMethod: Record<string, number> = {};
@@ -318,6 +319,10 @@ export function DaySummary() {
       }
     });
 
+    // NOW calculate adjusted cash using only CASH payments (not credit card, debit, etc.)
+    const totalCashCollected = paymentsByMethod['CASH'] || 0;
+    adjustedCash = totalCashCollected - totalEmployeePayments;
+
     return {
       // Scheduled appointments info
       total: sortedScheduled.length,
@@ -345,6 +350,7 @@ export function DaySummary() {
       employeePaymentsByPerson,
 
       // Net cash position
+      totalCashCollected,
       adjustedCash,
     };
   }, [sortedScheduled, sortedPayments, atGaragePayments, mobileServicePayments, employeePayments]);
@@ -370,6 +376,8 @@ export function DaySummary() {
         employeePaymentsCount: stats.employeePaymentsCount,
         employeePaymentsByMethod: stats.employeePaymentsByMethod,
         employeePaymentsByPerson: stats.employeePaymentsByPerson,
+        // Net cash position
+        totalCashCollected: stats.totalCashCollected,
         adjustedCash: stats.adjustedCash,
       };
 
@@ -1013,7 +1021,7 @@ export function DaySummary() {
                       💰 Net Cash Position (Adjusted)
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
-                      Total collected from customers minus cash given to employees
+                      Cash collected from customers minus cash given to employees
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
@@ -1031,15 +1039,15 @@ export function DaySummary() {
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 6, sm: 4 }}>
                     <Typography variant="caption" color="text.secondary">
-                      Customer Payments
+                      Cash from Customers
                     </Typography>
                     <Typography variant="h6" fontWeight="bold" color="success.dark">
-                      +${stats.totalPayments.toFixed(2)}
+                      +${stats.totalCashCollected.toFixed(2)}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 4 }}>
                     <Typography variant="caption" color="text.secondary">
-                      Employee Payments
+                      Cash to Employees
                     </Typography>
                     <Typography variant="h6" fontWeight="bold" color="warning.dark">
                       -${stats.totalEmployeePayments.toFixed(2)}
