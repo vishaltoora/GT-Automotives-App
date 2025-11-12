@@ -13,7 +13,7 @@ export class JobsService {
 
   async create(createJobDto: CreateJobDto, userId: string): Promise<Job> {
     try {
-      // Validate that the employee exists and has STAFF or ADMIN role
+      // Validate that the employee exists and has STAFF, ADMIN, or SUPERVISOR role
       const employee = await this.jobRepository['prisma'].user.findUnique({
         where: { id: createJobDto.employeeId },
         include: { role: true },
@@ -23,8 +23,8 @@ export class JobsService {
         throw new NotFoundException('Employee not found');
       }
 
-      if (employee.role.name !== 'STAFF' && employee.role.name !== 'ADMIN') {
-        throw new BadRequestException('Jobs can only be assigned to staff or admin users');
+      if (employee.role.name !== 'STAFF' && employee.role.name !== 'ADMIN' && employee.role.name !== 'SUPERVISOR') {
+        throw new BadRequestException('Jobs can only be assigned to staff, admin, or supervisor users');
       }
 
       const jobData = {
