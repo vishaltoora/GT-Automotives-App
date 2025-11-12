@@ -396,7 +396,7 @@ model Payment {
   amount        Decimal       @db.Decimal(10, 2)
   paymentMethod PaymentMethod
   status        PaymentStatus @default(PENDING)
-  paidAt        DateTime?
+  paidAt        DateTime?     // Date when payment was actually processed/collected (for accurate daily cash reporting)
   paidBy        String?       // Who processed the payment
   notes         String?
   reference     String?       // Check number, transaction ID, etc.
@@ -408,7 +408,8 @@ model Payment {
 
   @@index([employeeId])
   @@index([status])
-  @@index([paidAt])
+  @@index([paidAt])          // Index for daily cash flow reports
+  @@index([paidAt, status])  // Composite index for EOD summaries
 }
 
 model PayrollPeriod {

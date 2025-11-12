@@ -44,7 +44,7 @@ export class PaymentsController {
 
   @Get()
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
   findAll(
     @Query('employeeId') employeeId?: string,
     @Query('status') status?: PaymentStatus,
@@ -70,7 +70,7 @@ export class PaymentsController {
 
   @Get('my-summary')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
   getMyPaymentSummary(@CurrentUser() user: any): Promise<PaymentSummaryDto> {
     // Always use the authenticated user's ID from token - staff can only see their own
     return this.paymentsService.getPaymentSummary(user.id);
@@ -85,7 +85,7 @@ export class PaymentsController {
 
   @Get('payroll-report')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   getPayrollReport(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
@@ -94,9 +94,21 @@ export class PaymentsController {
     return this.paymentsService.getPayrollReport(startDate, endDate, employeeId);
   }
 
+  /**
+   * Get payments processed on a specific date (for EOD summary)
+   * @param paymentDate - Date to query (YYYY-MM-DD or ISO string)
+   */
+  @Get('by-payment-date')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR')
+  async getByPaymentDate(@Query('paymentDate') paymentDate: string) {
+    const date = new Date(paymentDate);
+    return this.paymentsService.getByPaymentDate(date);
+  }
+
   @Get('my-payments')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
   findMyPayments(@CurrentUser() user: any): Promise<PaymentResponseDto[]> {
     // Always use the authenticated user's ID from token - staff can only see their own
     return this.paymentsService.findByEmployee(user.id);
@@ -111,14 +123,14 @@ export class PaymentsController {
 
   @Get('job/:jobId')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
   findByJob(@Param('jobId') jobId: string): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findByJob(jobId);
   }
 
   @Get(':id')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
   findOne(@Param('id') id: string): Promise<PaymentResponseDto> {
     return this.paymentsService.findOne(id);
   }

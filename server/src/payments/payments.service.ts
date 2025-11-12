@@ -307,6 +307,51 @@ export class PaymentsService {
     );
   }
 
+  /**
+   * Get payments processed on a specific date (for EOD summary)
+   * Uses business timezone (PST/PDT) to ensure correct day matching
+   */
+  async getByPaymentDate(paymentDate: Date) {
+    const { extractBusinessDate, POSTGRES_TIMEZONE } = await import('../config/timezone.config.js');
+
+    // Extract date in business timezone (PST/PDT)
+    const dateOnly = extractBusinessDate(paymentDate);
+
+    console.log('[GET PAYMENTS BY DATE] Query:', {
+      input: paymentDate,
+      dateOnly,
+      businessTimezone: POSTGRES_TIMEZONE,
+    });
+
+    // Use raw SQL with AT TIME ZONE to compare dates in Pacific Time
+    const payments = await this.paymentRepository['prisma'].$queryRaw<any[]>`
+      SELECT
+        p.*,
+        json_build_object(
+          'id', j.id,
+          'jobNumber', j."jobNumber",
+          'title', j.title,
+          'status', j.status
+        ) as job,
+        json_build_object(
+          'id', u.id,
+          'firstName', u."firstName",
+          'lastName', u."lastName",
+          'email', u.email
+        ) as employee
+      FROM "Payment" p
+      LEFT JOIN "Job" j ON j.id = p."jobId"
+      LEFT JOIN "User" u ON u.id = p."employeeId"
+      WHERE p.status = 'PAID'
+        AND DATE(p."paidAt" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) = ${dateOnly}::date
+      ORDER BY p."paidAt" DESC
+    `;
+
+    console.log(`[GET PAYMENTS BY DATE] Found ${(payments as any[]).length} payments for ${dateOnly}`);
+
+    return this.transformToResponseDto(payments as any[]);
+  }
+
   private transformToResponseDto(payments: any[]): PaymentResponseDto[] {
     return payments.map(payment => ({
       id: payment.id,

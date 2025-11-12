@@ -150,6 +150,14 @@ class PaymentService {
 
     return this.makeRequest<any>(`${this.baseUrl}/payroll-report?${searchParams}`);
   }
+
+  /**
+   * Get payments processed on a specific date (for EOD summary)
+   */
+  async getByPaymentDate(paymentDate: Date): Promise<PaymentResponseDto[]> {
+    const dateStr = paymentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    return this.makeRequest<PaymentResponseDto[]>(`${this.baseUrl}/by-payment-date?paymentDate=${dateStr}`);
+  }
 }
 
 export const paymentService = new PaymentService();

@@ -339,6 +339,11 @@ export class EmailService {
     mobileServicePayments: number;
     mobileServiceCount: number;
     mobileServicePaymentsByMethod: Record<string, number>;
+    totalEmployeePayments?: number;
+    employeePaymentsCount?: number;
+    employeePaymentsByMethod?: Record<string, number>;
+    employeePaymentsByPerson?: Record<string, { name: string; amount: number; count: number }>;
+    adjustedCash?: number;
   }): Promise<{ success: boolean; sent: number; failed: number }> {
     this.logger.log('[EMAIL] sendEODSummary called');
 
@@ -451,6 +456,63 @@ export class EmailService {
               </ul>
             ` : '<p style="color: #666; margin-top: 10px;">No payments collected</p>'}
           </div>
+
+          ${data.totalEmployeePayments && data.totalEmployeePayments > 0 ? `
+          <!-- Employee Payments Stats -->
+          <div style="background-color: #fff3e0; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ff9800;">
+            <h3 style="margin-top: 0; color: #ff9800;">👥 Employee Payments - Cash Given Out</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0;"><strong>Number of Payments:</strong></td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${data.employeePaymentsCount || 0}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0;"><strong>Total Cash Given Out:</strong></td>
+                <td style="padding: 8px 0; text-align: right; color: #f44336; font-weight: bold; font-size: 18px;">-$${data.totalEmployeePayments.toFixed(2)}</td>
+              </tr>
+            </table>
+
+            ${data.employeePaymentsByPerson && Object.keys(data.employeePaymentsByPerson).length > 0 ? `
+              <h4 style="margin-top: 20px; margin-bottom: 10px;">Payments by Employee:</h4>
+              <ul style="list-style: none; padding: 0;">
+                ${Object.entries(data.employeePaymentsByPerson).map(([empId, empData]) =>
+                  `<li><strong>${empData.name}</strong>: $${empData.amount.toFixed(2)} (${empData.count} payment${empData.count > 1 ? 's' : ''})</li>`
+                ).join('')}
+              </ul>
+            ` : ''}
+
+            ${data.employeePaymentsByMethod && Object.keys(data.employeePaymentsByMethod).length > 0 ? `
+              <h4 style="margin-top: 20px; margin-bottom: 10px;">Payment Methods Used:</h4>
+              <ul style="list-style: none; padding: 0;">
+                ${formatPaymentMethods(data.employeePaymentsByMethod)}
+              </ul>
+            ` : ''}
+          </div>
+          ` : ''}
+
+          ${data.adjustedCash !== undefined ? `
+          <!-- Net Cash Position -->
+          <div style="background-color: #c8e6c9; padding: 20px; border-radius: 5px; margin: 20px 0; border: 3px solid #4caf50;">
+            <h3 style="margin-top: 0; color: #2e7d32;">💰 Net Cash Position (Adjusted)</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0;"><strong>Customer Payments Collected:</strong></td>
+                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">+$${data.totalPayments.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0;"><strong>Employee Payments Given:</strong></td>
+                <td style="padding: 8px 0; text-align: right; color: #f44336; font-weight: bold;">-$${data.totalEmployeePayments?.toFixed(2) || '0.00'}</td>
+              </tr>
+              <tr style="border-top: 2px solid #4caf50;">
+                <td style="padding: 12px 0;"><strong style="font-size: 16px;">Net Cash on Hand:</strong></td>
+                <td style="padding: 12px 0; text-align: right; color: #2e7d32; font-weight: bold; font-size: 20px;">=$${data.adjustedCash.toFixed(2)}</td>
+              </tr>
+            </table>
+            <p style="color: #666; margin-top: 10px; font-size: 12px;">
+              This is the expected cash that should be in the cash drawer at the end of the day.
+            </p>
+          </div>
+          ` : ''}
 
           <div style="margin-top: 30px; padding: 15px; background-color: #f5f5f5; border-left: 4px solid #1976d2;">
             <p style="margin: 0; color: #666;">

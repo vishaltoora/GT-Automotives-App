@@ -45,6 +45,8 @@ import {
 } from '../../components/appointments/AppointmentCard';
 import { formatTimeRange } from '../../utils/timeFormat';
 import { appointmentService } from '../../services/appointment.service';
+import { paymentService } from '../../services/payment.service';
+import { PaymentResponseDto } from '@gt-automotive/data';
 
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -104,6 +106,7 @@ export function DaySummary() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [scheduledAppointments, setScheduledAppointments] = useState<Appointment[]>([]); // Appointments scheduled for this date
   const [paymentsProcessed, setPaymentsProcessed] = useState<Appointment[]>([]); // Payments processed on this date
+  const [employeePayments, setEmployeePayments] = useState<PaymentResponseDto[]>([]); // Employee payments made on this date
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sendingEOD, setSendingEOD] = useState(false);
@@ -125,19 +128,22 @@ export function DaySummary() {
 
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-      // Fetch both scheduled appointments and payments processed on this date
-      const [scheduled, payments] = await Promise.all([
+      // Fetch scheduled appointments, customer payments, and employee payments for this date
+      const [scheduled, payments, empPayments] = await Promise.all([
         // Appointments scheduled for this date
         appointmentService.getAppointments({
           startDate: dateStr,
           endDate: dateStr,
         }),
-        // Payments processed on this date (regardless of appointment date)
+        // Customer payments processed on this date (regardless of appointment date)
         appointmentService.getByPaymentDate(selectedDate),
+        // Employee payments made on this date
+        paymentService.getByPaymentDate(selectedDate),
       ]);
 
       setScheduledAppointments(scheduled);
       setPaymentsProcessed(payments);
+      setEmployeePayments(empPayments);
     } catch (err: any) {
       console.error('Error fetching data:', err);
       setError(err.message || 'Failed to load data');
@@ -187,7 +193,7 @@ export function DaySummary() {
       return acc;
     }, {} as Record<string, number>);
 
-    // Payment statistics - based on payments PROCESSED today (not scheduled)
+    // Customer payment statistics - based on payments PROCESSED today (not scheduled)
     const totalPayments = sortedPayments.reduce(
       (sum, apt) => sum + (apt.paymentAmount || 0),
       0
@@ -206,6 +212,35 @@ export function DaySummary() {
       },
       0
     );
+
+    // Employee payments statistics - cash given to employees today
+    const totalEmployeePayments = employeePayments.reduce(
+      (sum, payment) => sum + Number(payment.amount),
+      0
+    );
+
+    // Group employee payments by payment method
+    const employeePaymentsByMethod: Record<string, number> = {};
+    employeePayments.forEach((payment) => {
+      const method = payment.paymentMethod || 'CASH';
+      employeePaymentsByMethod[method] = (employeePaymentsByMethod[method] || 0) + Number(payment.amount);
+    });
+
+    // Group employee payments by employee for breakdown
+    const employeePaymentsByPerson: Record<string, { name: string; amount: number; count: number }> = {};
+    employeePayments.forEach((payment) => {
+      const empId = payment.employeeId;
+      const empName = payment.employee ? `${payment.employee.firstName} ${payment.employee.lastName}` : 'Unknown';
+
+      if (!employeePaymentsByPerson[empId]) {
+        employeePaymentsByPerson[empId] = { name: empName, amount: 0, count: 0 };
+      }
+      employeePaymentsByPerson[empId].amount += Number(payment.amount);
+      employeePaymentsByPerson[empId].count += 1;
+    });
+
+    // Calculate adjusted cash (cash collected from customers - cash given to employees)
+    const adjustedCash = totalPayments - totalEmployeePayments;
 
     // Calculate payments by method from breakdown - FROM PAYMENTS PROCESSED TODAY
     const paymentsByMethod: Record<string, number> = {};
@@ -290,7 +325,7 @@ export function DaySummary() {
       totalHours: (totalDuration / 60).toFixed(1),
       statusCounts,
 
-      // Payments processed today info
+      // Customer payments processed today info
       paymentsProcessedCount: sortedPayments.length,
       totalPayments,
       totalExpected,
@@ -302,8 +337,17 @@ export function DaySummary() {
       mobileServicePayments: mobileServiceTotalPayments,
       completedMobileService: mobileServicePayments.length,
       mobileServicePaymentsByMethod,
+
+      // Employee payments info
+      totalEmployeePayments,
+      employeePaymentsCount: employeePayments.length,
+      employeePaymentsByMethod,
+      employeePaymentsByPerson,
+
+      // Net cash position
+      adjustedCash,
     };
-  }, [sortedScheduled, sortedPayments, atGaragePayments, mobileServicePayments]);
+  }, [sortedScheduled, sortedPayments, atGaragePayments, mobileServicePayments, employeePayments]);
 
   const handleSendEOD = async () => {
     try {
@@ -321,6 +365,12 @@ export function DaySummary() {
         mobileServicePayments: stats.mobileServicePayments,
         mobileServiceCount: stats.completedMobileService,
         mobileServicePaymentsByMethod: stats.mobileServicePaymentsByMethod,
+        // Employee payments
+        totalEmployeePayments: stats.totalEmployeePayments,
+        employeePaymentsCount: stats.employeePaymentsCount,
+        employeePaymentsByMethod: stats.employeePaymentsByMethod,
+        employeePaymentsByPerson: stats.employeePaymentsByPerson,
+        adjustedCash: stats.adjustedCash,
       };
 
       await axios.post(
@@ -804,6 +854,206 @@ export function DaySummary() {
                     </Grid>
                   </Box>
                 )}
+              </Paper>
+            </Grid>
+
+            {/* Employee Payments Section */}
+            <Grid size={12}>
+              <Paper
+                elevation={1}
+                sx={{
+                  p: { xs: 2, sm: 2.5, md: 3 },
+                  border: 1,
+                  borderColor: stats.totalEmployeePayments > 0 ? 'warning.main' : 'divider',
+                  bgcolor: stats.totalEmployeePayments > 0 ? 'warning.lighter' : 'background.paper',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    justifyContent: 'space-between',
+                    mb: { xs: 2, sm: 2.5, md: 3 },
+                    gap: { xs: 2, sm: 0 }
+                  }}
+                >
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <PersonIcon color="warning" fontSize="small" />
+                      <Typography
+                        variant="h6"
+                        fontWeight="bold"
+                        sx={{ fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}
+                      >
+                        Employee Payments - Cash Given Out
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+                    >
+                      {stats.employeePaymentsCount} payment{stats.employeePaymentsCount === 1 ? '' : 's'} {isViewingToday ? 'made today' : `on this date`}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                      Total Cash Given Out
+                    </Typography>
+                    <Typography
+                      variant="h3"
+                      fontWeight="bold"
+                      color="warning.dark"
+                      sx={{ fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}
+                    >
+                      ${stats.totalEmployeePayments.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {stats.totalEmployeePayments > 0 && (
+                  <>
+                    <Divider sx={{ my: { xs: 2, sm: 2.5 } }} />
+
+                    {/* Employee Breakdown */}
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                        Payment Breakdown by Employee
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {Object.entries(stats.employeePaymentsByPerson).map(([empId, data]) => (
+                          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={empId}>
+                            <Card variant="outlined" sx={{ p: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'warning.main', fontSize: '0.875rem' }}>
+                                  {data.name.split(' ').map(n => n[0]).join('')}
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="body2" fontWeight="bold">
+                                    {data.name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {data.count} payment{data.count > 1 ? 's' : ''}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Typography variant="h6" fontWeight="bold" color="warning.dark">
+                                ${data.amount.toFixed(2)}
+                              </Typography>
+                            </Card>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+
+                    {/* Payment Method Breakdown */}
+                    {Object.keys(stats.employeePaymentsByMethod).length > 0 && (
+                      <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight="medium" display="block" sx={{ mb: 1 }}>
+                          Payment Methods Used:
+                        </Typography>
+                        <Grid container spacing={2}>
+                          {Object.entries(stats.employeePaymentsByMethod).map(([method, amount]) => (
+                            <Grid size={{ xs: 6, sm: 4, md: 3 }} key={method}>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                  {method === 'CASH' && '💵 Cash'}
+                                  {method === 'E_TRANSFER' && '📱 E-Transfer'}
+                                  {method === 'CREDIT_CARD' && '💳 Credit'}
+                                  {method === 'DEBIT_CARD' && '💳 Debit'}
+                                  {method === 'CHEQUE' && '📝 Cheque'}
+                                </Typography>
+                                <Typography variant="h6" fontWeight="bold">
+                                  ${amount.toFixed(2)}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      </Box>
+                    )}
+                  </>
+                )}
+
+                {stats.totalEmployeePayments === 0 && (
+                  <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                    <MoneyIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                    <Typography variant="body2">
+                      No employee payments made {isViewingToday ? 'today' : 'on this date'}
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+
+            {/* Adjusted Cash Summary - Net Cash Position */}
+            <Grid size={12}>
+              <Paper
+                elevation={2}
+                sx={{
+                  p: { xs: 2, sm: 2.5, md: 3 },
+                  border: 2,
+                  borderColor: 'success.main',
+                  bgcolor: 'success.lighter',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    justifyContent: 'space-between',
+                    gap: { xs: 2, sm: 0 }
+                  }}
+                >
+                  <Box>
+                    <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                      💰 Net Cash Position (Adjusted)
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                      Total collected from customers minus cash given to employees
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                    <Typography variant="h2" fontWeight="bold" color="success.dark" sx={{ fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' } }}>
+                      ${stats.adjustedCash.toFixed(2)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, fontSize: { xs: '0.75rem', sm: '0.813rem' } }}>
+                      Expected cash on hand
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 6, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Customer Payments
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="success.dark">
+                      +${stats.totalPayments.toFixed(2)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Employee Payments
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="warning.dark">
+                      -${stats.totalEmployeePayments.toFixed(2)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Net Cash Available
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="success.main">
+                      =${stats.adjustedCash.toFixed(2)}
+                    </Typography>
+                  </Grid>
+                </Grid>
               </Paper>
             </Grid>
 
