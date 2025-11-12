@@ -66,7 +66,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export function MyEarnings() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -212,7 +212,7 @@ export function MyEarnings() {
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Box
-          onClick={() => navigate('/staff/dashboard')}
+          onClick={() => navigate(`/${role}/dashboard`)}
           sx={{
             display: 'inline-flex',
             alignItems: 'center',

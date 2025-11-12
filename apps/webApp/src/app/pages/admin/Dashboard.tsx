@@ -490,7 +490,7 @@ export function AdminDashboard() {
                 </Typography>
               </Paper>
 
-              {/* Payments - Admin only, not Supervisor */}
+              {/* Payments - Admin only */}
               {role === 'admin' && (
                 <Paper
                   component={Link}
@@ -508,6 +508,28 @@ export function AdminDashboard() {
                   <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
                   <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                     Payments
+                  </Typography>
+                </Paper>
+              )}
+
+              {/* My Earnings - Supervisor only */}
+              {role === 'supervisor' && (
+                <Paper
+                  component={Link}
+                  to={`${basePath}/my-earnings`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: '#00bcd4',
+                    },
+                  }}
+                >
+                  <AttachMoney sx={{ ...actionIconStyles, color: '#00bcd4' }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    My Earnings
                   </Typography>
                 </Paper>
               )}

@@ -203,6 +203,8 @@ export function App() {
           <Route path="employee-schedule" element={<EmployeeSchedule />} />
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
+          <Route path="my-jobs" element={<MyJobs />} />
+          <Route path="my-earnings" element={<MyEarnings />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

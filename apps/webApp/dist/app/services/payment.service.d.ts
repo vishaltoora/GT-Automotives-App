@@ -23,6 +23,10 @@ declare class PaymentService {
     getMyPaymentSummary(): Promise<PaymentSummaryDto>;
     getMyPayments(): Promise<PaymentResponseDto[]>;
     getPayrollReport(startDate: string, endDate: string, employeeId?: string): Promise<any>;
+    /**
+     * Get payments processed on a specific date (for EOD summary)
+     */
+    getByPaymentDate(paymentDate: Date): Promise<PaymentResponseDto[]>;
 }
 export declare const paymentService: PaymentService;
 export default paymentService;

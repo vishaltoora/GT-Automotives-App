@@ -29,6 +29,7 @@ export declare function useAuth(): {
     isLoading: any;
     role: string | null;
     isAdmin: boolean;
+    isSupervisor: boolean;
     isStaff: boolean;
     isCustomer: boolean;
     logout: () => Promise<void>;

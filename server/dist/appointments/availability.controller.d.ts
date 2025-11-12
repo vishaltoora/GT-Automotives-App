@@ -4,14 +4,14 @@ export declare class AvailabilityController {
     private readonly availabilityService;
     constructor(availabilityService: AvailabilityService);
     /**
-     * Set or update recurring availability for an employee (ADMIN only)
-     * Roles: ADMIN
+     * Set or update recurring availability for an employee (ADMIN and SUPERVISOR)
+     * Roles: ADMIN, SUPERVISOR
      */
     setRecurring(dto: SetAvailabilityDto, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -23,23 +23,23 @@ export declare class AvailabilityController {
      */
     setMyRecurring(dto: Omit<SetAvailabilityDto, 'employeeId'>, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
         isAvailable: boolean;
     }>;
     /**
-     * Get employee's recurring availability (ADMIN only)
-     * Roles: ADMIN
+     * Get employee's recurring availability (ADMIN and SUPERVISOR)
+     * Roles: ADMIN, SUPERVISOR
      */
     getRecurring(employeeId: string): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -51,27 +51,27 @@ export declare class AvailabilityController {
      */
     getMyRecurring(user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
         isAvailable: boolean;
     }[]>;
     /**
-     * Add a time slot override (ADMIN only)
-     * Roles: ADMIN
+     * Add a time slot override (ADMIN and SUPERVISOR)
+     * Roles: ADMIN, SUPERVISOR
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }>;
     /**
@@ -80,28 +80,28 @@ export declare class AvailabilityController {
      */
     addMyOverride(dto: Omit<TimeSlotOverrideDto, 'employeeId'>, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }>;
     /**
-     * Get overrides for an employee within a date range (ADMIN only)
-     * Roles: ADMIN
+     * Get overrides for an employee within a date range (ADMIN and SUPERVISOR)
+     * Roles: ADMIN, SUPERVISOR
      */
     getOverrides(employeeId: string, startDate: string, endDate: string): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -110,13 +110,13 @@ export declare class AvailabilityController {
      */
     getMyOverrides(startDate: string, endDate: string, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -125,9 +125,9 @@ export declare class AvailabilityController {
      */
     deleteRecurring(availabilityId: string, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -139,23 +139,23 @@ export declare class AvailabilityController {
      */
     deleteOverride(overrideId: string, user: any): Promise<{
         id: string;
+        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        employeeId: string;
         endTime: string;
-        date: Date;
         startTime: string;
         isAvailable: boolean;
+        date: Date;
         reason: string | null;
     }>;
     /**
      * Check available time slots for a specific date and duration
-     * Roles: ADMIN, STAFF, CUSTOMER (for booking)
+     * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER (for booking)
      */
     checkAvailability(dto: CheckAvailabilityDto): Promise<import("../common/dto/employee-availability.dto").AvailableSlot[]>;
     /**
      * Check if specific employee is available at a specific time
-     * Roles: ADMIN, STAFF
+     * Roles: ADMIN, SUPERVISOR, STAFF
      */
     checkEmployeeAvailability(employeeId: string, date: string, startTime: string, duration: number): Promise<{
         employeeId: string;

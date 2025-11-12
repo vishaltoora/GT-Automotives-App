@@ -212,7 +212,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
         const allUsers = await userService.getUsers();
 
         const staffUsers = allUsers.filter((user) =>
-          (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN') &&
+          (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN' || user.role?.name?.toUpperCase() === 'SUPERVISOR') &&
           user.isActive
         );
 

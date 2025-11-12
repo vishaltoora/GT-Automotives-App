@@ -61,6 +61,15 @@ export declare class EmailService {
         mobileServicePayments: number;
         mobileServiceCount: number;
         mobileServicePaymentsByMethod: Record<string, number>;
+        totalEmployeePayments?: number;
+        employeePaymentsCount?: number;
+        employeePaymentsByMethod?: Record<string, number>;
+        employeePaymentsByPerson?: Record<string, {
+            name: string;
+            amount: number;
+            count: number;
+        }>;
+        adjustedCash?: number;
     }): Promise<{
         success: boolean;
         sent: number;

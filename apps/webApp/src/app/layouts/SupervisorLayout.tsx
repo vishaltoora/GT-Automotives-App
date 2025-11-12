@@ -35,7 +35,8 @@ import {
   Work,
   ShoppingCart,
   Schedule,
-  Email
+  Email,
+  AttachMoney
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -79,6 +80,8 @@ export function SupervisorLayout() {
     { text: 'Schedule', icon: <Email />, path: '/supervisor/employee-schedule' },
     { divider: true },
     { text: 'Jobs', icon: <Work />, path: '/supervisor/jobs' },
+    { text: 'My Jobs', icon: <Work />, path: '/supervisor/my-jobs' },
+    { text: 'My Earnings', icon: <AttachMoney />, path: '/supervisor/my-earnings' },
   ];
 
   const isActive = (path: string) => {

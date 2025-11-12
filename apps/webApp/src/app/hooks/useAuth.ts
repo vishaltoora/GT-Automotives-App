@@ -177,6 +177,7 @@ export function useAuth() {
     isLoading: isStillLoading,
     role: userRole,
     isAdmin: userRole === 'admin',
+    isSupervisor: userRole === 'supervisor',
     isStaff: userRole === 'staff',
     isCustomer: userRole === 'customer',
     logout,

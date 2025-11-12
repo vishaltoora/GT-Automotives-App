@@ -218,7 +218,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       setEmployeesLoading(true);
       const allUsers = await userService.getUsers();
       const staffAndAdminUsers = allUsers.filter(
-        (user) => (user.role?.name === 'STAFF' || user.role?.name === 'ADMIN') && user.isActive
+        (user) => (user.role?.name === 'STAFF' || user.role?.name === 'ADMIN' || user.role?.name === 'SUPERVISOR') && user.isActive
       );
 
       // Deduplicate by user ID (in case same user appears multiple times)

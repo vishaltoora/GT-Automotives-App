@@ -26,6 +26,11 @@ export declare class PaymentsService {
     remove(id: string, userId: string): Promise<void>;
     getPaymentSummary(employeeId?: string): Promise<PaymentSummaryDto>;
     getPayrollReport(startDate: string, endDate: string, employeeId?: string): Promise<any[]>;
+    /**
+     * Get payments processed on a specific date (for EOD summary)
+     * Uses business timezone (PST/PDT) to ensure correct day matching
+     */
+    getByPaymentDate(paymentDate: Date): Promise<PaymentResponseDto[]>;
     private transformToResponseDto;
 }
 //# sourceMappingURL=payments.service.d.ts.map

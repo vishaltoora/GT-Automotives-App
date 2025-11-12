@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -77,9 +77,13 @@ interface EmployeeJobSummary extends Employee {
 export function JobsManagement() {
   const { employeeId } = useParams<{ employeeId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Determine base path from current location
+  const basePath = location.pathname.startsWith('/supervisor') ? '/supervisor' : '/admin';
 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeSummaries, setEmployeeSummaries] = useState<EmployeeJobSummary[]>([]);
@@ -159,7 +163,7 @@ export function JobsManagement() {
       setLoading(true);
       const users = await userService.getUsers();
       const staffAndAdmins = users.filter(u =>
-        u.role?.name === 'STAFF' || u.role?.name === 'ADMIN'
+        u.role?.name === 'STAFF' || u.role?.name === 'ADMIN' || u.role?.name === 'SUPERVISOR'
       );
 
       // Fetch job summaries for each employee
@@ -211,13 +215,13 @@ export function JobsManagement() {
   };
 
   const handleEmployeeClick = (employee: Employee) => {
-    navigate(`/admin/jobs/${employee.id}`);
+    navigate(`${basePath}/jobs/${employee.id}`);
   };
 
   const handleBackToEmployees = () => {
     setSelectedEmployee(null);
     clearFilters();
-    navigate('/admin/jobs');
+    navigate(`${basePath}/jobs`);
   };
 
   const handleCreateJob = async (newJob: JobResponseDto) => {

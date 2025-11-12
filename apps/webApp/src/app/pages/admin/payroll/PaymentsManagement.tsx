@@ -157,8 +157,8 @@ export function PaymentsManagement() {
       setPendingJobs(pendingJobsData);
 
       // Calculate employee summaries after data is fetched
-      // Include both STAFF and ADMIN users
-      const staffMembers = users.filter(u => u.role?.name === 'STAFF' || u.role?.name === 'ADMIN');
+      // Include STAFF, ADMIN, and SUPERVISOR users
+      const staffMembers = users.filter(u => u.role?.name === 'STAFF' || u.role?.name === 'ADMIN' || u.role?.name === 'SUPERVISOR');
       setEmployees(staffMembers);
 
       const summaries: EmployeePaymentSummary[] = staffMembers.map((employee) => {

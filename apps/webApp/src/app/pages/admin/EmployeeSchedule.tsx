@@ -70,9 +70,9 @@ export default function EmployeeSchedule() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Filter only STAFF and ADMIN users
+      // Filter only STAFF, ADMIN, and SUPERVISOR users
       const staffAndAdmin = response.data.filter(
-        (user: User) => user.role.name === 'STAFF' || user.role.name === 'ADMIN'
+        (user: User) => user.role.name === 'STAFF' || user.role.name === 'ADMIN' || user.role.name === 'SUPERVISOR'
       );
       setEmployees(staffAndAdmin);
     } catch (error) {
