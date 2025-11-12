@@ -715,7 +715,13 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             }
           }}
         >
-          {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Invoice' : 'Create Invoice')}
+          {loading
+            ? (isEditMode ? 'Updating...' : 'Creating...')
+            : (isEditMode
+                ? (isMobile ? 'Update' : 'Update Invoice')
+                : (isMobile ? 'Create' : 'Create Invoice')
+              )
+          }
         </Button>
       </DialogActions>
     </Dialog>

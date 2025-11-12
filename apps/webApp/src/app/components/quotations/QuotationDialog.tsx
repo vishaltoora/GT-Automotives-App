@@ -373,7 +373,13 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
             }
           }}
         >
-          {saving ? 'Saving...' : 'Save & Print'}
+          {saving
+            ? (quoteId ? 'Updating...' : 'Creating...')
+            : (quoteId
+                ? (isMobile ? 'Update' : 'Update Quote')
+                : (isMobile ? 'Create' : 'Create Quote')
+              )
+          }
         </Button>
       </DialogActions>
     </Dialog>
