@@ -85,6 +85,9 @@ export class PaymentsService {
 
   async processPayment(processPaymentDto: ProcessPaymentDto, userId: string): Promise<Payment> {
     try {
+      // Import timezone helper for business timezone awareness
+      const { getCurrentBusinessDateTime } = await import('../config/timezone.config.js');
+
       // Find the job and validate
       const job = await this.jobRepository.findById(processPaymentDto.jobId);
 
@@ -110,6 +113,7 @@ export class PaymentsService {
       }
 
       // Create and immediately process the payment
+      // Use business timezone (PST/PDT) for paidAt timestamp to ensure correct day matching in EOD summaries
       const paymentData = {
         job: {
           connect: { id: processPaymentDto.jobId }
@@ -123,7 +127,7 @@ export class PaymentsService {
         reference: processPaymentDto.reference,
         paidBy: processPaymentDto.paidBy,
         status: PaymentStatus.PAID,
-        paidAt: new Date()
+        paidAt: getCurrentBusinessDateTime() // Use PST/PDT timezone, not UTC
       };
 
       const payment = await this.paymentRepository.create(paymentData);
@@ -212,6 +216,7 @@ export class PaymentsService {
       if (updatePaymentDto.amount !== undefined) updateData.amount = updatePaymentDto.amount;
       if (updatePaymentDto.paymentMethod !== undefined) updateData.paymentMethod = updatePaymentDto.paymentMethod;
       if (updatePaymentDto.status !== undefined) updateData.status = updatePaymentDto.status;
+      // paidAt is already in the format received from client, no need to convert timezone here
       if (updatePaymentDto.paidAt !== undefined) updateData.paidAt = new Date(updatePaymentDto.paidAt);
       if (updatePaymentDto.notes !== undefined) updateData.notes = updatePaymentDto.notes;
       if (updatePaymentDto.reference !== undefined) updateData.reference = updatePaymentDto.reference;
