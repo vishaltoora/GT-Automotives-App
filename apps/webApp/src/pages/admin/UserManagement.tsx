@@ -328,22 +328,30 @@ const UserManagement: React.FC = () => {
           <Button
             variant="outlined"
             color="primary"
-            startIcon={!isMobile && <RefreshIcon />}
+            startIcon={<RefreshIcon />}
             onClick={fetchUsers}
             size={isMobile ? 'small' : 'medium'}
-            sx={{ flex: { xs: 1, sm: 0 } }}
+            sx={{
+              flex: { xs: 1, sm: 0 },
+              minWidth: { xs: 0, sm: 'auto' },
+              px: { xs: 2, sm: 3 }
+            }}
           >
-            Refresh
+            {isMobile ? 'Refresh' : 'Refresh'}
           </Button>
           <Button
             variant="contained"
             color="primary"
-            startIcon={!isMobile && <AddIcon />}
+            startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
             size={isMobile ? 'small' : 'medium'}
-            sx={{ flex: { xs: 1, sm: 0 } }}
+            sx={{
+              flex: { xs: 1, sm: 0 },
+              minWidth: { xs: 0, sm: 'auto' },
+              px: { xs: 2, sm: 3 }
+            }}
           >
-            Add User
+            {isMobile ? 'Add User' : 'Add User'}
           </Button>
         </Stack>
       </Box>
