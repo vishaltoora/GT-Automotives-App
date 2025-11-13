@@ -512,6 +512,28 @@ export function AdminDashboard() {
                 </Paper>
               )}
 
+              {/* My Jobs - Supervisor only */}
+              {role === 'supervisor' && (
+                <Paper
+                  component={Link}
+                  to={`${basePath}/my-jobs`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: colors.secondary.main,
+                    },
+                  }}
+                >
+                  <Work sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    My Jobs
+                  </Typography>
+                </Paper>
+              )}
+
               {/* My Earnings - Supervisor only */}
               {role === 'supervisor' && (
                 <Paper
