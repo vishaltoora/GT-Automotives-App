@@ -16,7 +16,8 @@ import {
   IconButton,
   Divider,
   Chip,
-  Tooltip
+  Tooltip,
+  Collapse
 } from '@mui/material';
 import {
   Dashboard,
@@ -35,7 +36,11 @@ import {
   ChevronRight,
   Work,
   EventAvailable,
-  AttachMoney
+  AttachMoney,
+  ExpandMore,
+  ExpandLess,
+  BusinessCenter,
+  Event
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -47,6 +52,11 @@ const drawerCollapsedWidth = 72;
 export function StaffLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [drawerCollapsed, setDrawerCollapsed] = React.useState(false);
+  const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({
+    work: true,
+    business: true,
+    scheduling: true,
+  });
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,22 +74,57 @@ export function StaffLayout() {
     navigate('/');
   };
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/staff/dashboard' },
-    { text: 'My Jobs', icon: <Work />, path: '/staff/jobs' },
-    { text: 'My Earnings', icon: <AttachMoney />, path: '/staff/earnings' },
-    { divider: true },
-    { text: 'Customers', icon: <People />, path: '/staff/customers' },
-    { text: 'Vehicles', icon: <DirectionsCar />, path: '/staff/vehicles' },
-    { text: 'Inventory', icon: <Inventory />, path: '/staff/inventory' },
-    { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
-    { text: 'Quotations', icon: <Description />, path: '/staff/quotations' },
-    { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
-    { text: 'My Availability', icon: <EventAvailable />, path: '/staff/availability' },
-    { divider: true },
-    { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
-    { divider: true },
-    { text: 'Settings', icon: <Settings />, path: '/staff/settings' },
+  const handleSectionToggle = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const menuSections = [
+    {
+      title: 'Overview',
+      items: [
+        { text: 'Dashboard', icon: <Dashboard />, path: '/staff/dashboard' },
+      ]
+    },
+    {
+      id: 'work',
+      title: 'My Work',
+      icon: <Work />,
+      items: [
+        { text: 'My Jobs', icon: <Work />, path: '/staff/jobs' },
+        { text: 'My Earnings', icon: <AttachMoney />, path: '/staff/earnings' },
+        { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
+      ]
+    },
+    {
+      id: 'business',
+      title: 'Business',
+      icon: <BusinessCenter />,
+      items: [
+        { text: 'Customers', icon: <People />, path: '/staff/customers' },
+        { text: 'Vehicles', icon: <DirectionsCar />, path: '/staff/vehicles' },
+        { text: 'Inventory', icon: <Inventory />, path: '/staff/inventory' },
+        { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
+        { text: 'Quotations', icon: <Description />, path: '/staff/quotations' },
+      ]
+    },
+    {
+      id: 'scheduling',
+      title: 'Scheduling',
+      icon: <Event />,
+      items: [
+        { text: 'Appointments', icon: <CalendarMonth />, path: '/staff/appointments' },
+        { text: 'My Availability', icon: <EventAvailable />, path: '/staff/availability' },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { text: 'Settings', icon: <Settings />, path: '/staff/settings' },
+      ]
+    },
   ];
 
   const isActive = (path: string) => {
@@ -159,61 +204,202 @@ export function StaffLayout() {
         </IconButton>
       </Box>
 
-      <List sx={{ flex: 1, py: 1, px: drawerCollapsed ? 0.5 : 1 }}>
-        {menuItems.map((item, index) => {
-          if (item.divider) {
-            return <Divider key={index} sx={{ my: 1, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />;
-          }
-          const active = item.path ? isActive(item.path) : false;
-          const listButton = (
-            <ListItemButton
-              component={Link}
-              to={item.path!}
-              sx={{
-                borderRadius: 1.5,
-                mx: 0.5,
-                transition: 'all 0.2s',
-                backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
-                justifyContent: drawerCollapsed ? 'center' : 'flex-start',
-                px: drawerCollapsed ? 0 : 2,
-                '&:hover': {
-                  backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
-                },
-              }}
-            >
-              <ListItemIcon sx={{
-                color: active ? colors.primary.main : colors.neutral[600],
-                minWidth: drawerCollapsed ? 0 : 40,
-                justifyContent: 'center',
-              }}>
-                {item.icon}
-              </ListItemIcon>
-              {!drawerCollapsed && (
-                <ListItemText
-                  primary={item.text}
-                  primaryTypographyProps={{
-                    fontSize: '0.95rem',
-                    fontWeight: active ? 600 : 400,
-                    color: active ? colors.primary.main : colors.text.primary,
-                  }}
-                />
-              )}
-            </ListItemButton>
-          );
+      <List sx={{ flex: 1, py: 1, px: drawerCollapsed ? 0.5 : 1, overflowY: 'auto' }}>
+        {menuSections.map((section, sectionIndex) => (
+          <React.Fragment key={section.title}>
+            {/* Section without expand (Overview/System) */}
+            {!section.id && (
+              <>
+                {section.items.map((item) => {
+                  const active = isActive(item.path);
+                  const listButton = (
+                    <ListItemButton
+                      component={Link}
+                      to={item.path}
+                      sx={{
+                        borderRadius: 1.5,
+                        mx: 0.5,
+                        mb: 0.5,
+                        transition: 'all 0.2s',
+                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
+                        borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                        justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                        px: drawerCollapsed ? 0 : 2,
+                        '&:hover': {
+                          backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{
+                        color: active ? colors.primary.main : colors.neutral[600],
+                        minWidth: drawerCollapsed ? 0 : 40,
+                        justifyContent: 'center',
+                      }}>
+                        {item.icon}
+                      </ListItemIcon>
+                      {!drawerCollapsed && (
+                        <ListItemText
+                          primary={item.text}
+                          primaryTypographyProps={{
+                            fontSize: '0.95rem',
+                            fontWeight: active ? 600 : 400,
+                            color: active ? colors.primary.main : colors.text.primary,
+                          }}
+                        />
+                      )}
+                    </ListItemButton>
+                  );
 
-          return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              {drawerCollapsed ? (
-                <Tooltip title={item.text} placement="right" arrow>
-                  {listButton}
-                </Tooltip>
-              ) : (
-                listButton
-              )}
-            </ListItem>
-          );
-        })}
+                  return (
+                    <ListItem key={item.text} disablePadding>
+                      {drawerCollapsed ? (
+                        <Tooltip title={item.text} placement="right" arrow>
+                          {listButton}
+                        </Tooltip>
+                      ) : (
+                        listButton
+                      )}
+                    </ListItem>
+                  );
+                })}
+                <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+              </>
+            )}
+
+            {/* Expandable sections */}
+            {section.id && (
+              <>
+                {drawerCollapsed ? (
+                  // Collapsed view - show section icon with tooltip
+                  <Tooltip title={section.title} placement="right" arrow>
+                    <ListItemButton
+                      onClick={() => handleSectionToggle(section.id!)}
+                      sx={{
+                        borderRadius: 1.5,
+                        mx: 0.5,
+                        mb: 0.5,
+                        justifyContent: 'center',
+                        backgroundColor: colors.neutral[100],
+                        '&:hover': {
+                          backgroundColor: colors.neutral[200],
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{
+                        color: colors.neutral[700],
+                        minWidth: 0,
+                        justifyContent: 'center',
+                      }}>
+                        {section.icon}
+                      </ListItemIcon>
+                    </ListItemButton>
+                  </Tooltip>
+                ) : (
+                  // Expanded view - show section header with minimal style
+                  <ListItemButton
+                    onClick={() => handleSectionToggle(section.id!)}
+                    sx={{
+                      borderRadius: 0,
+                      mx: 0,
+                      mb: 0.5,
+                      py: 1,
+                      px: 2,
+                      borderLeft: `3px solid ${colors.primary.main}`,
+                      backgroundColor: 'transparent',
+                      '&:hover': {
+                        backgroundColor: colors.primary.lighter + '10',
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{
+                      color: colors.primary.main,
+                      minWidth: 40,
+                    }}>
+                      {section.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={section.title}
+                      primaryTypographyProps={{
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        color: colors.primary.main,
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                      }}
+                    />
+                    {expandedSections[section.id] ? (
+                      <ExpandLess sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                    ) : (
+                      <ExpandMore sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                    )}
+                  </ListItemButton>
+                )}
+
+                {/* Section items - always show when collapsed, conditionally when expanded */}
+                <Collapse in={drawerCollapsed || expandedSections[section.id]} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {section.items.map((item) => {
+                      const active = isActive(item.path);
+                      const listButton = (
+                        <ListItemButton
+                          component={Link}
+                          to={item.path}
+                          sx={{
+                            borderRadius: 1.5,
+                            mx: 0.5,
+                            mb: 0.5,
+                            pl: drawerCollapsed ? 0 : 4,
+                            transition: 'all 0.2s',
+                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
+                            borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                            justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                            '&:hover': {
+                              backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                            },
+                          }}
+                        >
+                          <ListItemIcon sx={{
+                            color: active ? colors.primary.main : colors.neutral[600],
+                            minWidth: drawerCollapsed ? 0 : 40,
+                            justifyContent: 'center',
+                          }}>
+                            {item.icon}
+                          </ListItemIcon>
+                          {!drawerCollapsed && (
+                            <ListItemText
+                              primary={item.text}
+                              primaryTypographyProps={{
+                                fontSize: '0.9rem',
+                                fontWeight: active ? 600 : 400,
+                                color: active ? colors.primary.main : colors.text.primary,
+                              }}
+                            />
+                          )}
+                        </ListItemButton>
+                      );
+
+                      return (
+                        <ListItem key={item.text} disablePadding>
+                          {drawerCollapsed ? (
+                            <Tooltip title={item.text} placement="right" arrow>
+                              {listButton}
+                            </Tooltip>
+                          ) : (
+                            listButton
+                          )}
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </Collapse>
+
+                {sectionIndex < menuSections.length - 1 && (
+                  <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+                )}
+              </>
+            )}
+          </React.Fragment>
+        ))}
       </List>
 
       <Divider sx={{ borderColor: colors.neutral[200] }} />
