@@ -143,7 +143,15 @@ jobs:
 
           echo "✅ Backend Web App deployment completed"
 
-      # Database Migrations (MyPersn pattern with downloaded source)
+      # Setup Node.js for migrations
+      - name: Setup Node.js for Migrations
+        if: github.event.inputs.run_migrations == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Database Migrations (optimized with pre-installed Node.js)
       - name: Run Database Migrations
         if: github.event.inputs.run_migrations == 'true'
         run: |
@@ -160,14 +168,8 @@ jobs:
           echo "📦 Found repository artifact: $REPO_ARTIFACT"
           cd "$REPO_ARTIFACT"
 
-          # Setup Node.js environment for migrations
-          export NVM_DIR="$HOME/.nvm"
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-          source $NVM_DIR/nvm.sh
-          nvm install 20
-          nvm use 20
-
-          # Install only what's needed for migrations
+          # Install only what's needed for migrations (faster with global install)
+          echo "📦 Installing Prisma CLI..."
           npm install -g prisma@latest
           npm install @prisma/client@latest
 
