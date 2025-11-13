@@ -72,7 +72,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState<CreateJobDto>({
-    employeeId: preselectedEmployeeId || '',
+    employeeId: preselectedEmployeeId || user?.id || '',
     title: '',
     description: '',
     payAmount: 0,
@@ -85,8 +85,10 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
       if (!hideEmployeeSelect) {
         fetchEmployees();
       }
+      // Default to current user if no preselected employee
+      const defaultEmployeeId = preselectedEmployeeId || user?.id || '';
       setFormData({
-        employeeId: preselectedEmployeeId || '',
+        employeeId: defaultEmployeeId,
         title: '',
         description: '',
         payAmount: 0,
