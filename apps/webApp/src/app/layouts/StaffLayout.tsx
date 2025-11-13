@@ -87,7 +87,7 @@ export function StaffLayout() {
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', background: colors.neutral[50] }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
       <Toolbar sx={{
         py: 2,
         px: drawerCollapsed ? 1 : 2,

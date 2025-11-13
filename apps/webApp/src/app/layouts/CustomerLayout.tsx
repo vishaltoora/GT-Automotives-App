@@ -53,7 +53,7 @@ export function CustomerLayout() {
   ];
 
   const drawer = (
-    <Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
       <Toolbar>
         <Typography variant="h6">Customer Portal</Typography>
       </Toolbar>
