@@ -16,7 +16,8 @@ import {
   IconButton,
   Divider,
   Chip,
-  Tooltip
+  Tooltip,
+  Collapse
 } from '@mui/material';
 import {
   Dashboard,
@@ -42,7 +43,12 @@ import {
   ShoppingCart,
   Sms,
   Schedule,
-  Email
+  Email,
+  ExpandMore,
+  ExpandLess,
+  BusinessCenter,
+  Event,
+  BarChart
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -54,6 +60,13 @@ const drawerCollapsedWidth = 72;
 export function AdminLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [drawerCollapsed, setDrawerCollapsed] = React.useState(false);
+  const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({
+    business: true,
+    scheduling: true,
+    operations: true,
+    analytics: true,
+    system: true,
+  });
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,31 +84,74 @@ export function AdminLayout() {
     navigate('/');
   };
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
-    { text: 'Day Summary', icon: <Assessment />, path: '/admin/day-summary' },
-    { divider: true },
-    { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
-    { text: 'Customers', icon: <People />, path: '/admin/customers' },
-    { text: 'Vehicles', icon: <DirectionsCar />, path: '/admin/vehicles' },
-    { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
-    { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
-    { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },
-    { text: 'Purchase & Expense Invoices', icon: <ShoppingCart />, path: '/admin/purchase-invoices' },
-    { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
-    { text: 'Availability', icon: <Schedule />, path: '/admin/availability' },
-    { text: 'SMS History', icon: <Sms />, path: '/admin/sms-history' },
-    { text: 'Schedule', icon: <Email />, path: '/admin/employee-schedule' },
-    { divider: true },
-    { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
-    { text: 'Jobs', icon: <Work />, path: '/admin/jobs' },
-    { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
-    { divider: true },
-    { text: 'Reports', icon: <Analytics />, path: '/admin/reports' },
-    { text: 'Analytics', icon: <Analytics />, path: '/admin/analytics' },
-    { divider: true },
-    { text: 'Security', icon: <Security />, path: '/admin/security' },
-    { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
+  const handleSectionToggle = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const menuSections = [
+    {
+      title: 'Overview',
+      items: [
+        { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
+        { text: 'Day Summary', icon: <Assessment />, path: '/admin/day-summary' },
+      ]
+    },
+    {
+      id: 'business',
+      title: 'Business Management',
+      icon: <BusinessCenter />,
+      items: [
+        { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
+        { text: 'Customers', icon: <People />, path: '/admin/customers' },
+        { text: 'Vehicles', icon: <DirectionsCar />, path: '/admin/vehicles' },
+        { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
+        { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
+        { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },
+        { text: 'Purchase & Expense Invoices', icon: <ShoppingCart />, path: '/admin/purchase-invoices' },
+      ]
+    },
+    {
+      id: 'scheduling',
+      title: 'Scheduling & Communication',
+      icon: <Event />,
+      items: [
+        { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
+        { text: 'Availability', icon: <Schedule />, path: '/admin/availability' },
+        { text: 'Employee Schedule', icon: <Email />, path: '/admin/employee-schedule' },
+        { text: 'SMS History', icon: <Sms />, path: '/admin/sms-history' },
+      ]
+    },
+    {
+      id: 'operations',
+      title: 'Operations',
+      icon: <Work />,
+      items: [
+        { text: 'Jobs', icon: <Work />, path: '/admin/jobs' },
+        { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
+        { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
+      ]
+    },
+    {
+      id: 'analytics',
+      title: 'Analytics & Reports',
+      icon: <BarChart />,
+      items: [
+        { text: 'Reports', icon: <Analytics />, path: '/admin/reports' },
+        { text: 'Analytics', icon: <Analytics />, path: '/admin/analytics' },
+      ]
+    },
+    {
+      id: 'system',
+      title: 'System',
+      icon: <Settings />,
+      items: [
+        { text: 'Security', icon: <Security />, path: '/admin/security' },
+        { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
+      ]
+    },
   ];
 
   const isActive = (path: string) => {
@@ -184,61 +240,193 @@ export function AdminLayout() {
         </IconButton>
       </Box>
 
-      <List sx={{ flex: 1, py: 1, px: drawerCollapsed ? 0.5 : 1 }}>
-        {menuItems.map((item, index) => {
-          if (item.divider) {
-            return <Divider key={index} sx={{ my: 1, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />;
-          }
-          const active = item.path ? isActive(item.path) : false;
-          const listButton = (
-            <ListItemButton
-              component={Link}
-              to={item.path!}
-              sx={{
-                borderRadius: 1.5,
-                mx: 0.5,
-                transition: 'all 0.2s',
-                backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
-                justifyContent: drawerCollapsed ? 'center' : 'flex-start',
-                px: drawerCollapsed ? 0 : 2,
-                '&:hover': {
-                  backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
-                },
-              }}
-            >
-              <ListItemIcon sx={{
-                color: active ? colors.primary.main : colors.neutral[600],
-                minWidth: drawerCollapsed ? 0 : 40,
-                justifyContent: 'center',
-              }}>
-                {item.icon}
-              </ListItemIcon>
-              {!drawerCollapsed && (
-                <ListItemText
-                  primary={item.text}
-                  primaryTypographyProps={{
-                    fontSize: '0.95rem',
-                    fontWeight: active ? 600 : 400,
-                    color: active ? colors.primary.main : colors.text.primary,
-                  }}
-                />
-              )}
-            </ListItemButton>
-          );
+      <List sx={{ flex: 1, py: 1, px: drawerCollapsed ? 0.5 : 1, overflowY: 'auto' }}>
+        {menuSections.map((section, sectionIndex) => (
+          <React.Fragment key={section.title}>
+            {/* Section without expand (Overview) */}
+            {!section.id && (
+              <>
+                {section.items.map((item) => {
+                  const active = isActive(item.path);
+                  const listButton = (
+                    <ListItemButton
+                      component={Link}
+                      to={item.path}
+                      sx={{
+                        borderRadius: 1.5,
+                        mx: 0.5,
+                        mb: 0.5,
+                        transition: 'all 0.2s',
+                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
+                        borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                        justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                        px: drawerCollapsed ? 0 : 2,
+                        '&:hover': {
+                          backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{
+                        color: active ? colors.primary.main : colors.neutral[600],
+                        minWidth: drawerCollapsed ? 0 : 40,
+                        justifyContent: 'center',
+                      }}>
+                        {item.icon}
+                      </ListItemIcon>
+                      {!drawerCollapsed && (
+                        <ListItemText
+                          primary={item.text}
+                          primaryTypographyProps={{
+                            fontSize: '0.95rem',
+                            fontWeight: active ? 600 : 400,
+                            color: active ? colors.primary.main : colors.text.primary,
+                          }}
+                        />
+                      )}
+                    </ListItemButton>
+                  );
 
-          return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              {drawerCollapsed ? (
-                <Tooltip title={item.text} placement="right" arrow>
-                  {listButton}
-                </Tooltip>
-              ) : (
-                listButton
-              )}
-            </ListItem>
-          );
-        })}
+                  return (
+                    <ListItem key={item.text} disablePadding>
+                      {drawerCollapsed ? (
+                        <Tooltip title={item.text} placement="right" arrow>
+                          {listButton}
+                        </Tooltip>
+                      ) : (
+                        listButton
+                      )}
+                    </ListItem>
+                  );
+                })}
+                <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+              </>
+            )}
+
+            {/* Expandable sections */}
+            {section.id && (
+              <>
+                {drawerCollapsed ? (
+                  // Collapsed view - show section icon with tooltip
+                  <Tooltip title={section.title} placement="right" arrow>
+                    <ListItemButton
+                      onClick={() => handleSectionToggle(section.id!)}
+                      sx={{
+                        borderRadius: 1.5,
+                        mx: 0.5,
+                        mb: 0.5,
+                        justifyContent: 'center',
+                        backgroundColor: colors.neutral[100],
+                        '&:hover': {
+                          backgroundColor: colors.neutral[200],
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{
+                        color: colors.neutral[700],
+                        minWidth: 0,
+                        justifyContent: 'center',
+                      }}>
+                        {section.icon}
+                      </ListItemIcon>
+                    </ListItemButton>
+                  </Tooltip>
+                ) : (
+                  // Expanded view - show section header
+                  <ListItemButton
+                    onClick={() => handleSectionToggle(section.id!)}
+                    sx={{
+                      borderRadius: 1.5,
+                      mx: 0.5,
+                      mb: 0.5,
+                      backgroundColor: colors.neutral[100],
+                      '&:hover': {
+                        backgroundColor: colors.neutral[200],
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{
+                      color: colors.neutral[700],
+                      minWidth: 40,
+                    }}>
+                      {section.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={section.title}
+                      primaryTypographyProps={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: colors.neutral[700],
+                      }}
+                    />
+                    {expandedSections[section.id] ? <ExpandLess /> : <ExpandMore />}
+                  </ListItemButton>
+                )}
+
+                {/* Section items - always show when collapsed, conditionally when expanded */}
+                <Collapse in={drawerCollapsed || expandedSections[section.id]} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {section.items.map((item) => {
+                      const active = isActive(item.path);
+                      const listButton = (
+                        <ListItemButton
+                          component={Link}
+                          to={item.path}
+                          sx={{
+                            borderRadius: 1.5,
+                            mx: 0.5,
+                            mb: 0.5,
+                            pl: drawerCollapsed ? 0 : 4,
+                            transition: 'all 0.2s',
+                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
+                            borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                            justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                            '&:hover': {
+                              backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                            },
+                          }}
+                        >
+                          <ListItemIcon sx={{
+                            color: active ? colors.primary.main : colors.neutral[600],
+                            minWidth: drawerCollapsed ? 0 : 40,
+                            justifyContent: 'center',
+                          }}>
+                            {item.icon}
+                          </ListItemIcon>
+                          {!drawerCollapsed && (
+                            <ListItemText
+                              primary={item.text}
+                              primaryTypographyProps={{
+                                fontSize: '0.9rem',
+                                fontWeight: active ? 600 : 400,
+                                color: active ? colors.primary.main : colors.text.primary,
+                              }}
+                            />
+                          )}
+                        </ListItemButton>
+                      );
+
+                      return (
+                        <ListItem key={item.text} disablePadding>
+                          {drawerCollapsed ? (
+                            <Tooltip title={item.text} placement="right" arrow>
+                              {listButton}
+                            </Tooltip>
+                          ) : (
+                            listButton
+                          )}
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </Collapse>
+
+                {sectionIndex < menuSections.length - 1 && (
+                  <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+                )}
+              </>
+            )}
+          </React.Fragment>
+        ))}
       </List>
 
       <Divider sx={{ borderColor: colors.neutral[200] }} />
