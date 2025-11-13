@@ -642,6 +642,7 @@ export class AppointmentsService {
    * Returns appointments where payment was processed on the specified date
    *
    * TIMEZONE HANDLING:
+   * - Accepts paymentDate as YYYY-MM-DD string (e.g., "2025-11-13")
    * - All date comparisons use Pacific Time (PST/PDT) via AT TIME ZONE
    * - This ensures payments show on the correct business day regardless of server timezone
    *
@@ -649,8 +650,8 @@ export class AppointmentsService {
    * - If paymentDate exists: Use paymentDate (new behavior - accurate processing date)
    * - If paymentDate is NULL: Fall back to scheduledDate + COMPLETED status (old appointments)
    */
-  async getByPaymentDate(paymentDate: Date) {
-    // Extract date in business timezone (PST/PDT)
+  async getByPaymentDate(paymentDate: string) {
+    // extractBusinessDate handles YYYY-MM-DD strings by returning them as-is
     const dateOnly = extractBusinessDate(paymentDate);
 
     console.log('[GET BY PAYMENT DATE] Query:', {

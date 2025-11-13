@@ -315,11 +315,12 @@ export class PaymentsService {
   /**
    * Get payments processed on a specific date (for EOD summary)
    * Uses business timezone (PST/PDT) to ensure correct day matching
+   * @param paymentDate - Date in YYYY-MM-DD format (e.g., "2025-11-13")
    */
-  async getByPaymentDate(paymentDate: Date) {
+  async getByPaymentDate(paymentDate: string) {
     const { extractBusinessDate, POSTGRES_TIMEZONE } = await import('../config/timezone.config.js');
 
-    // Extract date in business timezone (PST/PDT)
+    // extractBusinessDate handles YYYY-MM-DD strings by returning them as-is
     const dateOnly = extractBusinessDate(paymentDate);
 
     console.log('[GET PAYMENTS BY DATE] Query:', {

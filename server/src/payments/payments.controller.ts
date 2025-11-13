@@ -96,14 +96,14 @@ export class PaymentsController {
 
   /**
    * Get payments processed on a specific date (for EOD summary)
-   * @param paymentDate - Date to query (YYYY-MM-DD or ISO string)
+   * @param paymentDate - Date in YYYY-MM-DD format (e.g., "2025-11-13")
    */
   @Get('by-payment-date')
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR')
   async getByPaymentDate(@Query('paymentDate') paymentDate: string) {
-    const date = new Date(paymentDate);
-    return this.paymentsService.getByPaymentDate(date);
+    // Pass the string directly - service will handle YYYY-MM-DD format
+    return this.paymentsService.getByPaymentDate(paymentDate);
   }
 
   @Get('my-payments')

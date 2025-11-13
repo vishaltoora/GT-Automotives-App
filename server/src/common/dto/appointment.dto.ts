@@ -135,7 +135,6 @@ export class CalendarQueryDto {
 }
 
 export class PaymentDateQueryDto {
-  @Type(() => Date)
-  @IsDate()
-  paymentDate!: Date; // Filter by payment processing date (for daily cash reports)
+  @IsString()
+  paymentDate!: string; // Filter by payment processing date in YYYY-MM-DD format (for daily cash reports)
 }
