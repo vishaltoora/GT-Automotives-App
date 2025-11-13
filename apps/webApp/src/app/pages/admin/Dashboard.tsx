@@ -500,6 +500,28 @@ export function AdminDashboard() {
                 </Typography>
               </Paper>
 
+              {/* My Jobs - Supervisor only - Before New Job */}
+              {role === 'supervisor' && (
+                <Paper
+                  component={Link}
+                  to={`${basePath}/my-jobs`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: colors.secondary.main,
+                    },
+                  }}
+                >
+                  <Work sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    My Jobs
+                  </Typography>
+                </Paper>
+              )}
+
               <Paper
                 onClick={() => setJobDialogOpen(true)}
                 sx={{
@@ -536,28 +558,6 @@ export function AdminDashboard() {
                   <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
                   <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                     Payments
-                  </Typography>
-                </Paper>
-              )}
-
-              {/* My Jobs - Supervisor only */}
-              {role === 'supervisor' && (
-                <Paper
-                  component={Link}
-                  to={`${basePath}/my-jobs`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: colors.secondary.main,
-                    },
-                  }}
-                >
-                  <Work sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    My Jobs
                   </Typography>
                 </Paper>
               )}
