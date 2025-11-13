@@ -368,21 +368,9 @@ export const AppointmentsManagement: React.FC = () => {
     const dateStr = date.toISOString().split('T')[0];
     return appointments.filter((apt) => {
       const aptDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
-
-      // Include if scheduled on this date
-      if (aptDate === dateStr) {
-        return true;
-      }
-
-      // Include if payment was processed on this date (for EOD highlighting)
-      if (apt.paymentDate) {
-        const paymentDateStr = new Date(apt.paymentDate).toISOString().split('T')[0];
-        if (paymentDateStr === dateStr) {
-          return true;
-        }
-      }
-
-      return false;
+      // Only include appointments scheduled on this date
+      // Payments processed on this date are fetched separately in DayAppointmentsDialog
+      return aptDate === dateStr;
     });
   };
 
