@@ -421,6 +421,34 @@ export function AdminDashboard() {
               gap: { xs: 1, sm: 1.5, md: 2 },
               mb: { xs: 1.5, sm: 2, md: 3 },
             }}>
+              {/* Day Summary - First position */}
+              <Paper
+                component={Link}
+                to={`${basePath}/day-summary`}
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.semantic.success}`,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.semantic.success,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
+                  Day Summary
+                </Typography>
+              </Paper>
+
               <Paper
                 onClick={() => setAppointmentDialogOpen(true)}
                 sx={{
@@ -555,33 +583,6 @@ export function AdminDashboard() {
                   </Typography>
                 </Paper>
               )}
-
-              <Paper
-                component={Link}
-                to={`${basePath}/day-summary`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.success}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.success,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
-                  Day Summary
-                </Typography>
-              </Paper>
             </Box>
 
             <Divider sx={{ my: { xs: 1.5, sm: 2, md: 3 } }} />
