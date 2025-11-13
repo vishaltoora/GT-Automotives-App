@@ -228,7 +228,7 @@ export function SupervisorLayout() {
                         mx: 0.5,
                         mb: 0.5,
                         transition: 'all 0.2s',
-                        backgroundColor: 'transparent',
+                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
                         borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
                         justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                         px: drawerCollapsed ? 0 : 2,
@@ -357,7 +357,7 @@ export function SupervisorLayout() {
                             mb: 0.5,
                             pl: drawerCollapsed ? 0 : 4,
                             transition: 'all 0.2s',
-                            backgroundColor: 'transparent',
+                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
                             borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
                             justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                             '&:hover': {

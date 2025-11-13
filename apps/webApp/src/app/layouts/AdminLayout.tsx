@@ -257,7 +257,7 @@ export function AdminLayout() {
                         mx: 0.5,
                         mb: 0.5,
                         transition: 'all 0.2s',
-                        backgroundColor: 'transparent',
+                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
                         borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
                         border: active ? `1px solid ${colors.neutral[200]}` : '1px solid transparent',
                         borderLeftWidth: active ? '3px' : '1px',
@@ -388,7 +388,7 @@ export function AdminLayout() {
                             mb: 0.5,
                             pl: drawerCollapsed ? 0 : 4,
                             transition: 'all 0.2s',
-                            backgroundColor: 'transparent',
+                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
                             borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
                             justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                             '&:hover': {
