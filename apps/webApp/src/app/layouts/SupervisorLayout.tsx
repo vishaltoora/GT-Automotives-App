@@ -228,12 +228,12 @@ export function SupervisorLayout() {
                         mx: 0.5,
                         mb: 0.5,
                         transition: 'all 0.2s',
-                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                        borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                        backgroundColor: 'transparent',
+                        borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
                         justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                         px: drawerCollapsed ? 0 : 2,
                         '&:hover': {
-                          backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                          backgroundColor: colors.neutral[100],
                         },
                       }}
                     >
@@ -357,11 +357,11 @@ export function SupervisorLayout() {
                             mb: 0.5,
                             pl: drawerCollapsed ? 0 : 4,
                             transition: 'all 0.2s',
-                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                            borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                            backgroundColor: 'transparent',
+                            borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
                             justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                             '&:hover': {
-                              backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                              backgroundColor: colors.neutral[100],
                             },
                           }}
                         >

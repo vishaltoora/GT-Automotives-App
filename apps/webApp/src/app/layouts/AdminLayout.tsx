@@ -101,7 +101,7 @@ export function AdminLayout() {
     },
     {
       id: 'business',
-      title: 'Business Management',
+      title: 'Business',
       icon: <BusinessCenter />,
       items: [
         { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
@@ -115,7 +115,7 @@ export function AdminLayout() {
     },
     {
       id: 'scheduling',
-      title: 'Scheduling & Communication',
+      title: 'Scheduling',
       icon: <Event />,
       items: [
         { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
@@ -136,7 +136,7 @@ export function AdminLayout() {
     },
     {
       id: 'analytics',
-      title: 'Analytics & Reports',
+      title: 'Analytics',
       icon: <BarChart />,
       items: [
         { text: 'Reports', icon: <Analytics />, path: '/admin/reports' },
@@ -257,12 +257,14 @@ export function AdminLayout() {
                         mx: 0.5,
                         mb: 0.5,
                         transition: 'all 0.2s',
-                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                        borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                        backgroundColor: 'transparent',
+                        borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
+                        border: active ? `1px solid ${colors.neutral[200]}` : '1px solid transparent',
+                        borderLeftWidth: active ? '3px' : '1px',
                         justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                         px: drawerCollapsed ? 0 : 2,
                         '&:hover': {
-                          backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                          backgroundColor: colors.neutral[100],
                         },
                       }}
                     >
@@ -331,21 +333,24 @@ export function AdminLayout() {
                     </ListItemButton>
                   </Tooltip>
                 ) : (
-                  // Expanded view - show section header
+                  // Expanded view - show section header (Minimal style with accent)
                   <ListItemButton
                     onClick={() => handleSectionToggle(section.id!)}
                     sx={{
-                      borderRadius: 1.5,
-                      mx: 0.5,
+                      borderRadius: 0,
+                      mx: 0,
                       mb: 0.5,
-                      backgroundColor: colors.neutral[100],
+                      py: 1,
+                      px: 2,
+                      borderLeft: `3px solid ${colors.primary.main}`,
+                      backgroundColor: 'transparent',
                       '&:hover': {
-                        backgroundColor: colors.neutral[200],
+                        backgroundColor: colors.primary.lighter + '10',
                       },
                     }}
                   >
                     <ListItemIcon sx={{
-                      color: colors.neutral[700],
+                      color: colors.primary.main,
                       minWidth: 40,
                     }}>
                       {section.icon}
@@ -353,12 +358,18 @@ export function AdminLayout() {
                     <ListItemText
                       primary={section.title}
                       primaryTypographyProps={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: colors.neutral[700],
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        color: colors.primary.main,
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
                       }}
                     />
-                    {expandedSections[section.id] ? <ExpandLess /> : <ExpandMore />}
+                    {expandedSections[section.id] ? (
+                      <ExpandLess sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                    ) : (
+                      <ExpandMore sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                    )}
                   </ListItemButton>
                 )}
 
@@ -377,11 +388,11 @@ export function AdminLayout() {
                             mb: 0.5,
                             pl: drawerCollapsed ? 0 : 4,
                             transition: 'all 0.2s',
-                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                            borderLeft: active ? `3px solid ${colors.secondary.main}` : '3px solid transparent',
+                            backgroundColor: 'transparent',
+                            borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
                             justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                             '&:hover': {
-                              backgroundColor: active ? colors.primary.lighter + '30' : colors.neutral[100],
+                              backgroundColor: colors.neutral[100],
                             },
                           }}
                         >
