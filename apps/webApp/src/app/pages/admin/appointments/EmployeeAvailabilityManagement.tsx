@@ -613,7 +613,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
           const isExpanded = expandedCards.has(employee.id);
 
           return (
-            <Grid size={{ xs: 12 }} key={employee.id}>
+            <Grid size={{ xs: 12, lg: 6 }} key={employee.id}>
               <Card>
                 <CardContent>
                   {/* Card Header */}
