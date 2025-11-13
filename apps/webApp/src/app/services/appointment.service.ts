@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { format } from 'date-fns';
 import { AppointmentStatus } from '@gt-automotive/data';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -336,10 +337,13 @@ export const appointmentService = {
 
   /**
    * Get appointments by payment date (for daily cash reports)
+   * Sends date in YYYY-MM-DD format to avoid timezone issues
    */
   async getByPaymentDate(paymentDate: Date): Promise<Appointment[]> {
     const queryParams = new URLSearchParams({
-      paymentDate: paymentDate.toISOString(),
+      // Send as YYYY-MM-DD to prevent timezone conversion issues
+      // Backend will interpret this as a date in business timezone (PST/PDT)
+      paymentDate: format(paymentDate, 'yyyy-MM-dd'),
     });
     const response = await apiClient.get(
       `/api/appointments/by-payment-date?${queryParams.toString()}`
