@@ -466,40 +466,6 @@ export function AdminDashboard() {
                 </Typography>
               </Paper>
 
-              <Paper
-                onClick={() => setInvoiceDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.secondary.main,
-                  },
-                }}
-              >
-                <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  New Invoice
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setQuotationDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.lighter,
-                  },
-                }}
-              >
-                <Description sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  New Quotation
-                </Typography>
-              </Paper>
-
               {/* My Jobs - Supervisor only - Before New Job */}
               {role === 'supervisor' && (
                 <Paper
@@ -537,6 +503,40 @@ export function AdminDashboard() {
                 <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
                 <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                   New Job
+                </Typography>
+              </Paper>
+
+              <Paper
+                onClick={() => setInvoiceDialogOpen(true)}
+                sx={{
+                  ...actionItemStyles,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.secondary.main,
+                  },
+                }}
+              >
+                <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                  New Invoice
+                </Typography>
+              </Paper>
+
+              <Paper
+                onClick={() => setQuotationDialogOpen(true)}
+                sx={{
+                  ...actionItemStyles,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.primary.lighter,
+                  },
+                }}
+              >
+                <Description sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                  New Quotation
                 </Typography>
               </Paper>
 
