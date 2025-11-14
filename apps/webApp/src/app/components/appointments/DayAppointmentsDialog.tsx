@@ -429,7 +429,9 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
       // Prepare EOD summary data
       const eodData = {
-        date: format(date, 'yyyy-MM-dd'),
+        // Use toISOString().split('T')[0] to preserve selected date
+        // format() would shift date at night when user is in PST timezone
+        date: date.toISOString().split('T')[0],
         totalPayments: stats.totalPayments,
         totalOwed: stats.totalOwed,
         paymentsByMethod: stats.paymentsByMethod,

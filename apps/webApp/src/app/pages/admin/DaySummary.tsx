@@ -126,7 +126,10 @@ export function DaySummary() {
       setLoading(true);
       setError(null);
 
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      // Use toISOString().split('T')[0] to get UTC date without timezone conversion
+      // DatePicker creates dates as midnight UTC, so this preserves the selected date
+      // format() would shift Nov 13 UTC to Nov 12 PST at night (8pm PST = 4am UTC next day)
+      const dateStr = selectedDate.toISOString().split('T')[0];
 
       // Fetch scheduled appointments, customer payments, and employee payments for this date
       const [scheduled, payments, empPayments] = await Promise.all([
@@ -361,7 +364,9 @@ export function DaySummary() {
       const token = await getToken();
 
       const eodData = {
-        date: format(selectedDate, 'yyyy-MM-dd'),
+        // Use toISOString().split('T')[0] to preserve selected date
+        // format() would shift date at night when server is in different timezone
+        date: selectedDate.toISOString().split('T')[0],
         totalPayments: stats.totalPayments,
         totalOwed: stats.totalOwed,
         paymentsByMethod: stats.paymentsByMethod,
