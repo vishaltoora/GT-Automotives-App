@@ -1,5 +1,146 @@
 # Completed Work Log
 
+## November 14, 2025 Updates
+
+### Critical Timezone Fixes: DatePicker 8 PM Bug & Appointment Filtering ✅
+
+**The 8 PM Bug - User Report:**
+- User checked EOD at 8 PM PST → All dates showed **one day back** (Nov 13 showed Nov 12 data)
+- User checked same page in morning → Dates showed **correctly**
+- Pattern: Works in morning, fails at night
+
+**Root Cause Analysis:**
+```javascript
+// When DatePicker creates a date for "Nov 13":
+const selectedDate = new Date('2025-11-13T00:00:00.000Z'); // midnight UTC
+
+// At 8 PM PST (which is 4 AM UTC next day):
+// format(date, 'yyyy-MM-dd') uses getDate() which converts to local timezone
+const wrongWay = format(selectedDate, 'yyyy-MM-dd');
+// Result: '2025-11-12' ❌ (midnight UTC Nov 13 = 4 PM PST Nov 12)
+
+// Correct way:
+const correctWay = selectedDate.toISOString().split('T')[0];
+// Result: '2025-11-13' ✅ (preserves UTC date)
+```
+
+**Why It Worked in Morning but Failed at Night:**
+- **Morning (9 AM PST = 5 PM UTC same day):**
+  - Still within same calendar day in both timezones
+  - format() returns correct date ✅
+
+- **Night (8 PM PST = 4 AM UTC next day):**
+  - UTC has crossed midnight boundary
+  - format() applies local timezone to UTC midnight = previous day ❌
+
+**Solution Applied:**
+
+1. **DaySummary.tsx - fetchData():**
+```typescript
+// BEFORE (WRONG):
+const dateStr = format(selectedDate, 'yyyy-MM-dd');
+
+// AFTER (CORRECT):
+const dateStr = selectedDate.toISOString().split('T')[0];
+```
+
+2. **DaySummary.tsx - handleSendEOD():**
+```typescript
+// BEFORE:
+date: format(selectedDate, 'yyyy-MM-dd'),
+
+// AFTER:
+date: selectedDate.toISOString().split('T')[0],
+```
+
+3. **DayAppointmentsDialog.tsx - handleSendEOD():**
+```typescript
+// BEFORE:
+date: format(date, 'yyyy-MM-dd'),
+
+// AFTER:
+date: date.toISOString().split('T')[0],
+```
+
+**Backend DTO Timezone Fix:**
+
+Issue: `PaymentDateQueryDto` was auto-converting string to Date:
+```typescript
+// BEFORE (WRONG):
+export class PaymentDateQueryDto {
+  @Type(() => Date)  // ← Converts '2025-11-13' to Date object
+  @IsDate()
+  paymentDate!: Date;
+}
+
+// AFTER (CORRECT):
+export class PaymentDateQueryDto {
+  @IsString()  // ← Keep as string
+  paymentDate!: string;
+}
+```
+
+Updated all service methods to accept string:
+- `appointments.service.ts`: `async getByPaymentDate(paymentDate: string)`
+- `payments.service.ts`: `async getByPaymentDate(paymentDate: string)`
+- `payments.controller.ts`: Removed `new Date(paymentDate)` conversion
+
+**Calendar Appointment Count Fix:**
+
+Issue: Yesterday's appointment paid today was showing in today's scheduled list.
+
+```typescript
+// BEFORE - AppointmentsManagement.tsx getAppointmentsForDay():
+return appointments.filter((apt) => {
+  const aptDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
+  if (aptDate === dateStr) return true;
+
+  // WRONG: Also included if paid on this date
+  if (apt.paymentDate) {
+    const paymentDateStr = new Date(apt.paymentDate).toISOString().split('T')[0];
+    if (paymentDateStr === dateStr) return true; // ← Caused duplicates
+  }
+  return false;
+});
+
+// AFTER:
+return appointments.filter((apt) => {
+  const aptDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
+  // Only include appointments scheduled on this date
+  // Payments processed on this date are fetched separately in DayAppointmentsDialog
+  return aptDate === dateStr;
+});
+```
+
+**Files Changed:**
+
+Backend (4 files):
+- `server/src/common/dto/appointment.dto.ts`
+- `server/src/appointments/appointments.service.ts`
+- `server/src/payments/payments.controller.ts`
+- `server/src/payments/payments.service.ts`
+
+Frontend (3 files):
+- `apps/webApp/src/app/pages/admin/DaySummary.tsx`
+- `apps/webApp/src/app/components/appointments/DayAppointmentsDialog.tsx`
+- `apps/webApp/src/app/pages/admin/appointments/AppointmentsManagement.tsx`
+
+**Impact:**
+- ✅ EOD summaries work correctly at any time of day (morning AND night)
+- ✅ Day Summary shows correct date 24/7
+- ✅ Calendar shows correct appointment counts
+- ✅ No more duplicate appointments in day view
+- ✅ Payments processed on different dates only appear in "Payments Processed" section
+
+**Testing Scenario:**
+- At 8 PM PST on Nov 13:
+  - Select Nov 13 in DatePicker
+  - Expected: Shows Nov 13 data
+  - Before fix: Showed Nov 12 data ❌
+  - After fix: Shows Nov 13 data ✅
+
+---
+
 ## November 5, 2025 Updates
 
 ### EOD Summary Date Parsing Bug Fix - Build 218 ✅

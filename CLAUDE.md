@@ -153,6 +153,30 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### November 14, 2025 - Critical Timezone Fixes: DatePicker 8 PM Bug & Appointment Filtering ✅
+- ✅ **CRITICAL 8 PM Bug Fixed**: DatePicker dates now work correctly at any time of day
+- ✅ **Root Cause**: DatePicker creates midnight UTC dates, format() applied PST conversion causing -1 day shift at night
+- ✅ **The Pattern**: Worked correctly in morning (9 AM PST), showed wrong date at night (8 PM PST)
+- ✅ **Solution**: Changed from `format(date, 'yyyy-MM-dd')` to `date.toISOString().split('T')[0]`
+- ✅ **Files Fixed**:
+  - `DaySummary.tsx`: fetchData() and handleSendEOD() date extraction
+  - `DayAppointmentsDialog.tsx`: handleSendEOD() date extraction
+- ✅ **Backend DTO Fix**: Changed `PaymentDateQueryDto.paymentDate` from Date to string
+- ✅ **Prevented DTO Timezone Conversion**: `@Type(() => Date)` decorator was converting strings to Date objects
+- ✅ **Calendar Appointment Count Fix**: Removed duplicate old appointments from scheduled list
+- ✅ **getAppointmentsForDay() Fix**: Only includes appointments scheduled on selected date
+- 🔧 **Backend Files Changed**:
+  - `server/src/common/dto/appointment.dto.ts`: Changed to string parameter
+  - `server/src/appointments/appointments.service.ts`: Updated signature
+  - `server/src/payments/payments.controller.ts`: Removed Date conversion
+  - `server/src/payments/payments.service.ts`: Updated signature
+- 🔧 **Frontend Files Changed**:
+  - `apps/webApp/src/app/pages/admin/DaySummary.tsx`: 2 fixes
+  - `apps/webApp/src/app/components/appointments/DayAppointmentsDialog.tsx`: 1 fix
+  - `apps/webApp/src/app/pages/admin/appointments/AppointmentsManagement.tsx`: 1 fix
+- 📝 **Impact**: EOD summaries, day views, and calendar counts all show correct dates 24/7
+- ⚠️ **Testing Scenario**: At 8 PM PST, selecting Nov 13 now queries Nov 13 data (not Nov 12)
+
 ### November 6, 2025 - Docker Image Optimization Complete (87% Size Reduction) ✅
 - ✅ **Massive Size Reduction**: Docker image optimized from 11.5GB to 1.5GB (87% reduction)
 - ✅ **Deployment Speed**: Image pull time reduced from 56 minutes to ~5-10 minutes (80-90% faster)
