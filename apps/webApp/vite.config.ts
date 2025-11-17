@@ -7,7 +7,7 @@ export default defineConfig(() => ({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/webApp',
   server: {
-    port: 4200,
+    port: 4500,
     host: 'localhost',
     proxy: {
       '/api': {
@@ -25,7 +25,7 @@ export default defineConfig(() => ({
     },
   },
   preview: {
-    port: 4200,
+    port: 4500,
     host: 'localhost',
   },
   plugins: [react()],

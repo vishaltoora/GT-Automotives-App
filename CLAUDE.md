@@ -75,7 +75,7 @@ yarn dev
 - **Security:** Mixed Content errors resolved ✅
 - **Progress:** 6 of 8 Epics Complete (75%)
 - **Next:** EPIC-06 - Appointment Scheduling
-- **Dev Frontend:** http://localhost:4200 (with Clerk Auth)
+- **Dev Frontend:** http://localhost:4500 (with Clerk Auth)
 - **Dev Backend:** http://localhost:3000/api
 - **Admin User:** vishal.alawalpuria@gmail.com
 - **SSL/DNS:** Namecheap DNS + Azure SSL + Clerk Certificates
