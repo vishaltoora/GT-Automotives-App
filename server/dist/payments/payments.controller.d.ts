@@ -6,31 +6,31 @@ export declare class PaymentsController {
     constructor(paymentsService: PaymentsService);
     create(createPaymentDto: CreatePaymentDto, user: any): Promise<{
         id: string;
-        jobId: string;
-        employeeId: string;
-        amount: import(".prisma/client/runtime/library").Decimal;
-        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         status: import("@prisma/client").$Enums.PaymentStatus;
-        paidAt: Date | null;
-        paidBy: string | null;
-        notes: string | null;
-        reference: string | null;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        notes: string | null;
+        amount: import(".prisma/client/runtime/library").Decimal;
+        jobId: string;
+        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
+        paidAt: Date | null;
+        paidBy: string | null;
+        reference: string | null;
     }>;
     processPayment(processPaymentDto: ProcessPaymentDto, user: any): Promise<{
         id: string;
-        jobId: string;
-        employeeId: string;
-        amount: import(".prisma/client/runtime/library").Decimal;
-        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         status: import("@prisma/client").$Enums.PaymentStatus;
-        paidAt: Date | null;
-        paidBy: string | null;
-        notes: string | null;
-        reference: string | null;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        notes: string | null;
+        amount: import(".prisma/client/runtime/library").Decimal;
+        jobId: string;
+        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
+        paidAt: Date | null;
+        paidBy: string | null;
+        reference: string | null;
     }>;
     findAll(employeeId?: string, status?: PaymentStatus, paymentMethod?: PaymentMethod, startDate?: string, endDate?: string): Promise<PaymentResponseDto[]>;
     getPaymentSummary(employeeId?: string): Promise<PaymentSummaryDto>;
@@ -39,7 +39,7 @@ export declare class PaymentsController {
     getPayrollReport(startDate: string, endDate: string, employeeId?: string): Promise<any[]>;
     /**
      * Get payments processed on a specific date (for EOD summary)
-     * @param paymentDate - Date to query (YYYY-MM-DD or ISO string)
+     * @param paymentDate - Date in YYYY-MM-DD format (e.g., "2025-11-13")
      */
     getByPaymentDate(paymentDate: string): Promise<PaymentResponseDto[]>;
     findMyPayments(user: any): Promise<PaymentResponseDto[]>;
@@ -48,31 +48,31 @@ export declare class PaymentsController {
     findOne(id: string): Promise<PaymentResponseDto>;
     update(id: string, updatePaymentDto: UpdatePaymentDto, user: any): Promise<{
         id: string;
-        jobId: string;
-        employeeId: string;
-        amount: import(".prisma/client/runtime/library").Decimal;
-        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         status: import("@prisma/client").$Enums.PaymentStatus;
-        paidAt: Date | null;
-        paidBy: string | null;
-        notes: string | null;
-        reference: string | null;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        notes: string | null;
+        amount: import(".prisma/client/runtime/library").Decimal;
+        jobId: string;
+        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
+        paidAt: Date | null;
+        paidBy: string | null;
+        reference: string | null;
     }>;
     revertPaymentStatus(id: string, user: any): Promise<{
         id: string;
-        jobId: string;
-        employeeId: string;
-        amount: import(".prisma/client/runtime/library").Decimal;
-        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
         status: import("@prisma/client").$Enums.PaymentStatus;
-        paidAt: Date | null;
-        paidBy: string | null;
-        notes: string | null;
-        reference: string | null;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
+        notes: string | null;
+        amount: import(".prisma/client/runtime/library").Decimal;
+        jobId: string;
+        paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
+        paidAt: Date | null;
+        paidBy: string | null;
+        reference: string | null;
     }>;
     remove(id: string, user: any): Promise<void>;
 }

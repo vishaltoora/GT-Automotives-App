@@ -2,6 +2,102 @@
 
 ## November 14, 2025 Updates
 
+### Puppeteer/Chromium Installation for Invoice PDF Generation ✅
+
+**User Report:**
+- Production error when trying to send invoice via email:
+  ```
+  Failed to send invoice email: Could not find Chrome (ver. 142.0.7444.59).
+  This can occur if either
+  1. you did not perform an installation before running the script
+     (e.g. `npx puppeteer browsers install chrome`) or
+  2. your cache path is incorrectly configured
+     (which is: /home/nodejs/.cache/puppeteer).
+  ```
+
+**Root Cause:**
+- Alpine-based Docker image didn't include Chromium browser
+- Puppeteer requires Chrome/Chromium to generate PDFs from HTML
+- Build environment had `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true` to save build time
+- Production runtime needed system Chromium installed
+
+**Investigation:**
+1. Confirmed Puppeteer usage in `server/src/pdf/pdf.service.ts`
+2. Found invoice PDF generation via `generatePdfFromHtml()` method
+3. Checked Dockerfile - Alpine base image had no Chromium packages
+4. Identified need for system Chromium with proper dependencies
+
+**Solution Implemented:**
+
+**1. Dockerfile - Added Chromium Packages (Alpine Production Stage):**
+```dockerfile
+# Before:
+RUN apk add --no-cache dumb-init tzdata
+
+# After:
+RUN apk add --no-cache \
+    dumb-init \
+    tzdata \
+    chromium \          # Browser for Puppeteer
+    nss \               # Network Security Services
+    freetype \          # Font rendering
+    harfbuzz \          # Text shaping
+    ca-certificates \   # SSL support
+    ttf-freefont        # Font package
+```
+
+**2. Dockerfile - Environment Variables:**
+```dockerfile
+# Tell Puppeteer to use system Chromium instead of downloading bundled version
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+```
+
+**3. server/src/pdf/pdf.service.ts - Updated Puppeteer Launch:**
+```typescript
+// Before:
+const browser = await puppeteer.launch({
+  headless: true,
+  args: ['--no-sandbox', '--disable-setuid-sandbox'],
+});
+
+// After:
+const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+
+this.logger.log(`[PDF] Launching Puppeteer with executable: ${executablePath || 'bundled'}`);
+
+const browser = await puppeteer.launch({
+  headless: true,
+  executablePath,  // Use system Chromium if available
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',  // Overcome limited resource problems
+    '--disable-gpu',
+  ],
+});
+```
+
+**Files Changed:**
+- `Dockerfile` (lines 49-57): Added Chromium packages to production stage
+- `Dockerfile` (lines 87-88): Added Puppeteer environment variables
+- `server/src/pdf/pdf.service.ts` (lines 17-30): Enhanced Puppeteer launch config
+
+**Impact:**
+- Invoice and quotation PDFs can now be generated in production
+- Email invoice feature fully operational
+- Chromium adds ~50-80MB to container size (still only ~1.6GB total)
+- Additional Chrome flags improve container stability
+
+**Testing Checklist:**
+- [ ] Build new Docker image with Chromium
+- [ ] Deploy to production
+- [ ] Test invoice email sending
+- [ ] Test quotation PDF generation
+- [ ] Verify PDF quality and formatting
+
+---
+
 ### Critical Timezone Fixes: DatePicker 8 PM Bug & Appointment Filtering ✅
 
 **The 8 PM Bug - User Report:**

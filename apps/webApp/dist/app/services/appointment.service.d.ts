@@ -158,7 +158,12 @@ export declare const appointmentService: {
     }>;
     /**
      * Get appointments by payment date (for daily cash reports)
+     * Sends date in YYYY-MM-DD format to avoid timezone issues
      */
-    getByPaymentDate(paymentDate: Date): Promise<Appointment[]>;
+    getByPaymentDate(paymentDate: Date | string): Promise<Appointment[]>;
+    /**
+     * Update payment information for an appointment
+     */
+    updatePayment(appointmentId: string, paymentData: any): Promise<Appointment>;
 };
 //# sourceMappingURL=appointment.service.d.ts.map

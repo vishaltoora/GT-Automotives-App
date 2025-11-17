@@ -26,7 +26,7 @@ declare class PaymentService {
     /**
      * Get payments processed on a specific date (for EOD summary)
      */
-    getByPaymentDate(paymentDate: Date): Promise<PaymentResponseDto[]>;
+    getByPaymentDate(paymentDate: Date | string): Promise<PaymentResponseDto[]>;
 }
 export declare const paymentService: PaymentService;
 export default paymentService;

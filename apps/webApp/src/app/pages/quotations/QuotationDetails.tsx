@@ -17,6 +17,14 @@ import {
   Card,
   CardContent,
   Alert,
+  useTheme,
+  useMediaQuery,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Stack,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -25,6 +33,8 @@ import {
   SwapHoriz as ConvertIcon,
   CheckCircle as AcceptIcon,
   Cancel as RejectIcon,
+  MoreVert as MoreVertIcon,
+  Send as SendIcon,
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../services/quotation.service';
 import { useAuth } from '../../hooks/useAuth';
@@ -37,10 +47,13 @@ const QuotationDetails: React.FC = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { showApiError } = useErrorHelpers();
-  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [quotation, setQuotation] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -81,6 +94,44 @@ const QuotationDetails: React.FC = () => {
     if (!quotation) return;
     const basePath = role === 'admin' ? '/admin' : '/staff';
     navigate(`${basePath}/invoices/new?fromQuotation=${quotation.id}`);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+
+  const handlePrintFromMenu = () => {
+    handlePrint();
+    handleMenuClose();
+  };
+
+  const handleEditFromMenu = () => {
+    setEditDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleMarkSentFromMenu = () => {
+    handleStatusUpdate('SENT');
+    handleMenuClose();
+  };
+
+  const handleAcceptFromMenu = () => {
+    handleStatusUpdate('ACCEPTED');
+    handleMenuClose();
+  };
+
+  const handleRejectFromMenu = () => {
+    handleStatusUpdate('REJECTED');
+    handleMenuClose();
+  };
+
+  const handleConvertFromMenu = () => {
+    handleConvert();
+    handleMenuClose();
   };
 
   const formatCurrency = (amount: number) => {
@@ -163,7 +214,13 @@ const QuotationDetails: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{
+      p: {
+        xs: theme.custom.spacing.pagePadding.mobile,
+        sm: theme.custom.spacing.pagePadding.tablet,
+        md: theme.custom.spacing.pagePadding.desktop
+      }
+    }}>
       <style>
         {`
           @media print {
@@ -177,69 +234,129 @@ const QuotationDetails: React.FC = () => {
           }
         `}
       </style>
-      
-      <Box className="no-print" sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Button startIcon={<BackIcon />} onClick={() => {
-          const basePath = role === 'admin' ? '/admin' : '/staff';
-          navigate(`${basePath}/quotations`);
-        }}>
-          Back to Quotations
-        </Button>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<PrintIcon />} onClick={handlePrint}>
-            Print
-          </Button>
-          {quotation.status !== 'CONVERTED' && (
-            <>
-              <Button 
-                variant="outlined" 
-                startIcon={<EditIcon />} 
-                onClick={() => setEditDialogOpen(true)}
-              >
-                Edit
-              </Button>
-              {quotation.status === 'DRAFT' && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleStatusUpdate('SENT')}
-                >
-                  Mark as Sent
-                </Button>
-              )}
-              {quotation.status === 'SENT' && (
+
+      <Box className="no-print" sx={{ mb: { xs: 1, sm: 2 } }}>
+        {isMobile ? (
+          // Mobile: Back button + Menu
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Button startIcon={<BackIcon />} onClick={() => {
+              const basePath = role === 'admin' ? '/admin' : '/staff';
+              navigate(`${basePath}/quotations`);
+            }}>
+              Back
+            </Button>
+            <IconButton onClick={handleMenuOpen} size="large" edge="end">
+              <MoreVertIcon />
+            </IconButton>
+            <Menu
+              anchorEl={menuAnchorEl}
+              open={Boolean(menuAnchorEl)}
+              onClose={handleMenuClose}
+            >
+              <MenuItem onClick={handlePrintFromMenu}>
+                <ListItemIcon><PrintIcon fontSize="small" /></ListItemIcon>
+                <ListItemText>Print</ListItemText>
+              </MenuItem>
+              {quotation.status !== 'CONVERTED' && (
                 <>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={<AcceptIcon />}
-                    onClick={() => handleStatusUpdate('ACCEPTED')}
-                  >
-                    Accept
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<RejectIcon />}
-                    onClick={() => handleStatusUpdate('REJECTED')}
-                  >
-                    Reject
-                  </Button>
+                  <MenuItem onClick={handleEditFromMenu}>
+                    <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText>Edit</ListItemText>
+                  </MenuItem>
+                  {quotation.status === 'DRAFT' && (
+                    <MenuItem onClick={handleMarkSentFromMenu}>
+                      <ListItemIcon><SendIcon fontSize="small" color="primary" /></ListItemIcon>
+                      <ListItemText>Mark as Sent</ListItemText>
+                    </MenuItem>
+                  )}
+                  {quotation.status === 'SENT' && (
+                    <>
+                      <MenuItem onClick={handleAcceptFromMenu}>
+                        <ListItemIcon><AcceptIcon fontSize="small" color="success" /></ListItemIcon>
+                        <ListItemText>Accept</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={handleRejectFromMenu}>
+                        <ListItemIcon><RejectIcon fontSize="small" color="error" /></ListItemIcon>
+                        <ListItemText>Reject</ListItemText>
+                      </MenuItem>
+                    </>
+                  )}
+                  {quotation.status === 'ACCEPTED' && (
+                    <MenuItem onClick={handleConvertFromMenu}>
+                      <ListItemIcon><ConvertIcon fontSize="small" color="primary" /></ListItemIcon>
+                      <ListItemText>Convert to Invoice</ListItemText>
+                    </MenuItem>
+                  )}
                 </>
               )}
-              {quotation.status === 'ACCEPTED' && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<ConvertIcon />}
-                  onClick={handleConvert}
-                >
-                  Convert to Invoice
-                </Button>
+            </Menu>
+          </Box>
+        ) : (
+          // Desktop: Original layout
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Button startIcon={<BackIcon />} onClick={() => {
+              const basePath = role === 'admin' ? '/admin' : '/staff';
+              navigate(`${basePath}/quotations`);
+            }}>
+              Back to Quotations
+            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button variant="outlined" startIcon={<PrintIcon />} onClick={handlePrint}>
+                Print
+              </Button>
+              {quotation.status !== 'CONVERTED' && (
+                <>
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => setEditDialogOpen(true)}
+                  >
+                    Edit
+                  </Button>
+                  {quotation.status === 'DRAFT' && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleStatusUpdate('SENT')}
+                    >
+                      Mark as Sent
+                    </Button>
+                  )}
+                  {quotation.status === 'SENT' && (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={<AcceptIcon />}
+                        onClick={() => handleStatusUpdate('ACCEPTED')}
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<RejectIcon />}
+                        onClick={() => handleStatusUpdate('REJECTED')}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                  {quotation.status === 'ACCEPTED' && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<ConvertIcon />}
+                      onClick={handleConvert}
+                    >
+                      Convert to Invoice
+                    </Button>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </Box>
+            </Box>
+          </Box>
+        )}
       </Box>
 
       {isExpired(quotation.validUntil) && quotation.status !== 'CONVERTED' && (
@@ -254,10 +371,15 @@ const QuotationDetails: React.FC = () => {
         </Alert>
       )}
 
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{
+        p: {
+          xs: 2,
+          sm: 3
+        }
+      }}>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant={isMobile ? "h5" : "h4"} gutterBottom>
               Quotation #{quotation.quotationNumber}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -269,7 +391,7 @@ const QuotationDetails: React.FC = () => {
               </Typography>
             )}
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: 'right' }}>
+          <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
             <Chip
               label={getStatusLabel(quotation.status)}
               color={getStatusColor(quotation.status)}
@@ -313,44 +435,84 @@ const QuotationDetails: React.FC = () => {
         </Grid>
 
         <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>Items</Typography>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Description</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell align="center">Quantity</TableCell>
-                <TableCell align="right">Unit Price</TableCell>
-                <TableCell align="right">Total</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {quotation.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
+        {isMobile ? (
+          // Mobile: Card-based layout
+          <Stack spacing={2}>
+            {quotation.items.map((item) => {
+              const displayTotal = item.total || item.quantity * item.unitPrice;
+              return (
+                <Card key={item.id} variant="outlined">
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                      <Chip label={item.itemType.replace('_', ' ')} size="small" />
+                      <Typography variant="h6" fontWeight="bold">
+                        {formatCurrency(displayTotal)}
+                      </Typography>
+                    </Box>
+
                     {(item as any).tireName && (
-                      <Typography variant="body2" fontWeight="medium">
+                      <Typography variant="body2" fontWeight="medium" gutterBottom>
                         {(item as any).tireName}
                       </Typography>
                     )}
-                    <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
                       {item.description}
                     </Typography>
-                  </TableCell>
-                  <TableCell>{item.itemType.replace('_', ' ')}</TableCell>
-                  <TableCell align="center">{item.quantity}</TableCell>
-                  <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
-                  <TableCell align="right">
-                    {formatCurrency(item.total || item.quantity * item.unitPrice)}
-                  </TableCell>
+
+                    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                      <Typography variant="body2">
+                        <strong>Qty:</strong> {item.quantity}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Unit Price:</strong> {formatCurrency(item.unitPrice)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Stack>
+        ) : (
+          // Desktop: Table layout
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell align="center">Quantity</TableCell>
+                  <TableCell align="right">Unit Price</TableCell>
+                  <TableCell align="right">Total</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {quotation.items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      {(item as any).tireName && (
+                        <Typography variant="body2" fontWeight="medium">
+                          {(item as any).tireName}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                        {item.description}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{item.itemType.replace('_', ' ')}</TableCell>
+                    <TableCell align="center">{item.quantity}</TableCell>
+                    <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(item.total || item.quantity * item.unitPrice)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-          <Box sx={{ minWidth: 300 }}>
+          <Box sx={{ minWidth: { xs: '100%', sm: 300 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography>Subtotal:</Typography>
               <Typography>{formatCurrency(quotation.subtotal)}</Typography>

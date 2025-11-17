@@ -28,6 +28,7 @@ import {
   useTheme,
   useMediaQuery,
   Divider,
+  Collapse,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -97,6 +98,7 @@ export function JobsManagement() {
   const [selectedJob, setSelectedJob] = useState<JobResponseDto | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
 
   // Filters for jobs view
   const [filters, setFilters] = useState({
@@ -733,60 +735,74 @@ export function JobsManagement() {
 
         {/* Summary Cards */}
         {summary && (
-          <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mb: 3, px: { xs: 0.5, sm: 0 } }}>
-            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.primary.light} 0%, ${colors.primary.main} 100%)`, color: 'white' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
-                    <WorkIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
-                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Total Jobs</Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
-                    {summary.totalJobs}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.warningLight} 0%, ${colors.semantic.warning} 100%)`, color: 'white' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
-                    <ScheduleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
-                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Pending</Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
-                    {summary.pendingJobs}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.infoLight} 0%, ${colors.semantic.info} 100%)`, color: 'white' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
-                    <CheckCircleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
-                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Ready</Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
-                    {summary.readyJobs}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-              <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.successLight} 0%, ${colors.semantic.success} 100%)`, color: 'white' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
-                    <MoneyIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
-                    <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600, fontSize: isMobile ? '0.7rem' : undefined }}>Total Pay</Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h5' : 'h3'} fontWeight="bold" sx={{ fontSize: isMobile ? '1.5rem' : undefined }}>
-                    ${summary.totalPayAmount.toFixed(2)}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+          <Box sx={{ mb: { xs: 2, sm: 3 }, px: { xs: 0.5, sm: 0 } }}>
+            {isMobile && (
+              <Button
+                fullWidth
+                onClick={() => setStatsExpanded(!statsExpanded)}
+                endIcon={statsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                sx={{ mb: statsExpanded ? 2 : 0, justifyContent: 'space-between' }}
+              >
+                Statistics
+              </Button>
+            )}
+            <Collapse in={!isMobile || statsExpanded}>
+              <Grid container spacing={isMobile ? 1.5 : 3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.primary.light} 0%, ${colors.primary.main} 100%)`, color: 'white' }}>
+                    <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                        <WorkIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                        <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Total Jobs</Typography>
+                      </Box>
+                      <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
+                        {summary.totalJobs}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.warningLight} 0%, ${colors.semantic.warning} 100%)`, color: 'white' }}>
+                    <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                        <ScheduleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                        <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Pending</Typography>
+                      </Box>
+                      <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
+                        {summary.pendingJobs}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.infoLight} 0%, ${colors.semantic.info} 100%)`, color: 'white' }}>
+                    <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                        <CheckCircleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                        <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600 }}>Ready</Typography>
+                      </Box>
+                      <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold">
+                        {summary.readyJobs}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${colors.semantic.successLight} 0%, ${colors.semantic.success} 100%)`, color: 'white' }}>
+                    <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1, mb: isMobile ? 0.5 : 1 }}>
+                        <MoneyIcon sx={{ fontSize: isMobile ? 18 : 24 }} />
+                        <Typography variant={isMobile ? 'caption' : 'h6'} sx={{ fontWeight: 600, fontSize: isMobile ? '0.7rem' : undefined }}>Total Pay</Typography>
+                      </Box>
+                      <Typography variant={isMobile ? 'h5' : 'h3'} fontWeight="bold" sx={{ fontSize: isMobile ? '1.5rem' : undefined }}>
+                        ${summary.totalPayAmount.toFixed(2)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Collapse>
+          </Box>
         )}
 
         {/* Filters */}

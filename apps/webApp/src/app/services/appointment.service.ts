@@ -338,15 +338,30 @@ export const appointmentService = {
    * Get appointments by payment date (for daily cash reports)
    * Sends date in YYYY-MM-DD format to avoid timezone issues
    */
-  async getByPaymentDate(paymentDate: Date): Promise<Appointment[]> {
+  async getByPaymentDate(paymentDate: Date | string): Promise<Appointment[]> {
+    const dateStr = typeof paymentDate === 'string'
+      ? paymentDate
+      : paymentDate.toISOString().split('T')[0];
+
     const queryParams = new URLSearchParams({
-      // Use toISOString().split('T')[0] to get YYYY-MM-DD without timezone conversion
+      // Use YYYY-MM-DD format to avoid timezone conversion
       // This preserves the date selected in the UI (e.g., Nov 13 stays Nov 13)
       // format(date) would convert Nov 13 UTC to Nov 12 PST
-      paymentDate: paymentDate.toISOString().split('T')[0],
+      paymentDate: dateStr,
     });
     const response = await apiClient.get(
       `/api/appointments/by-payment-date?${queryParams.toString()}`
+    );
+    return response.data;
+  },
+
+  /**
+   * Update payment information for an appointment
+   */
+  async updatePayment(appointmentId: string, paymentData: any): Promise<Appointment> {
+    const response = await apiClient.patch(
+      `/api/appointments/${appointmentId}/payment`,
+      paymentData
     );
     return response.data;
   },

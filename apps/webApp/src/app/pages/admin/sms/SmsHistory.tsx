@@ -16,7 +16,17 @@ import {
   Grid,
   TextField,
   MenuItem,
+  useTheme,
+  useMediaQuery,
+  Collapse,
+  Button,
+  Stack,
+  Divider,
 } from '@mui/material';
+import {
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+} from '@mui/icons-material';
 import { useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 
@@ -51,11 +61,14 @@ interface SmsStatistics {
 }
 
 export const SmsHistory: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { getToken } = useAuth();
   const [messages, setMessages] = useState<SmsMessage[]>([]);
   const [statistics, setStatistics] = useState<SmsStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('all');
+  const [statsExpanded, setStatsExpanded] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -116,82 +129,102 @@ export const SmsHistory: React.FC = () => {
   }
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <Box sx={{
+      p: {
+        xs: theme.custom.spacing.pagePadding.mobile,
+        sm: theme.custom.spacing.pagePadding.tablet,
+        md: theme.custom.spacing.pagePadding.desktop
+      }
+    }}>
+      <Typography variant={isMobile ? "h5" : "h4"} gutterBottom sx={{ mb: { xs: 2, sm: 3 } }}>
         SMS Message History
       </Typography>
 
       {/* Statistics Cards */}
       {statistics && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
-                  Total Messages
-                </Typography>
-                <Typography variant="h4">{statistics.totalMessages}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
-                  Delivered
-                </Typography>
-                <Typography variant="h4" color="success.main">
-                  {statistics.deliveredMessages}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {statistics.deliveryRate}% delivery rate
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
-                  Failed
-                </Typography>
-                <Typography variant="h4" color="error.main">
-                  {statistics.failedMessages}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
-                  Total Cost
-                </Typography>
-                <Typography variant="h4">${statistics.totalCost.toFixed(2)}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
-                  Opted-In Customers
-                </Typography>
-                <Typography variant="h4">{statistics.optedInCustomers}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
-                  Opted-In Staff/Admin
-                </Typography>
-                <Typography variant="h4">{statistics.optedInUsers}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+          {isMobile && (
+            <Button
+              fullWidth
+              onClick={() => setStatsExpanded(!statsExpanded)}
+              endIcon={statsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              sx={{ mb: statsExpanded ? 2 : 0, justifyContent: 'space-between' }}
+            >
+              Statistics
+            </Button>
+          )}
+          <Collapse in={!isMobile || statsExpanded}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Typography color="text.secondary" variant="body2" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      Total Messages
+                    </Typography>
+                    <Typography variant={isMobile ? "h5" : "h4"}>{statistics.totalMessages}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Typography color="text.secondary" variant="body2" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      Delivered
+                    </Typography>
+                    <Typography variant={isMobile ? "h5" : "h4"} color="success.main">
+                      {statistics.deliveredMessages}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6875rem', sm: '0.75rem' } }}>
+                      {statistics.deliveryRate}% delivery rate
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Typography color="text.secondary" variant="body2" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      Failed
+                    </Typography>
+                    <Typography variant={isMobile ? "h5" : "h4"} color="error.main">
+                      {statistics.failedMessages}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Typography color="text.secondary" variant="body2" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      Total Cost
+                    </Typography>
+                    <Typography variant={isMobile ? "h5" : "h4"}>${statistics.totalCost.toFixed(2)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Typography color="text.secondary" variant="body2" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      Opted-In Customers
+                    </Typography>
+                    <Typography variant={isMobile ? "h5" : "h4"}>{statistics.optedInCustomers}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Typography color="text.secondary" variant="body2" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      Opted-In Staff/Admin
+                    </Typography>
+                    <Typography variant={isMobile ? "h5" : "h4"}>{statistics.optedInUsers}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Collapse>
+        </Box>
       )}
 
       {/* Filter */}
@@ -201,7 +234,8 @@ export const SmsHistory: React.FC = () => {
           label="Filter by Type"
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          sx={{ minWidth: 250 }}
+          sx={{ minWidth: { xs: '100%', sm: 250 } }}
+          size={isMobile ? 'small' : 'medium'}
         >
           <MenuItem value="all">All Messages</MenuItem>
           <MenuItem value="APPOINTMENT_REMINDER">Appointment Reminder</MenuItem>
@@ -216,8 +250,72 @@ export const SmsHistory: React.FC = () => {
         </TextField>
       </Box>
 
-      {/* Messages Table */}
-      <TableContainer component={Paper}>
+      {/* Messages */}
+      {isMobile ? (
+        // Mobile: Card Layout
+        <Box>
+          {filteredMessages.length === 0 ? (
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                No SMS messages found
+              </Typography>
+            </Paper>
+          ) : (
+            <Stack spacing={2}>
+              {filteredMessages.map((message) => (
+                <Card key={message.id} variant="outlined">
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                          {message.customer && `${message.customer.firstName} ${message.customer.lastName}`}
+                          {message.user && `${message.user.firstName} ${message.user.lastName} (Staff)`}
+                          {!message.customer && !message.user && 'Unknown'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {message.to}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={message.status}
+                        color={getStatusColor(message.status) as any}
+                        size="small"
+                        sx={{ fontSize: '0.6875rem', height: '20px' }}
+                      />
+                    </Box>
+
+                    <Divider sx={{ my: 1 }} />
+
+                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                      {getTypeLabel(message.type)}
+                    </Typography>
+
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {message.body}
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(message.createdAt).toLocaleDateString()} {new Date(message.createdAt).toLocaleTimeString()}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {message.segments || 1} seg
+                        </Typography>
+                        <Typography variant="caption" fontWeight="medium">
+                          ${((message.segments || 1) * 0.0025).toFixed(4)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      ) : (
+        // Desktop: Table Layout
+        <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
@@ -280,6 +378,7 @@ export const SmsHistory: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      )}
     </Box>
   );
 };

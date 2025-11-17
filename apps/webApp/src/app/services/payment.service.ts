@@ -154,8 +154,10 @@ class PaymentService {
   /**
    * Get payments processed on a specific date (for EOD summary)
    */
-  async getByPaymentDate(paymentDate: Date): Promise<PaymentResponseDto[]> {
-    const dateStr = paymentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+  async getByPaymentDate(paymentDate: Date | string): Promise<PaymentResponseDto[]> {
+    const dateStr = typeof paymentDate === 'string'
+      ? paymentDate
+      : paymentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
     return this.makeRequest<PaymentResponseDto[]>(`${this.baseUrl}/by-payment-date?paymentDate=${dateStr}`);
   }
 }

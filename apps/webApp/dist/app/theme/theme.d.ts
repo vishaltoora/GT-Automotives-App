@@ -6,6 +6,11 @@ declare module '@mui/material/styles' {
             spacing: {
                 section: string;
                 card: string;
+                pagePadding: {
+                    mobile: string;
+                    tablet: string;
+                    desktop: string;
+                };
             };
             borderRadius: {
                 small: string;
@@ -20,6 +25,11 @@ declare module '@mui/material/styles' {
             spacing?: {
                 section?: string;
                 card?: string;
+                pagePadding?: {
+                    mobile?: string;
+                    tablet?: string;
+                    desktop?: string;
+                };
             };
             borderRadius?: {
                 small?: string;

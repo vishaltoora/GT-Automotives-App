@@ -7,14 +7,14 @@ export declare class QuotationsController {
     create(createQuoteDto: CreateQuoteDto, req: any): Promise<{
         id: string;
         status: import("@prisma/client").$Enums.QuotationStatus;
-        notes: string | null;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         email: string | null;
         phone: string | null;
-        createdBy: string;
         address: string | null;
         businessName: string | null;
+        createdBy: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -34,14 +34,14 @@ export declare class QuotationsController {
     findAll(): Promise<{
         id: string;
         status: import("@prisma/client").$Enums.QuotationStatus;
-        notes: string | null;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         email: string | null;
         phone: string | null;
-        createdBy: string;
         address: string | null;
         businessName: string | null;
+        createdBy: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -61,14 +61,14 @@ export declare class QuotationsController {
     search(customerName?: string, quotationNumber?: string, status?: string, startDate?: string, endDate?: string): Promise<{
         id: string;
         status: import("@prisma/client").$Enums.QuotationStatus;
-        notes: string | null;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         email: string | null;
         phone: string | null;
-        createdBy: string;
         address: string | null;
         businessName: string | null;
+        createdBy: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -88,14 +88,14 @@ export declare class QuotationsController {
     findOne(id: string): Promise<{
         id: string;
         status: import("@prisma/client").$Enums.QuotationStatus;
-        notes: string | null;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         email: string | null;
         phone: string | null;
-        createdBy: string;
         address: string | null;
         businessName: string | null;
+        createdBy: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -115,14 +115,14 @@ export declare class QuotationsController {
     update(id: string, updateQuoteDto: UpdateQuoteDto): Promise<{
         id: string;
         status: import("@prisma/client").$Enums.QuotationStatus;
-        notes: string | null;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         email: string | null;
         phone: string | null;
-        createdBy: string;
         address: string | null;
         businessName: string | null;
+        createdBy: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;

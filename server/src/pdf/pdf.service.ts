@@ -14,9 +14,20 @@ export class PdfService {
     format?: 'A4' | 'Letter';
     printBackground?: boolean;
   }): Promise<Buffer> {
+    // Use system Chromium in production (Alpine container)
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+
+    this.logger.log(`[PDF] Launching Puppeteer with executable: ${executablePath || 'bundled'}`);
+
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath, // Use system Chromium if available
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage', // Overcome limited resource problems
+        '--disable-gpu',
+      ],
     });
 
     try {

@@ -675,7 +675,7 @@ export class AppointmentsService {
     const appointments = await this.prisma.$queryRaw<any[]>`
       SELECT a.*
       FROM "Appointment" a
-      WHERE a."paymentAmount" > 0
+      WHERE a."paymentAmount" >= 0
         AND (
           -- New behavior: Payment was processed on this date (paymentDate is set)
           -- Compare in Pacific Time to ensure correct business day

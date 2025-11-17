@@ -47,6 +47,7 @@ import { formatTimeRange } from '../../utils/timeFormat';
 import { appointmentService } from '../../services/appointment.service';
 import { paymentService } from '../../services/payment.service';
 import { PaymentResponseDto } from '@gt-automotive/data';
+import { PaymentDialog } from '../../components/appointments/PaymentDialog';
 
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -115,6 +116,8 @@ export function DaySummary() {
     message: '',
     severity: 'success',
   });
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   // Fetch both scheduled appointments and payments processed for the selected date
   useEffect(() => {
@@ -139,9 +142,10 @@ export function DaySummary() {
           endDate: dateStr,
         }),
         // Customer payments processed on this date (regardless of appointment date)
-        appointmentService.getByPaymentDate(selectedDate),
+        // Use dateStr to avoid timezone issues (9pm PST showing on previous day)
+        appointmentService.getByPaymentDate(dateStr),
         // Employee payments made on this date
-        paymentService.getByPaymentDate(selectedDate),
+        paymentService.getByPaymentDate(dateStr),
       ]);
 
       setScheduledAppointments(scheduled);
@@ -428,6 +432,35 @@ export function DaySummary() {
 
   const handleToday = () => {
     setSelectedDate(new Date());
+  };
+
+  const handleProcessPayment = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setPaymentDialogOpen(true);
+  };
+
+  const handlePaymentSubmit = async (paymentData: any) => {
+    if (!selectedAppointment) return;
+
+    try {
+      await appointmentService.updatePayment(selectedAppointment.id, paymentData);
+      setPaymentDialogOpen(false);
+      setSelectedAppointment(null);
+      setSnackbar({
+        open: true,
+        message: 'Payment updated successfully!',
+        severity: 'success',
+      });
+      // Refresh data to show updated payment
+      fetchData();
+    } catch (err: any) {
+      console.error('Error updating payment:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Failed to update payment',
+        severity: 'error',
+      });
+    }
   };
 
   const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
@@ -1102,156 +1135,307 @@ export function DaySummary() {
                             bgcolor: 'warning.lighter',
                           }}
                         >
-                          <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                          <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
+                            {/* Customer Header */}
                             <Box
                               sx={{
                                 display: 'flex',
                                 flexDirection: { xs: 'column', sm: 'row' },
                                 justifyContent: 'space-between',
                                 alignItems: { xs: 'stretch', sm: 'flex-start' },
-                                mb: { xs: 1.5, sm: 2 },
-                                gap: { xs: 1.5, sm: 0 }
+                                gap: { xs: 1.5, sm: 0 },
+                                mb: 2,
                               }}
                             >
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
                                 <Avatar
                                   sx={{
+                                    width: { xs: 40, sm: 48 },
+                                    height: { xs: 40, sm: 48 },
                                     bgcolor: 'warning.main',
-                                    width: { xs: 36, sm: 40 },
-                                    height: { xs: 36, sm: 40 },
-                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                    fontSize: { xs: '1rem', sm: '1.2rem' },
                                   }}
                                 >
                                   {appointment.customer.firstName[0]}
                                   {appointment.customer.lastName[0]}
                                 </Avatar>
-                                <Box sx={{ flex: 1, minWidth: 0 }}>
-                                  <Typography
-                                    variant="h6"
-                                    fontWeight="bold"
-                                    sx={{
-                                      fontSize: { xs: '0.938rem', sm: '1.125rem' },
-                                      lineHeight: 1.2,
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap'
-                                    }}
-                                  >
-                                    {appointment.customer.firstName} {appointment.customer.lastName}
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                                    {appointment.customer.firstName}{' '}
+                                    {appointment.customer.lastName}
                                   </Typography>
                                   {appointment.customer.businessName && (
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                      sx={{
-                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap'
-                                      }}
-                                    >
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
                                       {appointment.customer.businessName}
                                     </Typography>
                                   )}
-                                  {appointment.customer.phone && (
+                                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                                    {appointment.customer.phone && (
+                                      <Chip
+                                        label={formatPhoneNumber(appointment.customer.phone)}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{ height: { xs: 24, sm: 28 }, fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
+                                      />
+                                    )}
                                     <Chip
-                                      label={formatPhoneNumber(appointment.customer.phone)}
+                                      icon={getStatusIcon(appointment.status)}
+                                      label={formatStatusLabel(appointment.status)}
+                                      color={getStatusColor(appointment.status) as any}
                                       size="small"
-                                      variant="outlined"
-                                      sx={{
-                                        mt: 0.5,
-                                        height: { xs: 20, sm: 24 },
-                                        fontSize: { xs: '0.688rem', sm: '0.813rem' },
-                                        '& .MuiChip-label': { px: { xs: 0.75, sm: 1 } }
-                                      }}
+                                      sx={{ height: { xs: 24, sm: 28 }, fontSize: { xs: '0.75rem', sm: '0.813rem' } }}
                                     />
-                                  )}
+                                  </Box>
                                 </Box>
                               </Box>
-                              <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, pl: { xs: 6.5, sm: 0 } }}>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{ fontSize: { xs: '0.688rem', sm: '0.75rem' } }}
-                                >
-                                  Outstanding Balance
-                                </Typography>
-                                <Typography
-                                  variant="h5"
-                                  color="warning.main"
-                                  fontWeight="bold"
-                                  sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
-                                >
-                                  ${outstandingBalance.toFixed(2)}
+                              <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, pl: { xs: 7, sm: 0 } }}>
+                                <Typography variant="h6" color="primary.main" fontWeight="bold" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                                  {formatTimeRange(
+                                    appointment.scheduledTime,
+                                    appointment.endTime || ''
+                                  )}
                                 </Typography>
                               </Box>
                             </Box>
-                            <Divider sx={{ my: { xs: 1, sm: 1.5 } }} />
+
+                            <Divider sx={{ my: 2 }} />
+
+                            {/* Appointment Details */}
                             <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-                              <Grid size={6}>
+                              <Grid size={{ xs: 12, md: 6 }}>
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
-                                  sx={{ fontSize: { xs: '0.688rem', sm: '0.75rem' } }}
+                                  textTransform="uppercase"
+                                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, fontWeight: 600 }}
                                 >
-                                  Expected Amount
+                                  Service Details
                                 </Typography>
-                                <Typography
-                                  variant="body1"
-                                  fontWeight="medium"
-                                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-                                >
-                                  ${(appointment.expectedAmount || 0).toFixed(2)}
-                                </Typography>
+                                <Box sx={{ mt: { xs: 0.5, sm: 1 } }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                    <BuildIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                    <Typography variant="body2" fontWeight="medium" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                      {formatServiceType(appointment.serviceType)}
+                                    </Typography>
+                                  </Box>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                    {appointment.appointmentType === 'MOBILE_SERVICE' ? (
+                                      <DriveEtaIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                    ) : (
+                                      <LocationOnIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                    )}
+                                    <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                      {appointment.appointmentType === 'MOBILE_SERVICE'
+                                        ? 'Mobile Service'
+                                        : 'At Garage'}
+                                    </Typography>
+                                  </Box>
+                                  {appointment.vehicle && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <CarIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} color="action" />
+                                      <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                        {appointment.vehicle.year} {appointment.vehicle.make}{' '}
+                                        {appointment.vehicle.model}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
                               </Grid>
-                              <Grid size={6}>
+
+                              {/* Payment Details */}
+                              <Grid size={{ xs: 12, md: 6 }}>
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
-                                  sx={{ fontSize: { xs: '0.688rem', sm: '0.75rem' } }}
+                                  textTransform="uppercase"
+                                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, fontWeight: 600 }}
                                 >
-                                  Amount Paid
+                                  Payment Details
                                 </Typography>
-                                <Typography
-                                  variant="body1"
-                                  fontWeight="medium"
-                                  color="success.main"
-                                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-                                >
-                                  ${(appointment.paymentAmount || 0).toFixed(2)}
-                                </Typography>
+                                <Box sx={{ mt: { xs: 0.5, sm: 1 } }}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      mb: 1,
+                                    }}
+                                  >
+                                    <Typography variant="body2" fontWeight="medium" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
+                                      Total Paid:
+                                    </Typography>
+                                    <Typography
+                                      variant="h6"
+                                      color="success.main"
+                                      fontWeight="bold"
+                                      sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                                    >
+                                      ${(appointment.paymentAmount || 0).toFixed(2)}
+                                    </Typography>
+                                  </Box>
+
+                                  {/* Payment Breakdown */}
+                                  {(() => {
+                                    let breakdown = appointment.paymentBreakdown;
+                                    if (typeof breakdown === 'string') {
+                                      try {
+                                        breakdown = JSON.parse(breakdown);
+                                      } catch (e) {
+                                        breakdown = undefined;
+                                      }
+                                    }
+                                    return breakdown && Array.isArray(breakdown) ? (
+                                      <Box
+                                        sx={{
+                                          bgcolor: 'grey.50',
+                                          borderRadius: 1,
+                                          p: 1,
+                                          mt: 1,
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          fontWeight="medium"
+                                          sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                        >
+                                          Payment Methods:
+                                        </Typography>
+                                        <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                          {breakdown.map((payment: PaymentEntry) => (
+                                            <Box
+                                              key={payment.id}
+                                              sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                              }}
+                                            >
+                                              <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                                                {payment.method === 'CASH' && '💵 Cash'}
+                                                {payment.method === 'E_TRANSFER' && '📱 E-Transfer'}
+                                                {payment.method === 'CREDIT_CARD' && '💳 Credit Card'}
+                                                {payment.method === 'DEBIT_CARD' && '💳 Debit Card'}
+                                                {payment.method === 'CHEQUE' && '📝 Cheque'}
+                                              </Typography>
+                                              <Typography
+                                                variant="body2"
+                                                fontWeight="bold"
+                                                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                                              >
+                                                ${payment.amount.toFixed(2)}
+                                              </Typography>
+                                            </Box>
+                                          ))}
+                                        </Stack>
+                                      </Box>
+                                    ) : null;
+                                  })()}
+
+                                  {/* Outstanding Balance */}
+                                  <Box
+                                    sx={{
+                                      bgcolor: 'warning.light',
+                                      borderRadius: 1,
+                                      p: { xs: 1, sm: 1.5 },
+                                      mt: 1,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        mb: 1,
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="warning.dark"
+                                        fontWeight="bold"
+                                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                      >
+                                        Outstanding Balance:
+                                      </Typography>
+                                      <Typography
+                                        variant="body1"
+                                        color="warning.dark"
+                                        fontWeight="bold"
+                                        sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                                      >
+                                        ${outstandingBalance.toFixed(2)}
+                                      </Typography>
+                                    </Box>
+                                    <Button
+                                      variant="contained"
+                                      color="warning"
+                                      size="small"
+                                      fullWidth
+                                      startIcon={<MoneyIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />}
+                                      onClick={() => handleProcessPayment(appointment)}
+                                      sx={{
+                                        color: 'white',
+                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                        py: { xs: 0.5, sm: 0.75 },
+                                        fontWeight: 600,
+                                        '&:hover': {
+                                          bgcolor: 'warning.dark',
+                                        },
+                                      }}
+                                    >
+                                      Process Payment
+                                    </Button>
+                                  </Box>
+                                </Box>
                               </Grid>
                             </Grid>
-                            <Box sx={{ mt: { xs: 1, sm: 1.5 } }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                {appointment.appointmentType === 'MOBILE_SERVICE' ? (
-                                  <DriveEtaIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} color="action" />
-                                ) : (
-                                  <LocationOnIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} color="action" />
-                                )}
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{
-                                    fontSize: { xs: '0.688rem', sm: '0.75rem' },
-                                    fontWeight: 600
-                                  }}
-                                >
-                                  {appointment.appointmentType === 'MOBILE_SERVICE' ? 'Mobile Service' : 'At Garage'}
-                                </Typography>
-                              </Box>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  fontSize: { xs: '0.688rem', sm: '0.75rem' },
-                                  lineHeight: 1.4,
-                                  display: 'block'
-                                }}
-                              >
-                                Service: {formatServiceType(appointment.serviceType)} • {formatTimeRange(appointment.scheduledTime, appointment.endTime || '')}
-                              </Typography>
-                            </Box>
+
+                            {/* Assigned Staff */}
+                            {appointment.employees && appointment.employees.length > 0 && (
+                              <>
+                                <Divider sx={{ my: 2 }} />
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    textTransform="uppercase"
+                                  >
+                                    Assigned Staff
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                                    {appointment.employees.map((emp) => (
+                                      <Chip
+                                        key={emp.employee.id}
+                                        icon={<PersonIcon />}
+                                        label={`${emp.employee.firstName} ${emp.employee.lastName}`}
+                                        size="small"
+                                        variant="outlined"
+                                        color="primary"
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              </>
+                            )}
+
+                            {/* Notes */}
+                            {appointment.notes && (
+                              <>
+                                <Divider sx={{ my: 2 }} />
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    textTransform="uppercase"
+                                  >
+                                    Notes
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ mt: 1 }}>
+                                    {appointment.notes}
+                                  </Typography>
+                                </Box>
+                              </>
+                            )}
                           </CardContent>
                         </Card>
                       );
@@ -1423,7 +1607,7 @@ export function DaySummary() {
                             >
                               Payment Details
                             </Typography>
-                            {appointment.status === 'COMPLETED' && appointment.paymentAmount ? (
+                            {appointment.status === 'COMPLETED' && appointment.paymentAmount !== undefined && appointment.paymentAmount !== null ? (
                               <Box sx={{ mt: { xs: 0.5, sm: 1 } }}>
                                 <Box
                                   sx={{
@@ -1606,6 +1790,23 @@ export function DaySummary() {
               )}
             </Grid>
           </Grid>
+        )}
+
+        {/* Payment Dialog */}
+        {selectedAppointment && (
+          <PaymentDialog
+            open={paymentDialogOpen}
+            onClose={() => {
+              setPaymentDialogOpen(false);
+              setSelectedAppointment(null);
+            }}
+            onSubmit={handlePaymentSubmit}
+            appointmentId={selectedAppointment.id}
+            defaultExpectedAmount={selectedAppointment.expectedAmount || 0}
+            existingPayments={selectedAppointment.paymentBreakdown as any}
+            existingNotes={selectedAppointment.paymentNotes}
+            isEditMode={true}
+          />
         )}
 
         {/* Success/Error Snackbar */}

@@ -29,8 +29,9 @@ export declare class PaymentsService {
     /**
      * Get payments processed on a specific date (for EOD summary)
      * Uses business timezone (PST/PDT) to ensure correct day matching
+     * @param paymentDate - Date in YYYY-MM-DD format (e.g., "2025-11-13")
      */
-    getByPaymentDate(paymentDate: Date): Promise<PaymentResponseDto[]>;
+    getByPaymentDate(paymentDate: string): Promise<PaymentResponseDto[]>;
     private transformToResponseDto;
 }
 //# sourceMappingURL=payments.service.d.ts.map

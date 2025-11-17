@@ -14,6 +14,8 @@ import {
   ListItemAvatar,
   Divider,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   People,
@@ -50,6 +52,8 @@ import { dashboardService, DashboardStats } from '../../services/dashboard.servi
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Determine base path based on user role
   const basePath = role === 'supervisor' ? '/supervisor' : '/admin';
@@ -394,33 +398,28 @@ export function AdminDashboard() {
       <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mt: { xs: 1, sm: 2, md: 3 } }}>
         {/* Quick Actions */}
         <Grid size={{ xs: 12, lg: 9 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 1.5, sm: 2, md: 3 },
-              borderRadius: 2,
-              border: `1px solid ${colors.neutral[200]}`,
-              height: '100%',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2, md: 3 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
+          {isMobile ? (
+            // Mobile: Show heading and cards without Paper wrapper
+            <Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  color: colors.primary.main,
+                  fontSize: '1rem',
+                  mb: 1.5,
+                  px: theme.custom.spacing.pagePadding.mobile
+                }}
+              >
                 Quick Actions
               </Typography>
-              <Chip label="Most Used" size="small" color="primary" sx={{ display: { xs: 'none', sm: 'flex' } }} />
-            </Box>
 
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-                md: 'repeat(3, 1fr)',
-                lg: 'repeat(5, 1fr)',
-              },
-              gap: { xs: 1, sm: 1.5, md: 2 },
-              mb: { xs: 1.5, sm: 2, md: 3 },
-            }}>
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 1,
+                mb: 1.5,
+              }}>
               {/* Day Summary - First position */}
               <Paper
                 component={Link}
@@ -585,21 +584,25 @@ export function AdminDashboard() {
               )}
             </Box>
 
-            <Divider sx={{ my: { xs: 1.5, sm: 2, md: 3 } }} />
-
-            <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: { xs: 1, sm: 1.5, md: 2 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
+            {/* Quick Navigation - Mobile without Divider */}
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                color: colors.primary.main,
+                fontSize: '1rem',
+                mb: 1.5,
+                mt: 2,
+                px: theme.custom.spacing.pagePadding.mobile
+              }}
+            >
               Quick Navigation
             </Typography>
 
             <Box sx={{
               display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-                md: 'repeat(3, 1fr)',
-                lg: 'repeat(5, 1fr)',
-              },
-              gap: { xs: 1, sm: 1.5, md: 2 }
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: 1
             }}>
               <Paper
                 component={Link}
@@ -736,7 +739,353 @@ export function AdminDashboard() {
                 </Typography>
               </Paper>
             </Box>
-          </Paper>
+          </Box>
+          ) : (
+            // Desktop: Original Paper wrapper layout
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 1.5, sm: 2, md: 3 },
+                borderRadius: 2,
+                border: `1px solid ${colors.neutral[200]}`,
+                height: '100%',
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2, md: 3 } }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
+                  Quick Actions
+                </Typography>
+                <Chip label="Most Used" size="small" color="primary" sx={{ display: { xs: 'none', sm: 'flex' } }} />
+              </Box>
+
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                  lg: 'repeat(5, 1fr)',
+                },
+                gap: { xs: 1, sm: 1.5, md: 2 },
+                mb: { xs: 1.5, sm: 2, md: 3 },
+              }}>
+                {/* Day Summary - First position */}
+                <Paper
+                  component={Link}
+                  to={`${basePath}/day-summary`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid ${colors.semantic.success}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.semantic.success,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
+                    Day Summary
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  onClick={() => setAppointmentDialogOpen(true)}
+                  sx={{
+                    ...actionItemStyles,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: colors.primary.lighter,
+                    },
+                  }}
+                >
+                  <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    New Appointment
+                  </Typography>
+                </Paper>
+
+                {/* My Jobs - Supervisor only - Before New Job */}
+                {role === 'supervisor' && (
+                  <Paper
+                    component={Link}
+                    to={`${basePath}/my-jobs`}
+                    sx={{
+                      ...actionItemStyles,
+                      textDecoration: 'none',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        borderColor: colors.secondary.main,
+                      },
+                    }}
+                  >
+                    <Work sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                      My Jobs
+                    </Typography>
+                  </Paper>
+                )}
+
+                <Paper
+                  onClick={() => setJobDialogOpen(true)}
+                  sx={{
+                    ...actionItemStyles,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: '#9c27b0',
+                    },
+                  }}
+                >
+                  <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    New Job
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  onClick={() => setInvoiceDialogOpen(true)}
+                  sx={{
+                    ...actionItemStyles,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: colors.secondary.main,
+                    },
+                  }}
+                >
+                  <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    New Invoice
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  onClick={() => setQuotationDialogOpen(true)}
+                  sx={{
+                    ...actionItemStyles,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: colors.primary.lighter,
+                    },
+                  }}
+                >
+                  <Description sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    New Quotation
+                  </Typography>
+                </Paper>
+
+                {/* Payments - Admin only */}
+                {role === 'admin' && (
+                  <Paper
+                    component={Link}
+                    to={`${basePath}/payments`}
+                    sx={{
+                      ...actionItemStyles,
+                      textDecoration: 'none',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        borderColor: '#00bcd4',
+                      },
+                    }}
+                  >
+                    <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
+                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                      Payments
+                    </Typography>
+                  </Paper>
+                )}
+
+                {/* My Earnings - Supervisor only */}
+                {role === 'supervisor' && (
+                  <Paper
+                    component={Link}
+                    to={`${basePath}/my-earnings`}
+                    sx={{
+                      ...actionItemStyles,
+                      textDecoration: 'none',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        borderColor: '#00bcd4',
+                      },
+                    }}
+                  >
+                    <AttachMoney sx={{ ...actionIconStyles, color: '#00bcd4' }} />
+                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                      My Earnings
+                    </Typography>
+                  </Paper>
+                )}
+              </Box>
+
+              <Divider sx={{ my: { xs: 1.5, sm: 2, md: 3 } }} />
+
+              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: { xs: 1, sm: 1.5, md: 2 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
+                Quick Navigation
+              </Typography>
+
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                  lg: 'repeat(5, 1fr)',
+                },
+                gap: { xs: 1, sm: 1.5, md: 2 }
+              }}>
+                <Paper
+                  component={Link}
+                  to={`${basePath}/appointments`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid ${colors.primary.lighter}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.primary.lighter,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.lighter }}>
+                    Appointments
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  component={Link}
+                  to={`${basePath}/jobs`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid #9c27b0`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: '#9c27b0',
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: '#9c27b0' }}>
+                    Jobs
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  component={Link}
+                  to={`${basePath}/inventory`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid ${colors.primary.main}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.primary.main,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <Inventory sx={{ ...actionIconStyles, color: colors.primary.main }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.main }}>
+                    Inventory
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  component={Link}
+                  to={`${basePath}/invoices`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid ${colors.secondary.main}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.secondary.main,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.secondary.main }}>
+                    Invoices
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  component={Link}
+                  to={`${basePath}/quotations`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid ${colors.semantic.info}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.semantic.info,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <Description sx={{ ...actionIconStyles, color: colors.semantic.info }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
+                    Quotations
+                  </Typography>
+                </Paper>
+              </Box>
+            </Paper>
+          )}
         </Grid>
 
         {/* Recent Activity */}

@@ -69,6 +69,7 @@ export declare class EmailService {
             amount: number;
             count: number;
         }>;
+        totalCashCollected?: number;
         adjustedCash?: number;
     }): Promise<{
         success: boolean;

@@ -134,14 +134,15 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     let hasError = false;
 
     payments.forEach((payment) => {
-      if (!payment.amount || payment.amount <= 0) {
-        newErrors[payment.id] = 'Amount must be greater than 0';
+      if (payment.amount === null || payment.amount === undefined || payment.amount < 0) {
+        newErrors[payment.id] = 'Amount cannot be negative';
         hasError = true;
       }
     });
 
-    if (totalAmount <= 0) {
-      newErrors.total = 'Total payment must be greater than 0';
+    // Allow $0 total for "pay later" scenarios
+    if (totalAmount < 0) {
+      newErrors.total = 'Total payment cannot be negative';
       hasError = true;
     }
 
@@ -436,7 +437,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           variant="contained"
           color="success"
           startIcon={<MoneyIcon />}
-          disabled={totalAmount <= 0}
+          disabled={totalAmount < 0}
           fullWidth={isMobile}
           size={isMobile ? 'large' : 'medium'}
         >

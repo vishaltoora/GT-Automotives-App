@@ -45,8 +45,16 @@ RUN ls -la /workspace/dist/apps/server/package.json && \
 # =============================================================================
 FROM node:20-alpine AS production
 
-# Install runtime dependencies
-RUN apk add --no-cache dumb-init tzdata
+# Install runtime dependencies including Chromium for Puppeteer
+RUN apk add --no-cache \
+    dumb-init \
+    tzdata \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -76,6 +84,8 @@ COPY --from=builder --chown=nodejs:nodejs /workspace/node_modules/@prisma/client
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOST=0.0.0.0
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Switch to non-root user
 USER nodejs

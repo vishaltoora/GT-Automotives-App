@@ -39,6 +39,6 @@ export declare class CalendarQueryDto {
     employeeId?: string;
 }
 export declare class PaymentDateQueryDto {
-    paymentDate: Date;
+    paymentDate: string;
 }
 //# sourceMappingURL=appointment.dto.d.ts.map

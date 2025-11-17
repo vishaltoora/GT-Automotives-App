@@ -21,6 +21,13 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  useTheme,
+  useMediaQuery,
+  Card,
+  CardContent,
+  Stack,
+  Divider,
+  Collapse,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -32,6 +39,8 @@ import {
   SwapHoriz as ConvertIcon,
   MoreVert as MoreVertIcon,
   Email as EmailIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../services/quotation.service';
 import QuoteDialog from '../../components/quotations/QuotationDialog';
@@ -44,7 +53,9 @@ const QuoteList: React.FC = () => {
   const { role } = useAuth();
   const { confirmDelete, confirm } = useConfirmationHelpers();
   const { showApiError } = useErrorHelpers();
-  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -54,6 +65,7 @@ const QuoteList: React.FC = () => {
   const [editingQuotationId, setEditingQuotationId] = useState<string | undefined>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   useEffect(() => {
     loadQuotations();
@@ -252,12 +264,26 @@ const QuoteList: React.FC = () => {
   });
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Quotes</Typography>
+    <Box sx={{
+      p: {
+        xs: theme.custom.spacing.pagePadding.mobile,
+        sm: theme.custom.spacing.pagePadding.tablet,
+        md: theme.custom.spacing.pagePadding.desktop
+      }
+    }}>
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between',
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: { xs: 2, sm: 0 },
+        mb: { xs: 2, sm: 3 }
+      }}>
+        <Typography variant={isMobile ? "h5" : "h4"}>Quotes</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
+          fullWidth={isMobile}
           onClick={() => {
             setEditingQuotationId(undefined);
             setDialogOpen(true);
@@ -267,116 +293,231 @@ const QuoteList: React.FC = () => {
         </Button>
       </Box>
 
-      <Paper sx={{ mb: 3, p: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              placeholder="Search by customer name or quote number..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
+      <Paper sx={{ mb: { xs: 2, sm: 3 }, p: { xs: 1.5, sm: 2 } }}>
+        {isMobile && (
+          <Button
+            fullWidth
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            endIcon={filtersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            sx={{ mb: filtersExpanded ? 2 : 0, justifyContent: 'space-between' }}
+          >
+            Search & Filters
+          </Button>
+        )}
+        <Collapse in={!isMobile || filtersExpanded}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                size={isMobile ? "small" : "medium"}
+                placeholder="Search by customer name or quote number..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 6, md: 2 }}>
+              <Button fullWidth variant="outlined" size={isMobile ? "small" : "medium"} onClick={handleSearch}>
+                Search
+              </Button>
+            </Grid>
+            <Grid size={{ xs: 6, md: 2 }}>
+              <Button fullWidth variant="outlined" size={isMobile ? "small" : "medium"} onClick={loadQuotations}>
+                Clear
+              </Button>
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <Button fullWidth variant="outlined" onClick={handleSearch}>
-              Search
-            </Button>
-          </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <Button fullWidth variant="outlined" onClick={loadQuotations}>
-              Clear
-            </Button>
-          </Grid>
-        </Grid>
+        </Collapse>
       </Paper>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Quote #</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Customer</TableCell>
-              <TableCell>Valid Until</TableCell>
-              <TableCell align="right">Total</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : filteredQuotations.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No quotes found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredQuotations
+{isMobile ? (
+        // Mobile: Card-based layout
+        <Box>
+          {loading ? (
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography>Loading...</Typography>
+            </Paper>
+          ) : filteredQuotations.length === 0 ? (
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography>No quotes found</Typography>
+            </Paper>
+          ) : (
+            <Stack spacing={2}>
+              {filteredQuotations
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((quotation) => (
-                  <TableRow key={quotation.id} hover>
-                    <TableCell>{quotation.quotationNumber}</TableCell>
-                    <TableCell>{formatDate(quotation.createdAt)}</TableCell>
-                    <TableCell>
+                  <Card key={quotation.id} variant="outlined">
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight="bold" gutterBottom>
+                            {quotation.quotationNumber}
+                          </Typography>
+                          <Chip
+                            label={getStatusLabel(quotation.status)}
+                            color={getStatusColor(quotation.status)}
+                            size="small"
+                          />
+                        </Box>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, quotation)}
+                          sx={{ mt: -1 }}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </Box>
+
+                      <Divider sx={{ my: 1.5 }} />
+
                       {quotation.businessName && (
-                        <Typography variant="body2" fontWeight="bold">
+                        <Typography variant="body2" fontWeight="bold" gutterBottom>
                           {quotation.businessName}
                         </Typography>
                       )}
-                      <Typography variant="body2">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         {quotation.customerName}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {quotation.validUntil ? formatDate(quotation.validUntil) : 'N/A'}
-                    </TableCell>
-                    <TableCell align="right">{formatCurrency(quotation.total)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getStatusLabel(quotation.status)}
-                        color={getStatusColor(quotation.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, quotation)}
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={filteredQuotations.length}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-        />
-      </TableContainer>
+
+                      <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Date:
+                          </Typography>
+                          <Typography variant="body2">
+                            {formatDate(quotation.createdAt)}
+                          </Typography>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Valid Until:
+                          </Typography>
+                          <Typography variant="body2">
+                            {quotation.validUntil ? formatDate(quotation.validUntil) : 'N/A'}
+                          </Typography>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                          <Typography variant="body1" fontWeight="bold">
+                            Total:
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold" color="primary.main">
+                            {formatCurrency(quotation.total)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+            </Stack>
+          )}
+
+          {/* Mobile Pagination */}
+          <Paper sx={{ mt: 2 }}>
+            <TablePagination
+              component="div"
+              count={filteredQuotations.length}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              labelRowsPerPage="Per page:"
+            />
+          </Paper>
+        </Box>
+      ) : (
+        // Desktop: Table layout
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Quote #</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Customer</TableCell>
+                <TableCell>Valid Until</TableCell>
+                <TableCell align="right">Total</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredQuotations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    No quotes found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredQuotations
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((quotation) => (
+                    <TableRow key={quotation.id} hover>
+                      <TableCell>{quotation.quotationNumber}</TableCell>
+                      <TableCell>{formatDate(quotation.createdAt)}</TableCell>
+                      <TableCell>
+                        {quotation.businessName && (
+                          <Typography variant="body2" fontWeight="bold">
+                            {quotation.businessName}
+                          </Typography>
+                        )}
+                        <Typography variant="body2">
+                          {quotation.customerName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {quotation.validUntil ? formatDate(quotation.validUntil) : 'N/A'}
+                      </TableCell>
+                      <TableCell align="right">{formatCurrency(quotation.total)}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusLabel(quotation.status)}
+                          color={getStatusColor(quotation.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, quotation)}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            component="div"
+            count={filteredQuotations.length}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+          />
+        </TableContainer>
+      )}
 
       <QuoteDialog
         open={dialogOpen}

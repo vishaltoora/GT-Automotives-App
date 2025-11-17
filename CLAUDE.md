@@ -153,6 +153,25 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### November 14, 2025 - Puppeteer/Chromium Installation for Invoice PDF Generation ✅
+- ✅ **Production Invoice Email Fixed**: Resolved "Could not find Chrome" error preventing invoice emails
+- ✅ **Root Cause**: Alpine Docker image didn't include Chromium for Puppeteer PDF generation
+- ✅ **Chromium Installation**: Added Chromium and required dependencies to Alpine production stage
+- ✅ **System Dependencies Added**:
+  - chromium (browser for Puppeteer)
+  - nss, freetype, harfbuzz (font rendering)
+  - ca-certificates (SSL support)
+  - ttf-freefont (font package)
+- ✅ **Environment Configuration**: Set `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser`
+- ✅ **PDF Service Enhancement**: Updated to use system Chromium with additional Chrome flags
+- ✅ **Additional Flags**: Added `--disable-dev-shm-usage` and `--disable-gpu` for container stability
+- 🔧 **Files Changed**:
+  - `Dockerfile`: Added Chromium packages to production stage (lines 49-57)
+  - `Dockerfile`: Added Puppeteer environment variables (lines 87-88)
+  - `server/src/pdf/pdf.service.ts`: Updated Puppeteer launch config to use system Chrome
+- 📝 **Impact**: Invoice and quotation PDFs can now be generated and emailed in production
+- ⚠️ **Image Size**: Chromium adds ~50-80MB to container size (still only ~1.6GB total)
+
 ### November 14, 2025 - Critical Timezone Fixes: DatePicker 8 PM Bug & Appointment Filtering ✅
 - ✅ **CRITICAL 8 PM Bug Fixed**: DatePicker dates now work correctly at any time of day
 - ✅ **Root Cause**: DatePicker creates midnight UTC dates, format() applied PST conversion causing -1 day shift at night

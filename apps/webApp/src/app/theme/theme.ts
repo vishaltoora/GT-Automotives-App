@@ -9,6 +9,12 @@ declare module '@mui/material/styles' {
       spacing: {
         section: string;
         card: string;
+        // Responsive page padding
+        pagePadding: {
+          mobile: string;
+          tablet: string;
+          desktop: string;
+        };
       };
       borderRadius: {
         small: string;
@@ -23,6 +29,11 @@ declare module '@mui/material/styles' {
       spacing?: {
         section?: string;
         card?: string;
+        pagePadding?: {
+          mobile?: string;
+          tablet?: string;
+          desktop?: string;
+        };
       };
       borderRadius?: {
         small?: string;
@@ -300,9 +311,16 @@ const themeOptions: ThemeOptions = {
       },
       styleOverrides: {
         root: {
-          paddingLeft: 24,
-          paddingRight: 24,
+          // Mobile: minimal padding for maximum screen utilization
+          paddingLeft: 8,
+          paddingRight: 8,
           '@media (min-width:600px)': {
+            // Tablet and up: comfortable padding
+            paddingLeft: 24,
+            paddingRight: 24,
+          },
+          '@media (min-width:960px)': {
+            // Desktop: standard padding
             paddingLeft: 32,
             paddingRight: 32,
           },
@@ -315,6 +333,12 @@ const themeOptions: ThemeOptions = {
     spacing: {
       section: '80px',
       card: '24px',
+      // Consistent page padding across the application
+      pagePadding: {
+        mobile: '8px',   // Minimal padding on mobile for maximum screen utilization
+        tablet: '16px',  // Comfortable padding on tablets
+        desktop: '24px', // Standard desktop padding
+      },
     },
     borderRadius: {
       small: '4px',

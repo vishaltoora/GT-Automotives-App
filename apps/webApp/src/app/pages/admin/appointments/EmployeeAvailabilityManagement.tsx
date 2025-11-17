@@ -26,6 +26,9 @@ import {
   ToggleButton,
   Stack,
   Avatar,
+  useTheme,
+  useMediaQuery,
+  Collapse,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -87,6 +90,9 @@ interface EmployeeWithAvailability {
 }
 
 export const EmployeeAvailabilityManagement: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [employees, setEmployees] = useState<EmployeeWithAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
@@ -95,6 +101,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
   const [availabilityDialogOpen, setAvailabilityDialogOpen] = useState(false);
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [templatesExpanded, setTemplatesExpanded] = useState(false);
 
   // Availability Form - now supports multiple days with multiple slots per day
   interface TimeSlot {
@@ -1007,6 +1014,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
         }}
         maxWidth="lg"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
             height: { xs: '100vh', sm: '90vh' },
@@ -1080,81 +1088,95 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
           <Paper
             variant="outlined"
             sx={{
-              p: { xs: 2, sm: 2 },
-              mb: { xs: 2.5, sm: 3 },
+              p: { xs: 1.5, sm: 2 },
+              mb: { xs: 2, sm: 3 },
               bgcolor: 'background.default',
             }}
           >
-            <Typography
-              variant="subtitle1"
-              gutterBottom
-              sx={{
-                fontWeight: 'bold',
-                mb: { xs: 1.5, sm: 2 },
-                fontSize: { xs: '0.9375rem', sm: '1rem' },
-              }}
-            >
-              Quick Templates
-            </Typography>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={{ xs: 1.5, sm: 1 }}
-              flexWrap="wrap"
-              useFlexGap
-            >
+            {isMobile && (
               <Button
-                variant="contained"
-                size="medium"
-                onClick={() => handleApplyQuickTemplate('WEEKDAYS')}
-                sx={{
-                  textTransform: 'none',
-                  fontSize: { xs: '0.875rem', sm: '0.875rem' },
-                  py: { xs: 1.5, sm: 1 },
-                  width: { xs: '100%', sm: 'auto' },
-                }}
+                fullWidth
+                onClick={() => setTemplatesExpanded(!templatesExpanded)}
+                endIcon={templatesExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                sx={{ mb: templatesExpanded ? 2 : 0, justifyContent: 'space-between' }}
               >
-                Mon-Fri 9am-5pm
+                Quick Templates
               </Button>
-              <Button
-                variant="contained"
-                size="medium"
-                onClick={() => handleApplyQuickTemplate('WEEKENDS')}
-                sx={{
-                  textTransform: 'none',
-                  fontSize: { xs: '0.875rem', sm: '0.875rem' },
-                  py: { xs: 1.5, sm: 1 },
-                  width: { xs: '100%', sm: 'auto' },
-                }}
+            )}
+            <Collapse in={!isMobile || templatesExpanded}>
+              {!isMobile && (
+                <Typography
+                  variant="subtitle1"
+                  gutterBottom
+                  sx={{
+                    fontWeight: 'bold',
+                    mb: 2,
+                    fontSize: '1rem',
+                  }}
+                >
+                  Quick Templates
+                </Typography>
+              )}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={{ xs: 1, sm: 1 }}
+                flexWrap="wrap"
+                useFlexGap
               >
-                Sat-Sun 10am-4pm
-              </Button>
-              <Button
-                variant="contained"
-                size="medium"
-                onClick={() => handleApplyQuickTemplate('ALL_WEEK')}
-                sx={{
-                  textTransform: 'none',
-                  fontSize: { xs: '0.875rem', sm: '0.875rem' },
-                  py: { xs: 1.5, sm: 1 },
-                  width: { xs: '100%', sm: 'auto' },
-                }}
-              >
-                Every Day 9am-5pm
-              </Button>
-              <Button
-                variant="contained"
-                size="medium"
-                onClick={() => handleApplyQuickTemplate('EXTENDED')}
-                sx={{
-                  textTransform: 'none',
-                  fontSize: { xs: '0.875rem', sm: '0.875rem' },
-                  py: { xs: 1.5, sm: 1 },
-                  width: { xs: '100%', sm: 'auto' },
-                }}
-              >
-                Every Day 9am-10pm
-              </Button>
-            </Stack>
+                <Button
+                  variant="contained"
+                  size={isMobile ? 'medium' : 'medium'}
+                  onClick={() => handleApplyQuickTemplate('WEEKDAYS')}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '0.875rem',
+                    py: { xs: 1, sm: 1 },
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
+                >
+                  Mon-Fri 9am-5pm
+                </Button>
+                <Button
+                  variant="contained"
+                  size={isMobile ? 'medium' : 'medium'}
+                  onClick={() => handleApplyQuickTemplate('WEEKENDS')}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '0.875rem',
+                    py: { xs: 1, sm: 1 },
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
+                >
+                  Sat-Sun 10am-4pm
+                </Button>
+                <Button
+                  variant="contained"
+                  size={isMobile ? 'medium' : 'medium'}
+                  onClick={() => handleApplyQuickTemplate('ALL_WEEK')}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '0.875rem',
+                    py: { xs: 1, sm: 1 },
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
+                >
+                  Every Day 9am-5pm
+                </Button>
+                <Button
+                  variant="contained"
+                  size={isMobile ? 'medium' : 'medium'}
+                  onClick={() => handleApplyQuickTemplate('EXTENDED')}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '0.875rem',
+                    py: { xs: 1, sm: 1 },
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
+                >
+                  Every Day 9am-10pm
+                </Button>
+              </Stack>
+            </Collapse>
           </Paper>
 
           {/* Day Cards Grid */}
@@ -1177,18 +1199,18 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   >
                     <CardContent
                       sx={{
-                        p: { xs: 2, sm: 2 },
-                        '&:last-child': { pb: { xs: 2, sm: 2 } },
+                        p: { xs: 1.5, sm: 2 },
+                        '&:last-child': { pb: { xs: 1.5, sm: 2 } },
                       }}
                     >
                       {/* Day Header */}
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={{ xs: 1.5, sm: 2 }}>
-                        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={{ xs: 1, sm: 2 }}>
+                        <Box display="flex" alignItems="center" gap={{ xs: 0.5, sm: 1 }} flexWrap="wrap">
                           <Typography
                             variant="h6"
                             sx={{
                               fontWeight: 'bold',
-                              fontSize: { xs: '1rem', sm: '1.25rem' },
+                              fontSize: { xs: '0.9375rem', sm: '1.25rem' },
                             }}
                           >
                             {day.label}
@@ -1199,7 +1221,13 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                               label={`${weeklySlots[day.value].length} slot${weeklySlots[day.value].length !== 1 ? 's' : ''}`}
                               color="primary"
                               size="small"
-                              sx={{ fontSize: { xs: '0.7rem', sm: '0.8125rem' } }}
+                              sx={{
+                                fontSize: { xs: '0.6875rem', sm: '0.8125rem' },
+                                height: { xs: '20px', sm: '24px' },
+                                '& .MuiChip-icon': {
+                                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                                },
+                              }}
                             />
                           )}
                         </Box>
@@ -1207,8 +1235,8 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
 
                       {/* Existing Slots */}
                       {hasSlots ? (
-                        <Box mb={{ xs: 2, sm: 2 }}>
-                          <Box display="flex" flexWrap="wrap" gap={{ xs: 1, sm: 1.5 }}>
+                        <Box mb={{ xs: 1.5, sm: 2 }}>
+                          <Box display="flex" flexWrap="wrap" gap={{ xs: 0.75, sm: 1.5 }}>
                             {weeklySlots[day.value].map((slot, index) => (
                               <Chip
                                 key={index}
@@ -1220,24 +1248,24 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                 size="medium"
                                 sx={{
                                   fontWeight: 'medium',
-                                  fontSize: { xs: '0.875rem', sm: '0.95rem' },
-                                  height: 'auto',
-                                  minHeight: { xs: '44px', sm: '40px' },
-                                  py: { xs: 1.75, sm: 1.5 },
-                                  px: 0.5,
+                                  fontSize: { xs: '0.8125rem', sm: '0.95rem' },
+                                  height: { xs: '32px', sm: 'auto' },
+                                  minHeight: { xs: '32px', sm: '40px' },
+                                  py: { xs: 0.5, sm: 1.5 },
+                                  px: { xs: 0.25, sm: 0.5 },
                                   '& .MuiChip-label': {
-                                    px: { xs: 1.5, sm: 2 },
-                                    py: 0.5,
+                                    px: { xs: 1, sm: 2 },
+                                    py: { xs: 0.25, sm: 0.5 },
                                   },
                                   '& .MuiChip-icon': {
-                                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
-                                    ml: { xs: 1.25, sm: 1.5 },
-                                    mr: -0.5,
+                                    fontSize: { xs: '0.9rem', sm: '1.25rem' },
+                                    ml: { xs: 0.75, sm: 1.5 },
+                                    mr: { xs: -0.25, sm: -0.5 },
                                   },
                                   '& .MuiChip-deleteIcon': {
-                                    fontSize: { xs: '1.3rem', sm: '1.25rem' },
-                                    mr: { xs: 0.75, sm: 1 },
-                                    ml: 0.5,
+                                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                    mr: { xs: 0.5, sm: 1 },
+                                    ml: { xs: 0.25, sm: 0.5 },
                                   },
                                 }}
                               />
@@ -1259,7 +1287,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                         </Box>
                       )}
 
-                      <Divider sx={{ my: { xs: 2, sm: 2 } }} />
+                      <Divider sx={{ my: { xs: 1.5, sm: 2 } }} />
 
                       {/* Add New Slot */}
                       <Box>
@@ -1268,18 +1296,18 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                           gutterBottom
                           sx={{
                             fontWeight: 'bold',
-                            mb: { xs: 1.5, sm: 1 },
-                            fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                            mb: { xs: 1, sm: 1 },
+                            fontSize: { xs: '0.8125rem', sm: '0.875rem' },
                           }}
                         >
                           Add Time Slot
                         </Typography>
-                        <Stack spacing={{ xs: 1.5, sm: 1 }}>
-                          <Grid container spacing={{ xs: 1.5, sm: 1 }}>
+                        <Stack spacing={{ xs: 1, sm: 1 }}>
+                          <Grid container spacing={{ xs: 1, sm: 1 }}>
                             <Grid size={{ xs: 6 }}>
                               <TextField
                                 fullWidth
-                                size="medium"
+                                size={isMobile ? 'small' : 'medium'}
                                 label="Start"
                                 type="time"
                                 value={tempTimes[day.value].start}
@@ -1289,11 +1317,11 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                 }}
                                 sx={{
                                   '& .MuiInputBase-root': {
-                                    height: { xs: '48px', sm: '40px' },
+                                    height: { xs: '36px', sm: '40px' },
                                   },
                                   '& .MuiInputBase-input': {
-                                    fontSize: { xs: '1rem', sm: '1rem' },
-                                    py: { xs: 1.5, sm: 1 },
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    py: { xs: 0.75, sm: 1 },
                                   },
                                 }}
                               />
@@ -1301,7 +1329,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                             <Grid size={{ xs: 6 }}>
                               <TextField
                                 fullWidth
-                                size="medium"
+                                size={isMobile ? 'small' : 'medium'}
                                 label="End"
                                 type="time"
                                 value={tempTimes[day.value].end}
@@ -1311,11 +1339,11 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                 }}
                                 sx={{
                                   '& .MuiInputBase-root': {
-                                    height: { xs: '48px', sm: '40px' },
+                                    height: { xs: '36px', sm: '40px' },
                                   },
                                   '& .MuiInputBase-input': {
-                                    fontSize: { xs: '1rem', sm: '1rem' },
-                                    py: { xs: 1.5, sm: 1 },
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    py: { xs: 0.75, sm: 1 },
                                   },
                                 }}
                               />
@@ -1324,7 +1352,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                           <Button
                             fullWidth
                             variant="outlined"
-                            size="medium"
+                            size={isMobile ? 'small' : 'medium'}
                             startIcon={<AddIcon />}
                             onClick={() =>
                               handleAddSlotToDay(
@@ -1335,12 +1363,12 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                             }
                             sx={{
                               textTransform: 'none',
-                              fontSize: { xs: '0.9375rem', sm: '0.875rem' },
-                              py: { xs: 1.5, sm: 1 },
-                              minHeight: { xs: '48px', sm: '40px' },
+                              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                              py: { xs: 0.75, sm: 1 },
+                              minHeight: { xs: '32px', sm: '40px' },
                             }}
                           >
-                            Add to {day.label}
+                            Add to {isMobile ? day.short : day.label}
                           </Button>
                         </Stack>
                       </Box>
@@ -1374,21 +1402,21 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
           >
             <Box
               display="flex"
-              gap={{ xs: 2, sm: 1 }}
+              gap={{ xs: 1, sm: 1 }}
               width={{ xs: '100%', sm: 'auto' }}
-              flexDirection={{ xs: 'column', sm: 'row' }}
+              flexDirection="row"
             >
               <Button
                 onClick={() => setAvailabilityDialogOpen(false)}
-                size="large"
+                size={isMobile ? 'medium' : 'large'}
                 variant="outlined"
                 sx={{
-                  width: { xs: '100%', sm: 'auto' },
-                  minHeight: { xs: '52px', sm: '40px' },
-                  fontSize: { xs: '1rem', sm: '0.875rem' },
-                  fontWeight: { xs: 'bold', sm: 'medium' },
-                  borderWidth: { xs: 2, sm: 1 },
-                  order: { xs: 2, sm: 1 },
+                  flex: { xs: 1, sm: 0 },
+                  minWidth: { xs: 100, sm: 'auto' },
+                  py: { xs: 1, sm: 1.5 },
+                  fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                  fontWeight: { xs: 'medium', sm: 'medium' },
+                  borderWidth: { xs: 1, sm: 1 },
                 }}
               >
                 Cancel
@@ -1397,20 +1425,20 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                 onClick={handleSetAvailability}
                 variant="contained"
                 color="primary"
-                size="large"
+                size={isMobile ? 'medium' : 'large'}
                 sx={{
-                  width: { xs: '100%', sm: 'auto' },
-                  minHeight: { xs: '52px', sm: '40px' },
-                  fontSize: { xs: '1rem', sm: '0.875rem' },
-                  fontWeight: 'bold',
-                  boxShadow: { xs: 2, sm: 1 },
-                  order: { xs: 1, sm: 2 },
+                  flex: { xs: 1, sm: 0 },
+                  minWidth: { xs: 100, sm: 'auto' },
+                  py: { xs: 1, sm: 1.5 },
+                  fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                  fontWeight: { xs: 'medium', sm: 'bold' },
+                  boxShadow: { xs: 1, sm: 1 },
                   '&:hover': {
-                    boxShadow: { xs: 4, sm: 2 },
+                    boxShadow: { xs: 2, sm: 2 },
                   },
                 }}
               >
-                Save All Changes
+                Save
               </Button>
             </Box>
             <Typography
@@ -1440,31 +1468,44 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
           }
           setOverrideDialogOpen(false);
         }}
+        fullScreen={isMobile}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            m: { xs: 0, sm: 2 },
+            borderRadius: { xs: 0, sm: 2 },
+          },
+        }}
       >
         <DialogTitle
           sx={{
             bgcolor: 'primary.main',
             color: 'white',
             position: 'relative',
+            py: { xs: 2, sm: 2 },
+            px: { xs: 2, sm: 3 },
           }}
         >
-          Add Time Off / Extra Shift
+          <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
+            Add Time Off / Extra Shift
+          </Typography>
           <IconButton
             aria-label="close"
             onClick={() => setOverrideDialogOpen(false)}
             sx={{
               position: 'absolute',
-              right: 8,
-              top: 8,
+              right: { xs: 8, sm: 16 },
+              top: { xs: 8, sm: 12 },
               color: 'white',
             }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid container spacing={{ xs: 2, sm: 2.5 }} sx={{ mt: 0.5 }}>
               <Grid size={{ xs: 12 }}>
                 <ToggleButtonGroup
                   value={overrideForm.isAvailable ? 'available' : 'unavailable'}
@@ -1475,13 +1516,19 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                     }
                   }}
                   fullWidth
+                  sx={{
+                    '& .MuiToggleButton-root': {
+                      py: { xs: 1.5, sm: 1 },
+                      fontSize: { xs: '0.9rem', sm: '0.875rem' },
+                    },
+                  }}
                 >
                   <ToggleButton value="unavailable" color="error">
-                    <EventBusyIcon sx={{ mr: 1 }} />
+                    <EventBusyIcon sx={{ mr: { xs: 0.5, sm: 1 }, fontSize: { xs: 20, sm: 24 } }} />
                     Time Off
                   </ToggleButton>
                   <ToggleButton value="available" color="success">
-                    <EventAvailableIcon sx={{ mr: 1 }} />
+                    <EventAvailableIcon sx={{ mr: { xs: 0.5, sm: 1 }, fontSize: { xs: 20, sm: 24 } }} />
                     Extra Shift
                   </ToggleButton>
                 </ToggleButtonGroup>
@@ -1491,12 +1538,18 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   label="Date"
                   value={overrideForm.date}
                   onChange={(date) => date && setOverrideForm({ ...overrideForm, date })}
-                  slotProps={{ textField: { fullWidth: true } }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: isMobile ? 'small' : 'medium'
+                    }
+                  }}
                 />
               </Grid>
-              <Grid size={{ xs: 6 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Start Time"
                   type="time"
                   value={overrideForm.startTime}
@@ -1504,9 +1557,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid size={{ xs: 6 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="End Time"
                   type="time"
                   value={overrideForm.endTime}
@@ -1517,18 +1571,32 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
               <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Reason (Optional)"
                   value={overrideForm.reason}
                   onChange={(e) => setOverrideForm({ ...overrideForm, reason: e.target.value })}
                   placeholder="Vacation, Sick Leave, Extra Coverage..."
+                  multiline
+                  rows={isMobile ? 2 : 3}
                 />
               </Grid>
             </Grid>
           </LocalizationProvider>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOverrideDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddOverride} variant="contained">
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2 }, gap: 1, flexDirection: 'row', justifyContent: 'flex-end' }}>
+          <Button
+            onClick={() => setOverrideDialogOpen(false)}
+            size="medium"
+            sx={{ flex: { xs: 1, sm: 0 }, minWidth: { xs: 80, sm: 100 } }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAddOverride}
+            variant="contained"
+            size="medium"
+            sx={{ flex: { xs: 1, sm: 0 }, minWidth: { xs: 80, sm: 100 } }}
+          >
             Add
           </Button>
         </DialogActions>

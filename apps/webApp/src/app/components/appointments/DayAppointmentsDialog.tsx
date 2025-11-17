@@ -29,7 +29,6 @@ import {
   DirectionsCar as DirectionsCarIcon,
   Schedule as ScheduleIcon,
   Build as BuildIcon,
-  Edit as EditIcon,
   Block as BlockIcon,
   LocationOn as LocationOnIcon,
   DriveEta as DriveEtaIcon,
@@ -1394,7 +1393,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                             >
                               Payment Details
                             </Typography>
-                            {appointment.status === 'COMPLETED' && appointment.paymentAmount ? (
+                            {appointment.status === 'COMPLETED' && appointment.paymentAmount !== undefined && appointment.paymentAmount !== null ? (
                               <Box sx={{ mt: { xs: 0.5, sm: 1 } }}>
                                 <Box
                                   sx={{
@@ -1610,11 +1609,12 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                           </>
                         )}
 
-                        {/* Edit Button - Bottom Right (Absolute Position) */}
+                        {/* Process Payment Button - Bottom Right (Absolute Position) */}
                         <Button
-                          variant="outlined"
+                          variant="contained"
+                          color="success"
                           size="small"
-                          startIcon={<EditIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />}
+                          startIcon={<MoneyIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />}
                           onClick={() => handleEditPayment(appointment)}
                           sx={{
                             position: 'absolute',
@@ -1623,9 +1623,14 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                             fontSize: { xs: '0.75rem', sm: '0.875rem' },
                             py: { xs: 0.5, sm: 0.75 },
                             px: { xs: 1.5, sm: 2 },
+                            fontWeight: 600,
+                            boxShadow: 2,
+                            '&:hover': {
+                              boxShadow: 4,
+                            },
                           }}
                         >
-                          Edit
+                          Process Payment
                         </Button>
                       </CardContent>
                     </Card>
