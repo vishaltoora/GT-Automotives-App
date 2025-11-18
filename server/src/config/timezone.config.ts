@@ -72,7 +72,23 @@ export function extractBusinessDate(date: Date | string): string {
   }
 
   const inputDate = typeof date === 'string' ? new Date(date) : date;
-  // Convert to business timezone
+
+  // CRITICAL FIX: If date is at midnight UTC (00:00:00), it represents a calendar date
+  // stored with Date.UTC(). Extract UTC components directly without timezone conversion.
+  const hours = inputDate.getUTCHours();
+  const minutes = inputDate.getUTCMinutes();
+  const seconds = inputDate.getUTCSeconds();
+  const milliseconds = inputDate.getUTCMilliseconds();
+
+  if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0) {
+    // Date stored at midnight UTC - extract UTC date components directly
+    const year = inputDate.getUTCFullYear();
+    const month = String(inputDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(inputDate.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // For non-midnight dates (actual timestamps), convert to business timezone
   const pstDate = new Date(
     inputDate.toLocaleString('en-US', { timeZone: BUSINESS_TIMEZONE })
   );
