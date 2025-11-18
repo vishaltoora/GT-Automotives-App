@@ -301,8 +301,11 @@ export class AppointmentsService {
       });
 
       // Get appointment IDs using raw SQL with proper employee join
+      // CRITICAL: PostgreSQL requires ORDER BY columns in SELECT when using DISTINCT
       const appointments = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT DISTINCT a."id" FROM ${fromClause} ${whereClause} ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
+        `SELECT DISTINCT a."id", a."scheduledDate", a."scheduledTime"
+         FROM ${fromClause} ${whereClause}
+         ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
         ...params
       );
 
