@@ -112,7 +112,13 @@ export default function EmployeeSchedule() {
       }
 
       // Fetch appointments for the selected employee and date
-      const dateStr = selectedDate.toISOString().split('T')[0];
+      // CRITICAL: Use direct date formatting to avoid timezone conversion
+      // toISOString() converts to UTC which causes -1 day shift after 5 PM PST
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
       const appointmentsResponse = await axios.get(`${API_URL}/api/appointments`, {
         params: {
           startDate: dateStr,
