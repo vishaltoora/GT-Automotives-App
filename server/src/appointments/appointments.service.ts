@@ -269,10 +269,16 @@ export class AppointmentsService {
 
       // Build additional filters
       const additionalConditions: string[] = [];
+      let fromClause = '"Appointment" a';
+
       if (query.employeeId) {
-        additionalConditions.push(`a."employeeId" = $${params.length + 1}`);
+        // CRITICAL: Join with AppointmentEmployee table for employee filtering
+        // The deprecated employeeId field is not used anymore
+        fromClause = '"Appointment" a INNER JOIN "AppointmentEmployee" ae ON a."id" = ae."appointmentId"';
+        additionalConditions.push(`ae."employeeId" = $${params.length + 1}`);
         params.push(query.employeeId);
       }
+
       if (query.customerId) {
         additionalConditions.push(`a."customerId" = $${params.length + 1}`);
         params.push(query.customerId);
@@ -289,13 +295,14 @@ export class AppointmentsService {
       console.log('[FIND ALL] Using DATE() comparison:', {
         startDate: query.startDate,
         endDate: query.endDate,
+        employeeId: query.employeeId,
         whereClause,
         params,
       });
 
-      // Get appointment IDs using raw SQL
+      // Get appointment IDs using raw SQL with proper employee join
       const appointments = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT a."id" FROM "Appointment" a ${whereClause} ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
+        `SELECT DISTINCT a."id" FROM ${fromClause} ${whereClause} ORDER BY a."scheduledDate" ASC, a."scheduledTime" ASC`,
         ...params
       );
 
