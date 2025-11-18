@@ -84,10 +84,16 @@ export class AppointmentsService {
       }
     }
 
+    // Handle scheduledDate - convert YYYY-MM-DD string to Date for database storage
+    // dto.scheduledDate is now always a string (YYYY-MM-DD format) to avoid timezone conversion in DTOs
+    // MUST do this BEFORE availability checks since they expect a Date object
+    const [year, month, day] = dto.scheduledDate.split('-').map(Number);
+    const normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+
     // Auto-assign employee if none provided
     let finalEmployeeIds = employeeIds;
     if (finalEmployeeIds.length === 0) {
-      const foundEmployeeId = await this.findAvailableEmployee(dto.scheduledDate, dto.scheduledTime, dto.duration);
+      const foundEmployeeId = await this.findAvailableEmployee(normalizedDate, dto.scheduledTime, dto.duration);
       if (!foundEmployeeId) {
         throw new ConflictException('No available employees for the requested time slot');
       }
@@ -106,10 +112,10 @@ export class AppointmentsService {
           throw new BadRequestException(`User ${employee.firstName} ${employee.lastName} is not a staff or admin member`);
         }
 
-        // Check availability
+        // Check availability - use normalizedDate (Date object) not dto.scheduledDate (string)
         const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
           empId,
-          dto.scheduledDate,
+          normalizedDate,
           dto.scheduledTime,
           dto.duration
         );
@@ -119,11 +125,6 @@ export class AppointmentsService {
         }
       }
     }
-
-    // Handle scheduledDate - convert YYYY-MM-DD string to Date for database storage
-    // dto.scheduledDate is now always a string (YYYY-MM-DD format) to avoid timezone conversion in DTOs
-    const [year, month, day] = dto.scheduledDate.split('-').map(Number);
-    const normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
 
     // Calculate end time
     const endTime = this.calculateEndTime(dto.scheduledTime, dto.duration);
