@@ -254,13 +254,18 @@ export class SmsService {
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
+
+    // CRITICAL: Format date from business date string directly to avoid timezone issues
+    // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     const [year, month, day] = businessDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const formattedDate = date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    });
+    const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+    const weekday = weekdayNames[dateForWeekday.getUTCDay()];
+    const monthName = monthNames[month - 1];
+    const formattedDate = `${weekday}, ${monthName} ${day}`;
 
     // Format time in 12-hour format
     const [hours, minutes] = appointment.scheduledTime.split(':');
@@ -324,13 +329,18 @@ export class SmsService {
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
+
+    // CRITICAL: Format date from business date string directly to avoid timezone issues
+    // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     const [year, month, day] = businessDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const formattedDate = date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    });
+    const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+    const weekday = weekdayNames[dateForWeekday.getUTCDay()];
+    const monthName = monthNames[month - 1];
+    const formattedDate = `${weekday}, ${monthName} ${day}`;
 
     // Format time in 12-hour format
     const [hours, minutes] = appointment.scheduledTime.split(':');
@@ -385,13 +395,18 @@ export class SmsService {
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
+
+    // CRITICAL: Format date from business date string directly to avoid timezone issues
+    // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     const [year, month, day] = businessDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const formattedDate = date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    });
+    const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+    const weekday = weekdayNames[dateForWeekday.getUTCDay()];
+    const monthName = monthNames[month - 1];
+    const formattedDate = `${weekday}, ${monthName} ${day}`;
 
     // Format time in 12-hour format
     const [hours, minutes] = appointment.scheduledTime.split(':');
@@ -456,13 +471,18 @@ export class SmsService {
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
+
+    // CRITICAL: Format date from business date string directly to avoid timezone issues
+    // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
+    const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekdayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
     const [year, month, day] = businessDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const formattedDate = date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
+    const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+    const weekday = weekdayNamesShort[dateForWeekday.getUTCDay()];
+    const monthName = monthNamesShort[month - 1];
+    const formattedDate = `${weekday}, ${monthName} ${day}`;
 
     // Format time in 12-hour format
     const [hours, minutes] = appointment.scheduledTime.split(':');

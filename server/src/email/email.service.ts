@@ -251,14 +251,18 @@ export class EmailService {
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
+
+    // CRITICAL: Format date from business date string directly to avoid timezone issues
+    // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     const [year, month, day] = businessDate.split('-').map(Number);
-    const appointmentDate = new Date(year, month - 1, day);
-    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+    const weekday = weekdayNames[dateForWeekday.getUTCDay()];
+    const monthName = monthNames[month - 1];
+    const formattedDate = `${weekday}, ${monthName} ${day}, ${year}`;
 
     // Format time in 12-hour format
     const [hours, minutes] = appointment.scheduledTime.split(':');
@@ -596,14 +600,18 @@ export class EmailService {
     try {
       // Format date correctly using timezone-aware utility
       const businessDate = extractBusinessDate(data.date);
+
+      // CRITICAL: Format date from business date string directly to avoid timezone issues
+      // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+      const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
       const [year, month, day] = businessDate.split('-').map(Number);
-      const scheduleDate = new Date(year, month - 1, day);
-      const formattedDate = scheduleDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+      const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+      const weekday = weekdayNames[dateForWeekday.getUTCDay()];
+      const monthName = monthNames[month - 1];
+      const formattedDate = `${weekday}, ${monthName} ${day}, ${year}`;
 
       // Build appointments table rows
       const appointmentsHtml = data.appointments.length > 0
@@ -844,14 +852,18 @@ export class EmailService {
     try {
       // Format date correctly using timezone-aware utility
       const businessDate = extractBusinessDate(data.scheduledDate);
+
+      // CRITICAL: Format date from business date string directly to avoid timezone issues
+      // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+      const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
       const [year, month, day] = businessDate.split('-').map(Number);
-      const appointmentDate = new Date(year, month - 1, day);
-      const formattedDate = appointmentDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+      const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+      const weekday = weekdayNames[dateForWeekday.getUTCDay()];
+      const monthName = monthNames[month - 1];
+      const formattedDate = `${weekday}, ${monthName} ${day}, ${year}`;
 
       // Calculate start and end time in 12-hour format
       const [hours, minutes] = data.scheduledTime.split(':');
