@@ -66,6 +66,10 @@ export class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
   duration?: number;
 
   @IsOptional()
+  @IsString()
+  serviceType?: string;
+
+  @IsOptional()
   @IsEnum(AppointmentStatus)
   status?: AppointmentStatus;
 

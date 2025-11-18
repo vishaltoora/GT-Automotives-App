@@ -161,6 +161,11 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           notes: appointment.notes || '',
         });
 
+        // Set selected customer for autocomplete
+        if (appointment.customer) {
+          setSelectedCustomer(appointment.customer);
+        }
+
         // Set selected employees for autocomplete
         if (appointment.employees && appointment.employees.length > 0) {
           const empObjects = appointment.employees.map(e => e.employee);
@@ -318,6 +323,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           scheduledDate: formData.scheduledDate,
           scheduledTime: formData.scheduledTime,
           duration: formData.duration,
+          serviceType: formData.serviceType,
           appointmentType: formData.appointmentType,
           notes: formData.notes || undefined,
         });
@@ -638,7 +644,6 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   value={formData.serviceType}
                   onChange={(e) => handleServiceTypeChange(e.target.value)}
                   label="Service Type"
-                  disabled={!!appointment}
                 >
                   {SERVICE_TYPES.map((service) => (
                     <MenuItem key={service.value} value={service.value}>
