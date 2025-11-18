@@ -1,6 +1,7 @@
-import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max, IsArray, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AppointmentStatus, AppointmentType } from '@prisma/client';
+import { IsDateString, IsOptionalDateString } from '../decorators/date-validation.decorator';
 
 export class CreateAppointmentDto {
   @IsString()
@@ -19,9 +20,8 @@ export class CreateAppointmentDto {
   @IsString({ each: true })
   employeeIds?: string[]; // Multiple employee IDs
 
-  @Type(() => Date)
-  @IsDate()
-  scheduledDate!: Date;
+  @IsDateString()
+  scheduledDate!: string; // YYYY-MM-DD format - keep as string to avoid timezone conversion
 
   @IsString()
   scheduledTime!: string; // "09:00" format (24-hour)
@@ -52,10 +52,8 @@ export class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
   @IsString({ each: true })
   employeeIds?: string[]; // Multiple employee IDs
 
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  scheduledDate?: Date;
+  @IsOptionalDateString()
+  scheduledDate?: string; // YYYY-MM-DD format - keep as string to avoid timezone conversion
 
   @IsOptional()
   @IsString()
@@ -119,13 +117,11 @@ export class AppointmentQueryDto {
 }
 
 export class CalendarQueryDto {
-  @Type(() => Date)
-  @IsDate()
-  startDate!: Date;
+  @IsDateString()
+  startDate!: string; // YYYY-MM-DD format - keep as string to avoid timezone conversion
 
-  @Type(() => Date)
-  @IsDate()
-  endDate!: Date;
+  @IsDateString()
+  endDate!: string; // YYYY-MM-DD format - keep as string to avoid timezone conversion
 
   @IsOptional()
   @IsString()

@@ -120,24 +120,10 @@ export class AppointmentsService {
       }
     }
 
-    // Handle scheduledDate properly to avoid timezone issues
-    // If dto.scheduledDate is already a Date object from the DTO transformer, it was parsed as UTC
-    // We need to extract the date components and create a new Date in local time
-    let normalizedDate: Date;
-
-    if (dto.scheduledDate instanceof Date) {
-      // DTO transformer already converted string to Date (as UTC)
-      // Extract the UTC date components and create local date
-      const year = dto.scheduledDate.getUTCFullYear();
-      const month = dto.scheduledDate.getUTCMonth();
-      const day = dto.scheduledDate.getUTCDate();
-      normalizedDate = new Date(year, month, day, 0, 0, 0, 0);
-    } else {
-      // Shouldn't happen, but handle string just in case
-      const dateStr = String(dto.scheduledDate);
-      const [year, month, day] = dateStr.split('-').map(Number);
-      normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-    }
+    // Handle scheduledDate - convert YYYY-MM-DD string to Date for database storage
+    // dto.scheduledDate is now always a string (YYYY-MM-DD format) to avoid timezone conversion in DTOs
+    const [year, month, day] = dto.scheduledDate.split('-').map(Number);
+    const normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
 
     // Calculate end time
     const endTime = this.calculateEndTime(dto.scheduledTime, dto.duration);
@@ -437,30 +423,17 @@ export class AppointmentsService {
     // Support both old employeeId and new employeeIds
     const employeeIds = dto.employeeIds || (dto.employeeId ? [dto.employeeId] : undefined);
 
-    // Normalize scheduledDate if provided (handle UTC parsing issue)
+    // Normalize scheduledDate if provided - convert YYYY-MM-DD string to Date for database storage
+    // dto.scheduledDate is now always a string (YYYY-MM-DD format) to avoid timezone conversion in DTOs
+    let normalizedDate: Date | undefined;
     if (dto.scheduledDate) {
-      let normalizedDate: Date;
-
-      if (dto.scheduledDate instanceof Date) {
-        // DTO transformer already converted string to Date (as UTC)
-        // Extract the UTC date components and create local date
-        const year = dto.scheduledDate.getUTCFullYear();
-        const month = dto.scheduledDate.getUTCMonth();
-        const day = dto.scheduledDate.getUTCDate();
-        normalizedDate = new Date(year, month, day, 0, 0, 0, 0);
-      } else {
-        // Shouldn't happen, but handle string just in case
-        const dateStr = String(dto.scheduledDate);
-        const [year, month, day] = dateStr.split('-').map(Number);
-        normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-      }
-
-      dto.scheduledDate = normalizedDate;
+      const [year, month, day] = dto.scheduledDate.split('-').map(Number);
+      normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
     }
 
     // If rescheduling or changing employee, check availability
     if (employeeIds || dto.scheduledDate || dto.scheduledTime || dto.duration) {
-      const scheduledDate = dto.scheduledDate || appointment.scheduledDate;
+      const scheduledDate = normalizedDate || appointment.scheduledDate;
       const scheduledTime = dto.scheduledTime || appointment.scheduledTime;
       const duration = dto.duration || appointment.duration;
 
@@ -527,6 +500,8 @@ export class AppointmentsService {
     // Prepare update data
     const updateData: any = {
       ...dto,
+      // Replace string scheduledDate with normalized Date object for database
+      ...(normalizedDate && { scheduledDate: normalizedDate }),
       updatedAt: new Date(),
     };
 
