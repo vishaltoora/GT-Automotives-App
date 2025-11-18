@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '@gt-automotive/database';
 import { SmsService } from './sms.service';
+import { getCurrentBusinessDate } from '../config/timezone.config';
 
 @Injectable()
 export class SmsSchedulerService {
@@ -20,8 +21,8 @@ export class SmsSchedulerService {
   async sendDailyScheduleToStaff() {
     this.logger.log('Sending daily schedule to staff members');
 
-    const now = new Date();
-    const todayString = now.toISOString().split('T')[0];
+    // Use business timezone (PST/PDT) to get correct date
+    const todayString = getCurrentBusinessDate();
 
     // Find all appointments scheduled for today with assigned staff
     const appointments = await this.prisma.appointment.findMany({
@@ -115,8 +116,8 @@ export class SmsSchedulerService {
     const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour ahead
     const oneHourFifteenFromNow = new Date(now.getTime() + 75 * 60 * 1000); // 1 hour 15 min ahead
 
-    // Get today's date string
-    const todayString = now.toISOString().split('T')[0];
+    // Get today's date string in business timezone (PST/PDT)
+    const todayString = getCurrentBusinessDate();
 
     // Find appointments scheduled between 1 hour and 1 hour 15 minutes from now
     const appointments = await this.prisma.appointment.findMany({

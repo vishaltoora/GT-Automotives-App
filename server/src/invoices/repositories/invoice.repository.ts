@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, Invoice, InvoiceStatus } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
 import { PrismaService } from '@gt-automotive/database';
+import { extractBusinessDate } from '../../config/timezone.config';
 
 @Injectable()
 export class InvoiceRepository extends BaseRepository<
@@ -234,7 +235,7 @@ export class InvoiceRepository extends BaseRepository<
     });
 
     return {
-      date: date.toISOString().split('T')[0],
+      date: extractBusinessDate(date),
       totalInvoices: invoices.length,
       totalRevenue: invoices.reduce((sum, inv) => sum + Number(inv.total), 0),
       byPaymentMethod,

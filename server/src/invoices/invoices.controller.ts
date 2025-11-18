@@ -18,6 +18,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { InvoiceStatus, PaymentMethod } from '@prisma/client';
+import { getCurrentBusinessDate } from '../config/timezone.config';
 
 @Controller('invoices')
 @UseGuards(JwtAuthGuard)
@@ -63,7 +64,8 @@ export class InvoicesController {
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   getDailyCashReport(@Query('date') date: string, @CurrentUser() user: any) {
-    const reportDate = date || new Date().toISOString().split('T')[0];
+    // Use business timezone date if no date provided
+    const reportDate = date || getCurrentBusinessDate();
     return this.invoicesService.getDailyCashReport(reportDate, user);
   }
 

@@ -385,7 +385,8 @@ export class AppointmentsService {
     const calendar: Record<string, any[]> = {};
 
     appointments.forEach((appointment) => {
-      const dateKey = appointment.scheduledDate.toISOString().split('T')[0];
+      // Use extractBusinessDate to avoid timezone conversion issues
+      const dateKey = extractBusinessDate(appointment.scheduledDate);
       if (!calendar[dateKey]) {
         calendar[dateKey] = [];
       }
