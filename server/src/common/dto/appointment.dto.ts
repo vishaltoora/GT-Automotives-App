@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max, IsArray, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AppointmentStatus, AppointmentType } from '@prisma/client';
 
@@ -98,14 +98,12 @@ export class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
 
 export class AppointmentQueryDto {
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  startDate?: Date;
+  @IsString()
+  startDate?: string; // YYYY-MM-DD format - keep as string to avoid timezone conversion
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  endDate?: Date;
+  @IsString()
+  endDate?: string; // YYYY-MM-DD format - keep as string to avoid timezone conversion
 
   @IsOptional()
   @IsString()
