@@ -44,6 +44,7 @@ import {
   formatServiceType,
 } from '../../components/appointments/AppointmentCard';
 import { formatTimeRange } from '../../utils/timeFormat';
+import { extractDateString } from '../../utils/dateUtils';
 import { appointmentService } from '../../services/appointment.service';
 import { paymentService } from '../../services/payment.service';
 import { PaymentResponseDto } from '@gt-automotive/data';
@@ -129,10 +130,9 @@ export function DaySummary() {
       setLoading(true);
       setError(null);
 
-      // Use toISOString().split('T')[0] to get UTC date without timezone conversion
-      // DatePicker creates dates as midnight UTC, so this preserves the selected date
-      // format() would shift Nov 13 UTC to Nov 12 PST at night (8pm PST = 4am UTC next day)
-      const dateStr = selectedDate.toISOString().split('T')[0];
+      // Use extractDateString() to get YYYY-MM-DD without timezone conversion
+      // This prevents the 8 PM bug where dates shift by ±1 day
+      const dateStr = extractDateString(selectedDate);
 
       // Fetch scheduled appointments, customer payments, and employee payments for this date
       const [scheduled, payments, empPayments] = await Promise.all([
@@ -368,9 +368,8 @@ export function DaySummary() {
       const token = await getToken();
 
       const eodData = {
-        // Use toISOString().split('T')[0] to preserve selected date
-        // format() would shift date at night when server is in different timezone
-        date: selectedDate.toISOString().split('T')[0],
+        // Use extractDateString() to get YYYY-MM-DD without timezone conversion
+        date: extractDateString(selectedDate),
         totalPayments: stats.totalPayments,
         totalOwed: stats.totalOwed,
         paymentsByMethod: stats.paymentsByMethod,

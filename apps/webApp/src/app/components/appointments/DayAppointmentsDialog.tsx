@@ -41,6 +41,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 import { formatTimeRange } from '../../utils/timeFormat';
+import { extractDateString } from '../../utils/dateUtils';
 import { PaymentDialog } from './PaymentDialog';
 import { appointmentService } from '../../services/appointment.service';
 import {
@@ -428,9 +429,8 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 
       // Prepare EOD summary data
       const eodData = {
-        // Use toISOString().split('T')[0] to preserve selected date
-        // format() would shift date at night when user is in PST timezone
-        date: date.toISOString().split('T')[0],
+        // Use extractDateString() to get YYYY-MM-DD without timezone conversion
+        date: extractDateString(date),
         totalPayments: stats.totalPayments,
         totalOwed: stats.totalOwed,
         paymentsByMethod: stats.paymentsByMethod,
