@@ -120,6 +120,47 @@ const date = new Date(dateStr);
 const display = date.toLocaleDateString();
 ```
 
+### Rule #6: Calendar Dates Use Date.UTC() ⭐ NEW
+
+**ALWAYS** use `Date.UTC()` when storing calendar dates (dates without specific times):
+
+```typescript
+// ✅ CORRECT - Appointment dates, invoice dates, etc.
+const [year, month, day] = dateString.split('-').map(Number);
+const normalizedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+// Stores: 2025-11-18T00:00:00Z (midnight UTC)
+
+// ❌ WRONG - Depends on server timezone
+const normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+// On UTC server: 2025-11-18T00:00:00Z (midnight UTC)
+// On PST server: 2025-11-18T08:00:00Z (8 AM UTC)
+```
+
+**Why**: Different servers (dev vs production) run in different timezones. Using `Date.UTC()` ensures consistent storage regardless of server timezone.
+
+### Rule #7: extractBusinessDate() Handles Both ⭐ NEW
+
+**ALWAYS** use `extractBusinessDate()` - it automatically handles calendar dates vs timestamps:
+
+```typescript
+import { extractBusinessDate } from '../config/timezone.config';
+
+// ✅ CORRECT - Works for both calendar dates and timestamps
+const dateStr = extractBusinessDate(appointment.scheduledDate);
+// If midnight UTC (calendar date): Extracts UTC components → "2025-11-18"
+// If has time (timestamp): Converts to PST → "2025-11-18"
+
+// ❌ WRONG - Always converts to PST
+const dateStr = appointment.scheduledDate.toLocaleString('en-US', {
+  timeZone: 'America/Vancouver'
+}).split(',')[0];
+// Midnight UTC → 4 PM previous day PST → Wrong date!
+```
+
+**How it works**:
+- **Midnight UTC dates** (00:00:00.000): Calendar dates, extract UTC components
+- **Non-midnight dates**: Timestamps, convert to business timezone
+
 ---
 
 ## 📚 **Utility Functions**
