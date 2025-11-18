@@ -153,6 +153,26 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### November 18, 2025 - Critical Production Timezone Fixes ✅
+- ✅ **CRITICAL Production Bug Fixed**: Appointment emails showing wrong date (Nov 17 instead of Nov 18)
+- ✅ **Root Cause Identified**: Two-layer timezone issue affecting production after 5 PM PST
+- ✅ **Layer 1 - Date Extraction**: Services using `toISOString().split()` causing UTC conversion
+- ✅ **Layer 2 - Date Storage**: `new Date(year, month, day)` using server's local timezone (UTC in production, PST in dev)
+- ✅ **Solution Implemented**: Use `Date.UTC()` for consistent midnight UTC storage across all environments
+- ✅ **Services Fixed**:
+  - SMS scheduler service (appointment confirmations and reminders)
+  - Email service (appointment assignments and schedules)
+  - Calendar grouping service
+  - Invoice cash reports
+- 🔧 **Files Changed**:
+  - `server/src/appointments/appointments.service.ts`: Date.UTC() for create/update (lines 93, 437)
+  - `server/src/sms/sms-scheduler.service.ts`: getCurrentBusinessDate() (lines 25, 120)
+  - `server/src/invoices/invoices.controller.ts`: getCurrentBusinessDate() (line 68)
+  - `server/src/invoices/repositories/invoice.repository.ts`: extractBusinessDate() (line 238)
+- 📝 **Impact**: All appointment emails/SMS now show correct dates regardless of booking time
+- ✅ **Edit Appointment Dialog**: Fixed customer display and enabled service type editing
+- ✅ **TypeScript**: All type checks passing, working tree clean
+
 ### November 14, 2025 - Puppeteer/Chromium Installation for Invoice PDF Generation ✅
 - ✅ **Production Invoice Email Fixed**: Resolved "Could not find Chrome" error preventing invoice emails
 - ✅ **Root Cause**: Alpine Docker image didn't include Chromium for Puppeteer PDF generation
