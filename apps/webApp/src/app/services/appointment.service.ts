@@ -97,6 +97,7 @@ export interface UpdateAppointmentRequest {
   scheduledDate?: Date | string; // Allow string to avoid timezone issues
   scheduledTime?: string;
   duration?: number;
+  serviceType?: string;
   status?: AppointmentStatus;
   appointmentType?: string;
   notes?: string;

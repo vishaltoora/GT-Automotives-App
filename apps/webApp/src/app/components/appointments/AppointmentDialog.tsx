@@ -163,7 +163,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
         // Set selected customer for autocomplete
         if (appointment.customer) {
-          setSelectedCustomer(appointment.customer);
+          setSelectedCustomer(appointment.customer as Customer);
         }
 
         // Set selected employees for autocomplete

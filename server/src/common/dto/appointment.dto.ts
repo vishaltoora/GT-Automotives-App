@@ -1,5 +1,4 @@
-import { IsString, IsOptional, IsDate, IsInt, IsEnum, Min, Max, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsInt, IsEnum, Min, Max, IsArray } from 'class-validator';
 import { AppointmentStatus, AppointmentType } from '@prisma/client';
 import { IsDateString, IsOptionalDateString } from '../decorators/date-validation.decorator';
 
