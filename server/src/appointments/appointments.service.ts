@@ -87,8 +87,10 @@ export class AppointmentsService {
     // Handle scheduledDate - convert YYYY-MM-DD string to Date for database storage
     // dto.scheduledDate is now always a string (YYYY-MM-DD format) to avoid timezone conversion in DTOs
     // MUST do this BEFORE availability checks since they expect a Date object
+    // CRITICAL: Use Date.UTC() to create date at midnight UTC, not local midnight
+    // This ensures consistent date storage regardless of server timezone
     const [year, month, day] = dto.scheduledDate.split('-').map(Number);
-    const normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const normalizedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
 
     // Auto-assign employee if none provided
     let finalEmployeeIds = employeeIds;
@@ -427,10 +429,12 @@ export class AppointmentsService {
 
     // Normalize scheduledDate if provided - convert YYYY-MM-DD string to Date for database storage
     // dto.scheduledDate is now always a string (YYYY-MM-DD format) to avoid timezone conversion in DTOs
+    // CRITICAL: Use Date.UTC() to create date at midnight UTC, not local midnight
+    // This ensures consistent date storage regardless of server timezone
     let normalizedDate: Date | undefined;
     if (dto.scheduledDate) {
       const [year, month, day] = dto.scheduledDate.split('-').map(Number);
-      normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      normalizedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     }
 
     // If rescheduling or changing employee, check availability
