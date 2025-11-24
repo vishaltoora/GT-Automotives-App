@@ -168,10 +168,15 @@ jobs:
           echo "📦 Found repository artifact: $REPO_ARTIFACT"
           cd "$REPO_ARTIFACT"
 
-          # Install only what's needed for migrations (faster with global install)
+          # Install only what's needed for migrations
           echo "📦 Installing Prisma CLI..."
           npm install -g prisma@latest
-          npm install @prisma/client@latest
+
+          # Create .prisma directory structure to prevent ENOENT error during generate
+          mkdir -p node_modules/.prisma/client/runtime
+
+          # Install @prisma/client with proper directory setup
+          npm install @prisma/client@latest --save
 
           # Set database URL
           export DATABASE_URL="${{ secrets.DATABASE_URL }}"
@@ -180,10 +185,11 @@ jobs:
           if [ -f "$SCHEMA_PATH" ]; then
             echo "📋 Found Prisma schema, running migrations..."
 
-            # Generate Prisma client
-            npx prisma generate --schema="$SCHEMA_PATH"
+            # Generate Prisma client (skip generate if it fails - migrate deploy doesn't need it)
+            echo "🔧 Generating Prisma client..."
+            npx prisma generate --schema="$SCHEMA_PATH" || echo "⚠️ Prisma generate failed, continuing with migrate deploy..."
 
-            # Run migrations
+            # Run migrations (migrate deploy doesn't need generated client)
             echo "🚀 Running database migrations..."
             if npx prisma migrate deploy --schema="$SCHEMA_PATH"; then
               echo "✅ Migrations completed successfully"
