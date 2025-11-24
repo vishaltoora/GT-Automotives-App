@@ -193,11 +193,12 @@ model Invoice {
   gstRate       Decimal?       @db.Decimal(5, 4)
   pstAmount     Decimal?       @db.Decimal(10, 2)
   pstRate       Decimal?       @db.Decimal(5, 4)
-  customer      Customer       @relation(fields: [customerId], references: [id])
-  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
-  company       Company        @relation(fields: [companyId], references: [id])
-  items         InvoiceItem[]
-  emailLogs     EmailLog[]     // Email logs related to this invoice
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  vehicle        Vehicle?        @relation(fields: [vehicleId], references: [id])
+  company        Company         @relation(fields: [companyId], references: [id])
+  items          InvoiceItem[]
+  squarePayments SquarePayment[] // Square payments for this invoice
+  emailLogs      EmailLog[]      // Email logs related to this invoice
 
   @@index([customerId])
   @@index([status])
@@ -218,6 +219,32 @@ model InvoiceItem {
   updatedAt   DateTime        @updatedAt
   invoice     Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   tire        Tire?           @relation(fields: [tireId], references: [id])
+}
+
+model SquarePayment {
+  id               String              @id @default(cuid())
+  invoiceId        String
+  squarePaymentId  String              @unique // Square's payment ID
+  amount           Decimal             @db.Decimal(10, 2)
+  currency         String              @default("CAD")
+  status           SquarePaymentStatus @default(PENDING)
+  sourceType       String?             // CARD, TERMINAL, etc.
+  cardBrand        String?             // VISA, MASTERCARD, etc.
+  last4            String?             // Last 4 digits of card
+  receiptUrl       String?             // Square receipt URL
+  note             String?
+  errorMessage     String?
+  squareOrderId    String?             // If linked to a Square order
+  locationId       String?             // Square location ID
+  deviceId         String?             // For Terminal payments
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  invoice          Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([squarePaymentId])
 }
 
 model Quotation {
@@ -446,6 +473,17 @@ enum PaymentStatus {
   PAID        // Payment completed
   FAILED      // Payment failed
   CANCELLED   // Payment cancelled
+}
+
+enum SquarePaymentStatus {
+  PENDING        // Payment initiated but not completed
+  PROCESSING     // Payment being processed
+  COMPLETED      // Payment successfully processed
+  APPROVED       // Payment approved by Square
+  CANCELED       // Payment canceled
+  FAILED         // Payment failed
+  REFUNDED       // Payment has been refunded
+  PARTIAL_REFUND // Payment has been partially refunded
 }
 
 enum PeriodType {

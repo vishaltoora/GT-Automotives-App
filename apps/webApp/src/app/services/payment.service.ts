@@ -160,6 +160,22 @@ class PaymentService {
       : paymentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
     return this.makeRequest<PaymentResponseDto[]>(`${this.baseUrl}/by-payment-date?paymentDate=${dateStr}`);
   }
+
+  /**
+   * Create a Square payment for an invoice
+   */
+  async createSquarePayment(paymentData: {
+    invoiceId: string;
+    sourceId: string;
+    amount: number;
+    currency?: string;
+    note?: string;
+  }): Promise<any> {
+    return this.makeRequest<any>(`${API_BASE_URL}/api/square/payments`, {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  }
 }
 
 export const paymentService = new PaymentService();
