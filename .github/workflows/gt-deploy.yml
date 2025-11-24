@@ -42,7 +42,7 @@ env:
 jobs:
   Deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.target }}
+    # environment: ${{ github.event.inputs.target }}  # Commented out - configure environments in GitHub repo settings if needed
     env:
       TARGET: ${{ github.event.inputs.target }}
       BUILD_NUMBER: ${{ github.event.inputs.buildNumber }}
