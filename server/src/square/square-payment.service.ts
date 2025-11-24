@@ -138,7 +138,7 @@ export class SquarePaymentService {
       const squarePayment = await this.squarePaymentRepository.create({
         squarePaymentId: payment.id!,
         squareOrderId: payment.orderId,
-        squareLocationId: payment.locationId!,
+        locationId: payment.locationId!,
         invoice: {
           connect: { id: invoiceId },
         },
@@ -200,7 +200,7 @@ export class SquarePaymentService {
         // Save failed payment record
         await this.squarePaymentRepository.create({
           squarePaymentId: `failed-${randomUUID()}`,
-          squareLocationId: this.locationId,
+          locationId: this.locationId,
           invoice: {
             connect: { id: invoiceId },
           },

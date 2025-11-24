@@ -231,12 +231,22 @@ model SquarePayment {
   sourceType       String?             // CARD, TERMINAL, etc.
   cardBrand        String?             // VISA, MASTERCARD, etc.
   last4            String?             // Last 4 digits of card
+  expMonth         Int?                // Card expiration month
+  expYear          Int?                // Card expiration year
   receiptUrl       String?             // Square receipt URL
+  receiptNumber    String?             // Square receipt number
   note             String?
   errorMessage     String?
+  errorCode        String?             // Square error code
   squareOrderId    String?             // If linked to a Square order
   locationId       String?             // Square location ID
   deviceId         String?             // For Terminal payments
+  processingFee    Decimal?            @db.Decimal(10, 2) // Square processing fee
+  netAmount        Decimal?            @db.Decimal(10, 2) // Net amount after processing fee
+  refundedAmount   Decimal?            @db.Decimal(10, 2) // Total refunded amount
+  refundedAt       DateTime?           // When refund was processed
+  processedAt      DateTime?           // When payment was processed
+  metadata         Json?               // Full Square payment response for reference
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
