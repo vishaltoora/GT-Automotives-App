@@ -139,8 +139,10 @@
     "react-hook-form": "^7.62.0",
     "react-image-pan-zoom-rotate": "^1.6.0",
     "react-router-dom": "6.29.0",
+    "react-square-web-payments-sdk": "^3.2.4-beta.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
+    "square": "39.1.1",
     "svix": "^1.73.0",
     "telnyx": "^3.9.0",
     "yup": "^1.7.0"

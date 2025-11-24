@@ -10,8 +10,13 @@ import {
   Alert,
   CircularProgress,
   Divider,
+  IconButton,
 } from '@mui/material';
-import { CreditCard as CreditCardIcon } from '@mui/icons-material';
+import {
+  CreditCard as CreditCardIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { PaymentForm, CreditCard } from 'react-square-web-payments-sdk';
 import { paymentService } from '../../services/payment.service';
 
@@ -35,6 +40,8 @@ export const SquarePaymentForm: React.FC<SquarePaymentFormProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Convert amount to number (handles string/Decimal from backend)
   const numericAmount = typeof amount === 'number' ? amount : parseFloat(String(amount));
@@ -106,13 +113,30 @@ export const SquarePaymentForm: React.FC<SquarePaymentFormProps> = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isMobile}
       disableEscapeKeyDown={isProcessing}
     >
-      <DialogTitle>
+      <DialogTitle
+        sx={{
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         <Box display="flex" alignItems="center" gap={1}>
-          <CreditCardIcon color="primary" />
-          <Typography variant="h6">Pay Invoice</Typography>
+          <CreditCardIcon />
+          Pay Invoice
         </Box>
+        <IconButton
+          onClick={handleClose}
+          disabled={isProcessing}
+          sx={{ color: 'primary.contrastText' }}
+        >
+          <CloseIcon />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent>
@@ -161,7 +185,7 @@ export const SquarePaymentForm: React.FC<SquarePaymentFormProps> = ({
               locationId={locationId}
               cardTokenizeResponseReceived={handlePayment}
             >
-              <CreditCard />
+              <CreditCard includeInputLabels />
             </PaymentForm>
 
             {isProcessing && (

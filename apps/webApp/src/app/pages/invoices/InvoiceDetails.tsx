@@ -37,6 +37,7 @@ import { quotationService } from '../../services/quotation.service';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
+import { PaymentMethodDialog } from '../../components/payments/PaymentMethodDialog';
 
 const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,6 +48,7 @@ const InvoiceDetails: React.FC = () => {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -170,6 +172,18 @@ const InvoiceDetails: React.FC = () => {
   const handleMarkAsPaidFromMenu = () => {
     setMenuAnchorEl(null);
     handleMarkAsPaid();
+  };
+
+  const handlePayWithSquare = () => {
+    setPaymentDialogOpen(true);
+    setMenuAnchorEl(null);
+  };
+
+  const handlePaymentSuccess = (paymentId: string) => {
+    console.log('Payment successful:', paymentId);
+    setPaymentDialogOpen(false);
+    // Reload invoice to show updated payment status
+    loadInvoice();
   };
 
   const formatCurrency = (amount: number) => {
@@ -297,6 +311,14 @@ const InvoiceDetails: React.FC = () => {
                 </ListItemIcon>
                 <ListItemText>Print</ListItemText>
               </MenuItem>
+              {invoice.status === 'PENDING' && (
+                <MenuItem onClick={handlePayWithSquare}>
+                  <ListItemIcon>
+                    <PaymentIcon fontSize="small" color="primary" />
+                  </ListItemIcon>
+                  <ListItemText>Pay with Card</ListItemText>
+                </MenuItem>
+              )}
               {canManageInvoice && invoice.status === 'PENDING' && (
                 <>
                   <MenuItem onClick={handleMarkAsPaidFromMenu}>
@@ -340,6 +362,16 @@ const InvoiceDetails: React.FC = () => {
               >
                 Print
               </Button>
+              {invoice.status === 'PENDING' && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<PaymentIcon />}
+                  onClick={handlePayWithSquare}
+                >
+                  Pay with Card
+                </Button>
+              )}
               {canManageInvoice && invoice.status === 'PENDING' && (
                 <>
                   <Button
@@ -647,6 +679,18 @@ const InvoiceDetails: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
+
+      {/* Payment Method Selection Dialog */}
+      {invoice && (
+        <PaymentMethodDialog
+          open={paymentDialogOpen}
+          onClose={() => setPaymentDialogOpen(false)}
+          invoiceId={invoice.id}
+          invoiceNumber={invoice.invoiceNumber}
+          amount={invoice.total}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
     </Box>
   );
 };

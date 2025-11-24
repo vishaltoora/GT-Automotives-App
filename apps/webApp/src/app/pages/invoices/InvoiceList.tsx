@@ -22,6 +22,7 @@ import {
   Divider,
   Pagination,
   IconButton,
+  Link,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -471,9 +472,21 @@ const InvoiceList: React.FC = () => {
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25, fontSize: '0.875rem' }}>
-                      {invoice.invoiceNumber}
-                    </Typography>
+                    <Link
+                      onClick={() => {
+                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+                        navigate(`${basePath}/invoices/${invoice.id}`);
+                      }}
+                      sx={{
+                        cursor: 'pointer',
+                        textDecoration: 'none',
+                        '&:hover': { textDecoration: 'underline' }
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25, fontSize: '0.875rem' }}>
+                        {invoice.invoiceNumber}
+                      </Typography>
+                    </Link>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                       {formatDate(invoice.createdAt)}
                     </Typography>
@@ -560,7 +573,22 @@ const InvoiceList: React.FC = () => {
             <TableBody>
               {paginatedInvoices.map((invoice) => (
                 <TableRow key={invoice.id}>
-                  <TableCell>{invoice.invoiceNumber}</TableCell>
+                  <TableCell>
+                    <Link
+                      onClick={() => {
+                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+                        navigate(`${basePath}/invoices/${invoice.id}`);
+                      }}
+                      sx={{
+                        cursor: 'pointer',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                        '&:hover': { textDecoration: 'underline' }
+                      }}
+                    >
+                      {invoice.invoiceNumber}
+                    </Link>
+                  </TableCell>
                   <TableCell>{formatDate(invoice.createdAt)}</TableCell>
                   <TableCell>
                     {(() => {
