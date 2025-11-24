@@ -191,11 +191,8 @@ export class InvoicesService {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
 
-    // Cannot update paid or cancelled invoices
-    if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
-      throw new BadRequestException(`Cannot update invoice with status ${invoice.status}`);
-    }
-
+    // Admins can update any invoice (including paid/cancelled)
+    // Log will track changes for audit purposes
     const oldValue = { ...invoice };
 
     // Prepare update data
@@ -312,11 +309,8 @@ export class InvoicesService {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
 
-    // Cannot delete paid invoices
-    if (invoice.status === 'PAID') {
-      throw new BadRequestException('Cannot delete a paid invoice');
-    }
-
+    // Admins can delete any invoice (including paid)
+    // Audit log will track the deletion for accountability
     // Actually delete the invoice and its items
     await this.invoiceRepository.delete(id);
 
