@@ -759,7 +759,9 @@ export const AppointmentsManagement: React.FC = () => {
                           // Case 2: Payment was processed on this date and has outstanding balance
                           if (apt.paymentDate) {
                             const paymentDateStr = new Date(apt.paymentDate).toISOString().split('T')[0];
-                            const hasOutstandingBalance = apt.expectedAmount && apt.paymentAmount && apt.paymentAmount < apt.expectedAmount;
+                            // CRITICAL FIX: Check paymentAmount !== undefined instead of truthiness
+                            // This ensures $0 payments with outstanding balance are highlighted
+                            const hasOutstandingBalance = apt.expectedAmount && apt.paymentAmount !== undefined && apt.paymentAmount < apt.expectedAmount;
 
                             if (paymentDateStr === dateStr && hasOutstandingBalance) {
                               return true;
@@ -888,10 +890,11 @@ export const AppointmentsManagement: React.FC = () => {
                                     {/* Tablet: Show appointment details */}
                                     <Box sx={{ display: { xs: 'none', sm: 'block', lg: 'none' } }}>
                                       {dayAppointments.slice(0, 2).map((apt) => {
+                                        // CRITICAL FIX: Check paymentAmount properly for $0 payments
                                         const needsAttention =
                                           apt.status === 'IN_PROGRESS' ||
                                           (apt.status === 'COMPLETED' &&
-                                            (!apt.paymentAmount || apt.paymentAmount < (apt.expectedAmount || 0)));
+                                            (apt.paymentAmount === undefined || apt.paymentAmount === null || apt.paymentAmount < (apt.expectedAmount || 0)));
                                         return (
                                           <Box
                                             key={apt.id}
