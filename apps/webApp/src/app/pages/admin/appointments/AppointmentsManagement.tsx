@@ -76,6 +76,7 @@ const getAppointmentTypeColor = (type: string) => {
 export const AppointmentsManagement: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
+  const [monthPaymentDates, setMonthPaymentDates] = useState<Record<string, Appointment[]>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<
@@ -165,6 +166,10 @@ export const AppointmentsManagement: React.FC = () => {
 
       const data = await appointmentService.getAppointments(params);
       setAppointments(data);
+
+      // Also fetch all appointments with payments processed in this month
+      // Group them by payment date for efficient calendar highlighting
+      await loadMonthPaymentDates();
     } catch (err: any) {
       showError({
         title: 'Failed to load appointments',
@@ -172,6 +177,36 @@ export const AppointmentsManagement: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMonthPaymentDates = async () => {
+    try {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const paymentsByDate: Record<string, Appointment[]> = {};
+
+      // Fetch payment data for each day in the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateStr = date.toISOString().split('T')[0];
+
+        try {
+          const paymentsOnDate = await appointmentService.getByPaymentDate(date);
+          if (paymentsOnDate.length > 0) {
+            paymentsByDate[dateStr] = paymentsOnDate;
+          }
+        } catch (err) {
+          // Silently ignore errors for individual days
+          console.warn(`Failed to fetch payments for ${dateStr}:`, err);
+        }
+      }
+
+      setMonthPaymentDates(paymentsByDate);
+    } catch (err: any) {
+      console.error('Failed to load payment dates:', err);
     }
   };
 
@@ -756,22 +791,21 @@ export const AppointmentsManagement: React.FC = () => {
                             return true;
                           }
 
-                          // Case 2: Payment was processed on this date and has outstanding balance
-                          if (apt.paymentDate) {
-                            const paymentDateStr = new Date(apt.paymentDate).toISOString().split('T')[0];
-                            // CRITICAL FIX: Check paymentAmount !== undefined instead of truthiness
-                            // This ensures $0 payments with outstanding balance are highlighted
-                            const hasOutstandingBalance = apt.expectedAmount && apt.paymentAmount !== undefined && apt.paymentAmount < apt.expectedAmount;
-
-                            if (paymentDateStr === dateStr && hasOutstandingBalance) {
-                              return true;
-                            }
-                          }
-
                           return false;
                         }
                       );
-                      const hasAttentionNeeded = appointmentsNeedingAttention.length > 0;
+
+                      // Check payment-date appointments for outstanding balances
+                      const paymentDateAppointments = monthPaymentDates[dateStr] || [];
+                      const paymentsNeedingAttention = paymentDateAppointments.filter((apt) => {
+                        // Check if payment was processed on this date and has outstanding balance
+                        // CRITICAL FIX: Check paymentAmount !== undefined instead of truthiness
+                        // This ensures $0 payments with outstanding balance are highlighted
+                        const hasOutstandingBalance = apt.expectedAmount && apt.paymentAmount !== undefined && apt.paymentAmount < apt.expectedAmount;
+                        return hasOutstandingBalance;
+                      });
+
+                      const hasAttentionNeeded = appointmentsNeedingAttention.length > 0 || paymentsNeedingAttention.length > 0;
 
                       return (
                         <Grid size={{ xs: 12 / 7 }} key={index}>
