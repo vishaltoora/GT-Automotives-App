@@ -175,8 +175,8 @@ jobs:
           # Create .prisma directory structure to prevent ENOENT error during generate
           mkdir -p node_modules/.prisma/client/runtime
 
-          # Install @prisma/client with proper directory setup
-          npm install @prisma/client@latest --save
+          # Install @prisma/client with legacy peer deps to avoid React 19 conflict
+          npm install @prisma/client@latest --save --legacy-peer-deps
 
           # Set database URL
           export DATABASE_URL="${{ secrets.DATABASE_URL }}"
