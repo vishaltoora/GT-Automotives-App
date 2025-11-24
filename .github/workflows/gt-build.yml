@@ -121,15 +121,24 @@ jobs:
           export VITE_API_URL=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_API_URL") | .value')
           export VITE_CLERK_PUBLISHABLE_KEY=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_CLERK_PUBLISHABLE_KEY") | .value')
           export VITE_GOOGLE_MAPS_API_KEY=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_GOOGLE_MAPS_API_KEY") | .value')
+          export VITE_SQUARE_APPLICATION_ID=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_SQUARE_APPLICATION_ID") | .value')
+          export VITE_SQUARE_LOCATION_ID=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_SQUARE_LOCATION_ID") | .value')
+          export VITE_SQUARE_ENVIRONMENT=$(echo "$VITE_SETTINGS" | jq -r '.[] | select(.name=="VITE_SQUARE_ENVIRONMENT") | .value')
 
           # Save to GITHUB_ENV for subsequent steps
           echo "VITE_API_URL=$VITE_API_URL" >> $GITHUB_ENV
           echo "VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY" >> $GITHUB_ENV
           echo "VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY" >> $GITHUB_ENV
+          echo "VITE_SQUARE_APPLICATION_ID=$VITE_SQUARE_APPLICATION_ID" >> $GITHUB_ENV
+          echo "VITE_SQUARE_LOCATION_ID=$VITE_SQUARE_LOCATION_ID" >> $GITHUB_ENV
+          echo "VITE_SQUARE_ENVIRONMENT=$VITE_SQUARE_ENVIRONMENT" >> $GITHUB_ENV
 
           echo "✅ VITE environment variables loaded from Azure"
           echo "   VITE_API_URL: '$VITE_API_URL' (empty = use reverse proxy)"
           echo "   VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:0:20}..."
+          echo "   VITE_SQUARE_APPLICATION_ID: ${VITE_SQUARE_APPLICATION_ID:0:20}..."
+          echo "   VITE_SQUARE_LOCATION_ID: ${VITE_SQUARE_LOCATION_ID:0:20}..."
+          echo "   VITE_SQUARE_ENVIRONMENT: $VITE_SQUARE_ENVIRONMENT"
 
       # Build shared library first, then frontend (sequential to avoid dependency issues)
       - name: Build Shared Libraries
