@@ -523,7 +523,9 @@ export class AppointmentsService {
       dto.paymentBreakdown !== undefined ||
       dto.paymentNotes !== undefined;
 
-    if (isPaymentUpdate && dto.paymentAmount && dto.paymentAmount > 0) {
+    // CRITICAL FIX: Set paymentDate when paymentAmount is defined (including $0)
+    // This ensures appointments completed with $0 payment (owing balance) appear in EOD
+    if (isPaymentUpdate && dto.paymentAmount !== undefined) {
       // ALWAYS set paymentDate to NOW when processing a payment
       // Use business timezone (PST/PDT) to ensure correct day for EOD reports
       // Store the actual current time, not midnight, for accurate timestamping
@@ -546,6 +548,7 @@ export class AppointmentsService {
         }),
         scheduledDate: appointment.scheduledDate,
         isReprocess: (appointment.paymentAmount || 0) > 0,
+        isZeroPayment: dto.paymentAmount === 0,
       });
     }
 
@@ -663,10 +666,16 @@ export class AppointmentsService {
     // This prevents timezone issues where:
     // - Morning payments (8am PST = 4pm UTC previous day) would show on wrong day
     // - Evening payments (8pm PST = 4am UTC next day) would show on wrong day
+    // CRITICAL FIX: Include appointments with $0 or NULL paymentAmount
+    // This ensures appointments completed with $0 payment (owing balance) appear in EOD
+    // The condition (paymentAmount >= 0 OR paymentAmount IS NULL) covers:
+    // - Normal payments ($100, $50, etc.)
+    // - Zero payments ($0 with expectedAmount set = owing balance)
+    // - Unprocessed payments (NULL paymentAmount but COMPLETED status)
     const appointments = await this.prisma.$queryRaw<any[]>`
       SELECT a.*
       FROM "Appointment" a
-      WHERE a."paymentAmount" >= 0
+      WHERE (a."paymentAmount" >= 0 OR a."paymentAmount" IS NULL)
         AND (
           -- New behavior: Payment was processed on this date (paymentDate is set)
           -- Compare in Pacific Time to ensure correct business day
