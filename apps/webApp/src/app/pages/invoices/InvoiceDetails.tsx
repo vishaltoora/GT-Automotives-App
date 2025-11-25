@@ -37,7 +37,7 @@ import { quotationService } from '../../services/quotation.service';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
-import { PaymentMethodDialog } from '../../components/payments/PaymentMethodDialog';
+import { SquarePaymentForm } from '../../components/payments/SquarePaymentForm';
 
 const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -680,9 +680,9 @@ const InvoiceDetails: React.FC = () => {
         </Grid>
       </Paper>
 
-      {/* Payment Method Selection Dialog */}
+      {/* Square Online Payment Form */}
       {invoice && (
-        <PaymentMethodDialog
+        <SquarePaymentForm
           open={paymentDialogOpen}
           onClose={() => setPaymentDialogOpen(false)}
           invoiceId={invoice.id}
