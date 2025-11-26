@@ -30,7 +30,17 @@
       "Bash(yarn dev:server)",
       "Bash(git restore:*)",
       "Bash(pkill:*)",
-      "Bash(yarn nx reset:*)"
+      "Bash(yarn nx reset:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate:*)",
+      "Bash(DATABASE_URL=\"postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require\" npx prisma db pull:*)",
+      "Bash(PGPASSWORD='P4dFPF6b5HasYFyrwcgOSfSdb' psql:*)",
+      "Bash(PGPASSWORD='postgres' psql:*)",
+      "Bash(az webapp show:*)",
+      "Bash(docker run:*)",
+      "Bash(ghcr.io/vishaltoora/gt-backend:build-20251124-213911-c3dde36)",
+      "Bash(gh secret list:*)",
+      "Bash(az webapp config show:*)",
+      "Bash(gh secret set:*)"
     ],
     "deny": [],
     "ask": []
