@@ -21,13 +21,19 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  Tabs,
+  Tab,
+  Alert,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   AttachMoney as MoneyIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
+  CreditCard as CreditCardIcon,
 } from '@mui/icons-material';
+import { ServiceAmountInput } from './ServiceAmountInput';
+import { AppointmentSquarePaymentForm } from './AppointmentSquarePaymentForm';
 
 interface PaymentEntry {
   id: string;
@@ -73,6 +79,11 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Tab state (0 = Manual Payment, 1 = Square Online Payment)
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Manual payment state
   const [payments, setPayments] = useState<PaymentEntry[]>(
     existingPayments && existingPayments.length > 0
       ? existingPayments
@@ -82,15 +93,40 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const [expectedAmount, setExpectedAmount] = useState(defaultExpectedAmount);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Square payment state
+  const [serviceAmount, setServiceAmount] = useState(0);
+  const [squareFormOpen, setSquareFormOpen] = useState(false);
+
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const remainingBalance = expectedAmount - totalAmount;
   const isPartialPayment = expectedAmount > 0 && totalAmount < expectedAmount;
+
+  // Handle opening Square payment form
+  const handleOpenSquareForm = () => {
+    if (serviceAmount <= 0) {
+      return;
+    }
+    setSquareFormOpen(true);
+  };
+
+  // Handle Square payment success
+  const handleSquarePaymentSuccess = (paymentId: string) => {
+    console.log('Square payment successful:', paymentId);
+    // Close both dialogs
+    setSquareFormOpen(false);
+    handleClose();
+    // Refresh the page to show updated appointment status
+    window.location.reload();
+  };
 
   const handleClose = () => {
     // Reset form
     setPayments([{ id: crypto.randomUUID(), method: 'CASH', amount: 0 }]);
     setPaymentNotes('');
+    setServiceAmount(0);
+    setActiveTab(0);
     setErrors({});
+    setSquareFormOpen(false);
     onClose();
   };
 
@@ -200,10 +236,33 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ pt: isMobile ? 2 : 3, px: isMobile ? 2 : 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Expected Amount Field */}
-          <TextField
+      <DialogContent dividers sx={{ p: 0 }}>
+        {/* Payment Method Tabs */}
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="fullWidth"
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab
+            label="Manual Payment"
+            icon={<MoneyIcon />}
+            iconPosition="start"
+          />
+          <Tab
+            label="Pay with Square"
+            icon={<CreditCardIcon />}
+            iconPosition="start"
+          />
+        </Tabs>
+
+        {/* Tab Content */}
+        <Box sx={{ pt: isMobile ? 2 : 3, px: isMobile ? 2 : 3, pb: isMobile ? 2 : 3 }}>
+          {/* Manual Payment Tab */}
+          {activeTab === 0 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Expected Amount Field */}
+              <TextField
             label="Expected Amount (Optional)"
             type="number"
             value={expectedAmount || ''}
@@ -403,16 +462,62 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
           <Divider />
 
-          {/* Payment Notes */}
-          <TextField
-            label="Payment Notes (Optional)"
-            value={paymentNotes}
-            onChange={(e) => setPaymentNotes(e.target.value)}
-            multiline
-            rows={3}
-            fullWidth
-            placeholder="e.g., Invoice number, reference number, partial payment, etc."
-          />
+              {/* Payment Notes */}
+              <TextField
+                label="Payment Notes (Optional)"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                multiline
+                rows={3}
+                fullWidth
+                placeholder="e.g., Invoice number, reference number, partial payment, etc."
+              />
+            </Box>
+          )}
+
+          {/* Square Payment Tab */}
+          {activeTab === 1 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  Pay with Card (Square)
+                </Typography>
+                <Typography variant="caption">
+                  Enter the service amount and click "Pay with Card" to open a secure payment form. The customer can pay with credit card, debit card, Apple Pay, or Google Pay. Once payment is successful, the appointment will be automatically marked as completed and an invoice will be created.
+                </Typography>
+              </Alert>
+
+              {/* Service Amount Input with Tax Calculation */}
+              <ServiceAmountInput
+                value={serviceAmount}
+                onChange={setServiceAmount}
+                disabled={false}
+              />
+
+              {/* Instructions */}
+              <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+                <CardContent>
+                  <Typography variant="subtitle2" gutterBottom>
+                    📋 What happens next:
+                  </Typography>
+                  <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                      Secure payment form opens with embedded card entry
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                      Customer enters card details (never stored on our servers)
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                      Invoice is automatically created and marked as PAID
+                    </Typography>
+                    <Typography component="li" variant="body2">
+                      Appointment is marked as COMPLETED
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
         </Box>
       </DialogContent>
 
@@ -432,18 +537,46 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         >
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="success"
-          startIcon={<MoneyIcon />}
-          disabled={totalAmount < 0}
-          fullWidth={isMobile}
-          size={isMobile ? 'large' : 'medium'}
-        >
-          {isEditMode ? 'Save Changes' : 'Complete & Record Payment'}
-        </Button>
+
+        {/* Manual Payment Button */}
+        {activeTab === 0 && (
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            color="success"
+            startIcon={<MoneyIcon />}
+            disabled={totalAmount < 0}
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
+          >
+            {isEditMode ? 'Save Changes' : 'Complete & Record Payment'}
+          </Button>
+        )}
+
+        {/* Square Payment Button */}
+        {activeTab === 1 && (
+          <Button
+            onClick={handleOpenSquareForm}
+            variant="contained"
+            color="primary"
+            startIcon={<CreditCardIcon />}
+            disabled={serviceAmount <= 0}
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
+          >
+            Pay with Card
+          </Button>
+        )}
       </DialogActions>
+
+      {/* Square Payment Form Dialog */}
+      <AppointmentSquarePaymentForm
+        open={squareFormOpen}
+        onClose={() => setSquareFormOpen(false)}
+        appointmentId={appointmentId}
+        serviceAmount={serviceAmount}
+        onPaymentSuccess={handleSquarePaymentSuccess}
+      />
     </Dialog>
   );
 };

@@ -14,6 +14,9 @@ import {
   CreateSquarePaymentDto,
   RefundSquarePaymentDto,
   SquarePaymentResponseDto,
+  CreateAppointmentCheckoutDto,
+  AppointmentCheckoutResponseDto,
+  CreateAppointmentPaymentDto,
 } from '../common/dto/square-payment.dto';
 import {
   CreateTerminalCheckoutDto,
@@ -59,6 +62,44 @@ export class SquarePaymentController {
   ): Promise<SquarePaymentResponseDto> {
     this.logger.log(`Refunding Square payment ${refundDto.squarePaymentId}`);
     return this.squarePaymentService.refundPayment(refundDto);
+  }
+
+  /**
+   * Create Square payment for appointment (embedded form - same as invoice flow)
+   * POST /api/square/payments/appointment
+   * Uses Square Web Payments SDK tokenization for card-present payment
+   */
+  @Post('appointment')
+  @HttpCode(HttpStatus.CREATED)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  async createAppointmentPayment(
+    @Body() paymentDto: CreateAppointmentPaymentDto,
+  ): Promise<SquarePaymentResponseDto> {
+    this.logger.log(
+      `Creating Square payment for appointment ${paymentDto.appointmentId}: $${paymentDto.serviceAmount}`,
+    );
+    return this.squarePaymentService.createAppointmentPayment(
+      paymentDto.appointmentId,
+      paymentDto.sourceId,
+      paymentDto.serviceAmount,
+    );
+  }
+
+  /**
+   * Create Square Checkout Link for appointment payment
+   * POST /api/square/payments/appointment/checkout
+   * Generates a hosted payment page where customers can pay online (legacy method)
+   */
+  @Post('appointment/checkout')
+  @HttpCode(HttpStatus.CREATED)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  async createAppointmentCheckout(
+    @Body() checkoutDto: CreateAppointmentCheckoutDto,
+  ): Promise<AppointmentCheckoutResponseDto> {
+    this.logger.log(
+      `Creating Square checkout for appointment ${checkoutDto.appointmentId}: $${checkoutDto.serviceAmount}`,
+    );
+    return this.squarePaymentService.createAppointmentCheckout(checkoutDto);
   }
 
   /**

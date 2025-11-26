@@ -175,6 +175,12 @@ export interface Appointment {
       email: string;
     };
   }>;
+  invoice?: {
+    id: string;
+    invoiceNumber: string;
+    paymentMethod?: string;
+    status: string;
+  };
 }
 
 export interface AvailableSlot {

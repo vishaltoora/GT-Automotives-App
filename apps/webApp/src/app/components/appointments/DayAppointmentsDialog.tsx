@@ -102,6 +102,12 @@ interface Appointment {
       lastName: string;
     };
   }>;
+  invoice?: {
+    id: string;
+    invoiceNumber: string;
+    paymentMethod?: string;
+    status: string;
+  };
 }
 
 interface DayAppointmentsDialogProps {
@@ -263,12 +269,16 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       }
 
       if (breakdown && Array.isArray(breakdown)) {
+        // Manual payment with breakdown (multiple payment methods)
         breakdown.forEach((payment: PaymentEntry) => {
           const method = payment.method || 'CASH';
           paymentsByMethod[method] = (paymentsByMethod[method] || 0) + (payment.amount || 0);
         });
       } else if (apt.paymentAmount) {
-        paymentsByMethod['CASH'] = (paymentsByMethod['CASH'] || 0) + apt.paymentAmount;
+        // Check if appointment has an invoice (Square payment creates invoice automatically)
+        const invoice = apt.invoice || null;
+        const method = invoice?.paymentMethod || 'CASH'; // Use invoice payment method or default to CASH
+        paymentsByMethod[method] = (paymentsByMethod[method] || 0) + apt.paymentAmount;
       }
     });
 
@@ -290,12 +300,16 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       }
 
       if (breakdown && Array.isArray(breakdown)) {
+        // Manual payment with breakdown (multiple payment methods)
         breakdown.forEach((payment: PaymentEntry) => {
           const method = payment.method || 'CASH';
           atGaragePaymentsByMethod[method] = (atGaragePaymentsByMethod[method] || 0) + (payment.amount || 0);
         });
       } else if (apt.paymentAmount) {
-        atGaragePaymentsByMethod['CASH'] = (atGaragePaymentsByMethod['CASH'] || 0) + apt.paymentAmount;
+        // Check if appointment has an invoice (Square payment creates invoice automatically)
+        const invoice = apt.invoice || null;
+        const method = invoice?.paymentMethod || 'CASH'; // Use invoice payment method or default to CASH
+        atGaragePaymentsByMethod[method] = (atGaragePaymentsByMethod[method] || 0) + apt.paymentAmount;
       }
     });
 
@@ -317,12 +331,16 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
       }
 
       if (breakdown && Array.isArray(breakdown)) {
+        // Manual payment with breakdown (multiple payment methods)
         breakdown.forEach((payment: PaymentEntry) => {
           const method = payment.method || 'CASH';
           mobileServicePaymentsByMethod[method] = (mobileServicePaymentsByMethod[method] || 0) + (payment.amount || 0);
         });
       } else if (apt.paymentAmount) {
-        mobileServicePaymentsByMethod['CASH'] = (mobileServicePaymentsByMethod['CASH'] || 0) + apt.paymentAmount;
+        // Check if appointment has an invoice (Square payment creates invoice automatically)
+        const invoice = apt.invoice || null;
+        const method = invoice?.paymentMethod || 'CASH'; // Use invoice payment method or default to CASH
+        mobileServicePaymentsByMethod[method] = (mobileServicePaymentsByMethod[method] || 0) + apt.paymentAmount;
       }
     });
 

@@ -38,6 +38,15 @@ export class AppointmentsService {
         },
       },
     },
+    // Include invoice for EOD payment method detection (Square vs Manual)
+    invoice: {
+      select: {
+        id: true,
+        invoiceNumber: true,
+        paymentMethod: true,
+        status: true,
+      },
+    },
   };
 
   constructor(

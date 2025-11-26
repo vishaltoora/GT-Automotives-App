@@ -177,6 +177,7 @@ model Invoice {
   customerId    String
   vehicleId     String?
   companyId     String
+  appointmentId String?        @unique // Link back to appointment if auto-generated
   subtotal      Decimal        @db.Decimal(10, 2)
   taxRate       Decimal        @db.Decimal(5, 4)
   taxAmount     Decimal        @db.Decimal(10, 2)
@@ -196,6 +197,7 @@ model Invoice {
   customer       Customer        @relation(fields: [customerId], references: [id])
   vehicle        Vehicle?        @relation(fields: [vehicleId], references: [id])
   company        Company         @relation(fields: [companyId], references: [id])
+  appointment    Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   items          InvoiceItem[]
   squarePayments SquarePayment[] // Square payments for this invoice
   emailLogs      EmailLog[]      // Email logs related to this invoice
@@ -203,6 +205,7 @@ model Invoice {
   @@index([customerId])
   @@index([status])
   @@index([companyId])
+  @@index([appointmentId])
 }
 
 model InvoiceItem {
@@ -223,7 +226,8 @@ model InvoiceItem {
 
 model SquarePayment {
   id               String              @id @default(cuid())
-  invoiceId        String
+  invoiceId        String?             // Optional - set by webhook after invoice creation
+  appointmentId    String?             // Link to appointment (for payment before invoice creation)
   squarePaymentId  String              @unique // Square's payment ID
   amount           Decimal             @db.Decimal(10, 2)
   currency         String              @default("CAD")
@@ -250,9 +254,11 @@ model SquarePayment {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  invoice          Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice          Invoice?            @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  appointment      Appointment?        @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
+  @@index([appointmentId])
   @@index([status])
   @@index([squarePaymentId])
 }
@@ -332,6 +338,8 @@ model Appointment {
   vehicle         Vehicle?                @relation(fields: [vehicleId], references: [id])
   employee        User?                   @relation(fields: [employeeId], references: [id])
   employees       AppointmentEmployee[]   // Multiple employees assigned to this appointment
+  invoice         Invoice?                // Auto-generated invoice (one-to-one)
+  squarePayments  SquarePayment[]         // Square payments linked to this appointment
   smsMessages     SmsMessage[]            // SMS messages related to this appointment
   emailLogs       EmailLog[]              // Email logs related to this appointment
 

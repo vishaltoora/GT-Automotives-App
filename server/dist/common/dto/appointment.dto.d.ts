@@ -4,7 +4,7 @@ export declare class CreateAppointmentDto {
     vehicleId?: string;
     employeeId?: string;
     employeeIds?: string[];
-    scheduledDate: Date;
+    scheduledDate: string;
     scheduledTime: string;
     duration: number;
     serviceType: string;
@@ -14,9 +14,10 @@ export declare class CreateAppointmentDto {
 export declare class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
     employeeId?: string;
     employeeIds?: string[];
-    scheduledDate?: Date;
+    scheduledDate?: string;
     scheduledTime?: string;
     duration?: number;
+    serviceType?: string;
     status?: AppointmentStatus;
     appointmentType?: AppointmentType;
     notes?: string;
@@ -27,15 +28,15 @@ export declare class UpdateAppointmentDto implements Partial<CreateAppointmentDt
     endTime?: string;
 }
 export declare class AppointmentQueryDto {
-    startDate?: Date;
-    endDate?: Date;
+    startDate?: string;
+    endDate?: string;
     employeeId?: string;
     customerId?: string;
     status?: AppointmentStatus;
 }
 export declare class CalendarQueryDto {
-    startDate: Date;
-    endDate: Date;
+    startDate: string;
+    endDate: string;
     employeeId?: string;
 }
 export declare class PaymentDateQueryDto {

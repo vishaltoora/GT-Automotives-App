@@ -9,9 +9,9 @@ export declare class AvailabilityController {
      */
     setRecurring(dto: SetAvailabilityDto, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -23,9 +23,9 @@ export declare class AvailabilityController {
      */
     setMyRecurring(dto: Omit<SetAvailabilityDto, 'employeeId'>, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -37,9 +37,9 @@ export declare class AvailabilityController {
      */
     getRecurring(employeeId: string): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -51,9 +51,9 @@ export declare class AvailabilityController {
      */
     getMyRecurring(user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -65,14 +65,14 @@ export declare class AvailabilityController {
      */
     addOverride(dto: TimeSlotOverrideDto): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        reason: string | null;
         startTime: string;
         isAvailable: boolean;
         date: Date;
-        reason: string | null;
     }>;
     /**
      * Add own time slot override (STAFF secure endpoint)
@@ -80,14 +80,14 @@ export declare class AvailabilityController {
      */
     addMyOverride(dto: Omit<TimeSlotOverrideDto, 'employeeId'>, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        reason: string | null;
         startTime: string;
         isAvailable: boolean;
         date: Date;
-        reason: string | null;
     }>;
     /**
      * Get overrides for an employee within a date range (ADMIN and SUPERVISOR)
@@ -95,14 +95,14 @@ export declare class AvailabilityController {
      */
     getOverrides(employeeId: string, startDate: string, endDate: string): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        reason: string | null;
         startTime: string;
         isAvailable: boolean;
         date: Date;
-        reason: string | null;
     }[]>;
     /**
      * Get own overrides within a date range (STAFF secure endpoint)
@@ -110,14 +110,14 @@ export declare class AvailabilityController {
      */
     getMyOverrides(startDate: string, endDate: string, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        reason: string | null;
         startTime: string;
         isAvailable: boolean;
         date: Date;
-        reason: string | null;
     }[]>;
     /**
      * Delete a recurring availability slot (ADMIN or owner only)
@@ -125,9 +125,9 @@ export declare class AvailabilityController {
      */
     deleteRecurring(availabilityId: string, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
         dayOfWeek: number;
         startTime: string;
@@ -139,14 +139,14 @@ export declare class AvailabilityController {
      */
     deleteOverride(overrideId: string, user: any): Promise<{
         id: string;
-        employeeId: string;
         createdAt: Date;
         updatedAt: Date;
+        employeeId: string;
         endTime: string;
+        reason: string | null;
         startTime: string;
         isAvailable: boolean;
         date: Date;
-        reason: string | null;
     }>;
     /**
      * Check available time slots for a specific date and duration

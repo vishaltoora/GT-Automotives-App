@@ -40,7 +40,11 @@
       "Bash(ghcr.io/vishaltoora/gt-backend:build-20251124-213911-c3dde36)",
       "Bash(gh secret list:*)",
       "Bash(az webapp config show:*)",
-      "Bash(gh secret set:*)"
+      "Bash(gh secret set:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma db push:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma generate:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

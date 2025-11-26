@@ -56,6 +56,42 @@ export class SquarePaymentResponseDto {
   }
 }
 
+export class CreateAppointmentCheckoutDto {
+  @IsString()
+  appointmentId!: string;
+
+  @IsNumber()
+  @Min(0.01)
+  serviceAmount!: number; // Base amount before taxes (GST + PST will be calculated)
+}
+
+export class CreateAppointmentPaymentDto {
+  @IsString()
+  appointmentId!: string;
+
+  @IsString()
+  sourceId!: string; // Square card token from Web Payments SDK
+
+  @IsNumber()
+  @Min(0.01)
+  serviceAmount!: number; // Base amount before taxes (GST + PST will be calculated)
+}
+
+export class AppointmentCheckoutResponseDto {
+  checkoutUrl!: string; // Square hosted payment page URL
+  checkoutId!: string; // Square checkout ID for tracking
+  appointmentId!: string;
+  serviceAmount!: number; // Base amount
+  gstAmount!: number; // Calculated GST (5%)
+  pstAmount!: number; // Calculated PST (7%)
+  totalAmount!: number; // Total with taxes
+  expiresAt!: Date; // Checkout link expiration
+
+  constructor(partial: Partial<AppointmentCheckoutResponseDto>) {
+    Object.assign(this, partial);
+  }
+}
+
 export class SquareWebhookDto {
   @IsString()
   merchantId!: string;

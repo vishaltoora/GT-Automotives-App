@@ -20,6 +20,6 @@ import { EmailModule } from '../email/email.module';
     ServiceRepository,
     PrismaService,
   ],
-  exports: [InvoicesService],
+  exports: [InvoicesService, InvoiceRepository],
 })
 export class InvoicesModule {}
