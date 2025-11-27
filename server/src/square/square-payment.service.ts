@@ -391,14 +391,20 @@ export class SquarePaymentService {
 
       // 13. Update appointment status to COMPLETED (payment already verified above)
       // Invoice is already created as PAID by appointmentInvoiceService
-      // IMPORTANT: Set paymentDate and paymentAmount for EOD summary
+      // IMPORTANT: Set paymentDate, paymentAmount, and paymentBreakdown for EOD summary
       await this.prisma.appointment.update({
         where: { id: appointmentId },
         data: {
           status: 'COMPLETED',
           paymentDate: new Date(), // Set payment date for EOD summary
           paymentAmount: taxes.totalAmount, // Total amount including taxes
-          // Note: paymentMethod is stored in Invoice model, not Appointment
+          paymentBreakdown: [
+            {
+              id: this.generatePaymentEntryId(),
+              method: 'CREDIT_CARD',
+              amount: taxes.totalAmount,
+            },
+          ], // Consistent with manual payment format
         },
       });
 
@@ -968,5 +974,12 @@ export class SquarePaymentService {
     };
 
     return statusMap[squareStatus] || SquarePaymentStatus.PENDING;
+  }
+
+  /**
+   * Generate a unique ID for payment entry (matches frontend format)
+   */
+  private generatePaymentEntryId(): string {
+    return randomUUID();
   }
 }
