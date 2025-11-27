@@ -3,7 +3,7 @@ import {
   Box,
   Typography,
 } from '@mui/material';
-import vendorService, { Vendor } from '../../services/vendor.service';
+import vendorService, { Vendor } from '../../requests/vendor.requests';
 import VendorDialog from './VendorDialog';
 import { useError } from '../../contexts/ErrorContext';
 import { AutocompleteWithAdd } from '../common/AutocompleteWithAdd';

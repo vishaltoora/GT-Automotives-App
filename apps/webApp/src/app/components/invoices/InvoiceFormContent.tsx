@@ -44,8 +44,8 @@ import {
   AccountBalance as AccountBalanceIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { InvoiceItem } from '../../services/invoice.service';
-import { Company } from '../../services/company.service';
+import { InvoiceItem } from '../../requests/invoice.requests';
+import { Company } from '../../requests/company.requests';
 import { ServiceDto } from '@gt-automotive/data';
 import { InvoiceItemType } from '../../../enums';
 import { colors } from '../../theme/colors';

@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useAuth as useMockAuth } from './MockClerkProvider';
-import { setClerkTokenGetter as setInvoiceTokenGetter } from '../services/invoice.service';
-import { setClerkTokenGetter as setQuotationTokenGetter } from '../services/quotation.service';
-import { setClerkTokenGetter as setCompanyTokenGetter } from '../services/company.service';
-import { setClerkTokenGetter as setUserTokenGetter } from '../services/user.service';
-import { setClerkTokenGetter as setJobTokenGetter } from '../services/job.service';
-import { setClerkTokenGetter as setPaymentTokenGetter } from '../services/payment.service';
+import { setClerkTokenGetter as setInvoiceTokenGetter } from '../requests/invoice.requests';
+import { setClerkTokenGetter as setQuotationTokenGetter } from '../requests/quotation.requests';
+import { setClerkTokenGetter as setCompanyTokenGetter } from '../requests/company.requests';
+import { setClerkTokenGetter as setUserTokenGetter } from '../requests/user.requests';
+import { setClerkTokenGetter as setJobTokenGetter } from '../requests/job.requests';
+import { setClerkTokenGetter as setPaymentTokenGetter } from '../requests/payment.requests';
 
 // Check if Clerk is configured - use direct import.meta.env access for consistency
 // @ts-ignore

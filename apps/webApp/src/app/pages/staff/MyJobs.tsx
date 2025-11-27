@@ -33,7 +33,7 @@ import {
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { JobResponseDto, JobSummaryDto, JobStatus, JobType } from '@gt-automotive/data';
-import { jobService } from '../../services/job.service';
+import { jobService } from '../../requests/job.requests';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
 import { EditJobDialog } from '../../components/payroll/EditJobDialog';
 import { ConfirmationDialog } from '../../components/common/ConfirmationDialog';

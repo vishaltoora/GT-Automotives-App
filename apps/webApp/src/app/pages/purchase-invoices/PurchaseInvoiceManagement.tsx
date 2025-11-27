@@ -40,12 +40,12 @@ import {
 import purchaseInvoiceService, {
   PurchaseInvoice,
   PurchaseCategory,
-} from '../../services/purchase-invoice.service';
+} from '../../requests/purchase-invoice.requests';
 import expenseInvoiceService, {
   ExpenseInvoice,
   ExpenseCategory,
-} from '../../services/expense-invoice.service';
-import analyticsService, { AnalyticsData } from '../../services/analytics.service';
+} from '../../requests/expense-invoice.requests';
+import analyticsService, { AnalyticsData } from '../../requests/analytics.requests';
 import PurchaseInvoiceDialog from '../../components/purchase-invoices/PurchaseInvoiceDialog';
 import FileViewerDialog from '../../components/common/FileViewerDialog';
 import { AnalyticsCards, AnalyticsCardData } from '../../components/common';

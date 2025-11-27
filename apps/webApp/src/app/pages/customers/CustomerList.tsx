@@ -44,7 +44,7 @@ import {
   LocationOn as LocationIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { customerService, Customer } from '../../services/customer.service';
+import { customerService, Customer } from '../../requests/customer.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { CustomerDialog } from '../../components/customers/CustomerDialog';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';

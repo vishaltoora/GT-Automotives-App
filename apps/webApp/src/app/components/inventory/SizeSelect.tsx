@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { AddIcon, DeleteIcon } from '../../icons/standard.icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TireSizeService, TireSize, CreateTireSizeDto, UpdateTireSizeDto } from '../../services/tire-size.service';
+import { TireSizeService, TireSize, CreateTireSizeDto, UpdateTireSizeDto } from '../../requests/tire-size.requests';
 
 interface SizeSelectProps {
   value?: string;

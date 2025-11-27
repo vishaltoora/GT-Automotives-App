@@ -45,67 +45,17 @@ import {
 } from '../../components/appointments/AppointmentCard';
 import { formatTimeRange } from '../../utils/timeFormat';
 import { extractDateString } from '../../utils/dateUtils';
-import { appointmentService } from '../../services/appointment.service';
-import { paymentService } from '../../services/payment.service';
+import {
+  appointmentService,
+  Appointment,
+  PaymentEntry,
+} from '../../requests/appointment.requests';
+import { paymentService } from '../../requests/payment.requests';
 import { PaymentResponseDto } from '@gt-automotive/data';
 import { PaymentDialog } from '../../components/appointments/PaymentDialog';
 
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-interface PaymentEntry {
-  id: string;
-  method: string;
-  amount: number;
-}
-
-interface Appointment {
-  id: string;
-  customerId: string;
-  scheduledDate: string | Date;
-  scheduledTime: string;
-  endTime?: string;
-  duration: number;
-  serviceType: string;
-  appointmentType?: string;
-  status: string;
-  notes?: string;
-  paymentAmount?: number;
-  paymentBreakdown?: PaymentEntry[];
-  paymentNotes?: string;
-  expectedAmount?: number;
-  reminderSent: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  customer: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    phone?: string;
-    email?: string;
-    businessName?: string;
-  };
-  vehicle?: {
-    id: string;
-    year: number;
-    make: string;
-    model: string;
-    licensePlate?: string;
-  };
-  employees?: Array<{
-    employee: {
-      id: string;
-      firstName: string;
-      lastName: string;
-    };
-  }>;
-  invoice?: {
-    id: string;
-    invoiceNumber: string;
-    paymentMethod?: string;
-    status: string;
-  };
-}
 
 export function DaySummary() {
   const { getToken } = useAuth(); // Still needed for EOD email endpoint

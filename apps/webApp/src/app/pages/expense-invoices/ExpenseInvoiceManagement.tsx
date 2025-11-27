@@ -38,8 +38,8 @@ import expenseInvoiceService, {
   ExpenseInvoice,
   ExpenseCategory,
   ExpenseInvoiceStatus,
-} from '../../services/expense-invoice.service';
-import analyticsService, { AnalyticsData } from '../../services/analytics.service';
+} from '../../requests/expense-invoice.requests';
+import analyticsService, { AnalyticsData } from '../../requests/analytics.requests';
 import ExpenseInvoiceDialog from '../../components/expense-invoices/ExpenseInvoiceDialog';
 import { AnalyticsCards, AnalyticsCardData } from '../../components/common';
 import PdfViewer from '../../components/common/PdfViewer';

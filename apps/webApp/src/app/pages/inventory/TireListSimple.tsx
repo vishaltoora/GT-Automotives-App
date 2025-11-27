@@ -61,7 +61,7 @@ const TireCondition = {
 type TireType = typeof TireType[keyof typeof TireType];
 type TireCondition = typeof TireCondition[keyof typeof TireCondition];
 import { useMutation } from '@tanstack/react-query';
-import { TireService } from '../../services/tire.service';
+import { TireService } from '../../requests/tire.requests';
 import TireCard from '../../components/inventory/TireCard';
 import TireDialog from '../../components/inventory/TireDialog';
 import DeleteConfirmDialog from '../../components/inventory/DeleteConfirmDialog';

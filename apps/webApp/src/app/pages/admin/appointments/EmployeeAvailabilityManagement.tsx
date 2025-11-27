@@ -52,8 +52,8 @@ import {
   availabilityService,
   EmployeeAvailability,
   TimeSlotOverride,
-} from '../../../services/availability.service';
-import { userService } from '../../../services/user.service';
+} from '../../../requests/availability.requests';
+import { userService } from '../../../requests/user.requests';
 import { useError } from '../../../contexts/ErrorContext';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { useAuth } from '../../../hooks/useAuth';

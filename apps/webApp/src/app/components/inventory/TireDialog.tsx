@@ -49,7 +49,7 @@ const TireCondition = {
 type TireType = typeof TireType[keyof typeof TireType];
 type TireCondition = typeof TireCondition[keyof typeof TireCondition];
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { TireService } from '../../services/tire.service';
+import { TireService } from '../../requests/tire.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { BrandSelect } from './BrandSelect';
 import { SizeSelect } from './SizeSelect';

@@ -30,7 +30,7 @@ import {
   squareTerminalService,
   TerminalDevice,
   TerminalCheckoutResponse,
-} from '../../services/square-terminal.service';
+} from '../../requests/square-terminal.requests';
 
 interface TerminalPaymentDialogProps {
   open: boolean;

@@ -17,17 +17,17 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
-import { invoiceService, InvoiceItem } from '../../services/invoice.service';
+import { invoiceService, InvoiceItem } from '../../requests/invoice.requests';
 import { InvoiceItemType } from '../../../enums';
-import { customerService } from '../../services/customer.service';
-import { vehicleService } from '../../services/vehicle.service';
-import TireService from '../../services/tire.service';
-import { serviceService } from '../../services/service.service';
-import { quotationService } from '../../services/quotation.service';
+import { customerService } from '../../requests/customer.requests';
+import { vehicleService } from '../../requests/vehicle.requests';
+import TireService from '../../requests/tire.requests';
+import { serviceService } from '../../requests/service.requests';
+import { quotationService } from '../../requests/quotation.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import InvoiceFormContent from './InvoiceFormContent';
-import companyService, { Company } from '../../services/company.service';
+import companyService, { Company } from '../../requests/company.requests';
 import { ServiceDto } from '@gt-automotive/data';
 
 const Transition = React.forwardRef(function Transition(

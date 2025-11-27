@@ -42,7 +42,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
-import { quotationService, Quote } from '../../services/quotation.service';
+import { quotationService, Quote } from '../../requests/quotation.requests';
 import QuoteDialog from '../../components/quotations/QuotationDialog';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';

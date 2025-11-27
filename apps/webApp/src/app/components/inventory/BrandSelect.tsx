@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { AddIcon, EditIcon, DeleteIcon } from '../../icons/standard.icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TireBrandService, TireBrand, CreateTireBrandDto, UpdateTireBrandDto } from '../../services/tire-brand.service';
+import { TireBrandService, TireBrand, CreateTireBrandDto, UpdateTireBrandDto } from '../../requests/tire-brand.requests';
 
 interface BrandSelectProps {
   value?: string;

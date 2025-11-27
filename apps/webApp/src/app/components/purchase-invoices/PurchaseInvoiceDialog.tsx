@@ -17,12 +17,12 @@ import { CloudUpload as UploadIcon, Image as ImageIcon, Close as CloseIcon } fro
 import {
   PurchaseInvoice,
   PurchaseCategory,
-} from '../../services/purchase-invoice.service';
+} from '../../requests/purchase-invoice.requests';
 import {
   ExpenseInvoice,
   ExpenseCategory,
-} from '../../services/expense-invoice.service';
-import vendorService, { Vendor } from '../../services/vendor.service';
+} from '../../requests/expense-invoice.requests';
+import vendorService, { Vendor } from '../../requests/vendor.requests';
 import VendorSelect from '../vendors/VendorSelect';
 
 interface PurchaseInvoiceDialogProps {

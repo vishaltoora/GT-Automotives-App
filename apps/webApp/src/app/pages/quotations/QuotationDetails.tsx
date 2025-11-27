@@ -36,7 +36,7 @@ import {
   MoreVert as MoreVertIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
-import { quotationService, Quote } from '../../services/quotation.service';
+import { quotationService, Quote } from '../../requests/quotation.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { formatPhoneForDisplay } from '../../utils/phone';
 import { useErrorHelpers } from '../../contexts/ErrorContext';

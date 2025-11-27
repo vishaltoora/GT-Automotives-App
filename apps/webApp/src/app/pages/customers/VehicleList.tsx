@@ -33,7 +33,7 @@ import {
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { vehicleService, Vehicle } from '../../services/vehicle.service';
+import { vehicleService, Vehicle } from '../../requests/vehicle.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 

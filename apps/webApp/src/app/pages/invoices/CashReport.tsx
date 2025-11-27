@@ -21,7 +21,7 @@ import {
   Print as PrintIcon,
   Today as TodayIcon,
 } from '@mui/icons-material';
-import { invoiceService } from '../../services/invoice.service';
+import { invoiceService } from '../../requests/invoice.requests';
 import { useAuth } from '../../hooks/useAuth';
 
 const CashReport: React.FC = () => {

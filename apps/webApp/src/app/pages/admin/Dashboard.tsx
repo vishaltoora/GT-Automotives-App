@@ -47,7 +47,7 @@ import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
 import { AppointmentDialog } from '../../components/appointments/AppointmentDialog';
 import TireDialog from '../../components/inventory/TireDialog';
 import { useAuth } from '../../hooks/useAuth';
-import { dashboardService, DashboardStats } from '../../services/dashboard.service';
+import { dashboardService, DashboardStats } from '../../requests/dashboard.requests';
 
 export function AdminDashboard() {
   const navigate = useNavigate();

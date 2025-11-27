@@ -37,8 +37,8 @@ import {
 } from '@mui/icons-material';
 import { format, isToday, isThisWeek, isThisMonth, isThisYear } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { paymentService } from '../../services/payment.service';
-import { jobService } from '../../services/job.service';
+import { paymentService } from '../../requests/payment.requests';
+import { jobService } from '../../requests/job.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import { JobStatus } from '@gt-automotive/data';

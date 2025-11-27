@@ -37,8 +37,8 @@ import {
   Payment as PaymentIcon,
   Email as EmailIcon,
 } from '@mui/icons-material';
-import { invoiceService, Invoice } from '../../services/invoice.service';
-import { companyService, Company } from '../../services/company.service';
+import { invoiceService, Invoice } from '../../requests/invoice.requests';
+import { companyService, Company } from '../../requests/company.requests';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import PaymentMethodDialog from '../../components/invoices/PaymentMethodDialog';

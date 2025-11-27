@@ -15,7 +15,7 @@ import {
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { customerService, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
+import { customerService, CreateCustomerDto, UpdateCustomerDto } from '../../requests/customer.requests';
 import { PhoneInput } from '../../components/common/PhoneInput';
 import axios from 'axios';
 

@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { AddIcon, DeleteIcon } from '../../icons/standard.icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { LocationService, Location, CreateLocationDto } from '../../services/location.service';
+import { LocationService, Location, CreateLocationDto } from '../../requests/location.requests';
 
 interface LocationSelectProps {
   value?: string;

@@ -27,8 +27,8 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { UpdateJobDto, JobType, JobStatus, JobResponseDto } from '@gt-automotive/data';
-import { jobService } from '../../services/job.service';
-// import { userService } from '../../services/user.service'; // TODO: Use for employee reassignment
+import { jobService } from '../../requests/job.requests';
+// import { userService } from '../../requests/user.requests'; // TODO: Use for employee reassignment
 import { colors } from '../../theme/colors';
 
 const Transition = React.forwardRef(function Transition(

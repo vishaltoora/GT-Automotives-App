@@ -46,7 +46,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   Appointment,
   appointmentService,
-} from '../../../services/appointment.service';
+} from '../../../requests/appointment.requests';
 import { format12Hour, formatTimeRange } from '../../../utils/timeFormat';
 
 const STATUS_COLORS: Record<

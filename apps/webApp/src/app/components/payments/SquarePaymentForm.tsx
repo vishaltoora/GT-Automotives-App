@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { PaymentForm, CreditCard } from 'react-square-web-payments-sdk';
-import { paymentService } from '../../services/payment.service';
+import { paymentService } from '../../requests/payment.requests';
 
 interface SquarePaymentFormProps {
   open: boolean;

@@ -74,7 +74,7 @@ apiClient.interceptors.response.use(
 
 class ServiceService {
   async getAll(): Promise<ServiceDto[]> {
-    const response = await apiClient.get('/invoices/services/all');
+    const response = await apiClient.get('/invoices/requests/all');
     return response.data;
   }
 
@@ -84,12 +84,12 @@ class ServiceService {
   }
 
   async update(id: string, data: UpdateServiceDto): Promise<ServiceDto> {
-    const response = await apiClient.patch(`/invoices/services/${id}`, data);
+    const response = await apiClient.patch(`/invoices/requests/${id}`, data);
     return response.data;
   }
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/invoices/services/${id}`);
+    await apiClient.delete(`/invoices/requests/${id}`);
   }
 }
 

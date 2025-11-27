@@ -21,6 +21,7 @@ export const IsArray = createDecorator();
 export const ValidateNested = createDecorator();
 export const IsBoolean = createDecorator();
 export const IsDate = createDecorator();
+export const IsDateString = createDecorator();
 export const ValidateIf = createDecorator();
 export const IsPositive = createDecorator();
 export const Type = createDecorator();

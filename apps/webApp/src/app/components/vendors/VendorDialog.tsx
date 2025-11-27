@@ -10,7 +10,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { Vendor } from '../../services/vendor.service';
+import { Vendor } from '../../requests/vendor.requests';
 
 interface VendorDialogProps {
   open: boolean;

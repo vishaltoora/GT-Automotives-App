@@ -19,8 +19,8 @@ import {
   ExpenseInvoice,
   ExpenseCategory,
   ExpenseInvoiceStatus,
-} from '../../services/expense-invoice.service';
-import vendorService, { Vendor } from '../../services/vendor.service';
+} from '../../requests/expense-invoice.requests';
+import vendorService, { Vendor } from '../../requests/vendor.requests';
 import VendorSelect from '../vendors/VendorSelect';
 
 interface ExpenseInvoiceDialogProps {

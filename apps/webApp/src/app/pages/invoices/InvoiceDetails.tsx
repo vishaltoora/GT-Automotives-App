@@ -32,8 +32,8 @@ import {
   Cancel as CancelIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { invoiceService, Invoice } from '../../services/invoice.service';
-import { quotationService } from '../../services/quotation.service';
+import { invoiceService, Invoice } from '../../requests/invoice.requests';
+import { quotationService } from '../../requests/quotation.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';

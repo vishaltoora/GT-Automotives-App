@@ -13,9 +13,9 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { Print as PrintIcon, Close as CloseIcon, RequestQuote as QuoteIcon } from '@mui/icons-material';
-import { quotationService, QuoteItem } from '../../services/quotation.service';
-import { TireService } from '../../services/tire.service';
-import { serviceService } from '../../services/service.service';
+import { quotationService, QuoteItem } from '../../requests/quotation.requests';
+import { TireService } from '../../requests/tire.requests';
+import { serviceService } from '../../requests/service.requests';
 import { ServiceDto } from '@gt-automotive/data';
 import QuotationFormContent from './QuotationFormContent';
 import { useError } from '../../contexts/ErrorContext';

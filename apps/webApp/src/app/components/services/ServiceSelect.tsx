@@ -20,7 +20,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { ServiceDto } from '@gt-automotive/data';
-import { serviceService } from '../../services/service.service';
+import { serviceService } from '../../requests/service.requests';
 import ServiceDialog from './ServiceDialog';
 import { useError } from '../../contexts/ErrorContext';
 

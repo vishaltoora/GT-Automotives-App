@@ -17,8 +17,8 @@ import {
 } from '@mui/material';
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { vehicleService, CreateVehicleDto, UpdateVehicleDto } from '../../services/vehicle.service';
-import { customerService, Customer } from '../../services/customer.service';
+import { vehicleService, CreateVehicleDto, UpdateVehicleDto } from '../../requests/vehicle.requests';
+import { customerService, Customer } from '../../requests/customer.requests';
 import { useAuth } from '../../hooks/useAuth';
 
 const currentYear = new Date().getFullYear();

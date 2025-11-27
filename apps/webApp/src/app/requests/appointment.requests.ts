@@ -1,5 +1,9 @@
 import axios from 'axios';
-import { AppointmentStatus } from '@gt-automotive/data';
+import {
+  AppointmentStatus,
+  AppointmentResponseDto as Appointment,
+  PaymentEntryDto as PaymentEntry,
+} from '@gt-automotive/data';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -85,12 +89,6 @@ export interface CreateAppointmentRequest {
   notes?: string;
 }
 
-export interface PaymentEntry {
-  id: string;
-  method: string;
-  amount: number;
-}
-
 export interface UpdateAppointmentRequest {
   employeeId?: string; // Deprecated: Use employeeIds instead
   employeeIds?: string[]; // Multiple employees
@@ -121,67 +119,8 @@ export interface CalendarQueryParams {
   employeeId?: string;
 }
 
-export interface Appointment {
-  id: string;
-  customerId: string;
-  vehicleId?: string;
-  employeeId?: string; // Deprecated: Use employees array instead
-  scheduledDate: Date;
-  scheduledTime: string;
-  endTime?: string;
-  duration: number;
-  serviceType: string;
-  appointmentType?: string;
-  status: AppointmentStatus;
-  notes?: string;
-  paymentAmount?: number; // Total amount paid
-  paymentBreakdown?: PaymentEntry[]; // Breakdown of payment methods
-  paymentNotes?: string;
-  expectedAmount?: number; // Expected total amount for the service (for tracking partial payments)
-  paymentDate?: Date; // Date when payment was actually processed/collected (for accurate daily cash reporting)
-  reminderSent: boolean;
-  bookedBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  customer: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone?: string;
-    businessName?: string;
-    address?: string;
-  };
-  vehicle?: {
-    id: string;
-    make: string;
-    model: string;
-    year: number;
-    licensePlate?: string;
-  };
-  employee?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  employees?: Array<{
-    id: string;
-    employeeId: string;
-    employee: {
-      id: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-    };
-  }>;
-  invoice?: {
-    id: string;
-    invoiceNumber: string;
-    paymentMethod?: string;
-    status: string;
-  };
-}
+// Re-export Appointment type from shared DTOs for convenience
+export type { Appointment, PaymentEntry };
 
 export interface AvailableSlot {
   employeeId: string;

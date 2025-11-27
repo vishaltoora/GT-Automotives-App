@@ -26,7 +26,7 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { TransitionProps} from '@mui/material/transitions';
-import { customerService, Customer, CreateCustomerDto, UpdateCustomerDto } from '../../services/customer.service';
+import { customerService, Customer, CreateCustomerDto, UpdateCustomerDto } from '../../requests/customer.requests';
 import { colors } from '../../theme/colors';
 import { PhoneInput } from '../common/PhoneInput';
 import { AddressAutocomplete } from '../common/AddressAutocomplete';

@@ -29,8 +29,8 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { CreateJobDto, JobType } from '../../types/job.types';
-import { jobService } from '../../services/job.service';
-import { userService } from '../../services/user.service';
+import { jobService } from '../../requests/job.requests';
+import { userService } from '../../requests/user.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 

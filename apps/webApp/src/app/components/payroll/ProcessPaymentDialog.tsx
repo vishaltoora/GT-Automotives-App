@@ -39,7 +39,7 @@ import {
 import { TransitionProps } from '@mui/material/transitions';
 import { ProcessPaymentDto, JobResponseDto } from '@gt-automotive/data';
 import { PaymentMethod } from '@gt-automotive/data';
-import { paymentService } from '../../services/payment.service';
+import { paymentService } from '../../requests/payment.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 

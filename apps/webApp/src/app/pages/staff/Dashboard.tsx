@@ -3,8 +3,8 @@ import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { dashboardService, DashboardStats } from '../../services/dashboard.service';
-import { appointmentService, Appointment } from '../../services/appointment.service';
+import { dashboardService, DashboardStats } from '../../requests/dashboard.requests';
+import { appointmentService, Appointment } from '../../requests/appointment.requests';
 import { colors } from '../../theme/colors';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';

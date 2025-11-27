@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import TireService from '../services/tire.service';
+import TireService from '../requests/tire.requests';
 import {
   TireResponseDto as ITire,
   CreateTireDto as ITireCreateInput,

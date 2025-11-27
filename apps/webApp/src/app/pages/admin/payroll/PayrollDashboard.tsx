@@ -28,9 +28,9 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { JobSummaryDto, PaymentSummaryDto, JobResponseDto, PaymentResponseDto } from '@gt-automotive/data';
-import { jobService } from '../../../services/job.service';
-import { paymentService } from '../../../services/payment.service';
-import { userService } from '../../../services/user.service';
+import { jobService } from '../../../requests/job.requests';
+import { paymentService } from '../../../requests/payment.requests';
+import { userService } from '../../../requests/user.requests';
 import { colors } from '../../../theme/colors';
 import { format } from 'date-fns';
 
