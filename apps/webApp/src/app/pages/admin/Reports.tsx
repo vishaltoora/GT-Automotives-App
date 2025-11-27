@@ -3,8 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Tabs,
-  Tab,
   TextField,
   Button,
   Grid,
@@ -19,54 +17,49 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Receipt,
-  Description,
   PictureAsPdf,
   Refresh,
+  AttachMoney,
+  Assessment,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`report-tabpanel-${index}`}
-      aria-labelledby={`report-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
-    </div>
-  );
-}
+type ReportType = 'purchase-expense' | 'tax-collection';
 
 export function Reports() {
-  const [tabValue, setTabValue] = useState(0);
+  const [reportType, setReportType] = useState<ReportType>('purchase-expense');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reportData, setReportData] = useState<any>(null);
+  const [taxReportData, setTaxReportData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { getToken } = useAuth();
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+  const handleReportTypeChange = (newType: ReportType) => {
+    setReportType(newType);
     setReportData(null);
+    setTaxReportData(null);
     setError(null);
   };
 
-  const loadReport = async (reportType: 'purchase' | 'expense') => {
+  const handleGenerateReport = async () => {
+    if (reportType === 'purchase-expense') {
+      await loadPurchaseExpenseReport();
+    } else if (reportType === 'tax-collection') {
+      await loadTaxReport();
+    }
+  };
+
+  const loadPurchaseExpenseReport = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -78,8 +71,7 @@ export function Reports() {
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
-      const endpoint = reportType === 'purchase' ? '/api/reports/purchase-report' : '/api/reports/expenses';
-      const response = await axios.get(`${baseURL}${endpoint}`, {
+      const response = await axios.get(`${baseURL}/api/reports/purchase-report`, {
         params,
         headers: {
           Authorization: `Bearer ${token}`,
@@ -87,9 +79,39 @@ export function Reports() {
       });
 
       setReportData(response.data);
+      setTaxReportData(null); // Clear tax report data
     } catch (err: any) {
       console.error('Error loading report:', err);
       setError(err.response?.data?.message || 'Failed to load report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTaxReport = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = await getToken();
+      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+      const params: any = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const response = await axios.get(`${baseURL}/api/reports/tax-report`, {
+        params,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setTaxReportData(response.data);
+      setReportData(null); // Clear purchase/expense report data
+    } catch (err: any) {
+      console.error('Error loading tax report:', err);
+      setError(err.response?.data?.message || 'Failed to load tax report');
     } finally {
       setLoading(false);
     }
@@ -108,8 +130,8 @@ export function Reports() {
     return (
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 Total Purchases
               </Typography>
@@ -124,8 +146,8 @@ export function Reports() {
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 Total Expenses
               </Typography>
@@ -140,8 +162,8 @@ export function Reports() {
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 Paid Total
               </Typography>
@@ -153,8 +175,8 @@ export function Reports() {
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 Pending Total
               </Typography>
@@ -336,113 +358,229 @@ export function Reports() {
         Financial Reports
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Comprehensive purchase and expense analysis
+        Generate comprehensive financial reports with date range filtering
       </Typography>
 
-      <Paper sx={{ mb: 3 }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 500,
-            },
-          }}
-        >
-          <Tab icon={<Receipt />} iconPosition="start" label="Purchase & Expense Report" />
-          <Tab icon={<Description />} iconPosition="start" label="Coming Soon" disabled />
-        </Tabs>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        {/* Report Configuration Section */}
+        <Typography variant="h6" gutterBottom fontWeight="600" sx={{ mb: 3 }}>
+          Report Configuration
+        </Typography>
 
-        <TabPanel value={tabValue} index={0}>
-          <Box sx={{ mb: 3 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Start Date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  size="small"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField
-                  fullWidth
-                  label="End Date"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  size="small"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={20} /> : <Refresh />}
-                  onClick={() => loadReport('purchase')}
-                  disabled={loading}
-                >
-                  Generate Report
-                </Button>
-              </Grid>
-            </Grid>
+        <Grid container spacing={3} alignItems="flex-end">
+          <Grid size={{ xs: 12, md: 3 }}>
+            <FormControl fullWidth>
+              <InputLabel>Report Type</InputLabel>
+              <Select
+                value={reportType}
+                label="Report Type"
+                onChange={(e) => handleReportTypeChange(e.target.value as ReportType)}
+              >
+                <MenuItem value="purchase-expense">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Receipt fontSize="small" />
+                    <span>Purchase & Expense</span>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="tax-collection">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AttachMoney fontSize="small" />
+                    <span>GST/PST Tax Collection</span>
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <TextField
+              fullWidth
+              label="Start Date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <TextField
+              fullWidth
+              label="End Date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 3 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Assessment />}
+              onClick={handleGenerateReport}
+              disabled={loading}
+              sx={{ height: 56 }}
+            >
+              Generate Report
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Report Results Section */}
+      <Paper sx={{ p: 3 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress size={60} />
           </Box>
+        )}
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
+        {/* Purchase & Expense Report Results */}
+        {!loading && reportType === 'purchase-expense' && reportData && (
+          <>
+            {renderSummaryCards()}
+            {renderCategoryBreakdown()}
+            {renderVendorAnalysis()}
+            {renderMonthlyTrends()}
+          </>
+        )}
 
-          {loading && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
-          )}
-
-          {!loading && reportData && (
+        {/* Tax Collection Report Results */}
+        {!loading && reportType === 'tax-collection' && taxReportData && (
             <>
-              {renderSummaryCards()}
-              {renderCategoryBreakdown()}
-              {renderVendorAnalysis()}
-              {renderMonthlyTrends()}
+              {/* Tax Summary Cards */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Typography color="text.secondary" gutterBottom variant="body2">
+                        Paid Invoices
+                      </Typography>
+                      <Typography variant="h5" fontWeight="bold">
+                        {taxReportData.totalInvoices || 0}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Typography color="text.secondary" gutterBottom variant="body2">
+                        GST Collected
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold" color="success.main">
+                        {formatCurrency(taxReportData.totalGstCollected || 0)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Typography color="text.secondary" gutterBottom variant="body2">
+                        PST Collected
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold" color="success.main">
+                        {formatCurrency(taxReportData.totalPstCollected || 0)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Typography color="text.secondary" gutterBottom variant="body2">
+                        Total Tax Collected
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold" color="primary">
+                        {formatCurrency(taxReportData.totalTaxCollected || 0)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              {/* Monthly Breakdown */}
+              {taxReportData.monthlyBreakdown?.length > 0 && (
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Monthly Tax Collection
+                  </Typography>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Month</TableCell>
+                          <TableCell align="right">Invoices</TableCell>
+                          <TableCell align="right">GST Collected</TableCell>
+                          <TableCell align="right">PST Collected</TableCell>
+                          <TableCell align="right">Total Tax</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {taxReportData.monthlyBreakdown.map((month: any) => (
+                          <TableRow key={month.month}>
+                            <TableCell>{month.month}</TableCell>
+                            <TableCell align="right">{month.invoiceCount}</TableCell>
+                            <TableCell align="right">{formatCurrency(month.gstCollected)}</TableCell>
+                            <TableCell align="right">{formatCurrency(month.pstCollected)}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                              {formatCurrency(month.totalTaxCollected)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Paper>
+              )}
             </>
           )}
 
-          {!loading && !reportData && !error && (
-            <Box
-              sx={{
-                textAlign: 'center',
-                py: 6,
-                color: 'text.secondary',
-              }}
-            >
-              <PictureAsPdf sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
-              <Typography variant="h6" gutterBottom>
-                No Report Generated
-              </Typography>
-              <Typography variant="body2">
-                Select date range and click Generate Report to view financial analysis
-              </Typography>
-            </Box>
-          )}
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={1}>
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1" color="text.secondary">
-              Additional reports coming soon...
-            </Typography>
+        {/* Empty State - No Report Generated */}
+        {!loading && !reportData && !taxReportData && !error && (
+          <Box
+            sx={{
+              textAlign: 'center',
+              py: 8,
+              color: 'text.secondary',
+            }}
+          >
+            {reportType === 'purchase-expense' ? (
+              <>
+                <Receipt sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
+                <Typography variant="h6" gutterBottom fontWeight="500">
+                  No Purchase & Expense Report Generated
+                </Typography>
+                <Typography variant="body2">
+                  Select a date range and click "Generate Report" to view comprehensive financial analysis
+                </Typography>
+              </>
+            ) : (
+              <>
+                <AttachMoney sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
+                <Typography variant="h6" gutterBottom fontWeight="500">
+                  No Tax Collection Report Generated
+                </Typography>
+                <Typography variant="body2">
+                  Select a date range and click "Generate Report" to view GST/PST tax collection from paid invoices
+                </Typography>
+              </>
+            )}
           </Box>
-        </TabPanel>
+        )}
       </Paper>
     </Box>
   );

@@ -8,6 +8,11 @@ import {
   MonthlyTrendDto,
   RecurringExpenseSummaryDto,
 } from '../common/dto/expense-report.dto';
+import {
+  TaxReportFilterDto,
+  TaxReportResponseDto,
+  MonthlyTaxBreakdownDto,
+} from '../common/dto/tax-report.dto';
 
 @Injectable()
 export class ReportsService {
@@ -430,5 +435,73 @@ export class ReportsService {
         },
       },
     };
+  }
+
+  async getTaxReport(filterDto: TaxReportFilterDto): Promise<TaxReportResponseDto> {
+    const startDate = filterDto.startDate ? new Date(filterDto.startDate) : undefined;
+    const endDate = filterDto.endDate ? new Date(filterDto.endDate) : undefined;
+
+    // Build filter conditions - ONLY PAID invoices
+    const where: any = {
+      status: 'PAID',
+    };
+    if (startDate) {
+      where.invoiceDate = { ...where.invoiceDate, gte: startDate };
+    }
+    if (endDate) {
+      where.invoiceDate = { ...where.invoiceDate, lte: endDate };
+    }
+
+    // Fetch PAID invoices with tax data
+    const invoices = await this.prisma.invoice.findMany({
+      where,
+      select: {
+        id: true,
+        invoiceDate: true,
+        gstAmount: true,
+        pstAmount: true,
+      },
+    });
+
+    // Calculate total tax collected (from PAID invoices only)
+    const totalGstCollected = invoices.reduce((sum, inv) => sum + Number(inv.gstAmount || 0), 0);
+    const totalPstCollected = invoices.reduce((sum, inv) => sum + Number(inv.pstAmount || 0), 0);
+    const totalTaxCollected = totalGstCollected + totalPstCollected;
+
+    // Calculate monthly breakdown
+    const monthlyBreakdown = this.calculateMonthlyTaxBreakdown(invoices);
+
+    return {
+      totalInvoices: invoices.length,
+      totalGstCollected,
+      totalPstCollected,
+      totalTaxCollected,
+      monthlyBreakdown,
+    };
+  }
+
+  private calculateMonthlyTaxBreakdown(invoices: any[]): MonthlyTaxBreakdownDto[] {
+    const monthMap = new Map<string, MonthlyTaxBreakdownDto>();
+
+    for (const invoice of invoices) {
+      const month = invoice.invoiceDate.toISOString().substring(0, 7); // YYYY-MM
+      const existing = monthMap.get(month) || {
+        month,
+        invoiceCount: 0,
+        gstCollected: 0,
+        pstCollected: 0,
+        totalTaxCollected: 0,
+      };
+
+      existing.invoiceCount++;
+      existing.gstCollected += Number(invoice.gstAmount || 0);
+      existing.pstCollected += Number(invoice.pstAmount || 0);
+      existing.totalTaxCollected = existing.gstCollected + existing.pstCollected;
+
+      monthMap.set(month, existing);
+    }
+
+    // Sort by month (most recent first)
+    return Array.from(monthMap.values()).sort((a, b) => b.month.localeCompare(a.month));
   }
 }

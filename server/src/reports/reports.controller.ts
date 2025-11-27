@@ -1,6 +1,7 @@
 import { Controller, Get, Query, UseGuards, ValidationPipe } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { ExpenseReportFilterDto, ExpenseReportResponseDto } from '../common/dto/expense-report.dto';
+import { TaxReportFilterDto, TaxReportResponseDto } from '../common/dto/tax-report.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -31,5 +32,13 @@ export class ReportsController {
   ): Promise<ExpenseReportResponseDto> {
     // Reuse the expense report service (it includes both purchase and expense invoices)
     return this.reportsService.getExpenseReport(filterDto);
+  }
+
+  @Get('tax-report')
+  @Roles('ADMIN')
+  async getTaxReport(
+    @Query(ValidationPipe) filterDto: TaxReportFilterDto,
+  ): Promise<TaxReportResponseDto> {
+    return this.reportsService.getTaxReport(filterDto);
   }
 }
