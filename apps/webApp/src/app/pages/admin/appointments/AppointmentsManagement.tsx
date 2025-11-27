@@ -1036,7 +1036,39 @@ export const AppointmentsManagement: React.FC = () => {
                     </Alert>
                   ) : (
                     <>
-                      {/* Card View for All Screen Sizes */}
+                      {/* Card View using AppointmentCard component */}
+                      <Box sx={{ p: 2 }}>
+                        {todayAppointments.map((appointment) => {
+                          return (
+                            <Box key={appointment.id} sx={{ mb: 2 }}>
+                              <AppointmentCard
+                                appointment={appointment}
+                                onEdit={handleEdit}
+                                onDelete={(appointmentId) => {
+                                  const apt = todayAppointments.find(a => a.id === appointmentId);
+                                  if (apt) handleDelete(apt);
+                                }}
+                                onStatusChange={handleStatusChange}
+                              />
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* List View - Hidden for now, keeping old custom card implementation below for reference */}
+              {false && calendarView === 'today' && (
+                <>
+                  {todayAppointments.length === 0 ? (
+                    <Alert severity="info" sx={{ m: { xs: 1, sm: 0 } }}>
+                      No appointments scheduled for today
+                    </Alert>
+                  ) : (
+                    <>
+                      {/* OLD Card View - Disabled */}
                       <Box sx={{ p: 1 }}>
                         {todayAppointments.map((appointment) => {
                           // Get time-based status for the appointment

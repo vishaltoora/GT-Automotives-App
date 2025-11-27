@@ -18,9 +18,6 @@ import {
   Tab,
   Grid,
   Paper,
-  Snackbar,
-  Alert,
-  CircularProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -35,13 +32,9 @@ import {
   Assignment as AssignmentIcon,
   AttachMoney as MoneyIcon,
   AttachMoney as AttachMoneyIcon,
-  Send as SendIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { useAuth } from '@clerk/clerk-react';
-import axios from 'axios';
 import { formatTimeRange } from '../../utils/timeFormat';
-import { extractDateString } from '../../utils/dateUtils';
 import { PaymentDialog } from './PaymentDialog';
 import { appointmentService } from '../../services/appointment.service';
 import {
@@ -52,9 +45,6 @@ import {
   formatStatusLabel,
   formatServiceType,
 } from './AppointmentCard';
-
-// @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface PaymentEntry {
   id: string;
@@ -150,18 +140,11 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   onStatusChange,
   onAddAppointment,
 }) => {
-  const { getToken } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [sendingEOD, setSendingEOD] = useState(false);
   const [paymentsProcessed, setPaymentsProcessed] = useState<Appointment[]>([]);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
 
   // Fetch payments processed on this date
   React.useEffect(() => {
@@ -370,15 +353,6 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     };
   }, [sortedAppointments, sortedPayments, atGarageAppointments, mobileServiceAppointments, atGaragePayments, mobileServicePayments]);
 
-  // Check if current time is within EOD send window (currently disabled - allows all times)
-  const isEODSendAllowed = () => {
-    return true; // Enabled for all times during testing
-    // const now = new Date();
-    // const currentHour = now.getHours();
-    // // Allow between 9 PM (21:00) and 11:59 PM, or between 12 AM and 7 AM
-    // return currentHour >= 21 || currentHour < 7;
-  };
-
   // Early return AFTER all hooks have been called
   if (!date) return null;
 
@@ -433,63 +407,11 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     }
 
     // Call the status change handler (it won't change status, just update payment)
-    await onStatusChange(selectedAppointment.id, selectedAppointment.status, updateData);
+    onStatusChange(selectedAppointment.id, selectedAppointment.status, updateData);
 
     setPaymentDialogOpen(false);
     setIsEditMode(false);
     setSelectedAppointment(null);
-  };
-
-  const handleSendEOD = async () => {
-    try {
-      setSendingEOD(true);
-      const token = await getToken();
-
-      // Prepare EOD summary data
-      const eodData = {
-        // Use extractDateString() to get YYYY-MM-DD without timezone conversion
-        date: extractDateString(date),
-        totalPayments: stats.totalPayments,
-        totalOwed: stats.totalOwed,
-        paymentsByMethod: stats.paymentsByMethod,
-        atGaragePayments: stats.atGaragePayments,
-        atGarageCount: stats.completedAtGarage,
-        atGaragePaymentsByMethod: stats.atGaragePaymentsByMethod,
-        mobileServicePayments: stats.mobileServicePayments,
-        mobileServiceCount: stats.completedMobileService,
-        mobileServicePaymentsByMethod: stats.mobileServicePaymentsByMethod,
-      };
-
-      await axios.post(
-        `${API_URL}/api/email/send-eod-summary`,
-        eodData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-        }
-      );
-
-      setSnackbar({
-        open: true,
-        message: 'EOD summary email sent successfully to admin users!',
-        severity: 'success',
-      });
-    } catch (error: any) {
-      console.error('Error sending EOD summary:', error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.message || 'Failed to send EOD summary',
-        severity: 'error',
-      });
-    } finally {
-      setSendingEOD(false);
-    }
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
   };
 
   const handleEditPayment = (appointment: Appointment) => {
@@ -501,10 +423,14 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={(event, reason) => {
+        if (reason === 'backdropClick') {
+          return; // Prevent closing on backdrop click
+        }
+        onClose();
+      }}
       maxWidth="lg"
       fullWidth
-      hideBackdrop
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 2 },
@@ -681,43 +607,13 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                 }}
               >
                 {/* Header */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                  <Box>
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Payment Summary - Collected Today
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {stats.paymentsProcessedCount} payment{stats.paymentsProcessedCount === 1 ? '' : 's'} processed today
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant={sendingEOD || stats.totalPayments === 0 || !isEODSendAllowed() ? "outlined" : "contained"}
-                    color="primary"
-                    size="small"
-                    startIcon={sendingEOD ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
-                    onClick={handleSendEOD}
-                    disabled={sendingEOD || stats.totalPayments === 0 || !isEODSendAllowed()}
-                    sx={{
-                      minWidth: 120,
-                      '&.Mui-disabled': {
-                        borderColor: 'action.disabled',
-                        color: 'text.disabled',
-                      }
-                    }}
-                    title={
-                      !isEODSendAllowed()
-                        ? 'EOD summary can only be sent between 9 PM and 7 AM'
-                        : stats.totalPayments === 0
-                        ? 'No payments to send'
-                        : ''
-                    }
-                  >
-                    {sendingEOD
-                      ? 'Sending...'
-                      : !isEODSendAllowed()
-                      ? 'Available at 9PM'
-                      : 'Send EOD'}
-                  </Button>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Payment Summary - Collected Today
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {stats.paymentsProcessedCount} payment{stats.paymentsProcessedCount === 1 ? '' : 's'} processed today
+                  </Typography>
                 </Box>
 
                 {/* Total Amount and Outstanding Balance */}
@@ -1728,18 +1624,6 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
           isEditMode={isEditMode}
         />
       )}
-
-      {/* Success/Error Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Dialog>
   );
 };

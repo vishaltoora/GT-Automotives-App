@@ -251,17 +251,17 @@ export class AppointmentsService {
 
       if (query.startDate) {
         const dateOnly = extractBusinessDate(query.startDate);
-        // Compare in Pacific Time to ensure correct business day
-        dateConditions.push(`DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $${params.length + 1}) >= DATE($${params.length + 2})`);
-        params.push(POSTGRES_TIMEZONE);
+        // scheduledDate is stored as midnight UTC (via Date.UTC in create/update)
+        // So we can directly compare the DATE portion without timezone conversion
+        dateConditions.push(`DATE(a."scheduledDate") >= DATE($${params.length + 1})`);
         params.push(dateOnly);
       }
 
       if (query.endDate) {
         const dateOnly = extractBusinessDate(query.endDate);
-        // Compare in Pacific Time to ensure correct business day
-        dateConditions.push(`DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $${params.length + 1}) <= DATE($${params.length + 2})`);
-        params.push(POSTGRES_TIMEZONE);
+        // scheduledDate is stored as midnight UTC (via Date.UTC in create/update)
+        // So we can directly compare the DATE portion without timezone conversion
+        dateConditions.push(`DATE(a."scheduledDate") <= DATE($${params.length + 1})`);
         params.push(dateOnly);
       }
 
@@ -348,17 +348,18 @@ export class AppointmentsService {
    * Uses DATE-only comparison to avoid timezone issues
    */
   async getCalendar(query: CalendarQueryDto, user?: any) {
-    // Extract date-only strings in Pacific Time
+    // Extract date-only strings
     const startDateOnly = extractBusinessDate(query.startDate);
     const endDateOnly = extractBusinessDate(query.endDate);
 
-    // Build conditions with Pacific Time comparison
+    // Build conditions without timezone conversion
+    // scheduledDate is stored as midnight UTC (via Date.UTC in create/update)
+    // So we can directly compare the DATE portion without timezone conversion
     const conditions: string[] = [
-      `DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $1) >= DATE($2)`,
-      `DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $1) <= DATE($3)`,
-      `a."status" IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS')`,
+      `DATE(a."scheduledDate") >= DATE($1)`,
+      `DATE(a."scheduledDate") <= DATE($2)`,
     ];
-    const params: any[] = [POSTGRES_TIMEZONE, startDateOnly, endDateOnly];
+    const params: any[] = [startDateOnly, endDateOnly];
 
     if (query.employeeId) {
       conditions.push(`a."employeeId" = $${params.length + 1}`);
@@ -745,14 +746,14 @@ export class AppointmentsService {
       serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
-    // Use raw SQL with Pacific Time comparison to ensure correct business day
+    // Query appointments for today
+    // scheduledDate is stored as midnight UTC (via Date.UTC in create/update)
+    // So we can directly compare the DATE portion without timezone conversion
     const appointmentRecords = await this.prisma.$queryRawUnsafe<any[]>(
       `SELECT a."id"
        FROM "Appointment" a
-       WHERE DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE $1) = DATE($2)
-         AND a."status" IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS')
+       WHERE DATE(a."scheduledDate") = DATE($1)
        ORDER BY a."scheduledTime" ASC`,
-      POSTGRES_TIMEZONE,
       todayDateOnly
     );
 
