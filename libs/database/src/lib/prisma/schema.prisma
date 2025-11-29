@@ -64,21 +64,22 @@ model RolePermission {
 }
 
 model Customer {
-  id           String          @id @default(cuid())
-  firstName    String
-  lastName     String
-  email        String?
-  phone        String?
-  address      String?
-  businessName String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  appointments Appointment[]
-  invoices     Invoice[]
-  vehicles     Vehicle[]
-  smsMessages  SmsMessage[]
-  smsPreference SmsPreference?
-  emailLogs    EmailLog[]     // Email logs related to this customer
+  id              String           @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  address         String?
+  businessName    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  appointments    Appointment[]
+  invoices        Invoice[]
+  vehicles        Vehicle[]
+  smsMessages     SmsMessage[]
+  smsPreference   SmsPreference?
+  emailLogs       EmailLog[]       // Email logs related to this customer
+  bookingRequests BookingRequest[] // Booking requests converted to this customer
 }
 
 model Vehicle {
@@ -342,6 +343,7 @@ model Appointment {
   squarePayments  SquarePayment[]         // Square payments linked to this appointment
   smsMessages     SmsMessage[]            // SMS messages related to this appointment
   emailLogs       EmailLog[]              // Email logs related to this appointment
+  bookingRequests BookingRequest[]        // Booking requests converted to this appointment
 
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
@@ -621,7 +623,7 @@ model PurchaseInvoice {
   taxAmount       Decimal?             @db.Decimal(10, 2)
   totalAmount     Decimal              @db.Decimal(10, 2)
   category        PurchaseCategory     // Categorization
-  status          PurchaseInvoiceStatus @default(PENDING)
+  status          PurchaseInvoiceStatus @default(PAID)
   paymentDate     DateTime?            // When it was paid
   paymentMethod   PaymentMethod?
   notes           String?              // Additional notes
@@ -652,7 +654,7 @@ model ExpenseInvoice {
   taxAmount       Decimal?             @db.Decimal(10, 2)
   totalAmount     Decimal              @db.Decimal(10, 2)
   category        ExpenseCategory      // Categorization
-  status          PurchaseInvoiceStatus @default(PENDING)
+  status          PurchaseInvoiceStatus @default(PAID)
   paymentDate     DateTime?            // When it was paid
   paymentMethod   PaymentMethod?
   isRecurring     Boolean              @default(false) // Rent, utilities, etc.
@@ -875,4 +877,43 @@ enum EmailType {
   PAYMENT_RECEIPT
   SERVICE_COMPLETE
   PROMOTIONAL
+  BOOKING_CONFIRMATION
+}
+
+model BookingRequest {
+  id              String                @id @default(cuid())
+  appointmentType AppointmentType       @default(AT_GARAGE)
+  firstName       String
+  lastName        String
+  phone           String
+  email           String
+  address         String?
+  serviceType     String
+  requestedDate   String                // YYYY-MM-DD format
+  requestedTime   String                // HH:MM format
+  notes           String?
+  status          BookingRequestStatus  @default(PENDING)
+  customerId      String?               // Set when converted to customer
+  appointmentId   String?               // Set when converted to appointment
+  customer        Customer?             @relation(fields: [customerId], references: [id])
+  appointment     Appointment?          @relation(fields: [appointmentId], references: [id])
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  processedAt     DateTime?             // When it was accepted/rejected
+  processedBy     String?               // User ID who processed it
+  rejectionReason String?
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([appointmentId])
+  @@map("booking_requests")
+}
+
+enum BookingRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CONVERTED
+  PROCESSED
 }
