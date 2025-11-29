@@ -13,10 +13,13 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { Link } from 'react-router-dom';
 import { colors } from '../../theme/colors';
 
-export function EmergencyServiceBanner() {
+interface EmergencyServiceBannerProps {
+  onBookNow?: () => void;
+}
+
+export function EmergencyServiceBanner({ onBookNow }: EmergencyServiceBannerProps) {
   return (
     <Box
       sx={{
@@ -103,9 +106,9 @@ export function EmergencyServiceBanner() {
               </Box>
             </Stack>
           </Grid>
-          
+
           <Grid size={{ xs: 12, md: 4 }}>
-            <ActionButtons />
+            <ActionButtons onBookNow={onBookNow} />
           </Grid>
         </Grid>
       </Container>
@@ -142,16 +145,19 @@ function ServiceFeatures() {
   );
 }
 
-function ActionButtons() {
+interface ActionButtonsProps {
+  onBookNow?: () => void;
+}
+
+function ActionButtons({ onBookNow }: ActionButtonsProps) {
   return (
-    <Stack 
-      direction={{ xs: 'row', sm: 'row' }} 
+    <Stack
+      direction={{ xs: 'row', sm: 'row' }}
       spacing={2}
       justifyContent={{ xs: 'center', md: 'flex-end' }}
     >
       <Button
-        component={Link}
-        to="/contact"
+        onClick={onBookNow}
         variant="contained"
         size="large"
         startIcon={<TruckIcon />}
@@ -172,7 +178,7 @@ function ActionButtons() {
           transition: 'all 0.3s ease',
         }}
       >
-        Request Service
+        Book Now
       </Button>
       <Button
         component="a"
@@ -198,7 +204,7 @@ function ActionButtons() {
           transition: 'all 0.3s ease',
         }}
       >
-        Call Now
+        Call Us
       </Button>
     </Stack>
   );

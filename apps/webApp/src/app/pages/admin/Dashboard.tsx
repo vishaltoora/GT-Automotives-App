@@ -16,6 +16,7 @@ import {
   CircularProgress,
   useTheme,
   useMediaQuery,
+  Badge,
 } from '@mui/material';
 import {
   People,
@@ -38,6 +39,7 @@ import {
   Work,
   Payment,
   Assignment,
+  RequestPage,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';
@@ -64,6 +66,7 @@ export function AdminDashboard() {
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingRequestsCount, setBookingRequestsCount] = useState(0);
 
   // Common mobile-optimized styles for action items
   const actionItemStyles = {
@@ -115,6 +118,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     loadStats();
+    loadBookingRequestsCount();
   }, []);
 
   const loadStats = async () => {
@@ -126,6 +130,28 @@ export function AdminDashboard() {
       console.error('Failed to load dashboard stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBookingRequestsCount = async () => {
+    try {
+      const token = await window.Clerk?.session?.getToken({});
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_URL}/api/booking-requests`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Count only new requests (PENDING, ACCEPTED, REJECTED)
+        const newCount = data.filter((r: any) =>
+          ['PENDING', 'ACCEPTED', 'REJECTED'].includes(r.status)
+        ).length;
+        setBookingRequestsCount(newCount);
+      }
+    } catch (error) {
+      console.error('Failed to load booking requests count:', error);
     }
   };
 
@@ -445,6 +471,40 @@ export function AdminDashboard() {
                 <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
                 <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
                   Day Summary
+                </Typography>
+              </Paper>
+
+              {/* Booking Requests - Second position */}
+              <Paper
+                component={Link}
+                to={`${basePath}/booking-requests`}
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.semantic.warning}`,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.semantic.warning,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiBadge-badge': {
+                      backgroundColor: 'white !important',
+                      color: `${colors.semantic.warning} !important`,
+                    },
+                  },
+                }}
+              >
+                <Badge badgeContent={bookingRequestsCount} color="warning">
+                  <RequestPage sx={{ ...actionIconStyles, color: colors.semantic.warning }} />
+                </Badge>
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.warning }}>
+                  Booking Requests
                 </Typography>
               </Paper>
 
@@ -794,6 +854,40 @@ export function AdminDashboard() {
                   <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
                   <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
                     Day Summary
+                  </Typography>
+                </Paper>
+
+                {/* Booking Requests - Second position */}
+                <Paper
+                  component={Link}
+                  to={`${basePath}/booking-requests`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid ${colors.semantic.warning}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.semantic.warning,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiBadge-badge': {
+                        backgroundColor: 'white !important',
+                        color: `${colors.semantic.warning} !important`,
+                      },
+                    },
+                  }}
+                >
+                  <Badge badgeContent={bookingRequestsCount} color="warning">
+                    <RequestPage sx={{ ...actionIconStyles, color: colors.semantic.warning }} />
+                  </Badge>
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.warning }}>
+                    Booking Requests
                   </Typography>
                 </Paper>
 

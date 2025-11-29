@@ -41,6 +41,7 @@ interface AppointmentDialogProps {
   onSuccess: () => void;
   appointment?: Appointment;
   preselectedCustomerId?: string;
+  preselectedServiceType?: string;
 }
 
 export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
@@ -49,6 +50,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   onSuccess,
   appointment,
   preselectedCustomerId,
+  preselectedServiceType,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     scheduledDate: new Date(),
     scheduledTime: getCurrentTimeRounded(),
     duration: 60,
-    serviceType: 'TIRE_CHANGE',
+    serviceType: preselectedServiceType || 'TIRE_CHANGE',
     appointmentType: 'AT_GARAGE',
     notes: '',
   });
@@ -134,7 +136,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       // Check availability on dialog open (for default date/time)
       checkAvailability();
     }
-  }, [open, appointment, preselectedCustomerId]);
+  }, [open, appointment, preselectedCustomerId, preselectedServiceType]);
 
   // Auto-adjust time if date changes to today and selected time is in the past
   useEffect(() => {
@@ -189,6 +191,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     try {
       const customer = await customerService.getCustomer(customerId);
       setSelectedCustomer(customer);
+      setFormData((prev) => ({ ...prev, customerId: customer.id }));
     } catch (err) {
       // Silently fail
     }
@@ -328,7 +331,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       scheduledDate: new Date(),
       scheduledTime: getCurrentTimeRounded(),
       duration: 60,
-      serviceType: 'TIRE_CHANGE',
+      serviceType: preselectedServiceType || 'TIRE_CHANGE',
       appointmentType: 'AT_GARAGE',
       notes: '',
     });

@@ -50,12 +50,12 @@ export declare class AvailabilityService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }>;
     /**
      * Get all overrides for an employee within a date range
@@ -64,12 +64,12 @@ export declare class AvailabilityService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }[]>;
     /**
      * Delete an override
@@ -78,12 +78,12 @@ export declare class AvailabilityService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }>;
     /**
      * Check available time slots for a specific date and duration

@@ -156,10 +156,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         } else if (quotationId && loadedData) {
           // Load quotation data to pre-fill the invoice
           await loadQuotationData(quotationId, loadedData.companies);
-        } else {
-          // Reset form when dialog opens for create mode
-          resetForm();
         }
+        // Note: resetForm() is not needed here because loadData() already sets the default company
+        // for create mode on lines 271-275
       };
 
       initializeDialog();

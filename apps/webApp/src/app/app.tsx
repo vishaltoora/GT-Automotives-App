@@ -77,6 +77,7 @@ import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoice
 // Appointment Pages
 import { AppointmentsManagement } from './pages/admin/appointments/AppointmentsManagement';
 import { EmployeeAvailabilityManagement } from './pages/admin/appointments/EmployeeAvailabilityManagement';
+import { BookingRequests } from './pages/admin/BookingRequests';
 
 // SMS Pages
 import { SmsHistory } from './pages/admin/sms/SmsHistory';
@@ -199,6 +200,7 @@ export function App() {
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="employee-schedule" element={<EmployeeSchedule />} />
           <Route path="jobs" element={<JobsManagement />} />
@@ -241,6 +243,7 @@ export function App() {
           <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
           {/* Expense invoices merged into purchase-invoices */}
           <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="sms-history" element={<SmsHistory />} />
           <Route path="employee-schedule" element={<EmployeeSchedule />} />

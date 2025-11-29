@@ -67,12 +67,12 @@ export declare class AvailabilityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }>;
     /**
      * Add own time slot override (STAFF secure endpoint)
@@ -82,12 +82,12 @@ export declare class AvailabilityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }>;
     /**
      * Get overrides for an employee within a date range (ADMIN and SUPERVISOR)
@@ -97,12 +97,12 @@ export declare class AvailabilityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }[]>;
     /**
      * Get own overrides within a date range (STAFF secure endpoint)
@@ -112,12 +112,12 @@ export declare class AvailabilityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }[]>;
     /**
      * Delete a recurring availability slot (ADMIN or owner only)
@@ -141,12 +141,12 @@ export declare class AvailabilityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        reason: string | null;
         employeeId: string;
         endTime: string;
-        reason: string | null;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
     }>;
     /**
      * Check available time slots for a specific date and duration

@@ -217,7 +217,6 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
                 label="Invoice Type"
                 value={invoiceType}
                 onChange={handleInvoiceTypeChange}
-                disabled={!!invoice}
               >
                 <MenuItem value="purchase">Purchase Invoice</MenuItem>
                 <MenuItem value="expense">Expense Invoice</MenuItem>

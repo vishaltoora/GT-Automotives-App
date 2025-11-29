@@ -1,8 +1,8 @@
 import { Schedule as ScheduleIcon } from '@mui/icons-material';
 import { Container } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CTASection } from '../../components/public';
+import { CTASection, BookingRequestDialog } from '../../components/public';
 import {
   ContactSection,
   EmergencyServiceBanner,
@@ -19,6 +19,7 @@ import { useAuth } from '../../hooks/useAuth';
 export function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, role, user, isLoading } = useAuth();
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
 
   useEffect(() => {
 
@@ -39,16 +40,31 @@ export function Home() {
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, role, user, navigate, isLoading]);
+
+  const handleOpenBookingDialog = () => {
+    setBookingDialogOpen(true);
+  };
+
+  const handleCloseBookingDialog = () => {
+    setBookingDialogOpen(false);
+  };
+
   return (
     <>
+      {/* Booking Request Dialog */}
+      <BookingRequestDialog
+        open={bookingDialogOpen}
+        onClose={handleCloseBookingDialog}
+      />
+
       {/* Hero Section */}
       <HeroSection />
 
       {/* Quick Actions Bar */}
-      <QuickActionsBar />
+      <QuickActionsBar onBookAppointment={handleOpenBookingDialog} />
 
       {/* Mobile Tire Emergency Service Banner */}
-      <EmergencyServiceBanner />
+      <EmergencyServiceBanner onBookNow={handleOpenBookingDialog} />
 
       {/* Featured Services */}
       <FeaturedServices />
@@ -73,11 +89,11 @@ export function Home() {
           title="Need Emergency Service?"
           description="We're available 24/7 for roadside assistance and emergency repairs"
           primaryAction={{
-            label: 'Call Now: (250) 986-9191',
+            label: 'Call (250) 986-9191',
             path: 'tel:2509869191',
           }}
           secondaryAction={{
-            label: 'Schedule Service',
+            label: 'Book Service',
             path: '/contact',
             icon: <ScheduleIcon />,
           }}

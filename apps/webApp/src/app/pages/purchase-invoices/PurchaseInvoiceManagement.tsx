@@ -209,7 +209,18 @@ const PurchaseInvoiceManagement: React.FC = () => {
       const service = invoiceType === 'purchase' ? purchaseInvoiceService : expenseInvoiceService;
 
       if (selectedInvoice) {
-        savedInvoice = await service.update(selectedInvoice.id, saveData);
+        // Check if invoice type changed
+        const originalType = purchaseCategories.includes(selectedInvoice.category as PurchaseCategory) ? 'purchase' : 'expense';
+
+        if (originalType !== invoiceType) {
+          // Type changed - delete from old table and create in new table
+          const oldService = originalType === 'purchase' ? purchaseInvoiceService : expenseInvoiceService;
+          await oldService.delete(selectedInvoice.id);
+          savedInvoice = await service.create(saveData);
+        } else {
+          // Same type - just update
+          savedInvoice = await service.update(selectedInvoice.id, saveData);
+        }
       } else {
         savedInvoice = await service.create(saveData);
       }
@@ -357,8 +368,8 @@ const PurchaseInvoiceManagement: React.FC = () => {
                 onChange={(e) => setFilters({ ...filters, category: e.target.value })}
               >
                 <MenuItem value="">All Categories</MenuItem>
-                {allCategories.map((cat) => (
-                  <MenuItem key={cat} value={cat}>
+                {allCategories.map((cat, index) => (
+                  <MenuItem key={`${cat}-${index}`} value={cat}>
                     {cat.replace(/_/g, ' ')}
                   </MenuItem>
                 ))}

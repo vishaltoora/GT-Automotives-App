@@ -28,6 +28,7 @@ import {
   CalendarMonth,
   Assessment,
   Analytics,
+  RequestPage,
   Settings,
   Security,
   Logout,
@@ -97,6 +98,7 @@ export function AdminLayout() {
       items: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
         { text: 'Day Summary', icon: <Assessment />, path: '/admin/day-summary' },
+        { text: 'Booking Requests', icon: <RequestPage />, path: '/admin/booking-requests' },
       ]
     },
     {

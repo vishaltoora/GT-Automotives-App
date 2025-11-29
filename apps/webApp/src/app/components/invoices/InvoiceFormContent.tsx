@@ -215,7 +215,9 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 {companies.map((company) => (
                   <MenuItem key={company.id} value={company.id}>
                     <Box>
-                      <Typography variant="body1">{company.name}</Typography>
+                      <Typography variant="body1">
+                        {company.name.replace(/[()]/g, '')}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {company.registrationNumber} {company.businessType && `• ${company.businessType}`}
                       </Typography>
@@ -688,28 +690,31 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         const details = `${tire.brand} ${formatTireType(tire.type)} - ${tire.size}`;
                         return name ? `${name} - ${details}` : details;
                       }}
-                      renderOption={(props, tire) => (
-                        <Box component="li" {...props}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <Box>
-                              {tire.name && (
-                                <Typography variant="body2" fontWeight="medium">
-                                  {tire.name}
+                      renderOption={(props, tire) => {
+                        const { key, ...otherProps } = props;
+                        return (
+                          <Box component="li" key={key} {...otherProps}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                              <Box>
+                                {tire.name && (
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {tire.name}
+                                  </Typography>
+                                )}
+                                <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
+                                  {tire.brand} {formatTireType(tire.type)} - {tire.size}
                                 </Typography>
-                              )}
-                              <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
-                                {tire.brand} {formatTireType(tire.type)} - {tire.size}
-                              </Typography>
+                              </Box>
+                              <Chip
+                                label={`Stock: ${tire.quantity}`}
+                                size="small"
+                                color={tire.quantity < 5 ? 'warning' : 'success'}
+                                sx={{ ml: 1 }}
+                              />
                             </Box>
-                            <Chip
-                              label={`Stock: ${tire.quantity}`}
-                              size="small"
-                              color={tire.quantity < 5 ? 'warning' : 'success'}
-                              sx={{ ml: 1 }}
-                            />
                           </Box>
-                        </Box>
-                      )}
+                        );
+                      }}
                       renderInput={(params) => (
                         <TextField
                           {...params}

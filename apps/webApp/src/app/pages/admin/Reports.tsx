@@ -30,10 +30,10 @@ import {
 import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 
-type ReportType = 'purchase-expense' | 'tax-collection';
+type ReportType = 'purchase' | 'expense' | 'tax-collection';
 
 export function Reports() {
-  const [reportType, setReportType] = useState<ReportType>('purchase-expense');
+  const [reportType, setReportType] = useState<ReportType>('purchase');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reportData, setReportData] = useState<any>(null);
@@ -50,7 +50,7 @@ export function Reports() {
   };
 
   const handleGenerateReport = async () => {
-    if (reportType === 'purchase-expense') {
+    if (reportType === 'purchase' || reportType === 'expense') {
       await loadPurchaseExpenseReport();
     } else if (reportType === 'tax-collection') {
       await loadTaxReport();
@@ -125,147 +125,91 @@ export function Reports() {
   const renderSummaryCards = () => {
     if (!reportData) return null;
 
-    return (
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Typography color="text.secondary" gutterBottom variant="body2">
-                Total Purchases
-              </Typography>
-              <Typography variant="h5" fontWeight="bold">
-                {reportData.totalPurchases || 0}
-              </Typography>
-              <Typography color="primary" variant="h6">
-                {formatCurrency(reportData.totalPurchaseAmount || 0)}
-              </Typography>
-            </CardContent>
-          </Card>
+    // Show only Purchase or Expense based on selected report type
+    if (reportType === 'purchase') {
+      return (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Total Purchase Invoices
+                </Typography>
+                <Typography variant="h5" fontWeight="bold">
+                  {reportData.totalPurchases || 0}
+                </Typography>
+                <Typography color="primary" variant="h6">
+                  {formatCurrency(reportData.totalPurchaseAmount || 0)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
+      );
+    } else if (reportType === 'expense') {
+      return (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Total Expense Invoices
+                </Typography>
+                <Typography variant="h5" fontWeight="bold">
+                  {reportData.totalExpenses || 0}
+                </Typography>
+                <Typography color="primary" variant="h6">
+                  {formatCurrency(reportData.totalExpenseAmount || 0)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      );
+    }
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Typography color="text.secondary" gutterBottom variant="body2">
-                Total Expenses
-              </Typography>
-              <Typography variant="h5" fontWeight="bold">
-                {reportData.totalExpenses || 0}
-              </Typography>
-              <Typography color="primary" variant="h6">
-                {formatCurrency(reportData.totalExpenseAmount || 0)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Typography color="text.secondary" gutterBottom variant="body2">
-                Paid Total
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="success.main">
-                {formatCurrency(reportData.paidTotal || 0)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Typography color="text.secondary" gutterBottom variant="body2">
-                Pending Total
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="warning.main">
-                {formatCurrency(reportData.pendingTotal || 0)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    );
+    return null;
   };
 
   const renderCategoryBreakdown = () => {
-    if (!reportData || (!reportData.purchasesByCategory?.length && !reportData.expensesByCategory?.length)) {
-      return null;
-    }
+    if (!reportData) return null;
+
+    // Show only Purchase or Expense categories based on report type
+    const categories = reportType === 'purchase'
+      ? reportData.purchasesByCategory
+      : reportData.expensesByCategory;
+
+    if (!categories?.length) return null;
 
     return (
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Breakdown by Category
+          {reportType === 'purchase' ? 'Purchase' : 'Expense'} Breakdown by Category
         </Typography>
-
-        {reportData.purchasesByCategory?.length > 0 && (
-          <>
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 2, mb: 1 }}>
-              Purchase Invoices
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Category</TableCell>
-                    <TableCell align="right">Count</TableCell>
-                    <TableCell align="right">Total</TableCell>
-                    <TableCell align="right">Paid</TableCell>
-                    <TableCell align="right">Pending</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {reportData.purchasesByCategory.map((cat: any) => (
-                    <TableRow key={cat.category}>
-                      <TableCell>
-                        <Chip label={cat.category} size="small" />
-                      </TableCell>
-                      <TableCell align="right">{cat.count}</TableCell>
-                      <TableCell align="right">{formatCurrency(cat.totalAmount)}</TableCell>
-                      <TableCell align="right">{formatCurrency(cat.paidAmount)}</TableCell>
-                      <TableCell align="right">{formatCurrency(cat.pendingAmount)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-
-        {reportData.expensesByCategory?.length > 0 && (
-          <>
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 3, mb: 1 }}>
-              Expense Invoices
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Category</TableCell>
-                    <TableCell align="right">Count</TableCell>
-                    <TableCell align="right">Total</TableCell>
-                    <TableCell align="right">Paid</TableCell>
-                    <TableCell align="right">Pending</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {reportData.expensesByCategory.map((cat: any) => (
-                    <TableRow key={cat.category}>
-                      <TableCell>
-                        <Chip label={cat.category} size="small" />
-                      </TableCell>
-                      <TableCell align="right">{cat.count}</TableCell>
-                      <TableCell align="right">{formatCurrency(cat.totalAmount)}</TableCell>
-                      <TableCell align="right">{formatCurrency(cat.paidAmount)}</TableCell>
-                      <TableCell align="right">{formatCurrency(cat.pendingAmount)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Category</TableCell>
+                <TableCell align="right">Count</TableCell>
+                <TableCell align="right">Total Amount</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {categories.map((cat: any) => (
+                <TableRow key={cat.category}>
+                  <TableCell>
+                    <Chip label={cat.category.replace(/_/g, ' ')} size="small" />
+                  </TableCell>
+                  <TableCell align="right">{cat.count}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                    {formatCurrency(cat.totalAmount)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Paper>
     );
   };
@@ -287,8 +231,6 @@ export function Reports() {
                 <TableCell>Vendor</TableCell>
                 <TableCell align="right">Invoices</TableCell>
                 <TableCell align="right">Total Spent</TableCell>
-                <TableCell align="right">Paid</TableCell>
-                <TableCell align="right">Pending</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -296,9 +238,9 @@ export function Reports() {
                 <TableRow key={index}>
                   <TableCell>{vendor.vendorName || 'Unknown'}</TableCell>
                   <TableCell align="right">{vendor.count}</TableCell>
-                  <TableCell align="right">{formatCurrency(vendor.totalAmount)}</TableCell>
-                  <TableCell align="right">{formatCurrency(vendor.paidAmount)}</TableCell>
-                  <TableCell align="right">{formatCurrency(vendor.pendingAmount)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                    {formatCurrency(vendor.totalAmount)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -316,30 +258,26 @@ export function Reports() {
     return (
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" gutterBottom>
-          Monthly Trends
+          Monthly Trends - {reportType === 'purchase' ? 'Purchases' : 'Expenses'}
         </Typography>
         <TableContainer>
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Month</TableCell>
-                <TableCell align="right">Purchases</TableCell>
-                <TableCell align="right">Purchase Total</TableCell>
-                <TableCell align="right">Expenses</TableCell>
-                <TableCell align="right">Expense Total</TableCell>
-                <TableCell align="right">Combined</TableCell>
+                <TableCell align="right">Count</TableCell>
+                <TableCell align="right">Total Amount</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {reportData.monthlyTrends.map((trend: any) => (
                 <TableRow key={trend.month}>
                   <TableCell>{trend.month}</TableCell>
-                  <TableCell align="right">{trend.purchaseCount}</TableCell>
-                  <TableCell align="right">{formatCurrency(trend.purchaseTotal)}</TableCell>
-                  <TableCell align="right">{trend.expenseCount}</TableCell>
-                  <TableCell align="right">{formatCurrency(trend.expenseTotal)}</TableCell>
+                  <TableCell align="right">
+                    {reportType === 'purchase' ? trend.purchaseCount : trend.expenseCount}
+                  </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                    {formatCurrency(trend.combinedTotal)}
+                    {formatCurrency(reportType === 'purchase' ? trend.purchaseTotal : trend.expenseTotal)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -374,10 +312,16 @@ export function Reports() {
                 label="Report Type"
                 onChange={(e) => handleReportTypeChange(e.target.value as ReportType)}
               >
-                <MenuItem value="purchase-expense">
+                <MenuItem value="purchase">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Receipt fontSize="small" />
-                    <span>Purchase & Expense</span>
+                    <span>Purchase Invoices</span>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="expense">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Receipt fontSize="small" />
+                    <span>Expense Invoices</span>
                   </Box>
                 </MenuItem>
                 <MenuItem value="tax-collection">
@@ -443,7 +387,7 @@ export function Reports() {
         )}
 
         {/* Purchase & Expense Report Results */}
-        {!loading && reportType === 'purchase-expense' && reportData && (
+        {!loading && (reportType === 'purchase' || reportType === 'expense') && reportData && (
           <>
             {renderSummaryCards()}
             {renderCategoryBreakdown()}
@@ -556,14 +500,24 @@ export function Reports() {
               color: 'text.secondary',
             }}
           >
-            {reportType === 'purchase-expense' ? (
+            {reportType === 'purchase' ? (
               <>
                 <Receipt sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
                 <Typography variant="h6" gutterBottom fontWeight="500">
-                  No Purchase & Expense Report Generated
+                  No Purchase Invoice Report Generated
                 </Typography>
                 <Typography variant="body2">
-                  Select a date range and click "Generate Report" to view comprehensive financial analysis
+                  Select a date range and click "Generate Report" to view purchase invoice analysis
+                </Typography>
+              </>
+            ) : reportType === 'expense' ? (
+              <>
+                <Receipt sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
+                <Typography variant="h6" gutterBottom fontWeight="500">
+                  No Expense Invoice Report Generated
+                </Typography>
+                <Typography variant="body2">
+                  Select a date range and click "Generate Report" to view expense invoice analysis
                 </Typography>
               </>
             ) : (

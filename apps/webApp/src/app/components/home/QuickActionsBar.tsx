@@ -13,14 +13,19 @@ import {
 import { Link } from 'react-router-dom';
 import { colors } from '../../theme/colors';
 
-export function QuickActionsBar() {
+interface QuickActionsBarProps {
+  onBookAppointment?: () => void;
+}
+
+export function QuickActionsBar({ onBookAppointment }: QuickActionsBarProps) {
   const actions = [
     {
       label: 'Book Appointment',
       icon: <ScheduleIcon />,
       variant: 'contained' as const,
       color: colors.primary.main,
-      path: '/contact',
+      onClick: onBookAppointment,
+      path: undefined,
     },
     {
       label: 'Browse Services',
@@ -28,6 +33,7 @@ export function QuickActionsBar() {
       variant: 'outlined' as const,
       color: colors.primary.main,
       path: '/services',
+      onClick: undefined,
     },
     {
       label: 'Browse Tires',
@@ -35,6 +41,7 @@ export function QuickActionsBar() {
       variant: 'outlined' as const,
       color: colors.tire.new,
       path: '/inventory',
+      onClick: undefined,
     },
     {
       label: 'Contact Us',
@@ -42,6 +49,7 @@ export function QuickActionsBar() {
       variant: 'contained' as const,
       color: colors.secondary.main,
       path: '/contact',
+      onClick: undefined,
     },
   ];
 
@@ -71,8 +79,8 @@ export function QuickActionsBar() {
                         backgroundColor: action.color,
                         color: 'white',
                         '&:hover': {
-                          backgroundColor: action.color === colors.primary.main 
-                            ? colors.primary.dark 
+                          backgroundColor: action.color === colors.primary.main
+                            ? colors.primary.dark
                             : colors.secondary.dark,
                         },
                       }
@@ -89,8 +97,10 @@ export function QuickActionsBar() {
                   borderRadius: 2,
                   fontWeight: 600,
                 }}
-                component={Link}
-                to={action.path}
+                {...(action.onClick
+                  ? { onClick: action.onClick }
+                  : { component: Link, to: action.path }
+                )}
               >
                 {action.label}
               </Button>

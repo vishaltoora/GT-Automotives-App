@@ -24,6 +24,7 @@ import { AppointmentsModule } from '../appointments/appointments.module';
 import { SmsModule } from '../sms/sms.module';
 import { EmailModule } from '../email/email.module';
 import { SquareModule } from '../square/square.module';
+import { BookingRequestsModule } from '../booking-requests/booking-requests.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -54,6 +55,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     SmsModule,
     EmailModule,
     SquareModule,
+    BookingRequestsModule,
   ],
   controllers: [AppController],
   providers: [

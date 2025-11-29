@@ -1354,4 +1354,182 @@ export class EmailService {
       return { success: false };
     }
   }
+
+  /**
+   * Send booking request notification to staff/admin
+   */
+  async sendBookingRequestNotification(data: {
+    recipientEmail: string;
+    recipientName: string;
+    bookingRequest: {
+      appointmentType: string;
+      customerName: string;
+      phone: string;
+      email: string;
+      address?: string;
+      serviceType: string;
+      requestedDate: string;
+      requestedTime: string;
+      notes: string;
+    };
+  }): Promise<{ success: boolean; messageId?: string }> {
+    this.logger.log(`[EMAIL] Sending booking request notification to ${data.recipientEmail}`);
+
+    if (!this.enabled) {
+      this.logger.warn('[EMAIL] Email service is disabled');
+      return { success: false };
+    }
+
+    const logoSrc = this.logoBase64 || 'https://gt-automotives.com/logo.png';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td align="center" style="padding: 40px 0;">
+              <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <!-- Header -->
+                <tr>
+                  <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8d 100%);">
+                    <img src="${logoSrc}" alt="GT Automotives" style="max-width: 200px; height: auto;">
+                  </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h1 style="margin: 0 0 20px; font-size: 24px; color: #1e3a5f;">
+                      New Booking Request
+                    </h1>
+
+                    <p style="margin: 0 0 20px; font-size: 16px; color: #333333;">
+                      Hi ${data.recipientName},
+                    </p>
+
+                    <p style="margin: 0 0 30px; font-size: 16px; color: #333333;">
+                      A new booking request has been submitted through the website. Please review the details below and contact the customer to confirm the appointment.
+                    </p>
+
+                    <!-- Customer Information -->
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                      <h2 style="margin: 0 0 15px; font-size: 18px; color: #1e3a5f;">
+                        Customer Information
+                      </h2>
+                      <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Name:</td>
+                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.customerName}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Phone:</td>
+                          <td style="padding: 8px 0; color: #333;">
+                            <a href="tel:${data.bookingRequest.phone}" style="color: #1976d2; text-decoration: none;">${data.bookingRequest.phone}</a>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Email:</td>
+                          <td style="padding: 8px 0; color: #333;">
+                            <a href="mailto:${data.bookingRequest.email}" style="color: #1976d2; text-decoration: none;">${data.bookingRequest.email}</a>
+                          </td>
+                        </tr>
+                        ${data.bookingRequest.address ? `
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Address:</td>
+                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.address}</td>
+                        </tr>
+                        ` : ''}
+                      </table>
+                    </div>
+
+                    <!-- Service Details -->
+                    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                      <h2 style="margin: 0 0 15px; font-size: 18px; color: #1e3a5f;">
+                        Service Details
+                      </h2>
+                      <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Service Location:</td>
+                          <td style="padding: 8px 0; color: #333; font-weight: bold;">
+                            ${data.bookingRequest.appointmentType === 'AT_GARAGE' ? '🏪 At Garage' : '🚗 Mobile Service'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Service Type:</td>
+                          <td style="padding: 8px 0; color: #333; font-weight: bold;">${data.bookingRequest.serviceType}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Requested Date:</td>
+                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.requestedDate}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Requested Time:</td>
+                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.requestedTime}</td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <!-- Additional Notes -->
+                    ${data.bookingRequest.notes !== 'None' ? `
+                    <div style="background-color: #fff3e0; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                      <h2 style="margin: 0 0 15px; font-size: 18px; color: #1e3a5f;">
+                        Additional Notes
+                      </h2>
+                      <p style="margin: 0; color: #333; white-space: pre-wrap;">${data.bookingRequest.notes}</p>
+                    </div>
+                    ` : ''}
+
+                    <!-- Action Required -->
+                    <div style="background-color: #ffebee; padding: 20px; border-radius: 8px; border-left: 4px solid #d32f2f;">
+                      <p style="margin: 0; color: #d32f2f; font-weight: bold;">
+                        ⚠️ Action Required
+                      </p>
+                      <p style="margin: 10px 0 0; color: #666;">
+                        Please contact the customer as soon as possible to confirm the appointment and provide any additional information or pricing.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 30px; background-color: #f8f9fa; text-align: center;">
+                    <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
+                      <strong>GT Automotives</strong><br>
+                      Prince George, BC<br>
+                      Phone: 250-570-2333 / 250-986-9191<br>
+                      Email: gt-automotives@outlook.com
+                    </p>
+                    <p style="margin: 20px 0 0; font-size: 12px; color: #999999;">
+                      This is an automated notification from the GT Automotives booking system.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    try {
+      const result = await this.sendEmail({
+        to: data.recipientEmail,
+        subject: `New Booking Request - ${data.bookingRequest.customerName}`,
+        htmlContent,
+        type: EmailType.BOOKING_CONFIRMATION, // Reusing this type
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error('[EMAIL] Failed to send booking request notification:', error);
+      return { success: false };
+    }
+  }
 }

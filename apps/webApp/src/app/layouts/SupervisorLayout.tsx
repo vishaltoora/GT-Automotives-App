@@ -41,7 +41,8 @@ import {
   ExpandMore,
   ExpandLess,
   BusinessCenter,
-  Event
+  Event,
+  RequestPage
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -88,6 +89,7 @@ export function SupervisorLayout() {
       items: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/supervisor/dashboard' },
         { text: 'Day Summary', icon: <Assessment />, path: '/supervisor/day-summary' },
+        { text: 'Booking Requests', icon: <RequestPage />, path: '/supervisor/booking-requests' },
       ]
     },
     {

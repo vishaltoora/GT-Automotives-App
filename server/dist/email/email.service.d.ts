@@ -131,5 +131,26 @@ export declare class EmailService {
         success: boolean;
         messageId?: string;
     }>;
+    /**
+     * Send booking request notification to staff/admin
+     */
+    sendBookingRequestNotification(data: {
+        recipientEmail: string;
+        recipientName: string;
+        bookingRequest: {
+            appointmentType: string;
+            customerName: string;
+            phone: string;
+            email: string;
+            address?: string;
+            serviceType: string;
+            requestedDate: string;
+            requestedTime: string;
+            notes: string;
+        };
+    }): Promise<{
+        success: boolean;
+        messageId?: string;
+    }>;
 }
 //# sourceMappingURL=email.service.d.ts.map
