@@ -129,8 +129,14 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
             } as User,
           ]);
         }
-      } else if (preselectedCustomerId) {
-        loadCustomerDetails(preselectedCustomerId);
+      } else {
+        // Handle preselected values when not editing an appointment
+        if (preselectedCustomerId) {
+          loadCustomerDetails(preselectedCustomerId);
+        }
+        if (preselectedServiceType) {
+          setFormData((prev) => ({ ...prev, serviceType: preselectedServiceType }));
+        }
       }
 
       // Check availability on dialog open (for default date/time)

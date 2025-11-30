@@ -1412,86 +1412,32 @@ export class EmailService {
                       Hi ${data.recipientName},
                     </p>
 
-                    <p style="margin: 0 0 30px; font-size: 16px; color: #333333;">
-                      A new booking request has been submitted through the website. Please review the details below and contact the customer to confirm the appointment.
+                    <p style="margin: 0 0 30px; font-size: 16px; color: #333333; line-height: 1.6;">
+                      A new booking request has been received from <strong>${data.bookingRequest.customerName}</strong>.
                     </p>
 
-                    <!-- Customer Information -->
-                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                      <h2 style="margin: 0 0 15px; font-size: 18px; color: #1e3a5f;">
-                        Customer Information
-                      </h2>
-                      <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Name:</td>
-                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.customerName}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Phone:</td>
-                          <td style="padding: 8px 0; color: #333;">
-                            <a href="tel:${data.bookingRequest.phone}" style="color: #1976d2; text-decoration: none;">${data.bookingRequest.phone}</a>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Email:</td>
-                          <td style="padding: 8px 0; color: #333;">
-                            <a href="mailto:${data.bookingRequest.email}" style="color: #1976d2; text-decoration: none;">${data.bookingRequest.email}</a>
-                          </td>
-                        </tr>
-                        ${data.bookingRequest.address ? `
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Address:</td>
-                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.address}</td>
-                        </tr>
-                        ` : ''}
-                      </table>
-                    </div>
-
-                    <!-- Service Details -->
-                    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                      <h2 style="margin: 0 0 15px; font-size: 18px; color: #1e3a5f;">
-                        Service Details
-                      </h2>
-                      <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Service Location:</td>
-                          <td style="padding: 8px 0; color: #333; font-weight: bold;">
-                            ${data.bookingRequest.appointmentType === 'AT_GARAGE' ? '🏪 At Garage' : '🚗 Mobile Service'}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Service Type:</td>
-                          <td style="padding: 8px 0; color: #333; font-weight: bold;">${data.bookingRequest.serviceType}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Requested Date:</td>
-                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.requestedDate}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-weight: bold;">Requested Time:</td>
-                          <td style="padding: 8px 0; color: #333;">${data.bookingRequest.requestedTime}</td>
-                        </tr>
-                      </table>
-                    </div>
-
-                    <!-- Additional Notes -->
-                    ${data.bookingRequest.notes !== 'None' ? `
-                    <div style="background-color: #fff3e0; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                      <h2 style="margin: 0 0 15px; font-size: 18px; color: #1e3a5f;">
-                        Additional Notes
-                      </h2>
-                      <p style="margin: 0; color: #333; white-space: pre-wrap;">${data.bookingRequest.notes}</p>
-                    </div>
-                    ` : ''}
-
-                    <!-- Action Required -->
-                    <div style="background-color: #ffebee; padding: 20px; border-radius: 8px; border-left: 4px solid #d32f2f;">
-                      <p style="margin: 0; color: #d32f2f; font-weight: bold;">
-                        ⚠️ Action Required
+                    <!-- Booking Summary -->
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                      <h3 style="margin: 0 0 15px; color: #1e3a5f; font-size: 16px;">Booking Summary</h3>
+                      <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.8;">
+                        <strong>Customer:</strong> ${data.bookingRequest.customerName}<br>
+                        <strong>Service Type:</strong> ${data.bookingRequest.serviceType}<br>
+                        <strong>Service Location:</strong> ${data.bookingRequest.appointmentType === 'AT_GARAGE' ? '🏪 At Garage' : '🚗 Mobile Service'}${data.bookingRequest.address ? ` - ${data.bookingRequest.address}` : ''}<br>
+                        <strong>Requested Date:</strong> ${data.bookingRequest.requestedDate} at ${data.bookingRequest.requestedTime}
+                        ${data.bookingRequest.notes && data.bookingRequest.notes !== 'None' ? `<br><br><strong>Customer Notes:</strong><br><span style="font-style: italic; color: #555;">"${data.bookingRequest.notes}"</span>` : ''}
                       </p>
-                      <p style="margin: 10px 0 0; color: #666;">
-                        Please contact the customer as soon as possible to confirm the appointment and provide any additional information or pricing.
-                      </p>
+                    </div>
+
+                    <p style="margin: 0 0 30px; font-size: 16px; color: #333333; line-height: 1.6;">
+                      Please log in to the GT Automotives platform to review the full request details and contact the customer.
+                    </p>
+
+                    <!-- CTA Button -->
+                    <div style="text-align: center; margin: 40px 0;">
+                      <a href="https://gt-automotives.com/admin/booking-requests"
+                         style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8d 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                        View Booking Requests
+                      </a>
                     </div>
                   </td>
                 </tr>
