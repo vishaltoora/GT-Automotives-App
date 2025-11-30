@@ -27,6 +27,7 @@ import { Contact } from './pages/public/Contact';
 import { About } from './pages/public/About';
 import { Products } from './pages/public/Products';
 import { Pricing } from './pages/public/Pricing';
+import { BookAppointment } from './pages/public/BookAppointment';
 
 // Customer Pages
 import { CustomerDashboard } from './pages/customer/Dashboard';
@@ -106,6 +107,7 @@ export function App() {
           <Route path="pricing" element={<Pricing />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="book-appointment" element={<BookAppointment />} />
         </Route>
 
         {/* Customer Routes */}

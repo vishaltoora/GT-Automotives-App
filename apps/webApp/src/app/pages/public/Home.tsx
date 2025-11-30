@@ -1,8 +1,8 @@
 import { Schedule as ScheduleIcon } from '@mui/icons-material';
 import { Container } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CTASection, BookingRequestDialog } from '../../components/public';
+import { CTASection } from '../../components/public';
 import {
   ContactSection,
   EmergencyServiceBanner,
@@ -19,7 +19,6 @@ import { useAuth } from '../../hooks/useAuth';
 export function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, role, user, isLoading } = useAuth();
-  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
 
   useEffect(() => {
 
@@ -41,30 +40,20 @@ export function Home() {
     }
   }, [isAuthenticated, role, user, navigate, isLoading]);
 
-  const handleOpenBookingDialog = () => {
-    setBookingDialogOpen(true);
-  };
-
-  const handleCloseBookingDialog = () => {
-    setBookingDialogOpen(false);
+  const handleBookAppointment = () => {
+    navigate('/book-appointment');
   };
 
   return (
     <>
-      {/* Booking Request Dialog */}
-      <BookingRequestDialog
-        open={bookingDialogOpen}
-        onClose={handleCloseBookingDialog}
-      />
-
       {/* Hero Section */}
       <HeroSection />
 
       {/* Quick Actions Bar */}
-      <QuickActionsBar onBookAppointment={handleOpenBookingDialog} />
+      <QuickActionsBar onBookAppointment={handleBookAppointment} />
 
       {/* Mobile Tire Emergency Service Banner */}
-      <EmergencyServiceBanner onBookNow={handleOpenBookingDialog} />
+      <EmergencyServiceBanner onBookNow={handleBookAppointment} />
 
       {/* Featured Services */}
       <FeaturedServices />
