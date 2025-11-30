@@ -1,0 +1,3 @@
+-- AlterEnum
+-- Add BOOKING_CONFIRMATION to the EmailType enum
+ALTER TYPE "EmailType" ADD VALUE 'BOOKING_CONFIRMATION';
