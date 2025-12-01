@@ -410,7 +410,7 @@ const InvoiceDetails: React.FC = () => {
               Invoice #{invoice.invoiceNumber}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Created: {formatDateTime(invoice.createdAt)}
+              Date: {new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: { xs: 'left', md: 'right' } }}>

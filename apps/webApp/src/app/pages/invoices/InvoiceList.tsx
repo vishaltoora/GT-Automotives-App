@@ -257,7 +257,9 @@ const InvoiceList: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
+    // Parse as UTC and format to avoid timezone shift
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { timeZone: 'UTC' });
   };
 
   const canCreateInvoice = role === 'staff' || role === 'supervisor' || role === 'admin';
@@ -488,7 +490,7 @@ const InvoiceList: React.FC = () => {
                       </Typography>
                     </Link>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                      {formatDate(invoice.createdAt)}
+                      {formatDate(invoice.invoiceDate || invoice.createdAt)}
                     </Typography>
                   </Box>
                   <ActionsMenu
@@ -589,7 +591,7 @@ const InvoiceList: React.FC = () => {
                       {invoice.invoiceNumber}
                     </Link>
                   </TableCell>
-                  <TableCell>{formatDate(invoice.createdAt)}</TableCell>
+                  <TableCell>{formatDate(invoice.invoiceDate || invoice.createdAt)}</TableCell>
                   <TableCell>
                     {(() => {
                       const customer = invoice.customer;

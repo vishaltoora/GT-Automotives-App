@@ -64,6 +64,7 @@ export interface Invoice {
   createdAt: string;
   updatedAt: string;
   paidAt?: string;
+  invoiceDate?: string;
 }
 
 // Using shared DTO from the library
@@ -207,7 +208,7 @@ class InvoiceService {
   // Helper method to generate print-friendly HTML
   generatePrintHTML(invoice: Invoice): string {
     const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
-    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'UTC' });
 
     // GT Logo - using actual logo.png
     const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
@@ -322,7 +323,7 @@ class InvoiceService {
           <div class="invoice-details">
             <h2>INVOICE</h2>
             <p><strong>Invoice #:</strong> ${invoice.invoiceNumber}<br>
-            <strong>Date:</strong> ${formatDate(invoice.createdAt)}<br>
+            <strong>Date:</strong> ${formatDate(invoice.invoiceDate || invoice.createdAt)}<br>
             <strong>Status:</strong> ${invoice.status}</p>
           </div>
         </div>
@@ -434,7 +435,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
       const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
       return `$${(numAmount || 0).toFixed(2)}`;
     };
-    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'UTC' });
 
     // GT Logo - using actual logo.png
     const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
@@ -458,7 +459,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
           <div style="text-align: right;">
             <h2 style="margin: 0; color: #333;">INVOICE</h2>
             <p><strong>Invoice #:</strong> ${invoice.invoiceNumber}<br>
-            <strong>Date:</strong> ${formatDate(invoice.createdAt)}<br>
+            <strong>Date:</strong> ${formatDate(invoice.invoiceDate || invoice.createdAt)}<br>
             <strong>Status:</strong> ${invoice.status}</p>
           </div>
         </div>

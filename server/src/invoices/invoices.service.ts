@@ -127,6 +127,7 @@ export class InvoicesService {
         notes: createInvoiceDto.notes,
         createdBy: userId,
         paidAt: createInvoiceDto.paymentMethod ? new Date() : undefined,
+        invoiceDate: createInvoiceDto.invoiceDate ? new Date(createInvoiceDto.invoiceDate) : new Date(),
       },
       items
     );
