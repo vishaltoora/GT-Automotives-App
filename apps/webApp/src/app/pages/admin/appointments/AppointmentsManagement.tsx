@@ -184,24 +184,32 @@ export const AppointmentsManagement: React.FC = () => {
     try {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+      // Format start and end dates for the month
+      const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+      // Single API call to fetch all payments for the month
+      const payments = await appointmentService.getPaymentsByDateRange(startDate, endDate);
+
+      // Group payments by date
       const paymentsByDate: Record<string, Appointment[]> = {};
-
-      // Fetch payment data for each day in the month
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const dateStr = date.toISOString().split('T')[0];
-
-        try {
-          const paymentsOnDate = await appointmentService.getByPaymentDate(date);
-          if (paymentsOnDate.length > 0) {
-            paymentsByDate[dateStr] = paymentsOnDate;
-          }
-        } catch (err) {
-          // Silently ignore errors for individual days
-          console.warn(`Failed to fetch payments for ${dateStr}:`, err);
+      for (const payment of payments) {
+        // Use paymentDate if available, otherwise fall back to scheduledDate
+        let dateStr: string;
+        if (payment.paymentDate) {
+          dateStr = new Date(payment.paymentDate).toISOString().split('T')[0];
+        } else if (typeof payment.scheduledDate === 'string') {
+          dateStr = payment.scheduledDate;
+        } else {
+          dateStr = new Date(payment.scheduledDate).toISOString().split('T')[0];
         }
+
+        if (!paymentsByDate[dateStr]) {
+          paymentsByDate[dateStr] = [];
+        }
+        paymentsByDate[dateStr].push(payment);
       }
 
       setMonthPaymentDates(paymentsByDate);
@@ -1472,6 +1480,11 @@ export const AppointmentsManagement: React.FC = () => {
           onDeleteAppointment={handleDeleteById}
           onStatusChange={handleStatusChange}
           onAddAppointment={handleCreate}
+          onRefresh={async () => {
+            // Reload appointments and payment data when payment is received in dialog
+            await loadMonthAppointments();
+            await loadTodayAppointments();
+          }}
         />
 
         {/* Action Menu */}

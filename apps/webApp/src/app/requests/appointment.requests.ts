@@ -311,4 +311,19 @@ export const appointmentService = {
     );
     return response.data;
   },
+
+  /**
+   * Get appointments with payments in a date range (for calendar highlighting)
+   * Optimized to return all payments in one request instead of per-day requests
+   */
+  async getPaymentsByDateRange(startDate: string, endDate: string): Promise<Appointment[]> {
+    const queryParams = new URLSearchParams({
+      startDate,
+      endDate,
+    });
+    const response = await apiClient.get(
+      `/api/appointments/payments-by-range?${queryParams.toString()}`
+    );
+    return response.data;
+  },
 };

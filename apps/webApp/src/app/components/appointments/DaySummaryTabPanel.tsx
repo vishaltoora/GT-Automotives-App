@@ -30,14 +30,12 @@ interface DaySummaryTabPanelProps {
   stats: PaymentStats;
   sortedPayments: Appointment[];
   onReceivePayment: (appointment: Appointment) => void;
-  onEditPayment: (appointment: Appointment) => void;
 }
 
 export const DaySummaryTabPanel: React.FC<DaySummaryTabPanelProps> = ({
   stats,
   sortedPayments,
   onReceivePayment,
-  onEditPayment,
 }) => {
   const outstandingBalancePayments = sortedPayments.filter(
     (apt) => apt.expectedAmount && apt.expectedAmount > (apt.paymentAmount || 0)
@@ -117,7 +115,6 @@ export const DaySummaryTabPanel: React.FC<DaySummaryTabPanelProps> = ({
                 key={appointment.id}
                 appointment={appointment}
                 onReceivePayment={onReceivePayment}
-                onEditPayment={onEditPayment}
               />
             ))}
           </Stack>

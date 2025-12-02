@@ -83,6 +83,21 @@ export class AppointmentsController {
   }
 
   /**
+   * Get appointments with payments in a date range (for calendar highlighting)
+   * This is optimized to return all payments in one request instead of per-day requests
+   * Roles: ADMIN, SUPERVISOR, STAFF
+   */
+  @Get('payments-by-range')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  async getPaymentsByDateRange(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.appointmentsService.getPaymentsByDateRange(startDate, endDate);
+  }
+
+  /**
    * Get customer's upcoming appointments
    * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER (customers can only see their own)
    */

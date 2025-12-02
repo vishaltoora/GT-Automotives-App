@@ -66,7 +66,6 @@ interface OutstandingBalanceCardProps {
     }>;
   };
   onReceivePayment: (appointment: any) => void;
-  onEditPayment: (appointment: any) => void;
 }
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
@@ -80,7 +79,6 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 export const OutstandingBalanceCard: React.FC<OutstandingBalanceCardProps> = ({
   appointment,
   onReceivePayment,
-  onEditPayment,
 }) => {
   const breakdown = parsePaymentBreakdown(appointment.paymentBreakdown);
 
@@ -99,7 +97,7 @@ export const OutstandingBalanceCard: React.FC<OutstandingBalanceCardProps> = ({
         position: 'relative',
       }}
     >
-      <CardContent sx={{ p: { xs: 1.5, sm: 2.5 }, pb: { xs: 6, sm: 7 } }}>
+      <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
         {/* Customer Header */}
         <Box
           sx={{
@@ -226,7 +224,7 @@ export const OutstandingBalanceCard: React.FC<OutstandingBalanceCardProps> = ({
                 </Typography>
               </Box>
               {appointment.vehicle && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                   <CarIcon
                     sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
                     color="action"
@@ -238,6 +236,25 @@ export const OutstandingBalanceCard: React.FC<OutstandingBalanceCardProps> = ({
                     {appointment.vehicle.year} {appointment.vehicle.make}{' '}
                     {appointment.vehicle.model}
                   </Typography>
+                </Box>
+              )}
+              {/* Assigned Staff - inline with service details */}
+              {appointment.employees && appointment.employees.length > 0 && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                  <PersonIcon
+                    sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                    color="action"
+                  />
+                  {appointment.employees.map((emp, index) => (
+                    <Typography
+                      key={emp.employee.id}
+                      variant="body2"
+                      sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}
+                    >
+                      {emp.employee.firstName} {emp.employee.lastName}
+                      {index < appointment.employees!.length - 1 ? ',' : ''}
+                    </Typography>
+                  ))}
                 </Box>
               )}
             </Box>
@@ -405,30 +422,6 @@ export const OutstandingBalanceCard: React.FC<OutstandingBalanceCardProps> = ({
           </Grid>
         </Grid>
 
-        {/* Employee Assignment */}
-        {appointment.employees && appointment.employees.length > 0 && (
-          <>
-            <Divider sx={{ my: 2 }} />
-            <Box>
-              <Typography variant="caption" color="text.secondary" textTransform="uppercase">
-                Assigned Staff
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                {appointment.employees.map((emp) => (
-                  <Chip
-                    key={emp.employee.id}
-                    icon={<PersonIcon />}
-                    label={`${emp.employee.firstName} ${emp.employee.lastName}`}
-                    size="small"
-                    variant="outlined"
-                    color="primary"
-                  />
-                ))}
-              </Box>
-            </Box>
-          </>
-        )}
-
         {/* Notes */}
         {appointment.notes && (
           <>
@@ -443,30 +436,6 @@ export const OutstandingBalanceCard: React.FC<OutstandingBalanceCardProps> = ({
             </Box>
           </>
         )}
-
-        {/* Process Payment Button - Bottom Right (Absolute Position) */}
-        <Button
-          variant="contained"
-          color="success"
-          size="small"
-          startIcon={<MoneyIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />}
-          onClick={() => onEditPayment(appointment)}
-          sx={{
-            position: 'absolute',
-            bottom: { xs: 12, sm: 16 },
-            right: { xs: 12, sm: 20 },
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-            py: { xs: 0.5, sm: 0.75 },
-            px: { xs: 1.5, sm: 2 },
-            fontWeight: 600,
-            boxShadow: 2,
-            '&:hover': {
-              boxShadow: 4,
-            },
-          }}
-        >
-          Process Payment
-        </Button>
       </CardContent>
     </Card>
   );

@@ -149,7 +149,8 @@ export interface AppointmentCardProps {
   };
   onEdit?: (appointment: any) => void;
   onDelete?: (appointmentId: string) => void;
-  onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void;
+  onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void | Promise<void>;
+  onPaymentComplete?: () => void | Promise<void>;
   showActions?: boolean;
 }
 
@@ -158,6 +159,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onEdit,
   onDelete,
   onStatusChange,
+  onPaymentComplete,
   showActions = true,
 }) => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -167,9 +169,13 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
     setPaymentDialogOpen(true);
   };
 
-  const handlePaymentSubmit = (paymentData: any) => {
+  const handlePaymentSubmit = async (paymentData: any) => {
     if (onStatusChange) {
-      onStatusChange(appointment.id, 'COMPLETED', paymentData);
+      await onStatusChange(appointment.id, 'COMPLETED', paymentData);
+    }
+    // Trigger refresh callback after payment is complete
+    if (onPaymentComplete) {
+      await onPaymentComplete();
     }
   };
 

@@ -36,8 +36,9 @@ interface DayAppointmentsDialogProps {
   appointments: Appointment[];
   onEditAppointment?: (appointment: Appointment) => void;
   onDeleteAppointment?: (appointmentId: string) => void;
-  onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void;
+  onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void | Promise<void>;
   onAddAppointment?: () => void;
+  onRefresh?: () => Promise<void>;
 }
 
 interface TabPanelProps {
@@ -68,10 +69,10 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   onDeleteAppointment,
   onStatusChange,
   onAddAppointment,
+  onRefresh,
 }) => {
   const [currentTab, setCurrentTab] = useState(0);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [paymentsProcessed, setPaymentsProcessed] = useState<Appointment[]>([]);
 
@@ -145,54 +146,51 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   const handlePaymentSubmit = async (paymentData: any) => {
     if (!selectedAppointment || !onStatusChange) return;
 
-    let updateData;
+    // Add mode: Merge with existing payment data
+    const currentTotal = selectedAppointment.paymentAmount || 0;
+    const newTotal = currentTotal + paymentData.totalAmount;
 
-    if (isEditMode) {
-      // Edit mode: Replace existing payment data
-      updateData = {
-        totalAmount: paymentData.totalAmount,
-        payments: paymentData.payments,
-        paymentNotes: paymentData.paymentNotes,
-        expectedAmount: paymentData.expectedAmount,
-      };
-    } else {
-      // Add mode: Merge with existing payment data
-      const currentTotal = selectedAppointment.paymentAmount || 0;
-      const newTotal = currentTotal + paymentData.totalAmount;
-
-      // Merge existing and new payment breakdown
-      let existingBreakdown = selectedAppointment.paymentBreakdown;
-      if (typeof existingBreakdown === 'string') {
-        try {
-          existingBreakdown = JSON.parse(existingBreakdown);
-        } catch (e) {
-          existingBreakdown = [];
-        }
+    // Merge existing and new payment breakdown
+    let existingBreakdown = selectedAppointment.paymentBreakdown;
+    if (typeof existingBreakdown === 'string') {
+      try {
+        existingBreakdown = JSON.parse(existingBreakdown);
+      } catch (e) {
+        existingBreakdown = [];
       }
-      const mergedBreakdown = [...(existingBreakdown || []), ...paymentData.payments];
-
-      updateData = {
-        totalAmount: newTotal,
-        payments: mergedBreakdown,
-        paymentNotes: paymentData.paymentNotes
-          ? `${selectedAppointment.paymentNotes || ''}\n${paymentData.paymentNotes}`.trim()
-          : selectedAppointment.paymentNotes,
-        expectedAmount: selectedAppointment.expectedAmount,
-      };
     }
+    const mergedBreakdown = [...(existingBreakdown || []), ...paymentData.payments];
+
+    const updateData = {
+      totalAmount: newTotal,
+      payments: mergedBreakdown,
+      paymentNotes: paymentData.paymentNotes
+        ? `${selectedAppointment.paymentNotes || ''}\n${paymentData.paymentNotes}`.trim()
+        : selectedAppointment.paymentNotes,
+      expectedAmount: selectedAppointment.expectedAmount,
+    };
 
     // Call the status change handler (it won't change status, just update payment)
-    onStatusChange(selectedAppointment.id, selectedAppointment.status, updateData);
+    await onStatusChange(selectedAppointment.id, selectedAppointment.status, updateData);
 
+    // Close payment dialog first
     setPaymentDialogOpen(false);
-    setIsEditMode(false);
     setSelectedAppointment(null);
+
+    // Refresh dialog data after payment is processed
+    await fetchPaymentsProcessed();
+    if (onRefresh) {
+      await onRefresh();
+    }
   };
 
-  const handleEditPayment = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setIsEditMode(true);
-    setPaymentDialogOpen(true);
+  // Handler for when payment is completed from AppointmentCard
+  const handlePaymentComplete = async () => {
+    // Refresh EOD data after payment is completed
+    await fetchPaymentsProcessed();
+    if (onRefresh) {
+      await onRefresh();
+    }
   };
 
   return (
@@ -312,6 +310,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                   onEdit={onEditAppointment}
                   onDelete={onDeleteAppointment}
                   onStatusChange={onStatusChange}
+                  onPaymentComplete={handlePaymentComplete}
                 />
               ))}
             </Stack>
@@ -335,6 +334,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                   onEdit={onEditAppointment}
                   onDelete={onDeleteAppointment}
                   onStatusChange={onStatusChange}
+                  onPaymentComplete={handlePaymentComplete}
                 />
               ))}
             </Stack>
@@ -347,7 +347,6 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
             stats={stats}
             sortedPayments={sortedPayments}
             onReceivePayment={handleReceivePayment}
-            onEditPayment={handleEditPayment}
           />
         </TabPanel>
       </DialogContent>
@@ -390,33 +389,21 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
         </Button>
       </DialogActions>
 
-      {/* Payment Dialog for Receiving Outstanding Balance or Editing Payment */}
+      {/* Payment Dialog for Receiving Outstanding Balance */}
       {selectedAppointment && (
         <PaymentDialog
           open={paymentDialogOpen}
           onClose={() => {
             setPaymentDialogOpen(false);
-            setIsEditMode(false);
             setSelectedAppointment(null);
           }}
           onSubmit={handlePaymentSubmit}
           appointmentId={selectedAppointment.id}
           defaultExpectedAmount={
-            isEditMode
-              ? selectedAppointment.expectedAmount || 0
-              : selectedAppointment.expectedAmount
+            selectedAppointment.expectedAmount
               ? selectedAppointment.expectedAmount - (selectedAppointment.paymentAmount || 0)
               : 0
           }
-          existingPayments={
-            isEditMode && selectedAppointment.paymentBreakdown
-              ? typeof selectedAppointment.paymentBreakdown === 'string'
-                ? JSON.parse(selectedAppointment.paymentBreakdown)
-                : selectedAppointment.paymentBreakdown
-              : undefined
-          }
-          existingNotes={isEditMode ? selectedAppointment.paymentNotes : ''}
-          isEditMode={isEditMode}
         />
       )}
     </Dialog>

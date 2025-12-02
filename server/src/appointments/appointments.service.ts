@@ -725,6 +725,63 @@ export class AppointmentsService {
   }
 
   /**
+   * Get appointments with payments processed within a date range
+   * This is optimized for calendar highlighting - returns all payments in one query
+   * instead of making individual requests for each day
+   */
+  async getPaymentsByDateRange(startDate: string, endDate: string) {
+    const startDateOnly = extractBusinessDate(startDate);
+    const endDateOnly = extractBusinessDate(endDate);
+
+    console.log('[GET PAYMENTS BY DATE RANGE] Query:', {
+      startDate: startDateOnly,
+      endDate: endDateOnly,
+      businessTimezone: POSTGRES_TIMEZONE,
+    });
+
+    // Fetch all appointments with payments in the date range
+    const appointments = await this.prisma.$queryRaw<any[]>`
+      SELECT a.*
+      FROM "Appointment" a
+      WHERE (a."paymentAmount" >= 0 OR a."paymentAmount" IS NULL)
+        AND (
+          -- Payment was processed within this date range
+          (
+            a."paymentDate" IS NOT NULL
+            AND DATE(a."paymentDate" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) >= DATE(${startDateOnly})
+            AND DATE(a."paymentDate" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) <= DATE(${endDateOnly})
+          )
+          OR
+          -- Fallback: Appointment scheduled in range and completed (for old data without paymentDate)
+          (
+            a."paymentDate" IS NULL
+            AND DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) >= DATE(${startDateOnly})
+            AND DATE(a."scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) <= DATE(${endDateOnly})
+            AND a."status" = 'COMPLETED'
+          )
+        )
+      ORDER BY a."paymentDate" ASC, a."scheduledTime" ASC
+    `;
+
+    const appointmentIds = appointments.map(a => a.id);
+
+    if (appointmentIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full appointments with relations
+    return this.prisma.appointment.findMany({
+      where: {
+        id: {
+          in: appointmentIds,
+        },
+      },
+      include: this.appointmentInclude,
+      orderBy: [{ paymentDate: 'asc' }, { scheduledTime: 'asc' }],
+    });
+  }
+
+  /**
    * Get today's appointments for printing/display
    * All users (STAFF and ADMIN) can see all appointments
    * Uses DATE-only comparison to avoid timezone issues
