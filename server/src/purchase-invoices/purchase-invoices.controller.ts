@@ -51,19 +51,14 @@ export class PurchaseInvoicesController {
     return this.purchaseInvoicesService.findAll(filterDto);
   }
 
-  @Get(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  async findOne(@Param('id') id: string): Promise<PurchaseInvoiceResponseDto> {
-    return this.purchaseInvoicesService.findOne(id);
-  }
+  // IMPORTANT: Specific routes with path segments must come BEFORE generic :id routes
+  // Otherwise NestJS will match :id first and treat "image-url" as part of the id
 
-  @Put(':id')
+  @Get(':id/image-url')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  async update(
-    @Param('id') id: string,
-    @Body(ValidationPipe) updateDto: UpdatePurchaseInvoiceDto,
-  ): Promise<PurchaseInvoiceResponseDto> {
-    return this.purchaseInvoicesService.update(id, updateDto);
+  async getImageUrl(@Param('id') id: string): Promise<{ imageUrl: string }> {
+    const imageUrl = await this.purchaseInvoicesService.getImageUrl(id);
+    return { imageUrl };
   }
 
   @Post(':id/upload')
@@ -91,11 +86,20 @@ export class PurchaseInvoicesController {
     return this.purchaseInvoicesService.deleteImage(id);
   }
 
-  @Get(':id/image-url')
+  // Generic :id routes come AFTER specific routes
+  @Get(':id')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  async getImageUrl(@Param('id') id: string): Promise<{ imageUrl: string }> {
-    const imageUrl = await this.purchaseInvoicesService.getImageUrl(id);
-    return { imageUrl };
+  async findOne(@Param('id') id: string): Promise<PurchaseInvoiceResponseDto> {
+    return this.purchaseInvoicesService.findOne(id);
+  }
+
+  @Put(':id')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  async update(
+    @Param('id') id: string,
+    @Body(ValidationPipe) updateDto: UpdatePurchaseInvoiceDto,
+  ): Promise<PurchaseInvoiceResponseDto> {
+    return this.purchaseInvoicesService.update(id, updateDto);
   }
 
   @Delete(':id')
