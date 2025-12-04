@@ -621,10 +621,20 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             ...newItem,
                             itemType: selectedType,
                             description: 'ECO Fee',
-                            unitPrice: 6.5
+                            unitPrice: 6.5,
+                            tireId: undefined,
+                            serviceId: undefined,
                           });
                         } else {
-                          setNewItem({ ...newItem, itemType: selectedType });
+                          // Reset description and unitPrice when changing type
+                          setNewItem({
+                            ...newItem,
+                            itemType: selectedType,
+                            description: '',
+                            unitPrice: '' as unknown as number,
+                            tireId: undefined,
+                            serviceId: undefined,
+                          });
                         }
                       }}
                       label="Type"
@@ -734,6 +744,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       value={(newItem as any).serviceId}
                       onChange={handleServiceChange}
                       onServicesChange={onServicesChange}
+                      size="small"
                     />
                   </Grid>
                 ) : (
@@ -771,8 +782,13 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     size="small"
                     type="number"
                     label={newItem.itemType === 'DISCOUNT' ? 'Discount Amount' : newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 'Discount Percentage' : 'Unit Price'}
-                    value={newItem.itemType === 'DISCOUNT' ? Math.abs(newItem.unitPrice) : newItem.unitPrice}
+                    value={newItem.itemType === 'DISCOUNT' ? (newItem.unitPrice ? Math.abs(newItem.unitPrice) : '') : newItem.unitPrice}
                     onChange={(e) => {
+                      // Allow empty string for clearing the field
+                      if (e.target.value === '') {
+                        setNewItem({ ...newItem, unitPrice: '' as unknown as number });
+                        return;
+                      }
                       const value = parseFloat(e.target.value) || 0;
                       // For discount amount items, automatically make the value negative
                       // For percentage items, keep it positive (we'll handle the negative in calculation)
@@ -781,6 +797,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         finalValue = -value;
                       }
                       setNewItem({ ...newItem, unitPrice: finalValue });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                        e.preventDefault();
+                      }
                     }}
                     InputProps={{
                       startAdornment: <InputAdornment position="start">
@@ -800,6 +821,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           ? 'Enter percentage (0-100)'
                           : undefined
                     }
+                    autoComplete="off"
                   />
                 </Grid>
 

@@ -130,9 +130,9 @@ export function TireForm() {
       size: '',
       type: TireType.ALL_SEASON as TireType,
       condition: TireCondition.NEW as TireCondition,
-      quantity: 0,
-      price: 0,
-      cost: isAdmin ? 0 : undefined,
+      quantity: '' as unknown as number,
+      price: '' as unknown as number,
+      cost: isAdmin ? ('' as unknown as number) : undefined,
       minStock: 5,
       location: '',
       imageUrl: '',
@@ -357,6 +357,7 @@ export function TireForm() {
                       error={formik.touched.quantity && Boolean(formik.errors.quantity)}
                       helperText={formik.touched.quantity && formik.errors.quantity}
                       inputProps={{ min: 0 }}
+                      autoComplete="off"
                     />
                   </Grid>
 
@@ -372,6 +373,7 @@ export function TireForm() {
                       error={formik.touched.minStock && Boolean(formik.errors.minStock)}
                       helperText={formik.touched.minStock && formik.errors.minStock}
                       inputProps={{ min: 0 }}
+                      autoComplete="off"
                     />
                   </Grid>
 
@@ -390,6 +392,7 @@ export function TireForm() {
                         startAdornment: <InputAdornment position="start">$</InputAdornment>,
                       }}
                       inputProps={{ min: 0, step: 0.01 }}
+                      autoComplete="off"
                     />
                   </Grid>
 
@@ -409,6 +412,7 @@ export function TireForm() {
                           startAdornment: <InputAdornment position="start">$</InputAdornment>,
                         }}
                         inputProps={{ min: 0, step: 0.01 }}
+                        autoComplete="off"
                       />
                     </Grid>
                   )}

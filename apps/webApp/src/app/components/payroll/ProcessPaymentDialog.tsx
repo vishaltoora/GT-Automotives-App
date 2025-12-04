@@ -130,14 +130,21 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
   };
 
   // Update amount when selection changes
+  // Note: We use JSON.stringify of job IDs to prevent infinite loops from allJobs array reference changes
   useEffect(() => {
     if (selectedJobIds.size > 0) {
       const total = allJobs
         .filter(j => selectedJobIds.has(j.id))
         .reduce((sum, j) => sum + j.payAmount, 0);
-      setFormData(prev => ({ ...prev, amount: total }));
+      setFormData(prev => {
+        // Only update if the amount actually changed to prevent unnecessary re-renders
+        if (prev.amount !== total) {
+          return { ...prev, amount: total };
+        }
+        return prev;
+      });
     }
-  }, [selectedJobIds, allJobs]);
+  }, [selectedJobIds, allJobs.length]);
 
   const handleInputChange = (field: keyof ProcessPaymentDto, value: any) => {
     setFormData(prev => ({

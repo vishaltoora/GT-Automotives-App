@@ -57,9 +57,9 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
     vendorName: '',
     description: '',
     invoiceDate: new Date().toISOString().split('T')[0],
-    amount: 0,
-    taxAmount: 0,
-    totalAmount: 0,
+    amount: '' as string | number,
+    taxAmount: '' as string | number,
+    totalAmount: '' as string | number,
     category: 'OFFICE_SUPPLIES' as ExpenseCategory,
     status: 'PENDING' as ExpenseInvoiceStatus,
     paymentDate: '',
@@ -97,9 +97,9 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
         vendorName: '',
         description: '',
         invoiceDate: new Date().toISOString().split('T')[0],
-        amount: 0,
-        taxAmount: 0,
-        totalAmount: 0,
+        amount: '',
+        taxAmount: '',
+        totalAmount: '',
         category: 'OFFICE_SUPPLIES',
         status: 'PENDING',
         paymentDate: '',
@@ -125,8 +125,8 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
 
     // Auto-calculate total if amount or tax changes
     if (field === 'amount' || field === 'taxAmount') {
-      const amount = field === 'amount' ? parseFloat(value) || 0 : formData.amount;
-      const tax = field === 'taxAmount' ? parseFloat(value) || 0 : formData.taxAmount;
+      const amount = field === 'amount' ? parseFloat(value) || 0 : parseFloat(String(formData.amount)) || 0;
+      const tax = field === 'taxAmount' ? parseFloat(value) || 0 : parseFloat(String(formData.taxAmount)) || 0;
       setFormData((prev) => ({ ...prev, totalAmount: amount + tax, [field]: parseFloat(value) || 0 }));
     }
   };
@@ -181,8 +181,8 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
   const isValid =
     formData.vendorName.trim().length > 0 &&
     formData.description.trim().length > 0 &&
-    formData.amount > 0 &&
-    formData.totalAmount > 0;
+    Number(formData.amount) > 0 &&
+    Number(formData.totalAmount) > 0;
 
   return (
     <Dialog open={open} maxWidth="md" fullWidth disableEscapeKeyDown>
@@ -268,6 +268,7 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
                 value={formData.amount}
                 onChange={handleChange('amount')}
                 inputProps={{ step: '0.01', min: '0' }}
+                autoComplete="off"
               />
             </Grid>
 
@@ -279,6 +280,7 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
                 value={formData.taxAmount}
                 onChange={handleChange('taxAmount')}
                 inputProps={{ step: '0.01', min: '0' }}
+                autoComplete="off"
               />
             </Grid>
 
@@ -291,6 +293,7 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
                 value={formData.totalAmount}
                 onChange={handleChange('totalAmount')}
                 inputProps={{ step: '0.01', min: '0' }}
+                autoComplete="off"
               />
             </Grid>
 

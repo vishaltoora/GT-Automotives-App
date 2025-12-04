@@ -104,8 +104,12 @@ export class InvoicesController {
   @Post(':id/send-email')
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  sendEmail(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.invoicesService.sendInvoiceEmail(id, user.id);
+  sendEmail(
+    @Param('id') id: string,
+    @Body() body: { email?: string; saveToCustomer?: boolean },
+    @CurrentUser() user: any,
+  ) {
+    return this.invoicesService.sendInvoiceEmail(id, user.id, body.email, body.saveToCustomer);
   }
 
   @Delete(':id')

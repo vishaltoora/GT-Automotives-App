@@ -442,7 +442,7 @@ export class InvoicesService {
     return this.serviceRepository.delete(id);
   }
 
-  async sendInvoiceEmail(invoiceId: string, userId: string) {
+  async sendInvoiceEmail(invoiceId: string, userId: string, overrideEmail?: string, saveToCustomer?: boolean) {
     // Get invoice with all relations including customer
     const invoice = await this.invoiceRepository.findWithDetails(invoiceId);
     if (!invoice) {
@@ -452,9 +452,17 @@ export class InvoicesService {
     // Get customer separately to ensure proper typing
     const customer = await this.customerRepository.findById(invoice.customerId);
 
-    // Check if customer has email
-    if (!customer?.email) {
-      throw new BadRequestException('Customer does not have an email address');
+    // Use override email or customer email
+    const emailToUse = overrideEmail || customer?.email;
+
+    // Check if we have an email to send to
+    if (!emailToUse) {
+      throw new BadRequestException('No email address provided and customer does not have an email address');
+    }
+
+    // If saveToCustomer is true and customer exists, update customer email
+    if (saveToCustomer && customer && overrideEmail && !customer.email) {
+      await this.customerRepository.update(customer.id, { email: overrideEmail });
     }
 
     try {
@@ -463,7 +471,7 @@ export class InvoicesService {
 
       // Send email
       const emailResult = await this.emailService.sendInvoiceEmail(
-        customer.email,
+        emailToUse,
         invoice.invoiceNumber,
         pdfBase64,
       );
@@ -480,13 +488,14 @@ export class InvoicesService {
         entityType: 'Invoice',
         entityId: invoiceId,
         details: {
-          email: customer.email,
+          email: emailToUse,
           invoiceNumber: invoice.invoiceNumber,
-          messageId: emailResult.messageId
+          messageId: emailResult.messageId,
+          emailSavedToCustomer: saveToCustomer && !!overrideEmail,
         },
       });
 
-      return { success: true, message: 'Invoice email sent successfully' };
+      return { success: true, message: 'Invoice email sent successfully', emailUsed: emailToUse };
     } catch (error) {
       throw new BadRequestException(
         `Failed to send invoice email: ${error instanceof Error ? error.message : 'Unknown error'}`,

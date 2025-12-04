@@ -81,9 +81,9 @@ export function TireFormSimple() {
     size: '',
     type: TireType.ALL_SEASON as TireType,
     condition: TireCondition.NEW as TireCondition,
-    quantity: 0,
-    price: 0,
-    cost: isAdmin ? 0 : undefined,
+    quantity: '' as unknown as number,
+    price: '' as unknown as number,
+    cost: isAdmin ? ('' as unknown as number) : undefined,
     minStock: 5,
     location: '',
     imageUrl: '',
@@ -339,10 +339,11 @@ export function TireFormSimple() {
                       label="Quantity *"
                       type="number"
                       value={formData.quantity}
-                      onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 0)}
+                      onChange={(e) => handleChange('quantity', e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
                       error={!!errors.quantity}
                       helperText={errors.quantity}
                       inputProps={{ min: 0 }}
+                      autoComplete="off"
                     />
                   </Grid>
 
@@ -355,6 +356,7 @@ export function TireFormSimple() {
                       value={formData.minStock}
                       onChange={(e) => handleChange('minStock', parseInt(e.target.value) || 0)}
                       inputProps={{ min: 0 }}
+                      autoComplete="off"
                     />
                   </Grid>
 
@@ -365,13 +367,14 @@ export function TireFormSimple() {
                       label="Selling Price *"
                       type="number"
                       value={formData.price}
-                      onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleChange('price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
                       error={!!errors.price}
                       helperText={errors.price}
                       InputProps={{
                         startAdornment: <InputAdornment position="start">$</InputAdornment>,
                       }}
                       inputProps={{ min: 0, step: 0.01 }}
+                      autoComplete="off"
                     />
                   </Grid>
 
@@ -383,13 +386,14 @@ export function TireFormSimple() {
                         label="Cost"
                         type="number"
                         value={formData.cost}
-                        onChange={(e) => handleChange('cost', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => handleChange('cost', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
                         error={!!errors.cost}
                         helperText={errors.cost}
                         InputProps={{
                           startAdornment: <InputAdornment position="start">$</InputAdornment>,
                         }}
                         inputProps={{ min: 0, step: 0.01 }}
+                        autoComplete="off"
                       />
                     </Grid>
                   )}

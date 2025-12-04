@@ -19,6 +19,7 @@ import { CommonModule } from '../common/common.module';
 import { VendorsModule } from '../vendors/vendors.module';
 import { PurchaseInvoicesModule } from '../purchase-invoices/purchase-invoices.module';
 import { ExpenseInvoicesModule } from '../expense-invoices/expense-invoices.module';
+import { PurchaseExpenseInvoicesModule } from '../purchase-expense-invoices/purchase-expense-invoices.module';
 import { ReportsModule } from '../reports/reports.module';
 import { AppointmentsModule } from '../appointments/appointments.module';
 import { SmsModule } from '../sms/sms.module';
@@ -50,6 +51,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     VendorsModule,
     PurchaseInvoicesModule,
     ExpenseInvoicesModule,
+    PurchaseExpenseInvoicesModule,
     ReportsModule,
     AppointmentsModule,
     SmsModule,

@@ -81,8 +81,12 @@ export class QuotationsController {
 
   @Post(':id/send-email')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  sendEmail(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.quotationsService.sendQuotationEmail(id, user.id);
+  sendEmail(
+    @Param('id') id: string,
+    @Body() body: { email?: string; saveToQuote?: boolean },
+    @CurrentUser() user: any,
+  ) {
+    return this.quotationsService.sendQuotationEmail(id, user.id, body.email, body.saveToQuote);
   }
 
   @Post(':id/convert')

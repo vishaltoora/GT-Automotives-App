@@ -154,10 +154,10 @@ class InvoiceService {
     return response.data;
   }
 
-  async sendInvoiceEmail(id: string): Promise<{ success: boolean; message: string }> {
+  async sendInvoiceEmail(id: string, email?: string, saveToCustomer?: boolean): Promise<{ success: boolean; message: string; emailUsed?: string }> {
     const response = await axios.post(
       `${API_URL}/api/invoices/${id}/send-email`,
-      {},
+      { email, saveToCustomer },
       {
         headers: await this.getHeaders(),
       }

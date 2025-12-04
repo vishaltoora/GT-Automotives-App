@@ -605,13 +605,16 @@ model Vendor {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
-  purchaseInvoices  PurchaseInvoice[]
-  expenseInvoices   ExpenseInvoice[]
+  purchaseInvoices        PurchaseInvoice[]
+  expenseInvoices         ExpenseInvoice[]
+  purchaseExpenseInvoices PurchaseExpenseInvoice[] @relation("PurchaseExpenseInvoices")
 
   @@index([name])
   @@index([isActive])
 }
 
+// DEPRECATED: Use PurchaseExpenseInvoice instead
+// Keeping for migration purposes - will be removed after data migration
 model PurchaseInvoice {
   id              String               @id @default(cuid())
   vendorId        String?              // Optional vendor relationship
@@ -643,6 +646,8 @@ model PurchaseInvoice {
   @@index([createdBy])
 }
 
+// DEPRECATED: Use PurchaseExpenseInvoice instead
+// Keeping for migration purposes - will be removed after data migration
 model ExpenseInvoice {
   id              String               @id @default(cuid())
   invoiceNumber   String?              // Vendor's invoice number
@@ -675,6 +680,36 @@ model ExpenseInvoice {
   @@index([status])
   @@index([createdBy])
   @@index([isRecurring])
+}
+
+// ============================================
+// Unified Purchase & Expense Invoice System
+// ============================================
+
+model PurchaseExpenseInvoice {
+  id              String                       @id @default(cuid())
+  type            PurchaseExpenseType          // PURCHASE or EXPENSE
+  vendorId        String?                      // Optional vendor relationship
+  vendorName      String                       // Free-text vendor name
+  description     String                       // What was purchased/expense description
+  invoiceDate     DateTime                     // Date on the invoice
+  totalAmount     Decimal                      @db.Decimal(10, 2)
+  category        PurchaseExpenseCategory      // Unified categorization
+  notes           String?                      // Additional notes
+  imageUrl        String?                      // Azure Blob Storage URL
+  imageName       String?                      // Original filename
+  imageSize       Int?                         // File size in bytes
+  createdBy       String                       // User who created it
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+
+  vendor          Vendor?                      @relation("PurchaseExpenseInvoices", fields: [vendorId], references: [id])
+
+  @@index([type])
+  @@index([invoiceDate])
+  @@index([vendorId])
+  @@index([category])
+  @@index([createdBy])
 }
 
 // ============================================
@@ -716,6 +751,33 @@ enum RecurringPeriod {
   MONTHLY
   QUARTERLY
   YEARLY
+}
+
+// Unified enums for PurchaseExpenseInvoice
+enum PurchaseExpenseType {
+  PURCHASE           // Purchase invoices (inventory, parts, etc.)
+  EXPENSE            // Expense invoices (rent, utilities, etc.)
+}
+
+enum PurchaseExpenseCategory {
+  // Purchase categories
+  TIRES              // Tire inventory purchases
+  PARTS              // Auto parts
+  TOOLS              // Tools and equipment
+  SUPPLIES           // Shop supplies
+  // Expense categories
+  RENT               // Shop rent
+  UTILITIES          // Electricity, water, gas, internet
+  INSURANCE          // Business insurance
+  ADVERTISING        // Marketing and advertising
+  OFFICE_SUPPLIES    // Office supplies
+  PROFESSIONAL_FEES  // Accounting, legal, etc.
+  MAINTENANCE        // Building/equipment maintenance
+  VEHICLE            // Company vehicle expenses
+  TRAVEL             // Travel expenses
+  TRAINING           // Staff training
+  SOFTWARE           // Software subscriptions
+  OTHER              // Other purchases/expenses
 }
 
 // ============================================

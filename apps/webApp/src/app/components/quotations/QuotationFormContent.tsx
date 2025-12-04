@@ -243,10 +243,20 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                         ...newItem,
                         itemType: selectedType,
                         description: 'ECO Fee',
-                        unitPrice: 6.5
+                        unitPrice: 6.5,
+                        tireId: undefined,
+                        serviceId: undefined,
                       });
                     } else {
-                      setNewItem({ ...newItem, itemType: selectedType });
+                      // Reset description and unitPrice when changing type
+                      setNewItem({
+                        ...newItem,
+                        itemType: selectedType,
+                        description: '',
+                        unitPrice: '' as unknown as number,
+                        tireId: undefined,
+                        serviceId: undefined,
+                      });
                     }
                   }}
                   label="Type"
@@ -364,11 +374,17 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 type="number"
                 label="Unit Price"
                 value={newItem.unitPrice}
-                onChange={(e) => setNewItem({ ...newItem, unitPrice: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value === '' ? '' as unknown as number : parseFloat(e.target.value) || 0 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                  }
+                }}
                 inputProps={{ min: 0, step: 0.01 }}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">$</InputAdornment>,
                 }}
+                autoComplete="off"
               />
             </Grid>
 

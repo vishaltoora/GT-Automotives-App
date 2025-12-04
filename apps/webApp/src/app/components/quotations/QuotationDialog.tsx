@@ -63,7 +63,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
     itemType: 'TIRE',
     description: '',
     quantity: 1,
-    unitPrice: 0,
+    unitPrice: '' as unknown as number,
   });
 
   useEffect(() => {
@@ -135,7 +135,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
       itemType: 'TIRE',
       description: '',
       quantity: 1,
-      unitPrice: 0,
+      unitPrice: '' as unknown as number,
     });
   };
 
@@ -168,7 +168,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
         itemType: 'TIRE',
         description: '',
         quantity: 1,
-        unitPrice: 0,
+        unitPrice: '' as unknown as number,
         tireId: undefined,
       });
     }

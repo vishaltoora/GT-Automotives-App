@@ -27,7 +27,7 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
 }) => {
   const [name, setName] = useState(service?.name || '');
   const [description, setDescription] = useState(service?.description || '');
-  const [unitPrice, setUnitPrice] = useState<number>(service?.unitPrice || 0);
+  const [unitPrice, setUnitPrice] = useState<number | string>(service?.unitPrice || '');
 
   React.useEffect(() => {
     if (service) {
@@ -37,13 +37,13 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
     } else {
       setName('');
       setDescription('');
-      setUnitPrice(0);
+      setUnitPrice('');
     }
   }, [service, open]);
 
   const handleSave = () => {
-    if (name && unitPrice > 0) {
-      onSave({ name, description, unitPrice });
+    if (name && Number(unitPrice) > 0) {
+      onSave({ name, description, unitPrice: Number(unitPrice) });
       handleClose();
     }
   };
@@ -51,7 +51,7 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
   const handleClose = () => {
     setName('');
     setDescription('');
-    setUnitPrice(0);
+    setUnitPrice('');
     onClose();
   };
 
@@ -86,10 +86,11 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
             label="Unit Price"
             type="number"
             value={unitPrice}
-            onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
+            onChange={(e) => setUnitPrice(e.target.value)}
             fullWidth
             required
             inputProps={{ min: 0, step: 0.01 }}
+            autoComplete="off"
           />
         </Box>
       </DialogContent>
@@ -98,7 +99,7 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={!name || unitPrice <= 0}
+          disabled={!name || !unitPrice || Number(unitPrice) <= 0}
         >
           {service ? 'Update' : 'Add'} Service
         </Button>

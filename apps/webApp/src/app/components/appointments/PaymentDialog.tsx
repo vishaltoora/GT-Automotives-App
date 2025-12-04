@@ -266,7 +266,12 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             label="Expected Amount (Optional)"
             type="number"
             value={expectedAmount || ''}
-            onChange={(e) => setExpectedAmount(parseFloat(e.target.value) || 0)}
+            onChange={(e) => setExpectedAmount(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+            onKeyDown={(e) => {
+              if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                e.preventDefault();
+              }
+            }}
             fullWidth
             InputProps={{
               startAdornment: <InputAdornment position="start">$</InputAdornment>,
@@ -276,6 +281,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
               step: 0.01,
             }}
             helperText="Enter the expected total amount to track partial payments"
+            autoComplete="off"
           />
 
           {/* Total Amount Display */}
@@ -426,6 +432,11 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         onChange={(e) =>
                           handlePaymentChange(payment.id, 'amount', e.target.value)
                         }
+                        onKeyDown={(e) => {
+                          if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                            e.preventDefault();
+                          }
+                        }}
                         error={!!errors[payment.id]}
                         helperText={errors[payment.id]}
                         size="small"
@@ -440,6 +451,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                           min: 0,
                           step: 0.01,
                         }}
+                        autoComplete="off"
                       />
 
                       {/* Delete Button - Desktop only */}
@@ -557,12 +569,20 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         {activeTab === 1 && (
           <Button
             onClick={handleOpenSquareForm}
-            variant="contained"
+            variant={serviceAmount <= 0 ? 'outlined' : 'contained'}
             color="primary"
             startIcon={<CreditCardIcon />}
             disabled={serviceAmount <= 0}
             fullWidth={isMobile}
             size={isMobile ? 'large' : 'medium'}
+            sx={serviceAmount <= 0 ? {
+              borderColor: 'grey.400',
+              color: 'grey.500',
+              '&.Mui-disabled': {
+                borderColor: 'grey.400',
+                color: 'grey.500',
+              },
+            } : {}}
           >
             Pay with Card
           </Button>

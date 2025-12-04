@@ -30,6 +30,7 @@ interface ServiceSelectProps {
   onChange: (serviceId: string, serviceName: string, unitPrice: number) => void;
   onServicesChange: () => void;
   disabled?: boolean;
+  size?: 'small' | 'medium';
 }
 
 export const ServiceSelect: React.FC<ServiceSelectProps> = ({
@@ -38,6 +39,7 @@ export const ServiceSelect: React.FC<ServiceSelectProps> = ({
   onChange,
   onServicesChange,
   disabled = false,
+  size = 'medium',
 }) => {
   const { showError } = useError();
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
@@ -127,20 +129,23 @@ export const ServiceSelect: React.FC<ServiceSelectProps> = ({
             }
           }}
           getOptionLabel={(service) => service.name}
-          renderOption={(props, service) => (
-            <Box component="li" {...props}>
-              {service.name}
-            </Box>
-          )}
+          renderOption={(props, service) => {
+            const { key, ...otherProps } = props;
+            return (
+              <Box component="li" key={key} {...otherProps}>
+                {service.name}
+              </Box>
+            );
+          }}
           renderInput={(params) => (
             <TextField
               {...params}
               label="Select Service"
               placeholder="Type to search..."
-              size="small"
+              size={size}
             />
           )}
-          size="small"
+          size={size}
           fullWidth
           disabled={disabled}
         />

@@ -72,6 +72,11 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
         type="number"
         value={value || ''}
         onChange={handleAmountChange}
+        onKeyDown={(e) => {
+          if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+            e.preventDefault();
+          }
+        }}
         error={!!error}
         helperText={error || 'Enter the base service amount (GST and PST will be calculated automatically)'}
         disabled={disabled}
@@ -86,6 +91,7 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
           min: 0,
           step: 0.01,
         }}
+        autoComplete="off"
         sx={{ mb: 2 }}
       />
 

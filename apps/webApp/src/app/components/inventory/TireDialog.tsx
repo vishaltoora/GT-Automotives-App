@@ -94,9 +94,9 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     size: '',
     type: TireType.ALL_SEASON as any,
     condition: TireCondition.NEW as any,
-    quantity: 0,
-    price: 0,
-    cost: 0,
+    quantity: '' as unknown as number,
+    price: '' as unknown as number,
+    cost: '' as unknown as number,
     minStock: 5,
     location: '',
     notes: '',
@@ -131,9 +131,9 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
           size: '',
           type: TireType.ALL_SEASON as any,
           condition: TireCondition.NEW as any,
-          quantity: 0,
-          price: 0,
-          cost: 0,
+          quantity: '' as unknown as number,
+          price: '' as unknown as number,
+          cost: '' as unknown as number,
           minStock: 5,
           location: '',
           notes: '',
@@ -413,10 +413,16 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                 type="number"
                 fullWidth
                 value={formData.quantity}
-                onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleChange('quantity', e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                onKeyDown={(e) => {
+                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                  }
+                }}
                 error={!!errors.quantity}
                 helperText={errors.quantity}
                 inputProps={{ min: 0 }}
+                autoComplete="off"
                 required
               />
             </Grid>
@@ -427,13 +433,19 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                 type="number"
                 fullWidth
                 value={formData.price}
-                onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
+                onChange={(e) => handleChange('price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                onKeyDown={(e) => {
+                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                  }
+                }}
                 error={!!errors.price}
                 helperText={errors.price}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">$</InputAdornment>,
                 }}
                 inputProps={{ min: 0, step: 0.01 }}
+                autoComplete="off"
                 required
               />
             </Grid>
@@ -444,13 +456,19 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                 type="number"
                 fullWidth
                 value={formData.cost}
-                onChange={(e) => handleChange('cost', parseFloat(e.target.value) || 0)}
+                onChange={(e) => handleChange('cost', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                onKeyDown={(e) => {
+                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                  }
+                }}
                 error={!!errors.cost}
                 helperText={errors.cost}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">$</InputAdornment>,
                 }}
                 inputProps={{ min: 0, step: 0.01 }}
+                autoComplete="off"
               />
             </Grid>
 
@@ -460,10 +478,16 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                 type="number"
                 fullWidth
                 value={formData.minStock}
-                onChange={(e) => handleChange('minStock', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleChange('minStock', e.target.value === '' ? '' as unknown as number : parseInt(e.target.value) || 0)}
+                onKeyDown={(e) => {
+                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                  }
+                }}
                 error={!!errors.minStock}
                 helperText={errors.minStock}
                 inputProps={{ min: 0 }}
+                autoComplete="off"
               />
             </Grid>
 

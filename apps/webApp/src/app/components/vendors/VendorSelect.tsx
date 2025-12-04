@@ -14,6 +14,7 @@ interface VendorSelectProps {
   onChange: (vendorId: string, vendorName: string) => void;
   onVendorsChange: () => void;
   disabled?: boolean;
+  required?: boolean;
   allowFreeSolo?: boolean;
   onFreeTextChange?: (vendorName: string) => void;
   size?: 'small' | 'medium';
@@ -25,6 +26,7 @@ export const VendorSelect: React.FC<VendorSelectProps> = ({
   onChange,
   onVendorsChange,
   disabled = false,
+  required = false,
   allowFreeSolo = true,
   onFreeTextChange,
   size = 'medium',
@@ -106,6 +108,7 @@ export const VendorSelect: React.FC<VendorSelectProps> = ({
         placeholder={allowFreeSolo ? 'Select or type vendor name' : 'Select vendor'}
         size={size}
         disabled={disabled}
+        required={required}
         freeSolo={allowFreeSolo}
         onInputChange={handleInputChange}
         addButtonTooltip="Add New Vendor"

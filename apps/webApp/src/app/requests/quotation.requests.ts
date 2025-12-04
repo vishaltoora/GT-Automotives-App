@@ -177,10 +177,10 @@ class QuoteService {
     return response.data;
   }
 
-  async sendQuotationEmail(id: string): Promise<{ success: boolean; message: string }> {
+  async sendQuotationEmail(id: string, email?: string, saveToQuote?: boolean): Promise<{ success: boolean; message: string; emailUsed?: string }> {
     const response = await axios.post(
       `${API_URL}/api/quotations/${id}/send-email`,
-      {},
+      { email, saveToQuote },
       {
         headers: await this.getHeaders(),
       }

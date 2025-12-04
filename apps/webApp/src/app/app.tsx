@@ -69,11 +69,11 @@ import CashReport from './pages/invoices/CashReport';
 import QuoteList from './pages/quotations/QuotationList';
 import QuotationDetails from './pages/quotations/QuotationDetails';
 
-// Purchase Invoice Pages
-import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoiceManagement';
+// Purchase Invoice Pages (Legacy - will be removed)
+// import PurchaseInvoiceManagement from './pages/purchase-invoices/PurchaseInvoiceManagement';
 
-// Expense Invoice Pages - Merged into Purchase Invoice Management
-// import ExpenseInvoiceManagement from './pages/expense-invoices/ExpenseInvoiceManagement';
+// Unified Purchase & Expense Invoice Pages
+import PurchaseExpenseInvoiceManagement from './pages/purchase-expense-invoices/PurchaseExpenseInvoiceManagement';
 
 // Appointment Pages
 import { AppointmentsManagement } from './pages/admin/appointments/AppointmentsManagement';
@@ -200,7 +200,7 @@ export function App() {
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
-          <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
+          <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
@@ -242,8 +242,8 @@ export function App() {
           <Route path="invoices/cash-report" element={<CashReport />} />
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
-          <Route path="purchase-invoices" element={<PurchaseInvoiceManagement />} />
-          {/* Expense invoices merged into purchase-invoices */}
+          <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
+          {/* Unified purchase & expense invoices */}
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />

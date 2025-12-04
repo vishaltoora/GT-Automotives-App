@@ -42,6 +42,7 @@ import { companyService, Company } from '../../requests/company.requests';
 import { useAuth } from '../../hooks/useAuth';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import PaymentMethodDialog from '../../components/invoices/PaymentMethodDialog';
+import EmailPromptDialog from '../../components/common/EmailPromptDialog';
 import { ActionsMenu, ActionItem } from '../../components/common';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
@@ -69,6 +70,8 @@ const InvoiceList: React.FC = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState<Invoice | null>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [invoiceForEmail, setInvoiceForEmail] = useState<Invoice | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -182,11 +185,14 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleSendEmail = async (invoice: Invoice) => {
+    // If customer has no email, open the email prompt dialog
     if (!invoice.customer?.email) {
-      showApiError(new Error('Customer does not have an email address'), 'Cannot send email');
+      setInvoiceForEmail(invoice);
+      setEmailDialogOpen(true);
       return;
     }
 
+    // Customer has email, confirm and send directly
     const confirmed = await confirm({
       title: 'Send Invoice Email',
       message: `Send invoice ${invoice.invoiceNumber} to ${invoice.customer.email}?\n\nThis will generate a PDF and send it via email to the customer.`,
@@ -206,6 +212,27 @@ const InvoiceList: React.FC = () => {
       } catch (error) {
         showApiError(error, 'Failed to send invoice email');
       }
+    }
+  };
+
+  const handleEmailPromptSubmit = async (email: string, saveToCustomer: boolean) => {
+    if (!invoiceForEmail) return;
+
+    try {
+      const result = await invoiceService.sendInvoiceEmail(invoiceForEmail.id, email, saveToCustomer);
+      await confirm({
+        title: 'Invoice Sent Successfully!',
+        message: `Invoice ${invoiceForEmail.invoiceNumber} has been emailed to ${result.emailUsed || email}${saveToCustomer ? '\n\nEmail has been saved to customer profile.' : ''}`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
+      // Refresh invoices to show updated customer email if saved
+      if (saveToCustomer) {
+        loadInvoices();
+      }
+    } catch (error) {
+      showApiError(error, 'Failed to send invoice email');
+      throw error; // Re-throw to keep dialog open
     }
   };
 
@@ -298,7 +325,7 @@ const InvoiceList: React.FC = () => {
         label: 'Send Email',
         icon: <EmailIcon />,
         onClick: () => handleSendEmail(invoice),
-        show: canManageInvoice && !!invoice.customer?.email,
+        show: canManageInvoice,
         color: 'info',
       },
       {
@@ -680,6 +707,26 @@ const InvoiceList: React.FC = () => {
         }}
         onConfirm={handlePaymentConfirm}
         invoiceNumber={invoiceToMarkPaid?.invoiceNumber || ''}
+      />
+
+      {/* Email Prompt Dialog - For sending email when customer has no email */}
+      <EmailPromptDialog
+        open={emailDialogOpen}
+        onClose={() => {
+          setEmailDialogOpen(false);
+          setInvoiceForEmail(null);
+        }}
+        onSubmit={handleEmailPromptSubmit}
+        customerName={(() => {
+          const customer = invoiceForEmail?.customer;
+          if (customer?.firstName || customer?.lastName) {
+            return `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+          }
+          return 'Customer';
+        })()}
+        customerId={invoiceForEmail?.customerId}
+        documentType="invoice"
+        documentNumber={invoiceForEmail?.invoiceNumber || ''}
       />
     </Box>
   );

@@ -44,6 +44,7 @@ import {
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../requests/quotation.requests';
 import QuoteDialog from '../../components/quotations/QuotationDialog';
+import EmailPromptDialog from '../../components/common/EmailPromptDialog';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
@@ -66,6 +67,8 @@ const QuoteList: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [quotationForEmail, setQuotationForEmail] = useState<Quote | null>(null);
 
   useEffect(() => {
     loadQuotations();
@@ -141,8 +144,10 @@ const QuoteList: React.FC = () => {
   };
 
   const handleSendEmail = async (quotation: Quote) => {
+    // If no email, open dialog to prompt for email
     if (!quotation.email) {
-      showApiError(new Error('Customer does not have an email address'), 'Cannot send email');
+      setQuotationForEmail(quotation);
+      setEmailDialogOpen(true);
       return;
     }
 
@@ -165,6 +170,30 @@ const QuoteList: React.FC = () => {
       } catch (error) {
         showApiError(error, 'Failed to send quotation email');
       }
+    }
+  };
+
+  const handleEmailPromptSubmit = async (email: string, saveToQuote: boolean) => {
+    if (!quotationForEmail) return;
+
+    try {
+      const result = await quotationService.sendQuotationEmail(quotationForEmail.id, email, saveToQuote);
+      setEmailDialogOpen(false);
+      setQuotationForEmail(null);
+
+      // If email was saved to quote, reload quotations to show updated email
+      if (saveToQuote) {
+        loadQuotations();
+      }
+
+      await confirm({
+        title: 'Quotation Sent Successfully!',
+        message: `Quotation ${quotationForEmail.quotationNumber} has been emailed to ${result.emailUsed || email}`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
+    } catch (error) {
+      showApiError(error, 'Failed to send quotation email');
     }
   };
 
@@ -566,14 +595,12 @@ const QuoteList: React.FC = () => {
           <ListItemText>Print</ListItemText>
         </MenuItem>
 
-        {selectedQuote?.email && (
-          <MenuItem onClick={() => handleMenuAction('sendEmail')}>
-            <ListItemIcon>
-              <EmailIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Send Email</ListItemText>
-          </MenuItem>
-        )}
+        <MenuItem onClick={() => handleMenuAction('sendEmail')}>
+          <ListItemIcon>
+            <EmailIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Send Email</ListItemText>
+        </MenuItem>
 
         {selectedQuote?.status !== 'CONVERTED' && (
           <MenuItem onClick={() => handleMenuAction('convert')}>
@@ -584,7 +611,7 @@ const QuoteList: React.FC = () => {
           </MenuItem>
         )}
 
-        <MenuItem 
+        <MenuItem
           onClick={() => handleMenuAction('delete')}
           disabled={selectedQuote?.status === 'CONVERTED'}
         >
@@ -594,6 +621,18 @@ const QuoteList: React.FC = () => {
           <ListItemText>Delete</ListItemText>
         </MenuItem>
       </Menu>
+
+      <EmailPromptDialog
+        open={emailDialogOpen}
+        onClose={() => {
+          setEmailDialogOpen(false);
+          setQuotationForEmail(null);
+        }}
+        onSubmit={handleEmailPromptSubmit}
+        customerName={quotationForEmail?.customerName || ''}
+        documentType="quotation"
+        documentNumber={quotationForEmail?.quotationNumber || ''}
+      />
     </Box>
   );
 };

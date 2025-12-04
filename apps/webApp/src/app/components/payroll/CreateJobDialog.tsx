@@ -75,7 +75,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     employeeId: preselectedEmployeeId || user?.id || '',
     title: '',
     description: '',
-    payAmount: 0,
+    payAmount: '' as unknown as number,
     jobType: JobType.REGULAR,
     dueDate: '',
   });
@@ -91,7 +91,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         employeeId: defaultEmployeeId,
         title: '',
         description: '',
-        payAmount: 0,
+        payAmount: '' as unknown as number,
         jobType: JobType.REGULAR,
         dueDate: '',
       });
@@ -119,7 +119,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!formData.employeeId || !formData.title || formData.payAmount <= 0) {
+    if (!formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0) {
       setError('Please fill in all required fields');
       return;
     }
@@ -131,7 +131,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
       const jobData = {
         employeeId: formData.employeeId,
         title: formData.title,
-        payAmount: formData.payAmount,
+        payAmount: Number(formData.payAmount),
         jobType: formData.jobType,
         ...(formData.description && formData.description.trim() && { description: formData.description }),
         ...(formData.dueDate && { dueDate: formData.dueDate }),
@@ -239,6 +239,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="e.g., Tire Installation, Oil Change, Brake Repair"
+              autoComplete="off"
             />
 
             <TextField
@@ -249,6 +250,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Detailed description of the job..."
+              autoComplete="off"
             />
 
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -258,7 +260,12 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 type="number"
                 label="Payment Amount"
                 value={formData.payAmount}
-                onChange={(e) => handleInputChange('payAmount', parseFloat(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('payAmount', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                onKeyDown={(e) => {
+                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                  }
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -267,6 +274,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                   ),
                 }}
                 inputProps={{ min: 0, step: 0.01 }}
+                autoComplete="off"
               />
 
               <FormControl fullWidth required>
@@ -322,13 +330,24 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         </Button>
         <Button
           onClick={handleSubmit}
-          variant="contained"
+          variant={!formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0 ? 'outlined' : 'contained'}
           size="large"
-          disabled={loading}
+          disabled={loading || !formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0}
           fullWidth={isMobile}
           sx={{
             minWidth: isMobile ? 'auto' : 120,
-            background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+            ...(!formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0
+              ? {
+                  borderColor: colors.neutral[300],
+                  color: colors.neutral[400],
+                  '&.Mui-disabled': {
+                    borderColor: colors.neutral[300],
+                    color: colors.neutral[400],
+                  },
+                }
+              : {
+                  background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+                }),
           }}
         >
           {loading ? 'Creating...' : 'Create Job'}

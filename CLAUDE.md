@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ### 🚨 Critical Rules
 - **[Environment Variables](.claude/rules/environment-variables.md)** - **CRITICAL**: Always use `import.meta.env.VITE_*` in frontend, NEVER `process.env.VITE_*`
 - **[Migration Management](.claude/agents/migration-manager.md)** - **CRITICAL**: NEVER modify schema.prisma without creating migrations first ⭐ NEW
+- **Database Migrations** - **CRITICAL**: NEVER use `prisma db push` - ALWAYS use `prisma migrate dev` for local and `prisma migrate deploy` for production. Using `db push` causes schema drift between local and production databases, leading to failed deployments and data issues.
 
 ### 📁 Documentation Structure
 - **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview

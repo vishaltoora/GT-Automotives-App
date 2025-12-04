@@ -241,16 +241,24 @@ export class QuotationsService {
     return invoice;
   }
 
-  async sendQuotationEmail(quotationId: string, userId: string) {
+  async sendQuotationEmail(quotationId: string, userId: string, overrideEmail?: string, saveToQuote?: boolean) {
     // Get quotation with all items
     const quotation = await this.quotationRepository.findOne(quotationId);
     if (!quotation) {
       throw new NotFoundException(`Quotation with ID "${quotationId}" not found`);
     }
 
-    // Check if quotation has customer email
-    if (!quotation.email) {
-      throw new BadRequestException('Customer does not have an email address');
+    // Use override email or quotation email
+    const emailToUse = overrideEmail || quotation.email;
+
+    // Check if we have an email to send to
+    if (!emailToUse) {
+      throw new BadRequestException('No email address provided and quotation does not have an email address');
+    }
+
+    // If saveToQuote is true and we have an override email, update the quotation
+    if (saveToQuote && overrideEmail && !quotation.email) {
+      await this.quotationRepository.update(quotationId, { email: overrideEmail });
     }
 
     try {
@@ -259,7 +267,7 @@ export class QuotationsService {
 
       // Send email
       const emailResult = await this.emailService.sendQuotationEmail(
-        quotation.email,
+        emailToUse,
         quotation.quotationNumber,
         pdfBase64,
       );
@@ -269,7 +277,7 @@ export class QuotationsService {
         throw new Error('Email service returned failure status');
       }
 
-      return { success: true, message: 'Quotation email sent successfully' };
+      return { success: true, message: 'Quotation email sent successfully', emailUsed: emailToUse };
     } catch (error) {
       throw new BadRequestException(
         `Failed to send quotation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
