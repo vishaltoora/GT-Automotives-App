@@ -214,13 +214,16 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         sx={{
           borderRadius: 2,
           transition: 'all 0.2s',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           '&:hover': {
             boxShadow: 2,
             borderColor: 'primary.main',
           },
         }}
       >
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Header: Time and Status */}
           <Box
             sx={{
@@ -419,7 +422,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
           {/* Quick Actions */}
           {showActions && onStatusChange && appointment.status !== 'COMPLETED' && (
-            <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 1, mt: 'auto', pt: 2, flexWrap: 'wrap' }}>
               {(appointment.status === 'SCHEDULED' || appointment.status === 'CONFIRMED') && (
                 <Button
                   size="small"

@@ -43,10 +43,12 @@ import {
   Business as BusinessIcon,
   LocationOn as LocationIcon,
   MoreVert as MoreVertIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { customerService, Customer } from '../../requests/customer.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { CustomerDialog } from '../../components/customers/CustomerDialog';
+import { CustomerDetailsDialog } from '../../components/customers/CustomerDetailsDialog';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { formatPhoneForDisplay } from '../../utils/phone';
 
@@ -65,15 +67,29 @@ export function CustomerList() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsCustomerId, setDetailsCustomerId] = useState<string | null>(null);
+  const [showOutstandingOnly, setShowOutstandingOnly] = useState(false);
 
   useEffect(() => {
     loadCustomers();
   }, []);
 
   useEffect(() => {
-    // Filter customers based on search term
+    // Filter customers based on search term and outstanding balance filter
+    let filtered = customers;
+
+    // Apply outstanding balance filter
+    if (showOutstandingOnly) {
+      filtered = filtered.filter((customer) => {
+        const outstandingBalance = customer.stats?.outstandingBalance || 0;
+        return outstandingBalance > 0;
+      });
+    }
+
+    // Apply search term filter
     if (searchTerm) {
-      const filtered = customers.filter((customer) => {
+      filtered = filtered.filter((customer) => {
         const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
         const searchLower = searchTerm.toLowerCase();
         return (
@@ -84,13 +100,12 @@ export function CustomerList() {
           (customer.businessName && customer.businessName.toLowerCase().includes(searchLower))
         );
       });
-      setFilteredCustomers(filtered);
-    } else {
-      setFilteredCustomers(customers);
     }
-    // Reset to first page when search changes
+
+    setFilteredCustomers(filtered);
+    // Reset to first page when filters change
     setPage(0);
-  }, [searchTerm, customers]);
+  }, [searchTerm, customers, showOutstandingOnly]);
 
   const loadCustomers = async () => {
     try {
@@ -124,6 +139,18 @@ export function CustomerList() {
   const getInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD',
+    }).format(amount);
+  };
+
+  // Count customers with outstanding balance
+  const customersWithOutstanding = customers.filter(
+    (c) => (c.stats?.outstandingBalance || 0) > 0
+  ).length;
 
   const TableRowMenu = ({ customer }: { customer: Customer }) => {
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -193,6 +220,7 @@ export function CustomerList() {
   const CustomerCard = ({ customer }: { customer: Customer }) => {
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const menuOpen = Boolean(menuAnchor);
+    const outstandingBalance = customer.stats?.outstandingBalance || 0;
 
     const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
       setMenuAnchor(event.currentTarget);
@@ -213,15 +241,43 @@ export function CustomerList() {
     };
 
     return (
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Card sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderLeft: outstandingBalance > 0 ? 4 : 0,
+        borderColor: outstandingBalance > 0 ? 'warning.main' : undefined,
+      }}>
         <CardContent sx={{ flexGrow: 1, p: 2 }}>
+          {/* Outstanding Balance Indicator */}
+          {outstandingBalance > 0 && (
+            <Chip
+              icon={<WarningIcon />}
+              label={formatCurrency(outstandingBalance)}
+              color="warning"
+              size="small"
+              sx={{ mb: 1.5, fontWeight: 'bold' }}
+            />
+          )}
           {/* Header with Avatar and Name */}
           <Box display="flex" alignItems="center" gap={2} mb={2}>
             <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
               {getInitials(customer.firstName, customer.lastName)}
             </Avatar>
             <Box flex={1}>
-              <Typography variant="h6" fontWeight="medium" noWrap>
+              <Typography
+                variant="h6"
+                fontWeight="medium"
+                noWrap
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': {
+                    color: 'primary.main',
+                    textDecoration: 'underline',
+                  },
+                }}
+                onClick={() => handleCustomerNameClick(customer)}
+              >
                 {customer.firstName} {customer.lastName}
               </Typography>
               {customer.phone && (
@@ -350,6 +406,20 @@ export function CustomerList() {
     handleDialogClose();
   };
 
+  const handleCustomerNameClick = (customer: Customer) => {
+    setDetailsCustomerId(customer.id);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleDetailsDialogClose = () => {
+    setDetailsDialogOpen(false);
+    setDetailsCustomerId(null);
+  };
+
+  const handleEditFromDetails = (customer: Customer) => {
+    handleEditClick(customer);
+  };
+
   // Calculate pagination
   const paginatedCustomers = filteredCustomers.slice(
     page * rowsPerPage,
@@ -398,45 +468,58 @@ export function CustomerList() {
         )}
       </Box>
 
-      {/* Search Bar with Add Button on Mobile */}
-      <Card sx={{ mb: 3, mx: { xs: 0.5, sm: 0 } }}>
-        <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Search customers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size={isMobile ? 'small' : 'medium'}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            {(role === 'staff' || role === 'supervisor' || role === 'admin') && isMobile && (
-              <IconButton
-                color="primary"
-                onClick={handleAddClick}
-                sx={{
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                  width: 40,
-                  height: 40,
-                }}
-              >
-                <AddIcon />
-              </IconButton>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
+      {/* Search Bar with Filter and Add Button */}
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mb: 3, mx: { xs: 0.5, sm: 0 } }}>
+        <TextField
+          sx={{ flex: 1, minWidth: { xs: '100%', sm: 200 } }}
+          variant="outlined"
+          placeholder="Search customers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          size={isMobile ? 'small' : 'medium'}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        {/* Outstanding Balance Filter Chip */}
+        <Chip
+          icon={<WarningIcon />}
+          label={isMobile ? `${customersWithOutstanding}` : `Outstanding (${customersWithOutstanding})`}
+          color={showOutstandingOnly ? 'warning' : 'default'}
+          variant={showOutstandingOnly ? 'filled' : 'outlined'}
+          onClick={() => setShowOutstandingOnly(!showOutstandingOnly)}
+          sx={{
+            fontWeight: showOutstandingOnly ? 'bold' : 'normal',
+            cursor: 'pointer',
+            height: isMobile ? 40 : 56,
+            borderRadius: 2,
+            '& .MuiChip-label': {
+              px: 1.5,
+            },
+          }}
+        />
+        {(role === 'staff' || role === 'supervisor' || role === 'admin') && isMobile && (
+          <IconButton
+            color="primary"
+            onClick={handleAddClick}
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              },
+              width: 40,
+              height: 40,
+            }}
+          >
+            <AddIcon />
+          </IconButton>
+        )}
+      </Box>
 
       {/* Card View for Mobile, Table for Desktop */}
       {isMobile ? (
@@ -463,6 +546,7 @@ export function CustomerList() {
                 <TableCell>Customer</TableCell>
                 <TableCell>Contact</TableCell>
                 <TableCell>Address</TableCell>
+                <TableCell align="center">Outstanding</TableCell>
                 <TableCell align="center">Vehicles</TableCell>
                 <TableCell align="center">Invoices</TableCell>
                 <TableCell align="center">Appointments</TableCell>
@@ -472,7 +556,7 @@ export function CustomerList() {
             <TableBody>
               {paginatedCustomers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={8} align="center">
                     <Typography variant="body2" color="textSecondary">
                       No customers found
                     </Typography>
@@ -487,7 +571,18 @@ export function CustomerList() {
                           {getInitials(customer.firstName, customer.lastName)}
                         </Avatar>
                         <Box>
-                          <Typography variant="body1" fontWeight="medium">
+                          <Typography
+                            variant="body1"
+                            fontWeight="medium"
+                            sx={{
+                              cursor: 'pointer',
+                              '&:hover': {
+                                color: 'primary.main',
+                                textDecoration: 'underline',
+                              },
+                            }}
+                            onClick={() => handleCustomerNameClick(customer)}
+                          >
                             {customer.firstName} {customer.lastName}
                           </Typography>
                           <Typography variant="body2" color="textSecondary">
@@ -521,6 +616,19 @@ export function CustomerList() {
                           {customer.address || '-'}
                         </Typography>
                       </Stack>
+                    </TableCell>
+                    <TableCell align="center">
+                      {(customer.stats?.outstandingBalance || 0) > 0 ? (
+                        <Chip
+                          icon={<WarningIcon />}
+                          label={formatCurrency(customer.stats?.outstandingBalance || 0)}
+                          size="small"
+                          color="warning"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">-</Typography>
+                      )}
                     </TableCell>
                     <TableCell align="center">
                       <Chip
@@ -592,6 +700,16 @@ export function CustomerList() {
         customerId={selectedCustomerId}
         customer={selectedCustomer}
       />
+
+      {detailsCustomerId && (
+        <CustomerDetailsDialog
+          open={detailsDialogOpen}
+          onClose={handleDetailsDialogClose}
+          customerId={detailsCustomerId}
+          onEdit={handleEditFromDetails}
+          onPaymentSuccess={loadCustomers}
+        />
+      )}
     </Box>
   );
 }

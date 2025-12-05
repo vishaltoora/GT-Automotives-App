@@ -96,10 +96,14 @@ export interface Customer {
   };
   stats?: {
     totalSpent: number;
+    outstandingBalance: number;
     vehicleCount: number;
     appointmentCount: number;
+    upcomingAppointments: number;
     lastVisitDate: Date | null;
   };
+  invoices?: Invoice[];
+  appointments?: Appointment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -117,6 +121,55 @@ export interface Vehicle {
     invoices: number;
     appointments: number;
   };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  customerId: string;
+  vehicleId?: string;
+  vehicle?: Vehicle;
+  status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
+  subtotal: number;
+  gstAmount: number;
+  total: number;
+  invoiceDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  items?: InvoiceItem[];
+}
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface AppointmentEmployee {
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface Appointment {
+  id: string;
+  customerId: string;
+  vehicleId?: string;
+  vehicle?: Vehicle;
+  scheduledDate: string;
+  serviceType: string;
+  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  notes?: string;
+  employees?: AppointmentEmployee[];
+  paymentAmount?: number;
+  expectedAmount?: number;
+  paymentBreakdown?: any;
   createdAt: string;
   updatedAt: string;
 }

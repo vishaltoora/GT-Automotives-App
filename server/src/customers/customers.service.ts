@@ -66,7 +66,20 @@ export class CustomersService {
 
   async findAll(userId: string, userRole: string) {
     // Only staff and admin can see all customers
-    return this.customerRepository.findAllWithDetails();
+    const customers = await this.customerRepository.findAllWithDetails();
+
+    // Fetch stats for each customer (includes outstanding balance from both invoices and appointments)
+    const customersWithStats = await Promise.all(
+      customers.map(async (customer) => {
+        const stats = await this.customerRepository.getCustomerStats(customer.id);
+        return {
+          ...customer,
+          stats,
+        };
+      })
+    );
+
+    return customersWithStats;
   }
 
   async findOne(id: string, userId: string, userRole: string) {

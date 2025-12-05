@@ -56,8 +56,8 @@ export class CustomerRepository extends BaseRepository<
             createdAt: 'desc',
           },
         },
+        // Return all invoices for accurate outstanding balance calculation
         invoices: {
-          take: 10,
           orderBy: {
             createdAt: 'desc',
           },
@@ -66,13 +66,24 @@ export class CustomerRepository extends BaseRepository<
             items: true,
           },
         },
+        // Return all appointments for complete history
         appointments: {
-          take: 10,
           orderBy: {
             scheduledDate: 'desc',
           },
           include: {
             vehicle: true,
+            employees: {
+              include: {
+                employee: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            },
           },
         },
         smsPreference: true,
@@ -109,8 +120,8 @@ export class CustomerRepository extends BaseRepository<
   }
 
   async getCustomerStats(customerId: string) {
-    const [totalSpent, vehicleCount, appointmentCount, lastVisit] = await Promise.all([
-      // Total amount spent
+    const [totalSpent, invoiceOutstanding, vehicleCount, appointmentCount, upcomingAppointments, lastVisit, unpaidAppointments] = await Promise.all([
+      // Total amount spent (PAID invoices)
       this.prisma.invoice.aggregate({
         where: {
           customerId,
@@ -120,26 +131,70 @@ export class CustomerRepository extends BaseRepository<
           total: true,
         },
       }),
+      // Outstanding balance from invoices (PENDING and DRAFT invoices)
+      this.prisma.invoice.aggregate({
+        where: {
+          customerId,
+          status: { in: ['PENDING', 'DRAFT'] },
+        },
+        _sum: {
+          total: true,
+        },
+      }),
       // Number of vehicles
       this.prisma.vehicle.count({
         where: { customerId },
       }),
-      // Number of appointments
+      // Total number of appointments
       this.prisma.appointment.count({
         where: { customerId },
       }),
+      // Upcoming appointments count
+      this.prisma.appointment.count({
+        where: {
+          customerId,
+          scheduledDate: { gte: new Date() },
+          status: { in: ['SCHEDULED', 'CONFIRMED'] },
+        },
+      }),
       // Last visit date
       this.prisma.invoice.findFirst({
-        where: { customerId },
+        where: { customerId, status: 'PAID' },
         orderBy: { createdAt: 'desc' },
         select: { createdAt: true },
       }),
+      // Completed appointments with outstanding balance (expectedAmount > paymentAmount)
+      this.prisma.appointment.findMany({
+        where: {
+          customerId,
+          status: 'COMPLETED',
+          expectedAmount: { gt: 0 },
+        },
+        select: {
+          expectedAmount: true,
+          paymentAmount: true,
+        },
+      }),
     ]);
+
+    // Calculate outstanding from appointments (expectedAmount - paymentAmount for each)
+    const appointmentOutstanding = unpaidAppointments.reduce((sum, apt) => {
+      const expected = Number(apt.expectedAmount) || 0;
+      const paid = Number(apt.paymentAmount) || 0;
+      const remaining = expected - paid;
+      return sum + (remaining > 0 ? remaining : 0);
+    }, 0);
+
+    // Total outstanding = invoices + appointments
+    const invoiceOutstandingAmount = Number(invoiceOutstanding._sum.total) || 0;
+    const totalOutstanding = invoiceOutstandingAmount + appointmentOutstanding;
 
     return {
       totalSpent: totalSpent._sum.total || 0,
+      outstandingBalance: totalOutstanding,
       vehicleCount,
       appointmentCount,
+      upcomingAppointments,
       lastVisitDate: lastVisit?.createdAt || null,
     };
   }
