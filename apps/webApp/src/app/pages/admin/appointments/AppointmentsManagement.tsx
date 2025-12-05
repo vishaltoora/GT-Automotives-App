@@ -431,11 +431,8 @@ export const AppointmentsManagement: React.FC = () => {
 
   const handleDayClick = (date: Date | null) => {
     if (!date) return;
-    const dayAppointments = getAppointmentsForDay(date);
-    if (dayAppointments.length > 0) {
-      setSelectedDate(date);
-      setDayDialogOpen(true);
-    }
+    setSelectedDate(date);
+    setDayDialogOpen(true);
   };
 
   const handleCloseDayDialog = () => {
