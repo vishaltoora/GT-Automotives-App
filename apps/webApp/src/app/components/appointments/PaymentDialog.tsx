@@ -6,10 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   InputAdornment,
   Box,
   Typography,
@@ -31,9 +27,12 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   CreditCard as CreditCardIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { ServiceAmountInput } from './ServiceAmountInput';
 import { AppointmentSquarePaymentForm } from './AppointmentSquarePaymentForm';
+import { appointmentService } from '../../requests/appointment.requests';
+import { CircularProgress } from '@mui/material';
 
 interface PaymentEntry {
   id: string;
@@ -59,13 +58,7 @@ interface PaymentDialogProps {
   isEditMode?: boolean;
 }
 
-const PAYMENT_METHODS = [
-  { value: 'CASH', label: 'Cash', icon: '💵' },
-  { value: 'E_TRANSFER', label: 'E-Transfer', icon: '📱' },
-  { value: 'CREDIT_CARD', label: 'Credit Card', icon: '💳' },
-  { value: 'DEBIT_CARD', label: 'Debit Card', icon: '💳' },
-  { value: 'CHEQUE', label: 'Cheque', icon: '📝' },
-];
+// Cash payment tab only uses CASH method - simplified UI
 
 export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   open,
@@ -80,8 +73,13 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Tab state (0 = Manual Payment, 1 = Square Online Payment)
+  // Tab state (0 = Cash Payment, 1 = E-Transfer with Invoice, 2 = Pay with Square)
   const [activeTab, setActiveTab] = useState(0);
+
+  // E-Transfer with Invoice state
+  const [eTransferAmount, setETransferAmount] = useState(0);
+  const [eTransferProcessing, setETransferProcessing] = useState(false);
+  const [eTransferError, setETransferError] = useState<string | null>(null);
 
   // Manual payment state
   const [payments, setPayments] = useState<PaymentEntry[]>(
@@ -101,6 +99,26 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const remainingBalance = expectedAmount - totalAmount;
   const isPartialPayment = expectedAmount > 0 && totalAmount < expectedAmount;
 
+  // Handle tab change - reset amounts when switching tabs
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    // Reset amounts for each tab when switching
+    if (newValue === 0) {
+      // Reset cash payments
+      setPayments([{ id: crypto.randomUUID(), method: 'CASH', amount: 0 }]);
+      setExpectedAmount(defaultExpectedAmount);
+      setPaymentNotes('');
+      setErrors({});
+    } else if (newValue === 1) {
+      // Reset E-Transfer amount
+      setETransferAmount(0);
+      setETransferError(null);
+    } else if (newValue === 2) {
+      // Reset Square amount
+      setServiceAmount(0);
+    }
+  };
+
   // Handle opening Square payment form
   const handleOpenSquareForm = () => {
     if (serviceAmount <= 0) {
@@ -119,11 +137,40 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     window.location.reload();
   };
 
+  // Handle E-Transfer with Invoice submission
+  const handleETransferSubmit = async () => {
+    if (eTransferAmount <= 0) {
+      setETransferError('Please enter a valid service amount');
+      return;
+    }
+
+    setETransferProcessing(true);
+    setETransferError(null);
+
+    try {
+      await appointmentService.createETransferInvoice(appointmentId, eTransferAmount);
+      // Close dialog and refresh
+      handleClose();
+      window.location.reload();
+    } catch (err: any) {
+      console.error('E-Transfer invoice creation failed:', err);
+      setETransferError(
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to create invoice. Please try again.'
+      );
+    } finally {
+      setETransferProcessing(false);
+    }
+  };
+
   const handleClose = () => {
     // Reset form
     setPayments([{ id: crypto.randomUUID(), method: 'CASH', amount: 0 }]);
     setPaymentNotes('');
     setServiceAmount(0);
+    setETransferAmount(0);
+    setETransferError(null);
     setActiveTab(0);
     setErrors({});
     setSquareFormOpen(false);
@@ -240,17 +287,24 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         {/* Payment Method Tabs */}
         <Tabs
           value={activeTab}
-          onChange={(_, newValue) => setActiveTab(newValue)}
-          variant="fullWidth"
+          onChange={handleTabChange}
+          variant={isMobile ? 'scrollable' : 'fullWidth'}
+          scrollButtons={isMobile ? 'auto' : false}
+          allowScrollButtonsMobile
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab
-            label="Manual Payment"
+            label={isMobile ? 'Cash' : 'Cash Payment'}
             icon={<MoneyIcon />}
             iconPosition="start"
           />
           <Tab
-            label="Pay with Square"
+            label="E-Transfer"
+            icon={<ReceiptIcon />}
+            iconPosition="start"
+          />
+          <Tab
+            label={isMobile ? 'Card' : 'Pay with Square'}
             icon={<CreditCardIcon />}
             iconPosition="start"
           />
@@ -340,7 +394,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             </CardContent>
           </Card>
 
-          {/* Payment Methods Breakdown */}
+          {/* Cash Payment Entries */}
           <Box>
             <Box
               sx={{
@@ -353,7 +407,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
               }}
             >
               <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
-                Payment Breakdown
+                Cash Payment Entries
               </Typography>
               <Button
                 startIcon={<AddIcon />}
@@ -363,7 +417,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 color="primary"
                 fullWidth={isMobile}
               >
-                Add Payment Method
+                Add Another Payment
               </Button>
             </Box>
 
@@ -386,12 +440,18 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         gap: isMobile ? 1.5 : 2,
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
                         <Chip
                           label={`#${index + 1}`}
                           size="small"
                           color="primary"
                           sx={{ minWidth: 45 }}
+                        />
+                        <Chip
+                          label="Cash"
+                          size="small"
+                          variant="outlined"
+                          icon={<MoneyIcon sx={{ fontSize: 16 }} />}
                         />
                         {isMobile && payments.length > 1 && (
                           <IconButton
@@ -406,27 +466,9 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         )}
                       </Box>
 
-                      {/* Payment Method */}
-                      <FormControl sx={{ flex: 1 }} size="small" fullWidth={isMobile}>
-                        <InputLabel>Payment Method</InputLabel>
-                        <Select
-                          value={payment.method}
-                          onChange={(e) =>
-                            handlePaymentChange(payment.id, 'method', e.target.value)
-                          }
-                          label="Payment Method"
-                        >
-                          {PAYMENT_METHODS.map((method) => (
-                            <MenuItem key={method.value} value={method.value}>
-                              {method.icon} {method.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-
                       {/* Amount */}
                       <TextField
-                        label="Amount"
+                        label="Cash Amount"
                         type="number"
                         value={payment.amount || ''}
                         onChange={(e) =>
@@ -440,7 +482,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         error={!!errors[payment.id]}
                         helperText={errors[payment.id]}
                         size="small"
-                        sx={{ width: isMobile ? '100%' : 150 }}
+                        sx={{ width: isMobile ? '100%' : 180 }}
                         fullWidth={isMobile}
                         InputProps={{
                           startAdornment: (
@@ -487,8 +529,79 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             </Box>
           )}
 
-          {/* Square Payment Tab */}
+          {/* E-Transfer with Invoice Tab */}
           {activeTab === 1 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  E-Transfer with Invoice
+                </Typography>
+                <Typography variant="caption">
+                  Enter the service amount to calculate taxes (GST + PST). An invoice will be automatically created and marked as PAID, and the appointment will be marked as completed.
+                </Typography>
+              </Alert>
+
+              {/* Expected Amount Field - Reference for user */}
+              {defaultExpectedAmount > 0 && (
+                <Card
+                  elevation={0}
+                  sx={{
+                    bgcolor: 'info.light',
+                    borderLeft: 4,
+                    borderColor: 'info.main',
+                  }}
+                >
+                  <CardContent sx={{ py: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" color="info.dark" fontWeight="medium">
+                        Expected Amount (Reference)
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold" color="info.dark">
+                        ${defaultExpectedAmount.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Error Message */}
+              {eTransferError && (
+                <Alert severity="error" onClose={() => setETransferError(null)}>
+                  {eTransferError}
+                </Alert>
+              )}
+
+              {/* Service Amount Input with Tax Calculation */}
+              <ServiceAmountInput
+                value={eTransferAmount}
+                onChange={setETransferAmount}
+                disabled={eTransferProcessing}
+              />
+
+              {/* Instructions */}
+              <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+                <CardContent>
+                  <Typography variant="subtitle2" gutterBottom>
+                    📋 What happens next:
+                  </Typography>
+                  <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                      Invoice is created with calculated taxes (GST 5% + PST 7%)
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                      Invoice is marked as PAID with E-Transfer payment method
+                    </Typography>
+                    <Typography component="li" variant="body2">
+                      Appointment is marked as COMPLETED
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+
+          {/* Square Payment Tab */}
+          {activeTab === 2 && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Alert severity="info" sx={{ mb: 2 }}>
                 <Typography variant="body2" fontWeight={500} gutterBottom>
@@ -498,6 +611,29 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                   Enter the service amount and click "Pay with Card" to open a secure payment form. The customer can pay with credit card, debit card, Apple Pay, or Google Pay. Once payment is successful, the appointment will be automatically marked as completed and an invoice will be created.
                 </Typography>
               </Alert>
+
+              {/* Expected Amount Field - Reference for user */}
+              {defaultExpectedAmount > 0 && (
+                <Card
+                  elevation={0}
+                  sx={{
+                    bgcolor: 'info.light',
+                    borderLeft: 4,
+                    borderColor: 'info.main',
+                  }}
+                >
+                  <CardContent sx={{ py: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" color="info.dark" fontWeight="medium">
+                        Expected Amount (Reference)
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold" color="info.dark">
+                        ${defaultExpectedAmount.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Service Amount Input with Tax Calculation */}
               <ServiceAmountInput
@@ -565,8 +701,31 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           </Button>
         )}
 
-        {/* Square Payment Button */}
+        {/* E-Transfer with Invoice Button */}
         {activeTab === 1 && (
+          <Button
+            onClick={handleETransferSubmit}
+            variant={eTransferAmount <= 0 ? 'outlined' : 'contained'}
+            color="warning"
+            startIcon={eTransferProcessing ? <CircularProgress size={20} color="inherit" /> : <ReceiptIcon />}
+            disabled={eTransferAmount <= 0 || eTransferProcessing}
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
+            sx={eTransferAmount <= 0 ? {
+              borderColor: 'grey.400',
+              color: 'grey.500',
+              '&.Mui-disabled': {
+                borderColor: 'grey.400',
+                color: 'grey.500',
+              },
+            } : {}}
+          >
+            {eTransferProcessing ? 'Creating Invoice...' : 'Create Invoice & Complete'}
+          </Button>
+        )}
+
+        {/* Square Payment Button */}
+        {activeTab === 2 && (
           <Button
             onClick={handleOpenSquareForm}
             variant={serviceAmount <= 0 ? 'outlined' : 'contained'}

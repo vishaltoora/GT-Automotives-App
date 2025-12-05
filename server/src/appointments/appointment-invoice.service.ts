@@ -27,6 +27,8 @@ interface CreateInvoiceFromAppointmentParams {
   serviceAmount: number; // Base amount before taxes
   squarePaymentId?: string; // Optional: link to Square payment
   userId: string; // User creating the invoice
+  paymentMethod?: 'CREDIT_CARD' | 'E_TRANSFER' | 'CASH'; // Payment method
+  status?: 'PAID' | 'PENDING'; // Invoice status
 }
 
 @Injectable()
@@ -45,7 +47,14 @@ export class AppointmentInvoiceService {
   async createInvoiceFromAppointment(
     params: CreateInvoiceFromAppointmentParams,
   ): Promise<Invoice> {
-    const { appointmentId, serviceAmount, squarePaymentId, userId } = params;
+    const {
+      appointmentId,
+      serviceAmount,
+      squarePaymentId,
+      userId,
+      paymentMethod = 'CREDIT_CARD',
+      status = 'PAID',
+    } = params;
 
     // Validate service amount
     if (serviceAmount <= 0) {
@@ -119,10 +128,10 @@ export class AppointmentInvoiceService {
         taxRate: new Decimal(taxes.gstRate + taxes.pstRate),
         taxAmount: new Decimal(taxes.gstAmount + taxes.pstAmount),
         total: new Decimal(taxes.totalAmount),
-        status: 'PAID', // Marked as paid since payment via Square
-        paymentMethod: 'CREDIT_CARD', // Square payment
+        status, // Use provided status (PAID for Square, PENDING for E-Transfer)
+        paymentMethod, // Use provided payment method
         createdBy: userId,
-        paidAt: new Date(),
+        paidAt: status === 'PAID' ? new Date() : undefined,
       },
       [
         {
@@ -136,7 +145,7 @@ export class AppointmentInvoiceService {
     );
 
     this.logger.log(
-      `Invoice ${invoiceNumber} created successfully for appointment ${appointmentId}${squarePaymentId ? ` (linked to Square payment ${squarePaymentId})` : ''}`,
+      `Invoice ${invoiceNumber} created successfully for appointment ${appointmentId} (status: ${status}, method: ${paymentMethod})${squarePaymentId ? ` (linked to Square payment ${squarePaymentId})` : ''}`,
     );
 
     return invoice;

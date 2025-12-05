@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsEnum, Min, Max, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsEnum, Min, Max, IsArray, IsNumber, IsPositive } from 'class-validator';
 import { AppointmentStatus, AppointmentType } from '@prisma/client';
 import { IsDateString, IsOptionalDateString } from '../decorators/date-validation.decorator';
 
@@ -134,4 +134,10 @@ export class CalendarQueryDto {
 export class PaymentDateQueryDto {
   @IsString()
   paymentDate!: string; // Filter by payment processing date in YYYY-MM-DD format (for daily cash reports)
+}
+
+export class CreateETransferInvoiceDto {
+  @IsNumber()
+  @IsPositive()
+  serviceAmount!: number; // Base service amount before taxes
 }

@@ -326,4 +326,17 @@ export const appointmentService = {
     );
     return response.data;
   },
+
+  /**
+   * Create E-Transfer invoice for an appointment
+   * Creates an invoice with PENDING status and completes the appointment
+   * Invoice is set to E_TRANSFER payment method
+   */
+  async createETransferInvoice(appointmentId: string, serviceAmount: number): Promise<any> {
+    const response = await apiClient.post(
+      `/api/appointments/${appointmentId}/e-transfer-invoice`,
+      { serviceAmount }
+    );
+    return response.data;
+  },
 };
