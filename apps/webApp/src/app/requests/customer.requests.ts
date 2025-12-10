@@ -210,6 +210,12 @@ class CustomerService {
     return this.getAllCustomers();
   }
 
+  // Lightweight endpoint for dropdowns/autocomplete - no stats, much faster
+  async getCustomersSimple(): Promise<Customer[]> {
+    const response = await apiClient.get('/customers/simple');
+    return response.data;
+  }
+
   async getCustomer(id: string): Promise<Customer> {
     const response = await apiClient.get(`/customers/${id}`);
     return response.data;

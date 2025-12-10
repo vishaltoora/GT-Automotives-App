@@ -36,6 +36,14 @@ export class CustomersController {
     return this.customersService.findAll(user.id, user.role.name);
   }
 
+  // Lightweight endpoint for dropdowns/autocomplete - no stats, just basic info
+  @Get('simple')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  findAllSimple() {
+    return this.customersService.findAllSimple();
+  }
+
   @Get('search')
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')

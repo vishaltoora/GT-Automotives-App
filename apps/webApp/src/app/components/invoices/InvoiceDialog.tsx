@@ -256,8 +256,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
   const loadData = async () => {
     try {
+      // Use getCustomersSimple() for faster loading - no stats needed for autocomplete
       const [customersData, tiresResult, servicesData, companiesData] = await Promise.all([
-        customerService.getCustomers(),
+        customerService.getCustomersSimple(),
         TireService.getTires({ page: 1, limit: 100 }),
         serviceService.getAll(),
         companyService.getCompanies(),

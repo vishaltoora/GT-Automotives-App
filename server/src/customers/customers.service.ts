@@ -66,20 +66,49 @@ export class CustomersService {
 
   async findAll(userId: string, userRole: string) {
     // Only staff and admin can see all customers
-    const customers = await this.customerRepository.findAllWithDetails();
+    // Get customers and all stats in parallel - eliminates N+1 query problem
+    const [customers, statsMap] = await Promise.all([
+      this.customerRepository.findAllWithDetails(),
+      this.customerRepository.getAllCustomerStats(),
+    ]);
 
-    // Fetch stats for each customer (includes outstanding balance from both invoices and appointments)
-    const customersWithStats = await Promise.all(
-      customers.map(async (customer) => {
-        const stats = await this.customerRepository.getCustomerStats(customer.id);
-        return {
-          ...customer,
-          stats,
-        };
-      })
-    );
+    // Merge stats with customers using the pre-computed stats map
+    const customersWithStats = customers.map((customer) => {
+      const stats = statsMap.get(customer.id) || {
+        totalSpent: 0,
+        outstandingBalance: 0,
+        vehicleCount: 0,
+        appointmentCount: 0,
+        upcomingAppointments: 0,
+        lastVisitDate: null,
+      };
+      return {
+        ...customer,
+        stats,
+      };
+    });
 
     return customersWithStats;
+  }
+
+  // Lightweight method for dropdowns/autocomplete - no stats, just basic info
+  // This is much faster as it avoids N+1 queries for customer stats
+  async findAllSimple() {
+    return this.prisma.customer.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        address: true,
+        businessName: true,
+      },
+      orderBy: [
+        { firstName: 'asc' },
+        { lastName: 'asc' },
+      ],
+    });
   }
 
   async findOne(id: string, userId: string, userRole: string) {

@@ -204,4 +204,138 @@ export class CustomerRepository extends BaseRepository<
       where: { id },
     });
   }
+
+  /**
+   * Get stats for ALL customers in a single efficient query batch
+   * This eliminates the N+1 problem by running aggregations once for all customers
+   */
+  async getAllCustomerStats(): Promise<Map<string, {
+    totalSpent: number;
+    outstandingBalance: number;
+    vehicleCount: number;
+    appointmentCount: number;
+    upcomingAppointments: number;
+    lastVisitDate: Date | null;
+  }>> {
+    const now = new Date();
+
+    // Run all aggregations in parallel - one query each for ALL customers
+    const [
+      totalSpentByCustomer,
+      invoiceOutstandingByCustomer,
+      vehicleCountByCustomer,
+      appointmentCountByCustomer,
+      upcomingAppointmentsByCustomer,
+      lastVisitByCustomer,
+      unpaidAppointmentsByCustomer,
+    ] = await Promise.all([
+      // Total amount spent (PAID invoices) - grouped by customer
+      this.prisma.invoice.groupBy({
+        by: ['customerId'],
+        where: { status: 'PAID' },
+        _sum: { total: true },
+      }),
+      // Outstanding balance from invoices (PENDING and DRAFT) - grouped by customer
+      this.prisma.invoice.groupBy({
+        by: ['customerId'],
+        where: { status: { in: ['PENDING', 'DRAFT'] } },
+        _sum: { total: true },
+      }),
+      // Vehicle count - grouped by customer
+      this.prisma.vehicle.groupBy({
+        by: ['customerId'],
+        _count: true,
+      }),
+      // Appointment count - grouped by customer
+      this.prisma.appointment.groupBy({
+        by: ['customerId'],
+        _count: true,
+      }),
+      // Upcoming appointments - grouped by customer
+      this.prisma.appointment.groupBy({
+        by: ['customerId'],
+        where: {
+          scheduledDate: { gte: now },
+          status: { in: ['SCHEDULED', 'CONFIRMED'] },
+        },
+        _count: true,
+      }),
+      // Last visit - get all paid invoices ordered by date, we'll pick the latest per customer
+      this.prisma.invoice.findMany({
+        where: { status: 'PAID' },
+        orderBy: { createdAt: 'desc' },
+        select: { customerId: true, createdAt: true },
+        distinct: ['customerId'],
+      }),
+      // Completed appointments with outstanding balance
+      this.prisma.appointment.findMany({
+        where: {
+          status: 'COMPLETED',
+          expectedAmount: { gt: 0 },
+        },
+        select: {
+          customerId: true,
+          expectedAmount: true,
+          paymentAmount: true,
+        },
+      }),
+    ]);
+
+    // Convert to Maps for O(1) lookup
+    const spentMap = new Map(totalSpentByCustomer.map(r => [r.customerId, Number(r._sum.total) || 0]));
+    const invoiceOutstandingMap = new Map(invoiceOutstandingByCustomer.map(r => [r.customerId, Number(r._sum.total) || 0]));
+    const vehicleMap = new Map(vehicleCountByCustomer.map(r => [r.customerId, r._count]));
+    const appointmentMap = new Map(appointmentCountByCustomer.map(r => [r.customerId, r._count]));
+    const upcomingMap = new Map(upcomingAppointmentsByCustomer.map(r => [r.customerId, r._count]));
+    const lastVisitMap = new Map(lastVisitByCustomer.map(r => [r.customerId, r.createdAt]));
+
+    // Calculate appointment outstanding per customer
+    const appointmentOutstandingMap = new Map<string, number>();
+    for (const apt of unpaidAppointmentsByCustomer) {
+      const expected = Number(apt.expectedAmount) || 0;
+      const paid = Number(apt.paymentAmount) || 0;
+      const remaining = expected - paid;
+      if (remaining > 0) {
+        const current = appointmentOutstandingMap.get(apt.customerId) || 0;
+        appointmentOutstandingMap.set(apt.customerId, current + remaining);
+      }
+    }
+
+    // Get all customer IDs to build the result map
+    const allCustomerIds = new Set([
+      ...spentMap.keys(),
+      ...invoiceOutstandingMap.keys(),
+      ...vehicleMap.keys(),
+      ...appointmentMap.keys(),
+      ...upcomingMap.keys(),
+      ...lastVisitMap.keys(),
+      ...appointmentOutstandingMap.keys(),
+    ]);
+
+    // Build the final stats map
+    const statsMap = new Map<string, {
+      totalSpent: number;
+      outstandingBalance: number;
+      vehicleCount: number;
+      appointmentCount: number;
+      upcomingAppointments: number;
+      lastVisitDate: Date | null;
+    }>();
+
+    for (const customerId of allCustomerIds) {
+      const invoiceOutstanding = invoiceOutstandingMap.get(customerId) || 0;
+      const appointmentOutstanding = appointmentOutstandingMap.get(customerId) || 0;
+
+      statsMap.set(customerId, {
+        totalSpent: spentMap.get(customerId) || 0,
+        outstandingBalance: invoiceOutstanding + appointmentOutstanding,
+        vehicleCount: vehicleMap.get(customerId) || 0,
+        appointmentCount: appointmentMap.get(customerId) || 0,
+        upcomingAppointments: upcomingMap.get(customerId) || 0,
+        lastVisitDate: lastVisitMap.get(customerId) || null,
+      });
+    }
+
+    return statsMap;
+  }
 }

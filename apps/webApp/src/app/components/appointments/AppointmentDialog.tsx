@@ -163,7 +163,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const loadCustomers = async () => {
     try {
       setCustomersLoading(true);
-      const data = await customerService.getCustomers();
+      // Use getCustomersSimple() for faster loading - no stats needed for autocomplete
+      const data = await customerService.getCustomersSimple();
       setCustomers(data);
     } finally {
       setCustomersLoading(false);
