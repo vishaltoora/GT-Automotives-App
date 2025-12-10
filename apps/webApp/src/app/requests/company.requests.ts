@@ -24,6 +24,12 @@ export interface Company {
 }
 
 class CompanyService {
+  // Cache for companies data - companies rarely change so we cache them
+  private companiesCache: Company[] | null = null;
+  private cacheTimestamp: number = 0;
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+  private fetchPromise: Promise<Company[]> | null = null; // Prevent duplicate requests
+
   private async getAuthToken(): Promise<string | null> {
     // Try to get fresh token from Clerk first
     if (getClerkToken) {
@@ -49,11 +55,47 @@ class CompanyService {
     };
   }
 
-  async getCompanies(): Promise<Company[]> {
-    const response = await axios.get(`${API_URL}/api/companies`, {
-      headers: await this.getHeaders(),
+  async getCompanies(forceRefresh = false): Promise<Company[]> {
+    const now = Date.now();
+
+    // Return cached data if valid and not forcing refresh
+    if (!forceRefresh && this.companiesCache && (now - this.cacheTimestamp) < this.CACHE_DURATION) {
+      return this.companiesCache;
+    }
+
+    // If a fetch is already in progress, wait for it (prevents duplicate requests)
+    if (this.fetchPromise) {
+      return this.fetchPromise;
+    }
+
+    // Start new fetch
+    this.fetchPromise = (async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/companies`, {
+          headers: await this.getHeaders(),
+        });
+        this.companiesCache = response.data;
+        this.cacheTimestamp = Date.now();
+        return response.data;
+      } finally {
+        this.fetchPromise = null;
+      }
+    })();
+
+    return this.fetchPromise;
+  }
+
+  // Clear cache when needed (e.g., after company update)
+  clearCache(): void {
+    this.companiesCache = null;
+    this.cacheTimestamp = 0;
+  }
+
+  // Pre-fetch companies (call this on app init)
+  prefetch(): void {
+    this.getCompanies().catch(() => {
+      // Silently fail prefetch - will retry on actual use
     });
-    return response.data;
   }
 
   async getDefaultCompany(): Promise<Company> {

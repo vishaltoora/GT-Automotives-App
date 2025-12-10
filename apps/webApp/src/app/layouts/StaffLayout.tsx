@@ -45,6 +45,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
 import gtLogo from '../images-and-logos/gt-automotive-logo.svg';
+import companyService from '../requests/company.requests';
 
 const drawerWidth = 280;
 const drawerCollapsedWidth = 72;
@@ -60,6 +61,11 @@ export function StaffLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Prefetch companies data on layout mount for faster invoice dialog loading
+  React.useEffect(() => {
+    companyService.prefetch();
+  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
