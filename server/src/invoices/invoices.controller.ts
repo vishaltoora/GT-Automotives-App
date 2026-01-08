@@ -62,7 +62,7 @@ export class InvoicesController {
 
   @Get('cash-report')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   getDailyCashReport(@Query('date') date: string, @CurrentUser() user: any) {
     // Use business timezone date if no date provided
     const reportDate = date || getCurrentBusinessDate();

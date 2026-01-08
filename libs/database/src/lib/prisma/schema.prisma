@@ -517,6 +517,7 @@ enum RoleName {
   CUSTOMER
   STAFF
   SUPERVISOR
+  ACCOUNTANT
   ADMIN
 }
 
@@ -622,8 +623,14 @@ model PurchaseInvoice {
   description     String               // What was purchased
   invoiceDate     DateTime             // Date on the invoice
   dueDate         DateTime?            // Payment due date
-  amount          Decimal              @db.Decimal(10, 2)
-  taxAmount       Decimal?             @db.Decimal(10, 2)
+  amount          Decimal              @db.Decimal(10, 2)  // Subtotal (before tax)
+  gstRate         Decimal              @default(5) @db.Decimal(5, 2)  // GST percentage (default 5%)
+  gstAmount       Decimal?             @db.Decimal(10, 2)  // GST amount
+  pstRate         Decimal              @default(7) @db.Decimal(5, 2)  // PST percentage (default 7%)
+  pstAmount       Decimal?             @db.Decimal(10, 2)  // PST amount
+  hstRate         Decimal              @default(0) @db.Decimal(5, 2)  // HST percentage (default 0%)
+  hstAmount       Decimal?             @db.Decimal(10, 2)  // HST amount
+  taxAmount       Decimal?             @db.Decimal(10, 2)  // Total tax (GST + PST + HST)
   totalAmount     Decimal              @db.Decimal(10, 2)
   category        PurchaseCategory     // Categorization
   status          PurchaseInvoiceStatus @default(PAID)
@@ -655,8 +662,14 @@ model ExpenseInvoice {
   vendorName      String               // Free-text vendor name
   description     String               // Expense description
   invoiceDate     DateTime             // Date on the invoice
-  amount          Decimal              @db.Decimal(10, 2)
-  taxAmount       Decimal?             @db.Decimal(10, 2)
+  amount          Decimal              @db.Decimal(10, 2)  // Subtotal (before tax)
+  gstRate         Decimal              @default(5) @db.Decimal(5, 2)  // GST percentage (default 5%)
+  gstAmount       Decimal?             @db.Decimal(10, 2)  // GST amount
+  pstRate         Decimal              @default(7) @db.Decimal(5, 2)  // PST percentage (default 7%)
+  pstAmount       Decimal?             @db.Decimal(10, 2)  // PST amount
+  hstRate         Decimal              @default(0) @db.Decimal(5, 2)  // HST percentage (default 0%)
+  hstAmount       Decimal?             @db.Decimal(10, 2)  // HST amount
+  taxAmount       Decimal?             @db.Decimal(10, 2)  // Total tax (GST + PST + HST)
   totalAmount     Decimal              @db.Decimal(10, 2)
   category        ExpenseCategory      // Categorization
   status          PurchaseInvoiceStatus @default(PAID)
@@ -693,6 +706,14 @@ model PurchaseExpenseInvoice {
   vendorName      String                       // Free-text vendor name
   description     String                       // What was purchased/expense description
   invoiceDate     DateTime                     // Date on the invoice
+  amount          Decimal                      @default(0) @db.Decimal(10, 2)  // Subtotal (before tax)
+  gstRate         Decimal                      @default(5) @db.Decimal(5, 2)  // GST percentage (default 5%)
+  gstAmount       Decimal?                     @db.Decimal(10, 2)  // GST amount
+  pstRate         Decimal                      @default(7) @db.Decimal(5, 2)  // PST percentage (default 7%)
+  pstAmount       Decimal?                     @db.Decimal(10, 2)  // PST amount
+  hstRate         Decimal                      @default(0) @db.Decimal(5, 2)  // HST percentage (default 0%)
+  hstAmount       Decimal?                     @db.Decimal(10, 2)  // HST amount
+  taxAmount       Decimal?                     @db.Decimal(10, 2)  // Total tax (GST + PST + HST)
   totalAmount     Decimal                      @db.Decimal(10, 2)
   category        PurchaseExpenseCategory      // Unified categorization
   notes           String?                      // Additional notes

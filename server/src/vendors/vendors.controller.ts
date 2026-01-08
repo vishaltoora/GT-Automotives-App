@@ -30,7 +30,7 @@ export class VendorsController {
   }
 
   @Get()
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -46,7 +46,7 @@ export class VendorsController {
   }
 
   @Get('search')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async search(
     @Query(ValidationPipe) searchDto: VendorSearchDto,
   ): Promise<VendorResponseDto[]> {
@@ -56,13 +56,13 @@ export class VendorsController {
   }
 
   @Get('active')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findActive(): Promise<VendorResponseDto[]> {
     return this.vendorsService.findActive();
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findOne(@Param('id') id: string): Promise<VendorResponseDto> {
     return this.vendorsService.findOne(id);
   }

@@ -43,7 +43,7 @@ export class PurchaseExpenseInvoicesController {
   }
 
   @Get()
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findAll(
     @Query(ValidationPipe) filterDto: PurchaseExpenseInvoiceFilterDto,
   ): Promise<{
@@ -59,7 +59,7 @@ export class PurchaseExpenseInvoicesController {
   // Otherwise NestJS will match :id first and treat "image-url" as part of the id
 
   @Get(':id/image-url')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async getImageUrl(@Param('id') id: string): Promise<{ imageUrl: string }> {
     const imageUrl = await this.purchaseExpenseInvoicesService.getImageUrl(id);
     return { imageUrl };
@@ -94,7 +94,7 @@ export class PurchaseExpenseInvoicesController {
 
   // Generic :id routes come AFTER specific routes
   @Get(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findOne(
     @Param('id') id: string,
   ): Promise<PurchaseExpenseInvoiceResponseDto> {

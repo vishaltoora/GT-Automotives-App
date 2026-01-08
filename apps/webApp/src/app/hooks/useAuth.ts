@@ -37,7 +37,6 @@ export function useAuth() {
   const isDevelopment = false; // Set to false to enable Clerk authentication
 
   useEffect(() => {
-
     const syncUser = async () => {
       // Development mode with mock data
       if (isDevelopment) {
@@ -91,10 +90,10 @@ export function useAuth() {
         } catch (error: any) {
           // For now, set a default customer user to prevent redirect loops
           // The proper sync should happen via Clerk webhook
+          const userEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
+
           if (error.response?.status === 404 || error.response?.status === 401) {
-            
             // Check if this is Vishal's account
-            const userEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
             if (userEmail === 'vishal.alawalpuria@gmail.com') {
               // This is Vishal - should be admin
               setAppUser({
@@ -126,6 +125,17 @@ export function useAuth() {
                 isActive: true
               });
             }
+          } else {
+            // For other errors (403, 500, network errors), still set a fallback user
+            // to prevent infinite loading
+            setAppUser({
+              id: clerkUser.id,
+              email: userEmail,
+              firstName: clerkUser.firstName || 'User',
+              lastName: clerkUser.lastName || '',
+              role: { id: 3, name: 'customer' }, // Default to customer role
+              isActive: true
+            });
           }
         } finally {
           setLoading(false);
@@ -177,6 +187,7 @@ export function useAuth() {
     isLoading: isStillLoading,
     role: userRole,
     isAdmin: userRole === 'admin',
+    isAccountant: userRole === 'accountant',
     isSupervisor: userRole === 'supervisor',
     isStaff: userRole === 'staff',
     isCustomer: userRole === 'customer',

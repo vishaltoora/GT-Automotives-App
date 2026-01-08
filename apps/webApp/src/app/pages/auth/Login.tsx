@@ -34,6 +34,9 @@ export function Login() {
           case 'admin':
             redirectPath = from?.startsWith('/admin') ? from : '/admin/dashboard';
             break;
+          case 'accountant':
+            redirectPath = from?.startsWith('/accountant') ? from : '/accountant/dashboard';
+            break;
           case 'supervisor':
             redirectPath = from?.startsWith('/supervisor') ? from : '/supervisor/dashboard';
             break;
@@ -59,11 +62,15 @@ export function Login() {
     const roleDisplayName =
       role === 'admin'
         ? 'Admin Panel'
+        : role === 'accountant'
+        ? 'Accountant Dashboard'
         : role === 'supervisor'
         ? 'Supervisor Dashboard'
         : role === 'staff'
         ? 'Staff Dashboard'
-        : 'Customer Portal';
+        : role === 'customer'
+        ? 'Customer Portal'
+        : 'Your Dashboard'; // Generic fallback when role is null/loading
 
     const message =
       user && role

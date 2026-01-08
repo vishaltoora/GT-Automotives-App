@@ -61,7 +61,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
     lastName: '',
     phone: '',
     isActive: true,
-    roleName: 'STAFF' as 'ADMIN' | 'SUPERVISOR' | 'STAFF',
+    roleName: 'STAFF' as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF',
     smsEnabled: true,
   });
 
@@ -95,7 +95,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
         lastName: user.lastName,
         phone: user.phone || '',
         isActive: user.isActive,
-        roleName: user.role.name as 'ADMIN' | 'SUPERVISOR' | 'STAFF',
+        roleName: user.role.name as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF',
         smsEnabled: false, // Will be updated by loadSmsPreferences
       });
 
@@ -326,10 +326,11 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
               <Select
                 value={formData.roleName}
                 label="Role"
-                onChange={(e) => setFormData({ ...formData, roleName: e.target.value as 'ADMIN' | 'SUPERVISOR' | 'STAFF' })}
+                onChange={(e) => setFormData({ ...formData, roleName: e.target.value as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF' })}
               >
                 <MenuItem value="STAFF">Staff</MenuItem>
                 <MenuItem value="SUPERVISOR">Supervisor</MenuItem>
+                <MenuItem value="ACCOUNTANT">Accountant</MenuItem>
                 <MenuItem value="ADMIN">Admin</MenuItem>
               </Select>
               <FormHelperText>

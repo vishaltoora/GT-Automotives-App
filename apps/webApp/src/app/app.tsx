@@ -9,6 +9,7 @@ import { PublicLayout } from './layouts/PublicLayout';
 import { CustomerLayout } from './layouts/CustomerLayout';
 import { StaffLayout } from './layouts/StaffLayout';
 import { SupervisorLayout } from './layouts/SupervisorLayout';
+import { AccountantLayout } from './layouts/AccountantLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
 // Guards
@@ -40,6 +41,9 @@ import { MyEarnings } from './pages/staff/MyEarnings';
 // Admin Pages
 import { AdminDashboard } from './pages/admin/Dashboard';
 import { DaySummary } from './pages/admin/DaySummary';
+
+// Accountant Pages
+import { AccountantDashboard } from './pages/accountant/AccountantDashboard';
 import UserManagement from '../pages/admin/UserManagement';
 
 // Payroll Pages
@@ -209,6 +213,27 @@ export function App() {
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
           <Route path="my-jobs" element={<MyJobs />} />
           <Route path="my-earnings" element={<MyEarnings />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
+
+        {/* Accountant Routes */}
+        <Route
+          path="/accountant/*"
+          element={
+            <AuthGuard>
+              <RoleGuard allowedRoles={['accountant', 'admin']}>
+                <AccountantLayout />
+              </RoleGuard>
+            </AuthGuard>
+          }
+        >
+          <Route path="dashboard" element={<AccountantDashboard />} />
+          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="invoices/:id" element={<InvoiceDetails />} />
+          <Route path="cash-report" element={<CashReport />} />
+          <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="analytics" element={<div>Analytics</div>} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

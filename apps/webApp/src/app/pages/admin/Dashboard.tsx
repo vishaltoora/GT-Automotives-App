@@ -58,7 +58,7 @@ export function AdminDashboard() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Determine base path based on user role
-  const basePath = role === 'supervisor' ? '/supervisor' : '/admin';
+  const basePath = role === 'supervisor' ? '/supervisor' : role === 'accountant' ? '/accountant' : '/admin';
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
