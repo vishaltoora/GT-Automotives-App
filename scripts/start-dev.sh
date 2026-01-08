@@ -48,7 +48,7 @@ start_with_pm2() {
     echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║         Servers Started with PM2 Successfully!         ║${NC}"
     echo -e "${GREEN}╠════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${GREEN}║  Frontend:  http://localhost:4200                     ║${NC}"
+    echo -e "${GREEN}║  Frontend:  http://localhost:4500                     ║${NC}"
     echo -e "${GREEN}║  Backend:   http://localhost:3000/api                 ║${NC}"
     echo -e "${GREEN}║                                                        ║${NC}"
     echo -e "${GREEN}║  Commands:                                            ║${NC}"

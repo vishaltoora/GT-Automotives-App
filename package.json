@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "nx run-many --target=serve --projects=webApp,server --parallel",
+    "dev:debug": "./scripts/run-debug.sh",
     "dev:persistent": "./scripts/dev-persistent.sh",
     "dev:pm2": "./scripts/start-dev.sh pm2",
     "dev:menu": "./scripts/start-dev.sh",

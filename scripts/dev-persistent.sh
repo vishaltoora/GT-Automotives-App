@@ -38,9 +38,9 @@ kill_port() {
 
 # Function to start the frontend server
 start_frontend() {
-    echo -e "${GREEN}Starting Frontend Server on port 4200...${NC}"
+    echo -e "${GREEN}Starting Frontend Server on port 4500...${NC}"
     cd apps/webApp
-    npx vite --host --port 4200 --strictPort &
+    npx vite --host --port 4500 --strictPort &
     FRONTEND_PID=$!
     cd ../..
 }
@@ -70,7 +70,7 @@ cleanup() {
     fi
     
     # Kill any remaining processes on the ports
-    kill_port 4200
+    kill_port 4500
     kill_port 3000
     
     echo -e "${GREEN}Servers stopped successfully!${NC}"
@@ -83,7 +83,7 @@ trap cleanup EXIT INT TERM
 # Main execution
 main() {
     # Kill any existing processes on our ports
-    kill_port 4200
+    kill_port 4500
     kill_port 3000
     
     echo -e "${BLUE}Installing dependencies if needed...${NC}"
@@ -100,7 +100,7 @@ main() {
     echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║           Development Servers Started Successfully      ║${NC}"
     echo -e "${GREEN}╠════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${GREEN}║  Frontend:  http://localhost:4200                     ║${NC}"
+    echo -e "${GREEN}║  Frontend:  http://localhost:4500                     ║${NC}"
     echo -e "${GREEN}║  Backend:   http://localhost:3000/api                 ║${NC}"
     echo -e "${GREEN}║                                                        ║${NC}"
     echo -e "${GREEN}║  Hot-reload is enabled for both servers               ║${NC}"
