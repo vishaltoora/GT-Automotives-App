@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -7,8 +7,6 @@ import {
   CardContent,
   Paper,
   CircularProgress,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import {
   AttachMoney,
@@ -27,8 +25,6 @@ import { dashboardService, DashboardStats } from '../../requests/dashboard.reque
 
 export function AccountantDashboard() {
   const { user } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
