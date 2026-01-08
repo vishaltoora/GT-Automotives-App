@@ -65,6 +65,14 @@ export interface PurchaseExpenseInvoice {
   vendorName: string;
   description: string;
   invoiceDate: string;
+  amount: number;           // Subtotal (before tax)
+  gstRate: number;          // GST percentage (default 5%)
+  gstAmount: number | null; // GST amount
+  pstRate: number;          // PST percentage (default 7%)
+  pstAmount: number | null; // PST amount
+  hstRate: number;          // HST percentage (default 0%)
+  hstAmount: number | null; // HST amount
+  taxAmount: number | null; // Total tax
   totalAmount: number;
   category: PurchaseExpenseCategory;
   notes: string | null;
@@ -86,6 +94,14 @@ export interface CreatePurchaseExpenseInvoiceDto {
   vendorName: string;
   description: string;
   invoiceDate: string;
+  amount: number;         // Subtotal (before tax)
+  gstRate: number;        // GST percentage
+  gstAmount?: number;     // GST amount
+  pstRate: number;        // PST percentage
+  pstAmount?: number;     // PST amount
+  hstRate: number;        // HST percentage
+  hstAmount?: number;     // HST amount
+  taxAmount?: number;     // Total tax
   totalAmount: number;
   category: PurchaseExpenseCategory;
   notes?: string;
@@ -97,6 +113,14 @@ export interface UpdatePurchaseExpenseInvoiceDto {
   vendorName?: string;
   description?: string;
   invoiceDate?: string;
+  amount?: number;
+  gstRate?: number;
+  gstAmount?: number;
+  pstRate?: number;
+  pstAmount?: number;
+  hstRate?: number;
+  hstAmount?: number;
+  taxAmount?: number;
   totalAmount?: number;
   category?: PurchaseExpenseCategory;
   notes?: string;

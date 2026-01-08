@@ -30,7 +30,7 @@ import {
 import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 
-type ReportType = 'purchase' | 'expense' | 'tax-collection';
+type ReportType = 'purchase' | 'expense' | 'tax-collection' | 'gst-paid';
 
 export function Reports() {
   const [reportType, setReportType] = useState<ReportType>('purchase');
@@ -38,6 +38,7 @@ export function Reports() {
   const [endDate, setEndDate] = useState('');
   const [reportData, setReportData] = useState<any>(null);
   const [taxReportData, setTaxReportData] = useState<any>(null);
+  const [gstPaidReportData, setGstPaidReportData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { getToken } = useAuth();
@@ -46,6 +47,7 @@ export function Reports() {
     setReportType(newType);
     setReportData(null);
     setTaxReportData(null);
+    setGstPaidReportData(null);
     setError(null);
   };
 
@@ -54,6 +56,8 @@ export function Reports() {
       await loadPurchaseExpenseReport();
     } else if (reportType === 'tax-collection') {
       await loadTaxReport();
+    } else if (reportType === 'gst-paid') {
+      await loadGstPaidReport();
     }
   };
 
@@ -78,6 +82,7 @@ export function Reports() {
 
       setReportData(response.data);
       setTaxReportData(null); // Clear tax report data
+      setGstPaidReportData(null);
     } catch (err: any) {
       console.error('Error loading report:', err);
       setError(err.response?.data?.message || 'Failed to load report');
@@ -107,9 +112,40 @@ export function Reports() {
 
       setTaxReportData(response.data);
       setReportData(null); // Clear purchase/expense report data
+      setGstPaidReportData(null);
     } catch (err: any) {
       console.error('Error loading tax report:', err);
       setError(err.response?.data?.message || 'Failed to load tax report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadGstPaidReport = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = await getToken();
+      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+      const params: any = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const response = await axios.get(`${baseURL}/api/reports/gst-paid-report`, {
+        params,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setGstPaidReportData(response.data);
+      setReportData(null);
+      setTaxReportData(null);
+    } catch (err: any) {
+      console.error('Error loading GST paid report:', err);
+      setError(err.response?.data?.message || 'Failed to load GST paid report');
     } finally {
       setLoading(false);
     }
@@ -330,6 +366,12 @@ export function Reports() {
                     <span>GST/PST Tax Collection</span>
                   </Box>
                 </MenuItem>
+                <MenuItem value="gst-paid">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AttachMoney fontSize="small" />
+                    <span>GST Paid on Purchase & Expense</span>
+                  </Box>
+                </MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -491,8 +533,117 @@ export function Reports() {
             </>
           )}
 
+        {/* GST Paid on Purchase & Expense Report Results */}
+        {!loading && reportType === 'gst-paid' && gstPaidReportData && (
+          <>
+            {/* GST Paid Summary Cards */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Typography color="text.secondary" gutterBottom variant="body2">
+                      Total Paid Invoices
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold">
+                      {gstPaidReportData.totalInvoices || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {gstPaidReportData.totalPurchaseInvoices || 0} Purchase, {gstPaidReportData.totalExpenseInvoices || 0} Expense
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Typography color="text.secondary" gutterBottom variant="body2">
+                      GST Paid
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="error.main">
+                      {formatCurrency(gstPaidReportData.totalGstPaid || 0)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Purchase: {formatCurrency(gstPaidReportData.purchaseGstPaid || 0)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Typography color="text.secondary" gutterBottom variant="body2">
+                      PST Paid
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="error.main">
+                      {formatCurrency(gstPaidReportData.totalPstPaid || 0)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Purchase: {formatCurrency(gstPaidReportData.purchasePstPaid || 0)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Typography color="text.secondary" gutterBottom variant="body2">
+                      Total Tax Paid
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="primary">
+                      {formatCurrency(gstPaidReportData.totalTaxPaid || 0)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      HST: {formatCurrency(gstPaidReportData.totalHstPaid || 0)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Monthly Breakdown */}
+            {gstPaidReportData.monthlyBreakdown?.length > 0 && (
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Monthly Tax Paid Breakdown
+                </Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Month</TableCell>
+                        <TableCell align="right">Purchase</TableCell>
+                        <TableCell align="right">Expense</TableCell>
+                        <TableCell align="right">GST Paid</TableCell>
+                        <TableCell align="right">PST Paid</TableCell>
+                        <TableCell align="right">Total Tax</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {gstPaidReportData.monthlyBreakdown.map((month: any) => (
+                        <TableRow key={month.month}>
+                          <TableCell>{month.month}</TableCell>
+                          <TableCell align="right">{month.purchaseCount}</TableCell>
+                          <TableCell align="right">{month.expenseCount}</TableCell>
+                          <TableCell align="right">{formatCurrency(month.totalGstPaid)}</TableCell>
+                          <TableCell align="right">{formatCurrency(month.totalPstPaid)}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                            {formatCurrency(month.totalTaxPaid)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            )}
+          </>
+        )}
+
         {/* Empty State - No Report Generated */}
-        {!loading && !reportData && !taxReportData && !error && (
+        {!loading && !reportData && !taxReportData && !gstPaidReportData && !error && (
           <Box
             sx={{
               textAlign: 'center',
@@ -520,7 +671,7 @@ export function Reports() {
                   Select a date range and click "Generate Report" to view expense invoice analysis
                 </Typography>
               </>
-            ) : (
+            ) : reportType === 'tax-collection' ? (
               <>
                 <AttachMoney sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
                 <Typography variant="h6" gutterBottom fontWeight="500">
@@ -528,6 +679,16 @@ export function Reports() {
                 </Typography>
                 <Typography variant="body2">
                   Select a date range and click "Generate Report" to view GST/PST tax collection from paid invoices
+                </Typography>
+              </>
+            ) : (
+              <>
+                <AttachMoney sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
+                <Typography variant="h6" gutterBottom fontWeight="500">
+                  No GST Paid Report Generated
+                </Typography>
+                <Typography variant="body2">
+                  Select a date range and click "Generate Report" to view GST/PST paid on purchase and expense invoices
                 </Typography>
               </>
             )}

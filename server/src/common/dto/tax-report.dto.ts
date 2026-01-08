@@ -28,3 +28,48 @@ export class TaxReportResponseDto {
   // Monthly trends
   monthlyBreakdown!: MonthlyTaxBreakdownDto[];
 }
+
+// GST Paid on Purchase & Expense Report DTOs
+export class MonthlyGstPaidBreakdownDto {
+  month!: string; // YYYY-MM format
+  purchaseCount!: number;
+  expenseCount!: number;
+  purchaseGstPaid!: number;
+  purchasePstPaid!: number;
+  purchaseHstPaid!: number;
+  expenseGstPaid!: number;
+  expensePstPaid!: number;
+  expenseHstPaid!: number;
+  totalGstPaid!: number;
+  totalPstPaid!: number;
+  totalHstPaid!: number;
+  totalTaxPaid!: number;
+}
+
+export class GstPaidReportResponseDto {
+  // Summary statistics
+  totalPurchaseInvoices!: number;
+  totalExpenseInvoices!: number;
+  totalInvoices!: number;
+
+  // GST Paid
+  purchaseGstPaid!: number;
+  expenseGstPaid!: number;
+  totalGstPaid!: number;
+
+  // PST Paid
+  purchasePstPaid!: number;
+  expensePstPaid!: number;
+  totalPstPaid!: number;
+
+  // HST Paid
+  purchaseHstPaid!: number;
+  expenseHstPaid!: number;
+  totalHstPaid!: number;
+
+  // Total Tax Paid
+  totalTaxPaid!: number;
+
+  // Monthly trends
+  monthlyBreakdown!: MonthlyGstPaidBreakdownDto[];
+}

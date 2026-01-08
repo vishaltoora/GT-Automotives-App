@@ -29,6 +29,50 @@ export class CreatePurchaseExpenseInvoiceDto {
   @IsNumber()
   @Min(0)
   @Type(() => Number)
+  amount!: number;  // Subtotal (before tax)
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  gstRate!: number;  // GST percentage (default 5%)
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  gstAmount?: number;  // GST amount
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pstRate!: number;  // PST percentage (default 7%)
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pstAmount?: number;  // PST amount
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  hstRate!: number;  // HST percentage (default 0%)
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  hstAmount?: number;  // HST amount
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  taxAmount?: number;  // Total tax
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
   totalAmount!: number;
 
   @IsEnum(PurchaseExpenseCategory)
@@ -59,6 +103,54 @@ export class UpdatePurchaseExpenseInvoiceDto {
   @IsOptional()
   @IsDateString()
   invoiceDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  amount?: number;  // Subtotal (before tax)
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  gstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  gstAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pstAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  hstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  hstAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  taxAmount?: number;
 
   @IsOptional()
   @IsNumber()
@@ -114,6 +206,14 @@ export interface PurchaseExpenseInvoiceResponseDto {
   vendorName: string;
   description: string;
   invoiceDate: Date;
+  amount: number;            // Subtotal (before tax)
+  gstRate: number;           // GST percentage
+  gstAmount: number | null;  // GST amount
+  pstRate: number;           // PST percentage
+  pstAmount: number | null;  // PST amount
+  hstRate: number;           // HST percentage
+  hstAmount: number | null;  // HST amount
+  taxAmount: number | null;  // Total tax
   totalAmount: number;
   category: PurchaseExpenseCategory;
   notes: string | null;

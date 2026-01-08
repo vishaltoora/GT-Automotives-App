@@ -12,6 +12,8 @@ import {
   TaxReportFilterDto,
   TaxReportResponseDto,
   MonthlyTaxBreakdownDto,
+  GstPaidReportResponseDto,
+  MonthlyGstPaidBreakdownDto,
 } from '../common/dto/tax-report.dto';
 
 @Injectable()
@@ -499,6 +501,184 @@ export class ReportsService {
       existing.totalTaxCollected = existing.gstCollected + existing.pstCollected;
 
       monthMap.set(month, existing);
+    }
+
+    // Sort by month (most recent first)
+    return Array.from(monthMap.values()).sort((a, b) => b.month.localeCompare(a.month));
+  }
+
+  async getGstPaidReport(filterDto: TaxReportFilterDto): Promise<GstPaidReportResponseDto> {
+    const startDate = filterDto.startDate ? new Date(filterDto.startDate) : undefined;
+    const endDate = filterDto.endDate ? new Date(filterDto.endDate) : undefined;
+
+    // Build filter conditions for legacy tables (PAID invoices only)
+    const legacyWhere: any = {
+      status: 'PAID',
+    };
+    if (startDate) {
+      legacyWhere.invoiceDate = { ...legacyWhere.invoiceDate, gte: startDate };
+    }
+    if (endDate) {
+      legacyWhere.invoiceDate = { ...legacyWhere.invoiceDate, lte: endDate };
+    }
+
+    // Build filter conditions for unified table (all invoices - no status field)
+    const unifiedWhere: any = {};
+    if (startDate) {
+      unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, gte: startDate };
+    }
+    if (endDate) {
+      unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, lte: endDate };
+    }
+
+    // Fetch from legacy tables (PurchaseInvoice, ExpenseInvoice)
+    const [legacyPurchaseInvoices, legacyExpenseInvoices] = await Promise.all([
+      this.prisma.purchaseInvoice.findMany({
+        where: legacyWhere,
+        select: {
+          id: true,
+          invoiceDate: true,
+          gstAmount: true,
+          pstAmount: true,
+          hstAmount: true,
+        },
+      }),
+      this.prisma.expenseInvoice.findMany({
+        where: legacyWhere,
+        select: {
+          id: true,
+          invoiceDate: true,
+          gstAmount: true,
+          pstAmount: true,
+          hstAmount: true,
+        },
+      }),
+    ]);
+
+    // Fetch from unified table (PurchaseExpenseInvoice)
+    const unifiedInvoices = await this.prisma.purchaseExpenseInvoice.findMany({
+      where: unifiedWhere,
+      select: {
+        id: true,
+        type: true,
+        invoiceDate: true,
+        gstAmount: true,
+        pstAmount: true,
+        hstAmount: true,
+      },
+    });
+
+    // Split unified invoices by type
+    const unifiedPurchaseInvoices = unifiedInvoices.filter(inv => inv.type === 'PURCHASE');
+    const unifiedExpenseInvoices = unifiedInvoices.filter(inv => inv.type === 'EXPENSE');
+
+    // Combine legacy and unified invoices
+    const purchaseInvoices = [...legacyPurchaseInvoices, ...unifiedPurchaseInvoices];
+    const expenseInvoices = [...legacyExpenseInvoices, ...unifiedExpenseInvoices];
+
+    // Calculate tax paid from purchase invoices
+    const purchaseGstPaid = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.gstAmount || 0), 0);
+    const purchasePstPaid = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.pstAmount || 0), 0);
+    const purchaseHstPaid = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.hstAmount || 0), 0);
+
+    // Calculate tax paid from expense invoices
+    const expenseGstPaid = expenseInvoices.reduce((sum, inv) => sum + Number(inv.gstAmount || 0), 0);
+    const expensePstPaid = expenseInvoices.reduce((sum, inv) => sum + Number(inv.pstAmount || 0), 0);
+    const expenseHstPaid = expenseInvoices.reduce((sum, inv) => sum + Number(inv.hstAmount || 0), 0);
+
+    // Calculate totals
+    const totalGstPaid = purchaseGstPaid + expenseGstPaid;
+    const totalPstPaid = purchasePstPaid + expensePstPaid;
+    const totalHstPaid = purchaseHstPaid + expenseHstPaid;
+    const totalTaxPaid = totalGstPaid + totalPstPaid + totalHstPaid;
+
+    // Calculate monthly breakdown
+    const monthlyBreakdown = this.calculateMonthlyGstPaidBreakdown(purchaseInvoices, expenseInvoices);
+
+    return {
+      totalPurchaseInvoices: purchaseInvoices.length,
+      totalExpenseInvoices: expenseInvoices.length,
+      totalInvoices: purchaseInvoices.length + expenseInvoices.length,
+      purchaseGstPaid,
+      expenseGstPaid,
+      totalGstPaid,
+      purchasePstPaid,
+      expensePstPaid,
+      totalPstPaid,
+      purchaseHstPaid,
+      expenseHstPaid,
+      totalHstPaid,
+      totalTaxPaid,
+      monthlyBreakdown,
+    };
+  }
+
+  private calculateMonthlyGstPaidBreakdown(
+    purchaseInvoices: any[],
+    expenseInvoices: any[],
+  ): MonthlyGstPaidBreakdownDto[] {
+    const monthMap = new Map<string, MonthlyGstPaidBreakdownDto>();
+
+    // Aggregate purchase invoices
+    for (const invoice of purchaseInvoices) {
+      const month = invoice.invoiceDate.toISOString().substring(0, 7); // YYYY-MM
+      const existing = monthMap.get(month) || {
+        month,
+        purchaseCount: 0,
+        expenseCount: 0,
+        purchaseGstPaid: 0,
+        purchasePstPaid: 0,
+        purchaseHstPaid: 0,
+        expenseGstPaid: 0,
+        expensePstPaid: 0,
+        expenseHstPaid: 0,
+        totalGstPaid: 0,
+        totalPstPaid: 0,
+        totalHstPaid: 0,
+        totalTaxPaid: 0,
+      };
+
+      existing.purchaseCount++;
+      existing.purchaseGstPaid += Number(invoice.gstAmount || 0);
+      existing.purchasePstPaid += Number(invoice.pstAmount || 0);
+      existing.purchaseHstPaid += Number(invoice.hstAmount || 0);
+
+      monthMap.set(month, existing);
+    }
+
+    // Aggregate expense invoices
+    for (const invoice of expenseInvoices) {
+      const month = invoice.invoiceDate.toISOString().substring(0, 7); // YYYY-MM
+      const existing = monthMap.get(month) || {
+        month,
+        purchaseCount: 0,
+        expenseCount: 0,
+        purchaseGstPaid: 0,
+        purchasePstPaid: 0,
+        purchaseHstPaid: 0,
+        expenseGstPaid: 0,
+        expensePstPaid: 0,
+        expenseHstPaid: 0,
+        totalGstPaid: 0,
+        totalPstPaid: 0,
+        totalHstPaid: 0,
+        totalTaxPaid: 0,
+      };
+
+      existing.expenseCount++;
+      existing.expenseGstPaid += Number(invoice.gstAmount || 0);
+      existing.expensePstPaid += Number(invoice.pstAmount || 0);
+      existing.expenseHstPaid += Number(invoice.hstAmount || 0);
+
+      monthMap.set(month, existing);
+    }
+
+    // Calculate totals for each month
+    for (const [, data] of monthMap) {
+      data.totalGstPaid = data.purchaseGstPaid + data.expenseGstPaid;
+      data.totalPstPaid = data.purchasePstPaid + data.expensePstPaid;
+      data.totalHstPaid = data.purchaseHstPaid + data.expenseHstPaid;
+      data.totalTaxPaid = data.totalGstPaid + data.totalPstPaid + data.totalHstPaid;
     }
 
     // Sort by month (most recent first)
