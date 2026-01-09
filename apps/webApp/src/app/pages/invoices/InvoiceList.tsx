@@ -59,11 +59,15 @@ const InvoiceList: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  // Immediate input value for responsive typing (combined search)
+  const [searchInput, setSearchInput] = useState('');
+  // Debounced search params that trigger API calls
   const [searchParams, setSearchParams] = useState({
-    customerName: '',
-    invoiceNumber: '',
+    search: '', // Combined search for invoice number and customer name
     status: '',
     companyId: '',
+    startDate: '',
+    endDate: '',
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -91,6 +95,25 @@ const InvoiceList: React.FC = () => {
     loadCompanies();
   }, []);
 
+  // Debounce text input searches (300ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchParams.search) {
+        setSearchParams((prev) => ({
+          ...prev,
+          search: searchInput,
+        }));
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Trigger search when searchParams change
+  useEffect(() => {
+    handleSearch();
+  }, [searchParams]);
+
   const loadCompanies = async () => {
     try {
       const data = await companyService.getCompanies();
@@ -114,14 +137,17 @@ const InvoiceList: React.FC = () => {
 
   const handleSearch = async () => {
     try {
-      const hasFilters = searchParams.status || searchParams.customerName || searchParams.invoiceNumber || searchParams.companyId;
+      const hasFilters = searchParams.status || searchParams.search || searchParams.companyId || searchParams.startDate || searchParams.endDate;
 
       const filtered = hasFilters
         ? await invoiceService.searchInvoices({
-            customerName: searchParams.customerName || undefined,
-            invoiceNumber: searchParams.invoiceNumber || undefined,
+            // Pass combined search to both customerName and invoiceNumber
+            customerName: searchParams.search || undefined,
+            invoiceNumber: searchParams.search || undefined,
             status: searchParams.status as any || undefined,
             companyId: searchParams.companyId || undefined,
+            startDate: searchParams.startDate || undefined,
+            endDate: searchParams.endDate || undefined,
           })
         : await invoiceService.getInvoices();
 
@@ -389,7 +415,7 @@ const InvoiceList: React.FC = () => {
         >
           <FilterListIcon sx={{ color: theme.palette.primary.main, fontSize: isMobile ? 20 : 24 }} />
           <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
-            Filters {isMobile && `(${[searchParams.status, searchParams.customerName, searchParams.invoiceNumber, searchParams.companyId].filter(Boolean).length})`}
+            Filters {isMobile && `(${[searchParams.status, searchParams.search, searchParams.companyId, searchParams.startDate, searchParams.endDate].filter(Boolean).length})`}
           </Typography>
           {isMobile && (
             <IconButton size="small" sx={{ ml: 'auto' }}>
@@ -400,12 +426,13 @@ const InvoiceList: React.FC = () => {
 
         {(!isMobile || filtersExpanded) && (
           <Grid container spacing={{ xs: 1.5, sm: 2 }} alignItems="center">
-            <Grid size={{ xs: 12, sm: 3 }}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth
-                label="Invoice Number"
-                value={searchParams.invoiceNumber}
-                onChange={(e) => setSearchParams({ ...searchParams, invoiceNumber: e.target.value })}
+                label="Search"
+                placeholder="Invoice # or Customer Name..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 size={isMobile ? 'small' : 'medium'}
                 InputProps={{
                   startAdornment: (
@@ -414,15 +441,6 @@ const InvoiceList: React.FC = () => {
                     </InputAdornment>
                   ),
                 }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 3 }}>
-              <TextField
-                fullWidth
-                label="Customer Name"
-                value={searchParams.customerName}
-                onChange={(e) => setSearchParams({ ...searchParams, customerName: e.target.value })}
-                size={isMobile ? 'small' : 'medium'}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 2 }}>
@@ -460,15 +478,26 @@ const InvoiceList: React.FC = () => {
               </TextField>
             </Grid>
             <Grid size={{ xs: 12, sm: 2 }}>
-              <Button
+              <TextField
                 fullWidth
-                variant="contained"
-                onClick={handleSearch}
-                startIcon={!isMobile && <SearchIcon />}
-                size={isMobile ? 'medium' : 'medium'}
-              >
-                Search
-              </Button>
+                type="date"
+                label="Start Date"
+                value={searchParams.startDate}
+                onChange={(e) => setSearchParams({ ...searchParams, startDate: e.target.value })}
+                size={isMobile ? 'small' : 'medium'}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 2 }}>
+              <TextField
+                fullWidth
+                type="date"
+                label="End Date"
+                value={searchParams.endDate}
+                onChange={(e) => setSearchParams({ ...searchParams, endDate: e.target.value })}
+                size={isMobile ? 'small' : 'medium'}
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
           </Grid>
         )}

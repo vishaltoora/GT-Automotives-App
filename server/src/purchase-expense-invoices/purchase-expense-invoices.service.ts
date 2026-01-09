@@ -39,6 +39,7 @@ export class PurchaseExpenseInvoicesService {
     const filters: any = {};
     if (filterDto.type) filters.type = filterDto.type;
     if (filterDto.vendorId) filters.vendorId = filterDto.vendorId;
+    if (filterDto.search) filters.search = filterDto.search;
     if (filterDto.category) filters.category = filterDto.category;
     if (filterDto.startDate) filters.startDate = new Date(filterDto.startDate);
     if (filterDto.endDate) filters.endDate = new Date(filterDto.endDate);

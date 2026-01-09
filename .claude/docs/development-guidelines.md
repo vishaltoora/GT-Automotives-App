@@ -73,6 +73,65 @@ GET    /api/reports/financial // Admin only
 - Use Grid2 size property syntax: `<Grid size={{ xs: 12, md: 6 }}>` instead of `<Grid xs={12} md={6}>`
 - Never use browser dialogs (`window.alert`, `window.confirm`) - use custom dialog system
 
+## Search-as-you-type Pattern (January 2026)
+
+When implementing search functionality, use debounced search inputs for better UX:
+
+```typescript
+// ✅ CORRECT - Separate immediate input from debounced search params
+const [searchInput, setSearchInput] = useState('');  // Immediate typing
+const [searchParams, setSearchParams] = useState({
+  search: '',  // Debounced value for API calls
+  status: '',
+  // ...other filters
+});
+
+// Debounce effect (300ms)
+useEffect(() => {
+  const timer = setTimeout(() => {
+    if (searchInput !== searchParams.search) {
+      setSearchParams((prev) => ({
+        ...prev,
+        search: searchInput,
+      }));
+    }
+  }, 300);
+  return () => clearTimeout(timer);
+}, [searchInput]);
+
+// Trigger API call when searchParams changes
+useEffect(() => {
+  handleSearch();
+}, [searchParams]);
+```
+
+**Key Points:**
+- Use 300ms debounce delay to prevent excessive API calls
+- Separate immediate input state from debounced search params
+- Reset pagination to page 1 when search changes
+- Use case-insensitive search on backend with Prisma `mode: 'insensitive'`
+
+**Combined Search Pattern (OR condition):**
+When a single search field needs to search multiple fields (e.g., invoice number AND customer name):
+
+```typescript
+// Frontend: Pass same value to both params
+await invoiceService.searchInvoices({
+  customerName: searchParams.search,
+  invoiceNumber: searchParams.search,
+});
+
+// Backend: Detect combined search and use OR condition
+if (params.invoiceNumber && params.customerName &&
+    params.invoiceNumber === params.customerName) {
+  where.OR = [
+    { invoiceNumber: { contains: searchTerm, mode: 'insensitive' } },
+    { customer: { firstName: { contains: searchTerm, mode: 'insensitive' } } },
+    { customer: { lastName: { contains: searchTerm, mode: 'insensitive' } } },
+  ];
+}
+```
+
 ## Environment Variable Access (Critical)
 ⚠️ **Always use direct `import.meta.env` access for Vite environment variables**
 

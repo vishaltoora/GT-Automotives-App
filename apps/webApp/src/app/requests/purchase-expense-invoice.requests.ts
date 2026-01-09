@@ -187,6 +187,7 @@ const purchaseExpenseInvoiceService = {
   async getAll(filters?: {
     type?: PurchaseExpenseType;
     vendorId?: string;
+    search?: string;
     category?: PurchaseExpenseCategory;
     startDate?: string;
     endDate?: string;

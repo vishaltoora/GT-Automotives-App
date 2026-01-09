@@ -1,5 +1,161 @@
 # Completed Work Log
 
+## January 9, 2026 Updates
+
+### Invoice & Purchase/Expense Invoice Search Enhancements ✅
+
+**User Request:**
+- Add pagination to Purchase/Expense Invoices page
+- Add search-as-you-type functionality for vendor name
+- Add search-as-you-type functionality for Invoice List
+- Combine Invoice Number and Customer Name search into single field
+
+**Implementation:**
+
+#### 1. Purchase/Expense Invoices - Pagination & Vendor Search
+
+**Frontend Changes (PurchaseExpenseInvoiceManagement.tsx):**
+```typescript
+// Added pagination state
+const [page, setPage] = useState(0);
+const [rowsPerPage, setRowsPerPage] = useState(20);
+const [total, setTotal] = useState(0);
+
+// Added debounced search input
+const [searchInput, setSearchInput] = useState('');
+
+// Debounce effect (300ms)
+useEffect(() => {
+  const timer = setTimeout(() => {
+    if (searchInput !== filters.search) {
+      handleFilterChange({ ...filters, search: searchInput });
+    }
+  }, 300);
+  return () => clearTimeout(timer);
+}, [searchInput]);
+
+// Load invoices with pagination
+const loadInvoices = async () => {
+  const filterParams = {
+    page: page + 1, // Backend uses 1-indexed pages
+    limit: rowsPerPage,
+    type: filters.type || undefined,
+    search: filters.search || undefined,
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined,
+  };
+  const response = await purchaseExpenseInvoiceService.getAll(filterParams);
+  setInvoices(response.data);
+  setTotal(response.total);
+};
+```
+
+**Backend Changes:**
+- `purchase-expense-invoice.dto.ts`: Added `search?: string` field to filter DTO
+- `purchase-expense-invoice.repository.ts`: Added search filter with case-insensitive matching
+- `purchase-expense-invoices.service.ts`: Pass search filter to repository
+
+#### 2. Invoice List - Combined Search & Search-as-you-type
+
+**Frontend Changes (InvoiceList.tsx):**
+```typescript
+// Before: Two separate search fields
+const [searchInputs, setSearchInputs] = useState({
+  customerName: '',
+  invoiceNumber: '',
+});
+
+// After: Single unified search
+const [searchInput, setSearchInput] = useState('');
+const [searchParams, setSearchParams] = useState({
+  search: '', // Combined search for invoice number and customer name
+  status: '',
+  companyId: '',
+  startDate: '',
+  endDate: '',
+});
+
+// Debounce effect (300ms)
+useEffect(() => {
+  const timer = setTimeout(() => {
+    if (searchInput !== searchParams.search) {
+      setSearchParams((prev) => ({
+        ...prev,
+        search: searchInput,
+      }));
+    }
+  }, 300);
+  return () => clearTimeout(timer);
+}, [searchInput]);
+
+// Pass search to both API params
+const handleSearch = async () => {
+  const filtered = await invoiceService.searchInvoices({
+    customerName: searchParams.search || undefined,
+    invoiceNumber: searchParams.search || undefined,
+    status: searchParams.status || undefined,
+    // ...other filters
+  });
+};
+```
+
+**Backend Changes (invoice.repository.ts):**
+```typescript
+async searchInvoices(searchParams: {
+  customerName?: string;
+  invoiceNumber?: string;
+  // ...other params
+}): Promise<Invoice[]> {
+  const where: Prisma.InvoiceWhereInput = {};
+
+  // When both customerName and invoiceNumber have same value,
+  // treat as combined search (OR condition)
+  if (searchParams.invoiceNumber && searchParams.customerName &&
+      searchParams.invoiceNumber === searchParams.customerName) {
+    const searchTerm = searchParams.invoiceNumber;
+    where.OR = [
+      {
+        invoiceNumber: {
+          contains: searchTerm,
+          mode: 'insensitive',
+        },
+      },
+      {
+        customer: {
+          OR: [
+            { firstName: { contains: searchTerm, mode: 'insensitive' } },
+            { lastName: { contains: searchTerm, mode: 'insensitive' } },
+            { businessName: { contains: searchTerm, mode: 'insensitive' } },
+          ],
+        },
+      },
+    ];
+  } else {
+    // Individual search fields (backward compatibility)
+    // ...existing logic
+  }
+  // ...rest of function
+}
+```
+
+**Files Changed:**
+- `apps/webApp/src/app/pages/invoices/InvoiceList.tsx`
+- `apps/webApp/src/app/pages/purchase-expense-invoices/PurchaseExpenseInvoiceManagement.tsx`
+- `apps/webApp/src/app/requests/purchase-expense-invoice.requests.ts`
+- `server/src/invoices/repositories/invoice.repository.ts`
+- `server/src/common/dto/purchase-expense-invoice.dto.ts`
+- `server/src/purchase-expense-invoices/purchase-expense-invoice.repository.ts`
+- `server/src/purchase-expense-invoices/purchase-expense-invoices.service.ts`
+
+**UX Improvements:**
+- Real-time search as user types (no need to click Search button)
+- 300ms debounce prevents excessive API calls
+- Single search field simplifies UI
+- Searches across invoice number, customer first/last name, and business name
+- Server-side pagination for large datasets
+
+---
+
 ## November 14, 2025 Updates
 
 ### Puppeteer/Chromium Installation for Invoice PDF Generation ✅

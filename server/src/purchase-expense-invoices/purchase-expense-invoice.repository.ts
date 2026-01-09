@@ -58,6 +58,7 @@ export class PurchaseExpenseInvoiceRepository {
     filters?: {
       type?: PurchaseExpenseType;
       vendorId?: string;
+      search?: string;
       category?: PurchaseExpenseCategory;
       startDate?: Date;
       endDate?: Date;
@@ -70,6 +71,12 @@ export class PurchaseExpenseInvoiceRepository {
     }
     if (filters?.vendorId) {
       where.vendorId = filters.vendorId;
+    }
+    if (filters?.search) {
+      where.vendorName = {
+        contains: filters.search,
+        mode: 'insensitive',
+      };
     }
     if (filters?.category) {
       where.category = filters.category;
@@ -190,6 +197,7 @@ export class PurchaseExpenseInvoiceRepository {
   async count(filters?: {
     type?: PurchaseExpenseType;
     vendorId?: string;
+    search?: string;
     category?: PurchaseExpenseCategory;
     startDate?: Date;
     endDate?: Date;
@@ -201,6 +209,12 @@ export class PurchaseExpenseInvoiceRepository {
     }
     if (filters?.vendorId) {
       where.vendorId = filters.vendorId;
+    }
+    if (filters?.search) {
+      where.vendorName = {
+        contains: filters.search,
+        mode: 'insensitive',
+      };
     }
     if (filters?.category) {
       where.category = filters.category;

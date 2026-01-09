@@ -42,7 +42,20 @@ This document provides a comprehensive overview of the current development statu
 
 ## 🚀 Major Features Completed
 
-### 1. Email System with Logo Branding ✅
+### 1. Invoice Search Enhancements (January 2026) ✅
+- **Combined Search Field**: Single search input for Invoice # and Customer Name
+- **Search-as-you-type**: 300ms debounced real-time filtering
+- **OR Search Logic**: Searches invoice number, first name, last name, business name
+- **Date Filters**: Start/end date filtering for invoices
+- **Purchase/Expense Pagination**: Server-side pagination with 10/20/50/100 rows per page
+- **Vendor Search**: Real-time search by vendor name in Purchase/Expense Invoices
+
+**Key Files**:
+- `InvoiceList.tsx` - Combined search, debounce, date filters
+- `PurchaseExpenseInvoiceManagement.tsx` - Pagination, vendor search
+- `invoice.repository.ts` - OR search logic for combined queries
+
+### 2. Email System with Logo Branding ✅
 - **Professional Email Branding**: GT Automotives logo in all email templates
 - **5 Email Templates**: Test, Appointment Confirmation, EOD Summary, Employee Schedule, Appointment Assignment
 - **Logo Optimization**: 108KB optimized logo (94% reduction from 1.9MB original)

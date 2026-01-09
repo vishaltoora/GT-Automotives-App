@@ -177,6 +177,10 @@ export class PurchaseExpenseInvoiceFilterDto {
   vendorId?: string;
 
   @IsOptional()
+  @IsString()
+  search?: string;  // Search by vendor name
+
+  @IsOptional()
   @IsEnum(PurchaseExpenseCategory)
   category?: PurchaseExpenseCategory;
 

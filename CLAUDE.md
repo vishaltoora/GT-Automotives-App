@@ -154,6 +154,25 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### January 9, 2026 - Invoice & Purchase/Expense Invoice Search Enhancements ✅
+- ✅ **Combined Search Field**: Invoice list now has single unified search for Invoice # and Customer Name
+- ✅ **Search-as-you-type**: 300ms debounced search for real-time filtering without button clicks
+- ✅ **OR Search Logic**: Backend updated to search across invoice number, first name, last name, and business name
+- ✅ **Pagination**: Added server-side pagination to Purchase/Expense Invoices (10/20/50/100 rows per page)
+- ✅ **Vendor Search**: Purchase/Expense Invoices now support search-as-you-type by vendor name
+- ✅ **Date Filters**: Added start/end date filters to both Invoice List and Purchase/Expense Invoices
+- ✅ **Removed Search Button**: Search happens automatically as user types (UX improvement)
+- 🔧 **Frontend Files Changed**:
+  - `apps/webApp/src/app/pages/invoices/InvoiceList.tsx`: Combined search field, debounce, date filters
+  - `apps/webApp/src/app/pages/purchase-expense-invoices/PurchaseExpenseInvoiceManagement.tsx`: Pagination, vendor search
+  - `apps/webApp/src/app/requests/purchase-expense-invoice.requests.ts`: Added search parameter
+- 🔧 **Backend Files Changed**:
+  - `server/src/invoices/repositories/invoice.repository.ts`: OR search logic for combined search
+  - `server/src/common/dto/purchase-expense-invoice.dto.ts`: Added search field to filter DTO
+  - `server/src/purchase-expense-invoices/purchase-expense-invoice.repository.ts`: Search by vendor name
+  - `server/src/purchase-expense-invoices/purchase-expense-invoices.service.ts`: Pass search filter
+- 📝 **Impact**: Faster invoice lookups, improved UX with real-time search results
+
 ### November 18, 2025 - Critical Production Timezone Fixes ✅
 - ✅ **CRITICAL Production Bug Fixed**: Appointment emails showing wrong date (Nov 17 instead of Nov 18)
 - ✅ **Root Cause Identified**: Two-layer timezone issue affecting production after 5 PM PST

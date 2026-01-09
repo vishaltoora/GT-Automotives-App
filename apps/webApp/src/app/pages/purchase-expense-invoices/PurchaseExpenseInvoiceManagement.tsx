@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -10,6 +10,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   IconButton,
   Chip,
   TextField,
@@ -23,6 +24,7 @@ import {
   Stack,
   Divider,
   Collapse,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,13 +36,12 @@ import {
   Visibility as VisibilityIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import purchaseExpenseInvoiceService, {
   PurchaseExpenseInvoice,
   PurchaseExpenseType,
-  PurchaseExpenseCategory,
   CATEGORY_LABELS,
-  ALL_CATEGORIES,
 } from '../../requests/purchase-expense-invoice.requests';
 import PurchaseExpenseInvoiceDialog from '../../components/purchase-expense-invoices/PurchaseExpenseInvoiceDialog';
 import FileViewerDialog from '../../components/common/FileViewerDialog';
@@ -63,36 +64,71 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
   const [menuInvoice, setMenuInvoice] =
     useState<PurchaseExpenseInvoice | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [searchInput, setSearchInput] = useState(''); // Immediate input value
   const [filters, setFilters] = useState({
     type: '' as PurchaseExpenseType | '',
-    category: '' as PurchaseExpenseCategory | '',
+    search: '',
     startDate: '',
     endDate: '',
   });
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [total, setTotal] = useState(0);
+
   const { confirm } = useConfirmation();
   const { showError } = useError();
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        handleFilterChange({ ...filters, search: searchInput });
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     loadInvoices();
-  }, [filters]);
+  }, [filters, page, rowsPerPage]);
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      const filterParams: any = {};
+      const filterParams: any = {
+        page: page + 1, // Backend uses 1-indexed pages
+        limit: rowsPerPage,
+      };
       if (filters.type) filterParams.type = filters.type;
-      if (filters.category) filterParams.category = filters.category;
+      if (filters.search) filterParams.search = filters.search;
       if (filters.startDate) filterParams.startDate = filters.startDate;
       if (filters.endDate) filterParams.endDate = filters.endDate;
 
       const response = await purchaseExpenseInvoiceService.getAll(filterParams);
       setInvoices(response.data);
+      setTotal(response.total);
     } catch (error) {
       showError('Failed to load invoices');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setPage(0); // Reset to first page when filters change
   };
 
   const handleOpenMenu = (
@@ -236,12 +272,29 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <TextField
                 fullWidth
+                size={isMobile ? 'small' : 'medium'}
+                label="Search Vendor"
+                placeholder="Type to search..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <TextField
+                fullWidth
                 select
                 size={isMobile ? 'small' : 'medium'}
                 label="Invoice Type"
                 value={filters.type}
                 onChange={(e) =>
-                  setFilters({
+                  handleFilterChange({
                     ...filters,
                     type: e.target.value as PurchaseExpenseType | '',
                   })
@@ -255,34 +308,12 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <TextField
                 fullWidth
-                select
-                size={isMobile ? 'small' : 'medium'}
-                label="Category"
-                value={filters.category}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    category: e.target.value as PurchaseExpenseCategory | '',
-                  })
-                }
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                {ALL_CATEGORIES.map((cat) => (
-                  <MenuItem key={cat} value={cat}>
-                    {CATEGORY_LABELS[cat]}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <TextField
-                fullWidth
                 size={isMobile ? 'small' : 'medium'}
                 type="date"
                 label="Start Date"
                 value={filters.startDate}
                 onChange={(e) =>
-                  setFilters({ ...filters, startDate: e.target.value })
+                  handleFilterChange({ ...filters, startDate: e.target.value })
                 }
                 InputLabelProps={{ shrink: true }}
               />
@@ -295,7 +326,7 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
                 label="End Date"
                 value={filters.endDate}
                 onChange={(e) =>
-                  setFilters({ ...filters, endDate: e.target.value })
+                  handleFilterChange({ ...filters, endDate: e.target.value })
                 }
                 InputLabelProps={{ shrink: true }}
               />
@@ -463,7 +494,32 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            component="div"
+            count={total}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 20, 50, 100]}
+          />
         </TableContainer>
+      )}
+
+      {/* Mobile Pagination */}
+      {isMobile && invoices.length > 0 && (
+        <Paper sx={{ mt: 2 }}>
+          <TablePagination
+            component="div"
+            count={total}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 20, 50]}
+            labelRowsPerPage="Per page:"
+          />
+        </Paper>
       )}
 
       <PurchaseExpenseInvoiceDialog

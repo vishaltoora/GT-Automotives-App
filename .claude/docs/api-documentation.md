@@ -406,6 +406,36 @@ Retrieves invoices with filtering.
 - `status`: Filter by payment status
 - `dateFrom`, `dateTo`: Date range filter
 
+### Search Invoices
+**GET** `/invoices/search`
+
+Search invoices with combined filtering. When `customerName` and `invoiceNumber` have the same value, performs an OR search across both fields.
+
+**Access**: Admin, Staff, Customer (own invoices only)
+
+**Query Parameters**:
+- `customerName` (string): Search by customer first name, last name, or business name (case-insensitive)
+- `invoiceNumber` (string): Search by invoice number (case-insensitive, partial match)
+- `status` (enum): Filter by status (DRAFT, PENDING, PAID, CANCELLED, REFUNDED)
+- `companyId` (string): Filter by company
+- `startDate` (string): Filter invoices from this date (ISO format)
+- `endDate` (string): Filter invoices until this date (ISO format)
+
+**Combined Search Behavior**:
+When `customerName` and `invoiceNumber` are both provided with the same value, the backend performs an OR search:
+- Matches invoice number containing the search term
+- OR matches customer first name containing the search term
+- OR matches customer last name containing the search term
+- OR matches customer business name containing the search term
+
+**Example Request**:
+```
+GET /invoices/search?customerName=john&invoiceNumber=john&status=PENDING
+```
+This will find invoices where:
+- Invoice number contains "john" (e.g., "INV-JOHN-001")
+- OR customer name contains "john" (e.g., "John Doe", "Johnson Corp")
+
 ### Get Invoice Details
 **GET** `/invoices/:id`
 
@@ -736,8 +766,133 @@ Retrieves SMS message history with filtering.
 - `ADMIN_DAILY_SUMMARY` - End-of-day metrics
 - And more (see SMS Feature Manager agent)
 
+## Purchase/Expense Invoice Endpoints
+
+### List Purchase/Expense Invoices
+**GET** `/purchase-expense-invoices`
+
+Retrieves purchase and expense invoices with pagination and filtering.
+
+**Access**: Admin, Staff, Accountant
+
+**Query Parameters**:
+- `type` (enum): Filter by type (PURCHASE, EXPENSE)
+- `search` (string): Search by vendor name (case-insensitive, partial match)
+- `vendorId` (string): Filter by vendor ID
+- `category` (enum): Filter by category
+- `startDate` (string): Filter from date (ISO format)
+- `endDate` (string): Filter until date (ISO format)
+- `page` (number): Page number (1-indexed, default: 1)
+- `limit` (number): Items per page (default: 20)
+
+**Response**:
+```json
+{
+  "data": [
+    {
+      "id": "inv_123",
+      "type": "PURCHASE",
+      "vendorId": "vendor_123",
+      "vendorName": "ABC Tire Supply",
+      "description": "Tire inventory restock",
+      "invoiceDate": "2026-01-09",
+      "amount": 1000.00,
+      "gstRate": 5,
+      "gstAmount": 50.00,
+      "pstRate": 7,
+      "pstAmount": 70.00,
+      "taxAmount": 120.00,
+      "totalAmount": 1120.00,
+      "category": "TIRES",
+      "notes": null,
+      "imageUrl": null,
+      "createdAt": "2026-01-09T10:00:00Z"
+    }
+  ],
+  "total": 150,
+  "page": 1,
+  "limit": 20
+}
+```
+
+**Categories**:
+- **Purchase**: TIRES, PARTS, TOOLS, SUPPLIES
+- **Expense**: RENT, UTILITIES, INSURANCE, ADVERTISING, OFFICE_SUPPLIES, PROFESSIONAL_FEES, MAINTENANCE, VEHICLE, TRAVEL, TRAINING, SOFTWARE, OTHER
+
+### Create Purchase/Expense Invoice
+**POST** `/purchase-expense-invoices`
+
+Creates a new purchase or expense invoice.
+
+**Access**: Admin, Staff, Accountant
+
+**Request Body**:
+```json
+{
+  "type": "PURCHASE",
+  "vendorId": "vendor_123",
+  "vendorName": "ABC Tire Supply",
+  "description": "Tire inventory restock",
+  "invoiceDate": "2026-01-09",
+  "amount": 1000.00,
+  "gstRate": 5,
+  "pstRate": 7,
+  "hstRate": 0,
+  "totalAmount": 1120.00,
+  "category": "TIRES",
+  "notes": "Monthly restock order"
+}
+```
+
+### Update Purchase/Expense Invoice
+**PUT** `/purchase-expense-invoices/:id`
+
+Updates an existing invoice.
+
+**Access**: Admin, Staff, Accountant
+
+### Delete Purchase/Expense Invoice
+**DELETE** `/purchase-expense-invoices/:id`
+
+Deletes an invoice.
+
+**Access**: Admin only
+
+### Upload Invoice Image
+**POST** `/purchase-expense-invoices/:id/upload`
+
+Uploads an image/receipt for the invoice.
+
+**Access**: Admin, Staff, Accountant
+
+**Content-Type**: multipart/form-data
+
+**Form Fields**:
+- `file`: Image file (JPEG, PNG, PDF)
+
+### Delete Invoice Image
+**DELETE** `/purchase-expense-invoices/:id/image`
+
+Removes the attached image from an invoice.
+
+**Access**: Admin, Staff, Accountant
+
+### Get Invoice Image URL
+**GET** `/purchase-expense-invoices/:id/image-url`
+
+Retrieves a signed URL for viewing the invoice image.
+
+**Access**: Admin, Staff, Accountant
+
+**Response**:
+```json
+{
+  "imageUrl": "https://storage.azure.com/invoices/..."
+}
+```
+
 ---
 
-**Last Updated**: October 23, 2025
-**Version**: 2.1
+**Last Updated**: January 9, 2026
+**Version**: 2.2
 **API Version**: v1

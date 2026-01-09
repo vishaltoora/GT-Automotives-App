@@ -440,7 +440,7 @@ const PurchaseExpenseInvoiceDialog: React.FC<
   );
 
   return (
-    <Dialog open={open} maxWidth="sm" fullWidth disableEscapeKeyDown>
+    <Dialog open={open} maxWidth="md" fullWidth disableEscapeKeyDown>
       <DialogTitle
         sx={{
           bgcolor: 'primary.main',

@@ -253,11 +253,76 @@ export class InvoiceRepository extends BaseRepository<
   }): Promise<Invoice[]> {
     const where: Prisma.InvoiceWhereInput = {};
 
-    if (searchParams.invoiceNumber) {
-      where.invoiceNumber = {
-        contains: searchParams.invoiceNumber,
-        mode: 'insensitive',
-      };
+    // When both customerName and invoiceNumber have the same value,
+    // treat it as a combined search (OR condition)
+    if (searchParams.invoiceNumber && searchParams.customerName &&
+        searchParams.invoiceNumber === searchParams.customerName) {
+      const searchTerm = searchParams.invoiceNumber;
+      where.OR = [
+        {
+          invoiceNumber: {
+            contains: searchTerm,
+            mode: 'insensitive',
+          },
+        },
+        {
+          customer: {
+            OR: [
+              {
+                firstName: {
+                  contains: searchTerm,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                lastName: {
+                  contains: searchTerm,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                businessName: {
+                  contains: searchTerm,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          },
+        },
+      ];
+    } else {
+      // Individual search fields (backward compatibility)
+      if (searchParams.invoiceNumber) {
+        where.invoiceNumber = {
+          contains: searchParams.invoiceNumber,
+          mode: 'insensitive',
+        };
+      }
+
+      if (searchParams.customerName) {
+        where.customer = {
+          OR: [
+            {
+              firstName: {
+                contains: searchParams.customerName,
+                mode: 'insensitive',
+              },
+            },
+            {
+              lastName: {
+                contains: searchParams.customerName,
+                mode: 'insensitive',
+              },
+            },
+            {
+              businessName: {
+                contains: searchParams.customerName,
+                mode: 'insensitive',
+              },
+            },
+          ],
+        };
+      }
     }
 
     if (searchParams.status) {
@@ -276,25 +341,6 @@ export class InvoiceRepository extends BaseRepository<
       if (searchParams.endDate) {
         where.createdAt.lte = searchParams.endDate;
       }
-    }
-
-    if (searchParams.customerName) {
-      where.customer = {
-        OR: [
-          {
-            firstName: {
-              contains: searchParams.customerName,
-              mode: 'insensitive',
-            },
-          },
-          {
-            lastName: {
-              contains: searchParams.customerName,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      };
     }
 
     return this.prisma.invoice.findMany({
