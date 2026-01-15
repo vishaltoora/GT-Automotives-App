@@ -38,7 +38,6 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
 import gtLogo from '../images-and-logos/gt-automotive-logo.svg';
-import Footer from '../components/common/Footer';
 
 const drawerWidth = 280;
 const drawerCollapsedWidth = 72;
@@ -425,7 +424,6 @@ export function AccountantLayout() {
           </Button>
         )}
       </Box>
-      <Footer collapsed={drawerCollapsed} />
     </Box>
   );
 
