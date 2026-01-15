@@ -26,6 +26,7 @@ import {
   Inventory as InventoryIcon
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
+import Footer from '../components/common/Footer';
 
 const drawerWidth = 240;
 
@@ -57,7 +58,7 @@ export function CustomerLayout() {
       <Toolbar>
         <Typography variant="h6">Customer Portal</Typography>
       </Toolbar>
-      <List>
+      <List sx={{ flex: 1 }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton component={Link} to={item.path}>
@@ -67,6 +68,7 @@ export function CustomerLayout() {
           </ListItem>
         ))}
       </List>
+      <Footer />
     </Box>
   );
 
