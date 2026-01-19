@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsEnum, IsDateString } from 'class-validator';
-import { PurchaseCategory, ExpenseCategory, PurchaseInvoiceStatus } from '@prisma/client';
+import { PurchaseCategory, ExpenseCategory, PurchaseInvoiceStatus, PurchaseExpenseCategory } from '@prisma/client';
 
 export class ExpenseReportFilterDto {
   @IsDateString()
@@ -20,7 +20,8 @@ export class ExpenseReportFilterDto {
 }
 
 export class CategorySummaryDto {
-  category!: PurchaseCategory | ExpenseCategory;
+  // Support both legacy categories (PurchaseCategory, ExpenseCategory) and unified categories (PurchaseExpenseCategory)
+  category!: PurchaseCategory | ExpenseCategory | PurchaseExpenseCategory;
   count!: number;
   totalAmount!: number;
   paidAmount!: number;

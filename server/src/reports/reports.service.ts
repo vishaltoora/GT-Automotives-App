@@ -24,68 +24,87 @@ export class ReportsService {
     const startDate = filterDto.startDate ? new Date(filterDto.startDate) : undefined;
     const endDate = filterDto.endDate ? new Date(filterDto.endDate) : undefined;
 
-    // Build filter conditions
+    // Build filter conditions for legacy tables
     const purchaseWhere: any = {};
     const expenseWhere: any = {};
+    // Build filter conditions for unified table
+    const unifiedWhere: any = {};
 
     if (startDate) {
       purchaseWhere.invoiceDate = { ...purchaseWhere.invoiceDate, gte: startDate };
       expenseWhere.invoiceDate = { ...expenseWhere.invoiceDate, gte: startDate };
+      unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, gte: startDate };
     }
     if (endDate) {
       purchaseWhere.invoiceDate = { ...purchaseWhere.invoiceDate, lte: endDate };
       expenseWhere.invoiceDate = { ...expenseWhere.invoiceDate, lte: endDate };
+      unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, lte: endDate };
     }
     if (filterDto.vendorId) {
       purchaseWhere.vendorId = filterDto.vendorId;
       expenseWhere.vendorId = filterDto.vendorId;
+      unifiedWhere.vendorId = filterDto.vendorId;
     }
     if (filterDto.status) {
       purchaseWhere.status = filterDto.status;
       expenseWhere.status = filterDto.status;
+      // Note: PurchaseExpenseInvoice doesn't have status field, skip filter
     }
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel (legacy tables + unified table)
     const [
-      purchaseInvoices,
-      expenseInvoices,
+      legacyPurchaseInvoices,
+      legacyExpenseInvoices,
+      unifiedInvoices,
       purchasesByCategory,
       expensesByCategory,
       recurringExpenses,
     ] = await Promise.all([
       this.prisma.purchaseInvoice.findMany({ where: purchaseWhere }),
       this.prisma.expenseInvoice.findMany({ where: expenseWhere }),
-      this.getPurchasesByCategory(purchaseWhere),
-      this.getExpensesByCategory(expenseWhere),
+      this.prisma.purchaseExpenseInvoice.findMany({ where: unifiedWhere }),
+      this.getPurchasesByCategory(purchaseWhere, unifiedWhere),
+      this.getExpensesByCategory(expenseWhere, unifiedWhere),
       this.getRecurringExpenses(expenseWhere),
     ]);
+
+    // Split unified invoices by type
+    const unifiedPurchases = unifiedInvoices.filter(inv => inv.type === 'PURCHASE');
+    const unifiedExpenses = unifiedInvoices.filter(inv => inv.type === 'EXPENSE');
+
+    // Combine legacy and unified invoices
+    const purchaseInvoices = [...legacyPurchaseInvoices, ...unifiedPurchases];
+    const expenseInvoices = [...legacyExpenseInvoices, ...unifiedExpenses];
 
     // Calculate summary statistics
     const totalPurchaseAmount = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
     const totalExpenseAmount = expenseInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-    const paidPurchases = purchaseInvoices.filter(inv => inv.status === 'PAID');
-    const paidExpenses = expenseInvoices.filter(inv => inv.status === 'PAID');
+    // For legacy tables, filter by status; unified table doesn't have status
+    const paidLegacyPurchases = legacyPurchaseInvoices.filter(inv => inv.status === 'PAID');
+    const paidLegacyExpenses = legacyExpenseInvoices.filter(inv => inv.status === 'PAID');
+    // Unified invoices are considered "paid" since there's no status field
     const paidTotal =
-      paidPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
-      paidExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+      paidLegacyPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
+      paidLegacyExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
+      unifiedInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-    const pendingPurchases = purchaseInvoices.filter(inv => inv.status === 'PENDING');
-    const pendingExpenses = expenseInvoices.filter(inv => inv.status === 'PENDING');
+    const pendingLegacyPurchases = legacyPurchaseInvoices.filter(inv => inv.status === 'PENDING');
+    const pendingLegacyExpenses = legacyExpenseInvoices.filter(inv => inv.status === 'PENDING');
     const pendingTotal =
-      pendingPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
-      pendingExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+      pendingLegacyPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
+      pendingLegacyExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-    const overduePurchases = purchaseInvoices.filter(inv => inv.status === 'OVERDUE');
-    const overdueExpenses = expenseInvoices.filter(inv => inv.status === 'OVERDUE');
+    const overdueLegacyPurchases = legacyPurchaseInvoices.filter(inv => inv.status === 'OVERDUE');
+    const overdueLegacyExpenses = legacyExpenseInvoices.filter(inv => inv.status === 'OVERDUE');
     const overdueTotal =
-      overduePurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
-      overdueExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+      overdueLegacyPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
+      overdueLegacyExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-    // Get vendor analysis
-    const topVendorsBySpending = await this.getTopVendorsBySpending(purchaseWhere, expenseWhere);
+    // Get vendor analysis (includes unified table)
+    const topVendorsBySpending = await this.getTopVendorsBySpending(purchaseWhere, expenseWhere, unifiedWhere);
 
-    // Get monthly trends
+    // Get monthly trends (includes unified table)
     const monthlyTrends = this.calculateMonthlyTrends(purchaseInvoices, expenseInvoices);
 
     return {
@@ -105,19 +124,30 @@ export class ReportsService {
     };
   }
 
-  private async getPurchasesByCategory(where: any): Promise<CategorySummaryDto[]> {
-    const groupedData = await this.prisma.purchaseInvoice.groupBy({
+  private async getPurchasesByCategory(legacyWhere: any, unifiedWhere: any): Promise<CategorySummaryDto[]> {
+    // Get legacy purchase invoices grouped by category
+    const legacyGroupedData = await this.prisma.purchaseInvoice.groupBy({
       by: ['category'],
-      where,
+      where: legacyWhere,
       _count: { id: true },
       _sum: { totalAmount: true },
     });
 
-    const result: CategorySummaryDto[] = [];
+    // Get unified purchase invoices grouped by category
+    const unifiedGroupedData = await this.prisma.purchaseExpenseInvoice.groupBy({
+      by: ['category'],
+      where: { ...unifiedWhere, type: 'PURCHASE' },
+      _count: { id: true },
+      _sum: { totalAmount: true },
+    });
 
-    for (const group of groupedData) {
+    // Merge categories from both sources
+    const categoryMap = new Map<string, CategorySummaryDto>();
+
+    // Process legacy data
+    for (const group of legacyGroupedData) {
       const categoryInvoices = await this.prisma.purchaseInvoice.findMany({
-        where: { ...where, category: group.category },
+        where: { ...legacyWhere, category: group.category },
       });
 
       const paidAmount = categoryInvoices
@@ -132,7 +162,7 @@ export class ReportsService {
         .filter(inv => inv.status === 'OVERDUE')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-      result.push({
+      categoryMap.set(group.category, {
         category: group.category,
         count: group._count.id,
         totalAmount: Number(group._sum.totalAmount || 0),
@@ -142,22 +172,54 @@ export class ReportsService {
       });
     }
 
-    return result;
+    // Add unified data (PurchaseExpenseInvoice has no status, treat as paid)
+    for (const group of unifiedGroupedData) {
+      const existing = categoryMap.get(group.category);
+      const unifiedAmount = Number(group._sum.totalAmount || 0);
+
+      if (existing) {
+        existing.count += group._count.id;
+        existing.totalAmount += unifiedAmount;
+        existing.paidAmount += unifiedAmount; // Unified invoices treated as paid
+      } else {
+        categoryMap.set(group.category, {
+          category: group.category,
+          count: group._count.id,
+          totalAmount: unifiedAmount,
+          paidAmount: unifiedAmount, // Unified invoices treated as paid
+          pendingAmount: 0,
+          overdueAmount: 0,
+        });
+      }
+    }
+
+    return Array.from(categoryMap.values());
   }
 
-  private async getExpensesByCategory(where: any): Promise<CategorySummaryDto[]> {
-    const groupedData = await this.prisma.expenseInvoice.groupBy({
+  private async getExpensesByCategory(legacyWhere: any, unifiedWhere: any): Promise<CategorySummaryDto[]> {
+    // Get legacy expense invoices grouped by category
+    const legacyGroupedData = await this.prisma.expenseInvoice.groupBy({
       by: ['category'],
-      where,
+      where: legacyWhere,
       _count: { id: true },
       _sum: { totalAmount: true },
     });
 
-    const result: CategorySummaryDto[] = [];
+    // Get unified expense invoices grouped by category
+    const unifiedGroupedData = await this.prisma.purchaseExpenseInvoice.groupBy({
+      by: ['category'],
+      where: { ...unifiedWhere, type: 'EXPENSE' },
+      _count: { id: true },
+      _sum: { totalAmount: true },
+    });
 
-    for (const group of groupedData) {
+    // Merge categories from both sources
+    const categoryMap = new Map<string, CategorySummaryDto>();
+
+    // Process legacy data
+    for (const group of legacyGroupedData) {
       const categoryInvoices = await this.prisma.expenseInvoice.findMany({
-        where: { ...where, category: group.category },
+        where: { ...legacyWhere, category: group.category },
       });
 
       const paidAmount = categoryInvoices
@@ -172,7 +234,7 @@ export class ReportsService {
         .filter(inv => inv.status === 'OVERDUE')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-      result.push({
+      categoryMap.set(group.category, {
         category: group.category,
         count: group._count.id,
         totalAmount: Number(group._sum.totalAmount || 0),
@@ -182,16 +244,38 @@ export class ReportsService {
       });
     }
 
-    return result;
+    // Add unified data (PurchaseExpenseInvoice has no status, treat as paid)
+    for (const group of unifiedGroupedData) {
+      const existing = categoryMap.get(group.category);
+      const unifiedAmount = Number(group._sum.totalAmount || 0);
+
+      if (existing) {
+        existing.count += group._count.id;
+        existing.totalAmount += unifiedAmount;
+        existing.paidAmount += unifiedAmount; // Unified invoices treated as paid
+      } else {
+        categoryMap.set(group.category, {
+          category: group.category,
+          count: group._count.id,
+          totalAmount: unifiedAmount,
+          paidAmount: unifiedAmount, // Unified invoices treated as paid
+          pendingAmount: 0,
+          overdueAmount: 0,
+        });
+      }
+    }
+
+    return Array.from(categoryMap.values());
   }
 
   private async getTopVendorsBySpending(
     purchaseWhere: any,
     expenseWhere: any,
+    unifiedWhere: any,
   ): Promise<VendorSummaryDto[]> {
     const vendorMap = new Map<string, VendorSummaryDto>();
 
-    // Aggregate purchases by vendor
+    // Aggregate legacy purchases by vendor
     const purchases = await this.prisma.purchaseInvoice.findMany({
       where: purchaseWhere,
     });
@@ -218,7 +302,7 @@ export class ReportsService {
       vendorMap.set(key, existing as VendorSummaryDto);
     }
 
-    // Aggregate expenses by vendor
+    // Aggregate legacy expenses by vendor
     const expenses = await this.prisma.expenseInvoice.findMany({
       where: expenseWhere,
     });
@@ -241,6 +325,29 @@ export class ReportsService {
       } else if (expense.status === 'PENDING') {
         existing.pendingAmount += Number(expense.totalAmount);
       }
+
+      vendorMap.set(key, existing as VendorSummaryDto);
+    }
+
+    // Aggregate unified invoices by vendor (no status, treat as paid)
+    const unifiedInvoices = await this.prisma.purchaseExpenseInvoice.findMany({
+      where: unifiedWhere,
+    });
+
+    for (const invoice of unifiedInvoices) {
+      const key = invoice.vendorId || invoice.vendorName;
+      const existing = vendorMap.get(key) || {
+        vendorId: invoice.vendorId,
+        vendorName: invoice.vendorName,
+        count: 0,
+        totalAmount: 0,
+        paidAmount: 0,
+        pendingAmount: 0,
+      };
+
+      existing.count++;
+      existing.totalAmount += Number(invoice.totalAmount);
+      existing.paidAmount += Number(invoice.totalAmount); // Unified invoices treated as paid
 
       vendorMap.set(key, existing as VendorSummaryDto);
     }
@@ -349,8 +456,14 @@ export class ReportsService {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    // MTD (Month-to-Date) calculations
-    const [mtdPurchases, mtdExpenses, mtdSalesInvoices] = await Promise.all([
+    // MTD (Month-to-Date) calculations - legacy tables + unified table
+    const [
+      mtdLegacyPurchases,
+      mtdLegacyExpenses,
+      mtdUnifiedPurchases,
+      mtdUnifiedExpenses,
+      mtdSalesInvoices,
+    ] = await Promise.all([
       this.prisma.purchaseInvoice.aggregate({
         where: {
           invoiceDate: { gte: startOfMonth },
@@ -361,6 +474,22 @@ export class ReportsService {
       this.prisma.expenseInvoice.aggregate({
         where: {
           invoiceDate: { gte: startOfMonth },
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.purchaseExpenseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfMonth },
+          type: 'PURCHASE',
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.purchaseExpenseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfMonth },
+          type: 'EXPENSE',
         },
         _sum: { totalAmount: true },
         _count: { id: true },
@@ -374,8 +503,14 @@ export class ReportsService {
       }),
     ]);
 
-    // YTD (Year-to-Date) calculations
-    const [ytdPurchases, ytdExpenses, ytdSalesInvoices] = await Promise.all([
+    // YTD (Year-to-Date) calculations - legacy tables + unified table
+    const [
+      ytdLegacyPurchases,
+      ytdLegacyExpenses,
+      ytdUnifiedPurchases,
+      ytdUnifiedExpenses,
+      ytdSalesInvoices,
+    ] = await Promise.all([
       this.prisma.purchaseInvoice.aggregate({
         where: {
           invoiceDate: { gte: startOfYear },
@@ -390,6 +525,22 @@ export class ReportsService {
         _sum: { totalAmount: true },
         _count: { id: true },
       }),
+      this.prisma.purchaseExpenseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfYear },
+          type: 'PURCHASE',
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.purchaseExpenseInvoice.aggregate({
+        where: {
+          invoiceDate: { gte: startOfYear },
+          type: 'EXPENSE',
+        },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
       this.prisma.invoice.aggregate({
         where: {
           invoiceDate: { gte: startOfYear },
@@ -398,42 +549,53 @@ export class ReportsService {
         _count: { id: true },
       }),
     ]);
+
+    // Combine legacy and unified counts/totals
+    const mtdPurchasesCount = mtdLegacyPurchases._count.id + mtdUnifiedPurchases._count.id;
+    const mtdPurchasesTotal = Number(mtdLegacyPurchases._sum.totalAmount || 0) + Number(mtdUnifiedPurchases._sum.totalAmount || 0);
+    const mtdExpensesCount = mtdLegacyExpenses._count.id + mtdUnifiedExpenses._count.id;
+    const mtdExpensesTotal = Number(mtdLegacyExpenses._sum.totalAmount || 0) + Number(mtdUnifiedExpenses._sum.totalAmount || 0);
+
+    const ytdPurchasesCount = ytdLegacyPurchases._count.id + ytdUnifiedPurchases._count.id;
+    const ytdPurchasesTotal = Number(ytdLegacyPurchases._sum.totalAmount || 0) + Number(ytdUnifiedPurchases._sum.totalAmount || 0);
+    const ytdExpensesCount = ytdLegacyExpenses._count.id + ytdUnifiedExpenses._count.id;
+    const ytdExpensesTotal = Number(ytdLegacyExpenses._sum.totalAmount || 0) + Number(ytdUnifiedExpenses._sum.totalAmount || 0);
 
     return {
       mtd: {
         purchases: {
-          count: mtdPurchases._count.id,
-          total: Number(mtdPurchases._sum.totalAmount || 0),
+          count: mtdPurchasesCount,
+          total: mtdPurchasesTotal,
         },
         expenses: {
-          count: mtdExpenses._count.id,
-          total: Number(mtdExpenses._sum.totalAmount || 0),
+          count: mtdExpensesCount,
+          total: mtdExpensesTotal,
         },
         salesInvoices: {
           count: mtdSalesInvoices._count.id,
           total: Number(mtdSalesInvoices._sum.total || 0),
         },
         combined: {
-          count: mtdPurchases._count.id + mtdExpenses._count.id,
-          total: Number(mtdPurchases._sum.totalAmount || 0) + Number(mtdExpenses._sum.totalAmount || 0),
+          count: mtdPurchasesCount + mtdExpensesCount,
+          total: mtdPurchasesTotal + mtdExpensesTotal,
         },
       },
       ytd: {
         purchases: {
-          count: ytdPurchases._count.id,
-          total: Number(ytdPurchases._sum.totalAmount || 0),
+          count: ytdPurchasesCount,
+          total: ytdPurchasesTotal,
         },
         expenses: {
-          count: ytdExpenses._count.id,
-          total: Number(ytdExpenses._sum.totalAmount || 0),
+          count: ytdExpensesCount,
+          total: ytdExpensesTotal,
         },
         salesInvoices: {
           count: ytdSalesInvoices._count.id,
           total: Number(ytdSalesInvoices._sum.total || 0),
         },
         combined: {
-          count: ytdPurchases._count.id + ytdExpenses._count.id,
-          total: Number(ytdPurchases._sum.totalAmount || 0) + Number(ytdExpenses._sum.totalAmount || 0),
+          count: ytdPurchasesCount + ytdExpensesCount,
+          total: ytdPurchasesTotal + ytdExpensesTotal,
         },
       },
     };
