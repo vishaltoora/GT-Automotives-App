@@ -42,6 +42,7 @@ export type PurchaseExpenseType = 'PURCHASE' | 'EXPENSE';
 
 export type PurchaseExpenseCategory =
   | 'TIRES'
+  | 'RIMS'
   | 'PARTS'
   | 'TOOLS'
   | 'SUPPLIES'
@@ -55,6 +56,7 @@ export type PurchaseExpenseCategory =
   | 'VEHICLE'
   | 'TRAVEL'
   | 'TRAINING'
+  | 'TEAM_MEETING'
   | 'SOFTWARE'
   | 'OTHER';
 
@@ -136,6 +138,7 @@ export interface PurchaseExpenseInvoiceListResponse {
 // Purchase category labels
 export const PURCHASE_CATEGORIES: PurchaseExpenseCategory[] = [
   'TIRES',
+  'RIMS',
   'PARTS',
   'TOOLS',
   'SUPPLIES',
@@ -153,6 +156,7 @@ export const EXPENSE_CATEGORIES: PurchaseExpenseCategory[] = [
   'VEHICLE',
   'TRAVEL',
   'TRAINING',
+  'TEAM_MEETING',
   'SOFTWARE',
 ];
 
@@ -166,6 +170,7 @@ export const ALL_CATEGORIES: PurchaseExpenseCategory[] = [
 // Category display names
 export const CATEGORY_LABELS: Record<PurchaseExpenseCategory, string> = {
   TIRES: 'Tires',
+  RIMS: 'Rims',
   PARTS: 'Parts',
   TOOLS: 'Tools',
   SUPPLIES: 'Supplies',
@@ -179,6 +184,7 @@ export const CATEGORY_LABELS: Record<PurchaseExpenseCategory, string> = {
   VEHICLE: 'Vehicle',
   TRAVEL: 'Travel',
   TRAINING: 'Training',
+  TEAM_MEETING: 'Team Meeting',
   SOFTWARE: 'Software',
   OTHER: 'Other',
 };

@@ -42,7 +42,21 @@ This document provides a comprehensive overview of the current development statu
 
 ## 🚀 Major Features Completed
 
-### 1. Invoice Search Enhancements (January 2026) ✅
+### 1. Home Page Redesign & Role Management (January 2026) ✅
+- **TireBrandsSection Redesign**: Prominently showcases tire sales as main business
+- **PricingSection Created**: Modern pricing cards with accurate service prices
+- **Hero Section Fix**: Unified 50vh height across all pages
+- **11 Tire Brands**: Michelin, Bridgestone, Goodyear, Continental, BF Goodrich, Pirelli, Firestone, Yokohama, Rovelo, Ironman, Westlake
+- **5 User Roles**: Admin, Accountant, Supervisor, Staff, Customer
+- **Role Redirect Fix**: Accountant and Supervisor roles now redirect to their dashboards
+
+**Key Files**:
+- `TireBrandsSection.tsx` - Complete redesign for tire sales showcase
+- `PricingSection.tsx` - New pricing component
+- `Home.tsx` - Added accountant/supervisor role redirects
+- `Products.tsx` - PageHero integration
+
+### 2. Invoice Search Enhancements (January 2026) ✅
 - **Combined Search Field**: Single search input for Invoice # and Customer Name
 - **Search-as-you-type**: 300ms debounced real-time filtering
 - **OR Search Logic**: Searches invoice number, first name, last name, business name

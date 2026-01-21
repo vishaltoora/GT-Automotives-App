@@ -783,6 +783,7 @@ enum PurchaseExpenseType {
 enum PurchaseExpenseCategory {
   // Purchase categories
   TIRES              // Tire inventory purchases
+  RIMS               // Rim/wheel purchases
   PARTS              // Auto parts
   TOOLS              // Tools and equipment
   SUPPLIES           // Shop supplies
@@ -797,6 +798,7 @@ enum PurchaseExpenseCategory {
   VEHICLE            // Company vehicle expenses
   TRAVEL             // Travel expenses
   TRAINING           // Staff training
+  TEAM_MEETING       // Team meetings, lunches, events
   SOFTWARE           // Software subscriptions
   OTHER              // Other purchases/expenses
 }

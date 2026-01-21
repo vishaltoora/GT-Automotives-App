@@ -7,12 +7,12 @@ import {
   ContactSection,
   EmergencyServiceBanner,
   FeaturedServices,
-  HeroSection,
+  PricingSection,
   QuickActionsBar,
   ServiceAreasSection,
   ServiceCategoriesGrid,
+  ServicesShowcase,
   TireBrandsSection,
-  TrustSection,
 } from '../../components/home';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -28,6 +28,12 @@ export function Home() {
       switch (role) {
         case 'admin':
           redirectPath = '/admin/dashboard';
+          break;
+        case 'accountant':
+          redirectPath = '/accountant/dashboard';
+          break;
+        case 'supervisor':
+          redirectPath = '/supervisor/dashboard';
           break;
         case 'staff':
           redirectPath = '/staff/dashboard';
@@ -46,8 +52,8 @@ export function Home() {
 
   return (
     <>
-      {/* Hero Section */}
-      <HeroSection />
+      {/* Interactive Services Showcase (Main Hero) */}
+      <ServicesShowcase />
 
       {/* Quick Actions Bar */}
       <QuickActionsBar onBookAppointment={handleBookAppointment} />
@@ -66,8 +72,8 @@ export function Home() {
       {/* Tire Brands Section */}
       <TireBrandsSection />
 
-      {/* Trust & Social Proof Section */}
-      <TrustSection />
+      {/* Pricing Section */}
+      <PricingSection />
 
       {/* Contact Information Section */}
       <ContactSection />

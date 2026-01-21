@@ -18,9 +18,40 @@ import {
   Speed as SpeedIcon,
   Security as SecurityIcon,
   Star as StarIcon,
+  Groups as TeamIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
-import { Hero, FeatureHighlight, CTASection } from '../../components/public';
+import { FeatureHighlight, CTASection } from '../../components/public';
+import { PageHero } from '../../components/shared';
 import { colors } from '../../theme/colors';
+
+// About page slides
+const aboutSlides = [
+  {
+    id: 'our-story',
+    title: 'About GT Automotives',
+    subtitle: 'Our Story',
+    description: 'Family-owned and operated since 2010, serving Prince George with pride and dedication. Quality service you can trust.',
+    image: 'https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=1920&q=80',
+    icon: HistoryIcon,
+  },
+  {
+    id: 'our-team',
+    title: 'Meet Our Expert Team',
+    subtitle: 'Certified Professionals',
+    description: 'Our ASE-certified technicians bring decades of combined experience to every vehicle we service.',
+    image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1920&q=80',
+    icon: TeamIcon,
+  },
+  {
+    id: 'our-values',
+    title: 'Built on Trust & Quality',
+    subtitle: 'Our Values',
+    description: 'Honest pricing, quality parts, and exceptional service - the foundation of everything we do.',
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
+    icon: HandshakeIcon,
+  },
+];
 
 interface TeamMember {
   name: string;
@@ -105,10 +136,8 @@ export const About: React.FC = () => {
   return (
     <>
       {/* Hero Section */}
-      <Hero
-        title="About GT Automotivess"
-        subtitle="Our Story"
-        description="Family-owned and operated since 2010, serving our community with pride and dedication."
+      <PageHero
+        slides={aboutSlides}
         primaryAction={{
           label: 'Meet Our Team',
           path: '#team',
@@ -117,7 +146,7 @@ export const About: React.FC = () => {
           label: 'Contact Us',
           path: '/contact',
         }}
-        height="40vh"
+        height="50vh"
       />
 
       {/* Company Story */}

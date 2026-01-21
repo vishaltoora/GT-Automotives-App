@@ -413,6 +413,8 @@ export class TiresService {
       price: tire.price.toNumber ? tire.price.toNumber() : tire.price,
       cost: tire.cost?.toNumber ? tire.cost.toNumber() : tire.cost,
       isLowStock: tire.quantity <= tire.minStock,
+      // Include brand image URL for display purposes
+      brandImageUrl: tire.brand?.imageUrl || tire.brandImageUrl || undefined,
     };
 
     // Remove the relationship objects to avoid confusion

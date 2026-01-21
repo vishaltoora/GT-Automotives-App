@@ -151,6 +151,7 @@ export interface TireResponseDto {
   quantity: number;
   description?: string;
   imageUrl?: string;
+  brandImageUrl?: string;
   inStock: boolean;
   createdAt: string;
   updatedAt: string;

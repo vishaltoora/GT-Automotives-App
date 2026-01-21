@@ -16,7 +16,36 @@ import TuneIcon from '@mui/icons-material/Tune';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import { ServicesHero, ServicesGrid, StatsSection, ServiceData } from '../../components/services';
+import { ServicesGrid, StatsSection, ServiceData } from '../../components/services';
+import { PageHero } from '../../components/shared';
+
+// Services page slides
+const servicesSlides = [
+  {
+    id: 'tire-services',
+    title: 'Expert Auto Care You Can Trust',
+    subtitle: 'Professional Services',
+    description: 'From routine maintenance to complex repairs, our certified technicians deliver quality service at competitive prices.',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    icon: TireRepairIcon,
+  },
+  {
+    id: 'mobile-service',
+    title: 'Mobile Tire Service',
+    subtitle: 'We Come To You',
+    description: "Don't wait at the shop! Our fully-equipped mobile unit comes to your home, office, or roadside.",
+    image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80',
+    icon: LocalShippingIcon,
+  },
+  {
+    id: 'maintenance',
+    title: 'Complete Maintenance',
+    subtitle: 'Keep Your Car Running',
+    description: 'Oil changes, brake service, battery replacement, and comprehensive vehicle inspections.',
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
+    icon: BuildIcon,
+  },
+];
 
 export const Services: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -151,7 +180,18 @@ export const Services: React.FC = () => {
 
   return (
     <>
-      <ServicesHero />
+      <PageHero
+        slides={servicesSlides}
+        primaryAction={{
+          label: 'Book Service',
+          path: '/contact',
+        }}
+        secondaryAction={{
+          label: 'Call Now',
+          path: 'tel:2509869191',
+        }}
+        height="50vh"
+      />
       <ServicesGrid
         services={services}
         categories={categories}

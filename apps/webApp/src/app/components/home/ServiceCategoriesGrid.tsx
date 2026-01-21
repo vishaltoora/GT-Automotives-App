@@ -69,7 +69,7 @@ export function ServiceCategoriesGrid() {
         ))}
       </Box>
 
-      <Box sx={{ textAlign: 'center', mt: 6 }}>
+      <Box sx={{ textAlign: 'center', mt: 6, mb: 8 }}>
         <Button
           component={Link}
           to="/services"

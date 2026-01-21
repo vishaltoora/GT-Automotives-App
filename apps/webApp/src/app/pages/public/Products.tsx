@@ -1,11 +1,42 @@
 import React, { useState } from 'react';
 import { Container } from '@mui/material';
-import { ProductsHero, ProductsGrid, ProductsFeaturesBar, ProductData } from '../../components/products';
+import TireRepairIcon from '@mui/icons-material/TireRepair';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import { ProductsGrid, ProductData } from '../../components/products';
 import { CTASection } from '../../components/public';
+import { PageHero } from '../../components/shared';
+
+// Products page slides
+const productsSlides = [
+  {
+    id: 'quality-tires',
+    title: 'Quality Tires for Every Vehicle',
+    subtitle: 'Premium Selection',
+    description: 'Browse our extensive inventory of new and quality used tires from trusted brands like Michelin, Bridgestone, Goodyear, and more.',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    icon: TireRepairIcon,
+  },
+  {
+    id: 'new-used',
+    title: 'New & Quality Used Tires',
+    subtitle: 'Options for Every Budget',
+    description: 'Whether you need premium new tires or budget-friendly quality used options, we have the right tires at the right price.',
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
+    icon: ShoppingCartIcon,
+  },
+  {
+    id: 'all-brands',
+    title: 'All Major Brands Available',
+    subtitle: 'Trusted Names',
+    description: 'Michelin, Bridgestone, Goodyear, Continental, BF Goodrich, Pirelli, and many more top tire brands in stock.',
+    image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80',
+    icon: VerifiedIcon,
+  },
+];
 
 export const Products: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
 
   const products: ProductData[] = [
     {
@@ -113,19 +144,23 @@ export const Products: React.FC = () => {
   ];
 
   const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.brand.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return selectedCategory === 'all' || product.category === selectedCategory;
   });
 
   return (
     <>
-      <ProductsHero 
-        searchTerm={searchTerm} 
-        onSearchChange={setSearchTerm} 
+      <PageHero
+        slides={productsSlides}
+        primaryAction={{
+          label: 'Shop Tires',
+          path: '/inventory',
+        }}
+        secondaryAction={{
+          label: 'Get Quote',
+          path: '/contact',
+        }}
+        height="50vh"
       />
-      <ProductsFeaturesBar />
       <Container maxWidth="xl" sx={{ py: { xs: 6, md: 10 } }}>
         <ProductsGrid
           products={filteredProducts}

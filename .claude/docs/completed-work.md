@@ -1,5 +1,82 @@
 # Completed Work Log
 
+## January 19, 2026 Updates
+
+### Home Page Redesign & Role Fixes ✅
+
+**User Requests:**
+- Tire sale is main aspect of business - need to display it prominently
+- TireBrandsSection is best place for this
+- Add Rovelo, Ironman, Westlake to brands
+- Create pricing section with accurate prices from pricing page
+- Include distance rates and after hours rates
+- Fix accountant role stuck on loading page
+
+**Implementation:**
+
+#### 1. TireBrandsSection Complete Redesign
+
+**Before:** Simple brand cards with tire emoji and brand names
+
+**After:** Professional tire sales showcase:
+- "PRINCE GEORGE'S TIRE SPECIALISTS" badge
+- "New & Used Tires" bold headline
+- Tire categories grid (All-Season, Winter, Performance, Truck & SUV)
+- 11 tire brands as chips
+- "Browse Our Inventory" CTA linking to /inventory
+- Phone number button
+- Deep blue gradient background with tire pattern
+
+**Brands Added:**
+- Rovelo
+- Ironman
+- Westlake
+
+#### 2. PricingSection Component Created
+
+**New file:** `apps/webApp/src/app/components/home/PricingSection.tsx`
+
+Three pricing cards:
+1. **Distance & After Hours** - $2/km beyond 10km, $99 call + $99/hr
+2. **Mobile Service** (Most Popular) - $139+ cars, $149+ trucks
+3. **Other Services** - Flat repair $29, rotation $69, balance $69
+
+Features:
+- Modern card-based design with hover effects
+- "Most Popular" badge on mobile service
+- Check icons for feature lists
+- "View All Prices" button → /pricing
+
+#### 3. Hero Section Height Fix
+
+**ServicesShowcase.tsx:**
+- Changed from `minHeight: '50vh'` to `height: '50vh'` for consistency
+
+#### 4. Products Page Updates
+
+- Replaced ProductsHero with PageHero component
+- Removed ProductsFeaturesBar ("quality guaranteed" banner)
+- Added productsSlides array with 3 slides
+
+#### 5. Accountant/Supervisor Role Redirect Fix
+
+**Problem:** Users with accountant or supervisor role got stuck on loading page
+
+**Root Cause:** Home.tsx switch statement only handled admin, staff, customer roles
+
+**Fix in Home.tsx:** Added cases for accountant → /accountant/dashboard and supervisor → /supervisor/dashboard
+
+**Files Changed:**
+- `apps/webApp/src/app/components/home/TireBrandsSection.tsx` - Complete redesign
+- `apps/webApp/src/app/components/home/PricingSection.tsx` - New file
+- `apps/webApp/src/app/components/home/ServicesShowcase.tsx` - Height fix, icon removal
+- `apps/webApp/src/app/components/home/ServiceCategoriesGrid.tsx` - Added mb: 8 below button
+- `apps/webApp/src/app/pages/public/Home.tsx` - Added accountant/supervisor redirects
+- `apps/webApp/src/app/pages/public/Products.tsx` - PageHero integration
+- `apps/webApp/src/app/components/home/index.ts` - Updated exports
+
+---
+
 ## January 9, 2026 Updates
 
 ### Invoice & Purchase/Expense Invoice Search Enhancements ✅

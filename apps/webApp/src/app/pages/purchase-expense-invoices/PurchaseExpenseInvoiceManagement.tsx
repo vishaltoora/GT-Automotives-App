@@ -37,12 +37,57 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Search as SearchIcon,
+  // Category icons
+  TireRepair as TiresIcon,
+  AllInclusive as RimsIcon,
+  Build as PartsIcon,
+  Construction as ToolsIcon,
+  Inventory as SuppliesIcon,
+  Home as RentIcon,
+  ElectricBolt as UtilitiesIcon,
+  Security as InsuranceIcon,
+  Campaign as AdvertisingIcon,
+  Print as OfficeSuppliesIcon,
+  Gavel as ProfessionalFeesIcon,
+  Handyman as MaintenanceIcon,
+  DirectionsCar as VehicleIcon,
+  Flight as TravelIcon,
+  School as TrainingIcon,
+  Groups as TeamMeetingIcon,
+  Code as SoftwareIcon,
+  MoreHoriz as OtherIcon,
 } from '@mui/icons-material';
 import purchaseExpenseInvoiceService, {
   PurchaseExpenseInvoice,
   PurchaseExpenseType,
+  PurchaseExpenseCategory,
   CATEGORY_LABELS,
 } from '../../requests/purchase-expense-invoice.requests';
+
+// Category configuration with icons and colors
+const CATEGORY_CONFIG: Record<
+  PurchaseExpenseCategory,
+  { icon: React.ReactNode; color: string; bgColor: string }
+> = {
+  TIRES: { icon: <TiresIcon fontSize="small" />, color: '#1565c0', bgColor: '#e3f2fd' },
+  RIMS: { icon: <RimsIcon fontSize="small" />, color: '#5c6bc0', bgColor: '#e8eaf6' },
+  PARTS: { icon: <PartsIcon fontSize="small" />, color: '#7b1fa2', bgColor: '#f3e5f5' },
+  TOOLS: { icon: <ToolsIcon fontSize="small" />, color: '#ef6c00', bgColor: '#fff3e0' },
+  SUPPLIES: { icon: <SuppliesIcon fontSize="small" />, color: '#2e7d32', bgColor: '#e8f5e9' },
+  RENT: { icon: <RentIcon fontSize="small" />, color: '#c62828', bgColor: '#ffebee' },
+  UTILITIES: { icon: <UtilitiesIcon fontSize="small" />, color: '#f9a825', bgColor: '#fffde7' },
+  INSURANCE: { icon: <InsuranceIcon fontSize="small" />, color: '#00838f', bgColor: '#e0f7fa' },
+  ADVERTISING: { icon: <AdvertisingIcon fontSize="small" />, color: '#ad1457', bgColor: '#fce4ec' },
+  OFFICE_SUPPLIES: { icon: <OfficeSuppliesIcon fontSize="small" />, color: '#5d4037', bgColor: '#efebe9' },
+  PROFESSIONAL_FEES: { icon: <ProfessionalFeesIcon fontSize="small" />, color: '#37474f', bgColor: '#eceff1' },
+  MAINTENANCE: { icon: <MaintenanceIcon fontSize="small" />, color: '#ff8f00', bgColor: '#fff8e1' },
+  VEHICLE: { icon: <VehicleIcon fontSize="small" />, color: '#0277bd', bgColor: '#e1f5fe' },
+  TRAVEL: { icon: <TravelIcon fontSize="small" />, color: '#6a1b9a', bgColor: '#f3e5f5' },
+  TRAINING: { icon: <TrainingIcon fontSize="small" />, color: '#00695c', bgColor: '#e0f2f1' },
+  TEAM_MEETING: { icon: <TeamMeetingIcon fontSize="small" />, color: '#d84315', bgColor: '#fbe9e7' },
+  SOFTWARE: { icon: <SoftwareIcon fontSize="small" />, color: '#283593', bgColor: '#e8eaf6' },
+  OTHER: { icon: <OtherIcon fontSize="small" />, color: '#616161', bgColor: '#f5f5f5' },
+};
 import PurchaseExpenseInvoiceDialog from '../../components/purchase-expense-invoices/PurchaseExpenseInvoiceDialog';
 import FileViewerDialog from '../../components/common/FileViewerDialog';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
@@ -206,6 +251,15 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
   };
 
   const formatDate = (date: string) => {
+    // Handle YYYY-MM-DD strings directly to avoid timezone conversion issues
+    // new Date('2026-01-15') interprets as UTC midnight, which becomes previous day in PST
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date; // Already in YYYY-MM-DD format (en-CA locale format)
+    }
+    // For ISO datetime strings, extract just the date part
+    if (date.includes('T')) {
+      return date.split('T')[0];
+    }
     return new Date(date).toLocaleDateString('en-CA');
   };
 
@@ -362,15 +416,23 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
                         }}
                       >
                         <Box sx={{ flex: 1 }}>
-                          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                          <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
                             <Chip
                               label={isPurchase ? 'Purchase' : 'Expense'}
                               size="small"
                               color={isPurchase ? 'primary' : 'secondary'}
                             />
                             <Chip
+                              icon={CATEGORY_CONFIG[invoice.category]?.icon}
                               label={CATEGORY_LABELS[invoice.category]}
                               size="small"
+                              sx={{
+                                backgroundColor: CATEGORY_CONFIG[invoice.category]?.bgColor,
+                                color: CATEGORY_CONFIG[invoice.category]?.color,
+                                '& .MuiChip-icon': {
+                                  color: CATEGORY_CONFIG[invoice.category]?.color,
+                                },
+                              }}
                             />
                           </Box>
                           <Typography variant="h6" fontWeight="bold">
@@ -474,8 +536,16 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
+                          icon={CATEGORY_CONFIG[invoice.category]?.icon}
                           label={CATEGORY_LABELS[invoice.category]}
                           size="small"
+                          sx={{
+                            backgroundColor: CATEGORY_CONFIG[invoice.category]?.bgColor,
+                            color: CATEGORY_CONFIG[invoice.category]?.color,
+                            '& .MuiChip-icon': {
+                              color: CATEGORY_CONFIG[invoice.category]?.color,
+                            },
+                          }}
                         />
                       </TableCell>
                       <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>

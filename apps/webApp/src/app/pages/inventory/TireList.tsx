@@ -173,7 +173,10 @@ export function TireList({
       sortable: false,
       renderCell: (params) => {
         const tire = params.row;
-        
+
+        // Debug log to check what data we're receiving
+        console.log('Tire data:', tire.brand, 'imageUrl:', tire.imageUrl, 'brandImageUrl:', tire.brandImageUrl);
+
         // Function to get emoji based on tire type
         const getTireEmoji = (type: TireType) => {
           switch (type) {
@@ -195,7 +198,7 @@ export function TireList({
         };
 
         // Prioritize brand image, fallback to tire image
-        const imageUrl = (tire as any).brandImageUrl || tire.imageUrl;
+        const imageUrl = tire.brandImageUrl || tire.imageUrl;
 
         if (imageUrl) {
           return (
@@ -206,12 +209,15 @@ export function TireList({
               sx={{
                 width: 40,
                 height: 40,
-                objectFit: 'cover',
+                objectFit: 'contain',
                 borderRadius: 1,
+                backgroundColor: 'grey.50',
               }}
               onError={(e) => {
-                // Hide broken images
-                e.currentTarget.style.display = 'none';
+                // On error, replace with emoji fallback
+                console.log('Image load error for:', tire.brand, imageUrl);
+                const target = e.currentTarget;
+                target.style.display = 'none';
               }}
             />
           );

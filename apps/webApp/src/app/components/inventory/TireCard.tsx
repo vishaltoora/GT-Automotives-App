@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Card,
   CardContent,
-  CardMedia,
   CardActions,
   Typography,
   Chip,
@@ -65,6 +64,123 @@ const getTireEmoji = (type: TireType): string => {
     default:
       return '🛞'; // Default tire
   }
+};
+
+// Brand configuration with colors
+const BRAND_CONFIG: Record<string, { bg: string; text: string; accent?: string }> = {
+  'Michelin': { bg: '#1a237e', text: '#ffffff', accent: '#ffd700' },
+  'Bridgestone': { bg: '#e53935', text: '#ffffff', accent: '#ffcdd2' },
+  'Goodyear': { bg: '#0d47a1', text: '#ffc107', accent: '#ffc107' },
+  'Continental': { bg: '#ff6f00', text: '#000000', accent: '#fff3e0' },
+  'BF Goodrich': { bg: '#d32f2f', text: '#ffffff', accent: '#ffcdd2' },
+  'Pirelli': { bg: '#ffc107', text: '#000000', accent: '#fff8e1' },
+  'Dunlop': { bg: '#212121', text: '#ffffff', accent: '#ffc107' },
+  'Yokohama': { bg: '#1565c0', text: '#ffffff', accent: '#bbdefb' },
+  'Hankook': { bg: '#ff5722', text: '#ffffff', accent: '#ffccbc' },
+  'Kumho': { bg: '#c62828', text: '#ffffff', accent: '#ffcdd2' },
+  'Firestone': { bg: '#b71c1c', text: '#ffffff', accent: '#ffcdd2' },
+  'Cooper': { bg: '#2e7d32', text: '#ffffff', accent: '#c8e6c9' },
+  'Toyo': { bg: '#e65100', text: '#ffffff', accent: '#ffe0b2' },
+  'Falken': { bg: '#1976d2', text: '#ffffff', accent: '#bbdefb' },
+  'Nitto': { bg: '#424242', text: '#ffffff', accent: '#bdbdbd' },
+};
+
+// Default brand color for unknown brands
+const DEFAULT_BRAND_CONFIG = { bg: '#37474f', text: '#ffffff', accent: '#b0bec5' };
+
+// Tire wheel SVG icon component
+const TireIcon: React.FC<{ size: number; color: string; accentColor: string }> = ({ size, color, accentColor }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* Outer tire ring */}
+    <circle cx="50" cy="50" r="48" stroke={color} strokeWidth="3" fill="none" opacity="0.3" />
+    <circle cx="50" cy="50" r="42" stroke={color} strokeWidth="8" fill="none" opacity="0.5" />
+    {/* Tire tread pattern */}
+    <circle cx="50" cy="50" r="38" stroke={accentColor} strokeWidth="2" fill="none" strokeDasharray="8 4" />
+    {/* Wheel rim */}
+    <circle cx="50" cy="50" r="25" fill={color} opacity="0.2" />
+    <circle cx="50" cy="50" r="22" stroke={color} strokeWidth="2" fill="none" />
+    {/* Center hub */}
+    <circle cx="50" cy="50" r="12" fill={color} opacity="0.4" />
+    <circle cx="50" cy="50" r="8" fill={accentColor} opacity="0.8" />
+    {/* Spokes */}
+    <line x1="50" y1="28" x2="50" y2="15" stroke={color} strokeWidth="2" opacity="0.6" />
+    <line x1="50" y1="72" x2="50" y2="85" stroke={color} strokeWidth="2" opacity="0.6" />
+    <line x1="28" y1="50" x2="15" y2="50" stroke={color} strokeWidth="2" opacity="0.6" />
+    <line x1="72" y1="50" x2="85" y2="50" stroke={color} strokeWidth="2" opacity="0.6" />
+    {/* Diagonal spokes */}
+    <line x1="34" y1="34" x2="24" y2="24" stroke={color} strokeWidth="2" opacity="0.4" />
+    <line x1="66" y1="66" x2="76" y2="76" stroke={color} strokeWidth="2" opacity="0.4" />
+    <line x1="34" y1="66" x2="24" y2="76" stroke={color} strokeWidth="2" opacity="0.4" />
+    <line x1="66" y1="34" x2="76" y2="24" stroke={color} strokeWidth="2" opacity="0.4" />
+  </svg>
+);
+
+// Custom Brand Display component
+interface BrandDisplayProps {
+  brand: string;
+  height: number;
+  type: TireType;
+}
+
+const BrandDisplay: React.FC<BrandDisplayProps> = ({ brand, height, type }) => {
+  const config = BRAND_CONFIG[brand] || DEFAULT_BRAND_CONFIG;
+  const iconSize = height > 150 ? 80 : height > 100 ? 60 : 50;
+
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        height: height,
+        backgroundColor: config.bg,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        gap: 1,
+      }}
+    >
+      {/* Tire wheel icon */}
+      <TireIcon size={iconSize} color={config.text} accentColor={config.accent || config.text} />
+
+      {/* Brand name */}
+      <Typography
+        sx={{
+          color: config.text,
+          fontWeight: 'bold',
+          fontSize: height > 150 ? '1.4rem' : height > 100 ? '1rem' : '0.85rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.15em',
+          textAlign: 'center',
+          px: 1,
+          textShadow: config.text === '#ffffff' ? '1px 1px 2px rgba(0,0,0,0.3)' : 'none',
+        }}
+      >
+        {brand}
+      </Typography>
+
+      {/* Tire type emoji badge */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          fontSize: height > 150 ? '1.3rem' : '1rem',
+          backgroundColor: 'rgba(255,255,255,0.9)',
+          borderRadius: '50%',
+          width: height > 150 ? 32 : 26,
+          height: height > 150 ? 32 : 26,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+        }}
+      >
+        {getTireEmoji(type)}
+      </Box>
+    </Box>
+  );
 };
 
 interface TireCardProps {
@@ -136,8 +252,6 @@ export function TireCard({
     if (onDelete) onDelete();
   };
 
-  const placeholderImage = `https://via.placeholder.com/300x200/f5f5f5/9e9e9e?text=${encodeURIComponent(tire.brand + ' ' + tire.size)}`;
-
   if (variant === 'compact') {
     return (
       <Card 
@@ -172,40 +286,12 @@ export function TireCard({
           </Box>
         )}
 
-        <Box sx={{ position: 'relative', height: isMobile ? 100 : 140 }}>
-          <CardMedia
-            component="img"
-            height={isMobile ? "100" : "140"}
-            image={(tire as any).brandImageUrl || tire.imageUrl || placeholderImage}
-            alt={`${tire.brand} ${tire.size}`}
-            sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
-            onError={(e) => {
-              // Replace with emoji fallback on error
-              const target = e.currentTarget;
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent && !parent.querySelector('.emoji-fallback')) {
-                const fallback = document.createElement('div');
-                fallback.className = 'emoji-fallback';
-                fallback.style.cssText = `
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  bottom: 0;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  background: #f5f5f5;
-                  font-size: ${isMobile ? '30px' : '40px'};
-                  border: 1px solid #e0e0e0;
-                `;
-                fallback.textContent = getTireEmoji(tire.type);
-                parent.appendChild(fallback);
-              }
-            }}
-          />
-        </Box>
+        {/* Custom Brand Display */}
+        <BrandDisplay
+          brand={tire.brand}
+          height={isMobile ? 100 : 140}
+          type={tire.type}
+        />
 
         <CardContent sx={{ flexGrow: 1, p: isMobile ? 1 : 2 }}>
           {tire.name && (
@@ -315,40 +401,12 @@ export function TireCard({
         </Box>
       )}
 
-      <Box sx={{ position: 'relative', height: isMobile ? 120 : 240 }}>
-        <CardMedia
-          component="img"
-          height={isMobile ? "120" : "240"}
-          image={(tire as any).brandImageUrl || tire.imageUrl || placeholderImage}
-          alt={`${tire.brand} ${tire.size}`}
-          sx={{ objectFit: 'contain', backgroundColor: 'grey.50' }}
-          onError={(e) => {
-            // Replace with emoji fallback on error
-            const target = e.currentTarget;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent && !parent.querySelector('.emoji-fallback')) {
-              const fallback = document.createElement('div');
-              fallback.className = 'emoji-fallback';
-              fallback.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: #f5f5f5;
-                font-size: ${isMobile ? '40px' : '60px'};
-                border: 1px solid #e0e0e0;
-              `;
-              fallback.textContent = getTireEmoji(tire.type);
-              parent.appendChild(fallback);
-            }
-          }}
-        />
-      </Box>
+      {/* Custom Brand Display */}
+      <BrandDisplay
+        brand={tire.brand}
+        height={isMobile ? 120 : 240}
+        type={tire.type}
+      />
 
       <CardContent sx={{ flexGrow: 1, p: isMobile ? 1.5 : 2 }}>
         {tire.name && (

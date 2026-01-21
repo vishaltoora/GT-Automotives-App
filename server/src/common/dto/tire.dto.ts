@@ -171,6 +171,10 @@ export class TireResponseDto {
   @IsString()
   imageUrl?: string;
 
+  @IsOptional()
+  @IsString()
+  brandImageUrl?: string;
+
   @IsBoolean()
   inStock!: boolean;
 
@@ -350,6 +354,10 @@ export class TireDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  brandImageUrl?: string;
 
   @IsBoolean()
   inStock!: boolean;

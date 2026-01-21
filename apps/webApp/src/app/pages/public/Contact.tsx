@@ -6,14 +6,56 @@ import ShippingIcon from '@mui/icons-material/LocalShipping';
 import CarWashIcon from '@mui/icons-material/LocalCarWash';
 import CheckIcon from '@mui/icons-material/CheckCircle';
 import PhoneIcon from '@mui/icons-material/Phone';
-import { ContactHero, QuickContactBar, ContactForm, ContactTeam } from '../../components/contact';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { QuickContactBar, ContactForm, ContactTeam } from '../../components/contact';
+import { PageHero } from '../../components/shared';
 import { colors } from '../../theme/colors';
+
+// Contact page slides
+const contactSlides = [
+  {
+    id: 'contact-us',
+    title: "We're Here to Help You",
+    subtitle: 'Contact Us',
+    description: 'Get in touch for expert tire services, mechanical repairs, or emergency assistance. Your satisfaction is our priority.',
+    image: 'https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=1920&q=80',
+    icon: SupportAgentIcon,
+  },
+  {
+    id: 'call-us',
+    title: 'Call Us Anytime',
+    subtitle: '24/7 Support',
+    description: 'Our friendly team is ready to assist you with any questions about our services or to schedule your appointment.',
+    image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1920&q=80',
+    icon: PhoneIcon,
+  },
+  {
+    id: 'visit-us',
+    title: 'Visit Our Shop',
+    subtitle: 'Prince George Location',
+    description: 'Come see us in person! Our shop is conveniently located with easy access and ample parking.',
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
+    icon: LocationOnIcon,
+  },
+];
 
 export const Contact: React.FC = () => {
 
   return (
     <>
-      <ContactHero />
+      <PageHero
+        slides={contactSlides}
+        primaryAction={{
+          label: 'Call Now',
+          path: 'tel:2509869191',
+        }}
+        secondaryAction={{
+          label: 'Send Email',
+          path: 'mailto:gt-automotives@outlook.com',
+        }}
+        height="50vh"
+      />
       <QuickContactBar />
 
       {/* Main Contact Section */}

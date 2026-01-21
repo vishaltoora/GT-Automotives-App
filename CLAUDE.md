@@ -87,10 +87,12 @@ yarn dev
 
 ## 🔑 Key Information
 
-### Three User Roles
+### Five User Roles
 1. **Customer** - Self-service portal (`/customer/*`)
 2. **Staff** - Operational dashboard (`/staff/*`)
-3. **Admin** - Full system control (`/admin/*`)
+3. **Supervisor** - Elevated permissions (`/supervisor/*`)
+4. **Accountant** - Financial access (`/accountant/*`)
+5. **Admin** - Full system control (`/admin/*`)
 
 ### Technology Highlights
 - **Frontend:** React 18 + TypeScript + Material-UI
@@ -153,6 +155,31 @@ git push origin main
 ---
 
 ## 🔄 Recent Updates
+
+### January 19, 2026 - Home Page Redesign & Role Fixes ✅
+- ✅ **TireBrandsSection Redesign**: Prominently showcases tire sales as main business
+  - Bold "New & Used Tires" headline with "PRINCE GEORGE'S TIRE SPECIALISTS" badge
+  - Tire categories grid (All-Season, Winter, Performance, Truck & SUV)
+  - 11 tire brands: Michelin, Bridgestone, Goodyear, Continental, BF Goodrich, Pirelli, Firestone, Yokohama, Rovelo, Ironman, Westlake
+  - "Browse Our Inventory" and phone CTA buttons
+- ✅ **PricingSection Created**: New modern pricing section replacing TrustSection
+  - Distance & After Hours card: $2/km beyond 10km, $99 call + $99/hr after hours
+  - Mobile Service card (Most Popular): $139+ for cars/SUVs, $149+ for trucks
+  - Other Services card: Flat repair $29, rotation $69, balance $69
+  - "View All Prices" button linking to /pricing page
+- ✅ **Hero Section Height Fix**: Changed from minHeight to fixed height: '50vh' for consistency
+- ✅ **Products Page Update**: Replaced ProductsHero with PageHero, removed ProductsFeaturesBar
+- ✅ **Accountant/Supervisor Role Redirect Fix**: Home.tsx now redirects accountant and supervisor roles to their dashboards
+  - Previously stuck on loading page because switch statement didn't handle these roles
+- 🔧 **Files Changed**:
+  - `apps/webApp/src/app/components/home/TireBrandsSection.tsx`: Complete redesign
+  - `apps/webApp/src/app/components/home/PricingSection.tsx`: New file
+  - `apps/webApp/src/app/components/home/ServicesShowcase.tsx`: Height fix, icon removal
+  - `apps/webApp/src/app/components/home/ServiceCategoriesGrid.tsx`: Added margin below button
+  - `apps/webApp/src/app/pages/public/Home.tsx`: Added accountant/supervisor redirects
+  - `apps/webApp/src/app/pages/public/Products.tsx`: PageHero integration
+  - `apps/webApp/src/app/components/home/index.ts`: Updated exports
+- 📝 **Impact**: Professional home page highlighting tire sales, all 5 user roles now redirect properly
 
 ### January 9, 2026 - Invoice & Purchase/Expense Invoice Search Enhancements ✅
 - ✅ **Combined Search Field**: Invoice list now has single unified search for Invoice # and Customer Name
