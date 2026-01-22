@@ -1,4 +1,4 @@
-import { PurchaseCategory, ExpenseCategory, PurchaseInvoiceStatus } from '@prisma/client';
+import { PurchaseCategory, ExpenseCategory, PurchaseInvoiceStatus, PurchaseExpenseCategory } from '@prisma/client';
 export declare class ExpenseReportFilterDto {
     startDate?: string;
     endDate?: string;
@@ -6,7 +6,7 @@ export declare class ExpenseReportFilterDto {
     status?: PurchaseInvoiceStatus;
 }
 export declare class CategorySummaryDto {
-    category: PurchaseCategory | ExpenseCategory;
+    category: PurchaseCategory | ExpenseCategory | PurchaseExpenseCategory;
     count: number;
     totalAmount: number;
     paidAmount: number;

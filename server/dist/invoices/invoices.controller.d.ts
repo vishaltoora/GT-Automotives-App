@@ -7,18 +7,18 @@ export declare class InvoicesController {
     private readonly invoicesService;
     constructor(invoicesService: InvoicesService);
     create(createInvoiceDto: CreateInvoiceDto, user: any): Promise<{
+        notes: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        invoiceNumber: string;
+        customerId: string;
         vehicleId: string | null;
-        companyId: string;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
         appointmentId: string | null;
+        invoiceNumber: string;
+        companyId: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -31,18 +31,18 @@ export declare class InvoicesController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
     }>;
     findAll(user: any): Promise<{
+        notes: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        invoiceNumber: string;
+        customerId: string;
         vehicleId: string | null;
-        companyId: string;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
         appointmentId: string | null;
+        invoiceNumber: string;
+        companyId: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -55,18 +55,18 @@ export declare class InvoicesController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
     }[]>;
     search(customerName?: string, invoiceNumber?: string, startDate?: string, endDate?: string, status?: InvoiceStatus, companyId?: string, user?: any): Promise<{
+        notes: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        invoiceNumber: string;
+        customerId: string;
         vehicleId: string | null;
-        companyId: string;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
         appointmentId: string | null;
+        invoiceNumber: string;
+        companyId: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -80,18 +80,18 @@ export declare class InvoicesController {
     }[]>;
     getDailyCashReport(date: string, user: any): Promise<any>;
     getCustomerInvoices(customerId: string, user: any): Promise<{
+        notes: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        invoiceNumber: string;
+        customerId: string;
         vehicleId: string | null;
-        companyId: string;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
         appointmentId: string | null;
+        invoiceNumber: string;
+        companyId: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -104,18 +104,18 @@ export declare class InvoicesController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
     }[]>;
     findOne(id: string, user: any): Promise<{
+        notes: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        invoiceNumber: string;
+        customerId: string;
         vehicleId: string | null;
-        companyId: string;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
         appointmentId: string | null;
+        invoiceNumber: string;
+        companyId: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -128,18 +128,18 @@ export declare class InvoicesController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
     }>;
     update(id: string, updateInvoiceDto: UpdateInvoiceDto, user: any): Promise<{
+        notes: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        invoiceNumber: string;
+        customerId: string;
         vehicleId: string | null;
-        companyId: string;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
         appointmentId: string | null;
+        invoiceNumber: string;
+        companyId: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -152,18 +152,18 @@ export declare class InvoicesController {
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
     }>;
     markAsPaid(id: string, paymentMethod: PaymentMethod, user: any): Promise<{
+        notes: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        customerId: string;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        invoiceNumber: string;
+        customerId: string;
         vehicleId: string | null;
-        companyId: string;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
         appointmentId: string | null;
+        invoiceNumber: string;
+        companyId: string;
         subtotal: import(".prisma/client/runtime/library").Decimal;
         taxRate: import(".prisma/client/runtime/library").Decimal;
         taxAmount: import(".prisma/client/runtime/library").Decimal;
@@ -175,41 +175,45 @@ export declare class InvoicesController {
         pstAmount: import(".prisma/client/runtime/library").Decimal | null;
         pstRate: import(".prisma/client/runtime/library").Decimal | null;
     }>;
-    sendEmail(id: string, user: any): Promise<{
+    sendEmail(id: string, body: {
+        email?: string;
+        saveToCustomer?: boolean;
+    }, user: any): Promise<{
         success: boolean;
         message: string;
+        emailUsed: string;
     }>;
     remove(id: string, user: any): Promise<void>;
     getAllServices(): Promise<{
         name: string;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }[]>;
     createService(createServiceDto: CreateServiceDto): Promise<{
         name: string;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     updateService(id: string, updateServiceDto: UpdateServiceDto): Promise<{
         name: string;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     deleteService(id: string): Promise<{
         name: string;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
 }

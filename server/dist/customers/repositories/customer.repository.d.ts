@@ -13,8 +13,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            model: string;
             make: string;
+            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -22,12 +22,12 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
         }[];
     } & {
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     }) | null>;
@@ -42,8 +42,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            model: string;
             make: string;
+            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -51,12 +51,12 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
         }[];
     } & {
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     })[]>;
@@ -67,21 +67,32 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
                 createdAt: Date;
                 updatedAt: Date;
                 customerId: string;
-                model: string;
                 make: string;
+                model: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
                 mileage: number | null;
             } | null;
+            employees: ({
+                employee: {
+                    id: string;
+                    firstName: string | null;
+                    lastName: string | null;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                employeeId: string;
+                appointmentId: string;
+            })[];
         } & {
+            notes: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            notes: string | null;
             scheduledDate: Date;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
             vehicleId: string | null;
             employeeId: string | null;
             scheduledTime: string;
@@ -89,6 +100,7 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
             paymentAmount: number | null;
             paymentBreakdown: Prisma.JsonValue | null;
             paymentNotes: string | null;
@@ -97,6 +109,68 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             reminderSent: boolean;
             bookedBy: string | null;
         })[];
+        invoices: ({
+            items: {
+                quantity: number;
+                description: string;
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                total: Prisma.Decimal;
+                invoiceId: string;
+                tireId: string | null;
+                tireName: string | null;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
+                unitPrice: Prisma.Decimal;
+            }[];
+            vehicle: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                customerId: string;
+                make: string;
+                model: string;
+                year: number;
+                vin: string | null;
+                licensePlate: string | null;
+                mileage: number | null;
+            } | null;
+        } & {
+            notes: string | null;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            createdBy: string;
+            total: Prisma.Decimal;
+            customerId: string;
+            vehicleId: string | null;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            appointmentId: string | null;
+            invoiceNumber: string;
+            companyId: string;
+            subtotal: Prisma.Decimal;
+            taxRate: Prisma.Decimal;
+            taxAmount: Prisma.Decimal;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+            invoiceDate: Date;
+            paidAt: Date | null;
+            gstAmount: Prisma.Decimal | null;
+            gstRate: Prisma.Decimal | null;
+            pstAmount: Prisma.Decimal | null;
+            pstRate: Prisma.Decimal | null;
+        })[];
+        vehicles: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            customerId: string;
+            make: string;
+            model: string;
+            year: number;
+            vin: string | null;
+            licensePlate: string | null;
+            mileage: number | null;
+        }[];
         smsPreference: {
             id: string;
             createdAt: Date;
@@ -114,76 +188,14 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             dailySummary: boolean;
             urgentAlerts: boolean;
         } | null;
-        invoices: ({
-            vehicle: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                customerId: string;
-                model: string;
-                make: string;
-                year: number;
-                vin: string | null;
-                licensePlate: string | null;
-                mileage: number | null;
-            } | null;
-            items: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                description: string;
-                quantity: number;
-                total: Prisma.Decimal;
-                tireName: string | null;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                unitPrice: Prisma.Decimal;
-                tireId: string | null;
-                invoiceId: string;
-            }[];
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            customerId: string;
-            notes: string | null;
-            createdBy: string;
-            total: Prisma.Decimal;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            vehicleId: string | null;
-            companyId: string;
-            appointmentId: string | null;
-            subtotal: Prisma.Decimal;
-            taxRate: Prisma.Decimal;
-            taxAmount: Prisma.Decimal;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-            invoiceDate: Date;
-            paidAt: Date | null;
-            gstAmount: Prisma.Decimal | null;
-            gstRate: Prisma.Decimal | null;
-            pstAmount: Prisma.Decimal | null;
-            pstRate: Prisma.Decimal | null;
-        })[];
-        vehicles: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            customerId: string;
-            model: string;
-            make: string;
-            year: number;
-            vin: string | null;
-            licensePlate: string | null;
-            mileage: number | null;
-        }[];
     } & {
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     }) | null>;
@@ -198,8 +210,8 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            model: string;
             make: string;
+            model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
@@ -207,31 +219,45 @@ export declare class CustomerRepository extends BaseRepository<Customer, Prisma.
         }[];
     } & {
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     })[]>;
     getCustomerStats(customerId: string): Promise<{
         totalSpent: number | Prisma.Decimal;
+        outstandingBalance: number;
         vehicleCount: number;
         appointmentCount: number;
+        upcomingAppointments: number;
         lastVisitDate: Date | null;
     }>;
     findById(id: string): Promise<{
         id: string;
-        email: string | null;
-        firstName: string;
-        lastName: string;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
     } | null>;
+    /**
+     * Get stats for ALL customers in a SINGLE optimized SQL query
+     * This eliminates the N+1 problem completely with one database round-trip
+     */
+    getAllCustomerStats(): Promise<Map<string, {
+        totalSpent: number;
+        outstandingBalance: number;
+        vehicleCount: number;
+        appointmentCount: number;
+        upcomingAppointments: number;
+        lastVisitDate: Date | null;
+    }>>;
 }
 //# sourceMappingURL=customer.repository.d.ts.map

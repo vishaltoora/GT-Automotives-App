@@ -14,38 +14,37 @@ export declare class SmsController {
      * Get SMS history (admin only)
      */
     getHistory(customerId?: string, userId?: string, limit?: string): Promise<({
-        user: {
-            id: string;
-            clerkId: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-            phone: string | null;
-            roleId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            lastLogin: Date | null;
-            isActive: boolean;
-        } | null;
         customer: {
             id: string;
-            email: string | null;
-            firstName: string;
-            lastName: string;
-            phone: string | null;
             createdAt: Date;
             updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            email: string | null;
+            phone: string | null;
             address: string | null;
             businessName: string | null;
         } | null;
+        user: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string | null;
+            lastName: string | null;
+            email: string;
+            phone: string | null;
+            clerkId: string;
+            roleId: string;
+            lastLogin: Date | null;
+            isActive: boolean;
+        } | null;
         appointment: {
+            notes: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            notes: string | null;
             scheduledDate: Date;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
             vehicleId: string | null;
             employeeId: string | null;
             scheduledTime: string;
@@ -53,6 +52,7 @@ export declare class SmsController {
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
             paymentAmount: number | null;
             paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
             paymentNotes: string | null;
@@ -62,13 +62,13 @@ export declare class SmsController {
             bookedBy: string | null;
         } | null;
     } & {
+        type: import("@prisma/client").$Enums.SmsType;
+        cost: import(".prisma/client/runtime/library").Decimal | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string | null;
         customerId: string | null;
-        type: import("@prisma/client").$Enums.SmsType;
-        cost: import(".prisma/client/runtime/library").Decimal | null;
         status: import("@prisma/client").$Enums.SmsStatus;
         appointmentId: string | null;
         to: string;

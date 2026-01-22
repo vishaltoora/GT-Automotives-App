@@ -423,7 +423,7 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
                               color={isPurchase ? 'primary' : 'secondary'}
                             />
                             <Chip
-                              icon={CATEGORY_CONFIG[invoice.category]?.icon}
+                              icon={CATEGORY_CONFIG[invoice.category]?.icon as React.ReactElement | undefined}
                               label={CATEGORY_LABELS[invoice.category]}
                               size="small"
                               sx={{
@@ -536,7 +536,7 @@ const PurchaseExpenseInvoiceManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          icon={CATEGORY_CONFIG[invoice.category]?.icon}
+                          icon={CATEGORY_CONFIG[invoice.category]?.icon as React.ReactElement | undefined}
                           label={CATEGORY_LABELS[invoice.category]}
                           size="small"
                           sx={{

@@ -1,5 +1,5 @@
 import { ExpenseReportFilterDto, ExpenseReportResponseDto } from '../common/dto/expense-report.dto';
-import { TaxReportFilterDto, TaxReportResponseDto } from '../common/dto/tax-report.dto';
+import { TaxReportFilterDto, TaxReportResponseDto, GstPaidReportResponseDto } from '../common/dto/tax-report.dto';
 export declare class ReportsService {
     private prisma;
     getExpenseReport(filterDto: ExpenseReportFilterDto): Promise<ExpenseReportResponseDto>;
@@ -49,5 +49,7 @@ export declare class ReportsService {
     }>;
     getTaxReport(filterDto: TaxReportFilterDto): Promise<TaxReportResponseDto>;
     private calculateMonthlyTaxBreakdown;
+    getGstPaidReport(filterDto: TaxReportFilterDto): Promise<GstPaidReportResponseDto>;
+    private calculateMonthlyGstPaidBreakdown;
 }
 //# sourceMappingURL=reports.service.d.ts.map

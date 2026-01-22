@@ -42,4 +42,7 @@ export declare class CalendarQueryDto {
 export declare class PaymentDateQueryDto {
     paymentDate: string;
 }
+export declare class CreateETransferInvoiceDto {
+    serviceAmount: number;
+}
 //# sourceMappingURL=appointment.dto.d.ts.map

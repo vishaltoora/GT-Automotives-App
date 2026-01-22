@@ -49,6 +49,7 @@ export declare class TireResponseDto {
     quantity: number;
     description?: string;
     imageUrl?: string;
+    brandImageUrl?: string;
     inStock: boolean;
     createdAt: string;
     updatedAt: string;
@@ -102,6 +103,7 @@ export declare class TireDto {
     quantity: number;
     description?: string;
     imageUrl?: string;
+    brandImageUrl?: string;
     inStock: boolean;
     createdAt: string;
     updatedAt: string;

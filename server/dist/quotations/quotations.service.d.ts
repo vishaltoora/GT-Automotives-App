@@ -24,9 +24,10 @@ export declare class QuotationsService {
         endDate?: string;
     }): Promise<Quotation[]>;
     convertToInvoice(quotationId: string, customerId: string, vehicleId?: string): Promise<any>;
-    sendQuotationEmail(quotationId: string, userId: string): Promise<{
+    sendQuotationEmail(quotationId: string, userId: string, overrideEmail?: string, saveToQuote?: boolean): Promise<{
         success: boolean;
         message: string;
+        emailUsed: string;
     }>;
 }
 //# sourceMappingURL=quotations.service.d.ts.map

@@ -5,14 +5,14 @@ export declare class QuotationsController {
     private readonly quotationsService;
     constructor(quotationsService: QuotationsService);
     create(createQuoteDto: CreateQuoteDto, req: any): Promise<{
+        notes: string | null;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
@@ -32,14 +32,14 @@ export declare class QuotationsController {
         convertedToInvoiceId: string | null;
     }>;
     findAll(): Promise<{
+        notes: string | null;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
@@ -59,14 +59,14 @@ export declare class QuotationsController {
         convertedToInvoiceId: string | null;
     }[]>;
     search(customerName?: string, quotationNumber?: string, status?: string, startDate?: string, endDate?: string): Promise<{
+        notes: string | null;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
@@ -86,14 +86,14 @@ export declare class QuotationsController {
         convertedToInvoiceId: string | null;
     }[]>;
     findOne(id: string): Promise<{
+        notes: string | null;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
@@ -113,14 +113,14 @@ export declare class QuotationsController {
         convertedToInvoiceId: string | null;
     }>;
     update(id: string, updateQuoteDto: UpdateQuoteDto): Promise<{
+        notes: string | null;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
-        notes: string | null;
         createdBy: string;
         total: import(".prisma/client/runtime/library").Decimal;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         businessName: string | null;
         status: import("@prisma/client").$Enums.QuotationStatus;
@@ -140,9 +140,13 @@ export declare class QuotationsController {
         convertedToInvoiceId: string | null;
     }>;
     remove(id: string): Promise<void>;
-    sendEmail(id: string, user: any): Promise<{
+    sendEmail(id: string, body: {
+        email?: string;
+        saveToQuote?: boolean;
+    }, user: any): Promise<{
         success: boolean;
         message: string;
+        emailUsed: string;
     }>;
     convertToInvoice(id: string, body: {
         customerId: string;

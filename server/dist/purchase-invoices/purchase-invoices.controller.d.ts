@@ -10,13 +10,13 @@ export declare class PurchaseInvoicesController {
         page: number;
         limit: number;
     }>;
-    findOne(id: string): Promise<PurchaseInvoiceResponseDto>;
-    update(id: string, updateDto: UpdatePurchaseInvoiceDto): Promise<PurchaseInvoiceResponseDto>;
-    uploadImage(id: string, file: any): Promise<PurchaseInvoiceResponseDto>;
-    deleteImage(id: string): Promise<PurchaseInvoiceResponseDto>;
     getImageUrl(id: string): Promise<{
         imageUrl: string;
     }>;
+    uploadImage(id: string, file: any): Promise<PurchaseInvoiceResponseDto>;
+    deleteImage(id: string): Promise<PurchaseInvoiceResponseDto>;
+    findOne(id: string): Promise<PurchaseInvoiceResponseDto>;
+    update(id: string, updateDto: UpdatePurchaseInvoiceDto): Promise<PurchaseInvoiceResponseDto>;
     remove(id: string): Promise<PurchaseInvoiceResponseDto>;
 }
 //# sourceMappingURL=purchase-invoices.controller.d.ts.map

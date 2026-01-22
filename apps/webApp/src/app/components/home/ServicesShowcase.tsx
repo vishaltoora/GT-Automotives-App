@@ -19,7 +19,6 @@ import {
   ArrowBack as PrevIcon,
   ArrowForward as NextIcon,
   Circle as DotIcon,
-  Phone as PhoneIcon,
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { colors } from '../../theme/colors';
@@ -111,7 +110,6 @@ export const ServicesShowcase: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
 
   const currentService = services[currentIndex];
-  const IconComponent = currentService.icon;
 
   // Auto-advance slides
   useEffect(() => {

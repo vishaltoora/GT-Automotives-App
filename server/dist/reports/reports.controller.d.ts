@@ -1,6 +1,6 @@
 import { ReportsService } from './reports.service';
 import { ExpenseReportFilterDto, ExpenseReportResponseDto } from '../common/dto/expense-report.dto';
-import { TaxReportFilterDto, TaxReportResponseDto } from '../common/dto/tax-report.dto';
+import { TaxReportFilterDto, TaxReportResponseDto, GstPaidReportResponseDto } from '../common/dto/tax-report.dto';
 export declare class ReportsController {
     private readonly reportsService;
     constructor(reportsService: ReportsService);
@@ -45,5 +45,6 @@ export declare class ReportsController {
     }>;
     getPurchaseReport(filterDto: ExpenseReportFilterDto): Promise<ExpenseReportResponseDto>;
     getTaxReport(filterDto: TaxReportFilterDto): Promise<TaxReportResponseDto>;
+    getGstPaidReport(filterDto: TaxReportFilterDto): Promise<GstPaidReportResponseDto>;
 }
 //# sourceMappingURL=reports.controller.d.ts.map

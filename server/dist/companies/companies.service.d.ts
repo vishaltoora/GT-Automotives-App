@@ -5,10 +5,10 @@ export declare class CompaniesService {
     findAll(): Promise<{
         name: string;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         registrationNumber: string;
         businessType: string | null;
@@ -17,10 +17,10 @@ export declare class CompaniesService {
     findDefault(): Promise<{
         name: string;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         registrationNumber: string;
         businessType: string | null;
@@ -29,10 +29,10 @@ export declare class CompaniesService {
     findById(id: string): Promise<{
         name: string;
         id: string;
-        email: string | null;
-        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
+        phone: string | null;
         address: string | null;
         registrationNumber: string;
         businessType: string | null;
