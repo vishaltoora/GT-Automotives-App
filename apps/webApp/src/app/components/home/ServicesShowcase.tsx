@@ -30,7 +30,8 @@ const services = [
     icon: TireServiceIcon,
     image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
     color: '#1a237e',
-    features: ['Mounting', 'Balancing', 'TPMS'],
+    features: ['Precision Mounting', 'Computer Balancing', 'TPMS Service'],
+    mobileFeatures: ['Mounting', 'Balancing', 'TPMS'],
   },
   {
     id: 'tire-rotation',
@@ -40,7 +41,8 @@ const services = [
     icon: BalancingIcon,
     image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80',
     color: '#2e7d32',
-    features: ['Even Wear', 'Long Life', 'Handling'],
+    features: ['Even Tire Wear', 'Extended Life', 'Better Handling'],
+    mobileFeatures: ['Even Wear', 'Long Life', 'Handling'],
   },
   {
     id: 'mobile-service',
@@ -50,7 +52,8 @@ const services = [
     icon: MobileServiceIcon,
     image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
     color: '#e65100',
-    features: ['Home/Office', 'Easy Booking', 'Same Day'],
+    features: ['Home & Office Service', 'Easy Online Booking', 'Same Day Available'],
+    mobileFeatures: ['Home/Office', 'Easy Booking', 'Same Day'],
   },
   {
     id: 'emergency-roadside',
@@ -60,7 +63,8 @@ const services = [
     icon: MobileServiceIcon,
     image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&q=80',
     color: '#d32f2f',
-    features: ['24/7 Service', 'Fast Response', 'Flat Repair'],
+    features: ['24/7 Availability', 'Fast Response Time', 'Flat Tire Repair'],
+    mobileFeatures: ['24/7 Service', 'Fast Response', 'Flat Repair'],
   },
   {
     id: 'seasonal-tires',
@@ -70,7 +74,8 @@ const services = [
     icon: AllSeasonIcon,
     image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=1920&q=80',
     color: '#c62828',
-    features: ['Storage', 'Quick Swap', 'Inspection'],
+    features: ['Tire Storage', 'Quick Changeover', 'Full Inspection'],
+    mobileFeatures: ['Storage', 'Quick Swap', 'Inspection'],
   },
   {
     id: 'mechanical-work',
@@ -80,7 +85,8 @@ const services = [
     icon: TireServiceIcon,
     image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=1920&q=80',
     color: '#455a64',
-    features: ['Engine', 'Brakes', 'Suspension'],
+    features: ['Engine Repair', 'Brake Service', 'Suspension Work'],
+    mobileFeatures: ['Engine', 'Brakes', 'Suspension'],
   },
 ];
 
@@ -135,7 +141,7 @@ export const ServicesShowcase: React.FC = () => {
     <Box
       sx={{
         position: 'relative',
-        height: { xs: '45vh', md: '30vh' },
+        height: { xs: '45vh', md: '50vh' },
         minHeight: { xs: 300, md: 350 },
         overflow: 'hidden',
       }}
@@ -318,7 +324,7 @@ export const ServicesShowcase: React.FC = () => {
 
             {/* Features */}
             <Stack direction="row" spacing={{ xs: 0, md: 2 }} flexWrap="wrap" sx={{ mb: { xs: 8, md: 4 }, gap: { xs: 1, md: 1 }, justifyContent: { xs: 'space-between', md: 'flex-start' } }}>
-              {currentService.features.map((feature, idx) => (
+              {(isMobile ? currentService.mobileFeatures : currentService.features).map((feature, idx) => (
                 <Box
                   key={idx}
                   sx={{
