@@ -12,11 +12,9 @@ import {
   Fade,
   Stack,
   Typography,
-  Zoom,
   Grid,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
-import gtLogo from '../../images-and-logos/gt-automotive-logo.svg';
 import { colors } from '../../theme/colors';
 
 interface HeroStatistic {
@@ -167,134 +165,6 @@ export function HeroSection() {
     </Box>
   );
 }
-
-function HeroLogo() {
-  return (
-    <Zoom in timeout={1000}>
-      <Box
-        sx={{
-          position: 'relative',
-          display: { xs: 'none', md: 'flex' },
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          height: '100%',
-          minHeight: 320,
-          pr: { md: 3, lg: 4 },
-        }}
-      >
-        <Box
-          sx={{
-            position: 'relative',
-            width: { md: 250, lg: 300, xl: 340 },
-            height: { md: 250, lg: 300, xl: 340 },
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {/* Animated Circles */}
-          <Box
-            sx={{
-              position: 'absolute',
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              border: '2px solid rgba(255,255,255,0.1)',
-              animation: 'pulse 3s ease-in-out infinite',
-              '@keyframes pulse': {
-                '0%, 100%': { transform: 'scale(1)', opacity: 1 },
-                '50%': { transform: 'scale(1.05)', opacity: 0.6 },
-              },
-            }}
-          />
-          <Box
-            sx={{
-              position: 'absolute',
-              width: '85%',
-              height: '85%',
-              borderRadius: '50%',
-              border: '2px solid rgba(255,255,255,0.15)',
-              animation: 'pulse 3s ease-in-out infinite 0.5s',
-            }}
-          />
-          
-          {/* Central Logo */}
-          <Box
-            sx={{
-              width: { md: 170, lg: 210, xl: 250 },
-              height: { md: 170, lg: 210, xl: 250 },
-              borderRadius: '50%',
-              background: 'white',
-              padding: { md: 2, lg: 2.5, xl: 3 },
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
-            <img
-              src={gtLogo}
-              alt="GT Automotives"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-              }}
-            />
-          </Box>
-
-          {/* Floating Icons */}
-          <FloatingServiceIcons />
-        </Box>
-      </Box>
-    </Zoom>
-  );
-}
-
-function FloatingServiceIcons() {
-  const icons = [
-    { Icon: TireIcon, top: 0, right: 0, bg: colors.secondary.main, delay: 0 },
-    { Icon: BuildIcon, bottom: 20, left: 0, bg: 'rgba(255,255,255,0.15)', delay: 1 },
-    { Icon: CarIcon, top: '50%', right: -10, bg: 'rgba(255,255,255,0.1)', delay: 2 },
-  ];
-
-  return (
-    <>
-      {icons.map((item, index) => {
-        const { Icon, delay, ...position } = item;
-        return (
-          <Box
-            key={index}
-            sx={{
-              position: 'absolute',
-              ...position,
-              width: index === 0 ? 50 : 45,
-              height: index === 0 ? 50 : 45,
-              borderRadius: '50%',
-              backgroundColor: item.bg,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: index === 0 ? '0 4px 12px rgba(255,107,53,0.4)' : 'none',
-              animation: 'float 4s ease-in-out infinite',
-              animationDelay: `${delay}s`,
-              '@keyframes float': {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
-              },
-            }}
-          >
-            <Icon sx={{ color: 'white', fontSize: '1.2rem' }} />
-          </Box>
-        );
-      })}
-    </>
-  );
-}
-
-import { Build as BuildIcon, DirectionsCar as CarIcon } from '@mui/icons-material';
 
 function HeroCTAButtons() {
   return (
