@@ -30,7 +30,7 @@ const services = [
     icon: TireServiceIcon,
     image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
     color: '#1a237e',
-    features: ['Precision Mounting', 'Computer Balancing', 'TPMS Service'],
+    features: ['Mounting', 'Balancing', 'TPMS'],
   },
   {
     id: 'tire-rotation',
@@ -40,7 +40,7 @@ const services = [
     icon: BalancingIcon,
     image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80',
     color: '#2e7d32',
-    features: ['Even Wear Pattern', 'Extended Life', 'Better Handling'],
+    features: ['Even Wear', 'Long Life', 'Handling'],
   },
   {
     id: 'mobile-service',
@@ -50,7 +50,7 @@ const services = [
     icon: MobileServiceIcon,
     image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
     color: '#e65100',
-    features: ['Home & Office Service', 'Convenient Scheduling', 'Same Day Available'],
+    features: ['Home/Office', 'Easy Booking', 'Same Day'],
   },
   {
     id: 'emergency-roadside',
@@ -60,7 +60,7 @@ const services = [
     icon: MobileServiceIcon,
     image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&q=80',
     color: '#d32f2f',
-    features: ['24/7 Emergency Service', 'Fast Response Time', 'Flat Tire Repair'],
+    features: ['24/7 Service', 'Fast Response', 'Flat Repair'],
   },
   {
     id: 'seasonal-tires',
@@ -70,7 +70,7 @@ const services = [
     icon: AllSeasonIcon,
     image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=1920&q=80',
     color: '#c62828',
-    features: ['Tire Storage', 'Quick Swap', 'Inspection Included'],
+    features: ['Storage', 'Quick Swap', 'Inspection'],
   },
   {
     id: 'mechanical-work',
@@ -80,7 +80,7 @@ const services = [
     icon: TireServiceIcon,
     image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=1920&q=80',
     color: '#455a64',
-    features: ['Engine Repair', 'Brake Service', 'Suspension Work'],
+    features: ['Engine', 'Brakes', 'Suspension'],
   },
 ];
 
@@ -135,7 +135,7 @@ export const ServicesShowcase: React.FC = () => {
     <Box
       sx={{
         position: 'relative',
-        height: { xs: '35vh', md: '30vh' },
+        height: { xs: '45vh', md: '30vh' },
         minHeight: { xs: 300, md: 350 },
         overflow: 'hidden',
       }}
@@ -273,63 +273,6 @@ export const ServicesShowcase: React.FC = () => {
               transition: 'opacity 0.3s ease, transform 0.3s ease',
             }}
           >
-            {/* Mobile Animated Logo */}
-            {isTablet && (
-              <Box
-                sx={{
-                  position: 'relative',
-                  width: 80,
-                  height: 80,
-                  mb: 2,
-                  mx: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {/* Animated Pulsing Circle */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    animation: 'pulse 3s ease-in-out infinite',
-                    '@keyframes pulse': {
-                      '0%, 100%': { transform: 'scale(1)', opacity: 1 },
-                      '50%': { transform: 'scale(1.1)', opacity: 0.5 },
-                    },
-                  }}
-                />
-                <Box
-                  sx={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: '50%',
-                    backgroundColor: 'white',
-                    padding: 0.75,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    zIndex: 2,
-                  }}
-                >
-                  <img
-                    src={gtLogo}
-                    alt="GT Automotives Logo"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                    }}
-                  />
-                </Box>
-              </Box>
-            )}
-
             {/* Subtitle */}
             <Typography
               variant="overline"
@@ -374,13 +317,13 @@ export const ServicesShowcase: React.FC = () => {
             </Typography>
 
             {/* Features */}
-            <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mb: 4, gap: 1 }}>
+            <Stack direction="row" spacing={{ xs: 0, md: 2 }} flexWrap="wrap" sx={{ mb: { xs: 8, md: 4 }, gap: { xs: 1, md: 1 }, justifyContent: { xs: 'space-between', md: 'flex-start' } }}>
               {currentService.features.map((feature, idx) => (
                 <Box
                   key={idx}
                   sx={{
-                    px: 2,
-                    py: 0.75,
+                    px: { xs: 2, md: 2 },
+                    py: { xs: 0.75, md: 0.75 },
                     borderRadius: 2,
                     backgroundColor: 'rgba(255,255,255,0.15)',
                     backdropFilter: 'blur(10px)',
@@ -389,7 +332,7 @@ export const ServicesShowcase: React.FC = () => {
                 >
                   <Typography
                     variant="body2"
-                    sx={{ color: 'white', fontWeight: 500 }}
+                    sx={{ color: 'white', fontWeight: 500, fontSize: { xs: '0.85rem', md: '0.875rem' } }}
                   >
                     {feature}
                   </Typography>

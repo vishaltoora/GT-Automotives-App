@@ -241,62 +241,6 @@ export const PageHero: React.FC<PageHeroProps> = ({
               transition: 'opacity 0.3s ease, transform 0.3s ease',
             }}
           >
-            {/* Mobile Animated Logo */}
-            {isTablet && (
-              <Box
-                sx={{
-                  position: 'relative',
-                  width: 80,
-                  height: 80,
-                  mb: 2,
-                  mx: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {/* Animated Pulsing Circle */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    animation: 'pulse 3s ease-in-out infinite',
-                    '@keyframes pulse': {
-                      '0%, 100%': { transform: 'scale(1)', opacity: 1 },
-                      '50%': { transform: 'scale(1.1)', opacity: 0.5 },
-                    },
-                  }}
-                />
-                <Box
-                  sx={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: '50%',
-                    backgroundColor: 'white',
-                    padding: 0.75,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    zIndex: 2,
-                  }}
-                >
-                  <img
-                    src={gtLogo}
-                    alt="GT Automotives Logo"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                    }}
-                  />
-                </Box>
-              </Box>
-            )}
 
             {/* Service Icon */}
             {IconComponent && (

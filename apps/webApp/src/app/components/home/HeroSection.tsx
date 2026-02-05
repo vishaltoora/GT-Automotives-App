@@ -36,7 +36,7 @@ export function HeroSection() {
     <Box
       sx={{
         position: 'relative',
-        minHeight: { xs: '450px', sm: '400px', md: '420px', lg: '450px' },
+        minHeight: { xs: '100vh', sm: '80vh', md: '420px', lg: '450px' },
         display: 'flex',
         alignItems: 'center',
         background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
@@ -57,19 +57,15 @@ export function HeroSection() {
         }}
       />
 
-      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 2, py: { xs: 4, md: 5 }, width: '100%' }}>
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 2, py: { xs: 6, sm: 5, md: 5 }, width: '100%' }}>
         <Grid container spacing={{ xs: 3, md: 6 }} alignItems="center">
-          {/* Logo Section */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <HeroLogo />
-          </Grid>
 
-          {/* Content Section */}
-          <Grid size={{ xs: 12, md: 8 }}>
+          {/* Content Section - Full width */}
+          <Grid size={12}>
             <Fade in timeout={800}>
-              <Stack spacing={2} sx={{ maxWidth: { md: '100%', lg: '900px' } }}>
+              <Stack spacing={{ xs: 3, sm: 2 }} sx={{ maxWidth: { md: '100%', lg: '900px' }, textAlign: { xs: 'center', md: 'left' } }}>
                 {/* Badge */}
-                <Box>
+                <Box sx={{ display: 'flex', justifyContent: { xs: 'center', md: 'flex-start' } }}>
                   <Chip
                     icon={<CertifiedIcon sx={{ fontSize: '1rem' }} />}
                     label="Certified Auto Service • Prince George • Est. 2010"
@@ -131,11 +127,11 @@ export function HeroSection() {
                 <HeroCTAButtons />
 
                 {/* Trust Indicators */}
-                <Stack 
-                  direction="row" 
-                  spacing={{ xs: 2, sm: 3, md: 4, lg: 5 }} 
+                <Stack
+                  direction="row"
+                  spacing={{ xs: 2, sm: 3, md: 4, lg: 5 }}
                   divider={<Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />}
-                  sx={{ pt: 3, mt: 1 }}
+                  sx={{ pt: 3, mt: 1, justifyContent: { xs: 'center', md: 'flex-start' }, flexWrap: 'wrap' }}
                 >
                   {statistics.map((stat, index) => (
                     <Box key={index}>
@@ -302,7 +298,7 @@ import { Build as BuildIcon, DirectionsCar as CarIcon } from '@mui/icons-materia
 
 function HeroCTAButtons() {
   return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ pt: 2 }}>
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ pt: 2, alignItems: { xs: 'center', md: 'flex-start' } }}>
       <Button
         component={Link}
         to="/inventory"
@@ -318,6 +314,8 @@ function HeroCTAButtons() {
           fontWeight: 600,
           borderRadius: 2,
           boxShadow: '0 4px 14px rgba(255,107,53,0.4)',
+          width: { xs: '100%', sm: 'auto' },
+          maxWidth: { xs: 280, sm: 'none' },
           '&:hover': {
             backgroundColor: colors.secondary.dark,
             transform: 'translateY(-2px)',
@@ -345,6 +343,8 @@ function HeroCTAButtons() {
           borderRadius: 2,
           borderWidth: 2,
           backgroundColor: 'rgba(255,255,255,0.05)',
+          width: { xs: '100%', sm: 'auto' },
+          maxWidth: { xs: 280, sm: 'none' },
           '&:hover': {
             borderColor: 'white',
             backgroundColor: 'rgba(255,255,255,0.15)',

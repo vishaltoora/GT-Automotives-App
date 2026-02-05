@@ -163,6 +163,7 @@ function ServicesSlider({ services }: { services: Service[] }) {
         width: '100%',
         overflow: 'hidden',
         py: 2,
+        px: { xs: 2, md: 0 },
       }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
