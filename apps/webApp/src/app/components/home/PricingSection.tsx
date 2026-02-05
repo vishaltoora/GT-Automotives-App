@@ -1,21 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
   Typography,
   Paper,
   Stack,
-  Button,
   Chip,
   Divider,
+  Fade,
 } from '@mui/material';
 import {
-  Check as CheckIcon,
   LocalShipping as MobileIcon,
   Build as ServiceIcon,
   Speed as QuickIcon,
+  TireRepair as TireIcon,
+  AcUnit as WinterIcon,
+  CarRepair as BalanceIcon,
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
 import { colors } from '../../theme/colors';
 
 interface PricingTier {
@@ -26,6 +27,7 @@ interface PricingTier {
   features: string[];
   popular?: boolean;
   icon: React.ReactNode;
+  color: string;
 }
 
 export function PricingSection() {
@@ -43,6 +45,7 @@ export function PricingSection() {
         '24/7 emergency available',
       ],
       icon: <ServiceIcon sx={{ fontSize: 28 }} />,
+      color: colors.primary.main,
     },
     {
       title: 'Mobile Service',
@@ -58,6 +61,7 @@ export function PricingSection() {
       ],
       popular: true,
       icon: <MobileIcon sx={{ fontSize: 28 }} />,
+      color: colors.secondary.main,
     },
     {
       title: 'Other Services',
@@ -72,15 +76,62 @@ export function PricingSection() {
         'Professional service',
       ],
       icon: <QuickIcon sx={{ fontSize: 28 }} />,
+      color: '#9c27b0',
+    },
+    {
+      title: 'Tire Installation',
+      subtitle: 'At Our Shop',
+      price: '$99',
+      priceNote: 'mount & balance + tax',
+      features: [
+        'Standard tires: $99 + tax',
+        'Low profile: $129 + tax',
+        'TPMS service included',
+        'Valve stems replaced',
+        'Free tire inspection',
+      ],
+      icon: <TireIcon sx={{ fontSize: 28 }} />,
+      color: '#1565c0',
+    },
+    {
+      title: 'Seasonal Changeover',
+      subtitle: 'Winter & Summer',
+      price: '$69',
+      priceNote: 'swap on rims + tax',
+      features: [
+        'Tires on rims: $69 + tax',
+        'Off rims: $139 + tax',
+        'Includes balance check',
+        'TPMS reset included',
+        'Storage available',
+      ],
+      icon: <WinterIcon sx={{ fontSize: 28 }} />,
+      color: '#0288d1',
+    },
+    {
+      title: 'Wheel Balancing',
+      subtitle: 'Smooth Ride',
+      price: '$69',
+      priceNote: 'all 4 wheels + tax',
+      features: [
+        'Computer balancing',
+        'Weight adjustment',
+        'Vibration diagnosis',
+        'Tire inspection',
+        'Quick turnaround',
+      ],
+      icon: <BalanceIcon sx={{ fontSize: 28 }} />,
+      color: '#455a64',
     },
   ];
 
   return (
     <Box
       sx={{
-        py: { xs: 8, md: 12 },
+        py: { xs: 6, md: 10 },
         background: `linear-gradient(180deg, ${colors.neutral[50]} 0%, white 100%)`,
         position: 'relative',
+        overflow: 'hidden',
       }}
     >
       {/* Subtle background pattern */}
@@ -98,124 +149,98 @@ export function PricingSection() {
       />
 
       <Container maxWidth="lg" sx={{ position: 'relative' }}>
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
-          <Chip
-            label="TRANSPARENT PRICING"
-            sx={{
-              backgroundColor: colors.secondary.main,
-              color: 'white',
-              fontWeight: 700,
-              mb: 3,
-              px: 2,
-              fontSize: '0.75rem',
-              letterSpacing: 1,
-            }}
-          />
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 800,
-              color: colors.text.primary,
-              mb: 2,
-              fontSize: { xs: '2rem', md: '2.75rem' },
-            }}
-          >
-            Simple, Honest Pricing
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{
-              color: colors.text.secondary,
-              maxWidth: 600,
-              mx: 'auto',
-              fontWeight: 400,
-              fontSize: { xs: '1rem', md: '1.1rem' },
-            }}
-          >
-            No hidden fees, no surprises. Quality service at fair prices.
-          </Typography>
-        </Box>
-
-        {/* Pricing Cards */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-            gap: { xs: 3, md: 4 },
-            mb: { xs: 6, md: 8 },
-          }}
-        >
-          {pricingTiers.map((tier, index) => (
-            <PricingCard key={index} tier={tier} />
-          ))}
-        </Box>
-
-        {/* Bottom Note */}
-        <Box
-          sx={{
-            textAlign: 'center',
-            p: { xs: 3, md: 4 },
-            backgroundColor: colors.primary.main + '08',
-            borderRadius: 3,
-            border: `1px solid ${colors.primary.main}15`,
-          }}
-        >
-          <Typography
-            variant="body1"
-            sx={{
-              color: colors.text.secondary,
-              mb: 2,
-              fontSize: { xs: '0.9rem', md: '1rem' },
-            }}
-          >
-            *Within Prince George city limits. Prices may vary based on tire size and vehicle type.
-          </Typography>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            justifyContent="center"
-          >
-            <Button
-              component={Link}
-              to="/pricing"
-              variant="contained"
-              size="large"
-              sx={{
-                backgroundColor: colors.secondary.main,
-                px: 4,
-                py: 1.5,
-                fontWeight: 600,
-                '&:hover': {
-                  backgroundColor: colors.secondary.dark,
-                },
-              }}
-            >
-              View All Prices
-            </Button>
-            <Button
-              component="a"
-              href="tel:2509869191"
-              variant="outlined"
-              size="large"
-              sx={{
-                borderColor: colors.primary.main,
-                color: colors.primary.main,
-                px: 4,
-                py: 1.5,
-                fontWeight: 600,
-                borderWidth: 2,
-                '&:hover': {
-                  borderWidth: 2,
-                  backgroundColor: colors.primary.main + '08',
-                },
-              }}
-            >
-              Call (250) 986-9191
-            </Button>
-          </Stack>
-        </Box>
+        <SectionHeader />
       </Container>
+
+      {/* Animated Slider */}
+      <PricingSlider pricingTiers={pricingTiers} />
+
+    </Box>
+  );
+}
+
+function SectionHeader() {
+  return (
+    <Fade in timeout={1000}>
+      <Box sx={{ textAlign: 'center', mb: 6 }}>
+        <Chip
+          label="TRANSPARENT PRICING"
+          sx={{
+            backgroundColor: colors.secondary.main,
+            color: 'white',
+            fontWeight: 700,
+            mb: 2,
+            px: 2,
+            fontSize: '0.75rem',
+            letterSpacing: 1,
+          }}
+        />
+        <Typography
+          variant="h2"
+          sx={{
+            fontWeight: 800,
+            color: colors.text.primary,
+            mb: 2,
+            fontSize: { xs: '2rem', md: '2.75rem' },
+          }}
+        >
+          Simple, Honest Pricing
+        </Typography>
+        <Typography
+          variant="h6"
+          sx={{
+            color: colors.text.secondary,
+            maxWidth: 600,
+            mx: 'auto',
+            fontWeight: 400,
+            fontSize: { xs: '1rem', md: '1.1rem' },
+          }}
+        >
+          No hidden fees, no surprises. Quality service at fair prices.
+        </Typography>
+      </Box>
+    </Fade>
+  );
+}
+
+function PricingSlider({ pricingTiers }: { pricingTiers: PricingTier[] }) {
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Duplicate tiers for seamless infinite loop
+  const duplicatedTiers = [...pricingTiers, ...pricingTiers];
+
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        width: '100%',
+        overflow: 'hidden',
+        py: 2,
+      }}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 3,
+          animation: 'scrollPricing 45s linear infinite',
+          animationPlayState: isPaused ? 'paused' : 'running',
+          width: 'fit-content',
+          '@keyframes scrollPricing': {
+            '0%': {
+              transform: 'translateX(0)',
+            },
+            '100%': {
+              transform: `translateX(-${pricingTiers.length * 320}px)`,
+            },
+          },
+        }}
+      >
+        {duplicatedTiers.map((tier, index) => (
+          <PricingCard key={index} tier={tier} />
+        ))}
+      </Box>
     </Box>
   );
 }
@@ -225,19 +250,19 @@ function PricingCard({ tier }: { tier: PricingTier }) {
     <Paper
       elevation={tier.popular ? 8 : 0}
       sx={{
+        width: 300,
+        minWidth: 300,
         position: 'relative',
-        p: { xs: 3, md: 4 },
+        p: 3,
         borderRadius: 4,
         border: tier.popular
           ? `2px solid ${colors.secondary.main}`
           : `1px solid ${colors.neutral[200]}`,
         backgroundColor: 'white',
         transition: 'all 0.3s ease',
-        transform: tier.popular ? { md: 'scale(1.05)' } : 'none',
+        flexShrink: 0,
         '&:hover': {
-          transform: tier.popular
-            ? { xs: 'translateY(-8px)', md: 'scale(1.05) translateY(-8px)' }
-            : 'translateY(-8px)',
+          transform: 'translateY(-8px)',
           boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
         },
       }}
@@ -255,7 +280,7 @@ function PricingCard({ tier }: { tier: PricingTier }) {
             backgroundColor: colors.secondary.main,
             color: 'white',
             fontWeight: 700,
-            fontSize: '0.7rem',
+            fontSize: '0.65rem',
             letterSpacing: 0.5,
           }}
         />
@@ -264,17 +289,15 @@ function PricingCard({ tier }: { tier: PricingTier }) {
       {/* Icon */}
       <Box
         sx={{
-          width: 56,
-          height: 56,
-          borderRadius: 3,
-          backgroundColor: tier.popular
-            ? colors.secondary.main + '15'
-            : colors.primary.main + '10',
+          width: 50,
+          height: 50,
+          borderRadius: 2,
+          backgroundColor: tier.color + '15',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          mb: 3,
-          color: tier.popular ? colors.secondary.main : colors.primary.main,
+          mb: 2,
+          color: tier.color,
         }}
       >
         {tier.icon}
@@ -282,11 +305,12 @@ function PricingCard({ tier }: { tier: PricingTier }) {
 
       {/* Title & Subtitle */}
       <Typography
-        variant="h5"
+        variant="h6"
         sx={{
           fontWeight: 700,
           color: colors.text.primary,
           mb: 0.5,
+          fontSize: '1.1rem',
         }}
       >
         {tier.title}
@@ -295,68 +319,71 @@ function PricingCard({ tier }: { tier: PricingTier }) {
         variant="body2"
         sx={{
           color: colors.text.secondary,
-          mb: 3,
+          mb: 2,
+          fontSize: '0.85rem',
         }}
       >
         {tier.subtitle}
       </Typography>
 
       {/* Price */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 2 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 800,
+            color: tier.color,
+            lineHeight: 1,
+            mb: 0.5,
+          }}
+        >
+          {tier.price}
+        </Typography>
         <Typography
           variant="caption"
           sx={{
             color: colors.text.secondary,
-            display: 'block',
-            mb: 0.5,
-            textTransform: 'uppercase',
-            letterSpacing: 1,
             fontSize: '0.7rem',
           }}
         >
           {tier.priceNote}
         </Typography>
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 800,
-            color: tier.popular ? colors.secondary.main : colors.primary.main,
-            lineHeight: 1,
-          }}
-        >
-          {tier.price}
-        </Typography>
       </Box>
 
-      <Divider sx={{ mb: 3 }} />
+      <Divider sx={{ mb: 2 }} />
 
       {/* Features */}
-      <Stack spacing={1.5}>
+      <Stack spacing={1}>
         {tier.features.map((feature, idx) => (
-          <Stack
-            key={idx}
-            direction="row"
-            spacing={1.5}
-            alignItems="center"
-          >
-            <CheckIcon
+          <Box key={idx} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box
+              component="span"
               sx={{
-                fontSize: 18,
-                color: tier.popular
-                  ? colors.secondary.main
-                  : colors.semantic.success,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: tier.color,
+                mr: 1,
+                flexShrink: 0,
+                animation: 'pulse 2s ease-in-out infinite',
+                animationDelay: `${idx * 0.2}s`,
+                '@keyframes pulse': {
+                  '0%, 100%': { transform: 'scale(1)', opacity: 1 },
+                  '50%': { transform: 'scale(1.5)', opacity: 0.7 },
+                },
               }}
             />
             <Typography
               variant="body2"
               sx={{
-                color: colors.text.secondary,
-                fontSize: '0.9rem',
+                color: colors.text.primary,
+                fontSize: '0.85rem',
+                fontWeight: 600,
               }}
             >
               {feature}
             </Typography>
-          </Stack>
+          </Box>
         ))}
       </Stack>
     </Paper>

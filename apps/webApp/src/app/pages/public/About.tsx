@@ -146,7 +146,6 @@ export const About: React.FC = () => {
           label: 'Contact Us',
           path: '/contact',
         }}
-        height="50vh"
       />
 
       {/* Company Story */}

@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   Typography,
-  Button,
   Stack,
   useTheme,
   useMediaQuery,
@@ -11,16 +10,13 @@ import {
 } from '@mui/material';
 import {
   Build as TireServiceIcon,
-  DirectionsCar as AlignmentIcon,
   Speed as BalancingIcon,
   LocalShipping as MobileServiceIcon,
   Brightness5 as AllSeasonIcon,
-  AcUnit as WinterIcon,
   ArrowBack as PrevIcon,
   ArrowForward as NextIcon,
   Circle as DotIcon,
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
 import { colors } from '../../theme/colors';
 import gtLogo from '../../images-and-logos/gt-automotive-logo.svg';
 
@@ -35,16 +31,6 @@ const services = [
     image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
     color: '#1a237e',
     features: ['Precision Mounting', 'Computer Balancing', 'TPMS Service'],
-  },
-  {
-    id: 'wheel-alignment',
-    title: 'Precision Wheel Alignment',
-    subtitle: 'Drive Straight, Save Money',
-    description: 'Proper alignment extends tire life, improves fuel economy, and ensures your vehicle handles safely in all conditions.',
-    icon: AlignmentIcon,
-    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
-    color: '#0d47a1',
-    features: ['4-Wheel Alignment', 'Steering Check', 'Suspension Inspection'],
   },
   {
     id: 'tire-rotation',
@@ -87,14 +73,14 @@ const services = [
     features: ['Tire Storage', 'Quick Swap', 'Inspection Included'],
   },
   {
-    id: 'winter-tires',
-    title: 'Winter Tire Specialists',
-    subtitle: 'Stay Safe This Winter',
-    description: 'Prince George winters demand quality winter tires. We stock top brands and install them properly for maximum safety on icy roads.',
-    icon: WinterIcon,
-    image: 'https://images.unsplash.com/photo-1548777123-e216912df7d8?w=1920&q=80',
-    color: '#1565c0',
-    features: ['Top Brands', 'Expert Advice', 'Studded Options'],
+    id: 'mechanical-work',
+    title: 'Full Mechanical Services',
+    subtitle: 'Complete Auto Repair',
+    description: 'From engine diagnostics to brake repairs, our experienced technicians handle all your mechanical needs with precision and care.',
+    icon: TireServiceIcon,
+    image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=1920&q=80',
+    color: '#455a64',
+    features: ['Engine Repair', 'Brake Service', 'Suspension Work'],
   },
 ];
 
@@ -149,7 +135,8 @@ export const ServicesShowcase: React.FC = () => {
     <Box
       sx={{
         position: 'relative',
-        height: '50vh',
+        height: { xs: '35vh', md: '30vh' },
+        minHeight: { xs: 300, md: 350 },
         overflow: 'hidden',
       }}
       onMouseEnter={() => setIsPaused(true)}
@@ -176,7 +163,7 @@ export const ServicesShowcase: React.FC = () => {
         />
       ))}
 
-      {/* Gradient Overlay */}
+      {/* Gradient Overlay - Using main brand color with reduced opacity */}
       <Box
         sx={{
           position: 'absolute',
@@ -185,15 +172,9 @@ export const ServicesShowcase: React.FC = () => {
           right: 0,
           bottom: 0,
           background: `linear-gradient(135deg,
-            rgba(${currentService.color === '#1a237e' ? '26, 35, 126' :
-                   currentService.color === '#0d47a1' ? '13, 71, 161' :
-                   currentService.color === '#2e7d32' ? '46, 125, 50' :
-                   currentService.color === '#e65100' ? '230, 81, 0' :
-                   currentService.color === '#c62828' ? '198, 40, 40' :
-                   '21, 101, 192'}, 0.85) 0%,
-            rgba(30, 58, 95, 0.9) 100%)`,
+            rgba(30, 58, 95, 0.6) 0%,
+            rgba(30, 58, 95, 0.7) 100%)`,
           zIndex: 1,
-          transition: 'background 0.5s ease-in-out',
         }}
       />
 
@@ -416,55 +397,6 @@ export const ServicesShowcase: React.FC = () => {
               ))}
             </Stack>
 
-            {/* CTA Buttons */}
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Button
-                component={Link}
-                to="/services"
-                variant="contained"
-                size="large"
-                sx={{
-                  backgroundColor: colors.secondary.main,
-                  color: 'white',
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  '&:hover': {
-                    backgroundColor: colors.secondary.dark,
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 6px 20px rgba(255,107,53,0.4)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                View All Services
-              </Button>
-              <Button
-                component={Link}
-                to="/contact"
-                variant="outlined"
-                size="large"
-                sx={{
-                  borderColor: 'white',
-                  color: 'white',
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderWidth: 2,
-                  '&:hover': {
-                    borderColor: 'white',
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    transform: 'translateY(-2px)',
-                    borderWidth: 2,
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                Book Now
-              </Button>
-            </Stack>
           </Box>
 
         </Stack>

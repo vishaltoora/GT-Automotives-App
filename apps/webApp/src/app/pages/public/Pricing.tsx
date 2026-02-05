@@ -47,7 +47,6 @@ export const Pricing: React.FC = () => {
           label: 'Call for Pricing',
           path: 'tel:2509869191',
         }}
-        height="50vh"
       />
       <MobileTireServiceSection />
       <CTASection

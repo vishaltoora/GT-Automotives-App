@@ -17,7 +17,7 @@ import {
   Autocomplete,
 } from '@mui/material';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LocationOn as LocationIcon, Store as StoreIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { useLoadScript, Autocomplete as GoogleAutocomplete } from '@react-google-maps/api';
@@ -53,6 +53,10 @@ const SERVICE_TYPES = [
 
 export function BookAppointment() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check if mobile service is pre-selected via URL param
+  const isMobilePreselected = searchParams.get('type') === 'mobile';
 
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
@@ -61,7 +65,7 @@ export function BookAppointment() {
   const timeOptions = generateTimeOptions();
 
   const [formData, setFormData] = useState<BookingFormData>({
-    appointmentType: 'AT_GARAGE',
+    appointmentType: isMobilePreselected ? 'MOBILE_SERVICE' : 'AT_GARAGE',
     firstName: '',
     lastName: '',
     phone: '',

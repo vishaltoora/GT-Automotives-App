@@ -37,7 +37,6 @@ interface PageHeroProps {
     label: string;
     path: string;
   };
-  height?: string;
   autoPlay?: boolean;
   slideDuration?: number;
 }
@@ -48,12 +47,10 @@ export const PageHero: React.FC<PageHeroProps> = ({
   slides,
   primaryAction,
   secondaryAction,
-  height = '50vh',
   autoPlay = true,
   slideDuration = SLIDE_DURATION,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -106,7 +103,8 @@ export const PageHero: React.FC<PageHeroProps> = ({
     <Box
       sx={{
         position: 'relative',
-        minHeight: isMobile ? height : height,
+        height: { xs: '35vh', md: '30vh' },
+        minHeight: { xs: 300, md: 350 },
         overflow: 'hidden',
       }}
       onMouseEnter={() => setIsPaused(true)}
@@ -133,7 +131,7 @@ export const PageHero: React.FC<PageHeroProps> = ({
         />
       ))}
 
-      {/* Gradient Overlay */}
+      {/* Gradient Overlay - Using main brand color with reduced opacity */}
       <Box
         sx={{
           position: 'absolute',
@@ -141,7 +139,9 @@ export const PageHero: React.FC<PageHeroProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'linear-gradient(135deg, rgba(36,60,85,0.6) 0%, rgba(30,50,70,0.5) 50%, rgba(36,60,85,0.6) 100%)',
+          background: `linear-gradient(135deg,
+            rgba(30, 58, 95, 0.6) 0%,
+            rgba(30, 58, 95, 0.7) 100%)`,
           zIndex: 1,
         }}
       />

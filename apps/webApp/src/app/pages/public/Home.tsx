@@ -1,16 +1,12 @@
-import { Schedule as ScheduleIcon } from '@mui/icons-material';
-import { Container } from '@mui/material';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CTASection } from '../../components/public';
 import {
   ContactSection,
   EmergencyServiceBanner,
   FeaturedServices,
+  FloatingActionButtons,
   PricingSection,
-  QuickActionsBar,
   ServiceAreasSection,
-  ServiceCategoriesGrid,
   ServicesShowcase,
   TireBrandsSection,
 } from '../../components/home';
@@ -55,19 +51,14 @@ export function Home() {
       {/* Interactive Services Showcase (Main Hero) */}
       <ServicesShowcase />
 
-      {/* Quick Actions Bar */}
-      <QuickActionsBar onBookAppointment={handleBookAppointment} />
+      {/* Floating Action Buttons */}
+      <FloatingActionButtons onBookAppointment={handleBookAppointment} />
 
       {/* Mobile Tire Emergency Service Banner */}
       <EmergencyServiceBanner onBookNow={handleBookAppointment} />
 
-      {/* Featured Services */}
+      {/* Featured Services Slider */}
       <FeaturedServices />
-
-      {/* Service Categories Grid */}
-      <Container maxWidth="lg">
-        <ServiceCategoriesGrid />
-      </Container>
 
       {/* Tire Brands Section */}
       <TireBrandsSection />
@@ -77,24 +68,6 @@ export function Home() {
 
       {/* Contact Information Section */}
       <ContactSection />
-
-      {/* CTA Section */}
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
-        <CTASection
-          title="Need Emergency Service?"
-          description="We're available 24/7 for roadside assistance and emergency repairs"
-          primaryAction={{
-            label: 'Call (250) 986-9191',
-            path: 'tel:2509869191',
-          }}
-          secondaryAction={{
-            label: 'Book Service',
-            path: '/contact',
-            icon: <ScheduleIcon />,
-          }}
-          variant="gradient"
-        />
-      </Container>
 
       {/* Service Areas */}
       <ServiceAreasSection />

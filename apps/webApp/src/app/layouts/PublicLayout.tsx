@@ -365,7 +365,7 @@ export function PublicLayout() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <PhoneIcon fontSize="small" />
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    (250) 986-9191 / (250) 565-1571
+                    250-570-2333, 250-986-9191
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -432,7 +432,10 @@ export function PublicLayout() {
           <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', my: 2 }} />
           
           <Typography variant="body2" align="center" sx={{ opacity: 0.8 }}>
-            © {new Date().getFullYear()} GT Automotivess. All rights reserved.
+            © {new Date().getFullYear()} GT Automotives. All rights reserved.
+          </Typography>
+          <Typography variant="caption" align="center" sx={{ opacity: 0.6, display: 'block', mt: 1 }}>
+            Created by Vishal Toora
           </Typography>
         </Container>
       </Box>

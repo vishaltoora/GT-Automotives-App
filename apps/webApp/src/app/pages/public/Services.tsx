@@ -190,7 +190,6 @@ export const Services: React.FC = () => {
           label: 'Call Now',
           path: 'tel:2509869191',
         }}
-        height="50vh"
       />
       <ServicesGrid
         services={services}

@@ -1,18 +1,19 @@
 import {
   CheckCircle as CheckIcon,
-  Emergency as EmergencyIcon,
   Phone as PhoneIcon,
-  Speed as SpeedIcon,
   LocalShipping as TruckIcon,
 } from '@mui/icons-material';
 import {
   Box,
   Button,
+  Card,
+  CardContent,
+  Chip,
   Container,
-  Grid,
   Stack,
   Typography,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { colors } from '../../theme/colors';
 
 interface EmergencyServiceBannerProps {
@@ -20,192 +21,265 @@ interface EmergencyServiceBannerProps {
 }
 
 export function EmergencyServiceBanner({ onBookNow }: EmergencyServiceBannerProps) {
-  return (
-    <Box
-      sx={{
-        background: `linear-gradient(135deg, ${colors.semantic.error} 0%, ${colors.secondary.main} 100%)`,
-        py: { xs: 4, md: 3 },
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Animated Background Pattern */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          opacity: 0.1,
-          backgroundImage: `
-            repeating-linear-gradient(
-              45deg,
-              transparent,
-              transparent 35px,
-              rgba(255,255,255,.1) 35px,
-              rgba(255,255,255,.1) 70px
-            )
-          `,
-          animation: 'moveStripes 2s linear infinite',
-          '@keyframes moveStripes': {
-            '0%': { transform: 'translateX(0)' },
-            '100%': { transform: 'translateX(70px)' },
-          },
-        }}
-      />
-      
-      <Container maxWidth="lg">
-        <Grid container alignItems="center" spacing={3}>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Box
-                sx={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(10px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  animation: 'pulse 2s infinite',
-                  '@keyframes pulse': {
-                    '0%': { 
-                      transform: 'scale(1)',
-                      boxShadow: '0 0 0 0 rgba(255,255,255,0.4)',
-                    },
-                    '70%': {
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 0 0 20px rgba(255,255,255,0)',
-                    },
-                    '100%': {
-                      transform: 'scale(1)',
-                      boxShadow: '0 0 0 0 rgba(255,255,255,0)',
-                    },
-                  },
-                }}
-              >
-                <TruckIcon sx={{ color: 'white', fontSize: 32 }} />
-              </Box>
-              
-              <Box>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    color: 'white',
-                    fontWeight: 800,
-                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                    lineHeight: 1.2,
-                    mb: 0.5,
-                  }}
-                >
-                  Mobile Tire Emergency Service
-                </Typography>
-                <ServiceFeatures />
-              </Box>
-            </Stack>
-          </Grid>
+  const navigate = useNavigate();
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <ActionButtons onBookNow={onBookNow} />
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
-  );
-}
+  const handleBookMobileService = () => {
+    navigate('/book-appointment?type=mobile');
+  };
 
-function ServiceFeatures() {
   const features = [
-    { icon: <EmergencyIcon sx={{ fontSize: 18 }} />, text: 'Available 24/7' },
-    { icon: <SpeedIcon sx={{ fontSize: 18 }} />, text: 'Fast Response Time' },
-    { icon: <CheckIcon sx={{ fontSize: 18 }} />, text: 'We Come To You' },
+    'Tire installation & mounting',
+    'Tire rotation & balancing',
+    'Flat tire repair',
+    'Seasonal tire changeover',
   ];
 
   return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.5, sm: 2 }}>
-      {features.map((feature, index) => (
+    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
+      {/* Section Header */}
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
         <Typography
-          key={index}
-          variant="body1"
+          variant="h2"
           sx={{
-            color: 'rgba(255,255,255,0.95)',
-            fontSize: { xs: '0.9rem', sm: '1rem' },
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
+            fontWeight: 800,
+            color: colors.text.primary,
+            mb: 2,
+            fontSize: { xs: '2rem', md: '3rem' },
           }}
         >
-          {feature.icon}
-          {feature.text}
+          Convenience At Your Doorstep
         </Typography>
-      ))}
-    </Stack>
-  );
-}
+        <Typography
+          variant="h5"
+          sx={{
+            color: colors.text.secondary,
+            maxWidth: 700,
+            mx: 'auto',
+            fontWeight: 400,
+          }}
+        >
+          Professional tire services delivered to your location - home, office, or roadside
+        </Typography>
+      </Box>
 
-interface ActionButtonsProps {
-  onBookNow?: () => void;
-}
-
-function ActionButtons({ onBookNow }: ActionButtonsProps) {
-  return (
-    <Stack
-      direction={{ xs: 'row', sm: 'row' }}
-      spacing={2}
-      justifyContent={{ xs: 'center', md: 'flex-end' }}
-    >
-      <Button
-        onClick={onBookNow}
-        variant="contained"
-        size="large"
-        startIcon={<TruckIcon />}
+      <Card
         sx={{
-          backgroundColor: 'white',
-          color: colors.secondary.main,
-          fontWeight: 700,
-          px: { xs: 3, sm: 4 },
-          py: 1.5,
-          fontSize: { xs: '1rem', sm: '1.1rem' },
-          borderRadius: 50,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-          '&:hover': {
-            backgroundColor: 'rgba(255,255,255,0.95)',
-            transform: 'translateY(-2px)',
-            boxShadow: '0 6px 30px rgba(0,0,0,0.3)',
-          },
-          transition: 'all 0.3s ease',
+          background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+          borderRadius: 4,
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
         }}
       >
-        Book Now
-      </Button>
-      <Button
-        component="a"
-        href="tel:2509869191"
-        variant="outlined"
-        size="large"
-        startIcon={<PhoneIcon />}
-        sx={{
-          borderColor: 'white',
-          color: 'white',
-          fontWeight: 700,
-          px: { xs: 3, sm: 4 },
-          py: 1.5,
-          fontSize: { xs: '1rem', sm: '1.1rem' },
-          borderRadius: 50,
-          borderWidth: 2,
-          '&:hover': {
-            borderColor: 'white',
-            backgroundColor: 'rgba(255,255,255,0.1)',
-            transform: 'translateY(-2px)',
-            borderWidth: 2,
-          },
-          transition: 'all 0.3s ease',
-        }}
-      >
-        Call Us
-      </Button>
-    </Stack>
+        {/* Background Pattern */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.05,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='20' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='30' cy='30' r='10' stroke='white' stroke-width='1' fill='none'/%3E%3C/svg%3E")`,
+            backgroundSize: '60px 60px',
+          }}
+        />
+
+        <CardContent sx={{ p: { xs: 3, md: 5 }, position: 'relative' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: 'center',
+              gap: { xs: 3, md: 5 },
+            }}
+          >
+            {/* Left Side - Mechanic Image */}
+            <Box
+              sx={{
+                flexShrink: 0,
+                width: { xs: '100%', md: '35%' },
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Box
+                component="img"
+                src="https://www.hunter.com/globalassets/hunter/sema2022/theme-pages/equipmentgroup-mobile.png"
+                alt="Mobile tire service mechanic"
+                sx={{
+                  maxWidth: { xs: 280, sm: 350, md: 400 },
+                  height: 'auto',
+                  filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.3))',
+                }}
+              />
+            </Box>
+
+            {/* Right Side - Content */}
+            <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' } }}>
+              {/* Badge */}
+              <Chip
+                label="WE COME TO YOU"
+                sx={{
+                  backgroundColor: colors.secondary.main,
+                  color: 'white',
+                  fontWeight: 700,
+                  mb: 2,
+                  px: 2,
+                  fontSize: '0.75rem',
+                  letterSpacing: 1,
+                }}
+              />
+
+              {/* Title with animated truck */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: { xs: 'center', md: 'flex-start' },
+                  gap: 2,
+                  flexWrap: 'wrap',
+                  mb: 1.5,
+                }}
+              >
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 800,
+                    color: 'white',
+                    fontSize: { xs: '1.75rem', md: '2.5rem' },
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  Mobile Tire Service
+                </Typography>
+                <TruckIcon
+                  sx={{
+                    color: 'white',
+                    fontSize: { xs: 32, sm: 40, md: 48 },
+                    animation: 'driveRight 3s ease-in-out infinite',
+                    '@keyframes driveRight': {
+                      '0%': { transform: 'translateX(-15px)' },
+                      '50%': { transform: 'translateX(15px)' },
+                      '100%': { transform: 'translateX(-15px)' },
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Description */}
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'rgba(255,255,255,0.9)',
+                  mb: 3,
+                  fontWeight: 400,
+                  fontSize: { xs: '0.95rem', md: '1.1rem' },
+                  lineHeight: 1.6,
+                }}
+              >
+                Schedule a convenient time and we'll come to your home, office, or anywhere you need us.
+                Professional tire service at your location.
+              </Typography>
+
+              {/* Features */}
+              <Stack
+                direction="column"
+                spacing={1.5}
+                sx={{ mb: 3 }}
+              >
+                {features.map((feature, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', md: 'flex-start' } }}>
+                    <CheckIcon sx={{ color: 'white', fontSize: 24 }} />
+                    <Typography variant="body1" sx={{ color: 'white', fontSize: '1rem', fontWeight: 700 }}>
+                      {feature}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+
+              {/* CTA Buttons */}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                justifyContent={{ xs: 'center', md: 'flex-start' }}
+              >
+                <Button
+                  onClick={handleBookMobileService}
+                  variant="contained"
+                  size="large"
+                  startIcon={
+                    <TruckIcon
+                      sx={{
+                        animation: 'driveRight 2s ease-in-out infinite',
+                        '@keyframes driveRight': {
+                          '0%, 100%': { transform: 'translateX(0)' },
+                          '50%': { transform: 'translateX(5px)' },
+                        },
+                      }}
+                    />
+                  }
+                  sx={{
+                    backgroundColor: colors.secondary.main,
+                    color: 'white',
+                    fontWeight: 700,
+                    px: 3,
+                    py: 1.5,
+                    fontSize: '0.95rem',
+                    borderRadius: 50,
+                    '&:hover': {
+                      backgroundColor: colors.secondary.dark,
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  Book Mobile Service
+                </Button>
+                <Button
+                  component="a"
+                  href="tel:2509869191"
+                  variant="outlined"
+                  size="large"
+                  startIcon={
+                    <PhoneIcon
+                      sx={{
+                        animation: 'ring 1.5s ease-in-out infinite',
+                        '@keyframes ring': {
+                          '0%, 100%': { transform: 'rotate(0deg)' },
+                          '10%': { transform: 'rotate(15deg)' },
+                          '20%': { transform: 'rotate(-10deg)' },
+                          '30%': { transform: 'rotate(15deg)' },
+                          '40%': { transform: 'rotate(-10deg)' },
+                          '50%': { transform: 'rotate(0deg)' },
+                        },
+                      }}
+                    />
+                  }
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    px: 3,
+                    py: 1.5,
+                    fontWeight: 600,
+                    borderWidth: 2,
+                    borderRadius: 50,
+                    '&:hover': {
+                      borderColor: 'white',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      borderWidth: 2,
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  Call Us
+                </Button>
+              </Stack>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }

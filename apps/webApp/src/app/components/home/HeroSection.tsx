@@ -357,27 +357,6 @@ function HeroCTAButtons() {
         Contact Us
       </Button>
 
-      <Button
-        component={Link}
-        to="/services"
-        variant="text"
-        size="large"
-        endIcon={<Box sx={{ transform: 'rotate(-45deg)' }}>→</Box>}
-        sx={{
-          color: 'white',
-          px: 3,
-          py: 1.5,
-          fontSize: '0.95rem',
-          fontWeight: 500,
-          '&:hover': {
-            backgroundColor: 'rgba(255,255,255,0.08)',
-            transform: 'translateX(4px)',
-          },
-          transition: 'all 0.3s ease',
-        }}
-      >
-        View All Services
-      </Button>
     </Stack>
   );
 }

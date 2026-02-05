@@ -54,7 +54,6 @@ export const Contact: React.FC = () => {
           label: 'Send Email',
           path: 'mailto:gt-automotives@outlook.com',
         }}
-        height="50vh"
       />
       <QuickContactBar />
 

@@ -159,7 +159,6 @@ export const Products: React.FC = () => {
           label: 'Get Quote',
           path: '/contact',
         }}
-        height="50vh"
       />
       <Container maxWidth="xl" sx={{ py: { xs: 6, md: 10 } }}>
         <ProductsGrid

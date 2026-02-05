@@ -1,8 +1,8 @@
 export { ContactSection } from './ContactSection';
 export { EmergencyServiceBanner } from './EmergencyServiceBanner';
 export { FeaturedServices } from './FeaturedServices';
+export { FloatingActionButtons } from './FloatingActionButtons';
 export { PricingSection } from './PricingSection';
-export { QuickActionsBar } from './QuickActionsBar';
 export { ServiceAreasSection } from './ServiceAreasSection';
 export { ServiceCategoriesGrid } from './ServiceCategoriesGrid';
 export { ServicesShowcase } from './ServicesShowcase';
