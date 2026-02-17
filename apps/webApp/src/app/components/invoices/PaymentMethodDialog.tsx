@@ -74,6 +74,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
               <MenuItem value={PaymentMethod.CHECK}>Check</MenuItem>
               <MenuItem value={PaymentMethod.E_TRANSFER}>E-Transfer</MenuItem>
               <MenuItem value={PaymentMethod.FINANCING}>Financing</MenuItem>
+              <MenuItem value={PaymentMethod.BANK_DEPOSIT}>Bank Deposit</MenuItem>
             </Select>
           </FormControl>
         </Box>

@@ -21,6 +21,7 @@ export enum PaymentMethod {
   CHECK = 'CHECK',
   E_TRANSFER = 'E_TRANSFER',
   FINANCING = 'FINANCING',
+  BANK_DEPOSIT = 'BANK_DEPOSIT',
 }
 
 export enum InvoiceItemType {

@@ -553,6 +553,7 @@ enum PaymentMethod {
   CHECK
   E_TRANSFER
   FINANCING
+  BANK_DEPOSIT
 }
 
 enum InvoiceItemType {

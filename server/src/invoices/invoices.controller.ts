@@ -27,17 +27,21 @@ export class InvoicesController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   create(@Body() createInvoiceDto: CreateInvoiceDto, @CurrentUser() user: any) {
     return this.invoicesService.create(createInvoiceDto, user.id);
   }
 
   @Get()
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   findAll(@CurrentUser() user: any) {
     return this.invoicesService.findAll(user);
   }
 
   @Get('search')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   search(
     @Query('customerName') customerName?: string,
     @Query('invoiceNumber') invoiceNumber?: string,
@@ -70,18 +74,22 @@ export class InvoicesController {
   }
 
   @Get('customer/:customerId')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   getCustomerInvoices(@Param('customerId') customerId: string, @CurrentUser() user: any) {
     return this.invoicesService.getCustomerInvoices(customerId, user);
   }
 
   @Get(':id')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
     return this.invoicesService.findOne(id, user);
   }
 
   @Patch(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   update(
     @Param('id') id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
@@ -92,7 +100,7 @@ export class InvoicesController {
 
   @Post(':id/pay')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   markAsPaid(
     @Param('id') id: string,
     @Body('paymentMethod') paymentMethod: PaymentMethod,
@@ -103,7 +111,7 @@ export class InvoicesController {
 
   @Post(':id/send-email')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   sendEmail(
     @Param('id') id: string,
     @Body() body: { email?: string; saveToCustomer?: boolean },
@@ -121,20 +129,22 @@ export class InvoicesController {
 
   // Service endpoints
   @Get('services/all')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   getAllServices() {
     return this.invoicesService.getAllServices();
   }
 
   @Post('services')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   createService(@Body() createServiceDto: CreateServiceDto) {
     return this.invoicesService.createService(createServiceDto);
   }
 
   @Patch('services/:id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   updateService(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
     return this.invoicesService.updateService(id, updateServiceDto);
   }

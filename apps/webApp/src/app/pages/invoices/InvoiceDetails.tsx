@@ -83,7 +83,7 @@ const InvoiceDetails: React.FC = () => {
   const handleCreateDialogClose = () => {
     setCreateDialogOpen(false);
     // Navigate back to invoices list
-    const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+    const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
     navigate(`${basePath}/invoices`);
   };
 
@@ -102,7 +102,7 @@ const InvoiceDetails: React.FC = () => {
     }
 
     // Navigate to the newly created invoice
-    const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+    const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
     navigate(`${basePath}/invoices/${newInvoice.id}`);
   };
 
@@ -242,7 +242,7 @@ const InvoiceDetails: React.FC = () => {
       }}>
         <Typography>Invoice not found</Typography>
         <Button startIcon={<BackIcon />} onClick={() => {
-          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
           navigate(`${basePath}/invoices`);
         }} sx={{ mt: 2 }}>
           Back to Invoices
@@ -279,7 +279,7 @@ const InvoiceDetails: React.FC = () => {
             <Button
               startIcon={<BackIcon />}
               onClick={() => {
-                const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+                const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
                 navigate(`${basePath}/invoices`);
               }}
             >
@@ -348,7 +348,7 @@ const InvoiceDetails: React.FC = () => {
             <Button
               startIcon={<BackIcon />}
               onClick={() => {
-                const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+                const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
                 navigate(`${basePath}/invoices`);
               }}
             >

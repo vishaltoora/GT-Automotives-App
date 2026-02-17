@@ -552,6 +552,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       <MenuItem value="CHECK">📝 Check</MenuItem>
                       <MenuItem value="E_TRANSFER">📱 E-Transfer</MenuItem>
                       <MenuItem value="FINANCING">🏦 Financing</MenuItem>
+                      <MenuItem value="BANK_DEPOSIT">🏦 Bank Deposit</MenuItem>
                     </Select>
                   </FormControl>
 

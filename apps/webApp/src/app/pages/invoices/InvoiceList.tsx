@@ -269,7 +269,7 @@ const InvoiceList: React.FC = () => {
     setEditingInvoice(null);
     // Optionally navigate to the invoice details (only for new invoices)
     if (!editingInvoice) {
-      const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+      const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
       navigate(`${basePath}/invoices/${invoice.id}`);
     }
   };
@@ -326,7 +326,7 @@ const InvoiceList: React.FC = () => {
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => {
-          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
           navigate(`${basePath}/invoices/${invoice.id}`);
         },
         show: true,
@@ -532,7 +532,7 @@ const InvoiceList: React.FC = () => {
                   <Box sx={{ flex: 1 }}>
                     <Link
                       onClick={() => {
-                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
                         navigate(`${basePath}/invoices/${invoice.id}`);
                       }}
                       sx={{
@@ -634,7 +634,7 @@ const InvoiceList: React.FC = () => {
                   <TableCell>
                     <Link
                       onClick={() => {
-                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
                         navigate(`${basePath}/invoices/${invoice.id}`);
                       }}
                       sx={{

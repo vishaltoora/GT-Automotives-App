@@ -66,7 +66,7 @@ const CashReport: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Button startIcon={<BackIcon />} onClick={() => {
-          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : '/customer';
+          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
           navigate(`${basePath}/invoices`);
         }}>
           Back to Invoices
