@@ -324,6 +324,7 @@ model Appointment {
   duration        Int                     @default(60) // minutes
   serviceType     String
   appointmentType AppointmentType         @default(AT_GARAGE)
+  serviceAddress  String?                 // Address for mobile service appointments (required when appointmentType is MOBILE_SERVICE)
   status          AppointmentStatus
   notes           String?
   paymentAmount   Float?                  // Total payment amount collected
@@ -857,6 +858,7 @@ enum SmsStatus {
 enum SmsType {
   APPOINTMENT_REMINDER     // 7-day, 3-day, 24-hour reminders (to customers)
   APPOINTMENT_CONFIRMATION // Immediate booking confirmation (to customers)
+  APPOINTMENT_UPDATE       // Appointment date/time changed notification (to customers)
   APPOINTMENT_CANCELLATION // Appointment cancelled notification (to customers)
   SERVICE_STATUS           // Service started, in progress, etc. (to customers)
   SERVICE_COMPLETE         // Ready for pickup (to customers)

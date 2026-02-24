@@ -71,6 +71,11 @@ export class AppointmentsService {
       duration: dto.duration,
     });
 
+    // Validate serviceAddress is required for MOBILE_SERVICE appointments
+    if (dto.appointmentType === 'MOBILE_SERVICE' && !dto.serviceAddress) {
+      throw new BadRequestException('Service address is required for mobile service appointments');
+    }
+
     // Validate customer exists
     const customer = await this.prisma.customer.findUnique({
       where: { id: dto.customerId },
@@ -152,6 +157,7 @@ export class AppointmentsService {
         duration: dto.duration,
         serviceType: dto.serviceType,
         appointmentType: dto.appointmentType,
+        serviceAddress: dto.serviceAddress,
         notes: dto.notes,
         status: AppointmentStatus.SCHEDULED,
         bookedBy,
@@ -226,7 +232,7 @@ export class AppointmentsService {
         scheduledTime: appointment.scheduledTime,
         duration: appointment.duration,
         appointmentType: appointment.appointmentType as 'AT_GARAGE' | 'MOBILE_SERVICE',
-        address: appointment.appointmentType === 'MOBILE_SERVICE' ? (appointment.customer.address || undefined) : undefined,
+        address: appointment.appointmentType === 'MOBILE_SERVICE' ? (appointment.serviceAddress || undefined) : undefined,
         notes: appointment.notes || undefined,
       }).catch(err => {
         console.error(`Failed to send appointment assignment email to ${employee.email}:`, err);
@@ -582,11 +588,28 @@ export class AppointmentsService {
       updateData.employeeId = employeeIds[0];
     }
 
-    return this.prisma.appointment.update({
+    const updatedAppointment = await this.prisma.appointment.update({
       where: { id },
       data: updateData,
       include: this.appointmentInclude,
     });
+
+    // Only send SMS notification if date or time ACTUALLY changed (compare with original values)
+    const originalDateStr = extractBusinessDate(appointment.scheduledDate);
+    const newDateStr = dto.scheduledDate || originalDateStr;
+    const dateChanged = newDateStr !== originalDateStr;
+    const timeChanged = dto.scheduledTime && dto.scheduledTime !== appointment.scheduledTime;
+
+    if (dateChanged || timeChanged) {
+      console.log(`[SMS] Date/time changed - sending update SMS. Date: ${originalDateStr} -> ${newDateStr}, Time: ${appointment.scheduledTime} -> ${dto.scheduledTime}`);
+      await this.smsService.sendAppointmentUpdate(id).catch(err => {
+        console.error(`[SMS] Failed to send appointment update SMS: ${err.message}`);
+      });
+    } else {
+      console.log(`[SMS] No date/time change detected - skipping SMS`);
+    }
+
+    return updatedAppointment;
   }
 
   /**

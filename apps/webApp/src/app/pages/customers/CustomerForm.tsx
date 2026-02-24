@@ -17,6 +17,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { customerService, CreateCustomerDto, UpdateCustomerDto } from '../../requests/customer.requests';
 import { PhoneInput } from '../../components/common/PhoneInput';
+import { AddressAutocomplete } from '../../components/common/AddressAutocomplete';
 import axios from 'axios';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
@@ -242,14 +243,12 @@ export function CustomerForm() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Address"
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={handleChange('address')}
+                  onChange={(address) => setFormData({ ...formData, address })}
                   disabled={saving}
-                  multiline
-                  rows={2}
+                  label="Address"
+                  helperText="Start typing to search addresses"
                 />
               </Grid>
               <Grid size={12}>

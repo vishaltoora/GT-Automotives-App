@@ -378,6 +378,80 @@ export class SmsService {
   }
 
   /**
+   * Send appointment update notification to customer (when date/time changes)
+   */
+  async sendAppointmentUpdate(appointmentId: string): Promise<void> {
+    this.logger.log(`📱 sendAppointmentUpdate called for appointment: ${appointmentId}`);
+
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        customer: true,
+        vehicle: true,
+      },
+    });
+
+    if (!appointment) {
+      this.logger.warn(`❌ Appointment not found: ${appointmentId}`);
+      return;
+    }
+
+    if (!appointment.customer.phone) {
+      this.logger.warn(`❌ Customer ${appointment.customer.firstName} ${appointment.customer.lastName} has no phone number`);
+      return;
+    }
+
+    this.logger.log(`✅ Sending update SMS to ${appointment.customer.phone}`);
+
+    // Format date correctly using timezone-aware utility
+    const businessDate = extractBusinessDate(appointment.scheduledDate);
+
+    // CRITICAL: Format date from business date string directly to avoid timezone issues
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    const [year, month, day] = businessDate.split('-').map(Number);
+    const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
+    const weekday = weekdayNames[dateForWeekday.getUTCDay()];
+    const monthName = monthNames[month - 1];
+    const formattedDate = `${weekday}, ${monthName} ${day}`;
+
+    // Format time in 12-hour format
+    const [hours, minutes] = appointment.scheduledTime.split(':');
+    const timeDate = new Date();
+    timeDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    const time = timeDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const serviceType = appointment.serviceType || 'service';
+    const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
+    const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
+
+    const greeting = this.getTimeBasedGreeting(appointment.customer.firstName);
+    let message = `${greeting}, your appointment at GT Automotives has been updated.\n\n`;
+    message += `NEW Date: ${formattedDate} at ${time}\n`;
+    message += `Service: ${serviceType}\n`;
+    if (vehicle) {
+      message += `Vehicle: ${vehicle}\n`;
+    }
+    message += `\nQuestions? Call/text at ${contactPhone}\n\n`;
+    message += `GT Automotives\nPrince George, BC`;
+
+    await this.sendSms({
+      to: appointment.customer.phone,
+      body: message,
+      type: SmsType.APPOINTMENT_UPDATE,
+      appointmentId: appointment.id,
+      customerId: appointment.customer.id,
+    });
+  }
+
+  /**
    * Send appointment reminder to customer
    */
   async sendAppointmentReminder(appointmentId: string, daysAhead: number): Promise<void> {
@@ -508,9 +582,9 @@ export class SmsService {
       `Customer: ${customerName}\n` +
       `Date: ${formattedDate} at ${time}\n`;
 
-    // Add customer address for mobile service appointments
-    if (isMobileService && appointment.customer.address) {
-      message += `Location: ${appointment.customer.address}\n`;
+    // Add service address for mobile service appointments
+    if (isMobileService && appointment.serviceAddress) {
+      message += `Location: ${appointment.serviceAddress}\n`;
     }
 
     message += `\nGT Automotives`;

@@ -86,6 +86,7 @@ export interface CreateAppointmentRequest {
   duration: number;
   serviceType: string;
   appointmentType: string;
+  serviceAddress?: string; // Required for MOBILE_SERVICE appointments
   notes?: string;
 }
 
@@ -98,6 +99,7 @@ export interface UpdateAppointmentRequest {
   serviceType?: string;
   status?: AppointmentStatus;
   appointmentType?: string;
+  serviceAddress?: string; // Address for MOBILE_SERVICE appointments
   notes?: string;
   paymentAmount?: number;
   paymentBreakdown?: PaymentEntry[]; // Array of payment entries

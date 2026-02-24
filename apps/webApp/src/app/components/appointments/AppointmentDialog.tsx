@@ -33,6 +33,7 @@ import { DateTimeSelector } from './DateTimeSelector';
 import { ServiceTypeSelector } from './ServiceTypeSelector';
 import { EmployeeChipSelector } from './EmployeeChipSelector';
 import { VehicleSelector } from './VehicleSelector';
+import { AddressAutocomplete } from '../common/AddressAutocomplete';
 import { getCurrentTimeRounded, isToday } from '../../utils/timeUtils';
 
 interface AppointmentDialogProps {
@@ -71,6 +72,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     duration: 60,
     serviceType: preselectedServiceType || 'TIRE_CHANGE',
     appointmentType: 'AT_GARAGE',
+    serviceAddress: '', // Required for MOBILE_SERVICE appointments
     notes: '',
   });
 
@@ -87,16 +89,24 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           appointment.employees?.map((e) => e.employeeId) ||
           (appointment.employeeId ? [appointment.employeeId] : []);
 
+        // Parse date without timezone conversion - extract YYYY-MM-DD and create local date
+        const dateStr = appointment.scheduledDate instanceof Date
+          ? appointment.scheduledDate.toISOString().split('T')[0]
+          : String(appointment.scheduledDate).split('T')[0];
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const localDate = new Date(year, month - 1, day); // Creates local midnight
+
         setFormData({
           customerId: appointment.customerId,
           vehicleId: appointment.vehicleId || '',
           employeeId: appointment.employeeId || '',
           employeeIds: employeeIds,
-          scheduledDate: new Date(appointment.scheduledDate),
+          scheduledDate: localDate,
           scheduledTime: appointment.scheduledTime,
           duration: appointment.duration,
           serviceType: appointment.serviceType,
           appointmentType: appointment.appointmentType || 'AT_GARAGE',
+          serviceAddress: (appointment as any).serviceAddress || '',
           notes: appointment.notes || '',
         });
 
@@ -256,6 +266,12 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         return;
       }
 
+      // Validate service address for mobile service
+      if (formData.appointmentType === 'MOBILE_SERVICE' && !formData.serviceAddress) {
+        setError('Please enter the service address for mobile service');
+        return;
+      }
+
       // Validate employee availability if manually selected
       // Skip frontend validation when editing - backend will properly exclude current appointment
       if (formData.employeeIds.length > 0 && !appointment) {
@@ -293,6 +309,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           duration: formData.duration,
           serviceType: formData.serviceType,
           appointmentType: formData.appointmentType,
+          serviceAddress: formData.appointmentType === 'MOBILE_SERVICE' ? formData.serviceAddress : undefined,
           notes: formData.notes || undefined,
         });
       } else {
@@ -306,6 +323,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           duration: formData.duration,
           serviceType: formData.serviceType,
           appointmentType: formData.appointmentType,
+          serviceAddress: formData.appointmentType === 'MOBILE_SERVICE' ? formData.serviceAddress : undefined,
           notes: formData.notes || undefined,
         });
       }
@@ -340,6 +358,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       duration: 60,
       serviceType: preselectedServiceType || 'TIRE_CHANGE',
       appointmentType: 'AT_GARAGE',
+      serviceAddress: '',
       notes: '',
     });
     setSelectedCustomer(null);
@@ -430,6 +449,26 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 </RadioGroup>
               </FormControl>
             </Grid>
+
+            {/* Service Address (required for Mobile Service) */}
+            {formData.appointmentType === 'MOBILE_SERVICE' && (
+              <Grid size={{ xs: 12 }}>
+                <AddressAutocomplete
+                  value={formData.serviceAddress}
+                  onChange={(address) =>
+                    setFormData((prev) => ({ ...prev, serviceAddress: address }))
+                  }
+                  label="Service Address"
+                  required
+                  error={formData.appointmentType === 'MOBILE_SERVICE' && !formData.serviceAddress}
+                  helperText={
+                    formData.appointmentType === 'MOBILE_SERVICE' && !formData.serviceAddress
+                      ? 'Address is required for mobile service'
+                      : ''
+                  }
+                />
+              </Grid>
+            )}
 
             {/* 2. Customer Selection */}
             <Grid size={{ xs: 12 }} sx={{ mt: -1 }}>

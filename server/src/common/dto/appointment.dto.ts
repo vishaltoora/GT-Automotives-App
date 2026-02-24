@@ -38,6 +38,10 @@ export class CreateAppointmentDto {
 
   @IsOptional()
   @IsString()
+  serviceAddress?: string; // Required for MOBILE_SERVICE appointments (validated in service)
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 }
 
@@ -75,6 +79,10 @@ export class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
   @IsOptional()
   @IsEnum(AppointmentType)
   appointmentType?: AppointmentType;
+
+  @IsOptional()
+  @IsString()
+  serviceAddress?: string; // Address for mobile service appointments
 
   @IsOptional()
   @IsString()

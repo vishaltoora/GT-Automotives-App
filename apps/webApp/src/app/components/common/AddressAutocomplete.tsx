@@ -12,16 +12,6 @@ import throttle from 'lodash/throttle';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-function loadScript(src: string, position: HTMLElement | null, id: string) {
-  if (!position) return;
-
-  const script = document.createElement('script');
-  script.setAttribute('async', '');
-  script.setAttribute('id', id);
-  script.src = src;
-  position.appendChild(script);
-}
-
 const autocompleteService = { current: null as any };
 
 interface MainTextMatchedSubstrings {
@@ -67,24 +57,41 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   const [options, setOptions] = useState<readonly PlaceType[]>([]);
   const loaded = useRef(false);
 
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+
   // Load Google Maps script once
-  if (typeof window !== 'undefined' && !loaded.current) {
-    if (!document.querySelector('#google-maps')) {
-      loadScript(
-        `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`,
-        document.querySelector('head'),
-        'google-maps'
-      );
+  useEffect(() => {
+    if (typeof window === 'undefined' || loaded.current) return;
+
+    const existingScript = document.querySelector('#google-maps');
+    if (existingScript) {
+      // Script already exists, check if Google is loaded
+      if ((window as any).google?.maps?.places) {
+        setGoogleLoaded(true);
+      } else {
+        // Wait for it to load
+        existingScript.addEventListener('load', () => setGoogleLoaded(true));
+      }
+      loaded.current = true;
+      return;
     }
+
+    const script = document.createElement('script');
+    script.id = 'google-maps';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.onload = () => setGoogleLoaded(true);
+    script.onerror = () => console.error('Failed to load Google Maps script');
+    document.head.appendChild(script);
     loaded.current = true;
-  }
+  }, []);
 
   // Throttled fetch function
   const fetch = useMemo(
     () =>
       throttle(
         (
-          request: { input: string; componentRestrictions?: { country: string } },
+          request: { input: string; componentRestrictions?: { country: string }; types?: string[] },
           callback: (results?: readonly PlaceType[]) => void
         ) => {
           autocompleteService.current?.getPlacePredictions(request, callback);
@@ -94,15 +101,16 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     []
   );
 
-  // Initialize autocomplete service
+  // Initialize autocomplete service when Google loads
+  useEffect(() => {
+    if (googleLoaded && !autocompleteService.current && (window as any).google?.maps?.places) {
+      autocompleteService.current = new (window as any).google.maps.places.AutocompleteService();
+    }
+  }, [googleLoaded]);
+
+  // Fetch predictions when input changes
   useEffect(() => {
     let active = true;
-
-    if (!autocompleteService.current && (window as any).google) {
-      autocompleteService.current = new (
-        window as any
-      ).google.maps.places.AutocompleteService();
-    }
 
     if (!autocompleteService.current) {
       return undefined;
@@ -117,6 +125,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       {
         input: inputValue,
         componentRestrictions: { country: 'ca' }, // Restrict to Canada
+        types: ['address'], // Include all address types (street addresses, routes, etc.)
       },
       (results?: readonly PlaceType[]) => {
         if (active) {
@@ -138,7 +147,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     return () => {
       active = false;
     };
-  }, [value, inputValue, fetch]);
+  }, [value, inputValue, fetch, googleLoaded]);
 
   // Sync with external fieldValue
   useEffect(() => {
@@ -157,15 +166,20 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     }
   }, [fieldValue]);
 
-  const handleChange = (event: any, newValue: PlaceType | null) => {
-    if (newValue) {
+  const handleChange = (event: any, newValue: PlaceType | string | null) => {
+    if (typeof newValue === 'string') {
+      // User typed a custom address (freeSolo mode)
+      setFieldValue(newValue);
+      setValue(null);
+    } else if (newValue) {
+      // User selected from dropdown
       setFieldValue(newValue.description);
       setValue(newValue);
+      setOptions([newValue, ...options]);
     } else {
       setFieldValue('');
       setValue(null);
     }
-    setOptions(newValue ? [newValue, ...options] : options);
   };
 
   // Fallback if no API key
@@ -187,6 +201,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   return (
     <Autocomplete
       id="google-address-autocomplete"
+      freeSolo // Allow custom addresses not in Google Places
       getOptionLabel={(option) =>
         typeof option === 'string' ? option : option.description
       }
@@ -200,6 +215,10 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       onChange={handleChange}
       onInputChange={(event, newInputValue) => {
         setInputValue(newInputValue);
+        // For freeSolo mode, also update the field value as user types
+        if (event?.type === 'change') {
+          setFieldValue(newInputValue);
+        }
       }}
       disabled={disabled}
       renderInput={(params) => (

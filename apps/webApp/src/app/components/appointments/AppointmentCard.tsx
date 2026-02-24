@@ -116,6 +116,7 @@ export interface AppointmentCardProps {
     duration: number;
     serviceType: string;
     appointmentType?: string;
+    serviceAddress?: string;
     status: string;
     notes?: string;
     customer: {
@@ -332,7 +333,39 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   {formatPhoneNumber(appointment.customer.phone)}
                 </Typography>
               )}
-              {appointment.customer.address && (
+              {/* Show service address for mobile service, otherwise show customer address */}
+              {appointment.appointmentType === 'MOBILE_SERVICE' && appointment.serviceAddress ? (
+                <Box
+                  component="a"
+                  href={`https://maps.google.com/?q=${encodeURIComponent(appointment.serviceAddress)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 0.5,
+                    mt: 0.5,
+                    textDecoration: 'none',
+                    color: 'primary.main',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  <LocationOnIcon sx={{ fontSize: '0.875rem', mt: 0.25, flexShrink: 0 }} />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {appointment.serviceAddress}
+                  </Typography>
+                </Box>
+              ) : appointment.customer.address && (
                 <Box
                   component="a"
                   href={`https://maps.google.com/?q=${encodeURIComponent(appointment.customer.address)}`}
