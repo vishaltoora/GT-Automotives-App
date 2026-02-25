@@ -334,10 +334,23 @@ export const appointmentService = {
    * Creates an invoice with PENDING status and completes the appointment
    * Invoice is set to E_TRANSFER payment method
    */
-  async createETransferInvoice(appointmentId: string, serviceAmount: number): Promise<any> {
+  async createETransferInvoice(appointmentId: string, serviceAmount: number, tipAmount?: number): Promise<any> {
     const response = await apiClient.post(
       `/api/appointments/${appointmentId}/e-transfer-invoice`,
-      { serviceAmount }
+      { serviceAmount, tipAmount }
+    );
+    return response.data;
+  },
+
+  /**
+   * Create Square Device invoice for an appointment
+   * Creates an invoice with PAID status and completes the appointment
+   * Used when payment was received via Square physical terminal device
+   */
+  async createSquareDeviceInvoice(appointmentId: string, serviceAmount: number, tipAmount?: number): Promise<any> {
+    const response = await apiClient.post(
+      `/api/appointments/${appointmentId}/square-device-invoice`,
+      { serviceAmount, tipAmount }
     );
     return response.data;
   },

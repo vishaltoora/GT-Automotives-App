@@ -25,6 +25,7 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 interface CreateInvoiceFromAppointmentParams {
   appointmentId: string;
   serviceAmount: number; // Base amount before taxes
+  tipAmount?: number; // Optional tip amount (not subject to tax)
   squarePaymentId?: string; // Optional: link to Square payment
   userId: string; // User creating the invoice
   paymentMethod?: 'CREDIT_CARD' | 'E_TRANSFER' | 'CASH'; // Payment method
@@ -50,6 +51,7 @@ export class AppointmentInvoiceService {
     const {
       appointmentId,
       serviceAmount,
+      tipAmount = 0,
       squarePaymentId,
       userId,
       paymentMethod = 'CREDIT_CARD',
@@ -88,8 +90,10 @@ export class AppointmentInvoiceService {
       );
     }
 
-    // 3. Calculate taxes (GST 5% + PST 7%)
+    // 3. Calculate taxes (GST 5% + PST 7%) - tip is NOT taxed
     const taxes = calculateTaxes(serviceAmount);
+    const tip = tipAmount || 0;
+    const totalWithTip = taxes.totalAmount + tip;
 
     // 4. Get service description from appointment type
     const serviceDescription = this.getServiceDescription(appointment);
@@ -107,10 +111,38 @@ export class AppointmentInvoiceService {
     const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber();
 
     this.logger.log(
-      `Creating invoice for appointment ${appointmentId}: ${serviceDescription} - $${taxes.totalAmount}`,
+      `Creating invoice for appointment ${appointmentId}: ${serviceDescription} - $${totalWithTip}${tip > 0 ? ` (includes $${tip} tip)` : ''}`,
     );
 
-    // 7. Create invoice with single "OTHER" item
+    // 7. Build invoice items array
+    const invoiceItems: Array<{
+      itemType: InvoiceItemType;
+      description: string;
+      quantity: number;
+      unitPrice: Decimal;
+      total: Decimal;
+    }> = [
+      {
+        itemType: InvoiceItemType.OTHER,
+        description: serviceDescription,
+        quantity: 1,
+        unitPrice: new Decimal(serviceAmount),
+        total: new Decimal(serviceAmount),
+      },
+    ];
+
+    // Add tips as separate line item if present (not taxed)
+    if (tip > 0) {
+      invoiceItems.push({
+        itemType: InvoiceItemType.OTHER,
+        description: 'Tips',
+        quantity: 1,
+        unitPrice: new Decimal(tip),
+        total: new Decimal(tip),
+      });
+    }
+
+    // 8. Create invoice
     const invoice = await this.invoiceRepository.createWithItems(
       {
         invoiceNumber,
@@ -120,28 +152,20 @@ export class AppointmentInvoiceService {
           : undefined,
         company: { connect: { id: defaultCompany.id } },
         appointment: { connect: { id: appointmentId } }, // Link to appointment
-        subtotal: new Decimal(taxes.subtotal),
+        subtotal: new Decimal(taxes.subtotal + tip), // Subtotal includes tip (but tip is not taxed)
         gstRate: new Decimal(taxes.gstRate),
         gstAmount: new Decimal(taxes.gstAmount),
         pstRate: new Decimal(taxes.pstRate),
         pstAmount: new Decimal(taxes.pstAmount),
         taxRate: new Decimal(taxes.gstRate + taxes.pstRate),
         taxAmount: new Decimal(taxes.gstAmount + taxes.pstAmount),
-        total: new Decimal(taxes.totalAmount),
+        total: new Decimal(totalWithTip), // Total includes tip
         status, // Use provided status (PAID for Square, PENDING for E-Transfer)
         paymentMethod, // Use provided payment method
         createdBy: userId,
         paidAt: status === 'PAID' ? new Date() : undefined,
       },
-      [
-        {
-          itemType: InvoiceItemType.OTHER,
-          description: serviceDescription,
-          quantity: 1,
-          unitPrice: new Decimal(serviceAmount),
-          total: new Decimal(serviceAmount),
-        },
-      ],
+      invoiceItems,
     );
 
     this.logger.log(

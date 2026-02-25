@@ -76,12 +76,13 @@ export class SquarePaymentController {
     @Body() paymentDto: CreateAppointmentPaymentDto,
   ): Promise<SquarePaymentResponseDto> {
     this.logger.log(
-      `Creating Square payment for appointment ${paymentDto.appointmentId}: $${paymentDto.serviceAmount}`,
+      `Creating Square payment for appointment ${paymentDto.appointmentId}: $${paymentDto.serviceAmount}${paymentDto.tipAmount ? ` (tip: $${paymentDto.tipAmount})` : ''}`,
     );
     return this.squarePaymentService.createAppointmentPayment(
       paymentDto.appointmentId,
       paymentDto.sourceId,
       paymentDto.serviceAmount,
+      paymentDto.tipAmount,
     );
   }
 

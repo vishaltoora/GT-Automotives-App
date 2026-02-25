@@ -32,4 +32,5 @@ export enum InvoiceItemType {
   LEVY = 'LEVY',
   DISCOUNT = 'DISCOUNT',
   DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE',
+  TIPS = 'TIPS',
 }

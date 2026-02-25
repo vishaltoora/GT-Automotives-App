@@ -43,6 +43,7 @@ import {
   Category as CategoryIcon,
   AccountBalance as AccountBalanceIcon,
   MoreVert as MoreVertIcon,
+  VolunteerActivism as TipsIcon,
 } from '@mui/icons-material';
 import { InvoiceItem } from '../../requests/invoice.requests';
 import { Company } from '../../requests/company.requests';
@@ -152,22 +153,34 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
 
   const calculateTotals = () => {
     // Calculate subtotal including discount items (which have negative values)
+    // TIPS are included in subtotal but NOT taxed
+    let taxableSubtotal = 0;
+    let tipsTotal = 0;
+
     const subtotal = items.reduce((sum, item) => {
       let itemTotal = item.quantity * item.unitPrice;
 
-      // For DISCOUNT_PERCENTAGE items, calculate based on other items
+      // For DISCOUNT_PERCENTAGE items, calculate based on other items (excluding TIPS and discounts)
       if (item.itemType === 'DISCOUNT_PERCENTAGE' && item.unitPrice) {
         const otherItemsSubtotal = items
-          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
+          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE' && i.itemType !== 'TIPS')
           .reduce((s, i) => s + (i.quantity * i.unitPrice), 0);
         itemTotal = -(otherItemsSubtotal * item.unitPrice) / 100;
+      }
+
+      // Track tips separately (not taxed)
+      if (item.itemType === 'TIPS') {
+        tipsTotal += itemTotal;
+      } else {
+        taxableSubtotal += itemTotal;
       }
 
       return sum + itemTotal;
     }, 0);
 
-    const gstAmount = subtotal * formData.gstRate;
-    const pstAmount = subtotal * formData.pstRate;
+    // Apply taxes only to taxable subtotal (excludes TIPS)
+    const gstAmount = taxableSubtotal * formData.gstRate;
+    const pstAmount = taxableSubtotal * formData.pstRate;
     const totalTax = gstAmount + pstAmount;
     const total = subtotal + totalTax;
     return { subtotal, gstAmount, pstAmount, totalTax, total };
@@ -609,7 +622,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
               mb: 3
             }}>
               <Grid container spacing={2} alignItems="center">
-                <Grid size={{ xs: 12, md: 2 }}>
+                <Grid size={{ xs: 12, md: newItem.itemType === 'TIPS' ? 4 : 2 }}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Type</InputLabel>
                     <Select
@@ -623,6 +636,17 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             itemType: selectedType,
                             description: 'ECO Fee',
                             unitPrice: 6.5,
+                            tireId: undefined,
+                            serviceId: undefined,
+                          });
+                        } else if (selectedType === 'TIPS') {
+                          // Auto-fill for TIPS - set quantity to 1
+                          setNewItem({
+                            ...newItem,
+                            itemType: selectedType,
+                            description: 'Tips',
+                            quantity: 1,
+                            unitPrice: '' as unknown as number,
                             tireId: undefined,
                             serviceId: undefined,
                           });
@@ -682,11 +706,18 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           % Discount
                         </Box>
                       </MenuItem>
+                      <MenuItem value="TIPS">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <TipsIcon fontSize="small" sx={{ color: 'green' }} />
+                          Tips
+                        </Box>
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
 
-                {newItem.itemType === 'TIRE' ? (
+                {/* Description/Selection field - hidden for TIPS */}
+                {newItem.itemType === 'TIPS' ? null : newItem.itemType === 'TIRE' ? (
                   <Grid size={{ xs: 12, md: 4 }}>
                     <Autocomplete
                       options={tires.filter(t => t.quantity > 0)}
@@ -765,24 +796,27 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                   </Grid>
                 )}
 
-                <Grid size={{ xs: 6, md: 2 }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="Quantity"
-                    value={newItem.quantity}
-                    onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
+                {/* Quantity field - hidden for TIPS */}
+                {newItem.itemType !== 'TIPS' && (
+                  <Grid size={{ xs: 6, md: 2 }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      label="Quantity"
+                      value={newItem.quantity}
+                      onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
+                      inputProps={{ min: 1 }}
+                    />
+                  </Grid>
+                )}
 
-                <Grid size={{ xs: 6, md: 2 }}>
+                <Grid size={{ xs: newItem.itemType === 'TIPS' ? 12 : 6, md: newItem.itemType === 'TIPS' ? 6 : 2 }}>
                   <TextField
                     fullWidth
                     size="small"
                     type="number"
-                    label={newItem.itemType === 'DISCOUNT' ? 'Discount Amount' : newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 'Discount Percentage' : 'Unit Price'}
+                    label={newItem.itemType === 'DISCOUNT' ? 'Discount Amount' : newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 'Discount Percentage' : newItem.itemType === 'TIPS' ? 'Tips Amount' : 'Unit Price'}
                     value={newItem.itemType === 'DISCOUNT' ? (newItem.unitPrice ? Math.abs(newItem.unitPrice) : '') : newItem.unitPrice}
                     onChange={(e) => {
                       // Allow empty string for clearing the field

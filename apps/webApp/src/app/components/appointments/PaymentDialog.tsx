@@ -17,9 +17,12 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
-  Tabs,
-  Tab,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -28,6 +31,7 @@ import {
   Delete as DeleteIcon,
   CreditCard as CreditCardIcon,
   Receipt as ReceiptIcon,
+  PointOfSale as PointOfSaleIcon,
 } from '@mui/icons-material';
 import { ServiceAmountInput } from './ServiceAmountInput';
 import { AppointmentSquarePaymentForm } from './AppointmentSquarePaymentForm';
@@ -58,7 +62,15 @@ interface PaymentDialogProps {
   isEditMode?: boolean;
 }
 
-// Cash payment tab only uses CASH method - simplified UI
+// Payment method options
+type PaymentMethodType = 'CASH' | 'E_TRANSFER' | 'SQUARE_ONLINE' | 'SQUARE_DEVICE';
+
+const PAYMENT_METHODS: { value: PaymentMethodType; label: string; icon: React.ReactNode }[] = [
+  { value: 'CASH', label: 'Cash Payment', icon: <MoneyIcon /> },
+  { value: 'E_TRANSFER', label: 'E-Transfer', icon: <ReceiptIcon /> },
+  { value: 'SQUARE_ONLINE', label: 'Pay with Square (Online)', icon: <CreditCardIcon /> },
+  { value: 'SQUARE_DEVICE', label: 'Square Device (Terminal)', icon: <PointOfSaleIcon /> },
+];
 
 export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   open,
@@ -73,13 +85,20 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Tab state (0 = Cash Payment, 1 = E-Transfer with Invoice, 2 = Pay with Square)
-  const [activeTab, setActiveTab] = useState(0);
+  // Payment method state
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('CASH');
 
   // E-Transfer with Invoice state
   const [eTransferAmount, setETransferAmount] = useState(0);
+  const [eTransferTip, setETransferTip] = useState(0);
   const [eTransferProcessing, setETransferProcessing] = useState(false);
   const [eTransferError, setETransferError] = useState<string | null>(null);
+
+  // Square Device state
+  const [squareDeviceAmount, setSquareDeviceAmount] = useState(0);
+  const [squareDeviceTip, setSquareDeviceTip] = useState(0);
+  const [squareDeviceProcessing, setSquareDeviceProcessing] = useState(false);
+  const [squareDeviceError, setSquareDeviceError] = useState<string | null>(null);
 
   // Manual payment state
   const [payments, setPayments] = useState<PaymentEntry[]>(
@@ -93,29 +112,35 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
   // Square payment state
   const [serviceAmount, setServiceAmount] = useState(0);
+  const [squareOnlineTip, setSquareOnlineTip] = useState(0);
   const [squareFormOpen, setSquareFormOpen] = useState(false);
 
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const remainingBalance = expectedAmount - totalAmount;
   const isPartialPayment = expectedAmount > 0 && totalAmount < expectedAmount;
 
-  // Handle tab change - reset amounts when switching tabs
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-    // Reset amounts for each tab when switching
-    if (newValue === 0) {
-      // Reset cash payments
+  // Handle payment method change - reset amounts when switching
+  const handlePaymentMethodChange = (event: SelectChangeEvent<PaymentMethodType>) => {
+    const newMethod = event.target.value as PaymentMethodType;
+    setPaymentMethod(newMethod);
+
+    // Reset amounts for each method when switching
+    if (newMethod === 'CASH') {
       setPayments([{ id: crypto.randomUUID(), method: 'CASH', amount: 0 }]);
       setExpectedAmount(defaultExpectedAmount);
       setPaymentNotes('');
       setErrors({});
-    } else if (newValue === 1) {
-      // Reset E-Transfer amount
+    } else if (newMethod === 'E_TRANSFER') {
       setETransferAmount(0);
+      setETransferTip(0);
       setETransferError(null);
-    } else if (newValue === 2) {
-      // Reset Square amount
+    } else if (newMethod === 'SQUARE_ONLINE') {
       setServiceAmount(0);
+      setSquareOnlineTip(0);
+    } else if (newMethod === 'SQUARE_DEVICE') {
+      setSquareDeviceAmount(0);
+      setSquareDeviceTip(0);
+      setSquareDeviceError(null);
     }
   };
 
@@ -148,7 +173,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setETransferError(null);
 
     try {
-      await appointmentService.createETransferInvoice(appointmentId, eTransferAmount);
+      await appointmentService.createETransferInvoice(appointmentId, eTransferAmount, eTransferTip > 0 ? eTransferTip : undefined);
       // Close dialog and refresh
       handleClose();
       window.location.reload();
@@ -164,14 +189,46 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
   };
 
+  // Handle Square Device invoice submission
+  const handleSquareDeviceSubmit = async () => {
+    if (squareDeviceAmount <= 0) {
+      setSquareDeviceError('Please enter a valid service amount');
+      return;
+    }
+
+    setSquareDeviceProcessing(true);
+    setSquareDeviceError(null);
+
+    try {
+      await appointmentService.createSquareDeviceInvoice(appointmentId, squareDeviceAmount, squareDeviceTip > 0 ? squareDeviceTip : undefined);
+      // Close dialog and refresh
+      handleClose();
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Square Device invoice creation failed:', err);
+      setSquareDeviceError(
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to create invoice. Please try again.'
+      );
+    } finally {
+      setSquareDeviceProcessing(false);
+    }
+  };
+
   const handleClose = () => {
     // Reset form
     setPayments([{ id: crypto.randomUUID(), method: 'CASH', amount: 0 }]);
     setPaymentNotes('');
     setServiceAmount(0);
+    setSquareOnlineTip(0);
     setETransferAmount(0);
+    setETransferTip(0);
     setETransferError(null);
-    setActiveTab(0);
+    setSquareDeviceAmount(0);
+    setSquareDeviceTip(0);
+    setSquareDeviceError(null);
+    setPaymentMethod('CASH');
     setErrors({});
     setSquareFormOpen(false);
     onClose();
@@ -283,390 +340,468 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 0 }}>
-        {/* Payment Method Tabs */}
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant={isMobile ? 'scrollable' : 'fullWidth'}
-          scrollButtons={isMobile ? 'auto' : false}
-          allowScrollButtonsMobile
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tab
-            label={isMobile ? 'Cash' : 'Cash Payment'}
-            icon={<MoneyIcon />}
-            iconPosition="start"
-          />
-          <Tab
-            label="E-Transfer"
-            icon={<ReceiptIcon />}
-            iconPosition="start"
-          />
-          <Tab
-            label={isMobile ? 'Card' : 'Pay with Square'}
-            icon={<CreditCardIcon />}
-            iconPosition="start"
-          />
-        </Tabs>
-
-        {/* Tab Content */}
-        <Box sx={{ pt: isMobile ? 2 : 3, px: isMobile ? 2 : 3, pb: isMobile ? 2 : 3 }}>
-          {/* Manual Payment Tab */}
-          {activeTab === 0 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Expected Amount Field */}
-              <TextField
-            label="Expected Amount (Optional)"
-            type="number"
-            value={expectedAmount || ''}
-            onChange={(e) => setExpectedAmount(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
-            onKeyDown={(e) => {
-              if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                e.preventDefault();
-              }
-            }}
-            fullWidth
-            InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
-            }}
-            inputProps={{
-              min: 0,
-              step: 0.01,
-            }}
-            helperText="Enter the expected total amount to track partial payments"
-            autoComplete="off"
-          />
-
-          {/* Total Amount Display */}
-          <Card
-            elevation={0}
-            sx={{
-              bgcolor: totalAmount > 0 ? 'success.light' : 'grey.100',
-              borderLeft: 4,
-              borderColor: totalAmount > 0 ? 'success.main' : 'grey.400',
-            }}
+      <DialogContent dividers sx={{ p: isMobile ? 2 : 3 }}>
+        {/* Payment Method Dropdown */}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel id="payment-method-label">Payment Method</InputLabel>
+          <Select
+            labelId="payment-method-label"
+            id="payment-method-select"
+            value={paymentMethod}
+            label="Payment Method"
+            onChange={handlePaymentMethodChange}
           >
-            <CardContent sx={{ py: 2 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: isPartialPayment ? 1 : 0,
-                }}
-              >
-                <Typography variant="body1" fontWeight="medium">
-                  Total Payment Received
-                </Typography>
-                <Typography
-                  variant="h4"
-                  fontWeight="bold"
-                  color={totalAmount > 0 ? 'success.dark' : 'text.secondary'}
-                >
-                  ${totalAmount.toFixed(2)}
-                </Typography>
-              </Box>
-              {isPartialPayment && (
+            {PAYMENT_METHODS.map((method) => (
+              <MenuItem key={method.value} value={method.value}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {method.icon}
+                  {method.label}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* Cash Payment Content */}
+        {paymentMethod === 'CASH' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Expected Amount Field */}
+            <TextField
+              label="Expected Amount (Optional)"
+              type="number"
+              value={expectedAmount || ''}
+              onChange={(e) => setExpectedAmount(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+              onKeyDown={(e) => {
+                if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                  e.preventDefault();
+                }
+              }}
+              fullWidth
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
+              inputProps={{
+                min: 0,
+                step: 0.01,
+              }}
+              helperText="Enter the expected total amount to track partial payments"
+              autoComplete="off"
+            />
+
+            {/* Total Amount Display */}
+            <Card
+              elevation={0}
+              sx={{
+                bgcolor: totalAmount > 0 ? 'success.light' : 'grey.100',
+                borderLeft: 4,
+                borderColor: totalAmount > 0 ? 'success.main' : 'grey.400',
+              }}
+            >
+              <CardContent sx={{ py: 2 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    pt: 1,
-                    borderTop: 1,
-                    borderColor: 'divider',
+                    mb: isPartialPayment ? 1 : 0,
                   }}
                 >
-                  <Typography variant="body2" color="warning.dark" fontWeight="medium">
-                    Remaining Balance Owed
+                  <Typography variant="body1" fontWeight="medium">
+                    Total Payment Received
                   </Typography>
-                  <Typography variant="h5" fontWeight="bold" color="warning.dark">
-                    ${remainingBalance.toFixed(2)}
+                  <Typography
+                    variant="h4"
+                    fontWeight="bold"
+                    color={totalAmount > 0 ? 'success.dark' : 'text.secondary'}
+                  >
+                    ${totalAmount.toFixed(2)}
                   </Typography>
                 </Box>
-              )}
-              {errors.total && (
-                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                  {errors.total}
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+                {isPartialPayment && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      pt: 1,
+                      borderTop: 1,
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Typography variant="body2" color="warning.dark" fontWeight="medium">
+                      Remaining Balance Owed
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold" color="warning.dark">
+                      ${remainingBalance.toFixed(2)}
+                    </Typography>
+                  </Box>
+                )}
+                {errors.total && (
+                  <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                    {errors.total}
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Cash Payment Entries */}
-          <Box>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                justifyContent: 'space-between',
-                alignItems: isMobile ? 'stretch' : 'center',
-                mb: 2,
-                gap: isMobile ? 1 : 0,
-              }}
-            >
-              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
-                Cash Payment Entries
-              </Typography>
-              <Button
-                startIcon={<AddIcon />}
-                onClick={handleAddPayment}
-                variant="outlined"
-                size={isMobile ? 'medium' : 'small'}
-                color="primary"
-                fullWidth={isMobile}
+            {/* Cash Payment Entries */}
+            <Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  justifyContent: 'space-between',
+                  alignItems: isMobile ? 'stretch' : 'center',
+                  mb: 2,
+                  gap: isMobile ? 1 : 0,
+                }}
               >
-                Add Another Payment
-              </Button>
-            </Box>
-
-            <Stack spacing={2}>
-              {payments.map((payment, index) => (
-                <Card
-                  key={payment.id}
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+                  Cash Payment Entries
+                </Typography>
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={handleAddPayment}
                   variant="outlined"
-                  sx={{
-                    borderRadius: 2,
-                    borderColor: errors[payment.id] ? 'error.main' : 'divider',
-                  }}
+                  size={isMobile ? 'medium' : 'small'}
+                  color="primary"
+                  fullWidth={isMobile}
                 >
-                  <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        flexDirection: isMobile ? 'column' : 'row',
-                        alignItems: isMobile ? 'stretch' : 'center',
-                        gap: isMobile ? 1.5 : 2,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                        <Chip
-                          label={`#${index + 1}`}
+                  Add Another Payment
+                </Button>
+              </Box>
+
+              <Stack spacing={2}>
+                {payments.map((payment, index) => (
+                  <Card
+                    key={payment.id}
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 2,
+                      borderColor: errors[payment.id] ? 'error.main' : 'divider',
+                    }}
+                  >
+                    <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: isMobile ? 'column' : 'row',
+                          alignItems: isMobile ? 'stretch' : 'center',
+                          gap: isMobile ? 1.5 : 2,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                          <Chip
+                            label={`#${index + 1}`}
+                            size="small"
+                            color="primary"
+                            sx={{ minWidth: 45 }}
+                          />
+                          <Chip
+                            label="Cash"
+                            size="small"
+                            variant="outlined"
+                            icon={<MoneyIcon sx={{ fontSize: 16 }} />}
+                          />
+                          {isMobile && payments.length > 1 && (
+                            <IconButton
+                              onClick={() => handleRemovePayment(payment.id)}
+                              disabled={payments.length === 1}
+                              size="small"
+                              color="error"
+                              sx={{ ml: 'auto' }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          )}
+                        </Box>
+
+                        {/* Amount */}
+                        <TextField
+                          label="Cash Amount"
+                          type="number"
+                          value={payment.amount || ''}
+                          onChange={(e) =>
+                            handlePaymentChange(payment.id, 'amount', e.target.value)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                              e.preventDefault();
+                            }
+                          }}
+                          error={!!errors[payment.id]}
+                          helperText={errors[payment.id]}
                           size="small"
-                          color="primary"
-                          sx={{ minWidth: 45 }}
+                          sx={{ width: isMobile ? '100%' : 180 }}
+                          fullWidth={isMobile}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">$</InputAdornment>
+                            ),
+                          }}
+                          inputProps={{
+                            min: 0,
+                            step: 0.01,
+                          }}
+                          autoComplete="off"
                         />
-                        <Chip
-                          label="Cash"
-                          size="small"
-                          variant="outlined"
-                          icon={<MoneyIcon sx={{ fontSize: 16 }} />}
-                        />
-                        {isMobile && payments.length > 1 && (
+
+                        {/* Delete Button - Desktop only */}
+                        {!isMobile && (
                           <IconButton
                             onClick={() => handleRemovePayment(payment.id)}
                             disabled={payments.length === 1}
                             size="small"
                             color="error"
-                            sx={{ ml: 'auto' }}
                           >
                             <DeleteIcon />
                           </IconButton>
                         )}
                       </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            </Box>
 
-                      {/* Amount */}
-                      <TextField
-                        label="Cash Amount"
-                        type="number"
-                        value={payment.amount || ''}
-                        onChange={(e) =>
-                          handlePaymentChange(payment.id, 'amount', e.target.value)
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                            e.preventDefault();
-                          }
-                        }}
-                        error={!!errors[payment.id]}
-                        helperText={errors[payment.id]}
-                        size="small"
-                        sx={{ width: isMobile ? '100%' : 180 }}
-                        fullWidth={isMobile}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">$</InputAdornment>
-                          ),
-                        }}
-                        inputProps={{
-                          min: 0,
-                          step: 0.01,
-                        }}
-                        autoComplete="off"
-                      />
+            <Divider />
 
-                      {/* Delete Button - Desktop only */}
-                      {!isMobile && (
-                        <IconButton
-                          onClick={() => handleRemovePayment(payment.id)}
-                          disabled={payments.length === 1}
-                          size="small"
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
+            {/* Payment Notes */}
+            <TextField
+              label="Payment Notes (Optional)"
+              value={paymentNotes}
+              onChange={(e) => setPaymentNotes(e.target.value)}
+              multiline
+              rows={3}
+              fullWidth
+              placeholder="e.g., Invoice number, reference number, partial payment, etc."
+            />
           </Box>
+        )}
 
-          <Divider />
+        {/* E-Transfer Content */}
+        {paymentMethod === 'E_TRANSFER' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2" fontWeight={500} gutterBottom>
+                E-Transfer with Invoice
+              </Typography>
+              <Typography variant="caption">
+                Enter the service amount to calculate taxes (GST + PST). An invoice will be automatically created and marked as PAID, and the appointment will be marked as completed.
+              </Typography>
+            </Alert>
 
-              {/* Payment Notes */}
-              <TextField
-                label="Payment Notes (Optional)"
-                value={paymentNotes}
-                onChange={(e) => setPaymentNotes(e.target.value)}
-                multiline
-                rows={3}
-                fullWidth
-                placeholder="e.g., Invoice number, reference number, partial payment, etc."
-              />
-            </Box>
-          )}
-
-          {/* E-Transfer with Invoice Tab */}
-          {activeTab === 1 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="body2" fontWeight={500} gutterBottom>
-                  E-Transfer with Invoice
-                </Typography>
-                <Typography variant="caption">
-                  Enter the service amount to calculate taxes (GST + PST). An invoice will be automatically created and marked as PAID, and the appointment will be marked as completed.
-                </Typography>
-              </Alert>
-
-              {/* Expected Amount Field - Reference for user */}
-              {defaultExpectedAmount > 0 && (
-                <Card
-                  elevation={0}
-                  sx={{
-                    bgcolor: 'info.light',
-                    borderLeft: 4,
-                    borderColor: 'info.main',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="info.dark" fontWeight="medium">
-                        Expected Amount (Reference)
-                      </Typography>
-                      <Typography variant="h6" fontWeight="bold" color="info.dark">
-                        ${defaultExpectedAmount.toFixed(2)}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Error Message */}
-              {eTransferError && (
-                <Alert severity="error" onClose={() => setETransferError(null)}>
-                  {eTransferError}
-                </Alert>
-              )}
-
-              {/* Service Amount Input with Tax Calculation */}
-              <ServiceAmountInput
-                value={eTransferAmount}
-                onChange={setETransferAmount}
-                disabled={eTransferProcessing}
-              />
-
-              {/* Instructions */}
-              <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
-                <CardContent>
-                  <Typography variant="subtitle2" gutterBottom>
-                    📋 What happens next:
-                  </Typography>
-                  <Box component="ol" sx={{ pl: 2, m: 0 }}>
-                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                      Invoice is created with calculated taxes (GST 5% + PST 7%)
+            {/* Expected Amount Field - Reference for user */}
+            {defaultExpectedAmount > 0 && (
+              <Card
+                elevation={0}
+                sx={{
+                  bgcolor: 'info.light',
+                  borderLeft: 4,
+                  borderColor: 'info.main',
+                }}
+              >
+                <CardContent sx={{ py: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" color="info.dark" fontWeight="medium">
+                      Expected Amount (Reference)
                     </Typography>
-                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                      Invoice is marked as PAID with E-Transfer payment method
-                    </Typography>
-                    <Typography component="li" variant="body2">
-                      Appointment is marked as COMPLETED
+                    <Typography variant="h6" fontWeight="bold" color="info.dark">
+                      ${defaultExpectedAmount.toFixed(2)}
                     </Typography>
                   </Box>
                 </CardContent>
               </Card>
-            </Box>
-          )}
+            )}
 
-          {/* Square Payment Tab */}
-          {activeTab === 2 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="body2" fontWeight={500} gutterBottom>
-                  Pay with Card (Square)
-                </Typography>
-                <Typography variant="caption">
-                  Enter the service amount and click "Pay with Card" to open a secure payment form. The customer can pay with credit card, debit card, Apple Pay, or Google Pay. Once payment is successful, the appointment will be automatically marked as completed and an invoice will be created.
-                </Typography>
+            {/* Error Message */}
+            {eTransferError && (
+              <Alert severity="error" onClose={() => setETransferError(null)}>
+                {eTransferError}
               </Alert>
+            )}
 
-              {/* Expected Amount Field - Reference for user */}
-              {defaultExpectedAmount > 0 && (
-                <Card
-                  elevation={0}
-                  sx={{
-                    bgcolor: 'info.light',
-                    borderLeft: 4,
-                    borderColor: 'info.main',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="info.dark" fontWeight="medium">
-                        Expected Amount (Reference)
-                      </Typography>
-                      <Typography variant="h6" fontWeight="bold" color="info.dark">
-                        ${defaultExpectedAmount.toFixed(2)}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              )}
+            {/* Service Amount Input with Tax Calculation */}
+            <ServiceAmountInput
+              value={eTransferAmount}
+              onChange={setETransferAmount}
+              tipAmount={eTransferTip}
+              onTipChange={setETransferTip}
+              showTip={true}
+              disabled={eTransferProcessing}
+            />
 
-              {/* Service Amount Input with Tax Calculation */}
-              <ServiceAmountInput
-                value={serviceAmount}
-                onChange={setServiceAmount}
-                disabled={false}
-              />
-
-              {/* Instructions */}
-              <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
-                <CardContent>
-                  <Typography variant="subtitle2" gutterBottom>
-                    📋 What happens next:
+            {/* Instructions */}
+            <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  What happens next:
+                </Typography>
+                <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Invoice is created with calculated taxes (GST 5% + PST 7%)
                   </Typography>
-                  <Box component="ol" sx={{ pl: 2, m: 0 }}>
-                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                      Secure payment form opens with embedded card entry
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Tip (if any) is added as a separate line item (no tax)
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Invoice is marked as PAID with E-Transfer payment method
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    Appointment is marked as COMPLETED
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* Square Online Content */}
+        {paymentMethod === 'SQUARE_ONLINE' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2" fontWeight={500} gutterBottom>
+                Pay with Card (Square)
+              </Typography>
+              <Typography variant="caption">
+                Enter the service amount and click "Pay with Card" to open a secure payment form. The customer can pay with credit card, debit card, Apple Pay, or Google Pay. Once payment is successful, the appointment will be automatically marked as completed and an invoice will be created.
+              </Typography>
+            </Alert>
+
+            {/* Expected Amount Field - Reference for user */}
+            {defaultExpectedAmount > 0 && (
+              <Card
+                elevation={0}
+                sx={{
+                  bgcolor: 'info.light',
+                  borderLeft: 4,
+                  borderColor: 'info.main',
+                }}
+              >
+                <CardContent sx={{ py: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" color="info.dark" fontWeight="medium">
+                      Expected Amount (Reference)
                     </Typography>
-                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                      Customer enters card details (never stored on our servers)
-                    </Typography>
-                    <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                      Invoice is automatically created and marked as PAID
-                    </Typography>
-                    <Typography component="li" variant="body2">
-                      Appointment is marked as COMPLETED
+                    <Typography variant="h6" fontWeight="bold" color="info.dark">
+                      ${defaultExpectedAmount.toFixed(2)}
                     </Typography>
                   </Box>
                 </CardContent>
               </Card>
-            </Box>
-          )}
-        </Box>
+            )}
+
+            {/* Service Amount Input with Tax Calculation */}
+            <ServiceAmountInput
+              value={serviceAmount}
+              onChange={setServiceAmount}
+              tipAmount={squareOnlineTip}
+              onTipChange={setSquareOnlineTip}
+              showTip={true}
+              disabled={false}
+            />
+
+            {/* Instructions */}
+            <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  What happens next:
+                </Typography>
+                <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Secure payment form opens with embedded card entry
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Customer enters card details (never stored on our servers)
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Invoice is automatically created with tip (if any) - no tax on tips
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    Appointment is marked as COMPLETED
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* Square Device Content */}
+        {paymentMethod === 'SQUARE_DEVICE' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2" fontWeight={500} gutterBottom>
+                Square Device Payment
+              </Typography>
+              <Typography variant="caption">
+                Use this option when the customer has already paid via the physical Square terminal device. Enter the service amount to calculate taxes (GST + PST). An invoice will be automatically created and marked as PAID with Credit Card payment method.
+              </Typography>
+            </Alert>
+
+            {/* Expected Amount Field - Reference for user */}
+            {defaultExpectedAmount > 0 && (
+              <Card
+                elevation={0}
+                sx={{
+                  bgcolor: 'info.light',
+                  borderLeft: 4,
+                  borderColor: 'info.main',
+                }}
+              >
+                <CardContent sx={{ py: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" color="info.dark" fontWeight="medium">
+                      Expected Amount (Reference)
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="info.dark">
+                      ${defaultExpectedAmount.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Error Message */}
+            {squareDeviceError && (
+              <Alert severity="error" onClose={() => setSquareDeviceError(null)}>
+                {squareDeviceError}
+              </Alert>
+            )}
+
+            {/* Service Amount Input with Tax Calculation */}
+            <ServiceAmountInput
+              value={squareDeviceAmount}
+              onChange={setSquareDeviceAmount}
+              tipAmount={squareDeviceTip}
+              onTipChange={setSquareDeviceTip}
+              showTip={true}
+              disabled={squareDeviceProcessing}
+            />
+
+            {/* Instructions */}
+            <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  What happens next:
+                </Typography>
+                <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Invoice is created with calculated taxes (GST 5% + PST 7%)
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Tip (if any) is added as a separate line item (no tax)
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                    Invoice is marked as PAID with Credit Card payment method
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    Appointment is marked as COMPLETED
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions
@@ -686,8 +821,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           Cancel
         </Button>
 
-        {/* Manual Payment Button */}
-        {activeTab === 0 && (
+        {/* Cash Payment Button */}
+        {paymentMethod === 'CASH' && (
           <Button
             onClick={handleSubmit}
             variant="contained"
@@ -701,8 +836,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           </Button>
         )}
 
-        {/* E-Transfer with Invoice Button */}
-        {activeTab === 1 && (
+        {/* E-Transfer Button */}
+        {paymentMethod === 'E_TRANSFER' && (
           <Button
             onClick={handleETransferSubmit}
             variant={eTransferAmount <= 0 ? 'outlined' : 'contained'}
@@ -724,8 +859,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           </Button>
         )}
 
-        {/* Square Payment Button */}
-        {activeTab === 2 && (
+        {/* Square Online Button */}
+        {paymentMethod === 'SQUARE_ONLINE' && (
           <Button
             onClick={handleOpenSquareForm}
             variant={serviceAmount <= 0 ? 'outlined' : 'contained'}
@@ -746,6 +881,29 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             Pay with Card
           </Button>
         )}
+
+        {/* Square Device Button */}
+        {paymentMethod === 'SQUARE_DEVICE' && (
+          <Button
+            onClick={handleSquareDeviceSubmit}
+            variant={squareDeviceAmount <= 0 ? 'outlined' : 'contained'}
+            color="secondary"
+            startIcon={squareDeviceProcessing ? <CircularProgress size={20} color="inherit" /> : <PointOfSaleIcon />}
+            disabled={squareDeviceAmount <= 0 || squareDeviceProcessing}
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
+            sx={squareDeviceAmount <= 0 ? {
+              borderColor: 'grey.400',
+              color: 'grey.500',
+              '&.Mui-disabled': {
+                borderColor: 'grey.400',
+                color: 'grey.500',
+              },
+            } : {}}
+          >
+            {squareDeviceProcessing ? 'Creating Invoice...' : 'Create Invoice & Complete'}
+          </Button>
+        )}
       </DialogActions>
 
       {/* Square Payment Form Dialog */}
@@ -754,6 +912,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         onClose={() => setSquareFormOpen(false)}
         appointmentId={appointmentId}
         serviceAmount={serviceAmount}
+        tipAmount={squareOnlineTip > 0 ? squareOnlineTip : undefined}
         onPaymentSuccess={handleSquarePaymentSuccess}
       />
     </Dialog>

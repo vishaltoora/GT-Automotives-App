@@ -75,6 +75,11 @@ export class CreateAppointmentPaymentDto {
   @IsNumber()
   @Min(0.01)
   serviceAmount!: number; // Base amount before taxes (GST + PST will be calculated)
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tipAmount?: number; // Optional tip amount (not subject to tax)
 }
 
 export class AppointmentCheckoutResponseDto {

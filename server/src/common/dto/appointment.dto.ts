@@ -148,4 +148,20 @@ export class CreateETransferInvoiceDto {
   @IsNumber()
   @IsPositive()
   serviceAmount!: number; // Base service amount before taxes
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tipAmount?: number; // Optional tip amount (not subject to tax)
+}
+
+export class CreateSquareDeviceInvoiceDto {
+  @IsNumber()
+  @IsPositive()
+  serviceAmount!: number; // Base service amount before taxes
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tipAmount?: number; // Optional tip amount (not subject to tax)
 }

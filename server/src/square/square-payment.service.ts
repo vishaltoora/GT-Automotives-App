@@ -234,6 +234,7 @@ export class SquarePaymentService {
     appointmentId: string,
     sourceId: string,
     serviceAmount: number,
+    tipAmount?: number,
   ): Promise<SquarePaymentResponseDto> {
     try {
       // 1. Verify appointment exists and is IN_PROGRESS
@@ -260,8 +261,10 @@ export class SquarePaymentService {
         );
       }
 
-      // 2. Calculate taxes (GST 5% + PST 7%)
+      // 2. Calculate taxes (GST 5% + PST 7%) - tip is not taxed
       const taxes = calculateTaxes(serviceAmount);
+      const tip = tipAmount || 0;
+      const totalWithTip = taxes.totalAmount + tip;
 
       // 3. Get service description
       const serviceLabel =
@@ -288,13 +291,14 @@ export class SquarePaymentService {
       const idempotencyKey = randomUUID();
 
       // 5. Convert amount to cents (Square requires amounts in smallest currency unit)
+      // Total includes tip (if any)
       const amountMoney = {
-        amount: BigInt(Math.round(taxes.totalAmount * 100)),
+        amount: BigInt(Math.round(totalWithTip * 100)),
         currency: 'CAD' as any,
       };
 
       this.logger.log(
-        `Creating Square payment for appointment ${appointmentId}: ${description} - $${taxes.totalAmount}`,
+        `Creating Square payment for appointment ${appointmentId}: ${description} - $${totalWithTip}${tip > 0 ? ` (includes $${tip} tip)` : ''}`,
       );
 
       // 6. Create payment with Square
@@ -330,7 +334,7 @@ export class SquarePaymentService {
       const processingFee = payment.processingFee?.[0]?.amountMoney?.amount
         ? Number(payment.processingFee[0].amountMoney.amount) / 100
         : undefined;
-      const netAmount = processingFee ? taxes.totalAmount - processingFee : taxes.totalAmount;
+      const netAmount = processingFee ? totalWithTip - processingFee : totalWithTip;
 
       // 9. Map Square status
       const status = this.mapSquareStatus(payment.status || 'PENDING');
@@ -354,6 +358,7 @@ export class SquarePaymentService {
       const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
         appointmentId,
         serviceAmount: taxes.subtotal, // Pass subtotal, service will calculate taxes
+        tipAmount: tip > 0 ? tip : undefined, // Pass tip amount if present
         squarePaymentId: payment.id!,
         userId: appointment.bookedBy || 'SYSTEM', // Use bookedBy as creator, fallback to SYSTEM
       });
@@ -367,7 +372,7 @@ export class SquarePaymentService {
         invoice: {
           connect: { id: invoice.id },
         },
-        amount: taxes.totalAmount,
+        amount: totalWithTip, // Total including tip
         currency: 'CAD',
         status,
         cardBrand,
@@ -386,6 +391,7 @@ export class SquarePaymentService {
           serviceAmount: taxes.subtotal,
           gstAmount: taxes.gstAmount,
           pstAmount: taxes.pstAmount,
+          tipAmount: tip > 0 ? tip : undefined,
         } as any,
       });
 
@@ -397,19 +403,19 @@ export class SquarePaymentService {
         data: {
           status: 'COMPLETED',
           paymentDate: new Date(), // Set payment date for EOD summary
-          paymentAmount: taxes.totalAmount, // Total amount including taxes
+          paymentAmount: totalWithTip, // Total amount including taxes and tip
           paymentBreakdown: [
             {
               id: this.generatePaymentEntryId(),
               method: 'CREDIT_CARD',
-              amount: taxes.totalAmount,
+              amount: totalWithTip, // Total including tip
             },
           ], // Consistent with manual payment format
         },
       });
 
       this.logger.log(
-        `Appointment ${appointmentId} marked as COMPLETED with payment $${taxes.totalAmount} and invoice ${invoice.invoiceNumber} marked as PAID (payment status: ${status})`,
+        `Appointment ${appointmentId} marked as COMPLETED with payment $${totalWithTip}${tip > 0 ? ` (includes $${tip} tip)` : ''} and invoice ${invoice.invoiceNumber} marked as PAID (payment status: ${status})`,
       );
 
       return new SquarePaymentResponseDto({

@@ -19,6 +19,7 @@ import {
   CalendarQueryDto,
   PaymentDateQueryDto,
   CreateETransferInvoiceDto,
+  CreateSquareDeviceInvoiceDto,
 } from '../common/dto/appointment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -139,13 +140,16 @@ export class AppointmentsController {
       );
     }
 
-    // 2. Calculate taxes
+    // 2. Calculate taxes and total (tip is not taxed)
     const taxes = calculateTaxes(dto.serviceAmount);
+    const tipAmount = dto.tipAmount || 0;
+    const totalWithTip = taxes.totalAmount + tipAmount;
 
     // 3. Create invoice with PAID status (E-Transfer received)
     const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
       appointmentId: id,
       serviceAmount: dto.serviceAmount,
+      tipAmount,
       userId: user.id,
       paymentMethod: 'E_TRANSFER',
       status: 'PAID',
@@ -161,14 +165,14 @@ export class AppointmentsController {
       data: {
         status: 'COMPLETED',
         paymentDate: new Date(),
-        expectedAmount: appointment.expectedAmount || taxes.totalAmount,
-        paymentAmount: existingPaymentAmount + taxes.totalAmount, // Add to existing payment
+        expectedAmount: appointment.expectedAmount || totalWithTip,
+        paymentAmount: existingPaymentAmount + totalWithTip, // Add to existing payment (includes tip)
         paymentBreakdown: [
           ...existingBreakdown,
           {
             id: crypto.randomUUID(),
             method: 'E_TRANSFER',
-            amount: taxes.totalAmount, // This E-Transfer payment
+            amount: totalWithTip, // This E-Transfer payment (includes tip)
           },
         ],
       },
@@ -179,10 +183,81 @@ export class AppointmentsController {
       invoice: {
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
-        total: taxes.totalAmount,
+        total: totalWithTip,
         status: invoice.status,
       },
       message: `Invoice ${invoice.invoiceNumber} created successfully. Awaiting E-Transfer payment.`,
+    };
+  }
+
+  /**
+   * Create Square Device invoice for an appointment
+   * Creates an invoice with PAID status (payment received via Square terminal device)
+   * Roles: ADMIN, SUPERVISOR, STAFF
+   */
+  @Post(':id/square-device-invoice')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  async createSquareDeviceInvoice(
+    @Param('id') id: string,
+    @Body() dto: CreateSquareDeviceInvoiceDto,
+    @CurrentUser() user: any,
+  ) {
+    // 1. Verify appointment exists and is IN_PROGRESS or COMPLETED (for remaining payments)
+    const appointment = await this.appointmentsService.findOne(id);
+    if (appointment.status !== 'IN_PROGRESS' && appointment.status !== 'COMPLETED') {
+      throw new BadRequestException(
+        `Appointment must be IN_PROGRESS or COMPLETED to create invoice. Current status: ${appointment.status}`,
+      );
+    }
+
+    // 2. Calculate taxes and total (tip is not taxed)
+    const taxes = calculateTaxes(dto.serviceAmount);
+    const tipAmount = dto.tipAmount || 0;
+    const totalWithTip = taxes.totalAmount + tipAmount;
+
+    // 3. Create invoice with PAID status (Square Device payment received)
+    const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
+      appointmentId: id,
+      serviceAmount: dto.serviceAmount,
+      tipAmount,
+      userId: user.id,
+      paymentMethod: 'CREDIT_CARD',
+      status: 'PAID',
+    });
+
+    // 4. Update appointment to COMPLETED with payment info
+    // If already completed (partial payment scenario), add to existing payment
+    const existingPaymentAmount = appointment.paymentAmount || 0;
+    const existingBreakdown = (appointment.paymentBreakdown as any[]) || [];
+
+    await this.prisma.appointment.update({
+      where: { id },
+      data: {
+        status: 'COMPLETED',
+        paymentDate: new Date(),
+        expectedAmount: appointment.expectedAmount || totalWithTip,
+        paymentAmount: existingPaymentAmount + totalWithTip, // Add to existing payment (includes tip)
+        paymentBreakdown: [
+          ...existingBreakdown,
+          {
+            id: crypto.randomUUID(),
+            method: 'CREDIT_CARD',
+            amount: totalWithTip, // This Square Device payment (includes tip)
+          },
+        ],
+      },
+    });
+
+    return {
+      success: true,
+      invoice: {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        total: totalWithTip,
+        status: invoice.status,
+      },
+      message: `Invoice ${invoice.invoiceNumber} created successfully. Payment received via Square Device.`,
     };
   }
 

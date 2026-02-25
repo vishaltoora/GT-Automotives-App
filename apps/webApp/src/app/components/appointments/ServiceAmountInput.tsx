@@ -12,6 +12,9 @@ import { AttachMoney as MoneyIcon } from '@mui/icons-material';
 interface ServiceAmountInputProps {
   value: number;
   onChange: (value: number) => void;
+  tipAmount?: number;
+  onTipChange?: (value: number) => void;
+  showTip?: boolean;
   error?: string;
   disabled?: boolean;
 }
@@ -24,11 +27,14 @@ const PST_RATE = 0.07;
  * ServiceAmountInput Component
  *
  * Input field for service amount with automatic tax calculation display
- * Shows GST (5%), PST (7%), and total amount with taxes
+ * Shows GST (5%), PST (7%), optional tip (no tax), and total amount
  */
 export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
   value,
   onChange,
+  tipAmount = 0,
+  onTipChange,
+  showTip = false,
   error,
   disabled = false,
 }) => {
@@ -37,15 +43,18 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
     const subtotal = value || 0;
     const gstAmount = subtotal * GST_RATE;
     const pstAmount = subtotal * PST_RATE;
-    const totalAmount = subtotal + gstAmount + pstAmount;
+    const tip = tipAmount || 0;
+    // Tip is added after taxes, no tax on tip
+    const totalAmount = subtotal + gstAmount + pstAmount + tip;
 
     return {
       subtotal,
       gstAmount: Number(gstAmount.toFixed(2)),
       pstAmount: Number(pstAmount.toFixed(2)),
+      tip: Number(tip.toFixed(2)),
       totalAmount: Number(totalAmount.toFixed(2)),
     };
-  }, [value]);
+  }, [value, tipAmount]);
 
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value;
@@ -60,6 +69,24 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
     const numValue = parseFloat(inputValue);
     if (!isNaN(numValue) && numValue >= 0) {
       onChange(numValue);
+    }
+  };
+
+  const handleTipChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!onTipChange) return;
+
+    const inputValue = event.target.value;
+
+    // Allow empty string
+    if (inputValue === '') {
+      onTipChange(0);
+      return;
+    }
+
+    // Parse as float and validate
+    const numValue = parseFloat(inputValue);
+    if (!isNaN(numValue) && numValue >= 0) {
+      onTipChange(numValue);
     }
   };
 
@@ -94,6 +121,37 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
         autoComplete="off"
         sx={{ mb: 2 }}
       />
+
+      {/* Tip Amount Input - Optional */}
+      {showTip && onTipChange && (
+        <TextField
+          fullWidth
+          label="Tips (Optional)"
+          type="number"
+          value={tipAmount || ''}
+          onChange={handleTipChange}
+          onKeyDown={(e) => {
+            if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+              e.preventDefault();
+            }
+          }}
+          disabled={disabled}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <MoneyIcon color="action" />
+              </InputAdornment>
+            ),
+          }}
+          inputProps={{
+            min: 0,
+            step: 0.01,
+          }}
+          autoComplete="off"
+          helperText="Tips are not subject to GST or PST"
+          sx={{ mb: 2 }}
+        />
+      )}
 
       {/* Tax Breakdown Display */}
       {value > 0 && (
@@ -138,6 +196,18 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
                 ${taxCalculation.pstAmount.toFixed(2)}
               </Typography>
             </Box>
+
+            {/* Tips - only show if tip feature is enabled and there's a tip */}
+            {showTip && taxCalculation.tip > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="success.main">
+                  Tips:
+                </Typography>
+                <Typography variant="body2" color="success.main" fontWeight={500}>
+                  ${taxCalculation.tip.toFixed(2)}
+                </Typography>
+              </Box>
+            )}
 
             <Divider sx={{ my: 1 }} />
 

@@ -54,7 +54,9 @@ export class InvoicesService {
     }
 
     // Calculate totals - handle discount items specially
+    // TIPS are included in subtotal but NOT taxed
     let subtotal = 0;
+    let taxableSubtotal = 0;
     const items = createInvoiceDto.items.map(item => {
       // For DISCOUNT items, the total should be negative
       // For DISCOUNT_PERCENTAGE items, calculate percentage of other items
@@ -65,14 +67,18 @@ export class InvoicesService {
         total = -Math.abs(total);
       } else if (item.itemType === 'DISCOUNT_PERCENTAGE') {
         // DISCOUNT_PERCENTAGE: unitPrice is the percentage value
-        // Calculate percentage of non-discount items
+        // Calculate percentage of non-discount items (excluding TIPS)
         const otherItemsSubtotal = createInvoiceDto.items
-          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
+          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE' && i.itemType !== 'TIPS')
           .reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
         total = -(otherItemsSubtotal * item.unitPrice) / 100;
       }
 
       subtotal += total;
+      // TIPS are not taxable
+      if (item.itemType !== 'TIPS') {
+        taxableSubtotal += total;
+      }
       return {
         ...item,
         itemType: item.itemType as InvoiceItemType,
@@ -82,6 +88,7 @@ export class InvoicesService {
     });
 
     // Handle tax calculations - support both combined and separate rates
+    // Apply taxes only to taxable subtotal (excludes TIPS)
     let taxRate: number;
     let gstRate: number | undefined;
     let pstRate: number | undefined;
@@ -92,15 +99,15 @@ export class InvoicesService {
       // Use separate GST/PST rates
       gstRate = createInvoiceDto.gstRate ?? 0;
       pstRate = createInvoiceDto.pstRate ?? 0;
-      gstAmount = subtotal * gstRate;
-      pstAmount = subtotal * pstRate;
+      gstAmount = taxableSubtotal * gstRate;
+      pstAmount = taxableSubtotal * pstRate;
       taxRate = gstRate + pstRate;
     } else {
       // Use combined tax rate (backward compatibility)
       taxRate = createInvoiceDto.taxRate ?? 0.0825;
     }
 
-    const taxAmount = subtotal * taxRate;
+    const taxAmount = taxableSubtotal * taxRate;
     const total = subtotal + taxAmount;
 
 

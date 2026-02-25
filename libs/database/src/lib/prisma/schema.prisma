@@ -565,6 +565,7 @@ enum InvoiceItemType {
   LEVY
   DISCOUNT
   DISCOUNT_PERCENTAGE
+  TIPS
 }
 
 enum AppointmentStatus {

@@ -27,6 +27,7 @@ interface AppointmentSquarePaymentFormProps {
   onClose: () => void;
   appointmentId: string;
   serviceAmount: number;
+  tipAmount?: number;
   onPaymentSuccess?: (paymentId: string) => void;
 }
 
@@ -41,6 +42,7 @@ export const AppointmentSquarePaymentForm: React.FC<AppointmentSquarePaymentForm
   onClose,
   appointmentId,
   serviceAmount,
+  tipAmount = 0,
   onPaymentSuccess,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -54,12 +56,13 @@ export const AppointmentSquarePaymentForm: React.FC<AppointmentSquarePaymentForm
   const applicationId = import.meta.env.VITE_SQUARE_APPLICATION_ID;
   const locationId = import.meta.env.VITE_SQUARE_LOCATION_ID;
 
-  // Calculate taxes (GST 5% + PST 7%)
+  // Calculate taxes (GST 5% + PST 7%) - tips are not taxed
   const GST_RATE = 0.05;
   const PST_RATE = 0.07;
   const gstAmount = serviceAmount * GST_RATE;
   const pstAmount = serviceAmount * PST_RATE;
-  const totalAmount = serviceAmount + gstAmount + pstAmount;
+  const tip = tipAmount || 0;
+  const totalAmount = serviceAmount + gstAmount + pstAmount + tip;
 
   if (!applicationId || !locationId) {
     return (
@@ -99,6 +102,7 @@ export const AppointmentSquarePaymentForm: React.FC<AppointmentSquarePaymentForm
           appointmentId,
           sourceId: token.token,
           serviceAmount,
+          tipAmount: tip > 0 ? tip : undefined,
         },
         {
           headers: {
@@ -216,6 +220,18 @@ export const AppointmentSquarePaymentForm: React.FC<AppointmentSquarePaymentForm
                   ${pstAmount.toFixed(2)}
                 </Typography>
               </Box>
+
+              {/* Show tips if present */}
+              {tip > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="success.main">
+                    Tips:
+                  </Typography>
+                  <Typography variant="body2" color="success.main" fontWeight={500}>
+                    ${tip.toFixed(2)}
+                  </Typography>
+                </Box>
+              )}
 
               <Divider sx={{ my: 1 }} />
 
