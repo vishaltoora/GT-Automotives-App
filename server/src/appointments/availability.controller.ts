@@ -46,12 +46,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Set or update own recurring availability (STAFF secure endpoint)
+   * Set or update own recurring availability (secure endpoint)
    * Uses authenticated user's ID from token
    */
   @Post('my-recurring')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
   async setMyRecurring(@Body() dto: Omit<SetAvailabilityDto, 'employeeId'>, @CurrentUser() user: any) {
     // Always use the authenticated user's ID from token
     const secureDto: SetAvailabilityDto = {
@@ -73,12 +73,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Get own recurring availability (STAFF secure endpoint)
+   * Get own recurring availability (secure endpoint)
    * Uses authenticated user's ID from token
    */
   @Get('my-recurring')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
   async getMyRecurring(@CurrentUser() user: any) {
     return this.availabilityService.getEmployeeAvailability(user.id);
   }
@@ -95,12 +95,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Add own time slot override (STAFF secure endpoint)
+   * Add own time slot override (secure endpoint)
    * Uses authenticated user's ID from token
    */
   @Post('my-override')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
   async addMyOverride(@Body() dto: Omit<TimeSlotOverrideDto, 'employeeId'>, @CurrentUser() user: any) {
     // Always use the authenticated user's ID from token
     const secureDto: TimeSlotOverrideDto = {
@@ -130,12 +130,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Get own overrides within a date range (STAFF secure endpoint)
+   * Get own overrides within a date range (secure endpoint)
    * Uses authenticated user's ID from token
    */
   @Get('my-overrides')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
   async getMyOverrides(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
@@ -149,12 +149,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Delete a recurring availability slot (ADMIN or owner only)
-   * Roles: ADMIN, STAFF
+   * Delete a recurring availability slot (ADMIN, SUPERVISOR, or owner)
+   * Roles: ADMIN, SUPERVISOR, STAFF
    */
   @Delete('recurring/:availabilityId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async deleteRecurring(
     @Param('availabilityId') availabilityId: string,
     @CurrentUser() user: any
@@ -170,12 +170,12 @@ export class AvailabilityController {
   }
 
   /**
-   * Delete an override (ADMIN or owner only)
-   * Roles: ADMIN, STAFF
+   * Delete an override (ADMIN, SUPERVISOR, or owner)
+   * Roles: ADMIN, SUPERVISOR, STAFF
    */
   @Delete('override/:overrideId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async deleteOverride(@Param('overrideId') overrideId: string, @CurrentUser() user: any) {
     return this.availabilityService.deleteOverride(overrideId);
   }

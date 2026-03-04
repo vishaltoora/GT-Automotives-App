@@ -28,7 +28,7 @@ interface CreateInvoiceFromAppointmentParams {
   tipAmount?: number; // Optional tip amount (not subject to tax)
   squarePaymentId?: string; // Optional: link to Square payment
   userId: string; // User creating the invoice
-  paymentMethod?: 'CREDIT_CARD' | 'E_TRANSFER' | 'CASH'; // Payment method
+  paymentMethod?: 'CREDIT_CARD' | 'DEBIT_CARD' | 'E_TRANSFER' | 'CASH'; // Payment method
   status?: 'PAID' | 'PENDING'; // Invoice status
 }
 

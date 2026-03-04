@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsEnum, Min, Max, IsArray, IsNumber, IsPositive } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsEnum, Min, Max, IsArray, IsNumber, IsPositive, IsIn } from 'class-validator';
 import { AppointmentStatus, AppointmentType } from '@prisma/client';
 import { IsDateString, IsOptionalDateString } from '../decorators/date-validation.decorator';
 
@@ -164,4 +164,8 @@ export class CreateSquareDeviceInvoiceDto {
   @IsNumber()
   @Min(0)
   tipAmount?: number; // Optional tip amount (not subject to tax)
+
+  @IsOptional()
+  @IsIn(['CREDIT_CARD', 'DEBIT_CARD'])
+  cardType?: 'CREDIT_CARD' | 'DEBIT_CARD'; // Type of card used for payment (defaults to CREDIT_CARD)
 }

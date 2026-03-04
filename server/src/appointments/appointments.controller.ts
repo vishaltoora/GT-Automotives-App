@@ -217,12 +217,14 @@ export class AppointmentsController {
     const totalWithTip = taxes.totalAmount + tipAmount;
 
     // 3. Create invoice with PAID status (Square Device payment received)
+    // Use cardType from DTO, default to CREDIT_CARD if not specified
+    const paymentMethod = dto.cardType || 'CREDIT_CARD';
     const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
       appointmentId: id,
       serviceAmount: dto.serviceAmount,
       tipAmount,
       userId: user.id,
-      paymentMethod: 'CREDIT_CARD',
+      paymentMethod,
       status: 'PAID',
     });
 
@@ -242,7 +244,7 @@ export class AppointmentsController {
           ...existingBreakdown,
           {
             id: crypto.randomUUID(),
-            method: 'CREDIT_CARD',
+            method: paymentMethod, // Use selected card type (CREDIT_CARD or DEBIT_CARD)
             amount: totalWithTip, // This Square Device payment (includes tip)
           },
         ],

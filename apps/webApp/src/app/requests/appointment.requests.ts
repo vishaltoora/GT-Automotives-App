@@ -346,11 +346,17 @@ export const appointmentService = {
    * Create Square Device invoice for an appointment
    * Creates an invoice with PAID status and completes the appointment
    * Used when payment was received via Square physical terminal device
+   * @param cardType - Type of card used: 'CREDIT_CARD' or 'DEBIT_CARD'
    */
-  async createSquareDeviceInvoice(appointmentId: string, serviceAmount: number, tipAmount?: number): Promise<any> {
+  async createSquareDeviceInvoice(
+    appointmentId: string,
+    serviceAmount: number,
+    tipAmount?: number,
+    cardType?: 'CREDIT_CARD' | 'DEBIT_CARD'
+  ): Promise<any> {
     const response = await apiClient.post(
       `/api/appointments/${appointmentId}/square-device-invoice`,
-      { serviceAmount, tipAmount }
+      { serviceAmount, tipAmount, cardType }
     );
     return response.data;
   },

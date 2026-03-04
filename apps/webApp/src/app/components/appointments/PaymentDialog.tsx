@@ -23,6 +23,10 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormLabel,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -99,6 +103,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const [squareDeviceTip, setSquareDeviceTip] = useState(0);
   const [squareDeviceProcessing, setSquareDeviceProcessing] = useState(false);
   const [squareDeviceError, setSquareDeviceError] = useState<string | null>(null);
+  const [squareDeviceCardType, setSquareDeviceCardType] = useState<'CREDIT_CARD' | 'DEBIT_CARD'>('CREDIT_CARD');
 
   // Manual payment state
   const [payments, setPayments] = useState<PaymentEntry[]>(
@@ -141,6 +146,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
       setSquareDeviceAmount(0);
       setSquareDeviceTip(0);
       setSquareDeviceError(null);
+      setSquareDeviceCardType('CREDIT_CARD');
     }
   };
 
@@ -200,7 +206,12 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setSquareDeviceError(null);
 
     try {
-      await appointmentService.createSquareDeviceInvoice(appointmentId, squareDeviceAmount, squareDeviceTip > 0 ? squareDeviceTip : undefined);
+      await appointmentService.createSquareDeviceInvoice(
+        appointmentId,
+        squareDeviceAmount,
+        squareDeviceTip > 0 ? squareDeviceTip : undefined,
+        squareDeviceCardType
+      );
       // Close dialog and refresh
       handleClose();
       window.location.reload();
@@ -228,6 +239,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setSquareDeviceAmount(0);
     setSquareDeviceTip(0);
     setSquareDeviceError(null);
+    setSquareDeviceCardType('CREDIT_CARD');
     setPaymentMethod('CASH');
     setErrors({});
     setSquareFormOpen(false);
@@ -768,6 +780,31 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
               </Alert>
             )}
 
+            {/* Card Type Selection */}
+            <FormControl component="fieldset" sx={{ mb: 1 }}>
+              <FormLabel component="legend" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                Card Type
+              </FormLabel>
+              <RadioGroup
+                row
+                value={squareDeviceCardType}
+                onChange={(e) => setSquareDeviceCardType(e.target.value as 'CREDIT_CARD' | 'DEBIT_CARD')}
+              >
+                <FormControlLabel
+                  value="CREDIT_CARD"
+                  control={<Radio size="small" />}
+                  label="Credit Card"
+                  disabled={squareDeviceProcessing}
+                />
+                <FormControlLabel
+                  value="DEBIT_CARD"
+                  control={<Radio size="small" />}
+                  label="Debit Card"
+                  disabled={squareDeviceProcessing}
+                />
+              </RadioGroup>
+            </FormControl>
+
             {/* Service Amount Input with Tax Calculation */}
             <ServiceAmountInput
               value={squareDeviceAmount}
@@ -792,7 +829,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     Tip (if any) is added as a separate line item (no tax)
                   </Typography>
                   <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                    Invoice is marked as PAID with Credit Card payment method
+                    Invoice is marked as PAID with {squareDeviceCardType === 'CREDIT_CARD' ? 'Credit Card' : 'Debit Card'} payment method
                   </Typography>
                   <Typography component="li" variant="body2">
                     Appointment is marked as COMPLETED
