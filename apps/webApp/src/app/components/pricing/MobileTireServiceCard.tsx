@@ -114,9 +114,10 @@ export const MobileTireServiceCard: React.FC<MobileTireServiceCardProps> = ({
                 <Typography
                   variant="body2"
                   sx={{
-                    color: pricingColors.text.secondary,
-                    fontWeight: 500,
+                    color: '#1a1a1a',
+                    fontWeight: 700,
                     mb: 1,
+                    letterSpacing: '-0.01em',
                   }}
                 >
                   {service.name}

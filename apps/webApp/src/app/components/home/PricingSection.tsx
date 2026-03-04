@@ -10,21 +10,23 @@ import {
   Fade,
 } from '@mui/material';
 import {
-  LocalShipping as MobileIcon,
-  Build as ServiceIcon,
-  Speed as QuickIcon,
+  DirectionsCar as CarIcon,
+  LocalShipping as TruckIcon,
+  Terrain as MudIcon,
   TireRepair as TireIcon,
-  AcUnit as WinterIcon,
-  CarRepair as BalanceIcon,
+  Build as RepairIcon,
+  Autorenew as SwapIcon,
+  Loop as RotationIcon,
+  Settings as BalanceIcon,
+  NightsStay as AfterHoursIcon,
+  BatteryChargingFull as BatteryIcon,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 
 interface PricingTier {
   title: string;
   subtitle: string;
-  price: string;
-  priceNote: string;
-  features: string[];
+  services: { name: string; price: string }[];
   popular?: boolean;
   icon: React.ReactNode;
   color: string;
@@ -33,95 +35,132 @@ interface PricingTier {
 export function PricingSection() {
   const pricingTiers: PricingTier[] = [
     {
-      title: 'Distance & After Hours',
-      subtitle: 'Additional Rates',
-      price: '$2/km',
-      priceNote: 'beyond 10km radius',
-      features: [
-        'Free within 10km of city center',
-        '$2 per km beyond 10km',
-        'After hours call: $99',
-        'After hours rate: $99/hr',
-        '24/7 emergency available',
-      ],
-      icon: <ServiceIcon sx={{ fontSize: 28 }} />,
+      title: 'Small Cars & Sedans',
+      subtitle: 'SUVs up to 18" tires',
+      icon: <CarIcon sx={{ fontSize: 28 }} />,
       color: colors.primary.main,
+      services: [
+        { name: 'Mount & Balance', price: '$139 ' },
+        { name: 'Double Mount & Balance', price: '$199 ' },
+      ],
     },
     {
-      title: 'Mobile Service',
-      subtitle: 'We Come To You',
-      price: '$139',
-      priceNote: 'starting from + tax',
-      features: [
-        'Cars & SUVs: $139 + tax',
-        'Pickup trucks: $149 + tax',
-        'Double swap: $199-229 + tax',
-        'Work hours: 9AM - 5PM',
-        'Same-day available',
-      ],
-      popular: true,
-      icon: <MobileIcon sx={{ fontSize: 28 }} />,
-      color: colors.secondary.main,
-    },
-    {
-      title: 'Other Services',
-      subtitle: 'Quick & Affordable',
-      price: '$29',
-      priceNote: 'flat tire repair + tax',
-      features: [
-        'Flat tire repair: $29 + supplies',
-        'Tire rotation: $69 + tax',
-        '4 tires balance: $69',
-        'Low profile: $149 + tax',
-        'Professional service',
-      ],
-      icon: <QuickIcon sx={{ fontSize: 28 }} />,
-      color: '#9c27b0',
-    },
-    {
-      title: 'Tire Installation',
-      subtitle: 'At Our Shop',
-      price: '$99',
-      priceNote: 'mount & balance + tax',
-      features: [
-        'Standard tires: $99 + tax',
-        'Low profile: $129 + tax',
-        'TPMS service included',
-        'Valve stems replaced',
-        'Free tire inspection',
-      ],
-      icon: <TireIcon sx={{ fontSize: 28 }} />,
+      title: 'Mid-Size SUVs',
+      subtitle: '19" tires and above',
+      icon: <CarIcon sx={{ fontSize: 28 }} />,
       color: '#1565c0',
+      services: [
+        { name: 'Mount & Balance', price: '$149 ' },
+        { name: 'Double Mount & Balance', price: '$229 ' },
+      ],
     },
     {
-      title: 'Seasonal Changeover',
-      subtitle: 'Winter & Summer',
-      price: '$69',
-      priceNote: 'swap on rims + tax',
-      features: [
-        'Tires on rims: $69 + tax',
-        'Off rims: $139 + tax',
-        'Includes balance check',
-        'TPMS reset included',
-        'Storage available',
+      title: 'Pickup Trucks',
+      subtitle: 'All sizes',
+      icon: <TruckIcon sx={{ fontSize: 28 }} />,
+      color: colors.secondary.main,
+      popular: true,
+      services: [
+        { name: 'Mount & Balance', price: '$169 ' },
+        { name: 'Double Mount & Balance', price: '$239 ' },
       ],
-      icon: <WinterIcon sx={{ fontSize: 28 }} />,
+    },
+    {
+      title: 'Pickup Truck Mud Tires',
+      subtitle: 'Heavy-duty off-road tires',
+      icon: <MudIcon sx={{ fontSize: 28 }} />,
+      color: '#6d4c41',
+      services: [
+        { name: 'Mount & Balance', price: '$199 ' },
+        { name: 'Double Mount & Balance', price: '$299 ' },
+      ],
+    },
+    {
+      title: 'Low Profile Tires',
+      subtitle: 'Special handling required',
+      icon: <TireIcon sx={{ fontSize: 28 }} />,
+      color: '#7b1fa2',
+      services: [
+        { name: 'Mount & Balance', price: '$149 ' },
+        { name: 'Double Mount & Balance', price: '$229 ' },
+      ],
+    },
+    {
+      title: 'Flat Tire Repair',
+      subtitle: 'Includes home visit in Bowl area',
+      icon: <RepairIcon sx={{ fontSize: 28 }} />,
+      color: '#4caf50',
+      services: [
+        { name: 'Service Fee', price: '$110 ' },
+      ],
+    },
+    {
+      title: 'Tire Swap',
+      subtitle: 'Seasonal tire changeover',
+      icon: <SwapIcon sx={{ fontSize: 28 }} />,
       color: '#0288d1',
+      services: [
+        { name: 'Small Car', price: '$69 ' },
+        { name: 'Pickup Truck', price: '$89 ' },
+      ],
     },
     {
-      title: 'Wheel Balancing',
-      subtitle: 'Smooth Ride',
-      price: '$69',
-      priceNote: 'all 4 wheels + tax',
-      features: [
-        'Computer balancing',
-        'Weight adjustment',
-        'Vibration diagnosis',
-        'Tire inspection',
-        'Quick turnaround',
+      title: 'Tire Rotation',
+      subtitle: 'Extend tire life',
+      icon: <RotationIcon sx={{ fontSize: 28 }} />,
+      color: '#00897b',
+      services: [
+        { name: 'Small Car', price: '$69 ' },
+        { name: 'Pickup Truck', price: '$89 ' },
       ],
+    },
+    {
+      title: '4 Tires Balance',
+      subtitle: 'Smooth ride guaranteed',
       icon: <BalanceIcon sx={{ fontSize: 28 }} />,
       color: '#455a64',
+      services: [
+        { name: 'Service Fee', price: '$69' },
+      ],
+    },
+    {
+      title: '4 Tire Balance & Swap',
+      subtitle: 'Balance and seasonal changeover',
+      icon: <BalanceIcon sx={{ fontSize: 28 }} />,
+      color: '#5e35b1',
+      services: [
+        { name: 'Small Car', price: '$99 ' },
+        { name: 'Pickup Truck', price: '$110 ' },
+      ],
+    },
+    {
+      title: 'Battery Boost',
+      subtitle: 'In Bowl area. $2/km outside.',
+      icon: <BatteryIcon sx={{ fontSize: 28 }} />,
+      color: '#f9a825',
+      services: [
+        { name: 'Service Fee', price: '$69' },
+      ],
+    },
+    {
+      title: 'Battery Replacement',
+      subtitle: 'In Bowl area. $2/km outside.',
+      icon: <BatteryIcon sx={{ fontSize: 28 }} />,
+      color: '#ff8f00',
+      services: [
+        { name: 'Service Fee', price: '$69' },
+      ],
+    },
+    {
+      title: 'Distance & After Hours',
+      subtitle: 'Additional Rates',
+      icon: <AfterHoursIcon sx={{ fontSize: 28 }} />,
+      color: '#37474f',
+      services: [
+        { name: 'Beyond Bowl area', price: '$2/km' },
+        { name: 'After hours call', price: '$99' },
+        { name: 'After hours rate', price: '$99/hr' },
+      ],
     },
   ];
 
@@ -224,7 +263,7 @@ function PricingSlider({ pricingTiers }: { pricingTiers: PricingTier[] }) {
         sx={{
           display: 'flex',
           gap: 3,
-          animation: 'scrollPricing 45s linear infinite',
+          animation: 'scrollPricing 60s linear infinite',
           animationPlayState: isPaused ? 'paused' : 'running',
           width: 'fit-content',
           '@keyframes scrollPricing': {
@@ -232,7 +271,7 @@ function PricingSlider({ pricingTiers }: { pricingTiers: PricingTier[] }) {
               transform: 'translateX(0)',
             },
             '100%': {
-              transform: `translateX(-${pricingTiers.length * 320}px)`,
+              transform: `translateX(-${pricingTiers.length * 304}px)`,
             },
           },
         }}
@@ -250,8 +289,8 @@ function PricingCard({ tier }: { tier: PricingTier }) {
     <Paper
       elevation={tier.popular ? 8 : 0}
       sx={{
-        width: 300,
-        minWidth: 300,
+        width: 280,
+        minWidth: 280,
         position: 'relative',
         p: 3,
         borderRadius: 4,
@@ -326,62 +365,38 @@ function PricingCard({ tier }: { tier: PricingTier }) {
         {tier.subtitle}
       </Typography>
 
-      {/* Price */}
-      <Box sx={{ mb: 2 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 800,
-            color: tier.color,
-            lineHeight: 1,
-            mb: 0.5,
-          }}
-        >
-          {tier.price}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            color: colors.text.secondary,
-            fontSize: '0.7rem',
-          }}
-        >
-          {tier.priceNote}
-        </Typography>
-      </Box>
-
       <Divider sx={{ mb: 2 }} />
 
-      {/* Features */}
-      <Stack spacing={1}>
-        {tier.features.map((feature, idx) => (
-          <Box key={idx} sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box
-              component="span"
-              sx={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                backgroundColor: tier.color,
-                mr: 1,
-                flexShrink: 0,
-                animation: 'pulse 2s ease-in-out infinite',
-                animationDelay: `${idx * 0.2}s`,
-                '@keyframes pulse': {
-                  '0%, 100%': { transform: 'scale(1)', opacity: 1 },
-                  '50%': { transform: 'scale(1.5)', opacity: 0.7 },
-                },
-              }}
-            />
+      {/* Services */}
+      <Stack spacing={1.5}>
+        {tier.services.map((service, idx) => (
+          <Box
+            key={idx}
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <Typography
               variant="body2"
               sx={{
                 color: colors.text.primary,
                 fontSize: '0.85rem',
-                fontWeight: 600,
+                fontWeight: 500,
               }}
             >
-              {feature}
+              {service.name}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: tier.color,
+                fontSize: '0.9rem',
+                fontWeight: 700,
+              }}
+            >
+              {service.price}
             </Typography>
           </Box>
         ))}

@@ -3,7 +3,6 @@ import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { MobileTireServiceSection } from '../../components/pricing';
-import { CTASection } from '../../components/public';
 import { PageHero } from '../../components/shared';
 
 // Pricing page slides
@@ -49,19 +48,6 @@ export const Pricing: React.FC = () => {
         }}
       />
       <MobileTireServiceSection />
-      <CTASection
-        title="Ready to Save on Your Auto Service?"
-        description="Contact us today for a personalized quote or to learn more about our service packages."
-        primaryAction={{
-          label: 'Get Your Quote',
-          path: '/contact'
-        }}
-        secondaryAction={{
-          label: '📞 (250) 986-9191',
-          path: 'tel:2509869191'
-        }}
-        variant="outlined"
-      />
     </>
   );
 };

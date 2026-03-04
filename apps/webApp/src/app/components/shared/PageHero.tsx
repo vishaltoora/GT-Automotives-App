@@ -103,8 +103,9 @@ export const PageHero: React.FC<PageHeroProps> = ({
     <Box
       sx={{
         position: 'relative',
-        height: { xs: '35vh', md: '30vh' },
-        minHeight: { xs: 300, md: 350 },
+        minHeight: { xs: '100vh', sm: '80vh', md: '420px', lg: '450px' },
+        display: 'flex',
+        alignItems: 'center',
         overflow: 'hidden',
       }}
       onMouseEnter={() => setIsPaused(true)}
