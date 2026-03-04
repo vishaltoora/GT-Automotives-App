@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-// Employee Payments Report Component
+// Employee Payments Report Component - Daily Summary View
 import {
   Box,
   Paper,
