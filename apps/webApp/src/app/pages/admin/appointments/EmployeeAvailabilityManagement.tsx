@@ -150,8 +150,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // Check if current user is staff (not admin) - case insensitive
-  const isStaff = currentUser?.role?.name?.toUpperCase() === 'STAFF';
+  // Check if current user is staff or supervisor (not admin) - case insensitive
+  const userRole = currentUser?.role?.name?.toUpperCase();
+  const isStaffOrSupervisor = userRole === 'STAFF' || userRole === 'SUPERVISOR';
 
   useEffect(() => {
     loadAllData();
@@ -168,7 +169,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       setLoading(true);
 
       // If staff user, only load their own availability using secure endpoints
-      if (isStaff && currentUser) {
+      if (isStaffOrSupervisor && currentUser) {
         try {
           // Use secure endpoints that fetch based on token
           const availability = await availabilityService.getMyRecurringAvailability();
@@ -354,7 +355,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       for (const [dayOfWeek, slots] of Object.entries(weeklySlots)) {
         for (const slot of slots) {
           // Use secure endpoint if staff user is editing their own availability
-          if (isStaff && selectedEmployeeId === currentUser?.id) {
+          if (isStaffOrSupervisor && selectedEmployeeId === currentUser?.id) {
             await availabilityService.setMyRecurringAvailability({
               dayOfWeek: Number(dayOfWeek),
               startTime: slot.startTime,
@@ -472,7 +473,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       if (!selectedEmployeeId) return;
 
       // Use secure endpoint if staff user is adding their own override
-      if (isStaff && selectedEmployeeId === currentUser?.id) {
+      if (isStaffOrSupervisor && selectedEmployeeId === currentUser?.id) {
         await availabilityService.addMyOverride({
           ...overrideForm,
         });
@@ -534,7 +535,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
         const schedule = QUICK_SCHEDULES[scheduleType];
         for (const day of schedule.days) {
           // Use secure endpoint if staff user is setting their own availability
-          if (isStaff && employeeId === currentUser?.id) {
+          if (isStaffOrSupervisor && employeeId === currentUser?.id) {
             await availabilityService.setMyRecurringAvailability({
               dayOfWeek: day,
               startTime: schedule.start,
