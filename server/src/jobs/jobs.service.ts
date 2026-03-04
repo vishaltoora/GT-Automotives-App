@@ -35,6 +35,7 @@ export class JobsService {
         description: createJobDto.description,
         payAmount: createJobDto.payAmount,
         jobType: createJobDto.jobType,
+        status: createJobDto.status,
         dueDate: createJobDto.dueDate ? new Date(createJobDto.dueDate) : undefined,
         createdBy: userId,
       };

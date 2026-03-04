@@ -87,7 +87,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent>
+        <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" mb={3}>
             Select how you want to process this payment for Invoice{' '}
             {invoiceNumber}

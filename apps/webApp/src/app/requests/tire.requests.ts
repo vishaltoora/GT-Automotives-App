@@ -12,6 +12,13 @@ import {
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+// Helper to get fresh token from Clerk
+let getClerkToken: (() => Promise<string | null>) | null = null;
+
+export function setClerkTokenGetter(getter: () => Promise<string | null>) {
+  getClerkToken = getter;
+}
+
 // Create axios instance with common configuration
 const apiClient = axios.create({
   baseURL: `${API_URL}/api`,
@@ -23,26 +30,36 @@ const apiClient = axios.create({
 // Add token interceptor for authentication
 apiClient.interceptors.request.use(
   async (config) => {
-    let token = localStorage.getItem('authToken');
-    
-    // If no token in localStorage, try to get it from Clerk
-    if (!token) {
-      try {
-        // Check if Clerk is available
-        if (window.Clerk && window.Clerk.session) {
-          token = await window.Clerk.session.getToken();
-          if (token) {
-            localStorage.setItem('authToken', token);
-          }
+    try {
+      // First try the registered token getter (from ServicesProvider)
+      if (getClerkToken) {
+        const token = await getClerkToken();
+        if (token) {
+          localStorage.setItem('authToken', token);
+          config.headers.Authorization = `Bearer ${token}`;
+          return config;
         }
-      } catch (error) {
-        // Silently handle token retrieval errors
       }
+
+      // Then try to get fresh token from Clerk directly
+      if (window.Clerk && window.Clerk.session) {
+        const token = await window.Clerk.session.getToken({});
+        if (token) {
+          localStorage.setItem('authToken', token);
+          config.headers.Authorization = `Bearer ${token}`;
+          return config;
+        }
+      }
+
+      // Fallback to localStorage token if Clerk not available
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
     }
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+
     return config;
   },
   (error) => {

@@ -48,6 +48,7 @@ import QuotationDialog from '../../components/quotations/QuotationDialog';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
 import { AppointmentDialog } from '../../components/appointments/AppointmentDialog';
 import TireDialog from '../../components/inventory/TireDialog';
+import { QuickTireSaleDialog } from '../../components/tire-sales';
 import { useAuth } from '../../hooks/useAuth';
 import { dashboardService, DashboardStats } from '../../requests/dashboard.requests';
 
@@ -64,6 +65,7 @@ export function AdminDashboard() {
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
+  const [tireSaleDialogOpen, setTireSaleDialogOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingRequestsCount, setBookingRequestsCount] = useState(0);
@@ -508,6 +510,32 @@ export function AdminDashboard() {
                 </Typography>
               </Paper>
 
+              {/* Quick Tire Sale */}
+              <Paper
+                onClick={() => setTireSaleDialogOpen(true)}
+                sx={{
+                  ...actionItemStyles,
+                  border: `1px solid ${colors.tire?.new || '#1976d2'}`,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.tire?.new || '#1976d2',
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <TireRepair sx={{ ...actionIconStyles, color: colors.tire?.new || '#1976d2' }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.tire?.new || '#1976d2' }}>
+                  Quick Tire Sale
+                </Typography>
+              </Paper>
+
               <Paper
                 onClick={() => setAppointmentDialogOpen(true)}
                 sx={{
@@ -888,6 +916,32 @@ export function AdminDashboard() {
                   </Badge>
                   <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.warning }}>
                     Booking Requests
+                  </Typography>
+                </Paper>
+
+                {/* Quick Tire Sale */}
+                <Paper
+                  onClick={() => setTireSaleDialogOpen(true)}
+                  sx={{
+                    ...actionItemStyles,
+                    border: `1px solid ${colors.tire?.new || '#1976d2'}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.tire?.new || '#1976d2',
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <TireRepair sx={{ ...actionIconStyles, color: colors.tire?.new || '#1976d2' }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.tire?.new || '#1976d2' }}>
+                    Quick Tire Sale
                   </Typography>
                 </Paper>
 
@@ -1364,6 +1418,15 @@ export function AdminDashboard() {
         onSuccess={() => {
           setTireDialogOpen(false);
           loadStats(); // Refresh stats after adding tire
+        }}
+      />
+
+      {/* Quick Tire Sale Dialog */}
+      <QuickTireSaleDialog
+        open={tireSaleDialogOpen}
+        onClose={() => setTireSaleDialogOpen(false)}
+        onSuccess={() => {
+          loadStats(); // Refresh stats after sale
         }}
       />
     </Box>

@@ -12,6 +12,7 @@ import QuotationDialog from '../../components/quotations/QuotationDialog';
 import { CustomerDialog } from '../../components/customers/CustomerDialog';
 import { AppointmentDialog } from '../../components/appointments/AppointmentDialog';
 import TireDialog from '../../components/inventory/TireDialog';
+import { QuickTireSaleDialog } from '../../components/tire-sales';
 
 export function StaffDashboard() {
   const { user } = useAuth();
@@ -27,6 +28,7 @@ export function StaffDashboard() {
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
+  const [tireSaleDialogOpen, setTireSaleDialogOpen] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -537,6 +539,35 @@ export function StaffDashboard() {
                 </Typography>
               </Paper>
 
+              {/* Quick Tire Sale */}
+              <Paper
+                onClick={() => setTireSaleDialogOpen(true)}
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: `1px solid ${colors.tire?.new || '#1976d2'}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.tire?.new || '#1976d2',
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <TireRepair sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.tire?.new || '#1976d2', mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.tire?.new || '#1976d2', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Quick Tire Sale
+                </Typography>
+              </Paper>
+
               <Paper
                 onClick={() => setInvoiceDialogOpen(true)}
                 sx={{
@@ -963,6 +994,15 @@ export function StaffDashboard() {
         onClose={() => setTireDialogOpen(false)}
         onSuccess={() => {
           setTireDialogOpen(false);
+          loadStats();
+        }}
+      />
+
+      {/* Quick Tire Sale Dialog */}
+      <QuickTireSaleDialog
+        open={tireSaleDialogOpen}
+        onClose={() => setTireSaleDialogOpen(false)}
+        onSuccess={() => {
           loadStats();
         }}
       />

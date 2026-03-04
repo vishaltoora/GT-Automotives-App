@@ -34,3 +34,10 @@ export enum InvoiceItemType {
   DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE',
   TIPS = 'TIPS',
 }
+
+export enum CommissionStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED',
+}

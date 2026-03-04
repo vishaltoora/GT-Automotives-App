@@ -29,6 +29,7 @@ model User {
   timeSlotOverrides     TimeSlotOverride[]      // Date-specific exceptions (time-off, extra shifts)
   smsMessages           SmsMessage[]            // SMS messages sent to this user (staff/admin notifications)
   smsPreference         SmsPreference?          // SMS notification preferences for staff/admin
+  tireSales             TireSale[]              @relation("TireSales") // Tire sales made by this user (for commission tracking)
 }
 
 model Role {
@@ -80,6 +81,7 @@ model Customer {
   smsPreference   SmsPreference?
   emailLogs       EmailLog[]       // Email logs related to this customer
   bookingRequests BookingRequest[] // Booking requests converted to this customer
+  tireSales       TireSale[]       // Tire sales to this customer
 }
 
 model Vehicle {
@@ -99,26 +101,27 @@ model Vehicle {
 }
 
 model Tire {
-  id            String          @id @default(cuid())
-  name          String?
-  sku           String?
-  brandId       String
-  sizeId        String
-  locationId    String?
-  type          TireType
-  condition     TireCondition
-  quantity      Int             @default(0)
-  price         Decimal         @db.Decimal(10, 2)
-  cost          Decimal?        @db.Decimal(10, 2)
-  minStock      Int             @default(5)
-  imageUrl      String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  invoiceItems  InvoiceItem[]
+  id             String          @id @default(cuid())
+  name           String?
+  sku            String?
+  brandId        String
+  sizeId         String
+  locationId     String?
+  type           TireType
+  condition      TireCondition
+  quantity       Int             @default(0)
+  price          Decimal         @db.Decimal(10, 2)
+  cost           Decimal?        @db.Decimal(10, 2)
+  minStock       Int             @default(5)
+  imageUrl       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  invoiceItems   InvoiceItem[]
   quotationItems QuotationItem[]
-  brand         TireBrand       @relation(fields: [brandId], references: [id])
-  size          TireSize        @relation(fields: [sizeId], references: [id])
-  location      Location?       @relation(fields: [locationId], references: [id])
+  tireSaleItems  TireSaleItem[]
+  brand          TireBrand       @relation(fields: [brandId], references: [id])
+  size           TireSize        @relation(fields: [sizeId], references: [id])
+  location       Location?       @relation(fields: [locationId], references: [id])
 
   @@index([brandId, sizeId])
   @@index([sku])
@@ -202,6 +205,7 @@ model Invoice {
   items          InvoiceItem[]
   squarePayments SquarePayment[] // Square payments for this invoice
   emailLogs      EmailLog[]      // Email logs related to this invoice
+  tireSale       TireSale?       // Tire sale that generated this invoice (one-to-one)
 
   @@index([customerId])
   @@index([status])
@@ -1005,4 +1009,86 @@ enum BookingRequestStatus {
   REJECTED
   CONVERTED
   PROCESSED
+}
+
+// ============================================
+// Quick Tire Sale System (for Commission Tracking)
+// ============================================
+
+model TireSale {
+  id               String           @id @default(cuid())
+  saleNumber       String           @unique
+
+  // Seller tracking (for commissions)
+  soldById         String
+  soldBy           User             @relation("TireSales", fields: [soldById], references: [id])
+
+  // Optional customer (required for non-cash payments)
+  customerId       String?
+  customer         Customer?        @relation(fields: [customerId], references: [id])
+
+  // Optional invoice link (created for non-cash payments)
+  invoiceId        String?          @unique
+  invoice          Invoice?         @relation(fields: [invoiceId], references: [id])
+
+  // Payment & totals
+  paymentMethod    PaymentMethod
+  subtotal         Decimal          @db.Decimal(10, 2)
+  taxAmount        Decimal          @db.Decimal(10, 2)
+  total            Decimal          @db.Decimal(10, 2)
+
+  // Commission tracking (tiered: $3/$4/$5 per tire based on monthly volume)
+  commissionRate   Decimal?         @db.Decimal(10, 2)  // Per-tire rate ($3, $4, or $5)
+  commissionAmount Decimal?         @db.Decimal(10, 2)  // Total commission for this sale
+  commissionStatus CommissionStatus @default(PENDING)
+  commissionPaidAt DateTime?
+  commissionJobId  String?          // Link to Job record when commission is paid
+
+  // Notes
+  notes            String?
+
+  // Timestamps
+  saleDate         DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations
+  items            TireSaleItem[]
+
+  @@index([soldById])
+  @@index([saleDate])
+  @@index([commissionStatus])
+  @@index([customerId])
+  @@map("tire_sales")
+}
+
+model TireSaleItem {
+  id            String        @id @default(cuid())
+  tireSaleId    String
+  tireId        String
+  quantity      Int
+  unitPrice     Decimal       @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+
+  // Denormalized tire info (for historical record)
+  tireBrand     String
+  tireSize      String
+  tireType      TireType
+  tireCondition TireCondition
+
+  createdAt     DateTime      @default(now())
+
+  tireSale      TireSale      @relation(fields: [tireSaleId], references: [id], onDelete: Cascade)
+  tire          Tire          @relation(fields: [tireId], references: [id])
+
+  @@index([tireSaleId])
+  @@index([tireId])
+  @@map("tire_sale_items")
+}
+
+enum CommissionStatus {
+  PENDING    // Commission calculated, not yet paid
+  APPROVED   // Approved for payment
+  PAID       // Commission paid to employee
+  CANCELLED  // Sale cancelled, no commission
 }

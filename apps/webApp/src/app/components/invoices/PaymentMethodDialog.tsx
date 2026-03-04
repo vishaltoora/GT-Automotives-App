@@ -55,8 +55,8 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent>
-        <Box sx={{ pt: 2 }}>
+      <DialogContent dividers>
+        <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Invoice: <strong>#{invoiceNumber}</strong>
           </Typography>

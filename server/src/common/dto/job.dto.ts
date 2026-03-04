@@ -19,6 +19,10 @@ export class CreateJobDto {
   jobType!: JobType;
 
   @IsOptional()
+  @IsEnum(JobStatus)
+  status?: JobStatus;
+
+  @IsOptional()
   @IsDateString()
   dueDate?: string;
 }
