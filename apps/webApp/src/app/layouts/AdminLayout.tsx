@@ -43,6 +43,7 @@ import {
   AttachMoney,
   ShoppingCart,
   Sms,
+  LocalMall,
   Schedule,
   Email,
   ExpandMore,
@@ -138,6 +139,7 @@ export function AdminLayout() {
       icon: <Work />,
       items: [
         { text: 'Jobs', icon: <Work />, path: '/admin/jobs' },
+        { text: 'Commission', icon: <LocalMall />, path: '/admin/tire-commissions' },
         { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
         { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
       ]
@@ -148,6 +150,7 @@ export function AdminLayout() {
       icon: <BarChart />,
       items: [
         { text: 'Reports', icon: <Analytics />, path: '/admin/reports' },
+        { text: 'Employee Payments', icon: <Payment />, path: '/admin/employee-payments-report' },
         { text: 'Analytics', icon: <Analytics />, path: '/admin/analytics' },
       ]
     },

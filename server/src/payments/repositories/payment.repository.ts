@@ -223,11 +223,22 @@ export class PaymentRepository extends BaseRepository<
   }
 
   async getPayrollReport(startDate: Date, endDate: Date, employeeId?: string) {
+    // Set endDate to end of day (23:59:59.999 UTC) to include all payments on that day
+    // Since dates come in as UTC midnight, we need to add 23:59:59 in UTC
+    const endOfDay = new Date(endDate.getTime() + (24 * 60 * 60 * 1000) - 1);
+
+    console.log('[PAYROLL REPORT] Query params:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+      employeeId,
+    });
+
     const whereClause: Prisma.PaymentWhereInput = {
       status: PaymentStatus.PAID,
       paidAt: {
         gte: startDate,
-        lte: endDate,
+        lte: endOfDay,
       },
     };
 

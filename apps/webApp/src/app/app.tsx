@@ -92,6 +92,10 @@ import EmployeeSchedule from './pages/admin/EmployeeSchedule';
 
 // Reports Pages
 import Reports from './pages/admin/Reports';
+import { EmployeePaymentsReport } from './pages/admin/reports/EmployeePaymentsReport';
+
+// Tire Sales Pages
+import { TireSalesManagement, CommissionManagement } from './pages/admin/tire-sales';
 
 export function App() {
   return (
@@ -279,9 +283,12 @@ export function App() {
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
           <Route path="payments" element={<PaymentsManagement />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="employee-payments-report" element={<EmployeePaymentsReport />} />
           <Route path="analytics" element={<div>Analytics</div>} />
           <Route path="security" element={<div>Security Settings</div>} />
           <Route path="settings" element={<div>System Settings</div>} />
+          <Route path="tire-commissions" element={<CommissionManagement />} />
+          <Route path="tire-sales" element={<TireSalesManagement />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
