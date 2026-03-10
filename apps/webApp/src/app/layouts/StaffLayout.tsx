@@ -40,7 +40,8 @@ import {
   ExpandMore,
   ExpandLess,
   BusinessCenter,
-  Event
+  Event,
+  TireRepair,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -101,6 +102,7 @@ export function StaffLayout() {
       items: [
         { text: 'My Jobs', icon: <Work />, path: '/staff/jobs' },
         { text: 'My Earnings', icon: <AttachMoney />, path: '/staff/earnings' },
+        { text: 'My Commission', icon: <TireRepair />, path: '/staff/commission' },
         { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },
       ]
     },

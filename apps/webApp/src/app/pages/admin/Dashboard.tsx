@@ -670,6 +670,28 @@ export function AdminDashboard() {
                   </Typography>
                 </Paper>
               )}
+
+              {/* My Commission - Supervisor only */}
+              {role === 'supervisor' && (
+                <Paper
+                  component={Link}
+                  to={`${basePath}/my-commission`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: colors.secondary.main,
+                    },
+                  }}
+                >
+                  <TireRepair sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                    My Commission
+                  </Typography>
+                </Paper>
+              )}
             </Box>
 
             {/* Quick Navigation - Mobile without Divider */}
@@ -1076,6 +1098,28 @@ export function AdminDashboard() {
                     <AttachMoney sx={{ ...actionIconStyles, color: '#00bcd4' }} />
                     <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                       My Earnings
+                    </Typography>
+                  </Paper>
+                )}
+
+                {/* My Commission - Supervisor only */}
+                {role === 'supervisor' && (
+                  <Paper
+                    component={Link}
+                    to={`${basePath}/my-commission`}
+                    sx={{
+                      ...actionItemStyles,
+                      textDecoration: 'none',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        borderColor: colors.secondary.main,
+                      },
+                    }}
+                  >
+                    <TireRepair sx={{ ...actionIconStyles, color: colors.secondary.main }} />
+                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
+                      My Commission
                     </Typography>
                   </Paper>
                 )}

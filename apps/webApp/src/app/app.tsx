@@ -37,6 +37,7 @@ import { CustomerDashboard } from './pages/customer/Dashboard';
 import { StaffDashboard } from './pages/staff/Dashboard';
 import { MyJobs } from './pages/staff/MyJobs';
 import { MyEarnings } from './pages/staff/MyEarnings';
+import { MyCommission } from './pages/staff/MyCommission';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/Dashboard';
@@ -172,6 +173,7 @@ export function App() {
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="jobs" element={<MyJobs />} />
           <Route path="earnings" element={<MyEarnings />} />
+          <Route path="commission" element={<MyCommission />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="reports" element={<div>Reports</div>} />
@@ -217,6 +219,7 @@ export function App() {
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
           <Route path="my-jobs" element={<MyJobs />} />
           <Route path="my-earnings" element={<MyEarnings />} />
+          <Route path="my-commission" element={<MyCommission />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

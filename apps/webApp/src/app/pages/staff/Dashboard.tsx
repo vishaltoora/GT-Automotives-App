@@ -539,6 +539,29 @@ export function StaffDashboard() {
                 </Typography>
               </Paper>
 
+              <Paper
+                component={Link}
+                to="/staff/commission"
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.neutral[200]}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    borderColor: colors.secondary.main,
+                  },
+                }}
+              >
+                <TireRepair sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.secondary.main, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  My Commission
+                </Typography>
+              </Paper>
+
               {/* Quick Tire Sale */}
               <Paper
                 onClick={() => setTireSaleDialogOpen(true)}

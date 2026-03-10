@@ -24,6 +24,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Tooltip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -103,6 +104,7 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quantityErrors, setQuantityErrors] = useState<Record<string, string>>({});
 
   // Fetch tires
   const { data: tiresData, isLoading: tiresLoading } = useQuery({
@@ -162,8 +164,12 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
       setNewCustomer({ firstName: '', lastName: '', phone: '', email: '' });
       setSelectedSalespersonId(user?.id || '');
       setError(null);
+      setQuantityErrors({});
     }
   }, [open, user?.id]);
+
+  // Check if there are any active quantity errors
+  const hasQuantityErrors = Object.values(quantityErrors).some((err) => !!err);
 
   // Handle tire selection
   const handleAddTire = (tire: any) => {
@@ -200,12 +206,44 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
     setSelectedTires((prev) => prev.filter((t) => t.tireId !== tireId));
   };
 
-  const handleQuantityChange = (tireId: string, newQuantity: number) => {
+  const handleQuantityChange = (tireId: string, value: string) => {
     const tire = selectedTires.find((t) => t.tireId === tireId);
     if (!tire) return;
 
-    const qty = Math.max(1, Math.min(newQuantity, tire.availableStock));
-    setSelectedTires((prev) => prev.map((t) => (t.tireId === tireId ? { ...t, quantity: qty } : t)));
+    // Allow empty string while typing
+    if (value === '') {
+      setSelectedTires((prev) => prev.map((t) => (t.tireId === tireId ? { ...t, quantity: 0 } : t)));
+      setQuantityErrors((prev) => ({ ...prev, [tireId]: '' }));
+      return;
+    }
+
+    const newQuantity = parseInt(value, 10);
+    if (isNaN(newQuantity)) return;
+
+    // Set the value and check for errors
+    setSelectedTires((prev) => prev.map((t) => (t.tireId === tireId ? { ...t, quantity: newQuantity } : t)));
+
+    // Show error if exceeds available stock
+    if (newQuantity > tire.availableStock) {
+      setQuantityErrors((prev) => ({ ...prev, [tireId]: `Max ${tire.availableStock} available` }));
+    } else if (newQuantity < 1) {
+      setQuantityErrors((prev) => ({ ...prev, [tireId]: 'Min 1 required' }));
+    } else {
+      setQuantityErrors((prev) => ({ ...prev, [tireId]: '' }));
+    }
+  };
+
+  const handleQuantityBlur = (tireId: string) => {
+    const tire = selectedTires.find((t) => t.tireId === tireId);
+    if (!tire) return;
+
+    // Clamp on blur to valid range
+    const qty = Math.max(1, Math.min(tire.quantity, tire.availableStock));
+    if (qty !== tire.quantity) {
+      setSelectedTires((prev) => prev.map((t) => (t.tireId === tireId ? { ...t, quantity: qty } : t)));
+    }
+    // Clear error on blur since we clamped the value
+    setQuantityErrors((prev) => ({ ...prev, [tireId]: '' }));
   };
 
   // Submit sale
@@ -274,21 +312,29 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          minHeight: isMobile ? '100%' : 400,
+          minHeight: isMobile ? '100%' : 600,
         },
       }}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TireIcon color="primary" />
+          <TireIcon sx={{ color: 'inherit' }} />
           <Typography variant="h6">Quick Tire Sale</Typography>
         </Box>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" sx={{ color: 'inherit' }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -444,14 +490,24 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <TextField
-                    type="number"
-                    value={tire.quantity}
-                    onChange={(e) => handleQuantityChange(tire.tireId, parseInt(e.target.value) || 1)}
-                    inputProps={{ min: 1, max: tire.availableStock }}
-                    size="small"
-                    sx={{ width: 60 }}
-                  />
+                  <Tooltip
+                    title={quantityErrors[tire.tireId] || ''}
+                    open={!!quantityErrors[tire.tireId]}
+                    arrow
+                    placement="top"
+                  >
+                    <TextField
+                      type="text"
+                      inputMode="numeric"
+                      value={tire.quantity === 0 ? '' : tire.quantity}
+                      onChange={(e) => handleQuantityChange(tire.tireId, e.target.value)}
+                      onBlur={() => handleQuantityBlur(tire.tireId)}
+                      onFocus={(e) => e.target.select()}
+                      size="small"
+                      error={!!quantityErrors[tire.tireId]}
+                      sx={{ width: 70 }}
+                    />
+                  </Tooltip>
                   <Typography variant="body2" fontWeight="bold" sx={{ minWidth: 60, textAlign: 'right' }}>
                     ${(tire.quantity * tire.unitPrice).toFixed(2)}
                   </Typography>
@@ -597,7 +653,7 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
           variant="contained"
           color="primary"
           onClick={handleSubmit}
-          disabled={isSubmitting || selectedTires.length === 0}
+          disabled={isSubmitting || selectedTires.length === 0 || hasQuantityErrors}
           startIcon={isSubmitting ? <CircularProgress size={20} /> : <CheckIcon />}
         >
           {isSubmitting ? 'Processing...' : 'Complete Sale'}

@@ -42,7 +42,8 @@ import {
   ExpandLess,
   BusinessCenter,
   Event,
-  RequestPage
+  RequestPage,
+  TireRepair,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -100,6 +101,7 @@ export function SupervisorLayout() {
         { text: 'Jobs', icon: <Work />, path: '/supervisor/jobs' },
         { text: 'My Jobs', icon: <Work />, path: '/supervisor/my-jobs' },
         { text: 'My Earnings', icon: <AttachMoney />, path: '/supervisor/my-earnings' },
+        { text: 'My Commission', icon: <TireRepair />, path: '/supervisor/my-commission' },
       ]
     },
     {
