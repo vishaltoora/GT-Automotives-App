@@ -28,6 +28,9 @@ import {
   Snackbar,
   Autocomplete,
   TextField,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -128,7 +131,7 @@ export function TireListSimple({
   const [sortBy] = useState<SortOption>('updatedAt'); // setSortBy removed - currently unused
   const [sortOrder] = useState<'asc' | 'desc'>('desc'); // setSortOrder removed - currently unused
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(embedded ? 6 : 12);
+  const [pageSize, setPageSize] = useState(embedded ? 6 : 10);
   
   // Dialog states
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
@@ -588,16 +591,56 @@ export function TireListSimple({
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_, newPage) => setPage(newPage)}
-            color="primary"
-            showFirstButton
-            showLastButton
-          />
+      {!embedded && totalCount > 0 && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'stretch' : 'center',
+            gap: 2,
+            mt: 3,
+            p: 2,
+            bgcolor: 'background.paper',
+            borderRadius: 1,
+          }}
+        >
+          {/* Items per page selector */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Rows per page:
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <Select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
+                <MenuItem value={10}>10</MenuItem>
+                <MenuItem value={25}>25</MenuItem>
+                <MenuItem value={50}>50</MenuItem>
+                <MenuItem value={100}>100</MenuItem>
+              </Select>
+            </FormControl>
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+              {`${((page - 1) * pageSize) + 1}-${Math.min(page * pageSize, totalCount)} of ${totalCount}`}
+            </Typography>
+          </Box>
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(_, newPage) => setPage(newPage)}
+              color="primary"
+              showFirstButton
+              showLastButton
+              size={isMobile ? 'small' : 'medium'}
+            />
+          )}
         </Box>
       )}
 
