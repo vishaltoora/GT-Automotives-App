@@ -18,6 +18,7 @@ export const TIRE_QUERY_KEYS = {
   lowStock: () => [...TIRE_QUERY_KEYS.all, 'low-stock'] as const,
   inventoryReport: () => [...TIRE_QUERY_KEYS.all, 'inventory-report'] as const,
   brands: () => [...TIRE_QUERY_KEYS.all, 'brands'] as const,
+  sizes: () => [...TIRE_QUERY_KEYS.all, 'sizes'] as const,
   sizeSuggestions: (query: string) => [...TIRE_QUERY_KEYS.all, 'size-suggestions', query] as const,
 };
 
@@ -73,6 +74,16 @@ export function useTireBrands() {
   return useQuery({
     queryKey: TIRE_QUERY_KEYS.brands(),
     queryFn: () => TireService.getTireBrands(),
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+  });
+}
+
+// Custom hook for fetching tire sizes
+export function useTireSizes() {
+  return useQuery({
+    queryKey: TIRE_QUERY_KEYS.sizes(),
+    queryFn: () => TireService.getTireSizes(),
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
   });

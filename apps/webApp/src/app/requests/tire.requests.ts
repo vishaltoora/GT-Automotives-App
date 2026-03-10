@@ -95,12 +95,23 @@ export class TireService {
    */
   static async getTires(params: ITireSearchParams = {}): Promise<ITireSearchResult> {
     const queryParams = new URLSearchParams();
-    
+
     // Add search parameter
     if (params.search) {
       queryParams.append('search', params.search);
     }
-    
+
+    // Add filter parameters
+    if (params.brand) {
+      queryParams.append('brand', params.brand);
+    }
+    if (params.type) {
+      queryParams.append('type', params.type);
+    }
+    if (params.size) {
+      queryParams.append('size', params.size);
+    }
+
     // Add sorting parameters
     if (params.sortBy) {
       queryParams.append('sortBy', params.sortBy);
@@ -108,7 +119,7 @@ export class TireService {
     if (params.sortOrder) {
       queryParams.append('sortOrder', params.sortOrder);
     }
-    
+
     // Add pagination parameters
     if (params.page) {
       queryParams.append('page', params.page.toString());
@@ -116,9 +127,7 @@ export class TireService {
     if (params.limit) {
       queryParams.append('limit', params.limit.toString());
     }
-    
-    // Add filters (removed - not supported in DTO)
-    
+
     const response: AxiosResponse<ITireSearchResult> = await apiClient.get(
       `/tires?${queryParams.toString()}`
     );
@@ -227,6 +236,14 @@ export class TireService {
    */
   static async getTireBrands(): Promise<string[]> {
     const response: AxiosResponse<string[]> = await apiClient.get('/tires/brands');
+    return response.data;
+  }
+
+  /**
+   * Get available tire sizes for filtering
+   */
+  static async getTireSizes(): Promise<string[]> {
+    const response: AxiosResponse<string[]> = await apiClient.get('/tires/sizes');
     return response.data;
   }
 

@@ -7,9 +7,7 @@ import {
   Grid,
   Card,
   CardContent,
-  TextField,
   IconButton,
-  Toolbar,
   Chip,
   Stack,
   Alert,
@@ -28,18 +26,19 @@ import {
   TableRow,
   Paper,
   Snackbar,
+  Autocomplete,
+  TextField,
 } from '@mui/material';
 import {
   Add as AddIcon,
   ViewList as ListViewIcon,
   ViewModule as GridViewIcon,
-  Search as SearchIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { useTires, useInvalidateTireQueries } from '../../hooks/useTires';
+import { useTires, useInvalidateTireQueries, useTireBrands, useTireSizes } from '../../hooks/useTires';
 import { ITireSearchParams, ITire } from '@gt-automotive/data';
 // Define enums locally to avoid Prisma client browser issues
 const TireType = {
@@ -51,15 +50,18 @@ const TireType = {
   RUN_FLAT: 'RUN_FLAT',
 } as const;
 
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
 type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
+
+// Tire type options for autocomplete filter
+const TIRE_TYPE_OPTIONS = [
+  { value: 'ALL_SEASON', label: 'All Season' },
+  { value: 'SUMMER', label: 'Summer' },
+  { value: 'WINTER', label: 'Winter' },
+  { value: 'PERFORMANCE', label: 'Performance' },
+  { value: 'OFF_ROAD', label: 'Off Road' },
+  { value: 'RUN_FLAT', label: 'Run Flat' },
+];
+
 import { useMutation } from '@tanstack/react-query';
 import { TireService } from '../../requests/tire.requests';
 import TireCard from '../../components/inventory/TireCard';
@@ -79,8 +81,33 @@ const formatTireType = (type: TireType): string => {
   return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 };
 
-const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+// Get unique color for each location based on string hash (FNV-1a algorithm for better distribution)
+const getLocationColor = (location: string | undefined): string => {
+  if (!location) return '#9e9e9e'; // grey for empty
+  // FNV-1a hash - better distribution than djb2
+  let hash = 2166136261;
+  for (let i = 0; i < location.length; i++) {
+    hash ^= location.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  hash = hash >>> 0; // Convert to unsigned 32-bit
+  const colors = [
+    '#1976d2', // blue
+    '#388e3c', // green
+    '#f57c00', // orange
+    '#7b1fa2', // purple
+    '#d32f2f', // red
+    '#0097a7', // cyan
+    '#c2185b', // pink
+    '#512da8', // deep purple
+    '#00796b', // teal
+    '#5d4037', // brown
+    '#455a64', // blue grey
+    '#e64a19', // deep orange
+    '#303f9f', // indigo
+  ];
+  // Use prime number 13 for better distribution with 13 colors
+  return colors[hash % 13];
 };
 
 export function TireListSimple({ 
@@ -91,11 +118,13 @@ export function TireListSimple({
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isAdmin, isStaff, isCustomer } = useAuth();
+  const { isAdmin, isCustomer } = useAuth();
 
   // State
   const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'grid' : 'list');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<string>('');
   const [sortBy] = useState<SortOption>('updatedAt'); // setSortBy removed - currently unused
   const [sortOrder] = useState<'asc' | 'desc'>('desc'); // setSortOrder removed - currently unused
   const [page, setPage] = useState(1);
@@ -114,22 +143,28 @@ export function TireListSimple({
     severity: 'success',
   });
 
-  // Debounced search
+  // Filter params for API
   const searchParams = useMemo<ITireSearchParams>(() => ({
-    search: searchQuery || undefined,
+    brand: selectedBrand || undefined,
+    type: (selectedType || undefined) as ITireSearchParams['type'],
+    size: selectedSize || undefined,
     sortBy,
     sortOrder,
     page,
     limit: pageSize,
-  }), [searchQuery, sortBy, sortOrder, page, pageSize]);
+  }), [selectedBrand, selectedType, selectedSize, sortBy, sortOrder, page, pageSize]);
 
   // Data fetching
-  const { 
-    data: tiresResult, 
-    isLoading, 
-    isError, 
-    error 
+  const {
+    data: tiresResult,
+    isLoading,
+    isError,
+    error
   } = useTires(searchParams);
+
+  // Fetch brands and sizes for dropdown filters
+  const { data: brands = [] } = useTireBrands();
+  const { data: sizes = [] } = useTireSizes();
 
   // const exportMutation = useExportTires(); // Unused - kept for future implementation
   const invalidateQueries = useInvalidateTireQueries();
@@ -161,9 +196,11 @@ export function TireListSimple({
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Event handlers
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    setPage(1); // Reset to first page when searching
+  const handleFilterChange = (filterType: 'brand' | 'type' | 'size', value: string) => {
+    if (filterType === 'brand') setSelectedBrand(value);
+    else if (filterType === 'type') setSelectedType(value);
+    else if (filterType === 'size') setSelectedSize(value);
+    setPage(1); // Reset to first page when filtering
   };
 
 
@@ -254,82 +291,54 @@ export function TireListSimple({
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Image</TableCell>
             <TableCell>Name/Brand</TableCell>
-            <TableCell>SKU</TableCell>
             <TableCell>Location</TableCell>
-            <TableCell>Size</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>Condition</TableCell>
             <TableCell>Stock</TableCell>
-            <TableCell>Price</TableCell>
-            {isAdmin && <TableCell>Cost</TableCell>}
-            {showActions && (isStaff || isAdmin) && <TableCell align="right">Actions</TableCell>}
+            <TableCell>Unit Price</TableCell>
+            <TableCell>Set Price</TableCell>
+            {showActions && isAdmin && <TableCell align="right">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
           {tires.map((tire) => (
             <TableRow key={tire.id}>
               <TableCell>
-                <Box
-                  sx={{
-                    width: 50,
-                    height: 50,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'grey.50',
-                    borderRadius: 1,
-                    fontSize: '24px',
-                    border: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                  title={`${tire.type.replace('_', ' ')} tire`}
-                >
-                  {tire.type === 'ALL_SEASON' ? '🌤️' :
-                   tire.type === 'SUMMER' ? '☀️' :
-                   tire.type === 'WINTER' ? '❄️' :
-                   tire.type === 'PERFORMANCE' ? '🏁' :
-                   tire.type === 'OFF_ROAD' ? '🏔️' :
-                   tire.type === 'RUN_FLAT' ? '🛡️' : '🛞'}
-                </Box>
-              </TableCell>
-              <TableCell>
                 <Box>
-                  {tire.name && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="body2" fontWeight="medium">
-                      {tire.name}
+                      {tire.name || tire.brand}
+                    </Typography>
+                    <Chip
+                      label={formatTireType(tire.type)}
+                      size="small"
+                      variant="outlined"
+                      color={
+                        tire.type === 'ALL_SEASON' ? 'info' :
+                        tire.type === 'SUMMER' ? 'warning' :
+                        tire.type === 'WINTER' ? 'primary' :
+                        tire.type === 'PERFORMANCE' ? 'error' :
+                        tire.type === 'OFF_ROAD' ? 'success' :
+                        tire.type === 'RUN_FLAT' ? 'secondary' : 'default'
+                      }
+                    />
+                  </Box>
+                  {tire.name && (
+                    <Typography variant="body2" color="text.secondary">
+                      {tire.brand}
                     </Typography>
                   )}
-                  <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
-                    {tire.brand}
+                  <Typography variant="caption" color="text.secondary">
+                    {tire.size}
                   </Typography>
                 </Box>
               </TableCell>
               <TableCell>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                  {tire.sku || '-'}
+                <Typography variant="body2" sx={{ color: getLocationColor(tire.location), fontWeight: 'medium' }}>
+                  {tire.location || '-'}
                 </Typography>
               </TableCell>
-              <TableCell>{tire.location || '-'}</TableCell>
-              <TableCell>{tire.size}</TableCell>
               <TableCell>
-                <Chip 
-                  label={formatTireType(tire.type)} 
-                  size="small" 
-                  variant="outlined"
-                />
-              </TableCell>
-              <TableCell>
-                <Chip 
-                  label={formatCondition(tire.condition)} 
-                  size="small" 
-                  color={tire.condition === 'NEW' ? 'success' : 'warning'}
-                  variant="outlined"
-                />
-              </TableCell>
-              <TableCell>
-                <Typography 
+                <Typography
                   color={tire.quantity <= (tire.minStock || 5) ? 'error' : 'inherit'}
                   fontWeight={tire.quantity <= (tire.minStock || 5) ? 'bold' : 'normal'}
                 >
@@ -337,12 +346,8 @@ export function TireListSimple({
                 </Typography>
               </TableCell>
               <TableCell>${tire.price.toFixed(2)}</TableCell>
-              {isAdmin && (
-                <TableCell>
-                  {tire.cost ? `$${tire.cost.toFixed(2)}` : '-'}
-                </TableCell>
-              )}
-              {showActions && (isStaff || isAdmin) && (
+              <TableCell>${(tire.price * 4).toFixed(2)}</TableCell>
+              {showActions && isAdmin && (
                 <TableCell align="right">
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                     <IconButton
@@ -384,12 +389,12 @@ export function TireListSimple({
     <Box>
       {/* Header */}
       {!embedded && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
+        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+          <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" gutterBottom>
             Tire Inventory
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {isCustomer 
+          <Typography variant="body2" color="text.secondary">
+            {isCustomer
               ? 'Browse our tire selection'
               : 'Manage tire inventory and stock levels'
             }
@@ -399,68 +404,124 @@ export function TireListSimple({
 
       {/* Toolbar */}
       <Card sx={{ mb: 3 }}>
-        <Toolbar sx={{ gap: isMobile ? 1 : 2, flexWrap: 'wrap', px: isMobile ? 1.5 : 2 }}>
-          {/* Search with floating Add button on mobile */}
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1 }}>
-            <TextField
-              placeholder="Search tires..."
-              variant="outlined"
+        <Box sx={{ p: isMobile ? 1.5 : 2 }}>
+          {/* Filters and Actions Row */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: isMobile ? 1.5 : 2,
+              alignItems: isMobile ? 'stretch' : 'center',
+            }}
+          >
+            {/* Brand Filter */}
+            <Autocomplete
               size="small"
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
-              }}
-              sx={{ flexGrow: 1 }}
+              sx={{ flex: isMobile ? 'none' : 1, minWidth: isMobile ? '100%' : 120 }}
+              options={brands}
+              value={selectedBrand || null}
+              onChange={(_, newValue) => handleFilterChange('brand', newValue || '')}
+              renderInput={(params) => <TextField {...params} label="Brand" />}
+              clearOnEscape
             />
-            {showActions && (isStaff || isAdmin) && isMobile && (
-              <IconButton
-                color="primary"
-                onClick={handleTireCreate}
-                sx={{
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                  width: 40,
-                  height: 40,
-                }}
+
+            {/* Type Filter */}
+            <Autocomplete
+              size="small"
+              sx={{ flex: isMobile ? 'none' : 1, minWidth: isMobile ? '100%' : 120 }}
+              options={TIRE_TYPE_OPTIONS}
+              getOptionLabel={(option) => option.label}
+              value={TIRE_TYPE_OPTIONS.find((opt) => opt.value === selectedType) || null}
+              onChange={(_, newValue) => handleFilterChange('type', newValue?.value || '')}
+              renderInput={(params) => <TextField {...params} label="Type" />}
+              clearOnEscape
+            />
+
+            {/* Size Filter */}
+            <Autocomplete
+              size="small"
+              sx={{ flex: isMobile ? 'none' : 1, minWidth: isMobile ? '100%' : 120 }}
+              options={sizes}
+              value={selectedSize || null}
+              onChange={(_, newValue) => handleFilterChange('size', newValue || '')}
+              renderInput={(params) => <TextField {...params} label="Size" />}
+              clearOnEscape
+            />
+
+            {/* View Mode Toggle - Beside filters on desktop, separate row on mobile */}
+            {isMobile ? null : (
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newViewMode) => newViewMode && setViewMode(newViewMode)}
+                size="small"
               >
-                <AddIcon />
-              </IconButton>
+                <ToggleButton value="grid">
+                  <GridViewIcon />
+                </ToggleButton>
+                <ToggleButton value="list">
+                  <ListViewIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
+
+            {/* Add Button - Beside filters on desktop */}
+            {!isMobile && showActions && isAdmin && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleTireCreate}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                Add New Tire
+              </Button>
             )}
           </Box>
 
-          {/* View Mode Toggle - Hide on mobile */}
-          {!isMobile && (
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={(_, newViewMode) => newViewMode && setViewMode(newViewMode)}
-              size="small"
+          {/* Mobile: View toggle and Add button row */}
+          {isMobile && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mt: 1.5,
+              }}
             >
-              <ToggleButton value="grid">
-                <GridViewIcon />
-              </ToggleButton>
-              <ToggleButton value="list">
-                <ListViewIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newViewMode) => newViewMode && setViewMode(newViewMode)}
+                size="small"
+              >
+                <ToggleButton value="grid">
+                  <GridViewIcon />
+                </ToggleButton>
+                <ToggleButton value="list">
+                  <ListViewIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
 
-          {/* Actions - Desktop only */}
-          {showActions && (isStaff || isAdmin) && !isMobile && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleTireCreate}
-              sx={{ whiteSpace: 'nowrap' }}
-            >
-              Add New Tire
-            </Button>
+              {showActions && isAdmin && (
+                <IconButton
+                  color="primary"
+                  onClick={handleTireCreate}
+                  sx={{
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                    width: 40,
+                    height: 40,
+                  }}
+                >
+                  <AddIcon />
+                </IconButton>
+              )}
+            </Box>
           )}
-        </Toolbar>
+        </Box>
       </Card>
 
 
@@ -489,7 +550,7 @@ export function TireListSimple({
               <TireCard
                 tire={tire}
                 onView={() => handleTireView(tire.id)}
-                onEdit={showActions && (isStaff || isAdmin) ? () => handleTireEdit(tire) : undefined}
+                onEdit={showActions && isAdmin ? () => handleTireEdit(tire) : undefined}
                 onDelete={showActions && isAdmin ? () => handleTireDelete(tire) : undefined}
                 showCost={isAdmin}
                 variant={embedded ? 'compact' : 'detailed'}
@@ -509,12 +570,12 @@ export function TireListSimple({
             No tires found
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {searchQuery
-              ? 'Try adjusting your search'
+            {(selectedBrand || selectedType || selectedSize)
+              ? 'Try adjusting your filters'
               : 'Get started by adding your first tire to the inventory'
             }
           </Typography>
-          {showActions && (isStaff || isAdmin) && (
+          {showActions && isAdmin && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -541,7 +602,7 @@ export function TireListSimple({
       )}
 
       {/* Floating Add Button */}
-      {showActions && (isStaff || isAdmin) && !embedded && (
+      {showActions && isAdmin && !embedded && (
         <Fab
           color="primary"
           onClick={handleTireCreate}
