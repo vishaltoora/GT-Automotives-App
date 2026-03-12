@@ -74,16 +74,28 @@ export class PdfService {
     // Load GT Logo as base64
     let gtLogoBase64 = '';
     try {
-      // Use process.cwd() to get project root, works in both dev and production
-      const logoPath = path.join(process.cwd(), 'server/assets/logo.png');
-      this.logger.log(`[PDF] Attempting to load logo from: ${logoPath}`);
+      // Try multiple paths for logo (dev vs production Docker)
+      const possiblePaths = [
+        path.join(process.cwd(), 'server/assets/logo.png'),  // Local dev
+        path.join(process.cwd(), 'assets/logo.png'),         // Production Docker
+        path.join(__dirname, '../assets/logo.png'),          // Relative to dist
+        path.join(__dirname, '../../assets/logo.png'),       // Alternative relative
+      ];
 
-      if (fs.existsSync(logoPath)) {
+      let logoPath: string | null = null;
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          logoPath = p;
+          break;
+        }
+      }
+
+      if (logoPath) {
         const logoBuffer = fs.readFileSync(logoPath);
         gtLogoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-        this.logger.log('[PDF] GT logo loaded successfully for PDF generation');
+        this.logger.log(`[PDF] GT logo loaded successfully from: ${logoPath}`);
       } else {
-        this.logger.warn(`[PDF] Logo file not found at: ${logoPath}`);
+        this.logger.warn(`[PDF] Logo file not found in any of the expected paths`);
       }
     } catch (error) {
       this.logger.warn('[PDF] Could not load GT logo for PDF generation:', error);
@@ -280,13 +292,28 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
     // Load GT Logo as base64
     let gtLogoBase64 = '';
     try {
-      const logoPath = path.join(process.cwd(), 'server/assets/logo.png');
-      if (fs.existsSync(logoPath)) {
+      // Try multiple paths for logo (dev vs production Docker)
+      const possiblePaths = [
+        path.join(process.cwd(), 'server/assets/logo.png'),  // Local dev
+        path.join(process.cwd(), 'assets/logo.png'),         // Production Docker
+        path.join(__dirname, '../assets/logo.png'),          // Relative to dist
+        path.join(__dirname, '../../assets/logo.png'),       // Alternative relative
+      ];
+
+      let logoPath: string | null = null;
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          logoPath = p;
+          break;
+        }
+      }
+
+      if (logoPath) {
         const logoBuffer = fs.readFileSync(logoPath);
         gtLogoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-        this.logger.log('[PDF] GT logo loaded successfully for quotation PDF generation');
+        this.logger.log(`[PDF] GT logo loaded successfully for quotation from: ${logoPath}`);
       } else {
-        this.logger.warn(`[PDF] Logo file not found at: ${logoPath}`);
+        this.logger.warn(`[PDF] Logo file not found in any of the expected paths`);
       }
     } catch (error) {
       this.logger.warn('[PDF] Could not load GT logo for quotation PDF generation:', error);
