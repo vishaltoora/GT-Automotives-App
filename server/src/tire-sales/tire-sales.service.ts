@@ -199,7 +199,7 @@ export class TireSalesService {
       invoiceId = invoice.id;
     }
 
-    // Create the tire sale
+    // Create the tire sale (repository handles inventory deduction in transaction)
     const tireSale = await this.tireSaleRepository.createWithItems(
       {
         saleNumber,

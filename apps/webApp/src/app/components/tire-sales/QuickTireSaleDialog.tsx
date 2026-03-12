@@ -298,6 +298,9 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
 
       await TireSaleService.create(request);
 
+      // Invalidate tire inventory cache to reflect deducted quantities
+      queryClient.invalidateQueries({ queryKey: ['tires'] });
+
       onSuccess?.();
       onClose();
     } catch (err: any) {
@@ -382,36 +385,38 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
           </Grid>
         </Grid>
 
-        {/* Tire Search */}
-        <Autocomplete
-          options={tires}
-          getOptionLabel={(option: any) => {
-            const size = typeof option.size === 'string' ? option.size : (option.size?.size || option.sizeName || '');
-            const brand = typeof option.brand === 'string' ? option.brand : (option.brand?.name || option.brandName || '');
-            return `${size} - ${brand} ${option.type} (${option.quantity} in stock)`;
-          }}
-          inputValue={searchQuery}
-          onInputChange={(_, value) => setSearchQuery(value)}
-          onChange={(_, value) => value && handleAddTire(value)}
-          loading={tiresLoading}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Search Tires"
-              placeholder="Search by brand or size..."
-              variant="outlined"
-              fullWidth
-              size="small"
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {tiresLoading && <CircularProgress color="inherit" size={20} />}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-            />
+        {/* Tire Search with Add Button */}
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <Autocomplete
+            options={tires}
+            getOptionLabel={(option: any) => {
+              const size = typeof option.size === 'string' ? option.size : (option.size?.size || option.sizeName || '');
+              const brand = typeof option.brand === 'string' ? option.brand : (option.brand?.name || option.brandName || '');
+              return `${size} - ${brand} ${option.type} (${option.quantity} in stock)`;
+            }}
+            inputValue={searchQuery}
+            onInputChange={(_, value) => setSearchQuery(value)}
+            onChange={(_, value) => value && handleAddTire(value)}
+            loading={tiresLoading}
+            sx={{ flex: 1 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Search Tires"
+                placeholder="Search by brand or size..."
+                variant="outlined"
+                fullWidth
+                size="small"
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {tiresLoading && <CircularProgress color="inherit" size={20} />}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+              />
           )}
           renderOption={(props, option: any) => {
             const { key, ...otherProps } = props;
@@ -461,8 +466,18 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
               </Button>
             </Box>
           }
-          sx={{ mb: 2 }}
         />
+          <Tooltip title="Add new tire to inventory">
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setShowAddTireDialog(true)}
+              sx={{ minWidth: 'auto', px: 1.5, height: 40 }}
+            >
+              <AddIcon />
+            </Button>
+          </Tooltip>
+        </Box>
 
         {/* Selected Tires */}
         {selectedTires.length > 0 && (

@@ -24,6 +24,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Paper,
   Snackbar,
   Autocomplete,
@@ -121,15 +122,16 @@ export function TireListSimple({
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isAdmin, isCustomer } = useAuth();
+  const { isAdmin, isSupervisor, isCustomer } = useAuth();
+  const canManageInventory = isAdmin || isSupervisor;
 
   // State
   const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'grid' : 'list');
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
-  const [sortBy] = useState<SortOption>('updatedAt'); // setSortBy removed - currently unused
-  const [sortOrder] = useState<'asc' | 'desc'>('desc'); // setSortOrder removed - currently unused
+  const [sortBy, setSortBy] = useState<SortOption | 'quantity' | 'setPrice'>('updatedAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(embedded ? 6 : 10);
   
@@ -194,7 +196,24 @@ export function TireListSimple({
     },
   });
 
-  const tires = tiresResult?.items || [];
+  const tiresRaw = tiresResult?.items || [];
+
+  // Sort tires client-side for quantity and setPrice columns
+  const tires = useMemo(() => {
+    if (sortBy === 'quantity') {
+      return [...tiresRaw].sort((a, b) => {
+        const diff = a.quantity - b.quantity;
+        return sortOrder === 'asc' ? diff : -diff;
+      });
+    }
+    if (sortBy === 'setPrice') {
+      return [...tiresRaw].sort((a, b) => {
+        const diff = (a.price * 4) - (b.price * 4);
+        return sortOrder === 'asc' ? diff : -diff;
+      });
+    }
+    return tiresRaw;
+  }, [tiresRaw, sortBy, sortOrder]);
   const totalCount = tiresResult?.total || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -208,16 +227,16 @@ export function TireListSimple({
 
 
 
-  // Unused for now - kept for future implementation
-  // const handleSortChange = (newSortBy: SortOption) => {
-  //   if (newSortBy === sortBy) {
-  //     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-  //   } else {
-  //     setSortBy(newSortBy);
-  //     setSortOrder('asc');
-  //   }
-  //   setPage(1);
-  // };
+  // Handle column header click for sorting
+  const handleSortChange = (newSortBy: SortOption | 'quantity' | 'setPrice') => {
+    if (newSortBy === sortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('asc');
+    }
+    setPage(1);
+  };
 
   const handleTireView = (tireId: string) => {
     if (embedded) {
@@ -296,10 +315,26 @@ export function TireListSimple({
           <TableRow>
             <TableCell>Name/Brand</TableCell>
             <TableCell>Location</TableCell>
-            <TableCell>Stock</TableCell>
+            <TableCell sortDirection={sortBy === 'quantity' ? sortOrder : false}>
+              <TableSortLabel
+                active={sortBy === 'quantity'}
+                direction={sortBy === 'quantity' ? sortOrder : 'asc'}
+                onClick={() => handleSortChange('quantity')}
+              >
+                Stock
+              </TableSortLabel>
+            </TableCell>
             <TableCell>Unit Price</TableCell>
-            <TableCell>Set Price</TableCell>
-            {showActions && isAdmin && <TableCell align="right">Actions</TableCell>}
+            <TableCell sortDirection={sortBy === 'setPrice' ? sortOrder : false}>
+              <TableSortLabel
+                active={sortBy === 'setPrice'}
+                direction={sortBy === 'setPrice' ? sortOrder : 'asc'}
+                onClick={() => handleSortChange('setPrice')}
+              >
+                Set Price
+              </TableSortLabel>
+            </TableCell>
+            {showActions && canManageInventory && <TableCell align="right">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -350,7 +385,7 @@ export function TireListSimple({
               </TableCell>
               <TableCell>${tire.price.toFixed(2)}</TableCell>
               <TableCell>${(tire.price * 4).toFixed(2)}</TableCell>
-              {showActions && isAdmin && (
+              {showActions && canManageInventory && (
                 <TableCell align="right">
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                     <IconButton
@@ -368,7 +403,7 @@ export function TireListSimple({
                     >
                       <EditIcon fontSize="small" />
                     </IconButton>
-                    {isAdmin && (
+                    {canManageInventory && (
                       <IconButton
                         size="small"
                         onClick={() => handleTireDelete(tire)}
@@ -469,7 +504,7 @@ export function TireListSimple({
             )}
 
             {/* Add Button - Beside filters on desktop */}
-            {!isMobile && showActions && isAdmin && (
+            {!isMobile && showActions && canManageInventory && (
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -505,7 +540,7 @@ export function TireListSimple({
                 </ToggleButton>
               </ToggleButtonGroup>
 
-              {showActions && isAdmin && (
+              {showActions && canManageInventory && (
                 <IconButton
                   color="primary"
                   onClick={handleTireCreate}
@@ -553,8 +588,8 @@ export function TireListSimple({
               <TireCard
                 tire={tire}
                 onView={() => handleTireView(tire.id)}
-                onEdit={showActions && isAdmin ? () => handleTireEdit(tire) : undefined}
-                onDelete={showActions && isAdmin ? () => handleTireDelete(tire) : undefined}
+                onEdit={showActions && canManageInventory ? () => handleTireEdit(tire) : undefined}
+                onDelete={showActions && canManageInventory ? () => handleTireDelete(tire) : undefined}
                 showCost={isAdmin}
                 variant={embedded ? 'compact' : 'detailed'}
                 showActions={showActions}
@@ -578,7 +613,7 @@ export function TireListSimple({
               : 'Get started by adding your first tire to the inventory'
             }
           </Typography>
-          {showActions && isAdmin && (
+          {showActions && canManageInventory && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -645,7 +680,7 @@ export function TireListSimple({
       )}
 
       {/* Floating Add Button */}
-      {showActions && isAdmin && !embedded && (
+      {showActions && canManageInventory && !embedded && (
         <Fab
           color="primary"
           onClick={handleTireCreate}
