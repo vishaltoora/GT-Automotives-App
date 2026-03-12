@@ -1230,7 +1230,8 @@ export class EmailService {
 
       return { success: true, messageId };
     } catch (error) {
-      this.logger.error('[EMAIL] Failed to send invoice email:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`[EMAIL] Failed to send invoice email: ${errorMessage}`, error);
       return { success: false };
     }
   }

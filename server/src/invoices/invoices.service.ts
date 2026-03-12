@@ -474,14 +474,18 @@ export class InvoicesService {
 
     try {
       // Generate PDF
+      console.log(`[INVOICE EMAIL] Generating PDF for invoice ${invoice.invoiceNumber}...`);
       const pdfBase64 = await this.pdfService.generateInvoicePdf(invoice);
+      console.log(`[INVOICE EMAIL] PDF generated successfully, size: ${pdfBase64.length} chars`);
 
       // Send email
+      console.log(`[INVOICE EMAIL] Sending email to ${emailToUse}...`);
       const emailResult = await this.emailService.sendInvoiceEmail(
         emailToUse,
         invoice.invoiceNumber,
         pdfBase64,
       );
+      console.log(`[INVOICE EMAIL] Email result:`, emailResult);
 
       // Check if email was sent successfully
       if (!emailResult.success) {
