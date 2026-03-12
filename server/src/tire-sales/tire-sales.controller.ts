@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Query,
@@ -14,6 +15,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import {
   CreateTireSaleDto,
+  UpdateTireSaleDto,
   TireSaleResponseDto,
   TireSaleFiltersDto,
   CommissionReportDto,
@@ -98,6 +100,29 @@ export class TireSalesController {
   }
 
   /**
+   * Get employee stats (admin only - for viewing other employee's stats)
+   * GET /api/tire-sales/employee-stats/:employeeId
+   */
+  @Get('employee-stats/:employeeId')
+  @Roles('ADMIN', 'ACCOUNTANT')
+  async getEmployeeStats(
+    @Param('employeeId') employeeId: string,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ): Promise<{
+    totalTiresSold: number;
+    currentRate: number;
+    nextThreshold: number | null;
+    tiresToNextThreshold: number | null;
+  }> {
+    return this.tireSalesService.getMonthlyStats(
+      employeeId,
+      year ? parseInt(year, 10) : undefined,
+      month ? parseInt(month, 10) : undefined,
+    );
+  }
+
+  /**
    * Get commission report
    * GET /api/tire-sales/reports/commissions
    */
@@ -117,6 +142,21 @@ export class TireSalesController {
   @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'ACCOUNTANT')
   async findOne(@Param('id') id: string): Promise<TireSaleResponseDto> {
     return this.tireSalesService.findOne(id);
+  }
+
+  /**
+   * Update tire sale (change salesperson)
+   * PATCH /api/tire-sales/:id
+   */
+  @Patch(':id')
+  @Roles('ADMIN')
+  async update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateTireSaleDto,
+    @Request() req: any,
+  ): Promise<TireSaleResponseDto> {
+    const userId = req.user?.id;
+    return this.tireSalesService.update(id, updateDto, userId);
   }
 
   /**

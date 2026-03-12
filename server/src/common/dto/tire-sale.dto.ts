@@ -104,6 +104,21 @@ export class CreateTireSaleDto {
 }
 
 // ============================================
+// Update Tire Sale DTO (Admin only - change salesperson)
+// ============================================
+
+export class UpdateTireSaleDto {
+  // Change salesperson
+  @IsOptional()
+  @IsString()
+  soldById?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// ============================================
 // Tire Sale Response DTO
 // ============================================
 

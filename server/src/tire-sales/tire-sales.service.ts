@@ -7,6 +7,7 @@ import { InvoicesService } from '../invoices/invoices.service';
 import { JobsService } from '../jobs/jobs.service';
 import {
   CreateTireSaleDto,
+  UpdateTireSaleDto,
   TireSaleResponseDto,
   TireSaleFiltersDto,
   CommissionReportDto,
@@ -46,9 +47,10 @@ export class TireSalesService {
 
   /**
    * Check if a threshold was crossed (for retroactive recalculation)
+   * Thresholds: 31 (Silver), 51 (Gold), 71 (Platinum)
    */
   private checkThresholdCrossed(beforeCount: number, afterCount: number): number | null {
-    const thresholds = [40, 60, 80];
+    const thresholds = [31, 51, 71];
     for (const threshold of thresholds) {
       if (beforeCount < threshold && afterCount >= threshold) {
         return threshold;
@@ -338,6 +340,85 @@ export class TireSalesService {
   }
 
   /**
+   * Update tire sale (change salesperson)
+   */
+  async update(id: string, dto: UpdateTireSaleDto, adminUserId: string): Promise<TireSaleResponseDto> {
+    const sale = await this.tireSaleRepository.findById(id);
+    if (!sale) {
+      throw new NotFoundException('Tire sale not found');
+    }
+
+    const oldSoldById = sale.soldById;
+    const updateData: any = {};
+
+    // Update salesperson if provided
+    if (dto.soldById && dto.soldById !== sale.soldById) {
+      // Verify the new salesperson exists
+      const newSalesperson = await this.prisma.user.findUnique({
+        where: { id: dto.soldById },
+      });
+      if (!newSalesperson) {
+        throw new BadRequestException('Salesperson not found');
+      }
+      updateData.soldById = dto.soldById;
+    }
+
+    // Update notes if provided
+    if (dto.notes !== undefined) {
+      updateData.notes = dto.notes;
+    }
+
+    // Only update if there are changes
+    if (Object.keys(updateData).length === 0) {
+      return this.toResponseDto(sale);
+    }
+
+    // Perform the update
+    const updatedSale = await this.prisma.tireSale.update({
+      where: { id },
+      data: updateData,
+      include: {
+        soldBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        customer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            businessName: true,
+            phone: true,
+          },
+        },
+        invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+          },
+        },
+        items: true,
+      },
+    });
+
+    // Log audit
+    await this.auditRepository.create({
+      userId: adminUserId,
+      action: 'UPDATE',
+      resource: 'TireSale',
+      resourceId: id,
+      oldValue: { soldById: oldSoldById },
+      newValue: updateData,
+    });
+
+    return this.toResponseDto(updatedSale as TireSaleWithRelations);
+  }
+
+  /**
    * Get commission report
    */
   async getCommissionReport(filters: CommissionFiltersDto): Promise<CommissionReportDto> {
@@ -527,19 +608,20 @@ export class TireSalesService {
     const totalTiresSold = await this.tireSaleRepository.getMonthlyTireCount(employeeId, y, m);
     const currentRate = this.getCommissionRate(totalTiresSold);
 
-    // Determine next threshold
+    // Determine next threshold based on commission tiers:
+    // Bronze: 0-30 ($3), Silver: 31-50 ($4), Gold: 51-70 ($5), Platinum: 71+ ($7)
     let nextThreshold: number | null = null;
     let tiresToNextThreshold: number | null = null;
 
-    if (totalTiresSold < 40) {
-      nextThreshold = 40;
-      tiresToNextThreshold = 40 - totalTiresSold;
-    } else if (totalTiresSold < 60) {
-      nextThreshold = 60;
-      tiresToNextThreshold = 60 - totalTiresSold;
-    } else if (totalTiresSold < 80) {
-      nextThreshold = 80;
-      tiresToNextThreshold = 80 - totalTiresSold;
+    if (totalTiresSold < 31) {
+      nextThreshold = 31;
+      tiresToNextThreshold = 31 - totalTiresSold;
+    } else if (totalTiresSold < 51) {
+      nextThreshold = 51;
+      tiresToNextThreshold = 51 - totalTiresSold;
+    } else if (totalTiresSold < 71) {
+      nextThreshold = 71;
+      tiresToNextThreshold = 71 - totalTiresSold;
     }
 
     return {

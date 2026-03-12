@@ -39,6 +39,11 @@ export interface CreateTireSaleRequest {
   notes?: string;
 }
 
+export interface UpdateTireSaleRequest {
+  soldById?: string;
+  notes?: string;
+}
+
 export interface TireSaleItem {
   id: string;
   tireId: string;
@@ -173,6 +178,33 @@ export const TireSaleService = {
   },
 
   /**
+   * Update a tire sale (change salesperson)
+   */
+  async update(id: string, data: UpdateTireSaleRequest): Promise<TireSale> {
+    const token = localStorage.getItem('authToken');
+    let authToken = token;
+
+    if (getClerkToken) {
+      try {
+        const clerkToken = await getClerkToken();
+        if (clerkToken) {
+          authToken = clerkToken;
+        }
+      } catch {
+        // Fall back to localStorage token
+      }
+    }
+
+    const response = await axios.patch(`${API_URL}/api/tire-sales/${id}`, data, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  },
+
+  /**
    * Get all tire sales with filters
    */
   async getAll(filters?: TireSaleFilters): Promise<TireSaleListResponse> {
@@ -264,6 +296,36 @@ export const TireSaleService = {
     if (month) params.append('month', String(month));
 
     const response = await axios.get(`${API_URL}/api/tire-sales/my-stats?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Get employee stats (admin only - for viewing other employee's stats)
+   */
+  async getEmployeeStats(employeeId: string, year?: number, month?: number): Promise<MonthlyStats> {
+    const token = localStorage.getItem('authToken');
+    let authToken = token;
+
+    if (getClerkToken) {
+      try {
+        const clerkToken = await getClerkToken();
+        if (clerkToken) {
+          authToken = clerkToken;
+        }
+      } catch {
+        // Fall back to localStorage token
+      }
+    }
+
+    const params = new URLSearchParams();
+    if (year) params.append('year', String(year));
+    if (month) params.append('month', String(month));
+
+    const response = await axios.get(`${API_URL}/api/tire-sales/employee-stats/${employeeId}?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },

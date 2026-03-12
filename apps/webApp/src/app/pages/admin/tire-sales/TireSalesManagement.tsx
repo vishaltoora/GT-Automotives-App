@@ -24,6 +24,11 @@ import {
   Card,
   CardContent,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -31,6 +36,7 @@ import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
   ArrowBack as BackIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { colors } from '../../../theme/colors';
@@ -85,6 +91,13 @@ export function TireSalesManagement() {
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
   const [employeeName, setEmployeeName] = useState<string | null>(null);
 
+  // Edit salesperson dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<TireSale | null>(null);
+  const [newSalespersonId, setNewSalespersonId] = useState('');
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [editLoading, setEditLoading] = useState(false);
+
   // Filters
   const [filters, setFilters] = useState<TireSaleFilters>({});
   const [startDate, setStartDate] = useState('');
@@ -116,7 +129,7 @@ export function TireSalesManagement() {
   useEffect(() => {
     loadSales();
     loadMonthlyStats();
-  }, [page, rowsPerPage, filters]);
+  }, [page, rowsPerPage, filters, employeeIdFromUrl]);
 
   const loadSales = async () => {
     try {
@@ -141,7 +154,11 @@ export function TireSalesManagement() {
 
   const loadMonthlyStats = async () => {
     try {
-      const stats = await TireSaleService.getMyStats();
+      // If viewing a specific employee's sales, get their stats
+      // Otherwise get the current user's stats
+      const stats = employeeIdFromUrl
+        ? await TireSaleService.getEmployeeStats(employeeIdFromUrl)
+        : await TireSaleService.getMyStats();
       setMonthlyStats(stats);
     } catch (err) {
       console.error('Failed to load monthly stats:', err);
@@ -169,6 +186,39 @@ export function TireSalesManagement() {
 
   const getTotalTiresInSale = (sale: TireSale) => {
     return sale.items.reduce((sum, item) => sum + item.quantity, 0);
+  };
+
+  // Load employees for edit dialog
+  useEffect(() => {
+    userService.getUsers().then((users: User[]) => {
+      const staffUsers = users.filter((u) =>
+        u.role?.name && ['STAFF', 'SUPERVISOR', 'ADMIN'].includes(u.role.name.toUpperCase())
+      );
+      setEmployees(staffUsers);
+    }).catch(() => {});
+  }, []);
+
+  const handleEditClick = (sale: TireSale) => {
+    setEditingSale(sale);
+    setNewSalespersonId(sale.soldBy.id);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingSale || !newSalespersonId) return;
+
+    try {
+      setEditLoading(true);
+      await TireSaleService.update(editingSale.id, { soldById: newSalespersonId });
+      setEditDialogOpen(false);
+      setEditingSale(null);
+      loadSales(); // Refresh the list
+    } catch (err: any) {
+      console.error('Failed to update tire sale:', err);
+      setError(err.response?.data?.message || 'Failed to update salesperson');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   return (
@@ -389,18 +439,19 @@ export function TireSalesManagement() {
                 <TableCell>Payment</TableCell>
                 <TableCell align="right">Commission</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : sales.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <TireIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                     <Typography color="text.secondary">No tire sales found</Typography>
                   </TableCell>
@@ -447,6 +498,17 @@ export function TireSalesManagement() {
                         color={COMMISSION_STATUS_COLORS[sale.commissionStatus]}
                       />
                     </TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="Change Salesperson">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditClick(sale)}
+                          color="primary"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -476,6 +538,54 @@ export function TireSalesManagement() {
           loadMonthlyStats();
         }}
       />
+
+      {/* Edit Salesperson Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Change Salesperson</DialogTitle>
+        <DialogContent>
+          {editingSale && (
+            <Box sx={{ pt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Sale: <strong>{editingSale.saleNumber}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Current: <strong>{editingSale.soldBy.firstName} {editingSale.soldBy.lastName}</strong>
+              </Typography>
+              <FormControl fullWidth>
+                <InputLabel>New Salesperson</InputLabel>
+                <Select
+                  value={newSalespersonId}
+                  onChange={(e) => setNewSalespersonId(e.target.value)}
+                  label="New Salesperson"
+                >
+                  {employees.map((emp) => (
+                    <MenuItem key={emp.id} value={emp.id}>
+                      {emp.firstName} {emp.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)} disabled={editLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleEditSave}
+            variant="contained"
+            disabled={editLoading || !newSalespersonId}
+          >
+            {editLoading ? <CircularProgress size={20} /> : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
