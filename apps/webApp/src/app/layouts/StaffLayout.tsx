@@ -42,6 +42,7 @@ import {
   BusinessCenter,
   Event,
   TireRepair,
+  LocalOffer,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -131,6 +132,12 @@ export function StaffLayout() {
       title: 'System',
       items: [
         { text: 'Settings', icon: <Settings />, path: '/staff/settings' },
+      ]
+    },
+    {
+      title: 'Quick Links',
+      items: [
+        { text: 'Pricing', icon: <LocalOffer />, path: '/pricing' },
       ]
     },
   ];

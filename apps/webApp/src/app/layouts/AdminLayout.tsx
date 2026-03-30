@@ -50,7 +50,8 @@ import {
   ExpandLess,
   BusinessCenter,
   Event,
-  BarChart
+  BarChart,
+  LocalOffer
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -161,6 +162,12 @@ export function AdminLayout() {
       items: [
         { text: 'Security', icon: <Security />, path: '/admin/security' },
         { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
+      ]
+    },
+    {
+      title: 'Quick Links',
+      items: [
+        { text: 'Pricing', icon: <LocalOffer />, path: '/pricing' },
       ]
     },
   ];

@@ -124,8 +124,8 @@ export class AppointmentsService {
         if (!employee) {
           throw new NotFoundException(`Employee with ID ${empId} not found`);
         }
-        if (employee.role.name !== 'STAFF' && employee.role.name !== 'ADMIN') {
-          throw new BadRequestException(`User ${employee.firstName} ${employee.lastName} is not a staff or admin member`);
+        if (employee.role.name !== 'STAFF' && employee.role.name !== 'ADMIN' && employee.role.name !== 'SUPERVISOR') {
+          throw new BadRequestException(`User ${employee.firstName} ${employee.lastName} is not a staff, admin, or supervisor member`);
         }
 
         // Check availability - use normalizedDate (Date object) not dto.scheduledDate (string)
@@ -908,10 +908,10 @@ export class AppointmentsService {
    * Helper: Find an available employee for a time slot
    */
   private async findAvailableEmployee(date: Date, startTime: string, duration: number): Promise<string | null> {
-    // Get all staff and admin users
+    // Get all staff, admin, and supervisor users
     const staffUsers = await this.prisma.user.findMany({
       where: {
-        role: { name: { in: ['STAFF', 'ADMIN'] } },
+        role: { name: { in: ['STAFF', 'ADMIN', 'SUPERVISOR'] } },
         isActive: true,
       },
     });

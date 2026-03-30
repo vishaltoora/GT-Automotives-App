@@ -44,6 +44,7 @@ import {
   Event,
   RequestPage,
   TireRepair,
+  LocalOffer,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -125,6 +126,12 @@ export function SupervisorLayout() {
         { text: 'Appointments', icon: <CalendarMonth />, path: '/supervisor/appointments' },
         { text: 'Availability', icon: <Schedule />, path: '/supervisor/availability' },
         { text: 'Employee Schedule', icon: <Email />, path: '/supervisor/employee-schedule' },
+      ]
+    },
+    {
+      title: 'Quick Links',
+      items: [
+        { text: 'Pricing', icon: <LocalOffer />, path: '/pricing' },
       ]
     },
   ];

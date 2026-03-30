@@ -174,10 +174,10 @@ export class AvailabilityService {
       }
       employees = [employee];
     } else {
-      // Get all STAFF and ADMIN users
+      // Get all STAFF, ADMIN, and SUPERVISOR users
       employees = await this.prisma.user.findMany({
         where: {
-          role: { name: { in: ['STAFF', 'ADMIN'] } },
+          role: { name: { in: ['STAFF', 'ADMIN', 'SUPERVISOR'] } },
           isActive: true,
         },
         include: { role: true },

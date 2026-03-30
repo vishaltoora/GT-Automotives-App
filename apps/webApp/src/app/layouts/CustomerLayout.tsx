@@ -23,7 +23,8 @@ import {
   Person,
   Logout,
   Menu as MenuIcon,
-  Inventory as InventoryIcon
+  Inventory as InventoryIcon,
+  LocalOffer
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
@@ -50,6 +51,7 @@ export function CustomerLayout() {
     { text: 'Invoices', icon: <Receipt />, path: '/customer/invoices' },
     { text: 'Appointments', icon: <CalendarMonth />, path: '/customer/appointments' },
     { text: 'Profile', icon: <Person />, path: '/customer/profile' },
+    { text: 'Pricing', icon: <LocalOffer />, path: '/pricing' },
   ];
 
   const drawer = (

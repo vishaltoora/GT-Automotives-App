@@ -23,7 +23,7 @@ export function AuthRedirect() {
       const currentPath = location.pathname;
       
       // Define public paths that should redirect authenticated users
-      const publicPaths = ['/', '/login', '/register', '/services', '/products', '/pricing', '/about', '/contact'];
+      const publicPaths = ['/', '/login', '/register', '/services', '/products', '/about', '/contact'];
       
       // Only redirect if on a public path
       if (publicPaths.includes(currentPath)) {
@@ -60,7 +60,7 @@ export function AuthRedirect() {
 
   // Show loading screen during redirect OR if we're about to redirect
   const currentPath = location.pathname;
-  const publicPaths = ['/', '/login', '/register', '/services', '/products', '/pricing', '/about', '/contact'];
+  const publicPaths = ['/', '/login', '/register', '/services', '/products', '/about', '/contact'];
   const isOnPublicPage = publicPaths.includes(currentPath);
   
   // Show loading immediately when authenticated user is detected on public page
