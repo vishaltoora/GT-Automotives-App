@@ -104,10 +104,7 @@ export class CustomersService {
         address: true,
         businessName: true,
       },
-      orderBy: [
-        { firstName: 'asc' },
-        { lastName: 'asc' },
-      ],
+      orderBy: { updatedAt: 'desc' },
     });
   }
 

@@ -16,8 +16,7 @@ import {
 import {
   Close as CloseIcon,
   Schedule as ScheduleIcon,
-  LocationOn as LocationOnIcon,
-  DriveEta as DriveEtaIcon,
+  CalendarMonth as CalendarMonthIcon,
   Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
@@ -103,18 +102,6 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     });
   }, [appointments]);
 
-  // Filter scheduled appointments by location type
-  const atGarageAppointments = useMemo(() => {
-    return sortedAppointments.filter(
-      (apt) => !apt.appointmentType || apt.appointmentType === 'AT_GARAGE'
-    );
-  }, [sortedAppointments]);
-
-  const mobileServiceAppointments = useMemo(() => {
-    return sortedAppointments.filter(
-      (apt) => apt.appointmentType === 'MOBILE_SERVICE'
-    );
-  }, [sortedAppointments]);
 
   // Sort payments processed by time
   const sortedPayments = useMemo(() => {
@@ -253,7 +240,7 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
         <Tabs
           value={currentTab}
           onChange={handleTabChange}
-          aria-label="appointment type tabs"
+          aria-label="appointment tabs"
           variant="scrollable"
           scrollButtons="auto"
           allowScrollButtonsMobile
@@ -269,80 +256,49 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
           }}
         >
           <Tab
-            icon={<LocationOnIcon />}
+            icon={<CalendarMonthIcon />}
             iconPosition="start"
-            label={`At Garage (${stats.atGarage})`}
+            label={`Appointments (${stats.total})`}
             id="day-appointments-tab-0"
             aria-controls="day-appointments-tabpanel-0"
-          />
-          <Tab
-            icon={<DriveEtaIcon />}
-            iconPosition="start"
-            label={`Mobile Service (${stats.mobileService})`}
-            id="day-appointments-tab-1"
-            aria-controls="day-appointments-tabpanel-1"
           />
           <Tab
             icon={<AssignmentIcon />}
             iconPosition="start"
             label="Day Summary"
-            id="day-appointments-tab-2"
-            aria-controls="day-appointments-tabpanel-2"
+            id="day-appointments-tab-1"
+            aria-controls="day-appointments-tabpanel-1"
           />
         </Tabs>
       </Box>
 
       <DialogContent sx={{ px: 3, flex: 1, overflow: 'auto' }}>
-        {/* At Garage Tab */}
+        {/* All Appointments Tab */}
         <TabPanel value={currentTab} index={0}>
-          {atGarageAppointments.length === 0 ? (
+          {sortedAppointments.length === 0 ? (
             <EmptyStateMessage
-              icon={<LocationOnIcon />}
-              title="No garage appointments"
-              message="There are no at-garage appointments for this date."
+              icon={<CalendarMonthIcon />}
+              title="No appointments"
+              message="There are no appointments scheduled for this date."
             />
           ) : (
             <Stack spacing={2}>
-              {atGarageAppointments.map((appointment) => (
-                <AppointmentCard
-                  key={appointment.id}
-                  appointment={appointment}
-                  onEdit={onEditAppointment}
-                  onDelete={onDeleteAppointment}
-                  onStatusChange={onStatusChange}
-                  onPaymentComplete={handlePaymentComplete}
-                />
-              ))}
-            </Stack>
-          )}
-        </TabPanel>
-
-        {/* Mobile Service Tab */}
-        <TabPanel value={currentTab} index={1}>
-          {mobileServiceAppointments.length === 0 ? (
-            <EmptyStateMessage
-              icon={<DriveEtaIcon />}
-              title="No mobile service appointments"
-              message="There are no mobile service appointments for this date."
-            />
-          ) : (
-            <Stack spacing={2}>
-              {mobileServiceAppointments.map((appointment) => (
-                <AppointmentCard
-                  key={appointment.id}
-                  appointment={appointment}
-                  onEdit={onEditAppointment}
-                  onDelete={onDeleteAppointment}
-                  onStatusChange={onStatusChange}
-                  onPaymentComplete={handlePaymentComplete}
-                />
-              ))}
+                {sortedAppointments.map((appointment) => (
+                  <AppointmentCard
+                    key={appointment.id}
+                    appointment={appointment}
+                    onEdit={onEditAppointment}
+                    onDelete={onDeleteAppointment}
+                    onStatusChange={onStatusChange}
+                    onPaymentComplete={handlePaymentComplete}
+                  />
+                ))}
             </Stack>
           )}
         </TabPanel>
 
         {/* Day Summary Tab */}
-        <TabPanel value={currentTab} index={2}>
+        <TabPanel value={currentTab} index={1}>
           <DaySummaryTabPanel
             stats={stats}
             sortedPayments={sortedPayments}

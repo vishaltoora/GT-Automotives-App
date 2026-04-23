@@ -154,13 +154,12 @@ export class AvailabilityService {
   async checkAvailableSlots(dto: CheckAvailabilityDto): Promise<AvailableSlot[]> {
     const dayOfWeek = dto.date.getDay();
 
-    // Normalize date to start of day in LOCAL time to match appointment creation logic
-    // Extract UTC components and create local date (same as appointments.service.ts)
+    // Normalize date to UTC midnight to match how appointments are stored
+    // Appointments are created with Date.UTC() in appointments.service.ts
     const year = dto.date.getUTCFullYear();
     const month = dto.date.getUTCMonth();
     const day = dto.date.getUTCDate();
-    const dateOnly = new Date(year, month, day, 0, 0, 0, 0);
-
+    const dateOnly = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
 
     // Get employees to check (specific employee or all)
     let employees;
@@ -266,12 +265,12 @@ export class AvailabilityService {
   ): Promise<boolean | { available: false; reason: string; suggestion: string }> {
     const dayOfWeek = date.getDay();
 
-    // Normalize date to start of day in LOCAL time to match appointment creation logic
-    // Extract UTC components and create local date (same as appointments.service.ts)
+    // Normalize date to UTC midnight to match how appointments are stored
+    // Appointments are created with Date.UTC() in appointments.service.ts
     const year = date.getUTCFullYear();
     const month = date.getUTCMonth();
     const day = date.getUTCDate();
-    const dateOnly = new Date(year, month, day, 0, 0, 0, 0);
+    const dateOnly = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
 
     console.log('[AVAILABILITY] Date normalization:', {
       inputDate: date,

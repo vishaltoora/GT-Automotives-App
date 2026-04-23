@@ -28,9 +28,30 @@ import {
   EventBusy as EventBusyIcon,
   MoreVert as MoreVertIcon,
   LocationOn as LocationOnIcon,
+  LocalShipping as LocalShippingIcon,
+  Garage as GarageIcon,
 } from '@mui/icons-material';
+import { keyframes } from '@mui/system';
 import { formatTimeRange } from '../../utils/timeFormat';
 import { PaymentDialog } from './PaymentDialog';
+
+// Animated van keyframes for mobile
+const driveAnimation = keyframes`
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+`;
+
+const bounceAnimation = keyframes`
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-1.5px); }
+  75% { transform: translateY(1.5px); }
+`;
+
+// Animated garage keyframes
+const garageAnimation = keyframes`
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+`;
 
 // Service type label mapping
 const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -202,6 +223,8 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
     }
   };
 
+  const isMobile = appointment.appointmentType === 'MOBILE_SERVICE';
+
   return (
     <>
       <PaymentDialog
@@ -218,9 +241,12 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
+          borderLeft: 4,
+          borderLeftColor: isMobile ? 'warning.main' : 'primary.main',
           '&:hover': {
             boxShadow: 2,
             borderColor: 'primary.main',
+            borderLeftColor: isMobile ? 'warning.main' : 'primary.main',
           },
         }}
       >
@@ -295,11 +321,64 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           </Menu>
 
           {/* Service Type */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             <BuildIcon fontSize="small" color="action" />
             <Typography variant="body1" fontWeight={500}>
               {formatServiceType(appointment.serviceType)}
             </Typography>
+          </Box>
+
+          {/* Location type indicator */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              mb: 1.5,
+              ml: 0.5,
+            }}
+          >
+            {isMobile ? (
+              <>
+                <LocalShippingIcon
+                  sx={{
+                    fontSize: '1rem',
+                    color: 'warning.main',
+                    animation: `${driveAnimation} 2s ease-in-out infinite, ${bounceAnimation} 0.6s ease-in-out infinite`,
+                  }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'warning.dark',
+                    letterSpacing: '0.3px',
+                  }}
+                >
+                  Mobile Service
+                </Typography>
+              </>
+            ) : (
+              <>
+                <GarageIcon
+                  sx={{
+                    fontSize: '1rem',
+                    color: 'primary.main',
+                    animation: `${garageAnimation} 3s ease-in-out infinite`,
+                  }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'primary.dark',
+                    letterSpacing: '0.3px',
+                  }}
+                >
+                  At Garage
+                </Typography>
+              </>
+            )}
           </Box>
 
           <Divider sx={{ my: 1.5 }} />
