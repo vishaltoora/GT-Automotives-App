@@ -145,7 +145,48 @@ export class AppointmentsController {
     const tipAmount = dto.tipAmount || 0;
     const totalWithTip = taxes.totalAmount + tipAmount;
 
-    // 3. Create invoice with PAID status (E-Transfer received)
+    // 3. Create invoice and update appointment - handle retry if invoice already exists
+    const existingPaymentAmount = appointment.paymentAmount || 0;
+    const existingBreakdown = (appointment.paymentBreakdown as any[]) || [];
+
+    // Check if invoice already exists (retry scenario - invoice created but appointment not updated)
+    const existingInvoice = await this.prisma.invoice.findFirst({
+      where: { appointmentId: id },
+    });
+
+    if (existingInvoice) {
+      // Invoice exists but appointment is still IN_PROGRESS - just update the appointment
+      await this.prisma.appointment.update({
+        where: { id },
+        data: {
+          status: 'COMPLETED',
+          paymentDate: new Date(),
+          expectedAmount: appointment.expectedAmount || totalWithTip,
+          paymentAmount: existingPaymentAmount + totalWithTip,
+          paymentBreakdown: [
+            ...existingBreakdown,
+            {
+              id: crypto.randomUUID(),
+              method: 'E_TRANSFER',
+              amount: totalWithTip,
+            },
+          ],
+        },
+      });
+
+      return {
+        success: true,
+        invoice: {
+          id: existingInvoice.id,
+          invoiceNumber: existingInvoice.invoiceNumber,
+          total: totalWithTip,
+          status: existingInvoice.status,
+        },
+        message: `Appointment marked as completed. Invoice ${existingInvoice.invoiceNumber} already exists.`,
+      };
+    }
+
+    // No existing invoice - create invoice then update appointment
     const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
       appointmentId: id,
       serviceAmount: dto.serviceAmount,
@@ -155,24 +196,19 @@ export class AppointmentsController {
       status: 'PAID',
     });
 
-    // 4. Update appointment to COMPLETED with payment info
-    // If already completed (partial payment scenario), add to existing payment
-    const existingPaymentAmount = appointment.paymentAmount || 0;
-    const existingBreakdown = (appointment.paymentBreakdown as any[]) || [];
-
     await this.prisma.appointment.update({
       where: { id },
       data: {
         status: 'COMPLETED',
         paymentDate: new Date(),
         expectedAmount: appointment.expectedAmount || totalWithTip,
-        paymentAmount: existingPaymentAmount + totalWithTip, // Add to existing payment (includes tip)
+        paymentAmount: existingPaymentAmount + totalWithTip,
         paymentBreakdown: [
           ...existingBreakdown,
           {
             id: crypto.randomUUID(),
             method: 'E_TRANSFER',
-            amount: totalWithTip, // This E-Transfer payment (includes tip)
+            amount: totalWithTip,
           },
         ],
       },
@@ -216,9 +252,49 @@ export class AppointmentsController {
     const tipAmount = dto.tipAmount || 0;
     const totalWithTip = taxes.totalAmount + tipAmount;
 
-    // 3. Create invoice with PAID status (Square Device payment received)
-    // Use cardType from DTO, default to CREDIT_CARD if not specified
+    // 3. Create invoice and update appointment in a transaction to prevent partial updates
     const paymentMethod = dto.cardType || 'CREDIT_CARD';
+    const existingPaymentAmount = appointment.paymentAmount || 0;
+    const existingBreakdown = (appointment.paymentBreakdown as any[]) || [];
+
+    // Check if invoice already exists (retry scenario - invoice created but appointment not updated)
+    const existingInvoice = await this.prisma.invoice.findFirst({
+      where: { appointmentId: id },
+    });
+
+    if (existingInvoice) {
+      // Invoice exists but appointment is still IN_PROGRESS - just update the appointment
+      await this.prisma.appointment.update({
+        where: { id },
+        data: {
+          status: 'COMPLETED',
+          paymentDate: new Date(),
+          expectedAmount: appointment.expectedAmount || totalWithTip,
+          paymentAmount: existingPaymentAmount + totalWithTip,
+          paymentBreakdown: [
+            ...existingBreakdown,
+            {
+              id: crypto.randomUUID(),
+              method: paymentMethod,
+              amount: totalWithTip,
+            },
+          ],
+        },
+      });
+
+      return {
+        success: true,
+        invoice: {
+          id: existingInvoice.id,
+          invoiceNumber: existingInvoice.invoiceNumber,
+          total: totalWithTip,
+          status: existingInvoice.status,
+        },
+        message: `Appointment marked as completed. Invoice ${existingInvoice.invoiceNumber} already exists.`,
+      };
+    }
+
+    // No existing invoice - create invoice then update appointment
     const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
       appointmentId: id,
       serviceAmount: dto.serviceAmount,
@@ -228,24 +304,19 @@ export class AppointmentsController {
       status: 'PAID',
     });
 
-    // 4. Update appointment to COMPLETED with payment info
-    // If already completed (partial payment scenario), add to existing payment
-    const existingPaymentAmount = appointment.paymentAmount || 0;
-    const existingBreakdown = (appointment.paymentBreakdown as any[]) || [];
-
     await this.prisma.appointment.update({
       where: { id },
       data: {
         status: 'COMPLETED',
         paymentDate: new Date(),
         expectedAmount: appointment.expectedAmount || totalWithTip,
-        paymentAmount: existingPaymentAmount + totalWithTip, // Add to existing payment (includes tip)
+        paymentAmount: existingPaymentAmount + totalWithTip,
         paymentBreakdown: [
           ...existingBreakdown,
           {
             id: crypto.randomUUID(),
-            method: paymentMethod, // Use selected card type (CREDIT_CARD or DEBIT_CARD)
-            amount: totalWithTip, // This Square Device payment (includes tip)
+            method: paymentMethod,
+            amount: totalWithTip,
           },
         ],
       },

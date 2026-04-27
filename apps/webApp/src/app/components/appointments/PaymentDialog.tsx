@@ -59,6 +59,7 @@ interface PaymentDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (paymentData: PaymentData) => void;
+  onPaymentComplete?: () => void | Promise<void>;
   appointmentId: string;
   defaultExpectedAmount?: number;
   existingPayments?: PaymentEntry[];
@@ -80,6 +81,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   open,
   onClose,
   onSubmit,
+  onPaymentComplete,
   appointmentId,
   defaultExpectedAmount = 0,
   existingPayments,
@@ -180,9 +182,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
     try {
       await appointmentService.createETransferInvoice(appointmentId, eTransferAmount, eTransferTip > 0 ? eTransferTip : undefined);
-      // Close dialog and refresh
+      // Backend already created invoice + updated appointment to COMPLETED
+      // Just close dialog and refresh data (don't trigger another status update)
       handleClose();
-      window.location.reload();
+      if (onPaymentComplete) await onPaymentComplete();
     } catch (err: any) {
       console.error('E-Transfer invoice creation failed:', err);
       setETransferError(
@@ -212,9 +215,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         squareDeviceTip > 0 ? squareDeviceTip : undefined,
         squareDeviceCardType
       );
-      // Close dialog and refresh
+      // Backend already created invoice + updated appointment to COMPLETED
+      // Just close dialog and refresh data (don't trigger another status update)
       handleClose();
-      window.location.reload();
+      if (onPaymentComplete) await onPaymentComplete();
     } catch (err: any) {
       console.error('Square Device invoice creation failed:', err);
       setSquareDeviceError(

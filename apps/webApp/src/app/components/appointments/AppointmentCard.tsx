@@ -231,6 +231,9 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         open={paymentDialogOpen}
         onClose={() => setPaymentDialogOpen(false)}
         onSubmit={handlePaymentSubmit}
+        onPaymentComplete={async () => {
+          if (onPaymentComplete) await onPaymentComplete();
+        }}
         appointmentId={appointment.id}
       />
       <Card

@@ -275,8 +275,15 @@ export const AppointmentsManagement: React.FC = () => {
 
   const handleStatusChange = async (appointmentId: string, newStatus: string, paymentData?: any) => {
     try {
-      // If status is being changed to CANCELLED, use the cancel endpoint to send SMS
+      // If status is being changed to CANCELLED, confirm first then use the cancel endpoint to send SMS
       if (newStatus === 'CANCELLED') {
+        const confirmed = await confirm({
+          title: 'Cancel Appointment',
+          message: 'Are you sure you want to cancel this appointment? The customer will be notified via SMS.',
+          confirmText: 'Cancel Appointment',
+          severity: 'warning',
+        });
+        if (!confirmed) return;
         await appointmentService.cancelAppointment(appointmentId);
         loadAppointments();
         loadTodayAppointments();
@@ -1054,6 +1061,7 @@ export const AppointmentsManagement: React.FC = () => {
                                   if (apt) handleDelete(apt);
                                 }}
                                 onStatusChange={handleStatusChange}
+                                onPaymentComplete={() => { loadAppointments(); loadTodayAppointments(); }}
                               />
                             </Box>
                           );
@@ -1444,6 +1452,7 @@ export const AppointmentsManagement: React.FC = () => {
                                   onEdit={handleEdit}
                                   onDelete={handleDeleteById}
                                   onStatusChange={handleStatusChange}
+                                  onPaymentComplete={() => { loadAppointments(); loadTodayAppointments(); }}
                                   showActions={true}
                                 />
                               </Grid>
