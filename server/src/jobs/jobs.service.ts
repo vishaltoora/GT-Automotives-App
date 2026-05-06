@@ -27,7 +27,7 @@ export class JobsService {
         throw new BadRequestException('Jobs can only be assigned to staff, admin, or supervisor users');
       }
 
-      const jobData = {
+      const jobData: any = {
         employee: {
           connect: { id: createJobDto.employeeId }
         },
@@ -37,8 +37,13 @@ export class JobsService {
         jobType: createJobDto.jobType,
         status: createJobDto.status,
         dueDate: createJobDto.dueDate ? new Date(createJobDto.dueDate) : undefined,
+        completedAt: createJobDto.completedAt ? new Date(createJobDto.completedAt) : undefined,
         createdBy: userId,
       };
+
+      if (createJobDto.appointmentId) {
+        jobData.appointment = { connect: { id: createJobDto.appointmentId } };
+      }
 
       const job = await this.jobRepository.create(jobData);
 
@@ -206,6 +211,7 @@ export class JobsService {
       id: job.id,
       jobNumber: job.jobNumber,
       employeeId: job.employeeId,
+      appointmentId: job.appointmentId ?? undefined,
       title: job.title,
       description: job.description,
       payAmount: Number(job.payAmount),
@@ -221,6 +227,12 @@ export class JobsService {
         firstName: job.employee.firstName,
         lastName: job.employee.lastName,
         email: job.employee.email,
+      } : undefined,
+      appointment: job.appointment ? {
+        id: job.appointment.id,
+        scheduledDate: job.appointment.scheduledDate,
+        scheduledTime: job.appointment.scheduledTime,
+        serviceType: job.appointment.serviceType,
       } : undefined,
       payments: job.payments ? job.payments.map((payment: any) => ({
         id: payment.id,

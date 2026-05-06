@@ -25,6 +25,7 @@ model User {
   payments              Payment[]               // Payments made to this user (for STAFF role)
   appointments          Appointment[]           // Appointments assigned to this employee (deprecated)
   appointmentEmployees  AppointmentEmployee[]   @relation("AppointmentEmployees") // Multiple appointment assignments
+  bookedAppointments    Appointment[]           @relation("BookedAppointments") // Appointments this user created/booked
   availability          EmployeeAvailability[]  // Weekly recurring schedule
   timeSlotOverrides     TimeSlotOverride[]      // Date-specific exceptions (time-off, extra shifts)
   smsMessages           SmsMessage[]            // SMS messages sent to this user (staff/admin notifications)
@@ -331,9 +332,11 @@ model Appointment {
   serviceAddress  String?                 // Address for mobile service appointments (required when appointmentType is MOBILE_SERVICE)
   status          AppointmentStatus
   notes           String?
-  paymentAmount   Float?                  // Total payment amount collected
+  paymentAmount   Float?                  // Total payment amount collected (includes service + product)
   paymentBreakdown Json?                  // Array of payment entries: [{id: 'uuid', method: 'CASH', amount: 50}, {id: 'uuid', method: 'E_TRANSFER', amount: 30}]
   paymentNotes    String?                 // Additional payment notes
+  productSaleAmount Float?                // Portion of paymentAmount that was a product sale (excluded from payroll payout calc)
+  productSaleItems  String[] @default([]) // Product types sold with this appointment (e.g. ["TIRES", "OIL"])
   expectedAmount  Float?                  // Expected total amount for tracking partial payments
   paymentDate     DateTime?               // Date when payment was actually processed/collected (for accurate daily cash reporting)
   reminderSent    Boolean                 @default(false)
@@ -344,11 +347,13 @@ model Appointment {
   vehicle         Vehicle?                @relation(fields: [vehicleId], references: [id])
   employee        User?                   @relation(fields: [employeeId], references: [id])
   employees       AppointmentEmployee[]   // Multiple employees assigned to this appointment
+  bookedByUser    User?                   @relation("BookedAppointments", fields: [bookedBy], references: [id])
   invoice         Invoice?                // Auto-generated invoice (one-to-one)
   squarePayments  SquarePayment[]         // Square payments linked to this appointment
   smsMessages     SmsMessage[]            // SMS messages related to this appointment
   emailLogs       EmailLog[]              // Email logs related to this appointment
   bookingRequests BookingRequest[]        // Booking requests converted to this appointment
+  jobs            Job[]                   // Payroll jobs auto-created when appointment was completed
 
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
@@ -419,26 +424,44 @@ model AuditLog {
 }
 
 model Job {
-  id          String      @id @default(cuid())
-  jobNumber   String      @unique @default(cuid())
-  employeeId  String      // Foreign key to User (where role = STAFF)
-  title       String      // Job description/title
-  description String?     // Detailed job description
-  payAmount   Decimal     @db.Decimal(10, 2)
-  status      JobStatus   @default(PENDING)
-  jobType     JobType     // Regular, Overtime, Bonus, Commission
-  dueDate     DateTime?   // When payment is due
-  completedAt DateTime?   // When job was completed
-  createdBy   String      // Who assigned the job
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String       @id @default(cuid())
+  jobNumber     String       @unique @default(cuid())
+  employeeId    String       // Foreign key to User (where role = STAFF)
+  appointmentId String?      // Optional link to the appointment this job was created from
+  title         String       // Job description/title
+  description   String?      // Detailed job description
+  payAmount     Decimal      @db.Decimal(10, 2)
+  status        JobStatus    @default(PENDING)
+  jobType       JobType      // Regular, Overtime, Bonus, Commission
+  dueDate       DateTime?    // When payment is due
+  completedAt   DateTime?    // When job was completed
+  createdBy     String       // Who assigned the job
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  employee    User        @relation(fields: [employeeId], references: [id])
-  payments    Payment[]   // One job can have multiple payments (partial payments)
+  employee      User         @relation(fields: [employeeId], references: [id])
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  payments      Payment[]    // One job can have multiple payments (partial payments)
 
   @@index([employeeId])
   @@index([status])
   @@index([createdAt])
+  @@index([appointmentId])
+}
+
+model AppointmentPayoutRule {
+  id           String   @id @default(cuid())
+  // Exact appointment payment amount (e.g. 80.00) that triggers this payout.
+  triggerAmount Decimal  @db.Decimal(10, 2) @unique
+  // Total payout pool to be split equally among completing employees.
+  payoutAmount  Decimal  @db.Decimal(10, 2)
+  description  String?  // Optional admin note (e.g. "Standard tire mount")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([triggerAmount])
+  @@index([isActive])
 }
 
 model Payment {
@@ -489,6 +512,7 @@ enum JobType {
   OVERTIME    // Overtime pay
   BONUS       // Performance bonus
   COMMISSION  // Sales commission
+  FLAT_RATE   // Flat per-appointment payout (e.g. auto-created from a completed appointment)
   EXPENSE     // Expense reimbursement
   OTHER       // Other compensation
 }

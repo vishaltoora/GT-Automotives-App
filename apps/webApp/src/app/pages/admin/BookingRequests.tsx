@@ -81,6 +81,8 @@ export function BookingRequests() {
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | undefined>(undefined);
   const [preselectedServiceType, setPreselectedServiceType] = useState<string | undefined>(undefined);
+  const [preselectedAppointmentType, setPreselectedAppointmentType] = useState<'AT_GARAGE' | 'MOBILE_SERVICE' | undefined>(undefined);
+  const [preselectedServiceAddress, setPreselectedServiceAddress] = useState<string | undefined>(undefined);
   const [currentBookingRequestId, setCurrentBookingRequestId] = useState<string | undefined>(undefined);
   const { confirm } = useConfirmation();
   const { showError } = useError();
@@ -232,6 +234,14 @@ export function BookingRequests() {
       // Set preselected customer ID, service type, and open appointment dialog
       setPreselectedCustomerId(customer.id);
       setPreselectedServiceType(selectedRequest.serviceType || undefined);
+      setPreselectedAppointmentType(
+        selectedRequest.appointmentType === 'MOBILE_SERVICE' ? 'MOBILE_SERVICE' : 'AT_GARAGE'
+      );
+      setPreselectedServiceAddress(
+        selectedRequest.appointmentType === 'MOBILE_SERVICE'
+          ? selectedRequest.address || undefined
+          : undefined
+      );
       setAppointmentDialogOpen(true);
     } catch (error: any) {
       showError({
@@ -766,10 +776,14 @@ export function BookingRequests() {
           setAppointmentDialogOpen(false);
           setPreselectedCustomerId(undefined);
           setPreselectedServiceType(undefined);
+          setPreselectedAppointmentType(undefined);
+          setPreselectedServiceAddress(undefined);
         }}
         onSuccess={handleAppointmentSuccess}
         preselectedCustomerId={preselectedCustomerId}
         preselectedServiceType={preselectedServiceType}
+        preselectedAppointmentType={preselectedAppointmentType}
+        preselectedServiceAddress={preselectedServiceAddress}
       />
     </Box>
   );

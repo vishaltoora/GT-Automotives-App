@@ -26,6 +26,14 @@ export class JobRepository extends BaseRepository<
             email: true,
           },
         },
+        appointment: {
+          select: {
+            id: true,
+            scheduledDate: true,
+            scheduledTime: true,
+            serviceType: true,
+          },
+        },
         payments: includePayments ? {
           orderBy: { createdAt: 'desc' },
         } : false,
@@ -44,6 +52,14 @@ export class JobRepository extends BaseRepository<
             firstName: true,
             lastName: true,
             email: true,
+          },
+        },
+        appointment: {
+          select: {
+            id: true,
+            scheduledDate: true,
+            scheduledTime: true,
+            serviceType: true,
           },
         },
         payments: true,
@@ -141,6 +157,14 @@ export class JobRepository extends BaseRepository<
             firstName: true,
             lastName: true,
             email: true,
+          },
+        },
+        appointment: {
+          select: {
+            id: true,
+            scheduledDate: true,
+            scheduledTime: true,
+            serviceType: true,
           },
         },
         payments: {

@@ -10,6 +10,9 @@ import {
 import { AvailabilityService } from './availability.service';
 import { SmsService } from '../sms/sms.service';
 import { EmailService } from '../email/email.service';
+import { JobsService } from '../jobs/jobs.service';
+import { PayoutRulesService } from '../payout-rules/payout-rules.service';
+import { JobType, JobStatus } from '@prisma/client';
 import { getCurrentBusinessDateTime, getCurrentBusinessDate, extractBusinessDate, POSTGRES_TIMEZONE } from '../config/timezone.config';
 
 @Injectable()
@@ -47,13 +50,23 @@ export class AppointmentsService {
         status: true,
       },
     },
+    bookedByUser: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+    },
   };
 
   constructor(
     private prisma: PrismaService,
     private availabilityService: AvailabilityService,
     private smsService: SmsService,
-    private emailService: EmailService
+    private emailService: EmailService,
+    private jobsService: JobsService,
+    private payoutRulesService: PayoutRulesService
   ) {}
 
   /**
@@ -168,30 +181,7 @@ export class AppointmentsService {
           })),
         },
       },
-      include: {
-        customer: true,
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        employees: {
-          include: {
-            employee: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
+      include: this.appointmentInclude,
     });
 
     // Send SMS confirmation to customer
@@ -433,7 +423,7 @@ export class AppointmentsService {
   /**
    * Update an appointment
    */
-  async update(id: string, dto: UpdateAppointmentDto) {
+  async update(id: string, dto: UpdateAppointmentDto, userId?: string) {
     const appointment = await this.findOne(id);
 
     console.log('[UPDATE APPOINTMENT] Updating appointment:', id);
@@ -570,6 +560,8 @@ export class AppointmentsService {
 
     // Remove employeeIds from direct update (will be handled separately)
     delete updateData.employeeIds;
+    // Remove completionEmployeeIds — handled separately to auto-create payroll jobs
+    delete updateData.completionEmployeeIds;
 
     // Update appointment and employees if provided
     if (employeeIds && employeeIds.length > 0) {
@@ -609,7 +601,150 @@ export class AppointmentsService {
       console.log(`[SMS] No date/time change detected - skipping SMS`);
     }
 
+    // Auto-create payroll jobs when the appointment transitions to COMPLETED
+    // and the caller provided the employees who actually performed the work.
+    const justCompleted =
+      dto.status === AppointmentStatus.COMPLETED &&
+      appointment.status !== AppointmentStatus.COMPLETED;
+    if (justCompleted && dto.completionEmployeeIds && dto.completionEmployeeIds.length > 0 && userId) {
+      await this.createCompletionJobs(updatedAppointment, dto.completionEmployeeIds, userId).catch(err => {
+        console.error('[JOBS] Failed to auto-create completion jobs:', err);
+      });
+    }
+
     return updatedAppointment;
+  }
+
+  /**
+   * Persist product-sale info on an appointment and (if employees were provided)
+   * auto-create payroll jobs. Used by completion endpoints (e-transfer, square-device)
+   * after they've already marked the appointment COMPLETED.
+   */
+  async applyCompletionExtras(
+    appointmentId: string,
+    opts: {
+      completionEmployeeIds?: string[];
+      productSaleAmount?: number;
+      productSaleItems?: string[];
+      serviceAmount?: number; // pre-tax service amount for payout calculation
+      tipAmount?: number; // added 100% to payout
+      userId: string;
+      wasAlreadyCompleted: boolean;
+    },
+  ) {
+    const updates: any = {};
+    if (opts.productSaleAmount !== undefined) updates.productSaleAmount = opts.productSaleAmount;
+    if (opts.productSaleItems !== undefined) updates.productSaleItems = opts.productSaleItems;
+    if (Object.keys(updates).length > 0) {
+      await this.prisma.appointment.update({ where: { id: appointmentId }, data: updates });
+    }
+
+    if (
+      !opts.wasAlreadyCompleted &&
+      opts.completionEmployeeIds &&
+      opts.completionEmployeeIds.length > 0
+    ) {
+      const appointment = await this.prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: this.appointmentInclude,
+      });
+      if (appointment) {
+        await this.createCompletionJobs(
+          appointment,
+          opts.completionEmployeeIds,
+          opts.userId,
+          opts.serviceAmount,
+          opts.tipAmount,
+        ).catch((err) =>
+          console.error('[JOBS] Failed to auto-create completion jobs:', err),
+        );
+      }
+    }
+  }
+
+  /**
+   * Create payroll jobs for the employees who completed an appointment.
+   * `serviceAmountOverride` lets non-cash flows pass the pre-tax service amount
+   * directly (so taxes don't inflate the payout). `tipAmount` is added 100%
+   * on top of the rule-based payout.
+   */
+  async createCompletionJobs(
+    appointment: any,
+    employeeIds: string[],
+    userId: string,
+    serviceAmountOverride?: number,
+    tipAmount: number = 0,
+  ) {
+    const paymentAmount = Number(appointment.paymentAmount || 0);
+    const productSaleAmount = Number(appointment.productSaleAmount || 0);
+    const tip = Math.max(0, Number(tipAmount) || 0);
+    // Service portion = (override or total payment) minus the product portion.
+    // Payroll payout is based on service work only — product sales excluded.
+    const baseAmount =
+      serviceAmountOverride !== undefined && serviceAmountOverride !== null
+        ? Number(serviceAmountOverride)
+        : paymentAmount;
+    const serviceAmount = Math.max(0, baseAmount - productSaleAmount);
+    const rulePayout = serviceAmount > 0
+      ? await this.payoutRulesService.calculatePayout(serviceAmount)
+      : 0;
+    const totalPayout = Math.round((rulePayout + tip) * 100) / 100;
+    if (totalPayout <= 0) {
+      console.log('[JOBS] Skipping job creation — no payout amount');
+      return;
+    }
+
+    const perEmployee = Math.round((totalPayout / employeeIds.length) * 100) / 100;
+    const customerName = appointment.customer
+      ? appointment.customer.businessName ||
+        `${appointment.customer.firstName} ${appointment.customer.lastName}`
+      : 'Customer';
+    const serviceLabel = String(appointment.serviceType || '').replace(/_/g, ' ');
+    const dateLabel = extractBusinessDate(appointment.scheduledDate);
+    const title = `${serviceLabel} — ${customerName}`;
+    const description = [
+      `Appointment on ${dateLabel} at ${appointment.scheduledTime}`,
+      `Customer: ${customerName}`,
+      appointment.vehicle
+        ? `Vehicle: ${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}`
+        : null,
+      `Appointment total: $${paymentAmount.toFixed(2)}`,
+      productSaleAmount > 0
+        ? `Product sale: $${productSaleAmount.toFixed(2)}${
+            Array.isArray(appointment.productSaleItems) && appointment.productSaleItems.length > 0
+              ? ` (${appointment.productSaleItems.join(', ')})`
+              : ''
+          } — excluded from payout`
+        : null,
+      `Service amount used for payout: $${serviceAmount.toFixed(2)}`,
+      `Rule-based payout: $${rulePayout.toFixed(2)}`,
+      tip > 0 ? `Tip (added 100%): $${tip.toFixed(2)}` : null,
+      `Total payout pool: $${totalPayout.toFixed(2)} split across ${employeeIds.length} employee(s)`,
+      appointment.notes ? `Notes: ${appointment.notes}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    // Use the appointment's payment date if set (when work was actually completed),
+    // otherwise fall back to now. Job is created READY since the work is done —
+    // admin still moves it to PAID via the regular payroll flow.
+    const completedAtIso = (appointment.paymentDate || new Date()).toISOString();
+
+    for (const employeeId of employeeIds) {
+      await this.jobsService.create(
+        {
+          employeeId,
+          appointmentId: appointment.id,
+          title,
+          description,
+          payAmount: perEmployee,
+          jobType: JobType.FLAT_RATE,
+          status: JobStatus.READY,
+          completedAt: completedAtIso,
+        },
+        userId,
+      );
+    }
   }
 
   /**
@@ -628,18 +763,7 @@ export class AppointmentsService {
         status: AppointmentStatus.CANCELLED,
         updatedAt: new Date(),
       },
-      include: {
-        customer: true,
-        vehicle: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
+      include: this.appointmentInclude,
     });
 
     // Send cancellation SMS to customer (non-blocking)

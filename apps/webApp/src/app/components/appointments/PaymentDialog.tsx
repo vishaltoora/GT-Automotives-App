@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -27,6 +27,9 @@ import {
   FormControlLabel,
   Radio,
   FormLabel,
+  Autocomplete,
+  Checkbox,
+  OutlinedInput,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -36,10 +39,17 @@ import {
   CreditCard as CreditCardIcon,
   Receipt as ReceiptIcon,
   PointOfSale as PointOfSaleIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { ServiceAmountInput } from './ServiceAmountInput';
 import { AppointmentSquarePaymentForm } from './AppointmentSquarePaymentForm';
 import { appointmentService } from '../../requests/appointment.requests';
+import { userService, User } from '../../requests/user.requests';
+import {
+  PayoutRule,
+  payoutRuleService,
+  calculatePayoutPreview,
+} from '../../requests/payout-rule.requests';
 import { CircularProgress } from '@mui/material';
 
 interface PaymentEntry {
@@ -53,7 +63,16 @@ interface PaymentData {
   payments: PaymentEntry[];
   paymentNotes?: string;
   expectedAmount?: number;
+  completionEmployeeIds?: string[];
+  productSaleAmount?: number;
+  productSaleItems?: string[];
 }
+
+const PRODUCT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'TIRES', label: 'Tires' },
+  { value: 'OIL', label: 'Oil' },
+  { value: 'FILTER', label: 'Filter' },
+];
 
 interface PaymentDialogProps {
   open: boolean;
@@ -65,6 +84,9 @@ interface PaymentDialogProps {
   existingPayments?: PaymentEntry[];
   existingNotes?: string;
   isEditMode?: boolean;
+  // Employees already assigned to the appointment — used as the default selection
+  // for "completed by". When empty/undefined the multi-select starts empty.
+  assignedEmployeeIds?: string[];
 }
 
 // Payment method options
@@ -87,6 +109,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   existingPayments,
   existingNotes = '',
   isEditMode = false,
+  assignedEmployeeIds,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -117,6 +140,57 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const [expectedAmount, setExpectedAmount] = useState(defaultExpectedAmount);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // "Completed by" multi-select state for auto-creating payroll jobs
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [selectedCompletionEmployees, setSelectedCompletionEmployees] = useState<User[]>([]);
+  const [payoutRules, setPayoutRules] = useState<PayoutRule[]>([]);
+  const [hasProductSale, setHasProductSale] = useState(false);
+  const [productSaleAmount, setProductSaleAmount] = useState<number>(0);
+  const [productSaleItems, setProductSaleItems] = useState<string[]>([]);
+
+  // Only enable the "completed by" section when the caller explicitly opts in
+  // by providing assignedEmployeeIds (e.g. on initial completion from AppointmentCard).
+  // Outstanding-balance flows from CustomerDetailsDialog / DayAppointmentsDialog
+  // don't pass it and shouldn't auto-create new jobs.
+  const completionEnabled = !isEditMode && assignedEmployeeIds !== undefined;
+
+  useEffect(() => {
+    if (!open || !completionEnabled) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [users, rules] = await Promise.all([
+          userService.getUsers(),
+          payoutRuleService.list().catch(() => [] as PayoutRule[]),
+        ]);
+        if (cancelled) return;
+        const staff = users.filter(
+          (u) =>
+            u.isActive &&
+            (u.role?.name === 'STAFF' ||
+              u.role?.name === 'ADMIN' ||
+              u.role?.name === 'SUPERVISOR'),
+        );
+        const unique = staff.filter(
+          (u, i, arr) => i === arr.findIndex((x) => x.id === u.id),
+        );
+        setEmployees(unique);
+        setPayoutRules(rules);
+        if (assignedEmployeeIds && assignedEmployeeIds.length > 0) {
+          setSelectedCompletionEmployees(
+            unique.filter((u) => assignedEmployeeIds.includes(u.id)),
+          );
+        }
+      } catch (e) {
+        // Non-blocking — payroll auto-creation is optional
+        console.error('Failed to load completion employees:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, completionEnabled, assignedEmployeeIds]);
+
   // Square payment state
   const [serviceAmount, setServiceAmount] = useState(0);
   const [squareOnlineTip, setSquareOnlineTip] = useState(0);
@@ -125,6 +199,38 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const remainingBalance = expectedAmount - totalAmount;
   const isPartialPayment = expectedAmount > 0 && totalAmount < expectedAmount;
+
+  // Service amount that runs through the lookup/30% rule (taxes excluded).
+  // Tips are NOT included here — they are added 100% on top of the rule-based
+  // payout. Cash has no separate tip so it uses the full total.
+  const payoutBaseAmount = (() => {
+    switch (paymentMethod) {
+      case 'CASH':
+        return totalAmount;
+      case 'E_TRANSFER':
+        return eTransferAmount;
+      case 'SQUARE_DEVICE':
+        return squareDeviceAmount;
+      case 'SQUARE_ONLINE':
+        return serviceAmount;
+      default:
+        return totalAmount;
+    }
+  })();
+
+  // Tip portion — added 100% to the payout pool on top of the rule-based amount.
+  const payoutTipAmount = (() => {
+    switch (paymentMethod) {
+      case 'E_TRANSFER':
+        return eTransferTip || 0;
+      case 'SQUARE_DEVICE':
+        return squareDeviceTip || 0;
+      case 'SQUARE_ONLINE':
+        return squareOnlineTip || 0;
+      default:
+        return 0;
+    }
+  })();
 
   // Handle payment method change - reset amounts when switching
   const handlePaymentMethodChange = (event: SelectChangeEvent<PaymentMethodType>) => {
@@ -170,6 +276,21 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     window.location.reload();
   };
 
+  // Bundle the optional "completed by" + product-sale fields for non-cash flows.
+  const buildCompletionExtras = () => {
+    if (!completionEnabled) return undefined;
+    const productAmount = hasProductSale ? Math.max(0, productSaleAmount) : 0;
+    return {
+      completionEmployeeIds:
+        selectedCompletionEmployees.length > 0
+          ? selectedCompletionEmployees.map((e) => e.id)
+          : undefined,
+      productSaleAmount: productAmount > 0 ? productAmount : undefined,
+      productSaleItems:
+        hasProductSale && productSaleItems.length > 0 ? productSaleItems : undefined,
+    };
+  };
+
   // Handle E-Transfer with Invoice submission
   const handleETransferSubmit = async () => {
     if (eTransferAmount <= 0) {
@@ -181,7 +302,12 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setETransferError(null);
 
     try {
-      await appointmentService.createETransferInvoice(appointmentId, eTransferAmount, eTransferTip > 0 ? eTransferTip : undefined);
+      await appointmentService.createETransferInvoice(
+        appointmentId,
+        eTransferAmount,
+        eTransferTip > 0 ? eTransferTip : undefined,
+        buildCompletionExtras(),
+      );
       // Backend already created invoice + updated appointment to COMPLETED
       // Just close dialog and refresh data (don't trigger another status update)
       handleClose();
@@ -213,7 +339,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         appointmentId,
         squareDeviceAmount,
         squareDeviceTip > 0 ? squareDeviceTip : undefined,
-        squareDeviceCardType
+        squareDeviceCardType,
+        buildCompletionExtras(),
       );
       // Backend already created invoice + updated appointment to COMPLETED
       // Just close dialog and refresh data (don't trigger another status update)
@@ -308,11 +435,21 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
 
     // Submit
-    const paymentData = {
+    const productAmount = completionEnabled && hasProductSale ? Math.max(0, productSaleAmount) : 0;
+    const paymentData: PaymentData = {
       totalAmount,
       payments,
       paymentNotes,
       expectedAmount: expectedAmount > 0 ? expectedAmount : undefined,
+      completionEmployeeIds:
+        completionEnabled && selectedCompletionEmployees.length > 0
+          ? selectedCompletionEmployees.map((e) => e.id)
+          : undefined,
+      productSaleAmount: productAmount > 0 ? productAmount : undefined,
+      productSaleItems:
+        completionEnabled && hasProductSale && productSaleItems.length > 0
+          ? productSaleItems
+          : undefined,
     };
     console.log('PaymentDialog - Submitting payment data:', paymentData);
     onSubmit(paymentData);
@@ -377,6 +514,141 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             ))}
           </Select>
         </FormControl>
+
+        {/* Completed By — Auto-creates payroll jobs (shown for all payment methods) */}
+        {completionEnabled && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <PersonIcon fontSize="small" /> Completed By
+            </Typography>
+            <Autocomplete
+              multiple
+              options={employees}
+              value={selectedCompletionEmployees}
+              onChange={(_e, value) => setSelectedCompletionEmployees(value)}
+              getOptionLabel={(option) => `${option.firstName || ''} ${option.lastName || ''}`.trim() || option.email}
+              isOptionEqualToValue={(opt, val) => opt.id === val.id}
+              renderOption={(props, option) => {
+                const { key: _key, ...rest } = props as any;
+                return (
+                  <li key={option.id} {...rest}>
+                    {`${option.firstName || ''} ${option.lastName || ''}`.trim() || option.email}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder={selectedCompletionEmployees.length === 0 ? 'Select employee(s) who completed the job' : ''}
+                  size="small"
+                />
+              )}
+            />
+
+            {/* Product Sale */}
+            <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'flex-start', gap: 1.5, flexWrap: 'wrap' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={hasProductSale}
+                    onChange={(e) => {
+                      setHasProductSale(e.target.checked);
+                      if (!e.target.checked) {
+                        setProductSaleAmount(0);
+                        setProductSaleItems([]);
+                      }
+                    }}
+                  />
+                }
+                label={<Typography variant="body2">Includes a product sale</Typography>}
+                sx={{ mr: 0 }}
+              />
+              {hasProductSale && (
+                <>
+                  <FormControl size="small" sx={{ minWidth: 220, flex: 1 }}>
+                    <InputLabel id="product-sale-items-label">Products Sold</InputLabel>
+                    <Select
+                      labelId="product-sale-items-label"
+                      multiple
+                      value={productSaleItems}
+                      onChange={(e) =>
+                        setProductSaleItems(
+                          typeof e.target.value === 'string'
+                            ? e.target.value.split(',')
+                            : (e.target.value as string[]),
+                        )
+                      }
+                      input={<OutlinedInput label="Products Sold" />}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {(selected as string[]).map((value) => (
+                            <Chip
+                              key={value}
+                              label={
+                                PRODUCT_OPTIONS.find((p) => p.value === value)?.label ?? value
+                              }
+                              size="small"
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    >
+                      {PRODUCT_OPTIONS.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          <Checkbox checked={productSaleItems.includes(option.value)} />
+                          <Typography variant="body2">{option.label}</Typography>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    type="number"
+                    size="small"
+                    label="Product Sale Amount"
+                    value={productSaleAmount || ''}
+                    onChange={(e) => setProductSaleAmount(parseFloat(e.target.value) || 0)}
+                    InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    sx={{ width: 200 }}
+                    helperText={`Service portion: $${Math.max(0, payoutBaseAmount - productSaleAmount).toFixed(2)}`}
+                  />
+                </>
+              )}
+            </Box>
+
+            {selectedCompletionEmployees.length > 0 && (payoutBaseAmount > 0 || payoutTipAmount > 0) && (() => {
+              const productAmount = hasProductSale ? Math.max(0, productSaleAmount) : 0;
+              const svcAmount = Math.max(0, payoutBaseAmount - productAmount);
+              const rulePayout = svcAmount > 0 ? calculatePayoutPreview(svcAmount, payoutRules) : 0;
+              const totalPayout = rulePayout + payoutTipAmount;
+              if (totalPayout <= 0) {
+                return (
+                  <Box sx={{ mt: 1, p: 1.5, bgcolor: 'warning.50', borderRadius: 1, border: 1, borderColor: 'warning.light' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      No payout amount — no payroll job will be created.
+                    </Typography>
+                  </Box>
+                );
+              }
+              const perEmployee = Math.round((totalPayout / selectedCompletionEmployees.length) * 100) / 100;
+              const exact = payoutRules.find((r) => r.isActive && Number(r.triggerAmount) === Number(svcAmount));
+              return (
+                <Box sx={{ mt: 1, p: 1.5, bgcolor: 'success.50', borderRadius: 1, border: 1, borderColor: 'success.light' }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Payroll preview: ${rulePayout.toFixed(2)} ({exact ? 'lookup rule' : '30% default'} on $
+                    {svcAmount.toFixed(2)} service)
+                    {payoutTipAmount > 0 ? ` + $${payoutTipAmount.toFixed(2)} tip (100%)` : ''}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    ${totalPayout.toFixed(2)} total · ${perEmployee.toFixed(2)} per employee
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    A pending job will be created for each selected employee.
+                  </Typography>
+                </Box>
+              );
+            })()}
+          </Box>
+        )}
 
         {/* Cash Payment Content */}
         {paymentMethod === 'CASH' && (

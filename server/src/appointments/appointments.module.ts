@@ -8,9 +8,11 @@ import { AppointmentInvoiceService } from './appointment-invoice.service';
 import { SmsModule } from '../sms/sms.module';
 import { EmailModule } from '../email/email.module';
 import { InvoicesModule } from '../invoices/invoices.module';
+import { JobsModule } from '../jobs/jobs.module';
+import { PayoutRulesModule } from '../payout-rules/payout-rules.module';
 
 @Module({
-  imports: [SmsModule, EmailModule, InvoicesModule],
+  imports: [SmsModule, EmailModule, InvoicesModule, JobsModule, PayoutRulesModule],
   controllers: [AppointmentsController, AvailabilityController],
   providers: [AppointmentsService, AvailabilityService, AppointmentInvoiceService, PrismaService],
   exports: [AppointmentsService, AvailabilityService, AppointmentInvoiceService],

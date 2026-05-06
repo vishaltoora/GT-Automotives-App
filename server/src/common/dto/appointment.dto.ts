@@ -101,6 +101,25 @@ export class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
   @IsOptional()
   expectedAmount?: number;
 
+  // Portion of paymentAmount that was a product sale rather than service work.
+  // Excluded from the payroll payout calculation.
+  @IsOptional()
+  productSaleAmount?: number;
+
+  // Product categories included in the sale (e.g. TIRES, OIL, FILTER).
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productSaleItems?: string[];
+
+  // Employees who actually completed the work — used to auto-create payroll jobs
+  // when the appointment transitions to COMPLETED. The total payout (from the
+  // payout-rules table or 30% fallback) is split equally among these employees.
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completionEmployeeIds?: string[];
+
   // Internal field for recalculated end time (not validated from request)
   endTime?: string;
 }
@@ -153,6 +172,21 @@ export class CreateETransferInvoiceDto {
   @IsNumber()
   @Min(0)
   tipAmount?: number; // Optional tip amount (not subject to tax)
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completionEmployeeIds?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  productSaleAmount?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productSaleItems?: string[];
 }
 
 export class CreateSquareDeviceInvoiceDto {
@@ -168,4 +202,19 @@ export class CreateSquareDeviceInvoiceDto {
   @IsOptional()
   @IsIn(['CREDIT_CARD', 'DEBIT_CARD'])
   cardType?: 'CREDIT_CARD' | 'DEBIT_CARD'; // Type of card used for payment (defaults to CREDIT_CARD)
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completionEmployeeIds?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  productSaleAmount?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productSaleItems?: string[];
 }

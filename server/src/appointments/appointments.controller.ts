@@ -154,6 +154,8 @@ export class AppointmentsController {
       where: { appointmentId: id },
     });
 
+    const wasAlreadyCompleted = appointment.status === 'COMPLETED';
+
     if (existingInvoice) {
       // Invoice exists but appointment is still IN_PROGRESS - just update the appointment
       await this.prisma.appointment.update({
@@ -174,6 +176,18 @@ export class AppointmentsController {
         },
       });
 
+      await this.appointmentsService.applyCompletionExtras(id, {
+        completionEmployeeIds: dto.completionEmployeeIds,
+        productSaleAmount: dto.productSaleAmount,
+        productSaleItems: dto.productSaleItems,
+        // Pre-tax service amount goes through the payout rule. Tip is added
+        // 100% on top of that — see createCompletionJobs.
+        serviceAmount: dto.serviceAmount,
+        tipAmount: dto.tipAmount || 0,
+        userId: user.id,
+        wasAlreadyCompleted,
+      });
+
       return {
         success: true,
         invoice: {
@@ -191,6 +205,8 @@ export class AppointmentsController {
       appointmentId: id,
       serviceAmount: dto.serviceAmount,
       tipAmount,
+      productSaleAmount: dto.productSaleAmount,
+      productSaleItems: dto.productSaleItems,
       userId: user.id,
       paymentMethod: 'E_TRANSFER',
       status: 'PAID',
@@ -212,6 +228,16 @@ export class AppointmentsController {
           },
         ],
       },
+    });
+
+    await this.appointmentsService.applyCompletionExtras(id, {
+      completionEmployeeIds: dto.completionEmployeeIds,
+      productSaleAmount: dto.productSaleAmount,
+      productSaleItems: dto.productSaleItems,
+      serviceAmount: dto.serviceAmount,
+      tipAmount: dto.tipAmount || 0,
+      userId: user.id,
+      wasAlreadyCompleted,
     });
 
     return {
@@ -262,6 +288,8 @@ export class AppointmentsController {
       where: { appointmentId: id },
     });
 
+    const wasAlreadyCompletedSq = appointment.status === 'COMPLETED';
+
     if (existingInvoice) {
       // Invoice exists but appointment is still IN_PROGRESS - just update the appointment
       await this.prisma.appointment.update({
@@ -282,6 +310,16 @@ export class AppointmentsController {
         },
       });
 
+      await this.appointmentsService.applyCompletionExtras(id, {
+        completionEmployeeIds: dto.completionEmployeeIds,
+        productSaleAmount: dto.productSaleAmount,
+        productSaleItems: dto.productSaleItems,
+        serviceAmount: dto.serviceAmount,
+        tipAmount: dto.tipAmount || 0,
+        userId: user.id,
+        wasAlreadyCompleted: wasAlreadyCompletedSq,
+      });
+
       return {
         success: true,
         invoice: {
@@ -299,6 +337,8 @@ export class AppointmentsController {
       appointmentId: id,
       serviceAmount: dto.serviceAmount,
       tipAmount,
+      productSaleAmount: dto.productSaleAmount,
+      productSaleItems: dto.productSaleItems,
       userId: user.id,
       paymentMethod,
       status: 'PAID',
@@ -320,6 +360,16 @@ export class AppointmentsController {
           },
         ],
       },
+    });
+
+    await this.appointmentsService.applyCompletionExtras(id, {
+      completionEmployeeIds: dto.completionEmployeeIds,
+      productSaleAmount: dto.productSaleAmount,
+      productSaleItems: dto.productSaleItems,
+      serviceAmount: dto.serviceAmount,
+      tipAmount: dto.tipAmount || 0,
+      userId: user.id,
+      wasAlreadyCompleted: wasAlreadyCompletedSq,
     });
 
     return {
@@ -352,8 +402,12 @@ export class AppointmentsController {
   @Patch(':id')
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  async update(@Param('id') id: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
-    return this.appointmentsService.update(id, updateAppointmentDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateAppointmentDto: UpdateAppointmentDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.appointmentsService.update(id, updateAppointmentDto, user?.id);
   }
 
   /**

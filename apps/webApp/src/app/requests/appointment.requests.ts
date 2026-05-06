@@ -334,10 +334,19 @@ export const appointmentService = {
    * Creates an invoice with PENDING status and completes the appointment
    * Invoice is set to E_TRANSFER payment method
    */
-  async createETransferInvoice(appointmentId: string, serviceAmount: number, tipAmount?: number): Promise<any> {
+  async createETransferInvoice(
+    appointmentId: string,
+    serviceAmount: number,
+    tipAmount?: number,
+    extras?: {
+      completionEmployeeIds?: string[];
+      productSaleAmount?: number;
+      productSaleItems?: string[];
+    },
+  ): Promise<any> {
     const response = await apiClient.post(
       `/api/appointments/${appointmentId}/e-transfer-invoice`,
-      { serviceAmount, tipAmount }
+      { serviceAmount, tipAmount, ...extras }
     );
     return response.data;
   },
@@ -352,11 +361,16 @@ export const appointmentService = {
     appointmentId: string,
     serviceAmount: number,
     tipAmount?: number,
-    cardType?: 'CREDIT_CARD' | 'DEBIT_CARD'
+    cardType?: 'CREDIT_CARD' | 'DEBIT_CARD',
+    extras?: {
+      completionEmployeeIds?: string[];
+      productSaleAmount?: number;
+      productSaleItems?: string[];
+    },
   ): Promise<any> {
     const response = await apiClient.post(
       `/api/appointments/${appointmentId}/square-device-invoice`,
-      { serviceAmount, tipAmount, cardType }
+      { serviceAmount, tipAmount, cardType, ...extras }
     );
     return response.data;
   },

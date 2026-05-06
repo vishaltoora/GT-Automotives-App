@@ -303,6 +303,15 @@ export const AppointmentsManagement: React.FC = () => {
         if (paymentData.expectedAmount !== undefined) {
           updateData.expectedAmount = paymentData.expectedAmount;
         }
+        if (paymentData.completionEmployeeIds !== undefined) {
+          updateData.completionEmployeeIds = paymentData.completionEmployeeIds;
+        }
+        if (paymentData.productSaleAmount !== undefined) {
+          updateData.productSaleAmount = paymentData.productSaleAmount;
+        }
+        if (paymentData.productSaleItems !== undefined) {
+          updateData.productSaleItems = paymentData.productSaleItems;
+        }
         console.log('AppointmentsManagement - Update data being sent:', updateData);
       }
 
@@ -1149,9 +1158,16 @@ export const AppointmentsManagement: React.FC = () => {
                                       <Chip label="UPCOMING" size="small" color="warning" sx={{ height: '24px', fontSize: '0.7rem', fontWeight: 600 }} />
                                     )}
                                   </Box>
-                                  <IconButton size="small" onClick={(e) => handleMenuOpen(e, appointment.id)} sx={{ padding: '6px' }}>
-                                    <MoreVertIcon />
-                                  </IconButton>
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, appointment.id)} sx={{ padding: '6px' }}>
+                                      <MoreVertIcon />
+                                    </IconButton>
+                                    {appointment.bookedByUser && (
+                                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+                                        Booked by: {appointment.bookedByUser.firstName} {appointment.bookedByUser.lastName}
+                                      </Typography>
+                                    )}
+                                  </Box>
                                 </Box>
 
                                 {/* Customer Section */}

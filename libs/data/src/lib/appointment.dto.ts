@@ -262,6 +262,11 @@ export class AppointmentResponseDto {
   @IsString()
   bookedBy?: string;
 
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AppointmentEmployeeDto)
+  bookedByUser?: AppointmentEmployeeDto;
+
   @IsString()
   createdAt!: Date;
 

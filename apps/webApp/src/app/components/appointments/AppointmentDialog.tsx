@@ -43,6 +43,8 @@ interface AppointmentDialogProps {
   appointment?: Appointment;
   preselectedCustomerId?: string;
   preselectedServiceType?: string;
+  preselectedAppointmentType?: 'AT_GARAGE' | 'MOBILE_SERVICE';
+  preselectedServiceAddress?: string;
 }
 
 export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
@@ -52,6 +54,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   appointment,
   preselectedCustomerId,
   preselectedServiceType,
+  preselectedAppointmentType,
+  preselectedServiceAddress,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +75,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     scheduledTime: getCurrentTimeRounded(),
     duration: 60,
     serviceType: preselectedServiceType || 'TIRE_CHANGE',
-    appointmentType: 'AT_GARAGE',
-    serviceAddress: '', // Required for MOBILE_SERVICE appointments
+    appointmentType: preselectedAppointmentType || 'AT_GARAGE',
+    serviceAddress: preselectedServiceAddress || '', // Required for MOBILE_SERVICE appointments
     notes: '',
   });
 
@@ -144,15 +148,18 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         if (preselectedCustomerId) {
           loadCustomerDetails(preselectedCustomerId);
         }
-        if (preselectedServiceType) {
-          setFormData((prev) => ({ ...prev, serviceType: preselectedServiceType }));
-        }
+        setFormData((prev) => ({
+          ...prev,
+          serviceType: preselectedServiceType || prev.serviceType,
+          appointmentType: preselectedAppointmentType || 'AT_GARAGE',
+          serviceAddress: preselectedServiceAddress || '',
+        }));
       }
 
       // Check availability on dialog open (for default date/time)
       checkAvailability();
     }
-  }, [open, appointment, preselectedCustomerId, preselectedServiceType]);
+  }, [open, appointment, preselectedCustomerId, preselectedServiceType, preselectedAppointmentType, preselectedServiceAddress]);
 
   // Auto-adjust time if date changes to today and selected time is in the past
   useEffect(() => {
@@ -404,6 +411,11 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           <Box sx={{ fontWeight: 'bold', color: 'white' }}>
             {appointment ? 'Edit Appointment' : 'New Appointment'}
           </Box>
+          {appointment?.bookedByUser && (
+            <Box sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)', mt: 0.5 }}>
+              Booked by: {appointment.bookedByUser.firstName} {appointment.bookedByUser.lastName}
+            </Box>
+          )}
           <IconButton
             aria-label="close"
             onClick={handleClose}
@@ -433,7 +445,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   row
                   value={formData.appointmentType}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, appointmentType: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      appointmentType: e.target.value as 'AT_GARAGE' | 'MOBILE_SERVICE',
+                    }))
                   }
                 >
                   <FormControlLabel

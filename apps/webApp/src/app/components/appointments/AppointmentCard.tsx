@@ -168,6 +168,12 @@ export interface AppointmentCardProps {
         lastName: string;
       };
     }>;
+    bookedByUser?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email?: string;
+    };
   };
   onEdit?: (appointment: any) => void;
   onDelete?: (appointmentId: string) => void;
@@ -235,6 +241,13 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           if (onPaymentComplete) await onPaymentComplete();
         }}
         appointmentId={appointment.id}
+        assignedEmployeeIds={
+          appointment.employees && appointment.employees.length > 0
+            ? appointment.employees.map((ae) => ae.employee.id)
+            : appointment.employee
+            ? [appointment.employee.id]
+            : []
+        }
       />
       <Card
         variant="outlined"
@@ -263,30 +276,46 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               mb: 2,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ScheduleIcon color="action" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
-              <Typography variant="h6" sx={{ fontSize: { xs: '0.938rem', sm: '1.25rem' }, fontWeight: { xs: 700, sm: 500 } }}>
-                {formatTimeRange(
-                  appointment.scheduledTime,
-                  appointment.endTime || ''
-                )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ScheduleIcon color="action" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.938rem', sm: '1.25rem' }, fontWeight: { xs: 700, sm: 500 } }}>
+                  {formatTimeRange(
+                    appointment.scheduledTime,
+                    appointment.endTime || ''
+                  )}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                ID: {appointment.id}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip
-                icon={getStatusIcon(appointment.status)}
-                label={formatStatusLabel(appointment.status)}
-                color={getStatusColor(appointment.status) as any}
-                size="small"
-              />
-              {showActions && (onEdit || onDelete) && (
-                <IconButton
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Chip
+                  icon={getStatusIcon(appointment.status)}
+                  label={formatStatusLabel(appointment.status)}
+                  color={getStatusColor(appointment.status) as any}
                   size="small"
-                  onClick={handleMenuOpen}
-                  sx={{ ml: 1 }}
+                />
+                {showActions && (onEdit || onDelete) && (
+                  <IconButton
+                    size="small"
+                    onClick={handleMenuOpen}
+                    sx={{ ml: 1 }}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+              {appointment.bookedByUser && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}
                 >
-                  <MoreVertIcon fontSize="small" />
-                </IconButton>
+                  Booked by: {appointment.bookedByUser.firstName} {appointment.bookedByUser.lastName}
+                </Typography>
               )}
             </Box>
           </Box>

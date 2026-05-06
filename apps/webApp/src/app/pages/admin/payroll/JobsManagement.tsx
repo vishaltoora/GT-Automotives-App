@@ -983,8 +983,6 @@ export function JobsManagement() {
                   <TableCell><strong>Job Title</strong></TableCell>
                   <TableCell><strong>Type</strong></TableCell>
                   <TableCell><strong>Date</strong></TableCell>
-                  <TableCell><strong>Hours</strong></TableCell>
-                  <TableCell><strong>Rate</strong></TableCell>
                   <TableCell><strong>Total</strong></TableCell>
                   <TableCell><strong>Status</strong></TableCell>
                   <TableCell align="right"><strong>Actions</strong></TableCell>
@@ -993,7 +991,7 @@ export function JobsManagement() {
               <TableBody>
                 {jobs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                       <WorkIcon sx={{ fontSize: 48, color: colors.neutral[400], mb: 1 }} />
                       <Typography variant="body1" color="text.secondary">
                         No jobs found for this employee
@@ -1006,9 +1004,23 @@ export function JobsManagement() {
                       <TableCell>
                         <Typography fontWeight="medium">{job.title}</Typography>
                         {job.description && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', whiteSpace: 'pre-line' }}>
                             {job.description}
                           </Typography>
+                        )}
+                        {job.appointmentId && (
+                          <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                            <Chip
+                              label="From appointment"
+                              size="small"
+                              variant="outlined"
+                              color="info"
+                              sx={{ height: 18, fontSize: '0.65rem' }}
+                            />
+                            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', color: 'text.secondary' }}>
+                              ID: {job.appointmentId}
+                            </Typography>
+                          </Box>
                         )}
                       </TableCell>
                       <TableCell>
@@ -1017,8 +1029,6 @@ export function JobsManagement() {
                       <TableCell>
                         {job.completedAt ? format(new Date(job.completedAt), 'MMM dd, yyyy') : '-'}
                       </TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>-</TableCell>
                       <TableCell>
                         <Typography fontWeight="bold" color="primary">
                           ${job.payAmount.toFixed(2)}

@@ -358,9 +358,20 @@ export const ProcessPaymentDialog: React.FC<ProcessPaymentDialogProps> = ({
                             </Box>
                           }
                           secondary={
-                            <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary">
-                              ${listJob.payAmount.toFixed(2)} • {getEmployeeName(listJob.employee)}
-                            </Typography>
+                            <Box component="span" sx={{ display: 'block' }}>
+                              <Typography component="span" variant={isMobile ? 'caption' : 'body2'} color="text.secondary" sx={{ display: 'block' }}>
+                                ${listJob.payAmount.toFixed(2)} • {getEmployeeName(listJob.employee)}
+                              </Typography>
+                              {listJob.appointment && (
+                                <Typography component="span" variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                                  Appt: {(() => {
+                                    const d = listJob.appointment.scheduledDate;
+                                    const dateStr = typeof d === 'string' ? d.split('T')[0] : new Date(d).toISOString().split('T')[0];
+                                    return `${dateStr} ${listJob.appointment.scheduledTime}`;
+                                  })()} · <Box component="span" sx={{ fontFamily: 'monospace' }}>ID: {listJob.appointment.id}</Box>
+                                </Typography>
+                              )}
+                            </Box>
                           }
                         />
                       </ListItem>

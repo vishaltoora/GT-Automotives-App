@@ -51,7 +51,8 @@ import {
   BusinessCenter,
   Event,
   BarChart,
-  LocalOffer
+  LocalOffer,
+  Calculate,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -143,6 +144,7 @@ export function AdminLayout() {
         { text: 'Commission', icon: <LocalMall />, path: '/admin/tire-commissions' },
         { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
         { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
+        { text: 'Payout Rules', icon: <Calculate />, path: '/admin/payout-rules' },
       ]
     },
     {

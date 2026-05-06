@@ -5,6 +5,10 @@ export class CreateJobDto {
   @IsString()
   employeeId!: string;
 
+  @IsOptional()
+  @IsString()
+  appointmentId?: string;
+
   @IsString()
   title!: string;
 
@@ -25,6 +29,10 @@ export class CreateJobDto {
   @IsOptional()
   @IsDateString()
   dueDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  completedAt?: string;
 }
 
 export class UpdateJobDto {
@@ -61,6 +69,7 @@ export class JobResponseDto {
   id!: string;
   jobNumber!: string;
   employeeId!: string;
+  appointmentId?: string;
   title!: string;
   description?: string;
   payAmount!: number;
@@ -76,6 +85,12 @@ export class JobResponseDto {
     firstName?: string;
     lastName?: string;
     email: string;
+  };
+  appointment?: {
+    id: string;
+    scheduledDate: Date;
+    scheduledTime: string;
+    serviceType: string;
   };
   payments?: Array<{
     id: string;

@@ -24,13 +24,21 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 
 interface CreateInvoiceFromAppointmentParams {
   appointmentId: string;
-  serviceAmount: number; // Base amount before taxes
+  serviceAmount: number; // Total pre-tax amount (service + product if any)
   tipAmount?: number; // Optional tip amount (not subject to tax)
+  productSaleAmount?: number; // Portion of serviceAmount that is product sale
+  productSaleItems?: string[]; // Product types sold (TIRES, OIL, FILTER)
   squarePaymentId?: string; // Optional: link to Square payment
   userId: string; // User creating the invoice
   paymentMethod?: 'CREDIT_CARD' | 'DEBIT_CARD' | 'E_TRANSFER' | 'CASH'; // Payment method
   status?: 'PAID' | 'PENDING'; // Invoice status
 }
+
+const PRODUCT_LABELS: Record<string, string> = {
+  TIRES: 'Tires',
+  OIL: 'Oil',
+  FILTER: 'Filter',
+};
 
 @Injectable()
 export class AppointmentInvoiceService {
@@ -52,6 +60,8 @@ export class AppointmentInvoiceService {
       appointmentId,
       serviceAmount,
       tipAmount = 0,
+      productSaleAmount = 0,
+      productSaleItems = [],
       squarePaymentId,
       userId,
       paymentMethod = 'CREDIT_CARD',
@@ -114,33 +124,52 @@ export class AppointmentInvoiceService {
       `Creating invoice for appointment ${appointmentId}: ${serviceDescription} - $${totalWithTip}${tip > 0 ? ` (includes $${tip} tip)` : ''}`,
     );
 
-    // 7. Build invoice items array
+    // 7. Build invoice items array. If a product sale is included, split it
+    // into a separate line item so the invoice clearly itemizes service vs product.
+    const productAmount = Math.max(0, Number(productSaleAmount) || 0);
+    const serviceLineAmount = Math.max(0, serviceAmount - productAmount);
+
     const invoiceItems: Array<{
       itemType: InvoiceItemType;
       description: string;
       quantity: number;
       unitPrice: Decimal;
       total: Decimal;
-    }> = [
-      {
-        itemType: InvoiceItemType.OTHER,
+    }> = [];
+
+    if (serviceLineAmount > 0) {
+      invoiceItems.push({
+        itemType: InvoiceItemType.SERVICE,
         description: serviceDescription,
         quantity: 1,
-        unitPrice: new Decimal(serviceAmount),
-        total: new Decimal(serviceAmount),
-      },
-    ];
-
-    // Add tips as separate line item if present (not taxed)
-    if (tip > 0) {
-      invoiceItems.push({
-        itemType: InvoiceItemType.OTHER,
-        description: 'Tips',
-        quantity: 1,
-        unitPrice: new Decimal(tip),
-        total: new Decimal(tip),
+        unitPrice: new Decimal(serviceLineAmount),
+        total: new Decimal(serviceLineAmount),
       });
     }
+
+    if (productAmount > 0) {
+      const productLabel =
+        productSaleItems && productSaleItems.length > 0
+          ? productSaleItems
+              .map((p) => PRODUCT_LABELS[p] || p)
+              .join(', ')
+          : 'Product Sale';
+      // Use TIRE itemType when only tires, otherwise PART for the generic case.
+      const onlyTires =
+        productSaleItems &&
+        productSaleItems.length > 0 &&
+        productSaleItems.every((p) => p === 'TIRES');
+      invoiceItems.push({
+        itemType: onlyTires ? InvoiceItemType.TIRE : InvoiceItemType.PART,
+        description: productLabel,
+        quantity: 1,
+        unitPrice: new Decimal(productAmount),
+        total: new Decimal(productAmount),
+      });
+    }
+
+    // Tips are intentionally NOT added to the invoice — they're tracked on
+    // the appointment payment breakdown and used only for payroll payout.
 
     // 8. Create invoice
     const invoice = await this.invoiceRepository.createWithItems(
@@ -152,14 +181,14 @@ export class AppointmentInvoiceService {
           : undefined,
         company: { connect: { id: defaultCompany.id } },
         appointment: { connect: { id: appointmentId } }, // Link to appointment
-        subtotal: new Decimal(taxes.subtotal + tip), // Subtotal includes tip (but tip is not taxed)
+        subtotal: new Decimal(taxes.subtotal),
         gstRate: new Decimal(taxes.gstRate),
         gstAmount: new Decimal(taxes.gstAmount),
         pstRate: new Decimal(taxes.pstRate),
         pstAmount: new Decimal(taxes.pstAmount),
         taxRate: new Decimal(taxes.gstRate + taxes.pstRate),
         taxAmount: new Decimal(taxes.gstAmount + taxes.pstAmount),
-        total: new Decimal(totalWithTip), // Total includes tip
+        total: new Decimal(taxes.totalAmount), // Tips excluded from invoice
         status, // Use provided status (PAID for Square, PENDING for E-Transfer)
         paymentMethod, // Use provided payment method
         createdBy: userId,

@@ -51,6 +51,7 @@ import UserManagement from '../pages/admin/UserManagement';
 import { PayrollDashboard } from './pages/admin/payroll/PayrollDashboard';
 import { JobsManagement } from './pages/admin/payroll/JobsManagement';
 import { PaymentsManagement } from './pages/admin/payroll/PaymentsManagement';
+import { PayoutRulesManagement } from './pages/admin/payroll/PayoutRulesManagement';
 
 
 // Inventory Pages
@@ -285,6 +286,7 @@ export function App() {
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
           <Route path="payments" element={<PaymentsManagement />} />
+          <Route path="payout-rules" element={<PayoutRulesManagement />} />
           <Route path="reports" element={<Reports />} />
           <Route path="employee-payments-report" element={<EmployeePaymentsReport />} />
           <Route path="analytics" element={<div>Analytics</div>} />
