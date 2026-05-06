@@ -194,6 +194,16 @@ jobs:
             echo "🔧 Generating Prisma client..."
             npx prisma generate --schema="$SCHEMA_PATH" || echo "⚠️ Prisma generate failed, continuing with migrate deploy..."
 
+            # One-time resolve for the baseline_drift_catchup migration: prod
+            # already has those schema changes from prior `db push`, so the
+            # migration's SQL fails (enum already exists). Mark it rolled-back
+            # to clear the failed state, then applied so future deploys skip it.
+            # Both commands are idempotent — the `|| true` keeps the deploy
+            # going if the migration isn't in the failed/pending state anymore.
+            echo "🛠 Resolving baseline_drift_catchup migration state..."
+            npx prisma migrate resolve --rolled-back 20260506000000_baseline_drift_catchup --schema="$SCHEMA_PATH" || true
+            npx prisma migrate resolve --applied 20260506000000_baseline_drift_catchup --schema="$SCHEMA_PATH" || true
+
             # Run migrations (migrate deploy doesn't need generated client)
             echo "🚀 Running database migrations..."
             if npx prisma migrate deploy --schema="$SCHEMA_PATH"; then
