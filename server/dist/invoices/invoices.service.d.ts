@@ -34,32 +34,32 @@ export declare class InvoicesService {
     markAsPaid(id: string, paymentMethod: PaymentMethod, userId: string): Promise<Invoice>;
     getAllServices(): Promise<{
         name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }[]>;
     createService(createServiceDto: CreateServiceDto): Promise<{
         name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     updateService(id: string, updateServiceDto: UpdateServiceDto): Promise<{
         name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     deleteService(id: string): Promise<{
         name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         unitPrice: import(".prisma/client/runtime/library").Decimal;

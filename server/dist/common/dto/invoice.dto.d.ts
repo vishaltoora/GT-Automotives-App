@@ -6,7 +6,8 @@ export declare enum InvoiceItemType {
     OTHER = "OTHER",
     LEVY = "LEVY",
     DISCOUNT = "DISCOUNT",
-    DISCOUNT_PERCENTAGE = "DISCOUNT_PERCENTAGE"
+    DISCOUNT_PERCENTAGE = "DISCOUNT_PERCENTAGE",
+    TIPS = "TIPS"
 }
 export declare class InvoiceItemDto {
     id?: string;

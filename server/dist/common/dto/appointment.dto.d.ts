@@ -9,6 +9,7 @@ export declare class CreateAppointmentDto {
     duration: number;
     serviceType: string;
     appointmentType: AppointmentType;
+    serviceAddress?: string;
     notes?: string;
 }
 export declare class UpdateAppointmentDto implements Partial<CreateAppointmentDto> {
@@ -20,11 +21,15 @@ export declare class UpdateAppointmentDto implements Partial<CreateAppointmentDt
     serviceType?: string;
     status?: AppointmentStatus;
     appointmentType?: AppointmentType;
+    serviceAddress?: string;
     notes?: string;
     paymentAmount?: number;
     paymentBreakdown?: any;
     paymentNotes?: string;
     expectedAmount?: number;
+    productSaleAmount?: number;
+    productSaleItems?: string[];
+    completionEmployeeIds?: string[];
     endTime?: string;
 }
 export declare class AppointmentQueryDto {
@@ -44,5 +49,17 @@ export declare class PaymentDateQueryDto {
 }
 export declare class CreateETransferInvoiceDto {
     serviceAmount: number;
+    tipAmount?: number;
+    completionEmployeeIds?: string[];
+    productSaleAmount?: number;
+    productSaleItems?: string[];
+}
+export declare class CreateSquareDeviceInvoiceDto {
+    serviceAmount: number;
+    tipAmount?: number;
+    cardType?: 'CREDIT_CARD' | 'DEBIT_CARD';
+    completionEmployeeIds?: string[];
+    productSaleAmount?: number;
+    productSaleItems?: string[];
 }
 //# sourceMappingURL=appointment.dto.d.ts.map

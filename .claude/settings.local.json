@@ -44,7 +44,8 @@
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma migrate dev:*)",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma db push:*)",
       "Bash(DATABASE_URL=\"postgresql://postgres@localhost:5432/gt_automotive?schema=public\" npx prisma generate:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(yarn nx *)"
     ],
     "deny": [],
     "ask": []

@@ -14,63 +14,66 @@ export declare class SmsController {
      * Get SMS history (admin only)
      */
     getHistory(customerId?: string, userId?: string, limit?: string): Promise<({
-        customer: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            firstName: string;
-            lastName: string;
-            email: string | null;
-            phone: string | null;
-            address: string | null;
-            businessName: string | null;
-        } | null;
-        user: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            firstName: string | null;
-            lastName: string | null;
-            email: string;
-            phone: string | null;
-            clerkId: string;
-            roleId: string;
-            lastLogin: Date | null;
-            isActive: boolean;
-        } | null;
         appointment: {
-            notes: string | null;
             id: string;
+            employeeId: string | null;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            scheduledDate: Date;
             vehicleId: string | null;
-            employeeId: string | null;
+            scheduledDate: Date;
             scheduledTime: string;
             endTime: string | null;
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
+            serviceAddress: string | null;
+            notes: string | null;
             paymentAmount: number | null;
             paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
             paymentNotes: string | null;
+            productSaleAmount: number | null;
+            productSaleItems: string[];
             expectedAmount: number | null;
             paymentDate: Date | null;
             reminderSent: boolean;
             bookedBy: string | null;
         } | null;
+        user: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            clerkId: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
+            phone: string | null;
+            roleId: string;
+            lastLogin: Date | null;
+            isActive: boolean;
+        } | null;
+        customer: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            businessName: string | null;
+        } | null;
     } & {
-        type: import("@prisma/client").$Enums.SmsType;
-        cost: import(".prisma/client/runtime/library").Decimal | null;
         id: string;
+        appointmentId: string | null;
+        status: import("@prisma/client").$Enums.SmsStatus;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
-        status: import("@prisma/client").$Enums.SmsStatus;
-        appointmentId: string | null;
+        userId: string | null;
+        type: import("@prisma/client").$Enums.SmsType;
+        cost: import(".prisma/client/runtime/library").Decimal | null;
         to: string;
         from: string;
         sentAt: Date | null;
@@ -87,8 +90,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;
@@ -107,8 +110,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;
@@ -133,8 +136,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;
@@ -160,8 +163,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;

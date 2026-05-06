@@ -1,11 +1,14 @@
 import { JobStatus, JobType } from '@prisma/client';
 export declare class CreateJobDto {
     employeeId: string;
+    appointmentId?: string;
     title: string;
     description?: string;
     payAmount: number;
     jobType: JobType;
+    status?: JobStatus;
     dueDate?: string;
+    completedAt?: string;
 }
 export declare class UpdateJobDto {
     title?: string;
@@ -20,6 +23,7 @@ export declare class JobResponseDto {
     id: string;
     jobNumber: string;
     employeeId: string;
+    appointmentId?: string;
     title: string;
     description?: string;
     payAmount: number;
@@ -35,6 +39,12 @@ export declare class JobResponseDto {
         firstName?: string;
         lastName?: string;
         email: string;
+    };
+    appointment?: {
+        id: string;
+        scheduledDate: Date;
+        scheduledTime: string;
+        serviceType: string;
     };
     payments?: Array<{
         id: string;

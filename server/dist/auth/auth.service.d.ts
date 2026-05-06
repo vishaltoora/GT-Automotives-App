@@ -14,11 +14,11 @@ export declare class AuthService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
-        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -37,11 +37,11 @@ export declare class AuthService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        clerkId: string;
+        email: string;
         firstName: string | null;
         lastName: string | null;
-        email: string;
         phone: string | null;
-        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
         isActive: boolean;
@@ -61,8 +61,8 @@ export declare class AuthService {
         lastName: string | null;
         role: {
             name: import("@prisma/client").$Enums.RoleName;
-            description: string | null;
             id: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
             displayName: string;

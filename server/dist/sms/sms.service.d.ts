@@ -40,6 +40,10 @@ export declare class SmsService {
      */
     sendAppointmentCancellation(appointmentId: string): Promise<void>;
     /**
+     * Send appointment update notification to customer (when date/time changes)
+     */
+    sendAppointmentUpdate(appointmentId: string): Promise<void>;
+    /**
      * Send appointment reminder to customer
      */
     sendAppointmentReminder(appointmentId: string, daysAhead: number): Promise<void>;
