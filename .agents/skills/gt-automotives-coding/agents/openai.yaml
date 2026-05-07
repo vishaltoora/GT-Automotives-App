@@ -1,0 +1,4 @@
+interface:
+  display_name: "GT Automotives Coding"
+  short_description: "Implement GT Automotives changes using repo-specific patterns."
+  default_prompt: "Use $gt-automotives-coding to implement this change following GT Automotives conventions."

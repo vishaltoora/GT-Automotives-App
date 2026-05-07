@@ -1,0 +1,7 @@
+personality = "friendly"
+
+[mcp_servers]
+
+[mcp_servers.nx-mcp]
+command = "npx"
+args = ["nx", "mcp"]
