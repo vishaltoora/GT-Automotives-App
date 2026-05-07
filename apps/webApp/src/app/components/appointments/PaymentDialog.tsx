@@ -678,9 +678,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
             {/* Total Amount Display */}
             <Card
-              elevation={0}
+              variant="outlined"
               sx={{
-                bgcolor: totalAmount > 0 ? 'success.light' : 'grey.100',
                 borderLeft: 4,
                 borderColor: totalAmount > 0 ? 'success.main' : 'grey.400',
               }}

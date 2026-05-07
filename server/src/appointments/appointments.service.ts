@@ -606,8 +606,13 @@ export class AppointmentsService {
     const justCompleted =
       dto.status === AppointmentStatus.COMPLETED &&
       appointment.status !== AppointmentStatus.COMPLETED;
-    if (justCompleted && dto.completionEmployeeIds && dto.completionEmployeeIds.length > 0 && userId) {
-      await this.createCompletionJobs(updatedAppointment, dto.completionEmployeeIds, userId).catch(err => {
+    if (justCompleted && userId) {
+      const completionEmployeeIds = this.resolveCompletionEmployeeIds(
+        updatedAppointment,
+        dto.completionEmployeeIds,
+      );
+
+      await this.createCompletionJobs(updatedAppointment, completionEmployeeIds, userId).catch(err => {
         console.error('[JOBS] Failed to auto-create completion jobs:', err);
       });
     }
@@ -639,19 +644,20 @@ export class AppointmentsService {
       await this.prisma.appointment.update({ where: { id: appointmentId }, data: updates });
     }
 
-    if (
-      !opts.wasAlreadyCompleted &&
-      opts.completionEmployeeIds &&
-      opts.completionEmployeeIds.length > 0
-    ) {
+    if (!opts.wasAlreadyCompleted) {
       const appointment = await this.prisma.appointment.findUnique({
         where: { id: appointmentId },
         include: this.appointmentInclude,
       });
       if (appointment) {
-        await this.createCompletionJobs(
+        const completionEmployeeIds = this.resolveCompletionEmployeeIds(
           appointment,
           opts.completionEmployeeIds,
+        );
+
+        await this.createCompletionJobs(
+          appointment,
+          completionEmployeeIds,
           opts.userId,
           opts.serviceAmount,
           opts.tipAmount,
@@ -675,6 +681,11 @@ export class AppointmentsService {
     serviceAmountOverride?: number,
     tipAmount: number = 0,
   ) {
+    if (!employeeIds.length) {
+      console.log('[JOBS] Skipping job creation — no completion employees');
+      return;
+    }
+
     const paymentAmount = Number(appointment.paymentAmount || 0);
     const productSaleAmount = Number(appointment.productSaleAmount || 0);
     const tip = Math.max(0, Number(tipAmount) || 0);
@@ -745,6 +756,24 @@ export class AppointmentsService {
         userId,
       );
     }
+  }
+
+  private resolveCompletionEmployeeIds(
+    appointment: any,
+    requestedEmployeeIds?: string[],
+  ): string[] {
+    const employeeIds =
+      requestedEmployeeIds && requestedEmployeeIds.length > 0
+        ? requestedEmployeeIds
+        : [
+            ...(appointment.employees || [])
+              .map((assignment: any) => assignment.employee?.id || assignment.employeeId)
+              .filter(Boolean),
+            appointment.employee?.id,
+            appointment.employeeId,
+          ].filter(Boolean);
+
+    return Array.from(new Set(employeeIds));
   }
 
   /**
@@ -1067,4 +1096,3 @@ export class AppointmentsService {
     return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
   }
 }
-
