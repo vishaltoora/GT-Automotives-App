@@ -13,6 +13,7 @@ export declare class UsersService {
         isActive?: boolean;
     }): Promise<({
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -22,12 +23,12 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     })[]>;
     findById(id: string): Promise<{
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -37,12 +38,12 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }>;
     findByEmail(email: string): Promise<({
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -52,7 +53,6 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }) | null>;
@@ -65,6 +65,7 @@ export declare class UsersService {
         createdBy: string;
     }): Promise<{
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -74,7 +75,6 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }>;
@@ -90,6 +90,7 @@ export declare class UsersService {
     }): Promise<{
         clerkCreated: boolean;
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -99,7 +100,6 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
         role: import("@prisma/client").Role;
     }>;
     update(id: string, data: {
@@ -111,6 +111,7 @@ export declare class UsersService {
         updatedBy: string;
     }): Promise<{
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -120,12 +121,12 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }>;
     assignRole(userId: string, roleId: string, assignedBy: string): Promise<{
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -135,12 +136,12 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }>;
     assignRoleByName(userId: string, roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF', assignedBy: string): Promise<{
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -150,12 +151,12 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }>;
     delete(id: string, deletedBy: string): Promise<{
         id: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         clerkId: string;
@@ -165,7 +166,6 @@ export declare class UsersService {
         phone: string | null;
         roleId: string;
         lastLogin: Date | null;
-        isActive: boolean;
     } & {
         role: import("@prisma/client").Role;
     }>;

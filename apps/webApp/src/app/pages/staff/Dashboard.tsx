@@ -13,6 +13,8 @@ import { CustomerDialog } from '../../components/customers/CustomerDialog';
 import { AppointmentDialog } from '../../components/appointments/AppointmentDialog';
 import TireDialog from '../../components/inventory/TireDialog';
 import { QuickTireSaleDialog } from '../../components/tire-sales';
+import { timeClockService } from '../../requests/time-clock.requests';
+import { TimeEntryDto } from '@gt-automotive/data';
 
 export function StaffDashboard() {
   const { user } = useAuth();
@@ -29,11 +31,38 @@ export function StaffDashboard() {
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
   const [tireSaleDialogOpen, setTireSaleDialogOpen] = useState(false);
+  const [currentTimeEntry, setCurrentTimeEntry] = useState<TimeEntryDto | null>(null);
+  const [clockActionLoading, setClockActionLoading] = useState(false);
 
   useEffect(() => {
     loadStats();
     loadTodayAppointments();
+    loadCurrentTimeEntry();
   }, []);
+
+  const loadCurrentTimeEntry = async () => {
+    try {
+      setCurrentTimeEntry(await timeClockService.getMyCurrent());
+    } catch (error) {
+      console.error('Failed to load current time entry:', error);
+    }
+  };
+
+  const handleQuickClockIn = async () => {
+    if (currentTimeEntry) {
+      window.location.href = '/staff/time-clock';
+      return;
+    }
+
+    try {
+      setClockActionLoading(true);
+      setCurrentTimeEntry(await timeClockService.clockIn());
+    } catch (error) {
+      console.error('Failed to clock in:', error);
+    } finally {
+      setClockActionLoading(false);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -428,6 +457,34 @@ export function StaffDashboard() {
               },
               gap: { xs: 1, sm: 2 },
             }}>
+              <Paper
+                onClick={handleQuickClockIn}
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: `1px solid ${colors.semantic.success}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.semantic.success,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <AccessTime sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.success, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  {clockActionLoading ? 'Clocking In...' : currentTimeEntry ? 'Clocked In' : 'Clock In'}
+                </Typography>
+              </Paper>
+
               <Paper
                 onClick={() => setAppointmentDialogOpen(true)}
                 sx={{

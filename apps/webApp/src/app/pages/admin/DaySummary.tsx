@@ -410,7 +410,26 @@ export function DaySummary() {
     if (!selectedAppointment) return;
 
     try {
-      await appointmentService.updatePayment(selectedAppointment.id, paymentData);
+      let existingBreakdown = selectedAppointment.paymentBreakdown;
+      if (typeof existingBreakdown === 'string') {
+        try {
+          existingBreakdown = JSON.parse(existingBreakdown);
+        } catch {
+          existingBreakdown = [];
+        }
+      }
+
+      await appointmentService.updateAppointment(selectedAppointment.id, {
+        paymentAmount: (selectedAppointment.paymentAmount || 0) + paymentData.totalAmount,
+        paymentBreakdown: [...((existingBreakdown as any[]) || []), ...paymentData.payments],
+        paymentNotes: paymentData.paymentNotes
+          ? `${selectedAppointment.paymentNotes || ''}\n${paymentData.paymentNotes}`.trim()
+          : selectedAppointment.paymentNotes,
+        expectedAmount: selectedAppointment.expectedAmount,
+        completionEmployeeIds: paymentData.completionEmployeeIds,
+        productSaleAmount: paymentData.productSaleAmount,
+        productSaleItems: paymentData.productSaleItems,
+      });
       setPaymentDialogOpen(false);
       setSelectedAppointment(null);
       setSnackbar({
@@ -1769,10 +1788,18 @@ export function DaySummary() {
             }}
             onSubmit={handlePaymentSubmit}
             appointmentId={selectedAppointment.id}
-            defaultExpectedAmount={selectedAppointment.expectedAmount || 0}
-            existingPayments={selectedAppointment.paymentBreakdown as any}
-            existingNotes={selectedAppointment.paymentNotes}
-            isEditMode={true}
+            defaultExpectedAmount={
+              selectedAppointment.expectedAmount
+                ? selectedAppointment.expectedAmount - (selectedAppointment.paymentAmount || 0)
+                : 0
+            }
+            assignedEmployeeIds={
+              selectedAppointment.employees && selectedAppointment.employees.length > 0
+                ? selectedAppointment.employees.map((ae) => ae.employee.id)
+                : selectedAppointment.employee
+                ? [selectedAppointment.employee.id]
+                : []
+            }
           />
         )}
 

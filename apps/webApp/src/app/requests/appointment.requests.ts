@@ -105,6 +105,9 @@ export interface UpdateAppointmentRequest {
   paymentBreakdown?: PaymentEntry[]; // Array of payment entries
   paymentNotes?: string;
   expectedAmount?: number; // Expected amount for tracking partial payments
+  completionEmployeeIds?: string[];
+  productSaleAmount?: number;
+  productSaleItems?: string[];
 }
 
 export interface AppointmentQueryParams {

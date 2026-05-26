@@ -38,6 +38,7 @@ import { StaffDashboard } from './pages/staff/Dashboard';
 import { MyJobs } from './pages/staff/MyJobs';
 import { MyEarnings } from './pages/staff/MyEarnings';
 import { MyCommission } from './pages/staff/MyCommission';
+import { TimeClock } from './pages/staff/TimeClock';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/Dashboard';
@@ -52,6 +53,7 @@ import { PayrollDashboard } from './pages/admin/payroll/PayrollDashboard';
 import { JobsManagement } from './pages/admin/payroll/JobsManagement';
 import { PaymentsManagement } from './pages/admin/payroll/PaymentsManagement';
 import { PayoutRulesManagement } from './pages/admin/payroll/PayoutRulesManagement';
+import { TimeClockManagement } from './pages/admin/payroll/TimeClockManagement';
 
 
 // Inventory Pages
@@ -173,6 +175,7 @@ export function App() {
           <Route path="quotations" element={<QuoteList />} />
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="jobs" element={<MyJobs />} />
+          <Route path="time-clock" element={<TimeClock />} />
           <Route path="earnings" element={<MyEarnings />} />
           <Route path="commission" element={<MyCommission />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
@@ -218,7 +221,9 @@ export function App() {
           <Route path="employee-schedule" element={<EmployeeSchedule />} />
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
+          <Route path="time-clock" element={<TimeClockManagement />} />
           <Route path="my-jobs" element={<MyJobs />} />
+          <Route path="my-time-clock" element={<TimeClock />} />
           <Route path="my-earnings" element={<MyEarnings />} />
           <Route path="my-commission" element={<MyCommission />} />
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -283,6 +288,7 @@ export function App() {
           <Route path="sms-history" element={<SmsHistory />} />
           <Route path="employee-schedule" element={<EmployeeSchedule />} />
           <Route path="payroll" element={<PayrollDashboard />} />
+          <Route path="time-clock" element={<TimeClockManagement />} />
           <Route path="jobs" element={<JobsManagement />} />
           <Route path="jobs/:employeeId" element={<JobsManagement />} />
           <Route path="payments" element={<PaymentsManagement />} />

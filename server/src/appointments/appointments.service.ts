@@ -601,12 +601,15 @@ export class AppointmentsService {
       console.log(`[SMS] No date/time change detected - skipping SMS`);
     }
 
-    // Auto-create payroll jobs when the appointment transitions to COMPLETED
-    // and the caller provided the employees who actually performed the work.
+    // Auto-create payroll jobs only once the completed appointment is paid in full.
+    // Partial/no-payment completions remain in EOD outstanding balance until cleared.
     const justCompleted =
       dto.status === AppointmentStatus.COMPLETED &&
       appointment.status !== AppointmentStatus.COMPLETED;
-    if (justCompleted && userId) {
+    const wasPaidInFull = this.isAppointmentPaidInFull(appointment);
+    const isPaidInFull = this.isAppointmentPaidInFull(updatedAppointment);
+    const becamePaidInFull = !wasPaidInFull && isPaidInFull;
+    if (userId && isPaidInFull && (justCompleted || becamePaidInFull)) {
       const completionEmployeeIds = this.resolveCompletionEmployeeIds(
         updatedAppointment,
         dto.completionEmployeeIds,
@@ -621,9 +624,9 @@ export class AppointmentsService {
   }
 
   /**
-   * Persist product-sale info on an appointment and (if employees were provided)
-   * auto-create payroll jobs. Used by completion endpoints (e-transfer, square-device)
-   * after they've already marked the appointment COMPLETED.
+   * Persist product-sale info on an appointment and auto-create payroll jobs only
+   * once the appointment is fully paid. Used by completion endpoints
+   * (e-transfer, square-device) after they've already updated payment totals.
    */
   async applyCompletionExtras(
     appointmentId: string,
@@ -635,6 +638,7 @@ export class AppointmentsService {
       tipAmount?: number; // added 100% to payout
       userId: string;
       wasAlreadyCompleted: boolean;
+      wasPaidInFull?: boolean;
     },
   ) {
     const updates: any = {};
@@ -644,28 +648,49 @@ export class AppointmentsService {
       await this.prisma.appointment.update({ where: { id: appointmentId }, data: updates });
     }
 
-    if (!opts.wasAlreadyCompleted) {
-      const appointment = await this.prisma.appointment.findUnique({
-        where: { id: appointmentId },
-        include: this.appointmentInclude,
-      });
-      if (appointment) {
-        const completionEmployeeIds = this.resolveCompletionEmployeeIds(
-          appointment,
-          opts.completionEmployeeIds,
-        );
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: this.appointmentInclude,
+    });
 
-        await this.createCompletionJobs(
-          appointment,
-          completionEmployeeIds,
-          opts.userId,
-          opts.serviceAmount,
-          opts.tipAmount,
-        ).catch((err) =>
-          console.error('[JOBS] Failed to auto-create completion jobs:', err),
-        );
-      }
+    if (appointment && this.isAppointmentPaidInFull(appointment) && !opts.wasPaidInFull) {
+      const shouldCreateForCompletion = !opts.wasAlreadyCompleted || opts.wasPaidInFull === false;
+      if (!shouldCreateForCompletion) return;
+
+      const completionEmployeeIds = this.resolveCompletionEmployeeIds(
+        appointment,
+        opts.completionEmployeeIds,
+      );
+
+      await this.createCompletionJobs(
+        appointment,
+        completionEmployeeIds,
+        opts.userId,
+        opts.serviceAmount,
+        opts.tipAmount,
+      ).catch((err) =>
+        console.error('[JOBS] Failed to auto-create completion jobs:', err),
+      );
     }
+  }
+
+  private isAppointmentPaidInFull(appointment: any): boolean {
+    const paid = Number(appointment?.paymentAmount || 0);
+    const expected = Number(appointment?.expectedAmount || 0);
+
+    if (expected > 0) {
+      return paid + 0.005 >= expected;
+    }
+
+    return paid > 0;
+  }
+
+  private async hasCompletionJobs(appointmentId: string): Promise<boolean> {
+    const existingJobs = await this.prisma.job.count({
+      where: { appointmentId },
+    });
+
+    return existingJobs > 0;
   }
 
   /**
@@ -681,6 +706,16 @@ export class AppointmentsService {
     serviceAmountOverride?: number,
     tipAmount: number = 0,
   ) {
+    if (await this.hasCompletionJobs(appointment.id)) {
+      console.log('[JOBS] Skipping job creation — completion jobs already exist');
+      return;
+    }
+
+    if (!this.isAppointmentPaidInFull(appointment)) {
+      console.log('[JOBS] Skipping job creation — appointment is not paid in full');
+      return;
+    }
+
     if (!employeeIds.length) {
       console.log('[JOBS] Skipping job creation — no completion employees');
       return;

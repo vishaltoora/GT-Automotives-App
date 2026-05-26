@@ -39,6 +39,23 @@ import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import { SquarePaymentForm } from '../../components/payments/SquarePaymentForm';
 
+const getCustomerName = (invoice: Invoice) => {
+  const customer = invoice.customer;
+
+  if (customer?.firstName || customer?.lastName) {
+    return `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+  }
+
+  return customer?.name || 'Customer';
+};
+
+const getVehicleDescription = (invoice: Invoice) => {
+  const vehicle = invoice.vehicle;
+  return [vehicle?.year, vehicle?.make, vehicle?.model]
+    .filter(Boolean)
+    .join(' ');
+};
+
 const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -83,7 +100,16 @@ const InvoiceDetails: React.FC = () => {
   const handleCreateDialogClose = () => {
     setCreateDialogOpen(false);
     // Navigate back to invoices list
-    const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+    const basePath =
+      role === 'admin'
+        ? '/admin'
+        : role === 'supervisor'
+        ? '/supervisor'
+        : role === 'staff'
+        ? '/staff'
+        : role === 'accountant'
+        ? '/accountant'
+        : '/customer';
     navigate(`${basePath}/invoices`);
   };
 
@@ -102,7 +128,16 @@ const InvoiceDetails: React.FC = () => {
     }
 
     // Navigate to the newly created invoice
-    const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+    const basePath =
+      role === 'admin'
+        ? '/admin'
+        : role === 'supervisor'
+        ? '/supervisor'
+        : role === 'staff'
+        ? '/staff'
+        : role === 'accountant'
+        ? '/accountant'
+        : '/customer';
     navigate(`${basePath}/invoices/${newInvoice.id}`);
   };
 
@@ -128,11 +163,16 @@ const InvoiceDetails: React.FC = () => {
 
   const handleMarkAsPaid = async () => {
     if (!invoice) return;
-    
-    const paymentMethod = prompt('Enter payment method (CASH, CREDIT_CARD, DEBIT_CARD, CHECK, E_TRANSFER, FINANCING):');
+
+    const paymentMethod = prompt(
+      'Enter payment method (CASH, CREDIT_CARD, DEBIT_CARD, CHECK, E_TRANSFER, FINANCING):'
+    );
     if (paymentMethod) {
       try {
-        await invoiceService.markInvoiceAsPaid(invoice.id, paymentMethod as any);
+        await invoiceService.markInvoiceAsPaid(
+          invoice.id,
+          paymentMethod as any
+        );
         loadInvoice();
       } catch (error) {
         console.error('Error marking invoice as paid:', error);
@@ -193,7 +233,6 @@ const InvoiceDetails: React.FC = () => {
     }).format(amount);
   };
 
-
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString();
   };
@@ -219,13 +258,15 @@ const InvoiceDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <Box sx={{
-        p: {
-          xs: theme.custom.spacing.pagePadding.mobile,
-          sm: theme.custom.spacing.pagePadding.tablet,
-          md: theme.custom.spacing.pagePadding.desktop
-        }
-      }}>
+      <Box
+        sx={{
+          p: {
+            xs: theme.custom.spacing.pagePadding.mobile,
+            sm: theme.custom.spacing.pagePadding.tablet,
+            md: theme.custom.spacing.pagePadding.desktop,
+          },
+        }}
+      >
         <Typography>Loading invoice...</Typography>
       </Box>
     );
@@ -233,18 +274,33 @@ const InvoiceDetails: React.FC = () => {
 
   if (!invoice) {
     return (
-      <Box sx={{
-        p: {
-          xs: theme.custom.spacing.pagePadding.mobile,
-          sm: theme.custom.spacing.pagePadding.tablet,
-          md: theme.custom.spacing.pagePadding.desktop
-        }
-      }}>
+      <Box
+        sx={{
+          p: {
+            xs: theme.custom.spacing.pagePadding.mobile,
+            sm: theme.custom.spacing.pagePadding.tablet,
+            md: theme.custom.spacing.pagePadding.desktop,
+          },
+        }}
+      >
         <Typography>Invoice not found</Typography>
-        <Button startIcon={<BackIcon />} onClick={() => {
-          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
-          navigate(`${basePath}/invoices`);
-        }} sx={{ mt: 2 }}>
+        <Button
+          startIcon={<BackIcon />}
+          onClick={() => {
+            const basePath =
+              role === 'admin'
+                ? '/admin'
+                : role === 'supervisor'
+                ? '/supervisor'
+                : role === 'staff'
+                ? '/staff'
+                : role === 'accountant'
+                ? '/accountant'
+                : '/customer';
+            navigate(`${basePath}/invoices`);
+          }}
+          sx={{ mt: 2 }}
+        >
           Back to Invoices
         </Button>
       </Box>
@@ -252,13 +308,15 @@ const InvoiceDetails: React.FC = () => {
   }
 
   return (
-    <Box sx={{
-      p: {
-        xs: theme.custom.spacing.pagePadding.mobile,
-        sm: theme.custom.spacing.pagePadding.tablet,
-        md: theme.custom.spacing.pagePadding.desktop
-      }
-    }}>
+    <Box
+      sx={{
+        p: {
+          xs: theme.custom.spacing.pagePadding.mobile,
+          sm: theme.custom.spacing.pagePadding.tablet,
+          md: theme.custom.spacing.pagePadding.desktop,
+        },
+      }}
+    >
       <style>
         {`
           @media print {
@@ -275,21 +333,32 @@ const InvoiceDetails: React.FC = () => {
       <Box className="no-print" sx={{ mb: { xs: 1, sm: 2 } }}>
         {isMobile ? (
           // Mobile: Back button + Menu
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <Button
               startIcon={<BackIcon />}
               onClick={() => {
-                const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+                const basePath =
+                  role === 'admin'
+                    ? '/admin'
+                    : role === 'supervisor'
+                    ? '/supervisor'
+                    : role === 'staff'
+                    ? '/staff'
+                    : role === 'accountant'
+                    ? '/accountant'
+                    : '/customer';
                 navigate(`${basePath}/invoices`);
               }}
             >
               Back
             </Button>
-            <IconButton
-              onClick={handleMenuOpen}
-              size="large"
-              edge="end"
-            >
+            <IconButton onClick={handleMenuOpen} size="large" edge="end">
               <MoreVertIcon />
             </IconButton>
             <Menu
@@ -348,7 +417,16 @@ const InvoiceDetails: React.FC = () => {
             <Button
               startIcon={<BackIcon />}
               onClick={() => {
-                const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+                const basePath =
+                  role === 'admin'
+                    ? '/admin'
+                    : role === 'supervisor'
+                    ? '/supervisor'
+                    : role === 'staff'
+                    ? '/staff'
+                    : role === 'accountant'
+                    ? '/accountant'
+                    : '/customer';
                 navigate(`${basePath}/invoices`);
               }}
             >
@@ -397,23 +475,31 @@ const InvoiceDetails: React.FC = () => {
         )}
       </Box>
 
-      <Paper sx={{
-        p: {
-          xs: theme.custom.spacing.pagePadding.mobile,
-          sm: theme.custom.spacing.pagePadding.tablet,
-          md: theme.custom.spacing.pagePadding.desktop
-        }
-      }}>
+      <Paper
+        sx={{
+          p: {
+            xs: theme.custom.spacing.pagePadding.mobile,
+            sm: theme.custom.spacing.pagePadding.tablet,
+            md: theme.custom.spacing.pagePadding.desktop,
+          },
+        }}
+      >
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant={isMobile ? 'h5' : 'h4'} gutterBottom>
               Invoice #{invoice.invoiceNumber}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Date: {new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+              Date:{' '}
+              {new Date(
+                invoice.invoiceDate || invoice.createdAt
+              ).toLocaleDateString('en-US', { timeZone: 'UTC' })}
             </Typography>
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+          <Grid
+            size={{ xs: 12, md: 6 }}
+            sx={{ textAlign: { xs: 'left', md: 'right' } }}
+          >
             <Box sx={{ mb: 1 }}>
               <Chip
                 label={invoice.status}
@@ -444,14 +530,18 @@ const InvoiceDetails: React.FC = () => {
                   Customer Information
                 </Typography>
                 <Typography variant="body1">
-                  {invoice.customer?.firstName} {invoice.customer?.lastName}
+                  {getCustomerName(invoice)}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Email: {invoice.customer?.email}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Phone: {invoice.customer?.phone}
-                </Typography>
+                {invoice.customer?.email && (
+                  <Typography variant="body2" color="text.secondary">
+                    Email: {invoice.customer.email}
+                  </Typography>
+                )}
+                {invoice.customer?.phone && (
+                  <Typography variant="body2" color="text.secondary">
+                    Phone: {invoice.customer.phone}
+                  </Typography>
+                )}
                 {invoice.customer?.address && (
                   <Typography variant="body2" color="text.secondary">
                     Address: {invoice.customer.address}
@@ -461,35 +551,42 @@ const InvoiceDetails: React.FC = () => {
             </Card>
           </Grid>
 
-          {invoice.vehicle && (
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Vehicle Information
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Vehicle Information
+                </Typography>
+                {invoice.vehicle ? (
+                  <>
+                    <Typography variant="body1">
+                      {getVehicleDescription(invoice)}
+                    </Typography>
+                    {invoice.vehicle.vin && (
+                      <Typography variant="body2" color="text.secondary">
+                        VIN Number: {invoice.vehicle.vin}
+                      </Typography>
+                    )}
+                    {invoice.vehicle.licensePlate && (
+                      <Typography variant="body2" color="text.secondary">
+                        License Plate: {invoice.vehicle.licensePlate}
+                      </Typography>
+                    )}
+                    {invoice.vehicle.mileage && (
+                      <Typography variant="body2" color="text.secondary">
+                        Mileage:{' '}
+                        {Number(invoice.vehicle.mileage).toLocaleString()} km
+                      </Typography>
+                    )}
+                  </>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No vehicle selected for this invoice.
                   </Typography>
-                  <Typography variant="body1">
-                    {invoice.vehicle.year} {invoice.vehicle.make} {invoice.vehicle.model}
-                  </Typography>
-                  {invoice.vehicle.vin && (
-                    <Typography variant="body2" color="text.secondary">
-                      VIN: {invoice.vehicle.vin}
-                    </Typography>
-                  )}
-                  {invoice.vehicle.licensePlate && (
-                    <Typography variant="body2" color="text.secondary">
-                      License Plate: {invoice.vehicle.licensePlate}
-                    </Typography>
-                  )}
-                  {invoice.vehicle.mileage && (
-                    <Typography variant="body2" color="text.secondary">
-                      Mileage: {invoice.vehicle.mileage.toLocaleString()} miles
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
 
           <Grid size={12}>
             <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
@@ -500,39 +597,79 @@ const InvoiceDetails: React.FC = () => {
               <Stack spacing={2}>
                 {invoice.items?.map((item) => {
                   // Calculate display total - handle DISCOUNT_PERCENTAGE items
-                  let displayTotal = item.total || item.quantity * Number(item.unitPrice);
-                  if (String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE') {
+                  let displayTotal =
+                    item.total || item.quantity * Number(item.unitPrice);
+                  if (
+                    String(item.itemType).toUpperCase() ===
+                    'DISCOUNT_PERCENTAGE'
+                  ) {
                     const otherItemsSubtotal = (invoice.items || [])
-                      .filter(i => String(i.itemType).toUpperCase() !== 'DISCOUNT' && String(i.itemType).toUpperCase() !== 'DISCOUNT_PERCENTAGE')
-                      .reduce((sum, i) => sum + (Number(i.total) || i.quantity * Number(i.unitPrice)), 0);
-                    displayTotal = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
-                  } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
+                      .filter(
+                        (i) =>
+                          String(i.itemType).toUpperCase() !== 'DISCOUNT' &&
+                          String(i.itemType).toUpperCase() !==
+                            'DISCOUNT_PERCENTAGE'
+                      )
+                      .reduce(
+                        (sum, i) =>
+                          sum +
+                          (Number(i.total) || i.quantity * Number(i.unitPrice)),
+                        0
+                      );
+                    displayTotal =
+                      -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
+                  } else if (
+                    String(item.itemType).toUpperCase() === 'DISCOUNT'
+                  ) {
                     displayTotal = -Math.abs(displayTotal);
                   }
 
                   return (
                     <Card key={item.id} variant="outlined">
                       <CardContent>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            mb: 1,
+                          }}
+                        >
                           <Chip label={item.itemType} size="small" />
                           <Typography variant="h6" fontWeight="bold">
                             {formatCurrency(displayTotal)}
                           </Typography>
                         </Box>
                         {(item as any).tireName && (
-                          <Typography variant="body1" fontWeight="medium" gutterBottom>
+                          <Typography
+                            variant="body1"
+                            fontWeight="medium"
+                            gutterBottom
+                          >
                             {(item as any).tireName}
                           </Typography>
                         )}
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          gutterBottom
+                        >
                           {item.description}
                         </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            mt: 1,
+                          }}
+                        >
                           <Typography variant="body2" color="text.secondary">
                             Qty: {item.quantity}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Unit Price: {String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
+                            Unit Price:{' '}
+                            {String(item.itemType).toUpperCase() ===
+                            'DISCOUNT_PERCENTAGE'
                               ? `${Number(item.unitPrice)}%`
                               : formatCurrency(item.unitPrice)}
                           </Typography>
@@ -558,14 +695,32 @@ const InvoiceDetails: React.FC = () => {
                   <TableBody>
                     {invoice.items?.map((item) => {
                       // Calculate display total - handle DISCOUNT_PERCENTAGE items
-                      let displayTotal = item.total || item.quantity * Number(item.unitPrice);
-                      if (String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE') {
+                      let displayTotal =
+                        item.total || item.quantity * Number(item.unitPrice);
+                      if (
+                        String(item.itemType).toUpperCase() ===
+                        'DISCOUNT_PERCENTAGE'
+                      ) {
                         // Recalculate percentage discount based on other items
                         const otherItemsSubtotal = (invoice.items || [])
-                          .filter(i => String(i.itemType).toUpperCase() !== 'DISCOUNT' && String(i.itemType).toUpperCase() !== 'DISCOUNT_PERCENTAGE')
-                          .reduce((sum, i) => sum + (Number(i.total) || i.quantity * Number(i.unitPrice)), 0);
-                        displayTotal = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
-                      } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
+                          .filter(
+                            (i) =>
+                              String(i.itemType).toUpperCase() !== 'DISCOUNT' &&
+                              String(i.itemType).toUpperCase() !==
+                                'DISCOUNT_PERCENTAGE'
+                          )
+                          .reduce(
+                            (sum, i) =>
+                              sum +
+                              (Number(i.total) ||
+                                i.quantity * Number(i.unitPrice)),
+                            0
+                          );
+                        displayTotal =
+                          -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
+                      } else if (
+                        String(item.itemType).toUpperCase() === 'DISCOUNT'
+                      ) {
                         // Ensure discount is negative
                         displayTotal = -Math.abs(displayTotal);
                       }
@@ -581,13 +736,21 @@ const InvoiceDetails: React.FC = () => {
                                 {(item as any).tireName}
                               </Typography>
                             )}
-                            <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                            <Typography
+                              variant="body2"
+                              color={
+                                (item as any).tireName
+                                  ? 'text.secondary'
+                                  : 'inherit'
+                              }
+                            >
                               {item.description}
                             </Typography>
                           </TableCell>
                           <TableCell align="right">{item.quantity}</TableCell>
                           <TableCell align="right">
-                            {String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
+                            {String(item.itemType).toUpperCase() ===
+                            'DISCOUNT_PERCENTAGE'
                               ? `${Number(item.unitPrice)}%`
                               : formatCurrency(item.unitPrice)}
                           </TableCell>
@@ -625,7 +788,9 @@ const InvoiceDetails: React.FC = () => {
                       <Typography variant="body1">Subtotal:</Typography>
                     </Grid>
                     <Grid size={6}>
-                      <Typography variant="body1">{formatCurrency(invoice.subtotal)}</Typography>
+                      <Typography variant="body1">
+                        {formatCurrency(invoice.subtotal)}
+                      </Typography>
                     </Grid>
                     {invoice.gstRate != null && invoice.gstRate > 0 && (
                       <>
@@ -635,7 +800,9 @@ const InvoiceDetails: React.FC = () => {
                           </Typography>
                         </Grid>
                         <Grid size={6}>
-                          <Typography variant="body1">{formatCurrency(invoice.gstAmount || 0)}</Typography>
+                          <Typography variant="body1">
+                            {formatCurrency(invoice.gstAmount || 0)}
+                          </Typography>
                         </Grid>
                       </>
                     )}
@@ -647,22 +814,27 @@ const InvoiceDetails: React.FC = () => {
                           </Typography>
                         </Grid>
                         <Grid size={6}>
-                          <Typography variant="body1">{formatCurrency(invoice.pstAmount || 0)}</Typography>
-                        </Grid>
-                      </>
-                    )}
-                    {(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) && (
-                      <>
-                        <Grid size={6}>
                           <Typography variant="body1">
-                            Tax ({(invoice.taxRate * 100).toFixed(2)}%):
+                            {formatCurrency(invoice.pstAmount || 0)}
                           </Typography>
                         </Grid>
-                        <Grid size={6}>
-                          <Typography variant="body1">{formatCurrency(invoice.taxAmount)}</Typography>
-                        </Grid>
                       </>
                     )}
+                    {(invoice.gstRate == null || invoice.gstRate === 0) &&
+                      (invoice.pstRate == null || invoice.pstRate === 0) && (
+                        <>
+                          <Grid size={6}>
+                            <Typography variant="body1">
+                              Tax ({(invoice.taxRate * 100).toFixed(2)}%):
+                            </Typography>
+                          </Grid>
+                          <Grid size={6}>
+                            <Typography variant="body1">
+                              {formatCurrency(invoice.taxAmount)}
+                            </Typography>
+                          </Grid>
+                        </>
+                      )}
                     <Grid size={12}>
                       <Divider sx={{ my: 1 }} />
                     </Grid>
@@ -670,7 +842,9 @@ const InvoiceDetails: React.FC = () => {
                       <Typography variant="h6">Total:</Typography>
                     </Grid>
                     <Grid size={6}>
-                      <Typography variant="h6">{formatCurrency(invoice.total)}</Typography>
+                      <Typography variant="h6">
+                        {formatCurrency(invoice.total)}
+                      </Typography>
                     </Grid>
                   </Grid>
                 </Box>

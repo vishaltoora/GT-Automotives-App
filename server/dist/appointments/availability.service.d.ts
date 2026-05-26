@@ -51,8 +51,8 @@ export declare class AvailabilityService {
         employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string;
         reason: string | null;
+        endTime: string;
         date: Date;
         startTime: string;
         isAvailable: boolean;
@@ -65,8 +65,8 @@ export declare class AvailabilityService {
         employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string;
         reason: string | null;
+        endTime: string;
         date: Date;
         startTime: string;
         isAvailable: boolean;
@@ -79,8 +79,8 @@ export declare class AvailabilityService {
         employeeId: string;
         createdAt: Date;
         updatedAt: Date;
-        endTime: string;
         reason: string | null;
+        endTime: string;
         date: Date;
         startTime: string;
         isAvailable: boolean;

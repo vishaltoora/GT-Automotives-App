@@ -34,6 +34,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Work,
+  AccessTime,
   ShoppingCart,
   Schedule,
   Email,
@@ -100,7 +101,9 @@ export function SupervisorLayout() {
       icon: <Work />,
       items: [
         { text: 'Jobs', icon: <Work />, path: '/supervisor/jobs' },
+        { text: 'Time Clock', icon: <AccessTime />, path: '/supervisor/time-clock' },
         { text: 'My Jobs', icon: <Work />, path: '/supervisor/my-jobs' },
+        { text: 'My Time Clock', icon: <AccessTime />, path: '/supervisor/my-time-clock' },
         { text: 'My Earnings', icon: <AttachMoney />, path: '/supervisor/my-earnings' },
         { text: 'My Commission', icon: <TireRepair />, path: '/supervisor/my-commission' },
       ]

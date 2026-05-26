@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto, UpdateVehicleDto } from '../common/dto/vehicle.dto';
+import { VinDecoderService } from './vin-decoder.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 // import { RoleGuard } from '../auth/guards/role.guard';
 // import { Roles } from '../auth/decorators/roles.decorator';
@@ -19,7 +20,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('vehicles')
 @UseGuards(JwtAuthGuard)
 export class VehiclesController {
-  constructor(private readonly vehiclesService: VehiclesService) {}
+  constructor(
+    private readonly vehiclesService: VehiclesService,
+    private readonly vinDecoderService: VinDecoderService,
+  ) {}
 
   @Post()
   create(
@@ -32,6 +36,22 @@ export class VehiclesController {
   @Get()
   findAll(@CurrentUser() user: any) {
     return this.vehiclesService.findAll(user.id, user.role.name);
+  }
+
+  @Get('decode-vin/:vin')
+  decodeVin(
+    @Param('vin') vin: string,
+    @Query('modelYear') modelYear?: string,
+  ) {
+    return this.vinDecoderService.decode(
+      vin,
+      modelYear ? Number(modelYear) : undefined,
+    );
+  }
+
+  @Get('models')
+  getModelsForMake(@Query('make') make: string) {
+    return this.vinDecoderService.getModelsForMake(make);
   }
 
   @Get('search')

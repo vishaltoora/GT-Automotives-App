@@ -9,6 +9,7 @@ import { setClerkTokenGetter as setJobTokenGetter } from '../requests/job.reques
 import { setClerkTokenGetter as setPaymentTokenGetter } from '../requests/payment.requests';
 import { setClerkTokenGetter as setTireSaleTokenGetter } from '../requests/tire-sale.requests';
 import { setClerkTokenGetter as setTireTokenGetter } from '../requests/tire.requests';
+import { setClerkTokenGetter as setTimeClockTokenGetter } from '../requests/time-clock.requests';
 
 // Check if Clerk is configured - use direct import.meta.env access for consistency
 // @ts-ignore
@@ -29,6 +30,7 @@ export const ServicesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setPaymentTokenGetter(getToken);
       setTireSaleTokenGetter(getToken);
       setTireTokenGetter(getToken);
+      setTimeClockTokenGetter(getToken);
     }
   }, [getToken]);
 

@@ -155,6 +155,9 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
         ? `${selectedAppointment.paymentNotes || ''}\n${paymentData.paymentNotes}`.trim()
         : selectedAppointment.paymentNotes,
       expectedAmount: selectedAppointment.expectedAmount,
+      completionEmployeeIds: paymentData.completionEmployeeIds,
+      productSaleAmount: paymentData.productSaleAmount,
+      productSaleItems: paymentData.productSaleItems,
     };
 
     // Call the status change handler (it won't change status, just update payment)
@@ -359,6 +362,13 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
             selectedAppointment.expectedAmount
               ? selectedAppointment.expectedAmount - (selectedAppointment.paymentAmount || 0)
               : 0
+          }
+          assignedEmployeeIds={
+            selectedAppointment.employees && selectedAppointment.employees.length > 0
+              ? selectedAppointment.employees.map((ae) => ae.employee.id)
+              : selectedAppointment.employee
+              ? [selectedAppointment.employee.id]
+              : []
           }
         />
       )}

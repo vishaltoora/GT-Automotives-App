@@ -35,6 +35,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Work,
+  AccessTime,
   EventAvailable,
   AttachMoney,
   ExpandMore,
@@ -102,6 +103,7 @@ export function StaffLayout() {
       icon: <Work />,
       items: [
         { text: 'My Jobs', icon: <Work />, path: '/staff/jobs' },
+        { text: 'Time Clock', icon: <AccessTime />, path: '/staff/time-clock' },
         { text: 'My Earnings', icon: <AttachMoney />, path: '/staff/earnings' },
         { text: 'My Commission', icon: <TireRepair />, path: '/staff/commission' },
         { text: 'Reports', icon: <Assessment />, path: '/staff/reports' },

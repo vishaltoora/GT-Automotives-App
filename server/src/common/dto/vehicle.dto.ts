@@ -45,11 +45,11 @@ export class UpdateVehicleDto {
 
   @IsOptional()
   @IsString()
-  vin?: string;
+  vin?: string | null;
 
   @IsOptional()
   @IsString()
-  licensePlate?: string;
+  licensePlate?: string | null;
 
   @IsOptional()
   @IsString()
@@ -100,4 +100,46 @@ export class VehicleResponseDto {
 
   @IsString()
   updatedAt!: string;
+}
+
+export class DecodeVinResponseDto {
+  @IsString()
+  vin!: string;
+
+  @IsOptional()
+  @IsString()
+  make?: string;
+
+  @IsOptional()
+  @IsString()
+  model?: string;
+
+  @IsOptional()
+  @IsNumber()
+  year?: number;
+
+  @IsOptional()
+  @IsString()
+  trim?: string;
+
+  @IsOptional()
+  @IsString()
+  bodyClass?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleType?: string;
+
+  @IsOptional()
+  @IsString()
+  engine?: string;
+
+  @IsOptional()
+  @IsString()
+  fuelType?: string;
+
+  warnings!: string[];
+
+  @IsString()
+  rawProvider!: 'NHTSA_VPIC';
 }

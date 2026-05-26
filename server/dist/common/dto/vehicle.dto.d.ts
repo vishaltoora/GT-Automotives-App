@@ -12,8 +12,8 @@ export declare class UpdateVehicleDto {
     make?: string;
     model?: string;
     year?: number;
-    vin?: string;
-    licensePlate?: string;
+    vin?: string | null;
+    licensePlate?: string | null;
     color?: string;
     mileage?: number;
     customerId?: string;
@@ -30,5 +30,18 @@ export declare class VehicleResponseDto {
     customer?: any;
     createdAt: string;
     updatedAt: string;
+}
+export declare class DecodeVinResponseDto {
+    vin: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    trim?: string;
+    bodyClass?: string;
+    vehicleType?: string;
+    engine?: string;
+    fuelType?: string;
+    warnings: string[];
+    rawProvider: 'NHTSA_VPIC';
 }
 //# sourceMappingURL=vehicle.dto.d.ts.map

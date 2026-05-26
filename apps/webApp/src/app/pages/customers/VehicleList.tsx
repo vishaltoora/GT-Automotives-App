@@ -32,13 +32,14 @@ import {
   Person as PersonIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { vehicleService, Vehicle } from '../../requests/vehicle.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 
 export function VehicleList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { role } = useAuth();
   const { confirmDelete } = useConfirmationHelpers();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -56,15 +57,15 @@ export function VehicleList() {
     if (searchTerm) {
       const filtered = vehicles.filter((vehicle) => {
         const searchLower = searchTerm.toLowerCase();
-        const customerName = vehicle.customer ? 
-          `${vehicle.customer.user.firstName} ${vehicle.customer.user.lastName}`.toLowerCase() : '';
+        const customerDisplay = getCustomerDisplay(vehicle);
+        const customerText = `${customerDisplay.name} ${customerDisplay.email}`.toLowerCase();
         return (
           vehicle.make.toLowerCase().includes(searchLower) ||
           vehicle.model.toLowerCase().includes(searchLower) ||
           vehicle.year.toString().includes(searchTerm) ||
           (vehicle.vin && vehicle.vin.toLowerCase().includes(searchLower)) ||
           (vehicle.licensePlate && vehicle.licensePlate.toLowerCase().includes(searchLower)) ||
-          customerName.includes(searchLower)
+          customerText.includes(searchLower)
         );
       });
       setFilteredVehicles(filtered);
@@ -107,6 +108,20 @@ export function VehicleList() {
     return mileage.toLocaleString() + ' mi';
   };
 
+  const getCustomerDisplay = (vehicle: Vehicle) => {
+    const customer = vehicle.customer as any;
+    const firstName = customer?.user?.firstName || customer?.firstName || '';
+    const lastName = customer?.user?.lastName || customer?.lastName || '';
+    const email = customer?.user?.email || customer?.email || '';
+    const businessName = customer?.businessName || '';
+    const name = [firstName, lastName].filter(Boolean).join(' ') || businessName;
+
+    return { name, email };
+  };
+
+  const routePrefix = location.pathname.match(/^\/(admin|staff|supervisor|customer)(?=\/)/)?.[0] || '';
+  const vehiclePath = (path: string) => `${routePrefix}/vehicles${path}`;
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -133,7 +148,7 @@ export function VehicleList() {
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          onClick={() => navigate('/vehicles/new')}
+          onClick={() => navigate(vehiclePath('/new'))}
         >
           Add Vehicle
         </Button>
@@ -181,101 +196,109 @@ export function VehicleList() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredVehicles.map((vehicle) => (
-                <TableRow key={vehicle.id} hover>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <CarIcon color="action" />
-                      <Box>
-                        <Typography variant="body1" fontWeight="medium">
-                          {vehicle.year} {vehicle.make} {vehicle.model}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          ID: {vehicle.id.slice(0, 8)}...
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    {vehicle.customer ? (
+              filteredVehicles.map((vehicle) => {
+                const customerDisplay = getCustomerDisplay(vehicle);
+                const canDelete =
+                  role === 'admin' ||
+                  (role === 'customer' && vehicle.customerId === vehicle.customer?.id);
+
+                return (
+                  <TableRow key={vehicle.id} hover>
+                    <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
-                        <PersonIcon fontSize="small" color="action" />
+                        <CarIcon color="action" />
                         <Box>
-                          <Typography variant="body2">
-                            {vehicle.customer.user.firstName} {vehicle.customer.user.lastName}
+                          <Typography variant="body1" fontWeight="medium">
+                            {vehicle.year} {vehicle.make} {vehicle.model}
                           </Typography>
                           <Typography variant="caption" color="textSecondary">
-                            {vehicle.customer.user.email}
+                            ID: {vehicle.id.slice(0, 8)}...
                           </Typography>
                         </Box>
                       </Box>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                      {vehicle.vin || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {vehicle.licensePlate || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
-                      <SpeedIcon fontSize="small" color="action" />
-                      <Typography variant="body2">
-                        {formatMileage(vehicle.mileage)}
+                    </TableCell>
+                    <TableCell>
+                      {customerDisplay.name || customerDisplay.email ? (
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <PersonIcon fontSize="small" color="action" />
+                          <Box>
+                            <Typography variant="body2">
+                              {customerDisplay.name || customerDisplay.email}
+                            </Typography>
+                            {customerDisplay.email && (
+                              <Typography variant="caption" color="textSecondary">
+                                {customerDisplay.email}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                        {vehicle.vin || '-'}
                       </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      <Chip
-                        icon={<BuildIcon />}
-                        label={vehicle._count?.invoices || 0}
-                        size="small"
-                        variant="outlined"
-                        title="Total Services"
-                      />
-                    </Stack>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Box display="flex" gap={1} justifyContent="flex-end">
-                      <Tooltip title="View Details">
-                        <IconButton
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {vehicle.licensePlate || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
+                        <SpeedIcon fontSize="small" color="action" />
+                        <Typography variant="body2">
+                          {formatMileage(vehicle.mileage)}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Stack direction="row" spacing={1} justifyContent="center">
+                        <Chip
+                          icon={<BuildIcon />}
+                          label={vehicle._count?.invoices || 0}
                           size="small"
-                          onClick={() => navigate(`/vehicles/${vehicle.id}`)}
-                        >
-                          <ViewIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/vehicles/${vehicle.id}/edit`)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      {(role === 'admin' || 
-                        (role === 'customer' && vehicle.customer?.user.id === vehicle.customerId)) && (
-                        <Tooltip title="Delete">
+                          variant="outlined"
+                          title="Total Services"
+                        />
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box display="flex" gap={1} justifyContent="flex-end">
+                        <Tooltip title="View Details">
                           <IconButton
                             size="small"
-                            color="error"
-                            onClick={() => handleDelete(vehicle)}
+                            onClick={() => navigate(vehiclePath(`/${vehicle.id}`))}
                           >
-                            <DeleteIcon />
+                            <ViewIcon />
                           </IconButton>
                         </Tooltip>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
+                        <Tooltip title="Edit">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(vehiclePath(`/${vehicle.id}/edit`))}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {canDelete && (
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDelete(vehicle)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

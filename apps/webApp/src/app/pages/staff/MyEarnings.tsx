@@ -35,14 +35,15 @@ import {
   HourglassEmpty,
   ArrowBack,
 } from '@mui/icons-material';
-import { format, isToday, isThisWeek, isThisMonth, isThisYear } from 'date-fns';
+import { endOfMonth, format, isToday, isThisWeek, isThisMonth, isThisYear, startOfMonth } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { paymentService } from '../../requests/payment.requests';
 import { jobService } from '../../requests/job.requests';
+import { timeClockService } from '../../requests/time-clock.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import { JobStatus } from '@gt-automotive/data';
-import { PaymentStatus } from '@gt-automotive/data';
+import { EmployeeCompensationDto, PaymentStatus, PayType, TimeEntryDto, TimeEntryStatus } from '@gt-automotive/data';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -78,6 +79,8 @@ export function MyEarnings() {
   // Earnings data
   const [payments, setPayments] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntryDto[]>([]);
+  const [compensation, setCompensation] = useState<EmployeeCompensationDto | null>(null);
 
   // Filters
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | 'ALL'>('ALL');
@@ -97,13 +100,19 @@ export function MyEarnings() {
 
       // Use secure endpoints that fetch data based on the authenticated user's token
       // This prevents staff from accessing other employees' data
-      const [paymentsData, jobsData] = await Promise.all([
+      const periodStart = startOfMonth(new Date()).toISOString();
+      const periodEnd = endOfMonth(new Date()).toISOString();
+      const [paymentsData, jobsData, entriesData, compensationData] = await Promise.all([
         paymentService.getMyPayments(),
         jobService.getMyJobs(),
+        timeClockService.getMyEntries({ startDate: periodStart, endDate: periodEnd }),
+        timeClockService.getMyCompensation().catch(() => null),
       ]);
 
       setPayments(paymentsData);
       setJobs(jobsData);
+      setTimeEntries(entriesData);
+      setCompensation(compensationData);
     } catch (err: any) {
       console.error('Failed to fetch earnings data:', err);
       setError(err.message || 'Failed to load earnings data');
@@ -138,6 +147,19 @@ export function MyEarnings() {
   };
 
   const earnings = calculateEarnings();
+
+  const approvedTimeEntries = timeEntries.filter(entry => entry.status === TimeEntryStatus.APPROVED);
+  const readyPayrollEntries = approvedTimeEntries.filter(entry => !entry.payrollProcessedAt);
+  const processedPayrollEntries = approvedTimeEntries.filter(entry => Boolean(entry.payrollProcessedAt));
+  const pendingTimeEntries = timeEntries.filter(entry =>
+    entry.status === TimeEntryStatus.CLOCKED_OUT || entry.status === TimeEntryStatus.ADJUSTED
+  );
+  const approvedHours = approvedTimeEntries.reduce((sum, entry) => sum + entry.paidMinutes / 60, 0);
+  const readyPayrollHours = readyPayrollEntries.reduce((sum, entry) => sum + entry.paidMinutes / 60, 0);
+  const processedPayrollHours = processedPayrollEntries.reduce((sum, entry) => sum + entry.paidMinutes / 60, 0);
+  const pendingHours = pendingTimeEntries.reduce((sum, entry) => sum + entry.paidMinutes / 60, 0);
+  const hourlyRate = compensation?.payType === PayType.HOURLY ? Number(compensation.hourlyRate || 0) : 0;
+  const calculatedHourlyPay = readyPayrollHours * hourlyRate;
 
   // Calculate job statistics
   const jobStats = {
@@ -237,7 +259,7 @@ export function MyEarnings() {
               My Earnings
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Track your earnings, payments, and job history
+              Track approved hours, payroll-ready hours, and estimated hourly pay
             </Typography>
           </Box>
           <Tooltip title="Refresh data">
@@ -248,7 +270,87 @@ export function MyEarnings() {
         </Box>
       </Box>
 
-      {/* Earnings & Jobs Summary Card */}
+      {/* Hourly Pay Summary Card */}
+      <Card
+        elevation={0}
+        sx={{
+          mb: 4,
+          border: `1px solid ${colors.neutral[200]}`,
+        }}
+      >
+        <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <AttachMoney sx={{ fontSize: 28, color: colors.primary.main, mr: 1 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.neutral[800] }}>
+                  Hourly Pay Summary
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Current month, based on approved hours that payroll has not processed yet
+                </Typography>
+              </Box>
+            </Box>
+            <Chip
+              color={compensation?.payType === PayType.HOURLY ? 'success' : 'default'}
+              label={compensation?.payType === PayType.HOURLY ? `${formatCurrency(hourlyRate)}/hr` : compensation?.payType || 'Rate not set'}
+            />
+          </Box>
+
+          <Grid container spacing={{ xs: 2.5, sm: 4 }}>
+            <Grid size={{ xs: 6, md: 3 }}>
+              <Typography variant="body2" sx={{ color: colors.neutral[600], fontWeight: 600, mb: 1 }}>
+                Ready Hours
+              </Typography>
+              <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ color: colors.semantic.info, fontWeight: 700 }}>
+                {readyPayrollHours.toFixed(2)}
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 6, md: 3 }}>
+              <Typography variant="body2" sx={{ color: colors.neutral[600], fontWeight: 600, mb: 1 }}>
+                Pending Hours
+              </Typography>
+              <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ color: colors.semantic.warning, fontWeight: 700 }}>
+                {pendingHours.toFixed(2)}
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 6, md: 3 }}>
+              <Typography variant="body2" sx={{ color: colors.neutral[600], fontWeight: 600, mb: 1 }}>
+                Processed Hours
+              </Typography>
+              <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ color: colors.neutral[900], fontWeight: 700 }}>
+                {processedPayrollHours.toFixed(2)}
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 6, md: 3 }}>
+              <Typography variant="body2" sx={{ color: colors.neutral[600], fontWeight: 600, mb: 1 }}>
+                Estimated Unpaid Pay
+              </Typography>
+              <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ color: colors.semantic.success, fontWeight: 700 }}>
+                {formatCurrency(calculatedHourlyPay)}
+              </Typography>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 3 }}>
+            <Chip size="small" variant="outlined" label={`${approvedHours.toFixed(2)} total approved hrs`} />
+            <Chip size="small" variant="outlined" label={`${hourlyRate ? formatCurrency(hourlyRate) : '-'}/hr`} />
+          </Box>
+
+          {compensation?.payType === PayType.SALARIED && (
+            <Alert severity="info" sx={{ mt: 3 }}>
+              You are marked as salaried. Hours are tracked for records, not direct hourly pay calculation.
+            </Alert>
+          )}
+          {!compensation && (
+            <Alert severity="warning" sx={{ mt: 3 }}>
+              Your hourly rate has not been set yet. Ask an admin to set your compensation profile.
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Legacy Earnings & Jobs Summary Card */}
       <Card
         elevation={0}
         sx={{

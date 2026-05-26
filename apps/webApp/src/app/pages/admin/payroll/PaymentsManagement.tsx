@@ -37,6 +37,7 @@ import {
   ExpandLess as ExpandLessIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
+  AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -46,11 +47,12 @@ import { PaymentStatus, PaymentMethod } from '@gt-automotive/data';
 import { paymentService } from '../../../requests/payment.requests';
 import { jobService } from '../../../requests/job.requests';
 import { userService } from '../../../requests/user.requests';
+import { timeClockService } from '../../../requests/time-clock.requests';
 import { ProcessPaymentDialog } from '../../../components/payroll/ProcessPaymentDialog';
 import { ConfirmationDialog } from '../../../components/common/ConfirmationDialog';
 import { useConfirmationDialog } from '../../../hooks/useConfirmationDialog';
 import { colors } from '../../../theme/colors';
-import { format } from 'date-fns';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -92,6 +94,9 @@ interface EmployeePaymentSummary extends Employee {
   todayEarnings: number;
   mtdEarnings: number;
   ytdEarnings: number;
+  payrollReadyHours: number;
+  payrollReadyAmount: number;
+  payrollProcessedHours: number;
 }
 
 export function PaymentsManagement() {
@@ -106,6 +111,7 @@ export function PaymentsManagement() {
   const [employeePaymentSummaries, setEmployeePaymentSummaries] = useState<EmployeePaymentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [processDialogOpen, setProcessDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobResponseDto | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -146,11 +152,17 @@ export function PaymentsManagement() {
         startDate: filters.startDate?.toISOString() || undefined,
         endDate: filters.endDate?.toISOString() || undefined,
       };
+      const payrollStartDate = (filters.startDate || startOfMonth(new Date())).toISOString();
+      const payrollEndDate = (filters.endDate || endOfMonth(new Date())).toISOString();
 
-      const [paymentsData, pendingJobsData, users] = await Promise.all([
+      const [paymentsData, pendingJobsData, users, payrollSummary] = await Promise.all([
         paymentService.getPayments(filterParams),
         jobService.getJobsReadyForPayment(),
         userService.getUsers(),
+        timeClockService.getPayrollSummary({
+          startDate: payrollStartDate,
+          endDate: payrollEndDate,
+        }),
       ]);
 
       setPayments(paymentsData);
@@ -189,6 +201,7 @@ export function PaymentsManagement() {
         const ytdEarnings = paidPayments
           .filter(p => p.paidAt && new Date(p.paidAt) >= yearStart)
           .reduce((sum, p) => sum + p.amount, 0);
+        const payrollEmployee = payrollSummary.employees.find(item => item.employee.id === employee.id);
 
         return {
           ...employee,
@@ -200,6 +213,9 @@ export function PaymentsManagement() {
           todayEarnings,
           mtdEarnings,
           ytdEarnings,
+          payrollReadyHours: payrollEmployee?.unpaidApprovedHours || 0,
+          payrollReadyAmount: payrollEmployee?.hourlyPay || 0,
+          payrollProcessedHours: payrollEmployee?.processedHours || 0,
         };
       });
 
@@ -219,6 +235,31 @@ export function PaymentsManagement() {
     setCurrentEmployeeJobs([]);
     setCurrentJobIndex(0);
     fetchData(); // Refresh all data
+  };
+
+  const handleProcessTimePayroll = async (employee: EmployeePaymentSummary) => {
+    const confirmed = await showConfirmation(
+      'Process Payroll Hours',
+      `Process ${employee.payrollReadyHours.toFixed(2)} approved hours for ${getEmployeeName(employee)}? These hours will move out of unpaid payroll-ready hours.`,
+      'Process Hours',
+      'info'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const startDate = (filters.startDate || startOfMonth(new Date())).toISOString();
+      const endDate = (filters.endDate || endOfMonth(new Date())).toISOString();
+      const result = await timeClockService.processPayroll({
+        employeeId: employee.id,
+        startDate,
+        endDate,
+      });
+      setMessage(`Processed ${result.processedHours.toFixed(2)} payroll hours for ${getEmployeeName(employee)}`);
+      await fetchData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to process payroll hours');
+    }
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, payment: PaymentResponseDto) => {
@@ -378,6 +419,11 @@ export function PaymentsManagement() {
             {error}
           </Alert>
         )}
+        {message && (
+          <Alert severity="success" sx={{ mb: 3, mx: { xs: 1.5, sm: 0 }, borderRadius: { xs: 0, sm: 1 } }} onClose={() => setMessage(null)}>
+            {message}
+          </Alert>
+        )}
 
         {/* Tabs - Hide on mobile, show only Employees */}
         <Box sx={{ mb: 3 }}>
@@ -518,6 +564,26 @@ export function PaymentsManagement() {
                             sx={{
                               flex: 1,
                               p: 1,
+                              bgcolor: colors.semantic.infoLight + '15',
+                              border: `1px solid ${colors.semantic.infoLight}`,
+                              borderRadius: 1,
+                              textAlign: 'center',
+                            }}
+                          >
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem', mb: 0.3 }}>
+                              Ready Hours
+                            </Typography>
+                            <Typography variant="h6" fontWeight="bold" color="info.main" sx={{ fontSize: '1.1rem' }}>
+                              ${employee.payrollReadyAmount.toFixed(0)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                              {employee.payrollReadyHours.toFixed(2)} hrs
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{
+                              flex: 1,
+                              p: 1,
                               bgcolor: colors.primary.light + '10',
                               border: `1px solid ${colors.primary.light}`,
                               borderRadius: 1,
@@ -595,6 +661,30 @@ export function PaymentsManagement() {
                               </Box>
                             </Box>
 
+                            <Box
+                              sx={{
+                                p: 1.5,
+                                bgcolor: colors.semantic.infoLight + '10',
+                                borderRadius: 1,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mb: 2,
+                              }}
+                            >
+                              <Box>
+                                <Typography variant="body2" color="text.secondary" fontWeight="600">
+                                  Approved Hours Ready
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {employee.payrollProcessedHours.toFixed(2)} hrs processed this period
+                                </Typography>
+                              </Box>
+                              <Typography variant="h6" fontWeight="bold" color="info.main">
+                                {employee.payrollReadyHours.toFixed(2)} hrs
+                              </Typography>
+                            </Box>
+
                             {/* Total Paid */}
                             <Box
                               sx={{
@@ -642,6 +732,17 @@ export function PaymentsManagement() {
                           }}
                         >
                           Process {employee.totalReadyJobs > 0 ? `${employee.totalReadyJobs} Jobs` : 'Jobs'}
+                        </Button>
+                        <Button
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          startIcon={<AccessTimeIcon />}
+                          onClick={() => handleProcessTimePayroll(employee)}
+                          disabled={employee.payrollReadyHours <= 0}
+                          sx={{ mt: 1, fontWeight: 600 }}
+                        >
+                          Process {employee.payrollReadyHours > 0 ? `${employee.payrollReadyHours.toFixed(2)} Hrs` : 'Hours'}
                         </Button>
                       </CardContent>
                     </Card>
@@ -743,6 +844,26 @@ export function PaymentsManagement() {
                                 sx={{
                                   flex: 1,
                                   p: 1.5,
+                                  bgcolor: colors.semantic.infoLight + '15',
+                                  border: `1px solid ${colors.semantic.infoLight}`,
+                                  borderRadius: 1,
+                                  textAlign: 'center',
+                                }}
+                              >
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem', mb: 0.5 }}>
+                                  Ready Hours
+                                </Typography>
+                                <Typography variant="h6" fontWeight="bold" color="info.main">
+                                  ${employee.payrollReadyAmount.toFixed(0)}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {employee.payrollReadyHours.toFixed(2)} hrs
+                                </Typography>
+                              </Box>
+                              <Box
+                                sx={{
+                                  flex: 1,
+                                  p: 1.5,
                                   bgcolor: colors.primary.light + '10',
                                   border: `1px solid ${colors.primary.light}`,
                                   borderRadius: 1,
@@ -820,6 +941,30 @@ export function PaymentsManagement() {
                                   </Box>
                                 </Box>
 
+                                <Box
+                                  sx={{
+                                    p: 1.5,
+                                    bgcolor: colors.semantic.infoLight + '10',
+                                    borderRadius: 1,
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    mb: 2,
+                                  }}
+                                >
+                                  <Box>
+                                    <Typography variant="body2" color="text.secondary" fontWeight="600">
+                                      Approved Hours Ready
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {employee.payrollProcessedHours.toFixed(2)} hrs processed this period
+                                    </Typography>
+                                  </Box>
+                                  <Typography variant="h6" fontWeight="bold" color="info.main">
+                                    {employee.payrollReadyHours.toFixed(2)} hrs
+                                  </Typography>
+                                </Box>
+
                                 {/* Total Paid */}
                                 <Box
                                   sx={{
@@ -867,6 +1012,17 @@ export function PaymentsManagement() {
                               }}
                             >
                               Process {employee.totalReadyJobs > 0 ? `${employee.totalReadyJobs} Jobs` : 'Jobs'}
+                            </Button>
+                            <Button
+                              fullWidth
+                              size="small"
+                              variant="outlined"
+                              startIcon={<AccessTimeIcon />}
+                              onClick={() => handleProcessTimePayroll(employee)}
+                              disabled={employee.payrollReadyHours <= 0}
+                              sx={{ mt: 1, fontWeight: 600 }}
+                            >
+                              Process {employee.payrollReadyHours > 0 ? `${employee.payrollReadyHours.toFixed(2)} Hrs` : 'Hours'}
                             </Button>
                           </CardContent>
                         </Card>

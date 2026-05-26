@@ -18,12 +18,6 @@ export declare class AppointmentsService {
      * Create a new appointment
      */
     create(dto: CreateAppointmentDto, bookedBy: string): Promise<{
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -40,12 +34,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -57,8 +63,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -66,28 +72,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -104,12 +104,6 @@ export declare class AppointmentsService {
      * Uses DATE-only comparison to avoid timezone issues
      */
     findAll(query: AppointmentQueryDto, user?: any): Promise<({
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -126,12 +120,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -143,8 +149,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -152,28 +158,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -194,12 +194,6 @@ export declare class AppointmentsService {
      * Find one appointment by ID
      */
     findOne(id: string): Promise<{
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -216,12 +210,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -233,8 +239,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -242,28 +248,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -278,12 +278,6 @@ export declare class AppointmentsService {
      * Update an appointment
      */
     update(id: string, dto: UpdateAppointmentDto, userId?: string): Promise<{
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -300,12 +294,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -317,8 +323,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -326,28 +332,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -359,9 +359,9 @@ export declare class AppointmentsService {
         bookedBy: string | null;
     }>;
     /**
-     * Persist product-sale info on an appointment and (if employees were provided)
-     * auto-create payroll jobs. Used by completion endpoints (e-transfer, square-device)
-     * after they've already marked the appointment COMPLETED.
+     * Persist product-sale info on an appointment and auto-create payroll jobs only
+     * once the appointment is fully paid. Used by completion endpoints
+     * (e-transfer, square-device) after they've already updated payment totals.
      */
     applyCompletionExtras(appointmentId: string, opts: {
         completionEmployeeIds?: string[];
@@ -371,7 +371,10 @@ export declare class AppointmentsService {
         tipAmount?: number;
         userId: string;
         wasAlreadyCompleted: boolean;
+        wasPaidInFull?: boolean;
     }): Promise<void>;
+    private isAppointmentPaidInFull;
+    private hasCompletionJobs;
     /**
      * Create payroll jobs for the employees who completed an appointment.
      * `serviceAmountOverride` lets non-cash flows pass the pre-tax service amount
@@ -379,16 +382,11 @@ export declare class AppointmentsService {
      * on top of the rule-based payout.
      */
     createCompletionJobs(appointment: any, employeeIds: string[], userId: string, serviceAmountOverride?: number, tipAmount?: number): Promise<void>;
+    private resolveCompletionEmployeeIds;
     /**
      * Cancel an appointment
      */
     cancel(id: string): Promise<{
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -405,12 +403,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -422,8 +432,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -431,28 +441,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -469,19 +473,19 @@ export declare class AppointmentsService {
     remove(id: string): Promise<{
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -506,12 +510,6 @@ export declare class AppointmentsService {
      * - If paymentDate is NULL: Fall back to scheduledDate + COMPLETED status (old appointments)
      */
     getByPaymentDate(paymentDate: string): Promise<({
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -528,12 +526,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -545,8 +555,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -554,28 +564,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -592,12 +596,6 @@ export declare class AppointmentsService {
      * instead of making individual requests for each day
      */
     getPaymentsByDateRange(startDate: string, endDate: string): Promise<({
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -614,12 +612,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -631,8 +641,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -640,28 +650,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -678,12 +682,6 @@ export declare class AppointmentsService {
      * Uses DATE-only comparison to avoid timezone issues
      */
     getTodayAppointments(user?: any): Promise<({
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -700,12 +698,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -717,8 +727,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -726,28 +736,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;
@@ -763,12 +767,6 @@ export declare class AppointmentsService {
      * Uses Pacific Time DATE comparison to ensure correct business day
      */
     getCustomerUpcoming(customerId: string): Promise<({
-        employee: {
-            id: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
@@ -785,12 +783,24 @@ export declare class AppointmentsService {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            make: string;
             model: string;
+            make: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
             mileage: number | null;
+        } | null;
+        invoice: {
+            id: string;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            invoiceNumber: string;
+            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
+        } | null;
+        employee: {
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
         } | null;
         employees: ({
             employee: {
@@ -802,8 +812,8 @@ export declare class AppointmentsService {
         } & {
             id: string;
             employeeId: string;
-            appointmentId: string;
             createdAt: Date;
+            appointmentId: string;
         })[];
         bookedByUser: {
             id: string;
@@ -811,28 +821,22 @@ export declare class AppointmentsService {
             firstName: string | null;
             lastName: string | null;
         } | null;
-        invoice: {
-            id: string;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            invoiceNumber: string;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
-        } | null;
     } & {
         id: string;
         employeeId: string | null;
-        status: import("@prisma/client").$Enums.AppointmentStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AppointmentStatus;
+        notes: string | null;
         customerId: string;
-        vehicleId: string | null;
         scheduledDate: Date;
+        vehicleId: string | null;
         scheduledTime: string;
         endTime: string | null;
         duration: number;
         serviceType: string;
         appointmentType: import("@prisma/client").$Enums.AppointmentType;
         serviceAddress: string | null;
-        notes: string | null;
         paymentAmount: number | null;
         paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
         paymentNotes: string | null;

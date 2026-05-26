@@ -49,52 +49,75 @@ export interface UpdateVehicleDto {
   make?: string;
   model?: string;
   year?: number;
-  vin?: string;
-  licensePlate?: string;
+  vin?: string | null;
+  licensePlate?: string | null;
   mileage?: number;
 }
 
+export interface DecodeVinResponse {
+  vin: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  trim?: string;
+  bodyClass?: string;
+  vehicleType?: string;
+  engine?: string;
+  fuelType?: string;
+  warnings: string[];
+  rawProvider: 'NHTSA_VPIC';
+}
+
 class VehicleService {
-  private getAuthHeader() {
-    // In production, get the actual token from Clerk
-    const token = localStorage.getItem('authToken') || 'mock-jwt-token';
+  private async getAuthHeader() {
+    let token: string | null = null;
+
+    if (window.Clerk?.session) {
+      token = await window.Clerk.session.getToken({});
+      if (token) {
+        localStorage.setItem('authToken', token);
+      }
+    }
+
+    token = token || localStorage.getItem('authToken');
+
     return {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token && { Authorization: `Bearer ${token}` }),
     };
   }
 
   async getAllVehicles(): Promise<Vehicle[]> {
     const response = await axios.get(`${API_URL}/api/vehicles`, {
-      headers: this.getAuthHeader(),
+      headers: await this.getAuthHeader(),
     });
     return response.data;
   }
 
   async getVehicle(id: string): Promise<Vehicle> {
     const response = await axios.get(`${API_URL}/api/vehicles/${id}`, {
-      headers: this.getAuthHeader(),
+      headers: await this.getAuthHeader(),
     });
     return response.data;
   }
 
   async getCustomerVehicles(customerId: string): Promise<Vehicle[]> {
     const response = await axios.get(`${API_URL}/api/vehicles/customer/${customerId}`, {
-      headers: this.getAuthHeader(),
+      headers: await this.getAuthHeader(),
     });
     return response.data;
   }
 
   async createVehicle(data: CreateVehicleDto): Promise<Vehicle> {
     const response = await axios.post(`${API_URL}/api/vehicles`, data, {
-      headers: this.getAuthHeader(),
+      headers: await this.getAuthHeader(),
     });
     return response.data;
   }
 
   async updateVehicle(id: string, data: UpdateVehicleDto): Promise<Vehicle> {
     const response = await axios.patch(`${API_URL}/api/vehicles/${id}`, data, {
-      headers: this.getAuthHeader(),
+      headers: await this.getAuthHeader(),
     });
     return response.data;
   }
@@ -102,21 +125,37 @@ class VehicleService {
   async updateMileage(id: string, mileage: number): Promise<Vehicle> {
     const response = await axios.patch(`${API_URL}/api/vehicles/${id}/mileage`, 
       { mileage },
-      { headers: this.getAuthHeader() }
+      { headers: await this.getAuthHeader() }
     );
     return response.data;
   }
 
   async deleteVehicle(id: string): Promise<void> {
     await axios.delete(`${API_URL}/api/vehicles/${id}`, {
-      headers: this.getAuthHeader(),
+      headers: await this.getAuthHeader(),
     });
   }
 
   async searchVehicles(searchTerm: string): Promise<Vehicle[]> {
     const response = await axios.get(`${API_URL}/api/vehicles/search`, {
       params: { q: searchTerm },
-      headers: this.getAuthHeader(),
+      headers: await this.getAuthHeader(),
+    });
+    return response.data;
+  }
+
+  async decodeVin(vin: string, modelYear?: number): Promise<DecodeVinResponse> {
+    const response = await axios.get(`${API_URL}/api/vehicles/decode-vin/${encodeURIComponent(vin)}`, {
+      params: modelYear ? { modelYear } : undefined,
+      headers: await this.getAuthHeader(),
+    });
+    return response.data;
+  }
+
+  async getModelsForMake(make: string): Promise<string[]> {
+    const response = await axios.get(`${API_URL}/api/vehicles/models`, {
+      params: { make },
+      headers: await this.getAuthHeader(),
     });
     return response.data;
   }

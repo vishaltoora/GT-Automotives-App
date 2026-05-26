@@ -313,13 +313,25 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
     if (!selectedAppointmentForPayment) return;
 
     try {
+      let existingBreakdown = selectedAppointmentForPayment.paymentBreakdown;
+      if (typeof existingBreakdown === 'string') {
+        try {
+          existingBreakdown = JSON.parse(existingBreakdown);
+        } catch {
+          existingBreakdown = [];
+        }
+      }
+
       // Update appointment with payment data
       // IMPORTANT: Always keep the ORIGINAL expectedAmount - don't overwrite with remaining amount
       await appointmentService.updateAppointment(selectedAppointmentForPayment.id, {
         paymentAmount: (selectedAppointmentForPayment.paymentAmount || 0) + paymentData.totalAmount,
         // Keep original expectedAmount, only set if not already set
         expectedAmount: selectedAppointmentForPayment.expectedAmount,
-        paymentBreakdown: paymentData.payments,
+        paymentBreakdown: [...((existingBreakdown as any[]) || []), ...paymentData.payments],
+        completionEmployeeIds: paymentData.completionEmployeeIds,
+        productSaleAmount: paymentData.productSaleAmount,
+        productSaleItems: paymentData.productSaleItems,
         notes: paymentData.paymentNotes ?
           `${selectedAppointmentForPayment.notes || ''}\nPayment: ${paymentData.paymentNotes}`.trim() :
           selectedAppointmentForPayment.notes,
@@ -1284,7 +1296,11 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
             (selectedAppointmentForPayment.expectedAmount || 0) - (selectedAppointmentForPayment.paymentAmount || 0)
           }
           // Don't pass existingPayments - we want a fresh payment entry for the remaining balance
-          isEditMode={true}
+          assignedEmployeeIds={
+            selectedAppointmentForPayment.employees && selectedAppointmentForPayment.employees.length > 0
+              ? selectedAppointmentForPayment.employees.map((ae) => ae.employee.id)
+              : []
+          }
         />
       )}
 

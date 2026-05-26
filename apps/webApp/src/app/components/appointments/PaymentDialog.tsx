@@ -148,11 +148,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const [productSaleAmount, setProductSaleAmount] = useState<number>(0);
   const [productSaleItems, setProductSaleItems] = useState<string[]>([]);
 
-  // Only enable the "completed by" section when the caller explicitly opts in
-  // by providing assignedEmployeeIds (e.g. on initial completion from AppointmentCard).
-  // Outstanding-balance flows from CustomerDetailsDialog / DayAppointmentsDialog
-  // don't pass it and shouldn't auto-create new jobs.
-  const completionEnabled = !isEditMode && assignedEmployeeIds !== undefined;
+  // Enable the "completed by" section only when the caller provides appointment
+  // employee context. Outstanding-balance flows pass this when the new payment
+  // can clear the balance and create payroll jobs.
+  const completionEnabled = assignedEmployeeIds !== undefined;
 
   useEffect(() => {
     if (!open || !completionEnabled) return;
@@ -199,6 +198,20 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const remainingBalance = expectedAmount - totalAmount;
   const isPartialPayment = expectedAmount > 0 && totalAmount < expectedAmount;
+  const nonCashAmount =
+    paymentMethod === 'E_TRANSFER'
+      ? eTransferAmount + eTransferTip
+      : paymentMethod === 'SQUARE_DEVICE'
+      ? squareDeviceAmount + squareDeviceTip
+      : paymentMethod === 'SQUARE_ONLINE'
+      ? serviceAmount + squareOnlineTip
+      : 0;
+  const paymentClearsBalance =
+    paymentMethod === 'CASH'
+      ? expectedAmount > 0
+        ? totalAmount + 0.005 >= expectedAmount
+        : totalAmount > 0
+      : nonCashAmount > 0;
 
   // Service amount that runs through the lookup/30% rule (taxes excluded).
   // Tips are NOT included here — they are added 100% on top of the rule-based
@@ -278,7 +291,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
   // Bundle the optional "completed by" + product-sale fields for non-cash flows.
   const buildCompletionExtras = () => {
-    if (!completionEnabled) return undefined;
+    if (!completionEnabled || !paymentClearsBalance) return undefined;
     const productAmount = hasProductSale ? Math.max(0, productSaleAmount) : 0;
     return {
       completionEmployeeIds:
@@ -435,19 +448,20 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
 
     // Submit
-    const productAmount = completionEnabled && hasProductSale ? Math.max(0, productSaleAmount) : 0;
+    const shouldSendCompletion = completionEnabled && paymentClearsBalance;
+    const productAmount = shouldSendCompletion && hasProductSale ? Math.max(0, productSaleAmount) : 0;
     const paymentData: PaymentData = {
       totalAmount,
       payments,
       paymentNotes,
       expectedAmount: expectedAmount > 0 ? expectedAmount : undefined,
       completionEmployeeIds:
-        completionEnabled && selectedCompletionEmployees.length > 0
+        shouldSendCompletion && selectedCompletionEmployees.length > 0
           ? selectedCompletionEmployees.map((e) => e.id)
           : undefined,
       productSaleAmount: productAmount > 0 ? productAmount : undefined,
       productSaleItems:
-        completionEnabled && hasProductSale && productSaleItems.length > 0
+        shouldSendCompletion && hasProductSale && productSaleItems.length > 0
           ? productSaleItems
           : undefined,
     };
@@ -515,8 +529,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           </Select>
         </FormControl>
 
-        {/* Completed By — Auto-creates payroll jobs (shown for all payment methods) */}
-        {completionEnabled && (
+        {/* Completed By — Auto-creates payroll jobs when this payment clears the balance */}
+        {completionEnabled && paymentClearsBalance && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <PersonIcon fontSize="small" /> Completed By

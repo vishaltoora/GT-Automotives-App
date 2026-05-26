@@ -40,6 +40,7 @@ import {
   Payment,
   Assignment,
   RequestPage,
+  AccessTime,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';
@@ -51,6 +52,8 @@ import TireDialog from '../../components/inventory/TireDialog';
 import { QuickTireSaleDialog } from '../../components/tire-sales';
 import { useAuth } from '../../hooks/useAuth';
 import { dashboardService, DashboardStats } from '../../requests/dashboard.requests';
+import { timeClockService } from '../../requests/time-clock.requests';
+import { TimeEntryDto } from '@gt-automotive/data';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -69,6 +72,8 @@ export function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingRequestsCount, setBookingRequestsCount] = useState(0);
+  const [currentTimeEntry, setCurrentTimeEntry] = useState<TimeEntryDto | null>(null);
+  const [clockActionLoading, setClockActionLoading] = useState(false);
 
   // Common mobile-optimized styles for action items
   const actionItemStyles = {
@@ -121,7 +126,36 @@ export function AdminDashboard() {
   useEffect(() => {
     loadStats();
     loadBookingRequestsCount();
-  }, []);
+    if (role !== 'accountant') {
+      loadCurrentTimeEntry();
+    }
+  }, [role]);
+
+  const loadCurrentTimeEntry = async () => {
+    try {
+      setCurrentTimeEntry(await timeClockService.getMyCurrent());
+    } catch (error) {
+      console.error('Failed to load current time entry:', error);
+    }
+  };
+
+  const handleQuickClockIn = async () => {
+    if (role === 'accountant') return;
+
+    if (currentTimeEntry) {
+      navigate(`${basePath}/time-clock`);
+      return;
+    }
+
+    try {
+      setClockActionLoading(true);
+      setCurrentTimeEntry(await timeClockService.clockIn());
+    } catch (error) {
+      console.error('Failed to clock in:', error);
+    } finally {
+      setClockActionLoading(false);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -448,6 +482,33 @@ export function AdminDashboard() {
                 gap: 1,
                 mb: 1.5,
               }}>
+              {role !== 'accountant' && (
+                <Paper
+                  onClick={handleQuickClockIn}
+                  sx={{
+                    ...actionItemStyles,
+                    border: `1px solid ${colors.semantic.success}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.semantic.success,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <AccessTime sx={{ ...actionIconStyles, color: colors.semantic.success }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
+                    {clockActionLoading ? 'Clocking In...' : currentTimeEntry ? 'Clocked In' : 'Clock In'}
+                  </Typography>
+                </Paper>
+              )}
+
               {/* Day Summary - First position */}
               <Paper
                 component={Link}
@@ -879,6 +940,33 @@ export function AdminDashboard() {
                 gap: { xs: 1, sm: 1.5, md: 2 },
                 mb: { xs: 1.5, sm: 2, md: 3 },
               }}>
+                {role !== 'accountant' && (
+                  <Paper
+                    onClick={handleQuickClockIn}
+                    sx={{
+                      ...actionItemStyles,
+                      border: `1px solid ${colors.semantic.success}`,
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        backgroundColor: colors.semantic.success,
+                        color: 'white',
+                        '& .MuiSvgIcon-root': {
+                          color: 'white !important',
+                        },
+                        '& .MuiTypography-root': {
+                          color: 'white !important',
+                        },
+                      },
+                    }}
+                  >
+                    <AccessTime sx={{ ...actionIconStyles, color: colors.semantic.success }} />
+                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
+                      {clockActionLoading ? 'Clocking In...' : currentTimeEntry ? 'Clocked In' : 'Clock In'}
+                    </Typography>
+                  </Paper>
+                )}
+
                 {/* Day Summary - First position */}
                 <Paper
                   component={Link}

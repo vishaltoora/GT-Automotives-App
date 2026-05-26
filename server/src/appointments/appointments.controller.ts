@@ -148,6 +148,10 @@ export class AppointmentsController {
     // 3. Create invoice and update appointment - handle retry if invoice already exists
     const existingPaymentAmount = appointment.paymentAmount || 0;
     const existingBreakdown = (appointment.paymentBreakdown as any[]) || [];
+    const wasPaidInFull =
+      appointment.expectedAmount && appointment.expectedAmount > 0
+        ? existingPaymentAmount + 0.005 >= appointment.expectedAmount
+        : existingPaymentAmount > 0;
 
     // Check if invoice already exists (retry scenario - invoice created but appointment not updated)
     const existingInvoice = await this.prisma.invoice.findFirst({
@@ -186,6 +190,7 @@ export class AppointmentsController {
         tipAmount: dto.tipAmount || 0,
         userId: user.id,
         wasAlreadyCompleted,
+        wasPaidInFull,
       });
 
       return {
@@ -238,6 +243,7 @@ export class AppointmentsController {
       tipAmount: dto.tipAmount || 0,
       userId: user.id,
       wasAlreadyCompleted,
+      wasPaidInFull,
     });
 
     return {
@@ -282,6 +288,10 @@ export class AppointmentsController {
     const paymentMethod = dto.cardType || 'CREDIT_CARD';
     const existingPaymentAmount = appointment.paymentAmount || 0;
     const existingBreakdown = (appointment.paymentBreakdown as any[]) || [];
+    const wasPaidInFull =
+      appointment.expectedAmount && appointment.expectedAmount > 0
+        ? existingPaymentAmount + 0.005 >= appointment.expectedAmount
+        : existingPaymentAmount > 0;
 
     // Check if invoice already exists (retry scenario - invoice created but appointment not updated)
     const existingInvoice = await this.prisma.invoice.findFirst({
@@ -318,6 +328,7 @@ export class AppointmentsController {
         tipAmount: dto.tipAmount || 0,
         userId: user.id,
         wasAlreadyCompleted: wasAlreadyCompletedSq,
+        wasPaidInFull,
       });
 
       return {
@@ -370,6 +381,7 @@ export class AppointmentsController {
       tipAmount: dto.tipAmount || 0,
       userId: user.id,
       wasAlreadyCompleted: wasAlreadyCompletedSq,
+      wasPaidInFull,
     });
 
     return {

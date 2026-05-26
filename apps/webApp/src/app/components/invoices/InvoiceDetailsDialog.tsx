@@ -50,7 +50,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
     children: React.ReactElement;
   },
-  ref: React.Ref<unknown>,
+  ref: React.Ref<unknown>
 ) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -61,6 +61,23 @@ interface InvoiceDetailsDialogProps {
   invoiceId: string;
   onInvoiceUpdate?: () => void;
 }
+
+const getCustomerName = (invoice: Invoice) => {
+  const customer = invoice.customer;
+
+  if (customer?.firstName || customer?.lastName) {
+    return `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+  }
+
+  return customer?.name || 'Customer';
+};
+
+const getVehicleDescription = (invoice: Invoice) => {
+  const vehicle = invoice.vehicle;
+  return [vehicle?.year, vehicle?.make, vehicle?.model]
+    .filter(Boolean)
+    .join(' ');
+};
 
 export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
   open,
@@ -107,10 +124,15 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
   const handleMarkAsPaid = async () => {
     if (!invoice) return;
 
-    const paymentMethod = prompt('Enter payment method (CASH, CREDIT_CARD, DEBIT_CARD, CHECK, E_TRANSFER, FINANCING):');
+    const paymentMethod = prompt(
+      'Enter payment method (CASH, CREDIT_CARD, DEBIT_CARD, CHECK, E_TRANSFER, FINANCING):'
+    );
     if (paymentMethod) {
       try {
-        await invoiceService.markInvoiceAsPaid(invoice.id, paymentMethod as any);
+        await invoiceService.markInvoiceAsPaid(
+          invoice.id,
+          paymentMethod as any
+        );
         loadInvoice();
         onInvoiceUpdate?.();
       } catch (err) {
@@ -213,8 +235,8 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
               display: 'flex',
               flexDirection: 'column',
               height: '100vh',
-            })
-          }
+            }),
+          },
         }}
       >
         <DialogTitle
@@ -229,9 +251,18 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
             flexShrink: 0,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 1, sm: 2 },
+            }}
+          >
             <ReceiptIcon sx={{ fontSize: { xs: 20, sm: 28 } }} />
-            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+            <Typography
+              variant={isMobile ? 'subtitle1' : 'h6'}
+              sx={{ fontWeight: 600 }}
+            >
               Invoice Details
             </Typography>
           </Box>
@@ -241,7 +272,7 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                 onClick={handleMenuOpen}
                 sx={{
                   color: 'white',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
                 }}
               >
                 <MoreVertIcon />
@@ -251,7 +282,7 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
               onClick={onClose}
               sx={{
                 color: 'white',
-                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
               }}
             >
               <CloseIcon />
@@ -313,7 +344,12 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
           }}
         >
           {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight="400px"
+            >
               <CircularProgress />
             </Box>
           ) : error ? (
@@ -328,10 +364,16 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                     Invoice #{invoice.invoiceNumber}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Date: {new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                    Date:{' '}
+                    {new Date(
+                      invoice.invoiceDate || invoice.createdAt
+                    ).toLocaleDateString('en-US', { timeZone: 'UTC' })}
                   </Typography>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                <Grid
+                  size={{ xs: 12, md: 6 }}
+                  sx={{ textAlign: { xs: 'left', md: 'right' } }}
+                >
                   <Box sx={{ mb: 1 }}>
                     <Chip
                       label={invoice.status}
@@ -362,7 +404,7 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                         Customer Information
                       </Typography>
                       <Typography variant="body1">
-                        {invoice.customer?.firstName} {invoice.customer?.lastName}
+                        {getCustomerName(invoice)}
                       </Typography>
                       {invoice.customer?.email && (
                         <Typography variant="body2" color="text.secondary">
@@ -383,35 +425,43 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                   </Card>
                 </Grid>
 
-                {invoice.vehicle && (
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          Vehicle Information
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Vehicle Information
+                      </Typography>
+                      {invoice.vehicle ? (
+                        <>
+                          <Typography variant="body1">
+                            {getVehicleDescription(invoice)}
+                          </Typography>
+                          {invoice.vehicle.vin && (
+                            <Typography variant="body2" color="text.secondary">
+                              VIN Number: {invoice.vehicle.vin}
+                            </Typography>
+                          )}
+                          {invoice.vehicle.licensePlate && (
+                            <Typography variant="body2" color="text.secondary">
+                              License Plate: {invoice.vehicle.licensePlate}
+                            </Typography>
+                          )}
+                          {invoice.vehicle.mileage && (
+                            <Typography variant="body2" color="text.secondary">
+                              Mileage:{' '}
+                              {Number(invoice.vehicle.mileage).toLocaleString()}{' '}
+                              km
+                            </Typography>
+                          )}
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No vehicle selected for this invoice.
                         </Typography>
-                        <Typography variant="body1">
-                          {invoice.vehicle.year} {invoice.vehicle.make} {invoice.vehicle.model}
-                        </Typography>
-                        {invoice.vehicle.vin && (
-                          <Typography variant="body2" color="text.secondary">
-                            VIN: {invoice.vehicle.vin}
-                          </Typography>
-                        )}
-                        {invoice.vehicle.licensePlate && (
-                          <Typography variant="body2" color="text.secondary">
-                            License Plate: {invoice.vehicle.licensePlate}
-                          </Typography>
-                        )}
-                        {invoice.vehicle.mileage && (
-                          <Typography variant="body2" color="text.secondary">
-                            Mileage: {invoice.vehicle.mileage.toLocaleString()} km
-                          </Typography>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                )}
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
 
                 <Grid size={12}>
                   <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
@@ -420,39 +470,88 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                   {isMobile ? (
                     <Stack spacing={2}>
                       {invoice.items?.map((item) => {
-                        let displayTotal = item.total || item.quantity * Number(item.unitPrice);
-                        if (String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE') {
+                        let displayTotal =
+                          item.total || item.quantity * Number(item.unitPrice);
+                        if (
+                          String(item.itemType).toUpperCase() ===
+                          'DISCOUNT_PERCENTAGE'
+                        ) {
                           const otherItemsSubtotal = (invoice.items || [])
-                            .filter(i => String(i.itemType).toUpperCase() !== 'DISCOUNT' && String(i.itemType).toUpperCase() !== 'DISCOUNT_PERCENTAGE')
-                            .reduce((sum, i) => sum + (Number(i.total) || i.quantity * Number(i.unitPrice)), 0);
-                          displayTotal = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
-                        } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
+                            .filter(
+                              (i) =>
+                                String(i.itemType).toUpperCase() !==
+                                  'DISCOUNT' &&
+                                String(i.itemType).toUpperCase() !==
+                                  'DISCOUNT_PERCENTAGE'
+                            )
+                            .reduce(
+                              (sum, i) =>
+                                sum +
+                                (Number(i.total) ||
+                                  i.quantity * Number(i.unitPrice)),
+                              0
+                            );
+                          displayTotal =
+                            -(otherItemsSubtotal * Number(item.unitPrice)) /
+                            100;
+                        } else if (
+                          String(item.itemType).toUpperCase() === 'DISCOUNT'
+                        ) {
                           displayTotal = -Math.abs(displayTotal);
                         }
 
                         return (
                           <Card key={item.id} variant="outlined">
                             <CardContent>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'flex-start',
+                                  mb: 1,
+                                }}
+                              >
                                 <Chip label={item.itemType} size="small" />
                                 <Typography variant="h6" fontWeight="bold">
                                   {formatCurrency(displayTotal)}
                                 </Typography>
                               </Box>
                               {(item as any).tireName && (
-                                <Typography variant="body1" fontWeight="medium" gutterBottom>
+                                <Typography
+                                  variant="body1"
+                                  fontWeight="medium"
+                                  gutterBottom
+                                >
                                   {(item as any).tireName}
                                 </Typography>
                               )}
-                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                gutterBottom
+                              >
                                 {item.description}
                               </Typography>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                                <Typography variant="body2" color="text.secondary">
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  mt: 1,
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
                                   Qty: {item.quantity}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  Unit Price: {String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  Unit Price:{' '}
+                                  {String(item.itemType).toUpperCase() ===
+                                  'DISCOUNT_PERCENTAGE'
                                     ? `${Number(item.unitPrice)}%`
                                     : formatCurrency(item.unitPrice)}
                                 </Typography>
@@ -476,13 +575,34 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                         </TableHead>
                         <TableBody>
                           {invoice.items?.map((item) => {
-                            let displayTotal = item.total || item.quantity * Number(item.unitPrice);
-                            if (String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE') {
+                            let displayTotal =
+                              item.total ||
+                              item.quantity * Number(item.unitPrice);
+                            if (
+                              String(item.itemType).toUpperCase() ===
+                              'DISCOUNT_PERCENTAGE'
+                            ) {
                               const otherItemsSubtotal = (invoice.items || [])
-                                .filter(i => String(i.itemType).toUpperCase() !== 'DISCOUNT' && String(i.itemType).toUpperCase() !== 'DISCOUNT_PERCENTAGE')
-                                .reduce((sum, i) => sum + (Number(i.total) || i.quantity * Number(i.unitPrice)), 0);
-                              displayTotal = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
-                            } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
+                                .filter(
+                                  (i) =>
+                                    String(i.itemType).toUpperCase() !==
+                                      'DISCOUNT' &&
+                                    String(i.itemType).toUpperCase() !==
+                                      'DISCOUNT_PERCENTAGE'
+                                )
+                                .reduce(
+                                  (sum, i) =>
+                                    sum +
+                                    (Number(i.total) ||
+                                      i.quantity * Number(i.unitPrice)),
+                                  0
+                                );
+                              displayTotal =
+                                -(otherItemsSubtotal * Number(item.unitPrice)) /
+                                100;
+                            } else if (
+                              String(item.itemType).toUpperCase() === 'DISCOUNT'
+                            ) {
                               displayTotal = -Math.abs(displayTotal);
                             }
 
@@ -493,17 +613,30 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                                 </TableCell>
                                 <TableCell>
                                   {(item as any).tireName && (
-                                    <Typography variant="body2" fontWeight="medium">
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight="medium"
+                                    >
                                       {(item as any).tireName}
                                     </Typography>
                                   )}
-                                  <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                                  <Typography
+                                    variant="body2"
+                                    color={
+                                      (item as any).tireName
+                                        ? 'text.secondary'
+                                        : 'inherit'
+                                    }
+                                  >
                                     {item.description}
                                   </Typography>
                                 </TableCell>
-                                <TableCell align="right">{item.quantity}</TableCell>
                                 <TableCell align="right">
-                                  {String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
+                                  {item.quantity}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {String(item.itemType).toUpperCase() ===
+                                  'DISCOUNT_PERCENTAGE'
                                     ? `${Number(item.unitPrice)}%`
                                     : formatCurrency(item.unitPrice)}
                                 </TableCell>
@@ -541,7 +674,9 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                             <Typography variant="body1">Subtotal:</Typography>
                           </Grid>
                           <Grid size={6}>
-                            <Typography variant="body1">{formatCurrency(invoice.subtotal)}</Typography>
+                            <Typography variant="body1">
+                              {formatCurrency(invoice.subtotal)}
+                            </Typography>
                           </Grid>
                           {invoice.gstRate != null && invoice.gstRate > 0 && (
                             <>
@@ -551,7 +686,9 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                                 </Typography>
                               </Grid>
                               <Grid size={6}>
-                                <Typography variant="body1">{formatCurrency(invoice.gstAmount || 0)}</Typography>
+                                <Typography variant="body1">
+                                  {formatCurrency(invoice.gstAmount || 0)}
+                                </Typography>
                               </Grid>
                             </>
                           )}
@@ -563,22 +700,28 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                                 </Typography>
                               </Grid>
                               <Grid size={6}>
-                                <Typography variant="body1">{formatCurrency(invoice.pstAmount || 0)}</Typography>
-                              </Grid>
-                            </>
-                          )}
-                          {(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) && (
-                            <>
-                              <Grid size={6}>
                                 <Typography variant="body1">
-                                  Tax ({(invoice.taxRate * 100).toFixed(2)}%):
+                                  {formatCurrency(invoice.pstAmount || 0)}
                                 </Typography>
                               </Grid>
-                              <Grid size={6}>
-                                <Typography variant="body1">{formatCurrency(invoice.taxAmount)}</Typography>
-                              </Grid>
                             </>
                           )}
+                          {(invoice.gstRate == null || invoice.gstRate === 0) &&
+                            (invoice.pstRate == null ||
+                              invoice.pstRate === 0) && (
+                              <>
+                                <Grid size={6}>
+                                  <Typography variant="body1">
+                                    Tax ({(invoice.taxRate * 100).toFixed(2)}%):
+                                  </Typography>
+                                </Grid>
+                                <Grid size={6}>
+                                  <Typography variant="body1">
+                                    {formatCurrency(invoice.taxAmount)}
+                                  </Typography>
+                                </Grid>
+                              </>
+                            )}
                           <Grid size={12}>
                             <Divider sx={{ my: 1 }} />
                           </Grid>
@@ -586,7 +729,9 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                             <Typography variant="h6">Total:</Typography>
                           </Grid>
                           <Grid size={6}>
-                            <Typography variant="h6">{formatCurrency(invoice.total)}</Typography>
+                            <Typography variant="h6">
+                              {formatCurrency(invoice.total)}
+                            </Typography>
                           </Grid>
                         </Grid>
                       </Box>
@@ -598,7 +743,9 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
           ) : null}
         </DialogContent>
 
-        <DialogActions sx={{ p: 2, borderTop: `1px solid ${colors.neutral[200]}` }}>
+        <DialogActions
+          sx={{ p: 2, borderTop: `1px solid ${colors.neutral[200]}` }}
+        >
           <Button onClick={onClose} variant="outlined">
             Close
           </Button>

@@ -80,6 +80,19 @@ Choose validation based on risk and touched files:
 - Prisma changes: migration status plus server build/test.
 - Broad refactors: `yarn lint`, `yarn test`, or Nx affected commands when available.
 
+Nx can fail in Codex/Claude-style sandboxes with `Failed to start plugin worker` because Nx uses Unix sockets for daemon communication, plugin isolation, and forked task execution. If a normal Nx command fails before running tasks, retry with:
+
+```bash
+env NX_DAEMON=false NX_ISOLATE_PLUGINS=false yarn typecheck
+```
+
+If that still fails at Nx infrastructure level, use direct project checks as a fallback and report the Nx limitation:
+
+```bash
+yarn typecheck:web
+yarn typecheck:server
+```
+
 If validation fails, fix the issue if it is caused by the current task. If validation cannot run because of environment or dependency problems, report that clearly.
 
 ## Reference

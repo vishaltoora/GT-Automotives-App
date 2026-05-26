@@ -40,6 +40,7 @@ import {
   ChevronRight,
   Payment,
   Work,
+  AccessTime,
   AttachMoney,
   ShoppingCart,
   Sms,
@@ -141,6 +142,7 @@ export function AdminLayout() {
       icon: <Work />,
       items: [
         { text: 'Jobs', icon: <Work />, path: '/admin/jobs' },
+        { text: 'Time Clock', icon: <AccessTime />, path: '/admin/time-clock' },
         { text: 'Commission', icon: <LocalMall />, path: '/admin/tire-commissions' },
         { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
         { text: 'Payments', icon: <Payment />, path: '/admin/payments' },

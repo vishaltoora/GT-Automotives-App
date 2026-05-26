@@ -23,6 +23,9 @@ model User {
   role                  Role                    @relation(fields: [roleId], references: [id])
   jobs                  Job[]                   // Jobs assigned to this user (for STAFF role)
   payments              Payment[]               // Payments made to this user (for STAFF role)
+  compensationProfiles  EmployeeCompensation[]  // Hourly/salaried compensation history
+  timeEntries           TimeEntry[]             // Clock-in/clock-out timesheets
+  payrollAdjustments    PayrollAdjustment[]     // Bonuses, deductions, reimbursements
   appointments          Appointment[]           // Appointments assigned to this employee (deprecated)
   appointmentEmployees  AppointmentEmployee[]   @relation("AppointmentEmployees") // Multiple appointment assignments
   bookedAppointments    Appointment[]           @relation("BookedAppointments") // Appointments this user created/booked
@@ -487,6 +490,92 @@ model Payment {
   @@index([paidAt, status])  // Composite index for EOD summaries
 }
 
+model EmployeeCompensation {
+  id                  String    @id @default(cuid())
+  employeeId          String
+  payType             PayType
+  hourlyRate          Decimal?  @db.Decimal(10, 2)
+  annualSalary        Decimal?  @db.Decimal(10, 2)
+  expectedWeeklyHours Decimal?  @db.Decimal(5, 2)
+  effectiveFrom       DateTime  @default(now())
+  effectiveTo         DateTime?
+  isActive            Boolean   @default(true)
+  createdBy           String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  employee            User      @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([employeeId, isActive])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model TimeEntry {
+  id               String          @id @default(cuid())
+  employeeId       String
+  clockInAt        DateTime
+  clockOutAt       DateTime?
+  status           TimeEntryStatus @default(OPEN)
+  source           TimeEntrySource @default(EMPLOYEE)
+  notes            String?
+  adjustedBy       String?
+  adjustmentReason String?
+  approvedBy       String?
+  approvedAt       DateTime?
+  payrollProcessedBy String?
+  payrollProcessedAt DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  employee         User            @relation(fields: [employeeId], references: [id])
+  breaks           BreakEntry[]
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([clockInAt])
+  @@index([employeeId, status])
+  @@index([employeeId, payrollProcessedAt])
+}
+
+model BreakEntry {
+  id          String    @id @default(cuid())
+  timeEntryId String
+  breakType   BreakType @default(MEAL)
+  startAt     DateTime
+  endAt       DateTime?
+  isPaid      Boolean   @default(false)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  timeEntry   TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+
+  @@index([timeEntryId])
+  @@index([startAt])
+}
+
+model PayrollAdjustment {
+  id           String                @id @default(cuid())
+  employeeId   String
+  type         PayrollAdjustmentType @default(BONUS)
+  amount       Decimal               @db.Decimal(10, 2)
+  reason       String
+  notes        String?
+  effectiveDate DateTime
+  createdBy    String
+  approvedBy   String?
+  approvedAt   DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  employee     User                 @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([type])
+  @@index([effectiveDate])
+}
+
 model PayrollPeriod {
   id        String   @id @default(cuid())
   startDate DateTime
@@ -497,6 +586,40 @@ model PayrollPeriod {
 
   @@unique([startDate, endDate, type])
   @@index([startDate, endDate])
+}
+
+enum PayType {
+  HOURLY
+  SALARIED
+}
+
+enum TimeEntryStatus {
+  OPEN
+  ON_BREAK
+  CLOCKED_OUT
+  APPROVED
+  ADJUSTED
+  VOIDED
+}
+
+enum TimeEntrySource {
+  EMPLOYEE
+  ADMIN
+  SYSTEM
+}
+
+enum BreakType {
+  MEAL
+  REST
+  PERSONAL
+  OTHER
+}
+
+enum PayrollAdjustmentType {
+  BONUS
+  REIMBURSEMENT
+  DEDUCTION
+  OTHER
 }
 
 enum JobStatus {

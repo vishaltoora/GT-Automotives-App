@@ -90,6 +90,51 @@ export interface UpdateInvoiceDto {
 }
 
 class InvoiceService {
+  private getCustomerName(invoice: Invoice): string {
+    const customer = invoice.customer;
+
+    if (customer?.firstName || customer?.lastName) {
+      return `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+    }
+
+    return customer?.name || 'Customer';
+  }
+
+  private getVehicleDescription(invoice: Invoice): string {
+    const vehicle = invoice.vehicle;
+    return [vehicle?.year, vehicle?.make, vehicle?.model]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  private getVehicleInfoHTML(invoice: Invoice): string {
+    const vehicle = invoice.vehicle;
+
+    if (!vehicle) {
+      return '';
+    }
+
+    const vehicleDescription = this.getVehicleDescription(invoice);
+
+    return `
+      <h3 style="margin: 0; line-height: 1.1;">Vehicle Information:</h3>
+      <p style="margin: 0;">${vehicleDescription ? `${vehicleDescription}<br>` : ''}
+      ${vehicle.vin ? `<strong>VIN Number:</strong> ${vehicle.vin}<br>` : ''}
+      ${
+        vehicle.licensePlate
+          ? `<strong>License Plate:</strong> ${vehicle.licensePlate}<br>`
+          : ''
+      }
+      ${
+        vehicle.mileage
+          ? `<strong>Mileage:</strong> ${Number(
+              vehicle.mileage
+            ).toLocaleString()} km`
+          : ''
+      }</p>
+    `;
+  }
+
   private async getAuthToken(): Promise<string | null> {
     // Try to get fresh token from Clerk first
     if (getClerkToken) {
@@ -143,7 +188,10 @@ class InvoiceService {
     return response.data;
   }
 
-  async markInvoiceAsPaid(id: string, paymentMethod: Invoice['paymentMethod']): Promise<Invoice> {
+  async markInvoiceAsPaid(
+    id: string,
+    paymentMethod: Invoice['paymentMethod']
+  ): Promise<Invoice> {
     const response = await axios.post(
       `${API_URL}/api/invoices/${id}/pay`,
       { paymentMethod },
@@ -154,7 +202,11 @@ class InvoiceService {
     return response.data;
   }
 
-  async sendInvoiceEmail(id: string, email?: string, saveToCustomer?: boolean): Promise<{ success: boolean; message: string; emailUsed?: string }> {
+  async sendInvoiceEmail(
+    id: string,
+    email?: string,
+    saveToCustomer?: boolean
+  ): Promise<{ success: boolean; message: string; emailUsed?: string }> {
     const response = await axios.post(
       `${API_URL}/api/invoices/${id}/send-email`,
       { email, saveToCustomer },
@@ -184,31 +236,41 @@ class InvoiceService {
       if (value) queryParams.append(key, value);
     });
 
-    const response = await axios.get(`${API_URL}/api/invoices/search?${queryParams}`, {
-      headers: await this.getHeaders(),
-    });
+    const response = await axios.get(
+      `${API_URL}/api/invoices/search?${queryParams}`,
+      {
+        headers: await this.getHeaders(),
+      }
+    );
     return response.data;
   }
 
   async getCustomerInvoices(customerId: string): Promise<Invoice[]> {
-    const response = await axios.get(`${API_URL}/api/invoices/customer/${customerId}`, {
-      headers: await this.getHeaders(),
-    });
+    const response = await axios.get(
+      `${API_URL}/api/invoices/customer/${customerId}`,
+      {
+        headers: await this.getHeaders(),
+      }
+    );
     return response.data;
   }
 
   async getDailyCashReport(date?: string): Promise<any> {
     const queryParam = date ? `?date=${date}` : '';
-    const response = await axios.get(`${API_URL}/api/invoices/cash-report${queryParam}`, {
-      headers: await this.getHeaders(),
-    });
+    const response = await axios.get(
+      `${API_URL}/api/invoices/cash-report${queryParam}`,
+      {
+        headers: await this.getHeaders(),
+      }
+    );
     return response.data;
   }
 
   // Helper method to generate print-friendly HTML
   generatePrintHTML(invoice: Invoice): string {
     const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
-    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'UTC' });
+    const formatDate = (dateStr: string) =>
+      new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'UTC' });
 
     // GT Logo - using actual logo.png
     const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
@@ -267,6 +329,37 @@ class InvoiceService {
           .customer-info {
             margin: 10px 0;
           }
+          .billing-vehicle-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            margin: 10px 0;
+          }
+          .billing-vehicle-row > div {
+            flex: 1;
+          }
+          .vehicle-info {
+            text-align: right;
+          }
+          .billing-vehicle-row h3,
+          .billing-vehicle-row p {
+            margin-top: 0;
+          }
+          .billing-vehicle-row h3 {
+            margin-bottom: 0;
+            line-height: 1.1;
+          }
+          .billing-vehicle-row p {
+            margin-bottom: 0;
+          }
+          @media (max-width: 600px) {
+            .billing-vehicle-row {
+              display: block;
+            }
+            .vehicle-info {
+              text-align: left;
+            }
+          }
           .items-table {
             width: 100%;
             border-collapse: collapse;
@@ -311,43 +404,60 @@ class InvoiceService {
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55;">${invoice.company?.name || 'GT Automotivess'}</h1>
-                <p style="margin: 0; font-size: 14px; color: #666;">${invoice.company?.businessType || 'Professional Tire & Auto Services'}</p>
-                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${invoice.company?.registrationNumber || '16472991'} Canada INC.</p>
+                <h1 style="margin: 0; color: #243c55;">${
+                  invoice.company?.name || 'GT Automotivess'
+                }</h1>
+                <p style="margin: 0; font-size: 14px; color: #666;">${
+                  invoice.company?.businessType ||
+                  'Professional Tire & Auto Services'
+                }</p>
+                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${
+                  invoice.company?.registrationNumber || '16472991'
+                } Canada INC.</p>
               </div>
             </div>
-            <p style="margin-top: 8px; font-size: 13px;">${invoice.company?.address || 'Prince George, BC'}<br>
-            ${invoice.company?.phone ? `Phone: ${formatPhoneForDisplay(invoice.company.phone)}<br>` : 'Phone: 250-570-2333<br>'}
-            ${invoice.company?.email ? `Email: ${invoice.company.email}` : 'Email: gt-automotives@outlook.com'}</p>
+            <p style="margin-top: 8px; font-size: 13px;">${
+              invoice.company?.address || 'Prince George, BC'
+            }<br>
+            ${
+              invoice.company?.phone
+                ? `Phone: ${formatPhoneForDisplay(invoice.company.phone)}<br>`
+                : 'Phone: 250-570-2333<br>'
+            }
+            ${
+              invoice.company?.email
+                ? `Email: ${invoice.company.email}`
+                : 'Email: gt-automotives@outlook.com'
+            }</p>
           </div>
           <div class="invoice-details">
             <h2>INVOICE</h2>
             <p><strong>Invoice #:</strong> ${invoice.invoiceNumber}<br>
-            <strong>Date:</strong> ${formatDate(invoice.invoiceDate || invoice.createdAt)}<br>
+            <strong>Date:</strong> ${formatDate(
+              invoice.invoiceDate || invoice.createdAt
+            )}<br>
             <strong>Status:</strong> ${invoice.status}</p>
           </div>
         </div>
 
-        <div class="customer-info">
-          <h3>Bill To:</h3>
-          <p>${(() => {
-            const customer = invoice.customer;
-            let customerName = '';
-            
-            if (customer?.firstName || customer?.lastName) {
-              const firstName = customer.firstName || '';
-              const lastName = customer.lastName || '';
-              customerName = `${firstName} ${lastName}`.trim();
-            } else if (customer?.name) {
-              customerName = customer.name;
-            } else {
-              customerName = 'Customer';
+        <div class="billing-vehicle-row">
+          <div class="customer-info">
+            <h3>Bill To:</h3>
+            <p>${this.getCustomerName(invoice)}<br>
+            ${
+              invoice.customer?.businessName
+                ? `<strong>${invoice.customer.businessName}</strong><br>`
+                : ''
             }
-            
-            return customerName;
-          })()}<br>
-          ${invoice.customer?.businessName ? `<strong>${invoice.customer.businessName}</strong><br>` : ''}
-          ${invoice.customer?.address || ''}</p>
+            ${invoice.customer?.address || ''}</p>
+          </div>
+          ${
+            invoice.vehicle
+              ? `<div class="vehicle-info">${this.getVehicleInfoHTML(
+                  invoice
+                )}</div>`
+              : ''
+          }
         </div>
 
         <table class="items-table">
@@ -361,15 +471,21 @@ class InvoiceService {
             </tr>
           </thead>
           <tbody>
-            ${invoice.items.map(item => `
+            ${invoice.items
+              .map(
+                (item) => `
               <tr>
                 <td>${item.description}</td>
                 <td>${item.itemType}</td>
                 <td>${item.quantity}</td>
                 <td>${formatCurrency(item.unitPrice)}</td>
-                <td>${formatCurrency(item.total || item.quantity * item.unitPrice)}</td>
+                <td>${formatCurrency(
+                  item.total || item.quantity * item.unitPrice
+                )}</td>
               </tr>
-            `).join('')}
+            `
+              )
+              .join('')}
           </tbody>
         </table>
 
@@ -379,21 +495,34 @@ class InvoiceService {
               <td>Subtotal:</td>
               <td>${formatCurrency(invoice.subtotal)}</td>
             </tr>
-${invoice.gstRate != null && invoice.gstRate > 0 ? `
+${
+  invoice.gstRate != null && invoice.gstRate > 0
+    ? `
             <tr>
               <td>GST (${(invoice.gstRate * 100).toFixed(2)}%):</td>
               <td>${formatCurrency(invoice.gstAmount || 0)}</td>
-            </tr>` : ''}
-${invoice.pstRate != null && invoice.pstRate > 0 ? `
+            </tr>`
+    : ''
+}
+${
+  invoice.pstRate != null && invoice.pstRate > 0
+    ? `
             <tr>
               <td>PST (${(invoice.pstRate * 100).toFixed(2)}%):</td>
               <td>${formatCurrency(invoice.pstAmount || 0)}</td>
-            </tr>` : ''}
-${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) ? `
+            </tr>`
+    : ''
+}
+${
+  (invoice.gstRate == null || invoice.gstRate === 0) &&
+  (invoice.pstRate == null || invoice.pstRate === 0)
+    ? `
             <tr>
               <td>Tax (${(invoice.taxRate * 100).toFixed(2)}%):</td>
               <td>${formatCurrency(invoice.taxAmount)}</td>
-            </tr>` : ''}
+            </tr>`
+    : ''
+}
             <tr class="total-row">
               <td>Total:</td>
               <td>${formatCurrency(invoice.total)}</td>
@@ -401,19 +530,36 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
           </table>
         </div>
 
-        ${invoice.notes ? `
+        ${
+          invoice.notes
+            ? `
           <div class="notes">
             <h3>Notes:</h3>
             <p>${invoice.notes}</p>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
 
-        ${invoice.paymentMethod ? `
+        ${
+          invoice.paymentMethod
+            ? `
           <div class="payment-info">
-            <p><strong>Payment Method:</strong> ${invoice.paymentMethod.replace(/_/g, ' ')}</p>
-            ${invoice.paidAt ? `<p><strong>Paid On:</strong> ${formatDate(invoice.paidAt)}</p>` : ''}
+            <p><strong>Payment Method:</strong> ${invoice.paymentMethod.replace(
+              /_/g,
+              ' '
+            )}</p>
+            ${
+              invoice.paidAt
+                ? `<p><strong>Paid On:</strong> ${formatDate(
+                    invoice.paidAt
+                  )}</p>`
+                : ''
+            }
           </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="footer">
           <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 40px;">
@@ -432,10 +578,12 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
   // Get print HTML content for dialog preview
   getPrintContent(invoice: Invoice): string {
     const formatCurrency = (amount: number | string) => {
-      const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+      const numAmount =
+        typeof amount === 'string' ? parseFloat(amount) : amount;
       return `$${(numAmount || 0).toFixed(2)}`;
     };
-    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'UTC' });
+    const formatDate = (dateStr: string) =>
+      new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'UTC' });
 
     // GT Logo - using actual logo.png
     const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
@@ -447,43 +595,60 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
               ${gtLogo}
               <div>
-                <h1 style="margin: 0; color: #243c55; font-size: 26px;">${invoice.company?.name || 'GT Automotivess'}</h1>
-                <p style="margin: 0; font-size: 14px; color: #666;">${invoice.company?.businessType || 'Professional Tire & Auto Services'}</p>
-                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${invoice.company?.registrationNumber || '16472991'} Canada INC.</p>
+                <h1 style="margin: 0; color: #243c55; font-size: 26px;">${
+                  invoice.company?.name || 'GT Automotivess'
+                }</h1>
+                <p style="margin: 0; font-size: 14px; color: #666;">${
+                  invoice.company?.businessType ||
+                  'Professional Tire & Auto Services'
+                }</p>
+                <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">${
+                  invoice.company?.registrationNumber || '16472991'
+                } Canada INC.</p>
               </div>
             </div>
-            <p style="margin-top: 8px; font-size: 13px;">${invoice.company?.address || 'Prince George, BC'}<br>
-            ${invoice.company?.phone ? `Phone: ${formatPhoneForDisplay(invoice.company.phone)}<br>` : 'Phone: 250-570-2333<br>'}
-            ${invoice.company?.email ? `Email: ${invoice.company.email}` : 'Email: gt-automotives@outlook.com'}</p>
+            <p style="margin-top: 8px; font-size: 13px;">${
+              invoice.company?.address || 'Prince George, BC'
+            }<br>
+            ${
+              invoice.company?.phone
+                ? `Phone: ${formatPhoneForDisplay(invoice.company.phone)}<br>`
+                : 'Phone: 250-570-2333<br>'
+            }
+            ${
+              invoice.company?.email
+                ? `Email: ${invoice.company.email}`
+                : 'Email: gt-automotives@outlook.com'
+            }</p>
           </div>
           <div style="text-align: right;">
             <h2 style="margin: 0; color: #333;">INVOICE</h2>
             <p><strong>Invoice #:</strong> ${invoice.invoiceNumber}<br>
-            <strong>Date:</strong> ${formatDate(invoice.invoiceDate || invoice.createdAt)}<br>
+            <strong>Date:</strong> ${formatDate(
+              invoice.invoiceDate || invoice.createdAt
+            )}<br>
             <strong>Status:</strong> ${invoice.status}</p>
           </div>
         </div>
 
-        <div style="margin: 10px 0;">
-          <h3>Bill To:</h3>
-          <p>${(() => {
-            const customer = invoice.customer;
-            let customerName = '';
-            
-            if (customer?.firstName || customer?.lastName) {
-              const firstName = customer.firstName || '';
-              const lastName = customer.lastName || '';
-              customerName = `${firstName} ${lastName}`.trim();
-            } else if (customer?.name) {
-              customerName = customer.name;
-            } else {
-              customerName = 'Customer';
+        <div style="display: flex; justify-content: space-between; gap: 24px; margin: 10px 0;">
+          <div style="flex: 1;">
+            <h3 style="margin: 0; line-height: 1.1;">Bill To:</h3>
+            <p style="margin: 0;">${this.getCustomerName(invoice)}<br>
+            ${
+              invoice.customer?.businessName
+                ? `<strong>${invoice.customer.businessName}</strong><br>`
+                : ''
             }
-            
-            return customerName;
-          })()}<br>
-          ${invoice.customer?.businessName ? `<strong>${invoice.customer.businessName}</strong><br>` : ''}
-          ${invoice.customer?.address || ''}</p>
+            ${invoice.customer?.address || ''}</p>
+          </div>
+          ${
+            invoice.vehicle
+              ? `<div style="flex: 1; text-align: right;">${this.getVehicleInfoHTML(
+                  invoice
+                )}</div>`
+              : ''
+          }
         </div>
 
         <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -497,33 +662,70 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
             </tr>
           </thead>
           <tbody>
-            ${invoice.items.map(item => {
-              // Calculate display total - handle DISCOUNT_PERCENTAGE items
-              let displayTotal = item.total || item.quantity * Number(item.unitPrice);
-              if (String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE') {
-                // Recalculate percentage discount based on other items
-                const otherItemsSubtotal = invoice.items
-                  .filter((i: any) => String(i.itemType).toUpperCase() !== 'DISCOUNT' && String(i.itemType).toUpperCase() !== 'DISCOUNT_PERCENTAGE')
-                  .reduce((sum: number, i: any) => sum + (Number(i.total) || Number(i.quantity) * Number(i.unitPrice)), 0);
-                displayTotal = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
-              } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
-                // Ensure discount is negative
-                displayTotal = -Math.abs(displayTotal);
-              }
+            ${invoice.items
+              .map((item) => {
+                // Calculate display total - handle DISCOUNT_PERCENTAGE items
+                let displayTotal =
+                  item.total || item.quantity * Number(item.unitPrice);
+                if (
+                  String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
+                ) {
+                  // Recalculate percentage discount based on other items
+                  const otherItemsSubtotal = invoice.items
+                    .filter(
+                      (i: any) =>
+                        String(i.itemType).toUpperCase() !== 'DISCOUNT' &&
+                        String(i.itemType).toUpperCase() !==
+                          'DISCOUNT_PERCENTAGE'
+                    )
+                    .reduce(
+                      (sum: number, i: any) =>
+                        sum +
+                        (Number(i.total) ||
+                          Number(i.quantity) * Number(i.unitPrice)),
+                      0
+                    );
+                  displayTotal =
+                    -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
+                } else if (String(item.itemType).toUpperCase() === 'DISCOUNT') {
+                  // Ensure discount is negative
+                  displayTotal = -Math.abs(displayTotal);
+                }
 
-              return `
+                return `
               <tr>
                 <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">
-                  ${(item as any).tireName ? `<div style="font-weight: 600; margin-bottom: 2px;">${(item as any).tireName}</div>` : ''}
-                  <div style="${(item as any).tireName ? 'color: #666; font-size: 0.95em;' : ''}">${item.description}</div>
+                  ${
+                    (item as any).tireName
+                      ? `<div style="font-weight: 600; margin-bottom: 2px;">${
+                          (item as any).tireName
+                        }</div>`
+                      : ''
+                  }
+                  <div style="${
+                    (item as any).tireName
+                      ? 'color: #666; font-size: 0.95em;'
+                      : ''
+                  }">${item.description}</div>
                 </td>
-                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.itemType}</td>
-                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${item.quantity}</td>
-                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE' ? `${Number(item.unitPrice)}%` : formatCurrency(item.unitPrice)}</td>
-                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(displayTotal)}</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${
+                  item.itemType
+                }</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${
+                  item.quantity
+                }</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${
+                  String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
+                    ? `${Number(item.unitPrice)}%`
+                    : formatCurrency(item.unitPrice)
+                }</td>
+                <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${formatCurrency(
+                  displayTotal
+                )}</td>
               </tr>
             `;
-            }).join('')}
+              })
+              .join('')}
           </tbody>
         </table>
 
@@ -531,43 +733,89 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
           <table style="margin-left: auto; width: 300px;">
             <tr>
               <td style="padding: 3px 5px;">Subtotal:</td>
-              <td style="padding: 3px 5px;">${formatCurrency(invoice.subtotal)}</td>
+              <td style="padding: 3px 5px;">${formatCurrency(
+                invoice.subtotal
+              )}</td>
             </tr>
-${invoice.gstRate != null && invoice.gstRate > 0 ? `
+${
+  invoice.gstRate != null && invoice.gstRate > 0
+    ? `
             <tr>
-              <td style="padding: 3px 5px;">GST (${(invoice.gstRate * 100).toFixed(2)}%):</td>
-              <td style="padding: 3px 5px;">${formatCurrency(invoice.gstAmount || 0)}</td>
-            </tr>` : ''}
-${invoice.pstRate != null && invoice.pstRate > 0 ? `
+              <td style="padding: 3px 5px;">GST (${(
+                invoice.gstRate * 100
+              ).toFixed(2)}%):</td>
+              <td style="padding: 3px 5px;">${formatCurrency(
+                invoice.gstAmount || 0
+              )}</td>
+            </tr>`
+    : ''
+}
+${
+  invoice.pstRate != null && invoice.pstRate > 0
+    ? `
             <tr>
-              <td style="padding: 3px 5px;">PST (${(invoice.pstRate * 100).toFixed(2)}%):</td>
-              <td style="padding: 3px 5px;">${formatCurrency(invoice.pstAmount || 0)}</td>
-            </tr>` : ''}
-${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null || invoice.pstRate === 0) ? `
+              <td style="padding: 3px 5px;">PST (${(
+                invoice.pstRate * 100
+              ).toFixed(2)}%):</td>
+              <td style="padding: 3px 5px;">${formatCurrency(
+                invoice.pstAmount || 0
+              )}</td>
+            </tr>`
+    : ''
+}
+${
+  (invoice.gstRate == null || invoice.gstRate === 0) &&
+  (invoice.pstRate == null || invoice.pstRate === 0)
+    ? `
             <tr>
-              <td style="padding: 3px 5px;">Tax (${(invoice.taxRate * 100).toFixed(2)}%):</td>
-              <td style="padding: 3px 5px;">${formatCurrency(invoice.taxAmount)}</td>
-            </tr>` : ''}
+              <td style="padding: 3px 5px;">Tax (${(
+                invoice.taxRate * 100
+              ).toFixed(2)}%):</td>
+              <td style="padding: 3px 5px;">${formatCurrency(
+                invoice.taxAmount
+              )}</td>
+            </tr>`
+    : ''
+}
             <tr style="font-weight: bold; font-size: 1.1em; border-top: 2px solid #333;">
               <td style="padding: 3px 5px;">Total:</td>
-              <td style="padding: 3px 5px;">${formatCurrency(invoice.total)}</td>
+              <td style="padding: 3px 5px;">${formatCurrency(
+                invoice.total
+              )}</td>
             </tr>
           </table>
         </div>
 
-        ${invoice.notes ? `
+        ${
+          invoice.notes
+            ? `
           <div style="margin-top: 12px;">
             <h3 style="margin-bottom: 8px;">Notes:</h3>
             <p style="margin: 0;">${invoice.notes}</p>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
 
-        ${invoice.paymentMethod ? `
+        ${
+          invoice.paymentMethod
+            ? `
           <div style="margin-top: 12px;">
-            <p style="margin: 0; font-size: 13px;"><strong>Payment Method:</strong> ${invoice.paymentMethod.replace(/_/g, ' ')}</p>
-            ${invoice.paidAt ? `<p style="margin: 0; font-size: 13px;"><strong>Paid On:</strong> ${formatDate(invoice.paidAt)}</p>` : ''}
+            <p style="margin: 0; font-size: 13px;"><strong>Payment Method:</strong> ${invoice.paymentMethod.replace(
+              /_/g,
+              ' '
+            )}</p>
+            ${
+              invoice.paidAt
+                ? `<p style="margin: 0; font-size: 13px;"><strong>Paid On:</strong> ${formatDate(
+                    invoice.paidAt
+                  )}</p>`
+                : ''
+            }
           </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div style="margin-top: 25px; text-align: center; color: #666; font-size: 0.85em;">
           <div style="border-top: 1px solid #ddd; padding-top: 12px; margin-top: 20px;">
@@ -586,7 +834,7 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
   printInvoice(invoice: Invoice): void {
     const htmlContent = this.getPrintContent(invoice);
     const printWindow = window.open('', '', 'width=800,height=600');
-    
+
     if (printWindow) {
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -627,13 +875,15 @@ ${(invoice.gstRate == null || invoice.gstRate === 0) && (invoice.pstRate == null
         </html>
       `);
       printWindow.document.close();
-      
+
       setTimeout(() => {
         printWindow.focus();
         // Show tip about removing headers/footers
         const showTip = !localStorage.getItem('invoice-print-tip-shown');
         if (showTip) {
-          alert('Tip: For cleaner printing without headers/footers, go to Print Settings and uncheck "Headers and footers" option.');
+          alert(
+            'Tip: For cleaner printing without headers/footers, go to Print Settings and uncheck "Headers and footers" option.'
+          );
           localStorage.setItem('invoice-print-tip-shown', 'true');
         }
         printWindow.print();
