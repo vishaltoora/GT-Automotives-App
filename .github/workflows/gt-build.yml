@@ -353,9 +353,26 @@ jobs:
             -t $CACHE_IMAGE \
             .
 
+          push_with_retry() {
+            local image="$1"
+
+            for attempt in 1 2 3; do
+              if docker push "$image"; then
+                return 0
+              fi
+
+              echo "⚠️ Push failed for $image (attempt $attempt/3)"
+              if [ "$attempt" != "3" ]; then
+                sleep $((attempt * 15))
+              fi
+            done
+
+            return 1
+          }
+
           echo "📤 Pushing images to GitHub Container Registry (FREE)..."
-          docker push $IMAGE_LOWER
-          docker push $CACHE_IMAGE
+          push_with_retry "$IMAGE_LOWER"
+          push_with_retry "$CACHE_IMAGE"
 
           echo "IMAGE_TAG=$IMAGE_LOWER" >> build-info.txt
           echo "BUILD_TAG=$BUILD_TAG" >> build-info.txt
