@@ -211,7 +211,7 @@ class InspectionService {
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; color: #172033; margin: 0; padding: 24px; background: #f6f8fb; }
-            .report { max-width: 960px; margin: 0 auto; background: white; padding: 32px; border: 1px solid #d8dee9; }
+            .report { width: 8.5in; max-width: 100%; min-height: 11in; margin: 0 auto; background: white; padding: 0.5in; border: 1px solid #d8dee9; }
             .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 2px solid #243c55; padding-bottom: 10px; margin-bottom: 18px; }
             .company-info { flex: 1; }
             .company-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
@@ -246,10 +246,34 @@ class InspectionService {
             p { margin: 6px 0 0; font-size: 13px; }
             .footer { margin-top: 28px; font-size: 12px; color: #5b6472; border-top: 1px solid #d8dee9; padding-top: 12px; }
             @media print {
-              body { background: white; padding: 0; }
-              .report { border: 0; max-width: none; padding: 0; }
-              .logo { width: 80px; height: 80px; }
-              @page { margin: 0.5in; }
+              * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              body { background: white; padding: 0; font-size: 11px; }
+              .report { border: 0; width: 100%; min-height: auto; max-width: none; padding: 16px; }
+              .header { gap: 14px; padding-bottom: 6px; margin-bottom: 10px; }
+              .company-brand { gap: 8px; margin-bottom: 4px; }
+              .logo { width: 58px; height: 58px; }
+              .company-info h1 { font-size: 20px; }
+              .company-info p { font-size: 11px !important; }
+              .company-contact { margin-top: 4px !important; font-size: 11px; }
+              .report-details { min-width: 150px; }
+              .report-details h2 { font-size: 16px; padding-bottom: 4px; margin-bottom: 6px; }
+              h2 { font-size: 14px; margin-bottom: 8px; padding-bottom: 5px; }
+              h3 { font-size: 11px; margin-bottom: 5px; }
+              .meta { gap: 18px; margin-bottom: 10px; font-size: 11px; }
+              .meta-left, .meta-right { gap: 4px; }
+              .meta-right { min-width: 0; }
+              .meta-row { grid-template-columns: max-content minmax(0, 1fr); gap: 3px; }
+              .summary { gap: 6px; margin: 10px 0; }
+              .summary div { padding: 6px; }
+              .section { margin-top: 12px; }
+              .item { padding: 7px; margin-bottom: 6px; }
+              .result { padding: 5px 0; }
+              .result-main { gap: 6px; }
+              .position { min-width: 24px; }
+              .status { padding: 2px 5px; font-size: 10px; }
+              p { margin-top: 4px; font-size: 11px; }
+              .footer { margin-top: 16px; font-size: 10px; padding-top: 8px; }
+              @page { size: 8.5in 11in; margin: 0.65in; }
             }
           </style>
         </head>
