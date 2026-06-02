@@ -43,6 +43,33 @@ const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/;
 const normalizeVin = (value: string) =>
   value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '').slice(0, 17);
 
+const getCustomerName = (customer: Customer) =>
+  [customer.firstName, customer.lastName].filter(Boolean).join(' ');
+
+const getCustomerLabel = (customer: Customer) => {
+  const name = getCustomerName(customer);
+  const business = customer.businessName?.trim();
+
+  if (business && name) {
+    return `${business} - ${name}`;
+  }
+
+  return business || name || customer.email || customer.phone || 'Unnamed customer';
+};
+
+const getCustomerSearchText = (customer: Customer) =>
+  [
+    customer.firstName,
+    customer.lastName,
+    getCustomerName(customer),
+    customer.phone,
+    customer.email,
+    customer.businessName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
 export function VehicleForm() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,6 +98,7 @@ export function VehicleForm() {
 
   const routePrefix = location.pathname.match(/^\/(admin|staff|supervisor|customer)(?=\/)/)?.[0] || '';
   const vehiclesPath = `${routePrefix}/vehicles`;
+  const selectedCustomer = customers.find((customer) => customer.id === formData.customerId) || null;
 
   useEffect(() => {
     loadCustomers();
@@ -275,21 +303,47 @@ export function VehicleForm() {
               {/* Only show customer selection for staff/admin or when adding new vehicle */}
               {(role !== 'customer' || !isEdit) && (
                 <Grid size={{ xs: 12 }}>
-                  <FormControl fullWidth required>
-                    <InputLabel>Customer</InputLabel>
-                    <Select
-                      value={formData.customerId}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customerId: e.target.value }))}
-                      label="Customer"
-                      disabled={saving || role === 'customer'}
-                    >
-                      {customers.map((customer) => (
-                        <MenuItem key={customer.id} value={customer.id}>
-                          {customer.firstName} {customer.lastName} {customer.email ? `- ${customer.email}` : ''}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Autocomplete
+                    options={customers}
+                    value={selectedCustomer}
+                    getOptionLabel={getCustomerLabel}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    filterOptions={(options, state) => {
+                      const search = state.inputValue.trim().toLowerCase();
+
+                      if (!search) {
+                        return options;
+                      }
+
+                      return options.filter((customer) =>
+                        getCustomerSearchText(customer).includes(search),
+                      );
+                    }}
+                    onChange={(_, customer) =>
+                      setFormData(prev => ({ ...prev, customerId: customer?.id || '' }))
+                    }
+                    disabled={saving || role === 'customer'}
+                    renderOption={(props, customer) => (
+                      <Box component="li" {...props} key={customer.id}>
+                        <Box>
+                          <Typography variant="body2">
+                            {getCustomerLabel(customer)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {[customer.phone, customer.email].filter(Boolean).join(' - ') || 'No contact info'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Customer"
+                        required
+                        placeholder="Search by name, phone, email, or business"
+                      />
+                    )}
+                  />
                 </Grid>
               )}
 

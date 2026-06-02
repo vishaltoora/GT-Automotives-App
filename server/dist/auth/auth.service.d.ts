@@ -15,11 +15,11 @@ export declare class AuthService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -38,11 +38,11 @@ export declare class AuthService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -60,12 +60,12 @@ export declare class AuthService {
         firstName: string | null;
         lastName: string | null;
         role: {
-            name: import("@prisma/client").$Enums.RoleName;
             id: string;
+            name: import("@prisma/client").$Enums.RoleName;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
             displayName: string;
-            description: string | null;
         };
         isActive: boolean;
     }>;

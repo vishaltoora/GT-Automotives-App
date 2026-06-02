@@ -14,40 +14,27 @@ export declare class SmsController {
      * Get SMS history (admin only)
      */
     getHistory(customerId?: string, userId?: string, limit?: string): Promise<({
-        user: {
-            id: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            clerkId: string;
-            email: string;
-            firstName: string | null;
-            lastName: string | null;
-            phone: string | null;
-            roleId: string;
-            lastLogin: Date | null;
-        } | null;
         customer: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            email: string | null;
             firstName: string;
             lastName: string;
+            email: string | null;
             phone: string | null;
             address: string | null;
             businessName: string | null;
         } | null;
         appointment: {
             id: string;
-            employeeId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            customerId: string;
+            vehicleId: string | null;
             status: import("@prisma/client").$Enums.AppointmentStatus;
             notes: string | null;
-            customerId: string;
+            employeeId: string | null;
             scheduledDate: Date;
-            vehicleId: string | null;
             scheduledTime: string;
             endTime: string | null;
             duration: number;
@@ -64,16 +51,30 @@ export declare class SmsController {
             reminderSent: boolean;
             bookedBy: string | null;
         } | null;
+        user: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string | null;
+            lastName: string | null;
+            email: string;
+            phone: string | null;
+            clerkId: string;
+            roleId: string;
+            lastLogin: Date | null;
+        } | null;
     } & {
         id: string;
+        type: import("@prisma/client").$Enums.SmsType;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
-        status: import("@prisma/client").$Enums.SmsStatus;
-        type: import("@prisma/client").$Enums.SmsType;
         customerId: string | null;
-        cost: import(".prisma/client/runtime/library").Decimal | null;
         appointmentId: string | null;
+        status: import("@prisma/client").$Enums.SmsStatus;
+        userId: string | null;
+        errorMessage: string | null;
+        cost: import(".prisma/client/runtime/library").Decimal | null;
         to: string;
         from: string;
         sentAt: Date | null;
@@ -81,7 +82,6 @@ export declare class SmsController {
         body: string;
         telnyxMessageId: string | null;
         segments: number | null;
-        errorMessage: string | null;
     })[]>;
     /**
      * Get customer preferences
@@ -90,8 +90,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;
@@ -110,8 +110,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;
@@ -136,8 +136,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;
@@ -163,8 +163,8 @@ export declare class SmsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string | null;
         customerId: string | null;
+        userId: string | null;
         optedIn: boolean;
         optedInAt: Date | null;
         optedOutAt: Date | null;

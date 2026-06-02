@@ -16,11 +16,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -31,11 +31,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -46,11 +46,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -68,11 +68,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -93,11 +93,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
         role: import("@prisma/client").Role;
@@ -114,11 +114,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -129,11 +129,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -144,11 +144,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
@@ -159,11 +159,11 @@ export declare class UsersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        clerkId: string;
-        email: string;
         firstName: string | null;
         lastName: string | null;
+        email: string;
         phone: string | null;
+        clerkId: string;
         roleId: string;
         lastLogin: Date | null;
     } & {
