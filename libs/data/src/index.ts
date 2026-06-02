@@ -15,6 +15,7 @@ export * from './lib/vendor.dto';
 export * from './lib/purchase-invoice.dto';
 export * from './lib/expense-invoice.dto';
 export * from './lib/appointment.dto';
+export * from './lib/inspection.dto';
 
 // Export decorators for direct use if needed
 export * from './lib/decorators';

@@ -118,12 +118,13 @@ export const useErrorHelpers = () => {
     },
 
     // Success messages (using info)
-    showSuccess: (message: string) => {
+    showSuccess: (message: string, onConfirm?: () => void) => {
       showInfo({
         title: 'Success',
         message,
         severity: 'info',
         confirmText: 'Great!',
+        onConfirm,
       });
     },
 

@@ -46,6 +46,7 @@ import {
   RequestPage,
   TireRepair,
   LocalOffer,
+  AssignmentTurnedIn,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -115,6 +116,7 @@ export function SupervisorLayout() {
       items: [
         { text: 'Customers', icon: <People />, path: '/supervisor/customers' },
         { text: 'Vehicles', icon: <DirectionsCar />, path: '/supervisor/vehicles' },
+        { text: 'Inspections', icon: <AssignmentTurnedIn />, path: '/supervisor/inspections' },
         { text: 'Inventory', icon: <Inventory />, path: '/supervisor/inventory' },
         { text: 'Invoices', icon: <Receipt />, path: '/supervisor/invoices' },
         { text: 'Quotations', icon: <Description />, path: '/supervisor/quotations' },

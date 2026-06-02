@@ -54,6 +54,7 @@ import {
   BarChart,
   LocalOffer,
   Calculate,
+  AssignmentTurnedIn,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -119,6 +120,7 @@ export function AdminLayout() {
         { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
         { text: 'Customers', icon: <People />, path: '/admin/customers' },
         { text: 'Vehicles', icon: <DirectionsCar />, path: '/admin/vehicles' },
+        { text: 'Inspections', icon: <AssignmentTurnedIn />, path: '/admin/inspections' },
         { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
         { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
         { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },

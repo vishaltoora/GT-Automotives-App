@@ -9,31 +9,33 @@ datasource db {
 }
 
 model User {
-  id                    String                  @id @default(cuid())
-  clerkId               String                  @unique
-  email                 String                  @unique
-  firstName             String?
-  lastName              String?
-  phone                 String?
-  roleId                String
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  lastLogin             DateTime?
-  isActive              Boolean                 @default(true)
-  role                  Role                    @relation(fields: [roleId], references: [id])
-  jobs                  Job[]                   // Jobs assigned to this user (for STAFF role)
-  payments              Payment[]               // Payments made to this user (for STAFF role)
-  compensationProfiles  EmployeeCompensation[]  // Hourly/salaried compensation history
-  timeEntries           TimeEntry[]             // Clock-in/clock-out timesheets
-  payrollAdjustments    PayrollAdjustment[]     // Bonuses, deductions, reimbursements
-  appointments          Appointment[]           // Appointments assigned to this employee (deprecated)
-  appointmentEmployees  AppointmentEmployee[]   @relation("AppointmentEmployees") // Multiple appointment assignments
-  bookedAppointments    Appointment[]           @relation("BookedAppointments") // Appointments this user created/booked
-  availability          EmployeeAvailability[]  // Weekly recurring schedule
-  timeSlotOverrides     TimeSlotOverride[]      // Date-specific exceptions (time-off, extra shifts)
-  smsMessages           SmsMessage[]            // SMS messages sent to this user (staff/admin notifications)
-  smsPreference         SmsPreference?          // SMS notification preferences for staff/admin
-  tireSales             TireSale[]              @relation("TireSales") // Tire sales made by this user (for commission tracking)
+  id                   String                 @id @default(cuid())
+  clerkId              String                 @unique
+  email                String                 @unique
+  firstName            String?
+  lastName             String?
+  phone                String?
+  roleId               String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  lastLogin            DateTime?
+  isActive             Boolean                @default(true)
+  role                 Role                   @relation(fields: [roleId], references: [id])
+  jobs                 Job[] // Jobs assigned to this user (for STAFF role)
+  payments             Payment[] // Payments made to this user (for STAFF role)
+  compensationProfiles EmployeeCompensation[] // Hourly/salaried compensation history
+  timeEntries          TimeEntry[] // Clock-in/clock-out timesheets
+  payrollAdjustments   PayrollAdjustment[] // Bonuses, deductions, reimbursements
+  appointments         Appointment[] // Appointments assigned to this employee (deprecated)
+  appointmentEmployees AppointmentEmployee[]  @relation("AppointmentEmployees") // Multiple appointment assignments
+  bookedAppointments   Appointment[]          @relation("BookedAppointments") // Appointments this user created/booked
+  availability         EmployeeAvailability[] // Weekly recurring schedule
+  timeSlotOverrides    TimeSlotOverride[] // Date-specific exceptions (time-off, extra shifts)
+  smsMessages          SmsMessage[] // SMS messages sent to this user (staff/admin notifications)
+  smsPreference        SmsPreference? // SMS notification preferences for staff/admin
+  tireSales            TireSale[]             @relation("TireSales") // Tire sales made by this user (for commission tracking)
+  inspectionsCreated   Inspection[]           @relation("InspectionCreatedBy")
+  inspectionsFinalized Inspection[]           @relation("InspectionFinalizedBy")
 }
 
 model Role {
@@ -80,12 +82,13 @@ model Customer {
   updatedAt       DateTime         @updatedAt
   appointments    Appointment[]
   invoices        Invoice[]
+  inspections     Inspection[]
   vehicles        Vehicle[]
   smsMessages     SmsMessage[]
   smsPreference   SmsPreference?
-  emailLogs       EmailLog[]       // Email logs related to this customer
+  emailLogs       EmailLog[] // Email logs related to this customer
   bookingRequests BookingRequest[] // Booking requests converted to this customer
-  tireSales       TireSale[]       // Tire sales to this customer
+  tireSales       TireSale[] // Tire sales to this customer
 }
 
 model Vehicle {
@@ -101,6 +104,7 @@ model Vehicle {
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
   invoices     Invoice[]
+  inspections  Inspection[]
   customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
 
@@ -180,36 +184,37 @@ model Company {
 }
 
 model Invoice {
-  id            String         @id @default(cuid())
-  invoiceNumber String         @unique @default(cuid())
-  customerId    String
-  vehicleId     String?
-  companyId     String
-  appointmentId String?        @unique // Link back to appointment if auto-generated
-  subtotal      Decimal        @db.Decimal(10, 2)
-  taxRate       Decimal        @db.Decimal(5, 4)
-  taxAmount     Decimal        @db.Decimal(10, 2)
-  total         Decimal        @db.Decimal(10, 2)
-  status        InvoiceStatus
-  paymentMethod PaymentMethod?
-  notes         String?
-  invoiceDate   DateTime       @default(now())
-  createdBy     String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  paidAt        DateTime?
-  gstAmount     Decimal?       @db.Decimal(10, 2)
-  gstRate       Decimal?       @db.Decimal(5, 4)
-  pstAmount     Decimal?       @db.Decimal(10, 2)
-  pstRate       Decimal?       @db.Decimal(5, 4)
+  id             String          @id @default(cuid())
+  invoiceNumber  String          @unique @default(cuid())
+  customerId     String
+  vehicleId      String?
+  companyId      String
+  appointmentId  String?         @unique // Link back to appointment if auto-generated
+  subtotal       Decimal         @db.Decimal(10, 2)
+  taxRate        Decimal         @db.Decimal(5, 4)
+  taxAmount      Decimal         @db.Decimal(10, 2)
+  total          Decimal         @db.Decimal(10, 2)
+  status         InvoiceStatus
+  paymentMethod  PaymentMethod?
+  notes          String?
+  invoiceDate    DateTime        @default(now())
+  createdBy      String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  paidAt         DateTime?
+  gstAmount      Decimal?        @db.Decimal(10, 2)
+  gstRate        Decimal?        @db.Decimal(5, 4)
+  pstAmount      Decimal?        @db.Decimal(10, 2)
+  pstRate        Decimal?        @db.Decimal(5, 4)
   customer       Customer        @relation(fields: [customerId], references: [id])
   vehicle        Vehicle?        @relation(fields: [vehicleId], references: [id])
   company        Company         @relation(fields: [companyId], references: [id])
   appointment    Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   items          InvoiceItem[]
+  inspections    Inspection[]
   squarePayments SquarePayment[] // Square payments for this invoice
-  emailLogs      EmailLog[]      // Email logs related to this invoice
-  tireSale       TireSale?       // Tire sale that generated this invoice (one-to-one)
+  emailLogs      EmailLog[] // Email logs related to this invoice
+  tireSale       TireSale? // Tire sale that generated this invoice (one-to-one)
 
   @@index([customerId])
   @@index([status])
@@ -234,37 +239,37 @@ model InvoiceItem {
 }
 
 model SquarePayment {
-  id               String              @id @default(cuid())
-  invoiceId        String?             // Optional - set by webhook after invoice creation
-  appointmentId    String?             // Link to appointment (for payment before invoice creation)
-  squarePaymentId  String              @unique // Square's payment ID
-  amount           Decimal             @db.Decimal(10, 2)
-  currency         String              @default("CAD")
-  status           SquarePaymentStatus @default(PENDING)
-  sourceType       String?             // CARD, TERMINAL, etc.
-  cardBrand        String?             // VISA, MASTERCARD, etc.
-  last4            String?             // Last 4 digits of card
-  expMonth         Int?                // Card expiration month
-  expYear          Int?                // Card expiration year
-  receiptUrl       String?             // Square receipt URL
-  receiptNumber    String?             // Square receipt number
-  note             String?
-  errorMessage     String?
-  errorCode        String?             // Square error code
-  squareOrderId    String?             // If linked to a Square order
-  locationId       String?             // Square location ID
-  deviceId         String?             // For Terminal payments
-  processingFee    Decimal?            @db.Decimal(10, 2) // Square processing fee
-  netAmount        Decimal?            @db.Decimal(10, 2) // Net amount after processing fee
-  refundedAmount   Decimal?            @db.Decimal(10, 2) // Total refunded amount
-  refundedAt       DateTime?           // When refund was processed
-  processedAt      DateTime?           // When payment was processed
-  metadata         Json?               // Full Square payment response for reference
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  id              String              @id @default(cuid())
+  invoiceId       String? // Optional - set by webhook after invoice creation
+  appointmentId   String? // Link to appointment (for payment before invoice creation)
+  squarePaymentId String              @unique // Square's payment ID
+  amount          Decimal             @db.Decimal(10, 2)
+  currency        String              @default("CAD")
+  status          SquarePaymentStatus @default(PENDING)
+  sourceType      String? // CARD, TERMINAL, etc.
+  cardBrand       String? // VISA, MASTERCARD, etc.
+  last4           String? // Last 4 digits of card
+  expMonth        Int? // Card expiration month
+  expYear         Int? // Card expiration year
+  receiptUrl      String? // Square receipt URL
+  receiptNumber   String? // Square receipt number
+  note            String?
+  errorMessage    String?
+  errorCode       String? // Square error code
+  squareOrderId   String? // If linked to a Square order
+  locationId      String? // Square location ID
+  deviceId        String? // For Terminal payments
+  processingFee   Decimal?            @db.Decimal(10, 2) // Square processing fee
+  netAmount       Decimal?            @db.Decimal(10, 2) // Net amount after processing fee
+  refundedAmount  Decimal?            @db.Decimal(10, 2) // Total refunded amount
+  refundedAt      DateTime? // When refund was processed
+  processedAt     DateTime? // When payment was processed
+  metadata        Json? // Full Square payment response for reference
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
-  invoice          Invoice?            @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  appointment      Appointment?        @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  invoice     Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([appointmentId])
@@ -273,33 +278,33 @@ model SquarePayment {
 }
 
 model Quotation {
-  id               String           @id @default(cuid())
-  quotationNumber  String           @unique @default(cuid())
-  customerName     String
-  businessName     String?
-  phone            String?
-  email            String?
-  address          String?
-  vehicleMake      String?
-  vehicleModel     String?
-  vehicleYear      Int?
-  subtotal         Decimal          @db.Decimal(10, 2)
-  gstRate          Decimal?         @db.Decimal(5, 4)
-  gstAmount        Decimal?         @db.Decimal(10, 2)
-  pstRate          Decimal?         @db.Decimal(5, 4)
-  pstAmount        Decimal?         @db.Decimal(10, 2)
-  taxRate          Decimal          @db.Decimal(5, 4)
-  taxAmount        Decimal          @db.Decimal(10, 2)
-  total            Decimal          @db.Decimal(10, 2)
-  status           QuotationStatus  @default(DRAFT)
-  validUntil       DateTime?
-  notes            String?
-  createdBy        String
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  convertedToInvoiceId String?      @unique
-  items            QuotationItem[]
-  emailLogs        EmailLog[]       // Email logs related to this quotation
+  id                   String          @id @default(cuid())
+  quotationNumber      String          @unique @default(cuid())
+  customerName         String
+  businessName         String?
+  phone                String?
+  email                String?
+  address              String?
+  vehicleMake          String?
+  vehicleModel         String?
+  vehicleYear          Int?
+  subtotal             Decimal         @db.Decimal(10, 2)
+  gstRate              Decimal?        @db.Decimal(5, 4)
+  gstAmount            Decimal?        @db.Decimal(10, 2)
+  pstRate              Decimal?        @db.Decimal(5, 4)
+  pstAmount            Decimal?        @db.Decimal(10, 2)
+  taxRate              Decimal         @db.Decimal(5, 4)
+  taxAmount            Decimal         @db.Decimal(10, 2)
+  total                Decimal         @db.Decimal(10, 2)
+  status               QuotationStatus @default(DRAFT)
+  validUntil           DateTime?
+  notes                String?
+  createdBy            String
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  convertedToInvoiceId String?         @unique
+  items                QuotationItem[]
+  emailLogs            EmailLog[] // Email logs related to this quotation
 
   @@index([status])
   @@index([customerName])
@@ -322,41 +327,42 @@ model QuotationItem {
 }
 
 model Appointment {
-  id              String                  @id @default(cuid())
-  customerId      String
-  vehicleId       String?
-  employeeId      String?                 // Deprecated: Use employees relation instead
-  scheduledDate   DateTime
-  scheduledTime   String                  // "09:00" format (24-hour)
-  endTime         String?                 // "10:30" format (calculated from duration)
-  duration        Int                     @default(60) // minutes
-  serviceType     String
-  appointmentType AppointmentType         @default(AT_GARAGE)
-  serviceAddress  String?                 // Address for mobile service appointments (required when appointmentType is MOBILE_SERVICE)
-  status          AppointmentStatus
-  notes           String?
-  paymentAmount   Float?                  // Total payment amount collected (includes service + product)
-  paymentBreakdown Json?                  // Array of payment entries: [{id: 'uuid', method: 'CASH', amount: 50}, {id: 'uuid', method: 'E_TRANSFER', amount: 30}]
-  paymentNotes    String?                 // Additional payment notes
-  productSaleAmount Float?                // Portion of paymentAmount that was a product sale (excluded from payroll payout calc)
-  productSaleItems  String[] @default([]) // Product types sold with this appointment (e.g. ["TIRES", "OIL"])
-  expectedAmount  Float?                  // Expected total amount for tracking partial payments
-  paymentDate     DateTime?               // Date when payment was actually processed/collected (for accurate daily cash reporting)
-  reminderSent    Boolean                 @default(false)
-  bookedBy        String?                 // User ID who created the booking
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  customer        Customer                @relation(fields: [customerId], references: [id])
-  vehicle         Vehicle?                @relation(fields: [vehicleId], references: [id])
-  employee        User?                   @relation(fields: [employeeId], references: [id])
-  employees       AppointmentEmployee[]   // Multiple employees assigned to this appointment
-  bookedByUser    User?                   @relation("BookedAppointments", fields: [bookedBy], references: [id])
-  invoice         Invoice?                // Auto-generated invoice (one-to-one)
-  squarePayments  SquarePayment[]         // Square payments linked to this appointment
-  smsMessages     SmsMessage[]            // SMS messages related to this appointment
-  emailLogs       EmailLog[]              // Email logs related to this appointment
-  bookingRequests BookingRequest[]        // Booking requests converted to this appointment
-  jobs            Job[]                   // Payroll jobs auto-created when appointment was completed
+  id                String                @id @default(cuid())
+  customerId        String
+  vehicleId         String?
+  employeeId        String? // Deprecated: Use employees relation instead
+  scheduledDate     DateTime
+  scheduledTime     String // "09:00" format (24-hour)
+  endTime           String? // "10:30" format (calculated from duration)
+  duration          Int                   @default(60) // minutes
+  serviceType       String
+  appointmentType   AppointmentType       @default(AT_GARAGE)
+  serviceAddress    String? // Address for mobile service appointments (required when appointmentType is MOBILE_SERVICE)
+  status            AppointmentStatus
+  notes             String?
+  paymentAmount     Float? // Total payment amount collected (includes service + product)
+  paymentBreakdown  Json? // Array of payment entries: [{id: 'uuid', method: 'CASH', amount: 50}, {id: 'uuid', method: 'E_TRANSFER', amount: 30}]
+  paymentNotes      String? // Additional payment notes
+  productSaleAmount Float? // Portion of paymentAmount that was a product sale (excluded from payroll payout calc)
+  productSaleItems  String[]              @default([]) // Product types sold with this appointment (e.g. ["TIRES", "OIL"])
+  expectedAmount    Float? // Expected total amount for tracking partial payments
+  paymentDate       DateTime? // Date when payment was actually processed/collected (for accurate daily cash reporting)
+  reminderSent      Boolean               @default(false)
+  bookedBy          String? // User ID who created the booking
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  customer          Customer              @relation(fields: [customerId], references: [id])
+  vehicle           Vehicle?              @relation(fields: [vehicleId], references: [id])
+  employee          User?                 @relation(fields: [employeeId], references: [id])
+  employees         AppointmentEmployee[] // Multiple employees assigned to this appointment
+  bookedByUser      User?                 @relation("BookedAppointments", fields: [bookedBy], references: [id])
+  invoice           Invoice? // Auto-generated invoice (one-to-one)
+  inspections       Inspection[]
+  squarePayments    SquarePayment[] // Square payments linked to this appointment
+  smsMessages       SmsMessage[] // SMS messages related to this appointment
+  emailLogs         EmailLog[] // Email logs related to this appointment
+  bookingRequests   BookingRequest[] // Booking requests converted to this appointment
+  jobs              Job[] // Payroll jobs auto-created when appointment was completed
 
   @@index([scheduledDate, status])
   @@index([employeeId, scheduledDate])
@@ -380,14 +386,14 @@ model AppointmentEmployee {
 model EmployeeAvailability {
   id          String   @id @default(cuid())
   employeeId  String
-  dayOfWeek   Int      // 0=Sunday, 1=Monday, ..., 6=Saturday
-  startTime   String   // "09:00" (24-hour format)
-  endTime     String   // "17:00" (24-hour format)
+  dayOfWeek   Int // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime   String // "09:00" (24-hour format)
+  endTime     String // "17:00" (24-hour format)
   isAvailable Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  employee    User     @relation(fields: [employeeId], references: [id])
+  employee User @relation(fields: [employeeId], references: [id])
 
   @@unique([employeeId, dayOfWeek, startTime])
   @@index([employeeId, dayOfWeek])
@@ -397,16 +403,144 @@ model TimeSlotOverride {
   id          String   @id @default(cuid())
   employeeId  String
   date        DateTime // Specific date (date only, no time)
-  startTime   String   // "09:00" (24-hour format)
-  endTime     String   // "17:00" (24-hour format)
-  isAvailable Boolean  // false = blocked (vacation), true = additional availability
-  reason      String?  // "Vacation", "Sick Leave", "Extra Shift", etc.
+  startTime   String // "09:00" (24-hour format)
+  endTime     String // "17:00" (24-hour format)
+  isAvailable Boolean // false = blocked (vacation), true = additional availability
+  reason      String? // "Vacation", "Sick Leave", "Extra Shift", etc.
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  employee    User     @relation(fields: [employeeId], references: [id])
+  employee User @relation(fields: [employeeId], references: [id])
 
   @@index([employeeId, date])
+}
+
+model InspectionTemplate {
+  id          String              @id @default(cuid())
+  name        String
+  slug        String              @unique
+  type        InspectionType
+  description String?
+  version     Int                 @default(1)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  sections    InspectionSection[]
+  inspections Inspection[]
+
+  @@index([type, isActive])
+}
+
+model InspectionSection {
+  id          String             @id @default(cuid())
+  templateId  String
+  title       String
+  description String?
+  sortOrder   Int
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  template    InspectionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  items       InspectionItem[]
+
+  @@index([templateId, sortOrder])
+}
+
+model InspectionItem {
+  id            String                   @id @default(cuid())
+  sectionId     String
+  label         String
+  description   String?
+  kind          InspectionItemKind       @default(CONDITION)
+  isRequired    Boolean                  @default(false)
+  sortOrder     Int
+  positionGroup InspectionPositionGroup?
+  unit          String?
+  options       Json?
+  helpText      String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  section       InspectionSection        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  results       InspectionItemResult[]
+
+  @@index([sectionId, sortOrder])
+}
+
+model Inspection {
+  id              String                   @id @default(cuid())
+  templateId      String
+  customerId      String
+  vehicleId       String?
+  appointmentId   String?
+  invoiceId       String?
+  roNumber        String?
+  status          InspectionStatus         @default(DRAFT)
+  overallStatus   InspectionOverallStatus?
+  mileage         Int?
+  technicianNotes String?
+  customerNotes   String?
+  completedAt     DateTime?
+  finalizedAt     DateTime?
+  createdById     String
+  finalizedById   String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  template        InspectionTemplate       @relation(fields: [templateId], references: [id])
+  customer        Customer                 @relation(fields: [customerId], references: [id])
+  vehicle         Vehicle?                 @relation(fields: [vehicleId], references: [id])
+  appointment     Appointment?             @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  invoice         Invoice?                 @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  createdBy       User                     @relation("InspectionCreatedBy", fields: [createdById], references: [id])
+  finalizedBy     User?                    @relation("InspectionFinalizedBy", fields: [finalizedById], references: [id])
+  results         InspectionItemResult[]
+  media           InspectionMedia[]
+
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([appointmentId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InspectionItemResult {
+  id              String                @id @default(cuid())
+  inspectionId    String
+  itemId          String
+  position        String                @default("GENERAL")
+  status          InspectionItemStatus?
+  value           String?
+  notes           String?
+  selectedOptions String[]              @default([])
+  sortOrder       Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  inspection      Inspection            @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  item            InspectionItem        @relation(fields: [itemId], references: [id])
+  media           InspectionMedia[]
+
+  @@unique([inspectionId, itemId, position])
+  @@index([inspectionId])
+  @@index([itemId])
+}
+
+model InspectionMedia {
+  id            String                @id @default(cuid())
+  inspectionId  String
+  resultId      String?
+  fileUrl       String
+  blobName      String?
+  containerName String?
+  mimeType      String?
+  fileName      String?
+  size          Int?
+  caption       String?
+  sortOrder     Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  inspection    Inspection            @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  result        InspectionItemResult? @relation(fields: [resultId], references: [id], onDelete: SetNull)
+
+  @@index([inspectionId])
+  @@index([resultId])
 }
 
 model AuditLog {
@@ -427,24 +561,24 @@ model AuditLog {
 }
 
 model Job {
-  id            String       @id @default(cuid())
-  jobNumber     String       @unique @default(cuid())
-  employeeId    String       // Foreign key to User (where role = STAFF)
-  appointmentId String?      // Optional link to the appointment this job was created from
-  title         String       // Job description/title
-  description   String?      // Detailed job description
-  payAmount     Decimal      @db.Decimal(10, 2)
-  status        JobStatus    @default(PENDING)
-  jobType       JobType      // Regular, Overtime, Bonus, Commission
-  dueDate       DateTime?    // When payment is due
-  completedAt   DateTime?    // When job was completed
-  createdBy     String       // Who assigned the job
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id            String    @id @default(cuid())
+  jobNumber     String    @unique @default(cuid())
+  employeeId    String // Foreign key to User (where role = STAFF)
+  appointmentId String? // Optional link to the appointment this job was created from
+  title         String // Job description/title
+  description   String? // Detailed job description
+  payAmount     Decimal   @db.Decimal(10, 2)
+  status        JobStatus @default(PENDING)
+  jobType       JobType // Regular, Overtime, Bonus, Commission
+  dueDate       DateTime? // When payment is due
+  completedAt   DateTime? // When job was completed
+  createdBy     String // Who assigned the job
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  employee      User         @relation(fields: [employeeId], references: [id])
-  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  payments      Payment[]    // One job can have multiple payments (partial payments)
+  employee    User         @relation(fields: [employeeId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  payments    Payment[] // One job can have multiple payments (partial payments)
 
   @@index([employeeId])
   @@index([status])
@@ -453,15 +587,15 @@ model Job {
 }
 
 model AppointmentPayoutRule {
-  id           String   @id @default(cuid())
+  id            String   @id @default(cuid())
   // Exact appointment payment amount (e.g. 80.00) that triggers this payout.
-  triggerAmount Decimal  @db.Decimal(10, 2) @unique
+  triggerAmount Decimal  @unique @db.Decimal(10, 2)
   // Total payout pool to be split equally among completing employees.
   payoutAmount  Decimal  @db.Decimal(10, 2)
-  description  String?  // Optional admin note (e.g. "Standard tire mount")
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  description   String? // Optional admin note (e.g. "Standard tire mount")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([triggerAmount])
   @@index([isActive])
@@ -470,24 +604,24 @@ model AppointmentPayoutRule {
 model Payment {
   id            String        @id @default(cuid())
   jobId         String
-  employeeId    String        // Denormalized for faster queries
+  employeeId    String // Denormalized for faster queries
   amount        Decimal       @db.Decimal(10, 2)
   paymentMethod PaymentMethod
   status        PaymentStatus @default(PENDING)
-  paidAt        DateTime?     // Date when payment was actually processed/collected (for accurate daily cash reporting)
-  paidBy        String?       // Who processed the payment
+  paidAt        DateTime? // Date when payment was actually processed/collected (for accurate daily cash reporting)
+  paidBy        String? // Who processed the payment
   notes         String?
-  reference     String?       // Check number, transaction ID, etc.
+  reference     String? // Check number, transaction ID, etc.
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  job           Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  employee      User          @relation(fields: [employeeId], references: [id])
+  job      Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  employee User @relation(fields: [employeeId], references: [id])
 
   @@index([employeeId])
   @@index([status])
-  @@index([paidAt])          // Index for daily cash flow reports
-  @@index([paidAt, status])  // Composite index for EOD summaries
+  @@index([paidAt]) // Index for daily cash flow reports
+  @@index([paidAt, status]) // Composite index for EOD summaries
 }
 
 model EmployeeCompensation {
@@ -504,7 +638,7 @@ model EmployeeCompensation {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  employee            User      @relation(fields: [employeeId], references: [id])
+  employee User @relation(fields: [employeeId], references: [id])
 
   @@index([employeeId])
   @@index([employeeId, isActive])
@@ -512,24 +646,24 @@ model EmployeeCompensation {
 }
 
 model TimeEntry {
-  id               String          @id @default(cuid())
-  employeeId       String
-  clockInAt        DateTime
-  clockOutAt       DateTime?
-  status           TimeEntryStatus @default(OPEN)
-  source           TimeEntrySource @default(EMPLOYEE)
-  notes            String?
-  adjustedBy       String?
-  adjustmentReason String?
-  approvedBy       String?
-  approvedAt       DateTime?
+  id                 String          @id @default(cuid())
+  employeeId         String
+  clockInAt          DateTime
+  clockOutAt         DateTime?
+  status             TimeEntryStatus @default(OPEN)
+  source             TimeEntrySource @default(EMPLOYEE)
+  notes              String?
+  adjustedBy         String?
+  adjustmentReason   String?
+  approvedBy         String?
+  approvedAt         DateTime?
   payrollProcessedBy String?
   payrollProcessedAt DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
-  employee         User            @relation(fields: [employeeId], references: [id])
-  breaks           BreakEntry[]
+  employee User         @relation(fields: [employeeId], references: [id])
+  breaks   BreakEntry[]
 
   @@index([employeeId])
   @@index([status])
@@ -549,27 +683,27 @@ model BreakEntry {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  timeEntry   TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  timeEntry TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
 
   @@index([timeEntryId])
   @@index([startAt])
 }
 
 model PayrollAdjustment {
-  id           String                @id @default(cuid())
-  employeeId   String
-  type         PayrollAdjustmentType @default(BONUS)
-  amount       Decimal               @db.Decimal(10, 2)
-  reason       String
-  notes        String?
+  id            String                @id @default(cuid())
+  employeeId    String
+  type          PayrollAdjustmentType @default(BONUS)
+  amount        Decimal               @db.Decimal(10, 2)
+  reason        String
+  notes         String?
   effectiveDate DateTime
-  createdBy    String
-  approvedBy   String?
-  approvedAt   DateTime?
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  createdBy     String
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
-  employee     User                 @relation(fields: [employeeId], references: [id])
+  employee User @relation(fields: [employeeId], references: [id])
 
   @@index([employeeId])
   @@index([type])
@@ -577,12 +711,12 @@ model PayrollAdjustment {
 }
 
 model PayrollPeriod {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   startDate DateTime
   endDate   DateTime
-  name      String   // "January 2025", "Week 1 Jan 2025"
+  name      String // "January 2025", "Week 1 Jan 2025"
   type      PeriodType // WEEKLY, MONTHLY, YEARLY
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 
   @@unique([startDate, endDate, type])
   @@index([startDate, endDate])
@@ -623,38 +757,38 @@ enum PayrollAdjustmentType {
 }
 
 enum JobStatus {
-  PENDING     // Job assigned, payment not yet due
-  READY       // Job completed, ready for payment
-  PAID        // Fully paid
-  CANCELLED   // Job cancelled
+  PENDING // Job assigned, payment not yet due
+  READY // Job completed, ready for payment
+  PAID // Fully paid
+  CANCELLED // Job cancelled
   PARTIALLY_PAID // Some payments made, balance remaining
 }
 
 enum JobType {
-  REGULAR     // Regular hourly/salary work
-  OVERTIME    // Overtime pay
-  BONUS       // Performance bonus
-  COMMISSION  // Sales commission
-  FLAT_RATE   // Flat per-appointment payout (e.g. auto-created from a completed appointment)
-  EXPENSE     // Expense reimbursement
-  OTHER       // Other compensation
+  REGULAR // Regular hourly/salary work
+  OVERTIME // Overtime pay
+  BONUS // Performance bonus
+  COMMISSION // Sales commission
+  FLAT_RATE // Flat per-appointment payout (e.g. auto-created from a completed appointment)
+  EXPENSE // Expense reimbursement
+  OTHER // Other compensation
 }
 
 enum PaymentStatus {
-  PENDING     // Payment scheduled but not made
-  PAID        // Payment completed
-  FAILED      // Payment failed
-  CANCELLED   // Payment cancelled
+  PENDING // Payment scheduled but not made
+  PAID // Payment completed
+  FAILED // Payment failed
+  CANCELLED // Payment cancelled
 }
 
 enum SquarePaymentStatus {
-  PENDING        // Payment initiated but not completed
-  PROCESSING     // Payment being processed
-  COMPLETED      // Payment successfully processed
-  APPROVED       // Payment approved by Square
-  CANCELED       // Payment canceled
-  FAILED         // Payment failed
-  REFUNDED       // Payment has been refunded
+  PENDING // Payment initiated but not completed
+  PROCESSING // Payment being processed
+  COMPLETED // Payment successfully processed
+  APPROVED // Payment approved by Square
+  CANCELED // Payment canceled
+  FAILED // Payment failed
+  REFUNDED // Payment has been refunded
   PARTIAL_REFUND // Payment has been partially refunded
 }
 
@@ -733,6 +867,49 @@ enum AppointmentType {
   MOBILE_SERVICE
 }
 
+enum InspectionType {
+  PEACE_OF_MIND
+  OUT_OF_PROVINCE
+  PRE_PURCHASE
+  SEASONAL
+  CUSTOM
+}
+
+enum InspectionStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  FINALIZED
+  CANCELLED
+}
+
+enum InspectionOverallStatus {
+  GOOD
+  ATTENTION_SOON
+  NEEDS_REPAIR
+  UNSAFE
+}
+
+enum InspectionItemKind {
+  CONDITION
+  MEASUREMENT
+  MULTI_SELECT
+  TEXT
+}
+
+enum InspectionItemStatus {
+  GOOD
+  FAIR
+  POOR
+  NOT_APPLICABLE
+  NOT_INSPECTED
+}
+
+enum InspectionPositionGroup {
+  TIRE_SET
+  BRAKE_SET
+}
+
 enum QuotationStatus {
   DRAFT
   SENT
@@ -747,18 +924,18 @@ enum QuotationStatus {
 // ============================================
 
 model Vendor {
-  id                String             @id @default(cuid())
-  name              String             @unique
-  contactPerson     String?
-  email             String?
-  phone             String?
-  address           String?
-  taxId             String?            // Tax ID / Business Number
-  paymentTerms      String?            // "Net 30", "Due on receipt", etc.
-  isActive          Boolean            @default(true)
-  notes             String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id            String   @id @default(cuid())
+  name          String   @unique
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  taxId         String? // Tax ID / Business Number
+  paymentTerms  String? // "Net 30", "Due on receipt", etc.
+  isActive      Boolean  @default(true)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   purchaseInvoices        PurchaseInvoice[]
   expenseInvoices         ExpenseInvoice[]
@@ -771,34 +948,34 @@ model Vendor {
 // DEPRECATED: Use PurchaseExpenseInvoice instead
 // Keeping for migration purposes - will be removed after data migration
 model PurchaseInvoice {
-  id              String               @id @default(cuid())
-  vendorId        String?              // Optional vendor relationship
-  vendorName      String               // Free-text vendor name (if no vendorId)
-  description     String               // What was purchased
-  invoiceDate     DateTime             // Date on the invoice
-  dueDate         DateTime?            // Payment due date
-  amount          Decimal              @db.Decimal(10, 2)  // Subtotal (before tax)
-  gstRate         Decimal              @default(5) @db.Decimal(5, 2)  // GST percentage (default 5%)
-  gstAmount       Decimal?             @db.Decimal(10, 2)  // GST amount
-  pstRate         Decimal              @default(7) @db.Decimal(5, 2)  // PST percentage (default 7%)
-  pstAmount       Decimal?             @db.Decimal(10, 2)  // PST amount
-  hstRate         Decimal              @default(0) @db.Decimal(5, 2)  // HST percentage (default 0%)
-  hstAmount       Decimal?             @db.Decimal(10, 2)  // HST amount
-  taxAmount       Decimal?             @db.Decimal(10, 2)  // Total tax (GST + PST + HST)
-  totalAmount     Decimal              @db.Decimal(10, 2)
-  category        PurchaseCategory     // Categorization
-  status          PurchaseInvoiceStatus @default(PAID)
-  paymentDate     DateTime?            // When it was paid
-  paymentMethod   PaymentMethod?
-  notes           String?              // Additional notes
-  imageUrl        String?              // Azure Blob Storage URL
-  imageName       String?              // Original filename
-  imageSize       Int?                 // File size in bytes
-  createdBy       String               // User who created it
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  id            String                @id @default(cuid())
+  vendorId      String? // Optional vendor relationship
+  vendorName    String // Free-text vendor name (if no vendorId)
+  description   String // What was purchased
+  invoiceDate   DateTime // Date on the invoice
+  dueDate       DateTime? // Payment due date
+  amount        Decimal               @db.Decimal(10, 2) // Subtotal (before tax)
+  gstRate       Decimal               @default(5) @db.Decimal(5, 2) // GST percentage (default 5%)
+  gstAmount     Decimal?              @db.Decimal(10, 2) // GST amount
+  pstRate       Decimal               @default(7) @db.Decimal(5, 2) // PST percentage (default 7%)
+  pstAmount     Decimal?              @db.Decimal(10, 2) // PST amount
+  hstRate       Decimal               @default(0) @db.Decimal(5, 2) // HST percentage (default 0%)
+  hstAmount     Decimal?              @db.Decimal(10, 2) // HST amount
+  taxAmount     Decimal?              @db.Decimal(10, 2) // Total tax (GST + PST + HST)
+  totalAmount   Decimal               @db.Decimal(10, 2)
+  category      PurchaseCategory // Categorization
+  status        PurchaseInvoiceStatus @default(PAID)
+  paymentDate   DateTime? // When it was paid
+  paymentMethod PaymentMethod?
+  notes         String? // Additional notes
+  imageUrl      String? // Azure Blob Storage URL
+  imageName     String? // Original filename
+  imageSize     Int? // File size in bytes
+  createdBy     String // User who created it
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
-  vendor          Vendor?              @relation(fields: [vendorId], references: [id])
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
 
   @@index([invoiceDate])
   @@index([vendorId])
@@ -810,36 +987,36 @@ model PurchaseInvoice {
 // DEPRECATED: Use PurchaseExpenseInvoice instead
 // Keeping for migration purposes - will be removed after data migration
 model ExpenseInvoice {
-  id              String               @id @default(cuid())
-  invoiceNumber   String?              // Vendor's invoice number
-  vendorId        String?              // Optional vendor relationship
-  vendorName      String               // Free-text vendor name
-  description     String               // Expense description
-  invoiceDate     DateTime             // Date on the invoice
-  amount          Decimal              @db.Decimal(10, 2)  // Subtotal (before tax)
-  gstRate         Decimal              @default(5) @db.Decimal(5, 2)  // GST percentage (default 5%)
-  gstAmount       Decimal?             @db.Decimal(10, 2)  // GST amount
-  pstRate         Decimal              @default(7) @db.Decimal(5, 2)  // PST percentage (default 7%)
-  pstAmount       Decimal?             @db.Decimal(10, 2)  // PST amount
-  hstRate         Decimal              @default(0) @db.Decimal(5, 2)  // HST percentage (default 0%)
-  hstAmount       Decimal?             @db.Decimal(10, 2)  // HST amount
-  taxAmount       Decimal?             @db.Decimal(10, 2)  // Total tax (GST + PST + HST)
-  totalAmount     Decimal              @db.Decimal(10, 2)
-  category        ExpenseCategory      // Categorization
+  id              String                @id @default(cuid())
+  invoiceNumber   String? // Vendor's invoice number
+  vendorId        String? // Optional vendor relationship
+  vendorName      String // Free-text vendor name
+  description     String // Expense description
+  invoiceDate     DateTime // Date on the invoice
+  amount          Decimal               @db.Decimal(10, 2) // Subtotal (before tax)
+  gstRate         Decimal               @default(5) @db.Decimal(5, 2) // GST percentage (default 5%)
+  gstAmount       Decimal?              @db.Decimal(10, 2) // GST amount
+  pstRate         Decimal               @default(7) @db.Decimal(5, 2) // PST percentage (default 7%)
+  pstAmount       Decimal?              @db.Decimal(10, 2) // PST amount
+  hstRate         Decimal               @default(0) @db.Decimal(5, 2) // HST percentage (default 0%)
+  hstAmount       Decimal?              @db.Decimal(10, 2) // HST amount
+  taxAmount       Decimal?              @db.Decimal(10, 2) // Total tax (GST + PST + HST)
+  totalAmount     Decimal               @db.Decimal(10, 2)
+  category        ExpenseCategory // Categorization
   status          PurchaseInvoiceStatus @default(PAID)
-  paymentDate     DateTime?            // When it was paid
+  paymentDate     DateTime? // When it was paid
   paymentMethod   PaymentMethod?
-  isRecurring     Boolean              @default(false) // Rent, utilities, etc.
-  recurringPeriod RecurringPeriod?     // MONTHLY, QUARTERLY, YEARLY
+  isRecurring     Boolean               @default(false) // Rent, utilities, etc.
+  recurringPeriod RecurringPeriod? // MONTHLY, QUARTERLY, YEARLY
   notes           String?
-  imageUrl        String?              // Azure Blob Storage URL
-  imageName       String?              // Original filename
-  imageSize       Int?                 // File size in bytes
-  createdBy       String               // User who created it
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  imageUrl        String? // Azure Blob Storage URL
+  imageName       String? // Original filename
+  imageSize       Int? // File size in bytes
+  createdBy       String // User who created it
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
-  vendor          Vendor?              @relation(fields: [vendorId], references: [id])
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
 
   @@index([invoiceDate])
   @@index([vendorId])
@@ -854,31 +1031,31 @@ model ExpenseInvoice {
 // ============================================
 
 model PurchaseExpenseInvoice {
-  id              String                       @id @default(cuid())
-  type            PurchaseExpenseType          // PURCHASE or EXPENSE
-  vendorId        String?                      // Optional vendor relationship
-  vendorName      String                       // Free-text vendor name
-  description     String                       // What was purchased/expense description
-  invoiceDate     DateTime                     // Date on the invoice
-  amount          Decimal                      @default(0) @db.Decimal(10, 2)  // Subtotal (before tax)
-  gstRate         Decimal                      @default(5) @db.Decimal(5, 2)  // GST percentage (default 5%)
-  gstAmount       Decimal?                     @db.Decimal(10, 2)  // GST amount
-  pstRate         Decimal                      @default(7) @db.Decimal(5, 2)  // PST percentage (default 7%)
-  pstAmount       Decimal?                     @db.Decimal(10, 2)  // PST amount
-  hstRate         Decimal                      @default(0) @db.Decimal(5, 2)  // HST percentage (default 0%)
-  hstAmount       Decimal?                     @db.Decimal(10, 2)  // HST amount
-  taxAmount       Decimal?                     @db.Decimal(10, 2)  // Total tax (GST + PST + HST)
-  totalAmount     Decimal                      @db.Decimal(10, 2)
-  category        PurchaseExpenseCategory      // Unified categorization
-  notes           String?                      // Additional notes
-  imageUrl        String?                      // Azure Blob Storage URL
-  imageName       String?                      // Original filename
-  imageSize       Int?                         // File size in bytes
-  createdBy       String                       // User who created it
-  createdAt       DateTime                     @default(now())
-  updatedAt       DateTime                     @updatedAt
+  id          String                  @id @default(cuid())
+  type        PurchaseExpenseType // PURCHASE or EXPENSE
+  vendorId    String? // Optional vendor relationship
+  vendorName  String // Free-text vendor name
+  description String // What was purchased/expense description
+  invoiceDate DateTime // Date on the invoice
+  amount      Decimal                 @default(0) @db.Decimal(10, 2) // Subtotal (before tax)
+  gstRate     Decimal                 @default(5) @db.Decimal(5, 2) // GST percentage (default 5%)
+  gstAmount   Decimal?                @db.Decimal(10, 2) // GST amount
+  pstRate     Decimal                 @default(7) @db.Decimal(5, 2) // PST percentage (default 7%)
+  pstAmount   Decimal?                @db.Decimal(10, 2) // PST amount
+  hstRate     Decimal                 @default(0) @db.Decimal(5, 2) // HST percentage (default 0%)
+  hstAmount   Decimal?                @db.Decimal(10, 2) // HST amount
+  taxAmount   Decimal?                @db.Decimal(10, 2) // Total tax (GST + PST + HST)
+  totalAmount Decimal                 @db.Decimal(10, 2)
+  category    PurchaseExpenseCategory // Unified categorization
+  notes       String? // Additional notes
+  imageUrl    String? // Azure Blob Storage URL
+  imageName   String? // Original filename
+  imageSize   Int? // File size in bytes
+  createdBy   String // User who created it
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
 
-  vendor          Vendor?                      @relation("PurchaseExpenseInvoices", fields: [vendorId], references: [id])
+  vendor Vendor? @relation("PurchaseExpenseInvoices", fields: [vendorId], references: [id])
 
   @@index([type])
   @@index([invoiceDate])
@@ -892,33 +1069,33 @@ model PurchaseExpenseInvoice {
 // ============================================
 
 enum PurchaseCategory {
-  TIRES              // Tire inventory purchases
-  PARTS              // Auto parts
-  TOOLS              // Tools and equipment
-  SUPPLIES           // Shop supplies
-  OTHER              // Other purchases
+  TIRES // Tire inventory purchases
+  PARTS // Auto parts
+  TOOLS // Tools and equipment
+  SUPPLIES // Shop supplies
+  OTHER // Other purchases
 }
 
 enum ExpenseCategory {
-  RENT               // Shop rent
-  UTILITIES          // Electricity, water, gas, internet
-  INSURANCE          // Business insurance
-  ADVERTISING        // Marketing and advertising
-  OFFICE_SUPPLIES    // Office supplies
-  PROFESSIONAL_FEES  // Accounting, legal, etc.
-  MAINTENANCE        // Building/equipment maintenance
-  VEHICLE            // Company vehicle expenses
-  TRAVEL             // Travel expenses
-  TRAINING           // Staff training
-  SOFTWARE           // Software subscriptions
-  OTHER              // Other expenses
+  RENT // Shop rent
+  UTILITIES // Electricity, water, gas, internet
+  INSURANCE // Business insurance
+  ADVERTISING // Marketing and advertising
+  OFFICE_SUPPLIES // Office supplies
+  PROFESSIONAL_FEES // Accounting, legal, etc.
+  MAINTENANCE // Building/equipment maintenance
+  VEHICLE // Company vehicle expenses
+  TRAVEL // Travel expenses
+  TRAINING // Staff training
+  SOFTWARE // Software subscriptions
+  OTHER // Other expenses
 }
 
 enum PurchaseInvoiceStatus {
-  PENDING            // Not yet paid
-  PAID               // Fully paid
-  OVERDUE            // Past due date
-  CANCELLED          // Cancelled invoice
+  PENDING // Not yet paid
+  PAID // Fully paid
+  OVERDUE // Past due date
+  CANCELLED // Cancelled invoice
 }
 
 enum RecurringPeriod {
@@ -930,31 +1107,31 @@ enum RecurringPeriod {
 
 // Unified enums for PurchaseExpenseInvoice
 enum PurchaseExpenseType {
-  PURCHASE           // Purchase invoices (inventory, parts, etc.)
-  EXPENSE            // Expense invoices (rent, utilities, etc.)
+  PURCHASE // Purchase invoices (inventory, parts, etc.)
+  EXPENSE // Expense invoices (rent, utilities, etc.)
 }
 
 enum PurchaseExpenseCategory {
   // Purchase categories
-  TIRES              // Tire inventory purchases
-  RIMS               // Rim/wheel purchases
-  PARTS              // Auto parts
-  TOOLS              // Tools and equipment
-  SUPPLIES           // Shop supplies
+  TIRES // Tire inventory purchases
+  RIMS // Rim/wheel purchases
+  PARTS // Auto parts
+  TOOLS // Tools and equipment
+  SUPPLIES // Shop supplies
   // Expense categories
-  RENT               // Shop rent
-  UTILITIES          // Electricity, water, gas, internet
-  INSURANCE          // Business insurance
-  ADVERTISING        // Marketing and advertising
-  OFFICE_SUPPLIES    // Office supplies
-  PROFESSIONAL_FEES  // Accounting, legal, etc.
-  MAINTENANCE        // Building/equipment maintenance
-  VEHICLE            // Company vehicle expenses
-  TRAVEL             // Travel expenses
-  TRAINING           // Staff training
-  TEAM_MEETING       // Team meetings, lunches, events
-  SOFTWARE           // Software subscriptions
-  OTHER              // Other purchases/expenses
+  RENT // Shop rent
+  UTILITIES // Electricity, water, gas, internet
+  INSURANCE // Business insurance
+  ADVERTISING // Marketing and advertising
+  OFFICE_SUPPLIES // Office supplies
+  PROFESSIONAL_FEES // Accounting, legal, etc.
+  MAINTENANCE // Building/equipment maintenance
+  VEHICLE // Company vehicle expenses
+  TRAVEL // Travel expenses
+  TRAINING // Staff training
+  TEAM_MEETING // Team meetings, lunches, events
+  SOFTWARE // Software subscriptions
+  OTHER // Other purchases/expenses
 }
 
 // ============================================
@@ -962,32 +1139,32 @@ enum PurchaseExpenseCategory {
 // ============================================
 
 model SmsMessage {
-  id            String        @id @default(cuid())
-  to            String        // Phone number in E.164 format (+1XXXXXXXXXX)
-  from          String        // Telnyx phone number
-  body          String        // Message content
-  status        SmsStatus     @default(PENDING)
-  type          SmsType       // APPOINTMENT_REMINDER, STATUS_UPDATE, etc.
+  id     String    @id @default(cuid())
+  to     String // Phone number in E.164 format (+1XXXXXXXXXX)
+  from   String // Telnyx phone number
+  body   String // Message content
+  status SmsStatus @default(PENDING)
+  type   SmsType // APPOINTMENT_REMINDER, STATUS_UPDATE, etc.
 
   // Telnyx specific fields
-  telnyxMessageId String?     @unique
-  cost          Decimal?      @db.Decimal(10, 6)
-  segments      Int?          @default(1)
-  errorMessage  String?
+  telnyxMessageId String?  @unique
+  cost            Decimal? @db.Decimal(10, 6)
+  segments        Int?     @default(1)
+  errorMessage    String?
 
   // Relationships - can be sent to either Customer or User (staff/admin)
   appointmentId String?
-  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
   customerId    String?
-  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customer      Customer?    @relation(fields: [customerId], references: [id])
   userId        String?
-  user          User?         @relation(fields: [userId], references: [id])
+  user          User?        @relation(fields: [userId], references: [id])
 
   // Timestamps
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([appointmentId])
   @@index([customerId])
@@ -999,57 +1176,57 @@ model SmsMessage {
 }
 
 enum SmsStatus {
-  PENDING      // Queued for sending
-  QUEUED       // Accepted by Telnyx
-  SENT         // Sent to carrier
-  DELIVERED    // Delivered to phone
-  FAILED       // Failed to send
-  UNDELIVERED  // Carrier couldn't deliver
+  PENDING // Queued for sending
+  QUEUED // Accepted by Telnyx
+  SENT // Sent to carrier
+  DELIVERED // Delivered to phone
+  FAILED // Failed to send
+  UNDELIVERED // Carrier couldn't deliver
 }
 
 enum SmsType {
-  APPOINTMENT_REMINDER     // 7-day, 3-day, 24-hour reminders (to customers)
+  APPOINTMENT_REMINDER // 7-day, 3-day, 24-hour reminders (to customers)
   APPOINTMENT_CONFIRMATION // Immediate booking confirmation (to customers)
-  APPOINTMENT_UPDATE       // Appointment date/time changed notification (to customers)
+  APPOINTMENT_UPDATE // Appointment date/time changed notification (to customers)
   APPOINTMENT_CANCELLATION // Appointment cancelled notification (to customers)
-  SERVICE_STATUS           // Service started, in progress, etc. (to customers)
-  SERVICE_COMPLETE         // Ready for pickup (to customers)
-  PROMOTIONAL              // Marketing messages (to customers)
-  EMERGENCY                // Urgent notifications (to customers)
-  STAFF_APPOINTMENT_ALERT  // New appointment assigned to staff
-  STAFF_SCHEDULE_REMINDER  // Daily schedule summary to staff
-  ADMIN_DAILY_SUMMARY      // End of day summary to admin
-  ADMIN_URGENT_ALERT       // Urgent issues requiring admin attention
+  SERVICE_STATUS // Service started, in progress, etc. (to customers)
+  SERVICE_COMPLETE // Ready for pickup (to customers)
+  PROMOTIONAL // Marketing messages (to customers)
+  EMERGENCY // Urgent notifications (to customers)
+  STAFF_APPOINTMENT_ALERT // New appointment assigned to staff
+  STAFF_SCHEDULE_REMINDER // Daily schedule summary to staff
+  ADMIN_DAILY_SUMMARY // End of day summary to admin
+  ADMIN_URGENT_ALERT // Urgent issues requiring admin attention
 }
 
 model SmsPreference {
-  id                  String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Can be associated with either Customer or User (staff/admin)
-  customerId          String?   @unique
-  customer            Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  userId              String?   @unique
-  user                User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId String?   @unique
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  userId     String?   @unique
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Opt-in/out tracking
-  optedIn             Boolean   @default(false)
-  optedInAt           DateTime?
-  optedOutAt          DateTime?
+  optedIn    Boolean   @default(false)
+  optedInAt  DateTime?
+  optedOutAt DateTime?
 
   // Customer preference toggles
-  appointmentReminders Boolean  @default(true)
-  serviceUpdates       Boolean  @default(true)
-  promotional          Boolean  @default(false)
+  appointmentReminders Boolean @default(true)
+  serviceUpdates       Boolean @default(true)
+  promotional          Boolean @default(false)
 
   // Staff/Admin preference toggles
-  appointmentAlerts    Boolean  @default(true)  // Staff: new appointments assigned
-  scheduleReminders    Boolean  @default(true)  // Staff: daily schedule summary
-  dailySummary         Boolean  @default(true)  // Admin: end of day summary
-  urgentAlerts         Boolean  @default(true)  // Admin: urgent issues
+  appointmentAlerts Boolean @default(true) // Staff: new appointments assigned
+  scheduleReminders Boolean @default(true) // Staff: daily schedule summary
+  dailySummary      Boolean @default(true) // Admin: end of day summary
+  urgentAlerts      Boolean @default(true) // Admin: urgent issues
 
   // Timestamps
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("sms_preferences")
 }
@@ -1059,33 +1236,33 @@ model SmsPreference {
 // ==========================================
 
 model EmailLog {
-  id            String        @id @default(cuid())
-  to            String        // Recipient email
-  from          String        // Sender email
-  subject       String        // Email subject
-  type          EmailType     // Type of email
-  status        EmailStatus   @default(PENDING)
+  id      String      @id @default(cuid())
+  to      String // Recipient email
+  from    String // Sender email
+  subject String // Email subject
+  type    EmailType // Type of email
+  status  EmailStatus @default(PENDING)
 
   // Brevo specific
-  brevoMessageId String?      @unique
+  brevoMessageId String? @unique
 
   // Relationships
   appointmentId String?
-  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
   invoiceId     String?
-  invoice       Invoice?      @relation(fields: [invoiceId], references: [id])
+  invoice       Invoice?     @relation(fields: [invoiceId], references: [id])
   quotationId   String?
-  quotation     Quotation?    @relation(fields: [quotationId], references: [id])
+  quotation     Quotation?   @relation(fields: [quotationId], references: [id])
   customerId    String?
-  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customer      Customer?    @relation(fields: [customerId], references: [id])
 
   // Timestamps
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  openedAt      DateTime?     // If tracking enabled
-  clickedAt     DateTime?     // If tracking enabled
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime? // If tracking enabled
+  clickedAt   DateTime? // If tracking enabled
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([appointmentId])
   @@index([invoiceId])
@@ -1121,26 +1298,26 @@ enum EmailType {
 }
 
 model BookingRequest {
-  id              String                @id @default(cuid())
-  appointmentType AppointmentType       @default(AT_GARAGE)
+  id              String               @id @default(cuid())
+  appointmentType AppointmentType      @default(AT_GARAGE)
   firstName       String
   lastName        String
   phone           String
   email           String
   address         String?
   serviceType     String
-  requestedDate   String                // YYYY-MM-DD format
-  requestedTime   String                // HH:MM format
+  requestedDate   String // YYYY-MM-DD format
+  requestedTime   String // HH:MM format
   notes           String?
-  status          BookingRequestStatus  @default(PENDING)
-  customerId      String?               // Set when converted to customer
-  appointmentId   String?               // Set when converted to appointment
-  customer        Customer?             @relation(fields: [customerId], references: [id])
-  appointment     Appointment?          @relation(fields: [appointmentId], references: [id])
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  processedAt     DateTime?             // When it was accepted/rejected
-  processedBy     String?               // User ID who processed it
+  status          BookingRequestStatus @default(PENDING)
+  customerId      String? // Set when converted to customer
+  appointmentId   String? // Set when converted to appointment
+  customer        Customer?            @relation(fields: [customerId], references: [id])
+  appointment     Appointment?         @relation(fields: [appointmentId], references: [id])
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  processedAt     DateTime? // When it was accepted/rejected
+  processedBy     String? // User ID who processed it
   rejectionReason String?
 
   @@index([status])
@@ -1163,44 +1340,44 @@ enum BookingRequestStatus {
 // ============================================
 
 model TireSale {
-  id               String           @id @default(cuid())
-  saleNumber       String           @unique
+  id         String @id @default(cuid())
+  saleNumber String @unique
 
   // Seller tracking (for commissions)
-  soldById         String
-  soldBy           User             @relation("TireSales", fields: [soldById], references: [id])
+  soldById String
+  soldBy   User   @relation("TireSales", fields: [soldById], references: [id])
 
   // Optional customer (required for non-cash payments)
-  customerId       String?
-  customer         Customer?        @relation(fields: [customerId], references: [id])
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
 
   // Optional invoice link (created for non-cash payments)
-  invoiceId        String?          @unique
-  invoice          Invoice?         @relation(fields: [invoiceId], references: [id])
+  invoiceId String?  @unique
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id])
 
   // Payment & totals
-  paymentMethod    PaymentMethod
-  subtotal         Decimal          @db.Decimal(10, 2)
-  taxAmount        Decimal          @db.Decimal(10, 2)
-  total            Decimal          @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  subtotal      Decimal       @db.Decimal(10, 2)
+  taxAmount     Decimal       @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
 
   // Commission tracking (tiered: $3/$4/$5 per tire based on monthly volume)
-  commissionRate   Decimal?         @db.Decimal(10, 2)  // Per-tire rate ($3, $4, or $5)
-  commissionAmount Decimal?         @db.Decimal(10, 2)  // Total commission for this sale
+  commissionRate   Decimal?         @db.Decimal(10, 2) // Per-tire rate ($3, $4, or $5)
+  commissionAmount Decimal?         @db.Decimal(10, 2) // Total commission for this sale
   commissionStatus CommissionStatus @default(PENDING)
   commissionPaidAt DateTime?
-  commissionJobId  String?          // Link to Job record when commission is paid
+  commissionJobId  String? // Link to Job record when commission is paid
 
   // Notes
-  notes            String?
+  notes String?
 
   // Timestamps
-  saleDate         DateTime         @default(now())
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  saleDate  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  items            TireSaleItem[]
+  items TireSaleItem[]
 
   @@index([soldById])
   @@index([saleDate])
@@ -1210,12 +1387,12 @@ model TireSale {
 }
 
 model TireSaleItem {
-  id            String        @id @default(cuid())
-  tireSaleId    String
-  tireId        String
-  quantity      Int
-  unitPrice     Decimal       @db.Decimal(10, 2)
-  total         Decimal       @db.Decimal(10, 2)
+  id         String  @id @default(cuid())
+  tireSaleId String
+  tireId     String
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(10, 2)
+  total      Decimal @db.Decimal(10, 2)
 
   // Denormalized tire info (for historical record)
   tireBrand     String
@@ -1223,10 +1400,10 @@ model TireSaleItem {
   tireType      TireType
   tireCondition TireCondition
 
-  createdAt     DateTime      @default(now())
+  createdAt DateTime @default(now())
 
-  tireSale      TireSale      @relation(fields: [tireSaleId], references: [id], onDelete: Cascade)
-  tire          Tire          @relation(fields: [tireId], references: [id])
+  tireSale TireSale @relation(fields: [tireSaleId], references: [id], onDelete: Cascade)
+  tire     Tire     @relation(fields: [tireId], references: [id])
 
   @@index([tireSaleId])
   @@index([tireId])
@@ -1234,8 +1411,8 @@ model TireSaleItem {
 }
 
 enum CommissionStatus {
-  PENDING    // Commission calculated, not yet paid
-  APPROVED   // Approved for payment
-  PAID       // Commission paid to employee
-  CANCELLED  // Sale cancelled, no commission
+  PENDING // Commission calculated, not yet paid
+  APPROVED // Approved for payment
+  PAID // Commission paid to employee
+  CANCELLED // Sale cancelled, no commission
 }

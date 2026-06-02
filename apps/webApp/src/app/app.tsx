@@ -100,6 +100,8 @@ import { EmployeePaymentsReport } from './pages/admin/reports/EmployeePaymentsRe
 
 // Tire Sales Pages
 import { TireSalesManagement, CommissionManagement } from './pages/admin/tire-sales';
+import { InspectionList } from './pages/inspections/InspectionList';
+import { InspectionEditor } from './pages/inspections/InspectionEditor';
 
 export function App() {
   return (
@@ -179,6 +181,8 @@ export function App() {
           <Route path="earnings" element={<MyEarnings />} />
           <Route path="commission" element={<MyCommission />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="inspections" element={<InspectionList />} />
+          <Route path="inspections/:id" element={<InspectionEditor />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
@@ -216,6 +220,8 @@ export function App() {
           <Route path="quotations/:id" element={<QuotationDetails />} />
           <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
           <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="inspections" element={<InspectionList />} />
+          <Route path="inspections/:id" element={<InspectionEditor />} />
           <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="employee-schedule" element={<EmployeeSchedule />} />
@@ -283,6 +289,8 @@ export function App() {
           <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
           {/* Unified purchase & expense invoices */}
           <Route path="appointments" element={<AppointmentsManagement />} />
+          <Route path="inspections" element={<InspectionList />} />
+          <Route path="inspections/:id" element={<InspectionEditor />} />
           <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="sms-history" element={<SmsHistory />} />

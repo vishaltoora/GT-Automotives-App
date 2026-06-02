@@ -1,5 +1,5 @@
 import { Box, Typography, Grid, Card, CardContent, Button, Paper, Chip, CircularProgress, Avatar, Divider, Stack, useTheme, useMediaQuery } from '@mui/material';
-import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning, Work, CalendarMonth, TireRepair, Event, AttachMoney } from '@mui/icons-material';
+import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning, Work, CalendarMonth, TireRepair, Event, AttachMoney, AssignmentTurnedIn } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
@@ -526,6 +526,36 @@ export function StaffDashboard() {
                 <CalendarMonth sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.lighter, mb: { xs: 0.5, sm: 1 } }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   Appointments
+                </Typography>
+              </Paper>
+
+              <Paper
+                component={Link}
+                to="/staff/inspections"
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.semantic.info}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.semantic.info,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <AssignmentTurnedIn sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.info, mb: { xs: 0.5, sm: 1 } }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.info, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Inspections
                 </Typography>
               </Paper>
 

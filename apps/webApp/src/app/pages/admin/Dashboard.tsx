@@ -41,6 +41,7 @@ import {
   Assignment,
   RequestPage,
   AccessTime,
+  AssignmentTurnedIn,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { Link, useNavigate } from 'react-router-dom';
@@ -614,6 +615,33 @@ export function AdminDashboard() {
                 </Typography>
               </Paper>
 
+              <Paper
+                component={Link}
+                to={`${basePath}/inspections`}
+                sx={{
+                  ...actionItemStyles,
+                  textDecoration: 'none',
+                  border: `1px solid ${colors.semantic.info}`,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: colors.semantic.info,
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: 'white !important',
+                    },
+                    '& .MuiTypography-root': {
+                      color: 'white !important',
+                    },
+                  },
+                }}
+              >
+                <AssignmentTurnedIn sx={{ ...actionIconStyles, color: colors.semantic.info }} />
+                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
+                  Inspections
+                </Typography>
+              </Paper>
+
               {/* My Jobs - Supervisor only - Before New Job */}
               {role === 'supervisor' && (
                 <Paper
@@ -1069,6 +1097,33 @@ export function AdminDashboard() {
                   <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
                   <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
                     New Appointment
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  component={Link}
+                  to={`${basePath}/inspections`}
+                  sx={{
+                    ...actionItemStyles,
+                    textDecoration: 'none',
+                    border: `1px solid ${colors.semantic.info}`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: colors.semantic.info,
+                      color: 'white',
+                      '& .MuiSvgIcon-root': {
+                        color: 'white !important',
+                      },
+                      '& .MuiTypography-root': {
+                        color: 'white !important',
+                      },
+                    },
+                  }}
+                >
+                  <AssignmentTurnedIn sx={{ ...actionIconStyles, color: colors.semantic.info }} />
+                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
+                    Inspections
                   </Typography>
                 </Paper>
 

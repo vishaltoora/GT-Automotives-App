@@ -29,6 +29,7 @@ import { BookingRequestsModule } from '../booking-requests/booking-requests.modu
 import { TireSalesModule } from '../tire-sales/tire-sales.module';
 import { PayoutRulesModule } from '../payout-rules/payout-rules.module';
 import { TimeClockModule } from '../time-clock/time-clock.module';
+import { InspectionsModule } from '../inspections/inspections.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -64,6 +65,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     TireSalesModule,
     PayoutRulesModule,
     TimeClockModule,
+    InspectionsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -27,6 +27,7 @@ export interface ErrorDialogProps {
   details?: string;
   showDetails?: boolean;
   confirmText?: string;
+  onConfirm?: () => void;
 }
 
 export const ErrorDialog: React.FC<ErrorDialogProps> = ({
@@ -38,8 +39,14 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
   details,
   showDetails,
   confirmText = 'OK',
+  onConfirm,
 }) => {
   const [detailsExpanded, setDetailsExpanded] = React.useState(false);
+
+  const handleConfirm = () => {
+    onClose();
+    onConfirm?.();
+  };
 
   const getSeverityIcon = () => {
     switch (severity) {
@@ -149,7 +156,7 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button
-          onClick={onClose}
+          onClick={handleConfirm}
           variant="contained"
           color={severity === 'error' ? 'error' : severity === 'warning' ? 'warning' : 'primary'}
           sx={{ minWidth: 80 }}

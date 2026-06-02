@@ -44,6 +44,7 @@ import {
   Event,
   TireRepair,
   LocalOffer,
+  AssignmentTurnedIn,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -116,6 +117,7 @@ export function StaffLayout() {
       items: [
         { text: 'Customers', icon: <People />, path: '/staff/customers' },
         { text: 'Vehicles', icon: <DirectionsCar />, path: '/staff/vehicles' },
+        { text: 'Inspections', icon: <AssignmentTurnedIn />, path: '/staff/inspections' },
         { text: 'Inventory', icon: <Inventory />, path: '/staff/inventory' },
         { text: 'Invoices', icon: <Receipt />, path: '/staff/invoices' },
         { text: 'Quotations', icon: <Description />, path: '/staff/quotations' },
