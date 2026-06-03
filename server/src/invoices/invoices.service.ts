@@ -77,8 +77,9 @@ export class InvoicesService {
       if (item.itemType !== 'TIPS') {
         taxableSubtotal += total;
       }
+      const { tire: _tire, ...itemFields } = item;
       return {
-        ...item,
+        ...itemFields,
         itemType: item.itemType as InvoiceItemType,
         total: new Decimal(total),
         unitPrice: new Decimal(item.unitPrice),
@@ -207,11 +208,11 @@ export class InvoicesService {
     // Handle items if provided
     let items: any[] | undefined;
     if (updateInvoiceDto.items) {
-      items = updateInvoiceDto.items.map(item => ({
-        ...item,
-        itemType: item.itemType as InvoiceItemType,
-        total: new Decimal(item.total || item.quantity * item.unitPrice),
-        unitPrice: new Decimal(item.unitPrice),
+      items = updateInvoiceDto.items.map(({ tire: _tire, ...itemFields }) => ({
+        ...itemFields,
+        itemType: itemFields.itemType as InvoiceItemType,
+        total: new Decimal(itemFields.total || itemFields.quantity * itemFields.unitPrice),
+        unitPrice: new Decimal(itemFields.unitPrice),
       }));
 
       // Recalculate totals based on new items - handle discount items specially
