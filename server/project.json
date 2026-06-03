@@ -15,7 +15,33 @@
         "compiler": "tsc",
         "target": "node",
         "webpackConfig": "server/webpack.config.js",
-        "generatePackageJson": true
+        "generatePackageJson": true,
+        "externalDependencies": [
+          "@azure/storage-blob",
+          "@clerk/clerk-sdk-node",
+          "@getbrevo/brevo",
+          "@nestjs/common",
+          "@nestjs/config",
+          "@nestjs/core",
+          "@nestjs/jwt",
+          "@nestjs/passport",
+          "@nestjs/platform-express",
+          "@nestjs/schedule",
+          "@prisma/client",
+          "@prisma/client/runtime/library",
+          "class-transformer",
+          "class-validator",
+          "jwks-rsa",
+          "passport",
+          "passport-jwt",
+          "puppeteer",
+          "reflect-metadata",
+          "rxjs",
+          "square",
+          "svix",
+          "telnyx",
+          "tslib"
+        ]
       },
       "configurations": {
         "production": {

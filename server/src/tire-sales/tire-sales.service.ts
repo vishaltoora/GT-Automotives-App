@@ -12,8 +12,8 @@ import {
   TireSaleFiltersDto,
   CommissionReportDto,
   CommissionFiltersDto,
-} from '../common/dto/tire-sale.dto';
-import { InvoiceItemType } from '../common/dto/invoice.dto';
+} from '@gt-automotive/data';
+import { InvoiceItemType } from '@gt-automotive/data';
 
 // Commission tiers (per tire, based on monthly volume)
 const COMMISSION_TIERS = [

@@ -38,19 +38,9 @@ import {
   Category as CategoryIcon,
   AccountBalance as AccountBalanceIcon,
 } from '@mui/icons-material';
-// Define QuotationItem type locally to avoid import issues
-type QuotationItem = {
-  id?: string;
-  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER' | 'LEVY';
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  tireId?: string;
-  serviceId?: string;
-  total?: number;
-};
 import { colors } from '../../theme/colors';
 import { ServiceDto } from '@gt-automotive/data';
+import type { QuoteItem as QuotationItem } from '../../requests/quotation.requests';
 import ServiceSelect from '../services/ServiceSelect';
 import { PhoneInput } from '../common/PhoneInput';
 

@@ -7,7 +7,7 @@ import {
   PaymentResponseDto,
   PaymentSummaryDto,
   ProcessPaymentDto
-} from '../common/dto/payment.dto';
+} from '@gt-automotive/data';
 import { Payment, PaymentStatus, PaymentMethod, JobStatus } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 

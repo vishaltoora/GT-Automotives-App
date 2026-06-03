@@ -13,14 +13,14 @@ import {
 import { AppointmentsService } from './appointments.service';
 import { AppointmentInvoiceService } from './appointment-invoice.service';
 import {
-  CreateAppointmentDto,
-  UpdateAppointmentDto,
   AppointmentQueryDto,
   CalendarQueryDto,
-  PaymentDateQueryDto,
+  CreateAppointmentDto,
   CreateETransferInvoiceDto,
   CreateSquareDeviceInvoiceDto,
-} from '../common/dto/appointment.dto';
+  PaymentDateQueryDto,
+  UpdateAppointmentDto,
+} from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

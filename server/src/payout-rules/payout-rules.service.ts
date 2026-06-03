@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
-import { CreatePayoutRuleDto, PayoutRuleResponseDto, UpdatePayoutRuleDto } from '../common/dto/payout-rule.dto';
+import { CreatePayoutRuleDto, PayoutRuleResponseDto, UpdatePayoutRuleDto } from '@gt-automotive/data';
 
 const DEFAULT_PERCENTAGE = 0.30;
 

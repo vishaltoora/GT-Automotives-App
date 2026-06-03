@@ -35,36 +35,14 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
+import {
+  getEnumLabel,
+  TIRE_CONDITION_DISPLAY,
+  TIRE_TYPE_DISPLAY,
+} from '../../constants/enum-mappings';
 import { useAuth } from '../../hooks/useAuth';
 import { useTire, useDeleteTire } from '../../hooks/useTires';
 import StockAdjustmentDialog from '../../components/inventory/StockAdjustmentDialog';
-
-const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
-};
-
-const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
-};
 
 const formatDate = (date: Date | string): string => {
   return new Date(date).toLocaleDateString('en-US', {
@@ -165,8 +143,8 @@ export function TireDetails() {
             <div class="label">
               <div class="title">${tire.brand} - ${tire.size}</div>
               <div class="info">Size: ${tire.size}</div>
-              <div class="info">Type: ${formatTireType(tire.type)}</div>
-              <div class="info">Condition: ${formatCondition(tire.condition)}</div>
+              <div class="info">Type: ${getEnumLabel(TIRE_TYPE_DISPLAY, tire.type)}</div>
+              <div class="info">Condition: ${getEnumLabel(TIRE_CONDITION_DISPLAY, tire.condition)}</div>
               <div class="info">Stock: ${tire.quantity}</div>
               ${tire.location ? `<div class="info">Location: ${tire.location}</div>` : ''}
               <div class="price">$${tire.price.toFixed(2)}</div>
@@ -340,8 +318,8 @@ export function TireDetails() {
                       Type
                     </Typography>
                     <Chip 
-                      label={formatTireType(tire.type)} 
-                      color="primary" 
+                      label={getEnumLabel(TIRE_TYPE_DISPLAY, tire.type)}
+                      color={TIRE_TYPE_DISPLAY[tire.type].chipColor}
                       variant="outlined"
                     />
                   </Box>
@@ -351,8 +329,8 @@ export function TireDetails() {
                       Condition
                     </Typography>
                     <Chip 
-                      label={formatCondition(tire.condition)} 
-                      color={tire.condition === TireCondition.NEW ? 'success' : 'warning'}
+                      label={getEnumLabel(TIRE_CONDITION_DISPLAY, tire.condition)}
+                      color={TIRE_CONDITION_DISPLAY[tire.condition].chipColor}
                       variant="outlined"
                     />
                   </Box>

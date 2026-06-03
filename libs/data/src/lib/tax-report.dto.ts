@@ -11,7 +11,7 @@ export class TaxReportFilterDto {
 }
 
 export class MonthlyTaxBreakdownDto {
-  month!: string; // YYYY-MM format
+  month!: string;
   invoiceCount!: number;
   gstCollected!: number;
   pstCollected!: number;
@@ -19,19 +19,15 @@ export class MonthlyTaxBreakdownDto {
 }
 
 export class TaxReportResponseDto {
-  // Summary statistics
   totalInvoices!: number;
   totalGstCollected!: number;
   totalPstCollected!: number;
   totalTaxCollected!: number;
-
-  // Monthly trends
   monthlyBreakdown!: MonthlyTaxBreakdownDto[];
 }
 
-// GST Paid on Purchase & Expense Report DTOs
 export class MonthlyGstPaidBreakdownDto {
-  month!: string; // YYYY-MM format
+  month!: string;
   purchaseCount!: number;
   expenseCount!: number;
   purchaseGstPaid!: number;
@@ -47,29 +43,18 @@ export class MonthlyGstPaidBreakdownDto {
 }
 
 export class GstPaidReportResponseDto {
-  // Summary statistics
   totalPurchaseInvoices!: number;
   totalExpenseInvoices!: number;
   totalInvoices!: number;
-
-  // GST Paid
   purchaseGstPaid!: number;
   expenseGstPaid!: number;
   totalGstPaid!: number;
-
-  // PST Paid
   purchasePstPaid!: number;
   expensePstPaid!: number;
   totalPstPaid!: number;
-
-  // HST Paid
   purchaseHstPaid!: number;
   expenseHstPaid!: number;
   totalHstPaid!: number;
-
-  // Total Tax Paid
   totalTaxPaid!: number;
-
-  // Monthly trends
   monthlyBreakdown!: MonthlyGstPaidBreakdownDto[];
 }

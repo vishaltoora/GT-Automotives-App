@@ -4,7 +4,7 @@ import {
   Injectable,
   RequestTimeoutException,
 } from '@nestjs/common';
-import { DecodeVinResponseDto } from '../common/dto/vehicle.dto';
+import { DecodeVinResponseDto } from '@gt-automotive/data';
 
 interface NhtsaDecodeResponse {
   Count?: number;

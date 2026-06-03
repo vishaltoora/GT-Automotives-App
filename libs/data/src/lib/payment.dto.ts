@@ -1,14 +1,9 @@
 import { IsString, IsNumber, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentMethod } from './invoice.dto';
+import { PaymentStatus } from './prisma-enums';
 
-// Enums for Payment - using string values to match Prisma
-
-export enum PaymentStatus {
-  PENDING = 'PENDING',
-  PAID = 'PAID',
-  FAILED = 'FAILED',
-  CANCELLED = 'CANCELLED'
-}
+export { PaymentStatus };
 
 export class CreatePaymentDto {
   @IsString()
@@ -18,6 +13,7 @@ export class CreatePaymentDto {
   employeeId!: string;
 
   @IsNumber()
+  @Type(() => Number)
   amount!: number;
 
   @IsEnum(PaymentMethod)
@@ -38,6 +34,7 @@ export class CreatePaymentDto {
 export class UpdatePaymentDto {
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   amount?: number;
 
   @IsOptional()
@@ -107,6 +104,7 @@ export class ProcessPaymentDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   amount?: number;
 
   @IsEnum(PaymentMethod)

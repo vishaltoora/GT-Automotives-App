@@ -2,11 +2,11 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException }
 import { PrismaService } from '@gt-automotive/database';
 import { AppointmentStatus } from '@prisma/client';
 import {
-  CreateAppointmentDto,
-  UpdateAppointmentDto,
   AppointmentQueryDto,
   CalendarQueryDto,
-} from '../common/dto/appointment.dto';
+  CreateAppointmentDto,
+  UpdateAppointmentDto,
+} from '@gt-automotive/data';
 import { AvailabilityService } from './availability.service';
 import { SmsService } from '../sms/sms.service';
 import { EmailService } from '../email/email.service';

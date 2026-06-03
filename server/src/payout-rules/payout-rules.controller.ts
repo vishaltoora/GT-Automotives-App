@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PayoutRulesService } from './payout-rules.service';
-import { CreatePayoutRuleDto, PayoutRuleResponseDto, UpdatePayoutRuleDto } from '../common/dto/payout-rule.dto';
+import { CreatePayoutRuleDto, PayoutRuleResponseDto, UpdatePayoutRuleDto } from '@gt-automotive/data';
 
 @Controller('payout-rules')
 @UseGuards(JwtAuthGuard)

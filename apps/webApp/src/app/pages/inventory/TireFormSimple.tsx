@@ -29,43 +29,22 @@ import {
 import {
   ITireCreateInput,
   ITireUpdateInput,
+  TireCondition,
+  TireType,
 } from '@gt-automotive/data';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
+import {
+  getEnumLabel,
+  TIRE_CONDITION_DISPLAY,
+  TIRE_CONDITION_OPTIONS,
+  TIRE_TYPE_DISPLAY,
+  TIRE_TYPE_OPTIONS,
+} from '../../constants/enum-mappings';
 import { useAuth } from '../../hooks/useAuth';
 import { 
   useTire, 
   useCreateTire, 
   useUpdateTire,
 } from '../../hooks/useTires';
-
-const TIRE_TYPES = Object.values(TireType);
-const TIRE_CONDITIONS = Object.values(TireCondition);
-
-const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
-};
-
-const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
-};
 
 export function TireFormSimple() {
   const { id } = useParams<{ id: string }>();
@@ -286,9 +265,9 @@ export function TireFormSimple() {
                         label="Type *"
                         onChange={(e) => handleChange('type', e.target.value)}
                       >
-                        {TIRE_TYPES.map((type) => (
-                          <MenuItem key={type} value={type}>
-                            {formatTireType(type)}
+                        {TIRE_TYPE_OPTIONS.map(({ value, label }) => (
+                          <MenuItem key={value} value={value}>
+                            {label}
                           </MenuItem>
                         ))}
                       </Select>
@@ -304,9 +283,9 @@ export function TireFormSimple() {
                         label="Condition *"
                         onChange={(e) => handleChange('condition', e.target.value)}
                       >
-                        {TIRE_CONDITIONS.map((condition) => (
-                          <MenuItem key={condition} value={condition}>
-                            {formatCondition(condition)}
+                        {TIRE_CONDITION_OPTIONS.map(({ value, label }) => (
+                          <MenuItem key={value} value={value}>
+                            {label}
                           </MenuItem>
                         ))}
                       </Select>
@@ -430,8 +409,8 @@ export function TireFormSimple() {
                     {formData.size}
                   </Typography>
                   <Stack direction="row" spacing={0.5}>
-                    <Chip label={formatTireType(formData.type)} size="small" />
-                    <Chip label={formatCondition(formData.condition)} size="small" />
+                    <Chip label={getEnumLabel(TIRE_TYPE_DISPLAY, formData.type)} size="small" />
+                    <Chip label={getEnumLabel(TIRE_CONDITION_DISPLAY, formData.condition)} size="small" />
                   </Stack>
                   <Typography variant="h6" color="primary">
                     ${formData.price.toFixed(2)}

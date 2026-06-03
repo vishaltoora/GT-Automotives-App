@@ -1,8 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InvoiceRepository } from './repositories/invoice.repository';
-import { CreateInvoiceDto } from '../common/dto/invoice.dto';
-import { UpdateInvoiceDto } from '../common/dto/invoice.dto';
-import { CreateServiceDto, UpdateServiceDto } from '../common/dto/service.dto';
+import { CreateInvoiceDto, CreateServiceDto, UpdateInvoiceDto, UpdateServiceDto } from '@gt-automotive/data';
 import { Invoice, InvoiceStatus, PaymentMethod, InvoiceItemType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { AuditRepository } from '../audit/repositories/audit.repository';

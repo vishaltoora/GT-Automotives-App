@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, ExpenseInvoice, ExpenseCategory, PurchaseInvoiceStatus } from '@prisma/client';
-import { CreateExpenseInvoiceDto, UpdateExpenseInvoiceDto } from '../common/dto/expense-invoice.dto';
+import { CreateExpenseInvoiceDto, UpdateExpenseInvoiceDto } from '@gt-automotive/data';
 
 @Injectable()
 export class ExpenseInvoiceRepository {

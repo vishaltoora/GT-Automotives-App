@@ -25,46 +25,12 @@ import {
   Inventory as InventoryIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { TireResponseDto as ITire } from '@gt-automotive/data';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
-
-// Helper function to get emoji based on tire type
-const getTireEmoji = (type: TireType): string => {
-  switch (type) {
-    case TireType.ALL_SEASON:
-      return '🌤️'; // All weather conditions
-    case TireType.SUMMER:
-      return '☀️'; // Summer sun
-    case TireType.WINTER:
-      return '❄️'; // Winter snowflake
-    case TireType.PERFORMANCE:
-      return '🏁'; // Racing/performance
-    case TireType.OFF_ROAD:
-      return '🏔️'; // Mountain/rugged terrain
-    case TireType.RUN_FLAT:
-      return '🛡️'; // Protection/safety
-    default:
-      return '🛞'; // Default tire
-  }
-};
+import { TireResponseDto as ITire, TireType } from '@gt-automotive/data';
+import {
+  getEnumLabel,
+  TIRE_CONDITION_DISPLAY,
+  TIRE_TYPE_DISPLAY,
+} from '../../constants/enum-mappings';
 
 // Brand configuration with colors
 const BRAND_CONFIG: Record<string, { bg: string; text: string; accent?: string }> = {
@@ -177,7 +143,7 @@ const BrandDisplay: React.FC<BrandDisplayProps> = ({ brand, height, type }) => {
           boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
         }}
       >
-        {getTireEmoji(type)}
+        {TIRE_TYPE_DISPLAY[type].icon}
       </Box>
     </Box>
   );
@@ -192,30 +158,6 @@ interface TireCardProps {
   variant?: 'compact' | 'detailed';
   showActions?: boolean;
 }
-
-const TIRE_TYPE_COLORS: Record<TireType, 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'> = {
-  [TireType.ALL_SEASON]: 'primary',
-  [TireType.SUMMER]: 'warning',
-  [TireType.WINTER]: 'info',
-  [TireType.PERFORMANCE]: 'secondary',
-  [TireType.OFF_ROAD]: 'success',
-  [TireType.RUN_FLAT]: 'error',
-};
-
-const CONDITION_COLORS: Record<TireCondition, 'success' | 'warning' | 'error'> = {
-  [TireCondition.NEW]: 'success',
-  [TireCondition.USED_EXCELLENT]: 'success',
-  [TireCondition.USED_GOOD]: 'warning',
-  [TireCondition.USED_FAIR]: 'error',
-};
-
-const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-};
-
-const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-};
 
 export function TireCard({
   tire,
@@ -321,9 +263,9 @@ export function TireCard({
 
           <Stack direction="row" spacing={0.5} sx={{ mb: isMobile ? 0.5 : 1 }}>
             <Chip
-              label={formatTireType(tire.type)}
+              label={getEnumLabel(TIRE_TYPE_DISPLAY, tire.type)}
               size="small"
-              color={TIRE_TYPE_COLORS[tire.type]}
+              color={TIRE_TYPE_DISPLAY[tire.type].chipColor}
               variant="outlined"
               sx={{
                 fontSize: isMobile ? '0.65rem' : undefined,
@@ -420,8 +362,8 @@ export function TireCard({
               {tire.brand}
             </Typography>
             <Chip
-              label={formatCondition(tire.condition)}
-              color={CONDITION_COLORS[tire.condition]}
+              label={getEnumLabel(TIRE_CONDITION_DISPLAY, tire.condition)}
+              color={TIRE_CONDITION_DISPLAY[tire.condition].chipColor}
               variant="outlined"
               size="small"
               sx={{
@@ -474,7 +416,7 @@ export function TireCard({
         </Box>
 
         <Typography variant={isMobile ? 'body2' : 'h6'} color="text.secondary" sx={{ mb: isMobile ? 1 : 2 }}>
-          {tire.size} • <Box component="span" sx={{ fontWeight: 'bold' }}>{formatTireType(tire.type)}</Box>
+          {tire.size} • <Box component="span" sx={{ fontWeight: 'bold' }}>{getEnumLabel(TIRE_TYPE_DISPLAY, tire.type)}</Box>
         </Typography>
 
         {!isMobile && tire.sku && (

@@ -16,7 +16,7 @@ import {
   PaymentResponseDto,
   PaymentSummaryDto,
   ProcessPaymentDto
-} from '../common/dto/payment.dto';
+} from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

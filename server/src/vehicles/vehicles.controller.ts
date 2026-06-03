@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
-import { CreateVehicleDto, UpdateVehicleDto } from '../common/dto/vehicle.dto';
+import { CreateVehicleDto, UpdateVehicleDto } from '@gt-automotive/data';
 import { VinDecoderService } from './vin-decoder.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 // import { RoleGuard } from '../auth/guards/role.guard';

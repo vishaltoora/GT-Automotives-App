@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { VendorRepository } from './vendor.repository';
-import { CreateVendorDto, UpdateVendorDto, VendorResponseDto } from '../common/dto/vendor.dto';
+import { CreateVendorDto, UpdateVendorDto, VendorResponseDto } from '@gt-automotive/data';
 
 @Injectable()
 export class VendorsService {

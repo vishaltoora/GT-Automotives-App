@@ -1,32 +1,17 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type, ValidateIf, IsPositive } from './decorators';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
+import { InvoiceItemType, InvoiceStatus, PaymentMethod } from './prisma-enums';
 
-export enum InvoiceStatus {
-  DRAFT = 'DRAFT',
-  PENDING = 'PENDING',
-  PAID = 'PAID',
-  CANCELLED = 'CANCELLED',
-  REFUNDED = 'REFUNDED'
-}
-
-export enum PaymentMethod {
-  CASH = 'CASH',
-  CREDIT_CARD = 'CREDIT_CARD',
-  DEBIT_CARD = 'DEBIT_CARD',
-  CHECK = 'CHECK',
-  E_TRANSFER = 'E_TRANSFER',
-  FINANCING = 'FINANCING'
-}
-
-export enum InvoiceItemType {
-  TIRE = 'TIRE',
-  SERVICE = 'SERVICE',
-  PART = 'PART',
-  OTHER = 'OTHER',
-  LEVY = 'LEVY',
-  DISCOUNT = 'DISCOUNT',
-  DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE',
-  TIPS = 'TIPS'
-}
+export { InvoiceItemType, InvoiceStatus, PaymentMethod };
 
 export class InvoiceItemDto {
   @IsOptional()
@@ -40,6 +25,13 @@ export class InvoiceItemDto {
   @IsOptional()
   @IsString()
   tireName?: string;
+
+  @IsOptional()
+  tire?: unknown;
+
+  @IsOptional()
+  @IsString()
+  serviceId?: string;
 
   @IsEnum(InvoiceItemType)
   itemType!: InvoiceItemType;
@@ -198,6 +190,42 @@ export class UpdateInvoiceDto {
   @IsOptional()
   @IsString()
   invoiceDate?: string;
+
+  @IsOptional()
+  @IsString()
+  companyId?: string;
+}
+
+export interface InvoiceCompanyDto {
+  id: string;
+  name: string;
+  registrationNumber: string;
+  businessType?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  isDefault: boolean;
+}
+
+export interface InvoiceCustomerDto {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  name?: string | null;
+  businessName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
+export interface InvoiceVehicleDto {
+  id: string;
+  year?: number | null;
+  make?: string | null;
+  model?: string | null;
+  vin?: string | null;
+  licensePlate?: string | null;
+  mileage?: number | null;
 }
 
 export class InvoiceResponseDto {
@@ -211,14 +239,20 @@ export class InvoiceResponseDto {
   customerId!: string;
 
   @IsOptional()
-  customer?: any;
+  customer?: InvoiceCustomerDto;
 
   @IsOptional()
   @IsString()
   vehicleId?: string;
 
   @IsOptional()
-  vehicle?: any;
+  vehicle?: InvoiceVehicleDto;
+
+  @IsString()
+  companyId!: string;
+
+  @IsOptional()
+  company?: InvoiceCompanyDto;
 
   @IsArray()
   @ValidateNested({ each: true })

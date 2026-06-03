@@ -26,28 +26,14 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { 
   TireDto, 
   CreateTireDto, 
-  UpdateTireDto
+  UpdateTireDto,
+  TireCondition,
+  TireType,
 } from '@gt-automotive/data';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  WINTER_STUDDED: 'WINTER_STUDDED',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
+import {
+  TIRE_CONDITION_OPTIONS,
+  TIRE_TYPE_OPTIONS,
+} from '../../constants/enum-mappings';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TireService } from '../../requests/tire.requests';
 import { useAuth } from '../../hooks/useAuth';
@@ -62,23 +48,6 @@ interface TireDialogProps {
   tire?: TireDto | null;
   onSuccess?: () => void;
 }
-
-const TIRE_TYPES = [
-  { value: TireType.ALL_SEASON, label: '🌤️ All Season' },
-  { value: TireType.SUMMER, label: '☀️ Summer' },
-  { value: TireType.WINTER, label: '❄️ Winter' },
-  { value: TireType.WINTER_STUDDED, label: '🧊 Winter Studded' },
-  { value: TireType.PERFORMANCE, label: '🏁 Performance' },
-  { value: TireType.OFF_ROAD, label: '🏔️ Off Road' },
-  { value: TireType.RUN_FLAT, label: '🔧 Run Flat' },
-];
-
-const TIRE_CONDITIONS = [
-  { value: TireCondition.NEW, label: 'New' },
-  { value: TireCondition.USED_EXCELLENT, label: 'Used - Excellent' },
-  { value: TireCondition.USED_GOOD, label: 'Used - Good' },
-  { value: TireCondition.USED_FAIR, label: 'Used - Fair' },
-];
 
 export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) {
   const queryClient = useQueryClient();
@@ -381,7 +350,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                   label="Type"
                   onChange={(e) => handleChange('type', e.target.value)}
                 >
-                  {TIRE_TYPES.map(type => (
+                  {TIRE_TYPE_OPTIONS.map(type => (
                     <MenuItem key={type.value} value={type.value}>
                       {type.label}
                     </MenuItem>
@@ -398,7 +367,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                   label="Condition"
                   onChange={(e) => handleChange('condition', e.target.value)}
                 >
-                  {TIRE_CONDITIONS.map(condition => (
+                  {TIRE_CONDITION_OPTIONS.map(condition => (
                     <MenuItem key={condition.value} value={condition.value}>
                       {condition.label}
                     </MenuItem>

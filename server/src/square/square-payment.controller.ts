@@ -17,12 +17,12 @@ import {
   CreateAppointmentCheckoutDto,
   AppointmentCheckoutResponseDto,
   CreateAppointmentPaymentDto,
-} from '../common/dto/square-payment.dto';
+} from '@gt-automotive/data';
 import {
   CreateTerminalCheckoutDto,
   TerminalCheckoutResponseDto,
   TerminalDeviceDto,
-} from '../common/dto/square-terminal.dto';
+} from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

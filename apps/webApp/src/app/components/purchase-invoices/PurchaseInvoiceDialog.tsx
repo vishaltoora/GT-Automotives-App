@@ -33,7 +33,20 @@ interface PurchaseInvoiceDialogProps {
 }
 
 const purchaseCategories: PurchaseCategory[] = ['TIRES', 'PARTS', 'TOOLS', 'SUPPLIES', 'OTHER'];
-const expenseCategories: ExpenseCategory[] = ['RENT', 'UTILITIES', 'INSURANCE', 'MARKETING', 'OFFICE_SUPPLIES', 'MAINTENANCE', 'OTHER'];
+const expenseCategories: ExpenseCategory[] = [
+  'RENT',
+  'UTILITIES',
+  'INSURANCE',
+  'ADVERTISING',
+  'OFFICE_SUPPLIES',
+  'PROFESSIONAL_FEES',
+  'MAINTENANCE',
+  'VEHICLE',
+  'TRAVEL',
+  'TRAINING',
+  'SOFTWARE',
+  'OTHER',
+];
 
 const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
   open,

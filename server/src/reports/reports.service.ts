@@ -7,14 +7,14 @@ import {
   VendorSummaryDto,
   MonthlyTrendDto,
   RecurringExpenseSummaryDto,
-} from '../common/dto/expense-report.dto';
+} from '@gt-automotive/data';
 import {
   TaxReportFilterDto,
   TaxReportResponseDto,
   MonthlyTaxBreakdownDto,
   GstPaidReportResponseDto,
   MonthlyGstPaidBreakdownDto,
-} from '../common/dto/tax-report.dto';
+} from '@gt-automotive/data';
 
 @Injectable()
 export class ReportsService {

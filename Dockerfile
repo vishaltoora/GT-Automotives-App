@@ -22,6 +22,7 @@ COPY . .
 ENV DISABLE_ERD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NX_DAEMON=false
+ENV NX_ISOLATE_PLUGINS=false
 
 # Install dependencies with retry logic
 RUN yarn install --frozen-lockfile --network-timeout 1000000 || \
@@ -32,11 +33,15 @@ RUN yarn install --frozen-lockfile --network-timeout 1000000 || \
 # Generate Prisma Client
 RUN yarn prisma generate --schema=libs/database/src/lib/prisma/schema.prisma
 
+# Verify generated shared DTO enum mirror before bundling the server
+RUN yarn enums:check
+
 # Build server with Nx (generatePackageJson: true creates pruned package.json)
 RUN yarn nx build server --configuration=production
 
-# Verify generated package.json exists
+# Verify generated package.json and lockfile exist
 RUN ls -la /workspace/dist/apps/server/package.json && \
+    ls -la /workspace/dist/apps/server/yarn.lock && \
     echo "✅ Generated pruned package.json" && \
     wc -l /workspace/dist/apps/server/package.json
 
@@ -62,9 +67,9 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /app
 
-# Copy generated package.json (pruned dependencies from Nx)
+# Copy generated package.json and lockfile (pruned dependencies from Nx)
 COPY --from=builder --chown=nodejs:nodejs /workspace/dist/apps/server/package.json ./
-COPY --from=builder --chown=nodejs:nodejs /workspace/yarn.lock ./
+COPY --from=builder --chown=nodejs:nodejs /workspace/dist/apps/server/yarn.lock ./
 
 # Install ONLY production dependencies
 # Note: No --frozen-lockfile because generated package.json may have different versions

@@ -1,29 +1,21 @@
 import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsDateString,
-  IsNumber,
-  IsBoolean,
   IsArray,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Matches,
+  Max,
+  Min,
   ValidateNested,
-} from './decorators';
+} from 'class-validator';
 import { Type } from 'class-transformer';
+import { AppointmentStatus, AppointmentType } from './prisma-enums';
 
-// Enums for Appointment - using string values to match Prisma
-export enum AppointmentStatus {
-  SCHEDULED = 'SCHEDULED',
-  CONFIRMED = 'CONFIRMED',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  NO_SHOW = 'NO_SHOW',
-}
-
-export enum AppointmentType {
-  AT_GARAGE = 'AT_GARAGE',
-  MOBILE_SERVICE = 'MOBILE_SERVICE',
-}
+export { AppointmentStatus, AppointmentType };
 
 // Nested DTOs for appointment relations
 export class PaymentEntryDto {
@@ -34,6 +26,7 @@ export class PaymentEntryDto {
   method!: string;
 
   @IsNumber()
+  @Type(() => Number)
   amount!: number;
 }
 
@@ -75,6 +68,7 @@ export class AppointmentVehicleDto {
   model!: string;
 
   @IsNumber()
+  @Type(() => Number)
   year!: number;
 
   @IsOptional()
@@ -136,18 +130,35 @@ export class CreateAppointmentDto {
   @IsString()
   employeeId?: string;
 
-  @IsDateString()
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  employeeIds?: string[];
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Date must be in YYYY-MM-DD format (e.g., 2025-11-18)',
+  })
   scheduledDate!: string;
 
   @IsString()
   scheduledTime!: string;
 
+  @IsInt()
+  @Min(15)
+  @Max(480)
+  @Type(() => Number)
+  duration!: number;
+
   @IsString()
-  duration!: string;
+  serviceType!: string;
+
+  @IsEnum(AppointmentType)
+  appointmentType!: AppointmentType;
 
   @IsOptional()
   @IsString()
-  serviceType?: string;
+  serviceAddress?: string;
 
   @IsOptional()
   @IsString()
@@ -158,18 +169,18 @@ export class CreateAppointmentDto {
 export class UpdateAppointmentDto {
   @IsOptional()
   @IsString()
-  customerId?: string;
-
-  @IsOptional()
-  @IsString()
-  vehicleId?: string;
-
-  @IsOptional()
-  @IsString()
   employeeId?: string;
 
   @IsOptional()
-  @IsDateString()
+  @IsArray()
+  @IsString({ each: true })
+  employeeIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Date must be in YYYY-MM-DD format (e.g., 2025-11-18)',
+  })
   scheduledDate?: string;
 
   @IsOptional()
@@ -177,8 +188,11 @@ export class UpdateAppointmentDto {
   scheduledTime?: string;
 
   @IsOptional()
-  @IsString()
-  duration?: string;
+  @IsInt()
+  @Min(15)
+  @Max(480)
+  @Type(() => Number)
+  duration?: number;
 
   @IsOptional()
   @IsEnum(AppointmentStatus)
@@ -189,8 +203,53 @@ export class UpdateAppointmentDto {
   serviceType?: string;
 
   @IsOptional()
+  @IsEnum(AppointmentType)
+  appointmentType?: AppointmentType;
+
+  @IsOptional()
+  @IsString()
+  serviceAddress?: string;
+
+  @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  paymentAmount?: number;
+
+  @IsOptional()
+  paymentBreakdown?: PaymentEntryDto[];
+
+  @IsOptional()
+  @IsString()
+  paymentNotes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  expectedAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  productSaleAmount?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productSaleItems?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completionEmployeeIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  endTime?: string;
 }
 
 // Response DTO
@@ -220,6 +279,7 @@ export class AppointmentResponseDto {
   endTime?: string;
 
   @IsNumber()
+  @Type(() => Number)
   duration!: number;
 
   @IsString()
@@ -238,6 +298,7 @@ export class AppointmentResponseDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   paymentAmount?: number; // Total amount paid
 
   @IsOptional()
@@ -249,6 +310,7 @@ export class AppointmentResponseDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   expectedAmount?: number; // Expected total amount for the service (for tracking partial payments)
 
   @IsOptional()
@@ -298,6 +360,86 @@ export class AppointmentResponseDto {
   @ValidateNested()
   @Type(() => AppointmentInvoiceDto)
   invoice?: AppointmentInvoiceDto;
+}
+
+export class AppointmentQueryDto {
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @IsOptional()
+  @IsEnum(AppointmentStatus)
+  status?: AppointmentStatus;
+}
+
+export class CalendarQueryDto {
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Date must be in YYYY-MM-DD format (e.g., 2025-11-18)',
+  })
+  startDate!: string;
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Date must be in YYYY-MM-DD format (e.g., 2025-11-18)',
+  })
+  endDate!: string;
+
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
+}
+
+export class PaymentDateQueryDto {
+  @IsString()
+  paymentDate!: string;
+}
+
+export class CreateETransferInvoiceDto {
+  @IsNumber()
+  @IsPositive()
+  @Type(() => Number)
+  serviceAmount!: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  tipAmount?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completionEmployeeIds?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  productSaleAmount?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productSaleItems?: string[];
+}
+
+export class CreateSquareDeviceInvoiceDto extends CreateETransferInvoiceDto {
+  @IsOptional()
+  @IsEnum(['CREDIT_CARD', 'DEBIT_CARD'])
+  cardType?: 'CREDIT_CARD' | 'DEBIT_CARD';
 }
 
 // Legacy type alias for backward compatibility

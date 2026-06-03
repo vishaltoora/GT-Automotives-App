@@ -34,26 +34,16 @@ import { LoadingButton } from '@mui/lab';
 import {
   ITireCreateInput,
   ITireUpdateInput,
+  TireCondition,
+  TireType,
 } from '@gt-automotive/data';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
+import {
+  getEnumLabel,
+  TIRE_CONDITION_DISPLAY,
+  TIRE_CONDITION_OPTIONS,
+  TIRE_TYPE_DISPLAY,
+  TIRE_TYPE_OPTIONS,
+} from '../../constants/enum-mappings';
 import { useAuth } from '../../hooks/useAuth';
 import { 
   useTire, 
@@ -64,25 +54,14 @@ import {
 } from '../../hooks/useTires';
 import TireImageUpload from '../../components/inventory/TireImageUpload';
 
-const TIRE_TYPES = Object.values(TireType);
-const TIRE_CONDITIONS = Object.values(TireCondition);
-
-const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-};
-
-const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-};
-
 // Validation schema
 const validationSchema = Yup.object({
   brand: Yup.string().required('Brand is required').min(2, 'Brand must be at least 2 characters'),
   size: Yup.string()
     .required('Size is required')
     .matches(/^\d{3}\/\d{2}R\d{2}$/, 'Size must be in format like 225/45R17'),
-  type: Yup.string().oneOf(TIRE_TYPES, 'Invalid tire type').required('Type is required'),
-  condition: Yup.string().oneOf(TIRE_CONDITIONS, 'Invalid condition').required('Condition is required'),
+  type: Yup.string().oneOf(TIRE_TYPE_OPTIONS.map(({ value }) => value), 'Invalid tire type').required('Type is required'),
+  condition: Yup.string().oneOf(TIRE_CONDITION_OPTIONS.map(({ value }) => value), 'Invalid condition').required('Condition is required'),
   quantity: Yup.number()
     .required('Quantity is required')
     .min(0, 'Quantity cannot be negative')
@@ -294,9 +273,9 @@ export function TireForm() {
                         onChange={formik.handleChange}
                         error={formik.touched.type && Boolean(formik.errors.type)}
                       >
-                        {TIRE_TYPES.map((type) => (
-                          <MenuItem key={type} value={type}>
-                            {formatTireType(type)}
+                        {TIRE_TYPE_OPTIONS.map(({ value, label }) => (
+                          <MenuItem key={value} value={value}>
+                            {label}
                           </MenuItem>
                         ))}
                       </Select>
@@ -314,9 +293,9 @@ export function TireForm() {
                         onChange={formik.handleChange}
                         error={formik.touched.condition && Boolean(formik.errors.condition)}
                       >
-                        {TIRE_CONDITIONS.map((condition) => (
-                          <MenuItem key={condition} value={condition}>
-                            {formatCondition(condition)}
+                        {TIRE_CONDITION_OPTIONS.map(({ value, label }) => (
+                          <MenuItem key={value} value={value}>
+                            {label}
                           </MenuItem>
                         ))}
                       </Select>
@@ -473,8 +452,8 @@ export function TireForm() {
                       {formik.values.size}
                     </Typography>
                     <Stack direction="row" spacing={0.5}>
-                      <Chip label={formatTireType(formik.values.type)} size="small" />
-                      <Chip label={formatCondition(formik.values.condition)} size="small" />
+                      <Chip label={getEnumLabel(TIRE_TYPE_DISPLAY, formik.values.type)} size="small" />
+                      <Chip label={getEnumLabel(TIRE_CONDITION_DISPLAY, formik.values.condition)} size="small" />
                     </Stack>
                     <Typography variant="h6" color="primary">
                       ${formik.values.price.toFixed(2)}

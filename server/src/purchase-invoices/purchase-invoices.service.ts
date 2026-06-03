@@ -6,7 +6,7 @@ import {
   UpdatePurchaseInvoiceDto,
   PurchaseInvoiceResponseDto,
   PurchaseInvoiceFilterDto,
-} from '../common/dto/purchase-invoice.dto';
+} from '@gt-automotive/data';
 
 @Injectable()
 export class PurchaseInvoicesService {

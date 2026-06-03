@@ -35,6 +35,8 @@
     "db:reset": "prisma migrate reset --schema=libs/database/src/lib/prisma/schema.prisma",
     "db:seed": "yarn ts-node libs/database/src/lib/prisma/seed.ts",
     "db:studio": "prisma studio --schema=libs/database/src/lib/prisma/schema.prisma",
+    "enums:generate": "node scripts/generate-prisma-enums.cjs",
+    "enums:check": "node scripts/generate-prisma-enums.cjs --check",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",

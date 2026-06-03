@@ -17,7 +17,7 @@ import {
   CreateInspectionDto,
   UpdateInspectionDto,
   UpdateInspectionResultDto,
-} from '../common/dto/inspection.dto';
+} from '@gt-automotive/data';
 import { defaultInspectionTemplates, InspectionTemplateSeed } from './peace-of-mind-template';
 
 const INSPECTION_INCLUDE = {

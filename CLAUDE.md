@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Environment Variables](.claude/rules/environment-variables.md)** - **CRITICAL**: Always use `import.meta.env.VITE_*` in frontend, NEVER `process.env.VITE_*`
 - **[Migration Management](.claude/agents/migration-manager.md)** - **CRITICAL**: NEVER modify schema.prisma without creating migrations first ⭐ NEW
 - **Database Migrations** - **CRITICAL**: NEVER use `prisma db push` - ALWAYS use `prisma migrate dev` for local and `prisma migrate deploy` for production. Using `db push` causes schema drift between local and production databases, leading to failed deployments and data issues.
+- **[DTO Single Source of Truth](.claude/docs/dto-single-source-of-truth.md)** - **CRITICAL**: All DTOs live in `libs/data`. Never add DTOs to `server/src/common/dto/`. After Prisma enum changes run `yarn enums:generate`. Never re-add `@nestjs/mapped-types` — use local `PartialType`/`OmitType`/`PickType` from `@gt-automotive/data`. ⭐ NEW
 
 ### 📁 Documentation Structure
 - **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview
@@ -32,6 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Backend Container Deployment Config](.claude/docs/backend-container-deployment-config.md)** - Complete Docker containerization guide with shared DTO fixes ⭐ UPDATED
 - **[Shared DTO Deployment Guide](.claude/docs/shared-dto-deployment-guide.md)** - Complete guide for shared DTO library deployment configuration ⭐ NEW
 - **[MyPersn Monorepo Learnings](.claude/docs/mypersn-monorepo-learnings.md)** - Architecture patterns and solutions from mypersn project ⭐ NEW
+- **[DTO Single Source of Truth](.claude/docs/dto-single-source-of-truth.md)** - Enum generation, local PartialType/OmitType/PickType, no NestJS in browser bundle ⭐ NEW
 - **[Container Deployment Learnings](.claude/docs/container-deployment-learnings.md)** - Critical lessons from shared library container issues and MyPersn pattern resolution ⭐ NEW
 - **[GHCR Migration Guide](.claude/docs/ghcr-migration.md)** - Migration from Azure Container Registry to GitHub Container Registry (saves $5-7/mo) ⭐ NEW
 - **[Docker Optimization](.claude/docs/docker-optimization.md)** - Docker image optimization strategy (87% size reduction) ⭐ NEW
