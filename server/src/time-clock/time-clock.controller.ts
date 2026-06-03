@@ -17,7 +17,7 @@ import {
   TimeEntryStatus,
   UpdateTimeEntryDto,
   UpsertEmployeeCompensationDto,
-} from '../common/dto/time-clock.dto';
+} from '@gt-automotive/data';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleGuard } from '../auth/guards/role.guard';

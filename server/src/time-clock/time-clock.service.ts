@@ -12,7 +12,7 @@ import {
   TimeEntryStatus,
   UpdateTimeEntryDto,
   UpsertEmployeeCompensationDto,
-} from '../common/dto/time-clock.dto';
+} from '@gt-automotive/data';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 
 const ACTIVE_TIME_ENTRY_STATUSES = [TimeEntryStatus.OPEN, TimeEntryStatus.ON_BREAK];

@@ -1,5 +1,6 @@
 const { composePlugins, withNx } = require('@nx/webpack');
 const path = require('node:path');
+const nodeExternals = require('webpack-node-externals');
 
 // Nx plugins for webpack - MyPersn pattern (simplified)
 module.exports = composePlugins(withNx(), (config) => {
@@ -16,6 +17,12 @@ module.exports = composePlugins(withNx(), (config) => {
       return `webpack:///${relativePath}`;
     },
   };
+
+  config.externals = [
+    nodeExternals({
+      allowlist: [/^@gt-automotive\/data(\/.*)?$/, /^@gt-automotive\/database(\/.*)?$/],
+    }),
+  ];
 
   // Ensure source maps are included
   config.module = config.module || {};

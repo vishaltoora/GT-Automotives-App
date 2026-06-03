@@ -8,7 +8,7 @@ import {
 import {
   CreatePurchaseExpenseInvoiceDto,
   UpdatePurchaseExpenseInvoiceDto,
-} from '../common/dto/purchase-expense-invoice.dto';
+} from '@gt-automotive/data';
 
 @Injectable()
 export class PurchaseExpenseInvoiceRepository {

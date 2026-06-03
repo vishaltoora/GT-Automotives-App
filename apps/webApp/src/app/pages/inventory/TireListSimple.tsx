@@ -44,27 +44,11 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useInvalidateTireQueries, useTireBrands, useTireSizes } from '../../hooks/useTires';
 import { ITireSearchParams, ITire } from '@gt-automotive/data';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-
-// Tire type options for autocomplete filter
-const TIRE_TYPE_OPTIONS = [
-  { value: 'ALL_SEASON', label: 'All Season' },
-  { value: 'SUMMER', label: 'Summer' },
-  { value: 'WINTER', label: 'Winter' },
-  { value: 'PERFORMANCE', label: 'Performance' },
-  { value: 'OFF_ROAD', label: 'Off Road' },
-  { value: 'RUN_FLAT', label: 'Run Flat' },
-];
+import {
+  getEnumLabel,
+  TIRE_TYPE_DISPLAY,
+  TIRE_TYPE_OPTIONS,
+} from '../../constants/enum-mappings';
 
 import { useMutation } from '@tanstack/react-query';
 import { TireService } from '../../requests/tire.requests';
@@ -80,10 +64,6 @@ interface TireListSimpleProps {
   showActions?: boolean;
   embedded?: boolean;
 }
-
-const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-};
 
 // Get unique color for each location based on string hash (FNV-1a algorithm for better distribution)
 const getLocationColor = (location: string | undefined): string => {
@@ -347,17 +327,10 @@ export function TireListSimple({
                       {tire.name || tire.brand}
                     </Typography>
                     <Chip
-                      label={formatTireType(tire.type)}
+                      label={getEnumLabel(TIRE_TYPE_DISPLAY, tire.type)}
                       size="small"
                       variant="outlined"
-                      color={
-                        tire.type === 'ALL_SEASON' ? 'info' :
-                        tire.type === 'SUMMER' ? 'warning' :
-                        tire.type === 'WINTER' ? 'primary' :
-                        tire.type === 'PERFORMANCE' ? 'error' :
-                        tire.type === 'OFF_ROAD' ? 'success' :
-                        tire.type === 'RUN_FLAT' ? 'secondary' : 'default'
-                      }
+                      color={TIRE_TYPE_DISPLAY[tire.type].chipColor}
                     />
                   </Box>
                   {tire.name && (

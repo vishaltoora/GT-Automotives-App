@@ -31,7 +31,20 @@ interface ExpenseInvoiceDialogProps {
   onImageUpload?: (invoiceId: string, file: File) => void;
 }
 
-const categories: ExpenseCategory[] = ['RENT', 'UTILITIES', 'INSURANCE', 'MARKETING', 'OFFICE_SUPPLIES', 'MAINTENANCE', 'OTHER'];
+const categories: ExpenseCategory[] = [
+  'RENT',
+  'UTILITIES',
+  'INSURANCE',
+  'ADVERTISING',
+  'OFFICE_SUPPLIES',
+  'PROFESSIONAL_FEES',
+  'MAINTENANCE',
+  'VEHICLE',
+  'TRAVEL',
+  'TRAINING',
+  'SOFTWARE',
+  'OTHER',
+];
 const statuses: ExpenseInvoiceStatus[] = ['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
 const paymentMethods = [
   PaymentMethod.CASH,

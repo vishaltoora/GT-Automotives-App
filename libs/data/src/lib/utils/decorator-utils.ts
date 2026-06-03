@@ -1,5 +1,10 @@
-import { applyDecorators } from '@nestjs/common';
-import { Type } from '../decorators';
+import { Type } from 'class-transformer';
+
+function applyDecorators(...decorators: Array<ClassDecorator | MethodDecorator | PropertyDecorator>) {
+  return (target: any, key?: string | symbol, descriptor?: PropertyDescriptor) => {
+    decorators.forEach((d) => (d as any)(target, key, descriptor));
+  };
+}
 import {
   IsArray,
   IsBoolean,
@@ -11,11 +16,11 @@ import {
   IsString,
   Min,
   ValidateNested
-} from '../decorators';
+} from 'class-validator';
 
 /**
  * Combines common validation decorators for GT Automotive DTOs
- * These decorators work across both browser and server environments
+ * These decorators compose the real shared DTO validation decorators.
  */
 
 export function OptionalString() {

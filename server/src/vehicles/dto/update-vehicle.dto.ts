@@ -1,4 +1,4 @@
-import { PartialType, OmitType } from '@nestjs/mapped-types';
+import { PartialType, OmitType } from '@gt-automotive/data';
 import { CreateVehicleDto } from './create-vehicle.dto';
 
 export class UpdateVehicleDto extends PartialType(

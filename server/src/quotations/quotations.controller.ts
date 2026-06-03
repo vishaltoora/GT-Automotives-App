@@ -11,8 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { QuotationsService } from './quotations.service';
-import { CreateQuoteDto } from '../common/dto/quotation.dto';
-import { UpdateQuoteDto } from '../common/dto/quotation.dto';
+import { CreateQuoteDto, UpdateQuoteDto } from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

@@ -17,9 +17,10 @@ export class CreateServiceDto {
   unitPrice!: number;
 }
 
-export class UpdateServiceDto implements Partial<CreateServiceDto> {
+export class UpdateServiceDto {
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
   name?: string;
 
   @IsString()
@@ -28,8 +29,8 @@ export class UpdateServiceDto implements Partial<CreateServiceDto> {
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Type(() => Number)
-  @IsPositive()
   @IsOptional()
+  @IsPositive()
   unitPrice?: number;
 }
 

@@ -1,4 +1,6 @@
-import { IsString, IsOptional, IsNumber } from './decorators';
+import { OmitType, PartialType } from './utils/mapped-types';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateVehicleDto {
   @IsString()
@@ -8,6 +10,7 @@ export class CreateVehicleDto {
   model!: string;
 
   @IsNumber()
+  @Type(() => Number)
   year!: number;
 
   @IsOptional()
@@ -19,27 +22,21 @@ export class CreateVehicleDto {
   licensePlate?: string;
 
   @IsOptional()
+  @IsString()
+  color?: string;
+
+  @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   mileage?: number;
 
-  @IsOptional()
   @IsString()
-  customerId?: string;
+  customerId!: string;
 }
 
-export class UpdateVehicleDto {
-  @IsOptional()
-  @IsString()
-  make?: string;
-
-  @IsOptional()
-  @IsString()
-  model?: string;
-
-  @IsOptional()
-  @IsNumber()
-  year?: number;
-
+export class UpdateVehicleDto extends PartialType(
+  OmitType(CreateVehicleDto, ['vin', 'licensePlate'] as const)
+) {
   @IsOptional()
   @IsString()
   vin?: string | null;
@@ -47,10 +44,31 @@ export class UpdateVehicleDto {
   @IsOptional()
   @IsString()
   licensePlate?: string | null;
+}
 
-  @IsOptional()
-  @IsNumber()
-  mileage?: number;
+export interface VehicleCustomerDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+  businessName?: string | null;
+}
+
+export interface VehicleCountDto {
+  invoices: number;
+  appointments: number;
+}
+
+export interface VehicleStatsDto {
+  serviceCount: number;
+  totalSpent: number;
+  lastServiceDate: string | Date | null;
+  nextAppointment: {
+    scheduledDate: string | Date;
+    scheduledTime?: string | null;
+    serviceType?: string | null;
+  } | null;
 }
 
 export class VehicleResponseDto {
@@ -64,6 +82,7 @@ export class VehicleResponseDto {
   model!: string;
 
   @IsNumber()
+  @Type(() => Number)
   year!: number;
 
   @IsOptional()
@@ -75,7 +94,12 @@ export class VehicleResponseDto {
   licensePlate?: string;
 
   @IsOptional()
+  @IsString()
+  color?: string;
+
+  @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   mileage?: number;
 
   @IsString()
@@ -88,28 +112,13 @@ export class VehicleResponseDto {
   updatedAt!: string;
 
   @IsOptional()
-  customer?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone?: string;
-    businessName?: string;
-  };
+  customer?: VehicleCustomerDto;
 
   @IsOptional()
-  _count?: {
-    invoices: number;
-    appointments: number;
-  };
+  _count?: VehicleCountDto;
 
   @IsOptional()
-  stats?: {
-    serviceCount: number;
-    totalSpent: number;
-    lastServiceDate: Date | null;
-    nextAppointment: any | null;
-  };
+  stats?: VehicleStatsDto;
 }
 
 export class DecodeVinResponseDto {
@@ -126,6 +135,7 @@ export class DecodeVinResponseDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   year?: number;
 
   @IsOptional()

@@ -1,17 +1,28 @@
-export interface TireBrandDto {
-  id: string;
-  name: string;
-  imageUrl?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { IsOptional, IsString, IsUrl } from 'class-validator';
 
-export interface CreateTireBrandDto {
-  name: string;
+export class CreateTireBrandDto {
+  @IsString()
+  name!: string;
+
+  @IsOptional()
+  @IsUrl()
   imageUrl?: string;
 }
 
-export interface UpdateTireBrandDto {
+export class UpdateTireBrandDto {
+  @IsOptional()
+  @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsUrl()
   imageUrl?: string;
+}
+
+export class TireBrandDto {
+  id!: string;
+  name!: string;
+  imageUrl?: string;
+  createdAt!: Date;
+  updatedAt!: Date;
 }

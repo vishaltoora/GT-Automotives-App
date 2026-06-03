@@ -1,4 +1,5 @@
 // Export all DTOs
+export * from './lib/prisma-enums';
 export * from './lib/tire.dto';
 export * from './lib/tire-brand.dto';
 export * from './lib/tire-size.dto';
@@ -16,9 +17,14 @@ export * from './lib/purchase-invoice.dto';
 export * from './lib/expense-invoice.dto';
 export * from './lib/appointment.dto';
 export * from './lib/inspection.dto';
-
-// Export decorators for direct use if needed
-export * from './lib/decorators';
+export * from './lib/employee-availability.dto';
+export * from './lib/expense-report.dto';
+export * from './lib/payout-rule.dto';
+export * from './lib/purchase-expense-invoice.dto';
+export * from './lib/square-payment.dto';
+export * from './lib/square-terminal.dto';
+export * from './lib/tax-report.dto';
+export * from './lib/tire-sale.dto';
 
 // Export utility functions
 export * from './lib/utils/index';

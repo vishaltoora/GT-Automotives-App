@@ -5,7 +5,7 @@ import {
   TimeSlotOverrideDto,
   CheckAvailabilityDto,
   AvailableSlot,
-} from '../common/dto/employee-availability.dto';
+} from '@gt-automotive/data';
 
 @Injectable()
 export class AvailabilityService {

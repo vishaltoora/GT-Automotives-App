@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, Vendor } from '@prisma/client';
-import { CreateVendorDto, UpdateVendorDto } from '../common/dto/vendor.dto';
+import { CreateVendorDto, UpdateVendorDto } from '@gt-automotive/data';
 
 @Injectable()
 export class VendorRepository {

@@ -20,7 +20,7 @@ import {
   UpdateExpenseInvoiceDto,
   ExpenseInvoiceResponseDto,
   ExpenseInvoiceFilterDto,
-} from '../common/dto/expense-invoice.dto';
+} from '@gt-automotive/data';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';

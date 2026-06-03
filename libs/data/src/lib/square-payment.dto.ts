@@ -1,24 +1,28 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
-import { SquarePaymentStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { SquarePaymentStatus } from './prisma-enums';
+
+export { SquarePaymentStatus };
 
 export class CreateSquarePaymentDto {
   @IsString()
   invoiceId!: string;
 
   @IsString()
-  sourceId!: string; // Card token from Square Web Payments SDK
+  sourceId!: string;
 
   @IsNumber()
   @Min(0.01)
+  @Type(() => Number)
   amount!: number;
 
   @IsString()
   @IsOptional()
-  currency?: string; // Defaults to CAD
+  currency?: string;
 
   @IsString()
   @IsOptional()
-  note?: string; // Optional payment note
+  note?: string;
 }
 
 export class RefundSquarePaymentDto {
@@ -27,11 +31,12 @@ export class RefundSquarePaymentDto {
 
   @IsNumber()
   @Min(0.01)
+  @Type(() => Number)
   amount!: number;
 
   @IsString()
   @IsOptional()
-  reason?: string; // Refund reason
+  reason?: string;
 }
 
 export class SquarePaymentResponseDto {
@@ -62,7 +67,8 @@ export class CreateAppointmentCheckoutDto {
 
   @IsNumber()
   @Min(0.01)
-  serviceAmount!: number; // Base amount before taxes (GST + PST will be calculated)
+  @Type(() => Number)
+  serviceAmount!: number;
 }
 
 export class CreateAppointmentPaymentDto {
@@ -70,27 +76,29 @@ export class CreateAppointmentPaymentDto {
   appointmentId!: string;
 
   @IsString()
-  sourceId!: string; // Square card token from Web Payments SDK
+  sourceId!: string;
 
   @IsNumber()
   @Min(0.01)
-  serviceAmount!: number; // Base amount before taxes (GST + PST will be calculated)
+  @Type(() => Number)
+  serviceAmount!: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
-  tipAmount?: number; // Optional tip amount (not subject to tax)
+  @Type(() => Number)
+  tipAmount?: number;
 }
 
 export class AppointmentCheckoutResponseDto {
-  checkoutUrl!: string; // Square hosted payment page URL
-  checkoutId!: string; // Square checkout ID for tracking
+  checkoutUrl!: string;
+  checkoutId!: string;
   appointmentId!: string;
-  serviceAmount!: number; // Base amount
-  gstAmount!: number; // Calculated GST (5%)
-  pstAmount!: number; // Calculated PST (7%)
-  totalAmount!: number; // Total with taxes
-  expiresAt!: Date; // Checkout link expiration
+  serviceAmount!: number;
+  gstAmount!: number;
+  pstAmount!: number;
+  totalAmount!: number;
+  expiresAt!: Date;
 
   constructor(partial: Partial<AppointmentCheckoutResponseDto>) {
     Object.assign(this, partial);

@@ -1,72 +1,17 @@
 import axios from 'axios';
+import type {
+  CreateVehicleDto,
+  DecodeVinResponseDto,
+  UpdateVehicleDto,
+  VehicleResponseDto,
+} from '@gt-automotive/data';
+
+export type Vehicle = VehicleResponseDto;
+export type DecodeVinResponse = DecodeVinResponseDto;
+export type { CreateVehicleDto, UpdateVehicleDto };
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-export interface Vehicle {
-  id: string;
-  customerId: string;
-  make: string;
-  model: string;
-  year: number;
-  vin?: string;
-  licensePlate?: string;
-  mileage?: number;
-  customer?: {
-    id: string;
-    user: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-    };
-  };
-  _count?: {
-    invoices: number;
-    appointments: number;
-  };
-  stats?: {
-    serviceCount: number;
-    totalSpent: number;
-    lastServiceDate: Date | null;
-    nextAppointment: any | null;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateVehicleDto {
-  customerId: string;
-  make: string;
-  model: string;
-  year: number;
-  vin?: string;
-  licensePlate?: string;
-  mileage?: number;
-}
-
-export interface UpdateVehicleDto {
-  make?: string;
-  model?: string;
-  year?: number;
-  vin?: string | null;
-  licensePlate?: string | null;
-  mileage?: number;
-}
-
-export interface DecodeVinResponse {
-  vin: string;
-  make?: string;
-  model?: string;
-  year?: number;
-  trim?: string;
-  bodyClass?: string;
-  vehicleType?: string;
-  engine?: string;
-  fuelType?: string;
-  warnings: string[];
-  rawProvider: 'NHTSA_VPIC';
-}
 
 class VehicleService {
   private async getAuthHeader() {

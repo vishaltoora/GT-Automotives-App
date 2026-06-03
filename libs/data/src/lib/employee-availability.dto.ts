@@ -1,15 +1,16 @@
-import { IsString, IsInt, IsBoolean, IsOptional, IsDate, Min, Max, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsBoolean, IsDate, IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
 
-const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/; // HH:MM 24-hour format
+const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export class SetAvailabilityDto {
   @IsString()
   employeeId!: string;
 
   @IsInt()
-  @Min(0) // Sunday
-  @Max(6) // Saturday
+  @Min(0)
+  @Max(6)
+  @Type(() => Number)
   dayOfWeek!: number;
 
   @IsString()
@@ -51,7 +52,7 @@ export class TimeSlotOverrideDto {
 export class CheckAvailabilityDto {
   @IsOptional()
   @IsString()
-  employeeId?: string; // If null, check all employees
+  employeeId?: string;
 
   @Type(() => Date)
   @IsDate()
@@ -60,7 +61,8 @@ export class CheckAvailabilityDto {
   @IsInt()
   @Min(15)
   @Max(480)
-  duration!: number; // minutes
+  @Type(() => Number)
+  duration!: number;
 }
 
 export class AvailableSlot {
@@ -78,6 +80,7 @@ export class BulkAvailabilityDto {
   @IsInt()
   @Min(0)
   @Max(6)
+  @Type(() => Number)
   dayOfWeek!: number;
 
   @IsString()
@@ -95,5 +98,6 @@ export class BulkAvailabilityDto {
   @IsInt()
   @Min(1)
   @Max(52)
-  repeatWeeks?: number; // How many weeks to apply this to
+  @Type(() => Number)
+  repeatWeeks?: number;
 }

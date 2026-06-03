@@ -1,14 +1,19 @@
-export interface TireSizeDto {
-  id: string;
-  size: string;
-  createdAt: Date;
-  updatedAt: Date;
+import { IsOptional, IsString } from 'class-validator';
+
+export class CreateTireSizeDto {
+  @IsString()
+  size!: string;
 }
 
-export interface CreateTireSizeDto {
-  size: string;
-}
-
-export interface UpdateTireSizeDto {
+export class UpdateTireSizeDto {
+  @IsOptional()
+  @IsString()
   size?: string;
+}
+
+export class TireSizeDto {
+  id!: string;
+  size!: string;
+  createdAt!: Date;
+  updatedAt!: Date;
 }

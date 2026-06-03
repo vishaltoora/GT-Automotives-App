@@ -15,7 +15,7 @@ import {
   SquarePaymentResponseDto,
   CreateAppointmentCheckoutDto,
   AppointmentCheckoutResponseDto,
-} from '../common/dto/square-payment.dto';
+} from '@gt-automotive/data';
 import { SquarePaymentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { calculateTaxes } from '../config/tax.config';

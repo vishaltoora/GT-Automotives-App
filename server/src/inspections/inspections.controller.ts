@@ -17,7 +17,7 @@ import {
   CreateInspectionDto,
   UpdateInspectionDto,
   UpdateInspectionResultDto,
-} from '../common/dto/inspection.dto';
+} from '@gt-automotive/data';
 import { InspectionsService } from './inspections.service';
 
 @Controller('inspections')

@@ -1,19 +1,17 @@
+import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsNumber,
-  IsOptional,
   IsArray,
   IsEnum,
-  ValidateNested,
+  IsNumber,
+  IsOptional,
   IsPositive,
+  IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { PaymentMethod, TireType, TireCondition, CommissionStatus } from '@prisma/client';
+import { CommissionStatus, PaymentMethod, TireCondition, TireType } from './prisma-enums';
 
-// ============================================
-// Tire Sale Item DTOs
-// ============================================
+export { CommissionStatus, PaymentMethod, TireCondition, TireType };
 
 export class TireSaleItemDto {
   @IsString()
@@ -22,10 +20,12 @@ export class TireSaleItemDto {
   @IsNumber()
   @IsPositive()
   @Min(1)
+  @Type(() => Number)
   quantity!: number;
 
   @IsNumber()
   @IsPositive()
+  @Type(() => Number)
   unitPrice!: number;
 }
 
@@ -40,10 +40,6 @@ export class TireSaleItemResponseDto {
   tireType!: TireType;
   tireCondition!: TireCondition;
 }
-
-// ============================================
-// Customer Data DTO (for inline customer creation)
-// ============================================
 
 export class CustomerDataDto {
   @IsString()
@@ -69,10 +65,6 @@ export class CustomerDataDto {
   address?: string;
 }
 
-// ============================================
-// Create Tire Sale DTO
-// ============================================
-
 export class CreateTireSaleDto {
   @IsArray()
   @ValidateNested({ each: true })
@@ -82,18 +74,15 @@ export class CreateTireSaleDto {
   @IsEnum(PaymentMethod)
   paymentMethod!: PaymentMethod;
 
-  // For existing customer (required for non-cash payments)
   @IsOptional()
   @IsString()
   customerId?: string;
 
-  // For creating new customer inline (non-cash only)
   @IsOptional()
   @ValidateNested()
   @Type(() => CustomerDataDto)
   customerData?: CustomerDataDto;
 
-  // Salesperson who made the sale (optional, defaults to current user)
   @IsOptional()
   @IsString()
   soldById?: string;
@@ -102,13 +91,8 @@ export class CreateTireSaleDto {
   @IsString()
   notes?: string;
 }
-
-// ============================================
-// Update Tire Sale DTO (Admin only - change salesperson)
-// ============================================
 
 export class UpdateTireSaleDto {
-  // Change salesperson
   @IsOptional()
   @IsString()
   soldById?: string;
@@ -117,10 +101,6 @@ export class UpdateTireSaleDto {
   @IsString()
   notes?: string;
 }
-
-// ============================================
-// Tire Sale Response DTO
-// ============================================
 
 export class TireSaleSellerDto {
   id!: string;
@@ -162,10 +142,6 @@ export class TireSaleResponseDto {
   createdAt!: Date;
 }
 
-// ============================================
-// Tire Sale Filters DTO
-// ============================================
-
 export class TireSaleFiltersDto {
   @IsOptional()
   @IsString()
@@ -197,10 +173,6 @@ export class TireSaleFiltersDto {
   @Type(() => Number)
   limit?: number;
 }
-
-// ============================================
-// Commission Report DTOs
-// ============================================
 
 export class EmployeeCommissionSummaryDto {
   employeeId!: string;
@@ -240,13 +212,9 @@ export class CommissionFiltersDto {
   employeeId?: string;
 }
 
-// ============================================
-// Monthly Stats DTO (for tiered commission calculation)
-// ============================================
-
 export class MonthlyTireSalesStatsDto {
   employeeId!: string;
-  month!: string; // YYYY-MM format
+  month!: string;
   totalTiresSold!: number;
-  currentCommissionRate!: number; // $3, $4, or $5
+  currentCommissionRate!: number;
 }

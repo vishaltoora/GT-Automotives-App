@@ -19,13 +19,23 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import { CreateTireDto } from '../common/dto/tire.dto';
-import { UpdateTireDto } from '../common/dto/tire.dto';
-import { StockAdjustmentDto } from '../common/dto/tire.dto';
-import { TireSearchDto, TireResponseDto, TireSearchResultDto } from '../common/dto/tire.dto';
-import { CreateTireBrandDto, UpdateTireBrandDto, TireBrandDto } from '../common/dto/tire-brand.dto';
-import { CreateTireSizeDto, UpdateTireSizeDto, TireSizeDto } from '../common/dto/tire-size.dto';
-import { CreateLocationDto, UpdateLocationDto, LocationDto } from '../common/dto/location.dto';
+import {
+  CreateTireDto,
+  CreateLocationDto,
+  CreateTireBrandDto,
+  CreateTireSizeDto,
+  LocationDto,
+  StockAdjustmentDto,
+  TireBrandDto,
+  TireResponseDto,
+  TireSearchDto,
+  TireSearchResultDto,
+  TireSizeDto,
+  UpdateLocationDto,
+  UpdateTireBrandDto,
+  UpdateTireDto,
+  UpdateTireSizeDto,
+} from '@gt-automotive/data';
 
 @Controller('tires')
 export class TiresController {

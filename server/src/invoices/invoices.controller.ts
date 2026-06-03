@@ -10,9 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceDto } from '../common/dto/invoice.dto';
-import { UpdateInvoiceDto } from '../common/dto/invoice.dto';
-import { CreateServiceDto, UpdateServiceDto } from '../common/dto/service.dto';
+import { CreateInvoiceDto, CreateServiceDto, UpdateInvoiceDto, UpdateServiceDto } from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

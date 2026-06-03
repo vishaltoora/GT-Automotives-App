@@ -1,4 +1,12 @@
 import axios from 'axios';
+import type {
+  CreateQuoteDto as SharedCreateQuoteDto,
+  QuotationItemDto,
+  QuotationItemType,
+  QuotationResponseDto,
+  QuotationStatus,
+  UpdateQuoteDto as SharedUpdateQuoteDto,
+} from '@gt-automotive/data';
 import gtLogoImage from '../images-and-logos/logo.png';
 import { formatPhoneForDisplay } from '../utils/phone';
 
@@ -12,81 +20,27 @@ export function setClerkTokenGetter(getter: () => Promise<string | null>) {
   getClerkToken = getter;
 }
 
-export interface QuoteItem {
-  id?: string;
-  tireId?: string;
-  tireName?: string;
-  tire?: any;
-  itemType: 'TIRE' | 'SERVICE' | 'PART' | 'OTHER' | 'LEVY';
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total?: number;
-}
+type QuotationItemTypeInput = QuotationItemType | `${QuotationItemType}`;
+type QuotationStatusInput = QuotationStatus | `${QuotationStatus}`;
 
-export interface Quote {
-  id: string;
-  quotationNumber: string; // Keep the DB field name but rename interface
-  customerName: string;
-  businessName?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  vehicleMake?: string;
-  vehicleModel?: string;
-  vehicleYear?: number;
+export type QuoteItem = Omit<QuotationItemDto, 'itemType'> & {
+  itemType: QuotationItemTypeInput;
+};
+
+export type Quote = Omit<QuotationResponseDto, 'items' | 'status'> & {
   items: QuoteItem[];
-  subtotal: number;
-  taxRate: number;
-  taxAmount: number;
-  gstRate?: number;
-  gstAmount?: number;
-  pstRate?: number;
-  pstAmount?: number;
-  total: number;
-  status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'CONVERTED';
-  validUntil?: string;
-  notes?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  convertedToInvoiceId?: string;
-}
+  status: QuotationStatusInput;
+};
 
-export interface CreateQuoteDto {
-  customerName: string;
-  businessName?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  vehicleMake?: string;
-  vehicleModel?: string;
-  vehicleYear?: number;
+export type CreateQuoteDto = Omit<SharedCreateQuoteDto, 'items' | 'status'> & {
   items: Omit<QuoteItem, 'id' | 'total'>[];
-  gstRate?: number;
-  pstRate?: number;
-  notes?: string;
-  status?: Quote['status'];
-  validUntil?: string;
-}
+  status?: QuotationStatusInput;
+};
 
-export interface UpdateQuoteDto {
-  customerName?: string;
-  businessName?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  vehicleMake?: string;
-  vehicleModel?: string;
-  vehicleYear?: number;
+export type UpdateQuoteDto = Omit<SharedUpdateQuoteDto, 'items' | 'status'> & {
   items?: Omit<QuoteItem, 'id' | 'total'>[];
-  gstRate?: number;
-  pstRate?: number;
-  notes?: string;
-  status?: Quote['status'];
-  validUntil?: string;
-  convertedToInvoiceId?: string;
-}
+  status?: QuotationStatusInput;
+};
 
 class QuoteService {
   private async getAuthToken(): Promise<string | null> {

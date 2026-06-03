@@ -47,7 +47,20 @@ import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../hooks/useAuth';
 
-const categories: ExpenseCategory[] = ['RENT', 'UTILITIES', 'INSURANCE', 'MARKETING', 'OFFICE_SUPPLIES', 'MAINTENANCE', 'OTHER'];
+const categories: ExpenseCategory[] = [
+  'RENT',
+  'UTILITIES',
+  'INSURANCE',
+  'ADVERTISING',
+  'OFFICE_SUPPLIES',
+  'PROFESSIONAL_FEES',
+  'MAINTENANCE',
+  'VEHICLE',
+  'TRAVEL',
+  'TRAINING',
+  'SOFTWARE',
+  'OTHER',
+];
 const statuses: ExpenseInvoiceStatus[] = ['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
 
 const ExpenseInvoiceManagement: React.FC = () => {

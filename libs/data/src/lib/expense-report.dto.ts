@@ -1,5 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsDateString } from 'class-validator';
-import { PurchaseCategory, ExpenseCategory, PurchaseInvoiceStatus, PurchaseExpenseCategory } from '@prisma/client';
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  ExpenseCategory,
+  PurchaseCategory,
+  PurchaseExpenseCategory,
+  PurchaseInvoiceStatus,
+} from './prisma-enums';
+
+export { ExpenseCategory, PurchaseCategory, PurchaseExpenseCategory, PurchaseInvoiceStatus };
 
 export class ExpenseReportFilterDto {
   @IsDateString()
@@ -20,7 +27,6 @@ export class ExpenseReportFilterDto {
 }
 
 export class CategorySummaryDto {
-  // Support both legacy categories (PurchaseCategory, ExpenseCategory) and unified categories (PurchaseExpenseCategory)
   category!: PurchaseCategory | ExpenseCategory | PurchaseExpenseCategory;
   count!: number;
   totalAmount!: number;
@@ -39,7 +45,7 @@ export class VendorSummaryDto {
 }
 
 export class MonthlyTrendDto {
-  month!: string; // YYYY-MM format
+  month!: string;
   purchaseCount!: number;
   purchaseTotal!: number;
   expenseCount!: number;
@@ -60,28 +66,17 @@ export class RecurringExpenseSummaryDto {
 }
 
 export class ExpenseReportResponseDto {
-  // Summary statistics
   totalPurchases!: number;
   totalPurchaseAmount!: number;
   totalExpenses!: number;
   totalExpenseAmount!: number;
   combinedTotal!: number;
-
-  // Payment status breakdown
   paidTotal!: number;
   pendingTotal!: number;
   overdueTotal!: number;
-
-  // Category breakdowns
   purchasesByCategory!: CategorySummaryDto[];
   expensesByCategory!: CategorySummaryDto[];
-
-  // Vendor analysis
   topVendorsBySpending!: VendorSummaryDto[];
-
-  // Monthly trends
   monthlyTrends!: MonthlyTrendDto[];
-
-  // Recurring expenses
   recurringExpenses!: RecurringExpenseSummaryDto[];
 }

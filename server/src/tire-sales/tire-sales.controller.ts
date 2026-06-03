@@ -20,7 +20,7 @@ import {
   TireSaleFiltersDto,
   CommissionReportDto,
   CommissionFiltersDto,
-} from '../common/dto/tire-sale.dto';
+} from '@gt-automotive/data';
 
 @Controller('tire-sales')
 @UseGuards(JwtAuthGuard, RoleGuard)

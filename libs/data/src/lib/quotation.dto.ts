@@ -1,18 +1,17 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, Type, OmitType } from './decorators';
+import { Type } from 'class-transformer';
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { QuotationStatus } from './prisma-enums';
 
-export enum QuotationStatus {
-  DRAFT = 'DRAFT',
-  SENT = 'SENT',
-  ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED',
-  EXPIRED = 'EXPIRED'
-}
+export { QuotationStatus };
 
 export enum QuotationItemType {
   TIRE = 'TIRE',
   SERVICE = 'SERVICE',
   PART = 'PART',
-  OTHER = 'OTHER'
+  OTHER = 'OTHER',
+  LEVY = 'LEVY',
+  DISCOUNT = 'DISCOUNT',
+  DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE'
 }
 
 export class QuotationItemDto {
@@ -24,6 +23,17 @@ export class QuotationItemDto {
   @IsString()
   tireId?: string;
 
+  @IsOptional()
+  @IsString()
+  tireName?: string;
+
+  @IsOptional()
+  tire?: unknown;
+
+  @IsOptional()
+  @IsString()
+  serviceId?: string;
+
   @IsEnum(QuotationItemType)
   itemType!: QuotationItemType;
 
@@ -31,59 +41,84 @@ export class QuotationItemDto {
   description!: string;
 
   @IsNumber()
+  @Type(() => Number)
   quantity!: number;
 
   @IsNumber()
+  @Type(() => Number)
   unitPrice!: number;
 
   @IsOptional()
+  @IsString()
+  discountType?: 'amount' | 'percentage';
+
+  @IsOptional()
   @IsNumber()
+  @Type(() => Number)
+  discountValue?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  discountAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
   total?: number;
 }
 
 export class CreateQuoteDto {
   @IsString()
-  customerId!: string;
+  customerName!: string;
 
   @IsOptional()
   @IsString()
-  vehicleId?: string;
+  businessName?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleMake?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleModel?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  vehicleYear?: number;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => QuotationItemDto)
   items!: QuotationItemDto[];
 
-  @IsNumber()
-  subtotal!: number;
-
-  @IsNumber()
-  taxRate!: number;
-
-  @IsNumber()
-  taxAmount!: number;
-
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   gstRate?: number;
 
   @IsOptional()
   @IsNumber()
-  gstAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
   pstRate?: number;
 
   @IsOptional()
-  @IsNumber()
-  pstAmount?: number;
-
-  @IsNumber()
-  total!: number;
-
   @IsEnum(QuotationStatus)
-  status!: QuotationStatus;
+  status?: QuotationStatus;
 
   @IsOptional()
   @IsString()
@@ -94,27 +129,141 @@ export class CreateQuoteDto {
   validUntil?: string;
 }
 
-export class UpdateQuoteDto extends OmitType(CreateQuoteDto, ['customerId']) {}
+export class UpdateQuoteDto {
+  @IsOptional()
+  @IsString()
+  customerName?: string;
+
+  @IsOptional()
+  @IsString()
+  businessName?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleMake?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleModel?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  vehicleYear?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => QuotationItemDto)
+  items?: QuotationItemDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  subtotal?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  taxRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  taxAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  gstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  gstAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  pstRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  pstAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  total?: number;
+
+  @IsOptional()
+  @IsEnum(QuotationStatus)
+  status?: QuotationStatus;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  validUntil?: string;
+
+  @IsOptional()
+  @IsString()
+  convertedToInvoiceId?: string;
+}
 
 export class QuotationResponseDto {
   @IsString()
   id!: string;
 
   @IsString()
-  quoteNumber!: string;
+  quotationNumber!: string;
 
   @IsString()
-  customerId!: string;
-
-  @IsOptional()
-  customer?: any;
+  customerName!: string;
 
   @IsOptional()
   @IsString()
-  vehicleId?: string;
+  businessName?: string;
 
   @IsOptional()
-  vehicle?: any;
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleMake?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleModel?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  vehicleYear?: number;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -122,31 +271,39 @@ export class QuotationResponseDto {
   items!: QuotationItemDto[];
 
   @IsNumber()
+  @Type(() => Number)
   subtotal!: number;
 
   @IsNumber()
+  @Type(() => Number)
   taxRate!: number;
 
   @IsNumber()
+  @Type(() => Number)
   taxAmount!: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   gstRate?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   gstAmount?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   pstRate?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   pstAmount?: number;
 
   @IsNumber()
+  @Type(() => Number)
   total!: number;
 
   @IsEnum(QuotationStatus)
@@ -159,6 +316,10 @@ export class QuotationResponseDto {
   @IsOptional()
   @IsString()
   validUntil?: string;
+
+  @IsOptional()
+  @IsString()
+  convertedToInvoiceId?: string;
 
   @IsString()
   createdBy!: string;

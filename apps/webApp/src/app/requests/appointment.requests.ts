@@ -1,8 +1,11 @@
 import axios from 'axios';
 import {
   AppointmentStatus,
+  AppointmentType,
+  CreateAppointmentDto,
   AppointmentResponseDto as Appointment,
   PaymentEntryDto as PaymentEntry,
+  UpdateAppointmentDto,
 } from '@gt-automotive/data';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -76,39 +79,17 @@ apiClient.interceptors.response.use(
   }
 );
 
-export interface CreateAppointmentRequest {
-  customerId: string;
-  vehicleId?: string;
-  employeeId?: string; // Deprecated: Use employeeIds instead
-  employeeIds?: string[]; // Multiple employees
-  scheduledDate: Date | string; // Allow string to avoid timezone issues
-  scheduledTime: string;
-  duration: number;
-  serviceType: string;
-  appointmentType: string;
-  serviceAddress?: string; // Required for MOBILE_SERVICE appointments
-  notes?: string;
-}
+type AppointmentTypeInput = AppointmentType | `${AppointmentType}`;
 
-export interface UpdateAppointmentRequest {
-  employeeId?: string; // Deprecated: Use employeeIds instead
-  employeeIds?: string[]; // Multiple employees
-  scheduledDate?: Date | string; // Allow string to avoid timezone issues
-  scheduledTime?: string;
-  duration?: number;
-  serviceType?: string;
-  status?: AppointmentStatus;
-  appointmentType?: string;
-  serviceAddress?: string; // Address for MOBILE_SERVICE appointments
-  notes?: string;
-  paymentAmount?: number;
-  paymentBreakdown?: PaymentEntry[]; // Array of payment entries
-  paymentNotes?: string;
-  expectedAmount?: number; // Expected amount for tracking partial payments
-  completionEmployeeIds?: string[];
-  productSaleAmount?: number;
-  productSaleItems?: string[];
-}
+export type CreateAppointmentRequest = Omit<CreateAppointmentDto, 'scheduledDate' | 'appointmentType'> & {
+  scheduledDate: Date | string;
+  appointmentType: AppointmentTypeInput;
+};
+
+export type UpdateAppointmentRequest = Omit<UpdateAppointmentDto, 'scheduledDate' | 'appointmentType'> & {
+  scheduledDate?: Date | string;
+  appointmentType?: AppointmentTypeInput;
+};
 
 export interface AppointmentQueryParams {
   startDate?: Date | string; // Allow string to avoid timezone issues
@@ -125,7 +106,7 @@ export interface CalendarQueryParams {
 }
 
 // Re-export Appointment type from shared DTOs for convenience
-export type { Appointment, PaymentEntry };
+export type { Appointment, PaymentEntry, CreateAppointmentDto, UpdateAppointmentDto };
 
 export interface AvailableSlot {
   employeeId: string;

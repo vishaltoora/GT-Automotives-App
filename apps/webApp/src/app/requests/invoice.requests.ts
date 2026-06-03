@@ -1,8 +1,16 @@
 import axios from 'axios';
-import { PaymentMethod } from '../../enums';
-import { CreateInvoiceDto, InvoiceItemType } from '@gt-automotive/data';
+import type {
+  CreateInvoiceDto,
+  InvoiceItemDto,
+  InvoiceResponseDto,
+  UpdateInvoiceDto,
+} from '@gt-automotive/data';
 import gtLogoImage from '../images-and-logos/logo.png';
 import { formatPhoneForDisplay } from '../utils/phone';
+
+export type InvoiceItem = InvoiceItemDto;
+export type Invoice = InvoiceResponseDto;
+export type { CreateInvoiceDto, UpdateInvoiceDto };
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -12,81 +20,6 @@ let getClerkToken: (() => Promise<string | null>) | null = null;
 
 export function setClerkTokenGetter(getter: () => Promise<string | null>) {
   getClerkToken = getter;
-}
-
-export interface InvoiceItem {
-  id?: string;
-  tireId?: string;
-  tireName?: string;
-  tire?: any;
-  serviceId?: string;
-  itemType: InvoiceItemType;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  discountType?: 'amount' | 'percentage';
-  discountValue?: number;
-  discountAmount?: number;
-  total?: number;
-}
-
-export interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  customerId: string;
-  customer?: any;
-  vehicleId?: string;
-  vehicle?: any;
-  companyId: string;
-  company?: {
-    id: string;
-    name: string;
-    registrationNumber: string;
-    businessType?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-    isDefault: boolean;
-  };
-  items: InvoiceItem[];
-  subtotal: number;
-  taxRate: number;
-  taxAmount: number;
-  gstRate?: number;
-  gstAmount?: number;
-  pstRate?: number;
-  pstAmount?: number;
-  total: number;
-  status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
-  paymentMethod?: PaymentMethod;
-  notes?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  paidAt?: string;
-  invoiceDate?: string;
-}
-
-// Using shared DTO from the library
-// export type CreateInvoiceDto = CreateInvoiceEnhancedDto;
-
-export interface UpdateInvoiceDto {
-  vehicleId?: string;
-  items?: InvoiceItem[];
-  subtotal?: number;
-  taxRate?: number;
-  taxAmount?: number;
-  gstRate?: number;
-  gstAmount?: number;
-  pstRate?: number;
-  pstAmount?: number;
-  total?: number;
-  status?: Invoice['status'];
-  paymentMethod?: PaymentMethod;
-  notes?: string;
-  paidAt?: string;
-  invoiceDate?: string;
-  companyId?: string;
 }
 
 class InvoiceService {

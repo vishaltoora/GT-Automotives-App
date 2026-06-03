@@ -7,12 +7,22 @@ import {
 } from '@nestjs/common';
 import { TireRepository } from './repositories/tire.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
-import { CreateTireDto } from '../common/dto/tire.dto';
-import { UpdateTireDto } from '../common/dto/tire.dto';
-import { TireFiltersDto } from '../common/dto/tire.dto';
-import { TireSearchDto, TireSearchResultDto, TireResponseDto, StockAdjustmentDto, InventoryReportDto } from '../common/dto/tire.dto';
-import { CreateTireBrandDto, UpdateTireBrandDto, TireBrandDto } from '../common/dto/tire-brand.dto';
-import { CreateTireSizeDto, UpdateTireSizeDto, TireSizeDto } from '../common/dto/tire-size.dto';
+import {
+  CreateTireDto,
+  CreateTireBrandDto,
+  CreateTireSizeDto,
+  InventoryReportDto,
+  StockAdjustmentDto,
+  TireBrandDto,
+  TireFiltersDto,
+  TireResponseDto,
+  TireSearchDto,
+  TireSearchResultDto,
+  TireSizeDto,
+  UpdateTireBrandDto,
+  UpdateTireDto,
+  UpdateTireSizeDto,
+} from '@gt-automotive/data';
 import { TireType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '@gt-automotive/database';

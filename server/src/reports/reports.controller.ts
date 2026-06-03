@@ -1,7 +1,7 @@
 import { Controller, Get, Query, UseGuards, ValidationPipe } from '@nestjs/common';
 import { ReportsService } from './reports.service';
-import { ExpenseReportFilterDto, ExpenseReportResponseDto } from '../common/dto/expense-report.dto';
-import { TaxReportFilterDto, TaxReportResponseDto, GstPaidReportResponseDto } from '../common/dto/tax-report.dto';
+import { ExpenseReportFilterDto, ExpenseReportResponseDto } from '@gt-automotive/data';
+import { TaxReportFilterDto, TaxReportResponseDto, GstPaidReportResponseDto } from '@gt-automotive/data';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';

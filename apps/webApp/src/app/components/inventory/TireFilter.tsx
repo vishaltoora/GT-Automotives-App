@@ -26,25 +26,10 @@ import {
   Clear as ClearIcon,
 } from '@mui/icons-material';
 import { TireFiltersDto } from '@gt-automotive/data';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
+import {
+  TIRE_CONDITION_OPTIONS,
+  TIRE_TYPE_OPTIONS,
+} from '../../constants/enum-mappings';
 import { useTireBrands, useTireSizeSuggestions } from '../../hooks/useTires';
 
 interface TireFilterProps {
@@ -53,17 +38,6 @@ interface TireFilterProps {
   onClear: () => void;
   isCompact?: boolean;
 }
-
-const TIRE_TYPES = Object.values(TireType);
-const TIRE_CONDITIONS = Object.values(TireCondition);
-
-const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-};
-
-const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-};
 
 export function TireFilter({ filters, onChange, onClear, isCompact = false }: TireFilterProps) {
   const [expanded, setExpanded] = useState(!isCompact);
@@ -157,9 +131,9 @@ export function TireFilter({ filters, onChange, onClear, isCompact = false }: Ti
           onChange={(e) => handleFilterChange('type', e.target.value || undefined)}
         >
           <MenuItem value="">All Types</MenuItem>
-          {TIRE_TYPES.map((type) => (
-            <MenuItem key={type} value={type}>
-              {formatTireType(type)}
+          {TIRE_TYPE_OPTIONS.map(({ value, label }) => (
+            <MenuItem key={value} value={value}>
+              {label}
             </MenuItem>
           ))}
         </Select>
@@ -174,9 +148,9 @@ export function TireFilter({ filters, onChange, onClear, isCompact = false }: Ti
           onChange={(e) => handleFilterChange('condition', e.target.value || undefined)}
         >
           <MenuItem value="">All Conditions</MenuItem>
-          {TIRE_CONDITIONS.map((condition) => (
-            <MenuItem key={condition} value={condition}>
-              {formatCondition(condition)}
+          {TIRE_CONDITION_OPTIONS.map(({ value, label }) => (
+            <MenuItem key={value} value={value}>
+              {label}
             </MenuItem>
           ))}
         </Select>

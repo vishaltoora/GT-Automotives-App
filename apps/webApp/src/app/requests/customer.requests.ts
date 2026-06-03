@@ -1,4 +1,24 @@
 import axios from 'axios';
+import type {
+  CustomerAppointmentDto,
+  CustomerAppointmentEmployeeDto,
+  CustomerInvoiceDto,
+  CustomerInvoiceItemDto,
+  CreateCustomerDto,
+  CustomerResponseDto,
+  CustomerVehicleDto,
+  SmsPreferenceDto,
+  UpdateCustomerDto,
+} from '@gt-automotive/data';
+
+export type Customer = CustomerResponseDto;
+export type SmsPreference = SmsPreferenceDto;
+export type Vehicle = CustomerVehicleDto;
+export type Invoice = CustomerInvoiceDto;
+export type InvoiceItem = CustomerInvoiceItemDto;
+export type AppointmentEmployee = CustomerAppointmentEmployeeDto;
+export type Appointment = CustomerAppointmentDto;
+export type { CreateCustomerDto, UpdateCustomerDto };
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -71,134 +91,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export interface SmsPreference {
-  optedIn: boolean;
-  appointmentReminders: boolean;
-  serviceUpdates: boolean;
-  promotional: boolean;
-}
-
-export interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  businessName?: string;
-  vehicles?: Vehicle[];
-  smsPreference?: SmsPreference;
-  _count?: {
-    invoices: number;
-    appointments: number;
-    vehicles: number;
-  };
-  stats?: {
-    totalSpent: number;
-    outstandingBalance: number;
-    vehicleCount: number;
-    appointmentCount: number;
-    upcomingAppointments: number;
-    lastVisitDate: Date | null;
-  };
-  invoices?: Invoice[];
-  appointments?: Appointment[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Vehicle {
-  id: string;
-  customerId: string;
-  make: string;
-  model: string;
-  year: number;
-  vin?: string;
-  licensePlate?: string;
-  mileage?: number;
-  _count?: {
-    invoices: number;
-    appointments: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  customerId: string;
-  vehicleId?: string;
-  vehicle?: Vehicle;
-  status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
-  subtotal: number;
-  gstAmount: number;
-  total: number;
-  invoiceDate?: string;
-  createdAt: string;
-  updatedAt: string;
-  items?: InvoiceItem[];
-}
-
-export interface InvoiceItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-}
-
-export interface AppointmentEmployee {
-  employee: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
-}
-
-export interface Appointment {
-  id: string;
-  customerId: string;
-  vehicleId?: string;
-  vehicle?: Vehicle;
-  scheduledDate: string;
-  serviceType: string;
-  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
-  notes?: string;
-  employees?: AppointmentEmployee[];
-  paymentAmount?: number;
-  expectedAmount?: number;
-  paymentBreakdown?: any;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateCustomerDto {
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  businessName?: string;
-  smsOptedIn?: boolean;
-  smsAppointmentReminders?: boolean;
-  smsServiceUpdates?: boolean;
-  smsPromotional?: boolean;
-}
-
-export interface UpdateCustomerDto {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  businessName?: string;
-  smsOptedIn?: boolean;
-  smsAppointmentReminders?: boolean;
-  smsServiceUpdates?: boolean;
-  smsPromotional?: boolean;
-}
 
 class CustomerService {
   async getAllCustomers(): Promise<Customer[]> {

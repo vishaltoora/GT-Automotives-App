@@ -1,26 +1,16 @@
 import { IsString, IsNumber, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { JobStatus, JobType } from './prisma-enums';
 
-// Enums for Job - using string values to match Prisma
-export enum JobStatus {
-  PENDING = 'PENDING',
-  READY = 'READY',
-  PAID = 'PAID',
-  CANCELLED = 'CANCELLED',
-  PARTIALLY_PAID = 'PARTIALLY_PAID'
-}
-
-export enum JobType {
-  REGULAR = 'REGULAR',
-  OVERTIME = 'OVERTIME',
-  BONUS = 'BONUS',
-  COMMISSION = 'COMMISSION',
-  EXPENSE = 'EXPENSE',
-  OTHER = 'OTHER'
-}
+export { JobStatus, JobType };
 
 export class CreateJobDto {
   @IsString()
   employeeId!: string;
+
+  @IsOptional()
+  @IsString()
+  appointmentId?: string;
 
   @IsString()
   title!: string;
@@ -30,14 +20,23 @@ export class CreateJobDto {
   description?: string;
 
   @IsNumber()
+  @Type(() => Number)
   payAmount!: number;
 
   @IsEnum(JobType)
   jobType!: JobType;
 
   @IsOptional()
+  @IsEnum(JobStatus)
+  status?: JobStatus;
+
+  @IsOptional()
   @IsDateString()
   dueDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  completedAt?: string;
 }
 
 export class UpdateJobDto {
@@ -51,6 +50,7 @@ export class UpdateJobDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   payAmount?: number;
 
   @IsOptional()

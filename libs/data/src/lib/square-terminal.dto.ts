@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateTerminalCheckoutDto {
   @IsString()
@@ -6,6 +7,7 @@ export class CreateTerminalCheckoutDto {
 
   @IsNumber()
   @Min(0.01)
+  @Type(() => Number)
   amount!: number;
 
   @IsString()

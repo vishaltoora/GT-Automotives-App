@@ -1,38 +1,14 @@
 import { IsBoolean, IsDateString, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  BreakType,
+  PayType,
+  PayrollAdjustmentType,
+  TimeEntrySource,
+  TimeEntryStatus,
+} from './prisma-enums';
 
-export enum PayType {
-  HOURLY = 'HOURLY',
-  SALARIED = 'SALARIED',
-}
-
-export enum TimeEntryStatus {
-  OPEN = 'OPEN',
-  ON_BREAK = 'ON_BREAK',
-  CLOCKED_OUT = 'CLOCKED_OUT',
-  APPROVED = 'APPROVED',
-  ADJUSTED = 'ADJUSTED',
-  VOIDED = 'VOIDED',
-}
-
-export enum TimeEntrySource {
-  EMPLOYEE = 'EMPLOYEE',
-  ADMIN = 'ADMIN',
-  SYSTEM = 'SYSTEM',
-}
-
-export enum BreakType {
-  MEAL = 'MEAL',
-  REST = 'REST',
-  PERSONAL = 'PERSONAL',
-  OTHER = 'OTHER',
-}
-
-export enum PayrollAdjustmentType {
-  BONUS = 'BONUS',
-  REIMBURSEMENT = 'REIMBURSEMENT',
-  DEDUCTION = 'DEDUCTION',
-  OTHER = 'OTHER',
-}
+export { BreakType, PayType, PayrollAdjustmentType, TimeEntrySource, TimeEntryStatus };
 
 export class UpsertEmployeeCompensationDto {
   @IsEnum(PayType)
@@ -40,14 +16,17 @@ export class UpsertEmployeeCompensationDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   hourlyRate?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   annualSalary?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   expectedWeeklyHours?: number;
 
   @IsOptional()
@@ -107,6 +86,7 @@ export class CreatePayrollAdjustmentDto {
   type?: PayrollAdjustmentType;
 
   @IsNumber()
+  @Type(() => Number)
   amount!: number;
 
   @IsString()

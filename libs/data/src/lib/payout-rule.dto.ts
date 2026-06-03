@@ -1,12 +1,15 @@
+import { Type } from 'class-transformer';
 import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreatePayoutRuleDto {
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
   triggerAmount!: number;
 
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
   payoutAmount!: number;
 
   @IsOptional()
@@ -22,11 +25,13 @@ export class UpdatePayoutRuleDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
   triggerAmount?: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
   payoutAmount?: number;
 
   @IsOptional()

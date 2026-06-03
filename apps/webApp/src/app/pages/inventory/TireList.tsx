@@ -36,26 +36,12 @@ import {
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAuth } from '../../hooks/useAuth';
 import { useTires, useExportTires, useInvalidateTireQueries } from '../../hooks/useTires';
-import { ITireSearchParams } from '@gt-automotive/data';
-// Define enums locally to avoid Prisma client browser issues
-const TireType = {
-  ALL_SEASON: 'ALL_SEASON',
-  SUMMER: 'SUMMER',
-  WINTER: 'WINTER',
-  PERFORMANCE: 'PERFORMANCE',
-  OFF_ROAD: 'OFF_ROAD',
-  RUN_FLAT: 'RUN_FLAT',
-} as const;
-
-const TireCondition = {
-  NEW: 'NEW',
-  USED_EXCELLENT: 'USED_EXCELLENT',
-  USED_GOOD: 'USED_GOOD',
-  USED_FAIR: 'USED_FAIR',
-} as const;
-
-type TireType = typeof TireType[keyof typeof TireType];
-type TireCondition = typeof TireCondition[keyof typeof TireCondition];
+import { ITireSearchParams, TireCondition, TireType } from '@gt-automotive/data';
+import {
+  getEnumLabel,
+  TIRE_CONDITION_DISPLAY,
+  TIRE_TYPE_DISPLAY,
+} from '../../constants/enum-mappings';
 import TireCard from '../../components/inventory/TireCard';
 
 type ViewMode = 'grid' | 'list';
@@ -66,14 +52,6 @@ interface TireListProps {
   showActions?: boolean;
   embedded?: boolean;
 }
-
-const formatTireType = (type: TireType): string => {
-  return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
-};
-
-const formatCondition = (condition: TireCondition): string => {
-  return condition.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase());
-};
 
 export function TireList({ 
   variant = 'full', 
@@ -177,26 +155,6 @@ export function TireList({
         // Debug log to check what data we're receiving
         console.log('Tire data:', tire.brand, 'imageUrl:', tire.imageUrl, 'brandImageUrl:', tire.brandImageUrl);
 
-        // Function to get emoji based on tire type
-        const getTireEmoji = (type: TireType) => {
-          switch (type) {
-            case 'ALL_SEASON':
-              return '🌤️'; // All weather conditions
-            case 'SUMMER':
-              return '☀️'; // Summer sun
-            case 'WINTER':
-              return '❄️'; // Winter snowflake
-            case 'PERFORMANCE':
-              return '🏁'; // Racing/performance
-            case 'OFF_ROAD':
-              return '🏔️'; // Mountain/rugged terrain
-            case 'RUN_FLAT':
-              return '🛡️'; // Protection/safety
-            default:
-              return '🛞'; // Default tire
-          }
-        };
-
         // Prioritize brand image, fallback to tire image
         const imageUrl = tire.brandImageUrl || tire.imageUrl;
 
@@ -214,7 +172,7 @@ export function TireList({
                 backgroundColor: 'grey.50',
               }}
               onError={(e) => {
-                // On error, replace with emoji fallback
+                // On error, hide the broken image and leave the type badge fallback.
                 console.log('Image load error for:', tire.brand, imageUrl);
                 const target = e.currentTarget;
                 target.style.display = 'none';
@@ -223,7 +181,7 @@ export function TireList({
           );
         }
         
-        // Show type-specific emoji placeholder when no image
+        // Show type-specific placeholder when no image
         return (
           <Box
             sx={{
@@ -238,9 +196,9 @@ export function TireList({
               border: '1px solid',
               borderColor: 'grey.200',
             }}
-            title={`${tire.type.replace('_', ' ')} tire`}
+            title={`${getEnumLabel(TIRE_TYPE_DISPLAY, tire.type as TireType)} tire`}
           >
-            {getTireEmoji(tire.type)}
+            {TIRE_TYPE_DISPLAY[tire.type as TireType].icon}
           </Box>
         );
       },
@@ -264,8 +222,9 @@ export function TireList({
       sortable: true,
       renderCell: (params) => (
         <Chip 
-          label={formatTireType(params.value)} 
+          label={getEnumLabel(TIRE_TYPE_DISPLAY, params.value as TireType)}
           size="small" 
+          color={TIRE_TYPE_DISPLAY[params.value as TireType].chipColor}
           variant="outlined"
         />
       ),
@@ -277,9 +236,9 @@ export function TireList({
       sortable: true,
       renderCell: (params) => (
         <Chip 
-          label={formatCondition(params.value)} 
+          label={getEnumLabel(TIRE_CONDITION_DISPLAY, params.value as TireCondition)}
           size="small" 
-          color={params.value === 'NEW' ? 'success' : 'warning'}
+          color={TIRE_CONDITION_DISPLAY[params.value as TireCondition].chipColor}
           variant="outlined"
         />
       ),
