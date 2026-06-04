@@ -1,19 +1,12 @@
-import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
   Grid,
-  Card,
-  CardContent,
   Paper,
-  CircularProgress,
 } from '@mui/material';
 import {
-  AttachMoney,
   Receipt,
   Analytics,
-  TrendingUp,
-  TrendingDown,
   Assessment,
   ShoppingCart,
   BarChart,
@@ -21,31 +14,13 @@ import {
 import { colors } from '../../theme/colors';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { dashboardService, DashboardStats } from '../../requests/dashboard.requests';
 
 export function AccountantDashboard() {
   const { user } = useAuth();
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const basePath = '/accountant';
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const data = await dashboardService.getStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Failed to load dashboard stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Quick action styles
   const actionItemStyles = {
@@ -97,174 +72,6 @@ export function AccountantDashboard() {
           Financial overview and reports
         </Typography>
       </Box>
-
-      {/* Financial Stats Cards */}
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress />
-        </Box>
-      ) : stats ? (
-        <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
-          {/* Total Revenue */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                height: '100%',
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <AttachMoney sx={{ fontSize: 28 }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Total Revenue
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, my: 0.5 }}>
-                      ${stats.revenue.value.toLocaleString()}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      {stats.revenue.trend === 'up' ? (
-                        <TrendingUp sx={{ fontSize: 16 }} />
-                      ) : (
-                        <TrendingDown sx={{ fontSize: 16 }} />
-                      )}
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {stats.revenue.change}% vs last month
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Total Invoices */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-                color: 'white',
-                border: 'none',
-                height: '100%',
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Receipt sx={{ fontSize: 28 }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Total Invoices
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, my: 0.5 }}>
-                      {stats.customers.value}
-                    </Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                      This month
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Pending Payments */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                color: 'white',
-                border: 'none',
-                height: '100%',
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Analytics sx={{ fontSize: 28 }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Pending Invoices
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, my: 0.5 }}>
-                      {stats.vehicles.value}
-                    </Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                      Awaiting payment
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Today's Revenue */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                color: 'white',
-                border: 'none',
-                height: '100%',
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <AttachMoney sx={{ fontSize: 28 }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Today's Revenue
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, my: 0.5 }}>
-                      ${stats.appointments.value * 150}
-                    </Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                      {stats.appointments.value} transactions
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      ) : null}
 
       {/* Quick Actions for Accountant */}
       <Paper

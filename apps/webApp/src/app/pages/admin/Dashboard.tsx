@@ -3,8 +3,6 @@ import {
   Box,
   Typography,
   Grid,
-  Card,
-  CardContent,
   Button,
   Chip,
   Paper,
@@ -13,25 +11,20 @@ import {
   ListItemText,
   ListItemAvatar,
   Divider,
-  CircularProgress,
   useTheme,
   useMediaQuery,
   Badge,
 } from '@mui/material';
 import {
-  People,
   AttachMoney,
   Inventory,
   SupervisorAccount,
   Analytics,
-  DirectionsCar,
   Receipt,
   CalendarMonth,
   Warning,
   CheckCircle,
   Error,
-  ArrowUpward,
-  ArrowDownward,
   TireRepair,
   Speed,
   LocalShipping,
@@ -52,7 +45,6 @@ import { AppointmentDialog } from '../../components/appointments/AppointmentDial
 import TireDialog from '../../components/inventory/TireDialog';
 import { QuickTireSaleDialog } from '../../components/tire-sales';
 import { useAuth } from '../../hooks/useAuth';
-import { dashboardService, DashboardStats } from '../../requests/dashboard.requests';
 import { timeClockService } from '../../requests/time-clock.requests';
 import { TimeEntryDto } from '@gt-automotive/data';
 
@@ -70,8 +62,7 @@ export function AdminDashboard() {
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
   const [tireSaleDialogOpen, setTireSaleDialogOpen] = useState(false);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+
   const [bookingRequestsCount, setBookingRequestsCount] = useState(0);
   const [currentTimeEntry, setCurrentTimeEntry] = useState<TimeEntryDto | null>(null);
   const [clockActionLoading, setClockActionLoading] = useState(false);
@@ -125,7 +116,6 @@ export function AdminDashboard() {
   };
 
   useEffect(() => {
-    loadStats();
     loadBookingRequestsCount();
     if (role !== 'accountant') {
       loadCurrentTimeEntry();
@@ -155,18 +145,6 @@ export function AdminDashboard() {
       console.error('Failed to clock in:', error);
     } finally {
       setClockActionLoading(false);
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const data = await dashboardService.getStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Failed to load dashboard stats:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -267,195 +245,6 @@ export function AdminDashboard() {
           </Box>
         </Box>
       </Box>
-
-      {/* Stats Cards - Compact Design - Hidden on mobile */}
-      {loading ? (
-        <Box sx={{ display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', py: { sm: 6, md: 8 } }}>
-          <CircularProgress />
-        </Box>
-      ) : stats ? (
-        <Box sx={{
-          display: { xs: 'none', sm: 'grid' },
-          gridTemplateColumns: {
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(4, 1fr)',
-          },
-          gap: { sm: 1.5, md: 2 },
-          mb: { sm: 2.5, md: 3 },
-        }}>
-          <Card
-            elevation={0}
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-                <Box
-                  sx={{
-                    p: { xs: 0.75, sm: 1 },
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <AttachMoney sx={{ fontSize: { xs: 20, sm: 24 } }} />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Total Revenue
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                    ${stats.revenue.value.toLocaleString()}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {stats.revenue.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    ) : (
-                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
-                      {stats.revenue.change}% vs last month
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card
-            elevation={0}
-            sx={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-                <Box
-                  sx={{
-                    p: { xs: 0.75, sm: 1 },
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <People sx={{ fontSize: { xs: 20, sm: 24 } }} />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Total Customers
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                    {stats.customers.value.toLocaleString()}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {stats.customers.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    ) : (
-                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
-                      {stats.customers.change}% growth
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card
-            elevation={0}
-            sx={{
-              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-                <Box
-                  sx={{
-                    p: { xs: 0.75, sm: 1 },
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <DirectionsCar sx={{ fontSize: { xs: 20, sm: 24 } }} />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Total Vehicles
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                    {stats.vehicles.value.toLocaleString()}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {stats.vehicles.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    ) : (
-                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
-                      {Math.abs(stats.vehicles.change)}% change
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card
-            elevation={0}
-            sx={{
-              background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-                <Box
-                  sx={{
-                    p: { xs: 0.75, sm: 1 },
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <CalendarMonth sx={{ fontSize: { xs: 20, sm: 24 } }} />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Today's Jobs
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                    {stats.appointments.value}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {stats.appointments.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    ) : (
-                      <ArrowDownward sx={{ fontSize: { xs: 12, sm: 14 } }} />
-                    )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
-                      {stats.appointments.change}% vs yesterday
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Box>
-      ) : null}
 
       {/* Charts and Activity Section */}
       <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mt: { xs: 1, sm: 2, md: 3 } }}>
@@ -1584,7 +1373,6 @@ export function AdminDashboard() {
         onClose={() => setJobDialogOpen(false)}
         onSuccess={(job) => {
           setJobDialogOpen(false);
-          loadStats(); // Refresh stats after creating job
         }}
       />
 
@@ -1594,7 +1382,6 @@ export function AdminDashboard() {
         onClose={() => setAppointmentDialogOpen(false)}
         onSuccess={() => {
           setAppointmentDialogOpen(false);
-          loadStats(); // Refresh stats after creating appointment
         }}
       />
 
@@ -1604,7 +1391,6 @@ export function AdminDashboard() {
         onClose={() => setTireDialogOpen(false)}
         onSuccess={() => {
           setTireDialogOpen(false);
-          loadStats(); // Refresh stats after adding tire
         }}
       />
 
@@ -1613,7 +1399,6 @@ export function AdminDashboard() {
         open={tireSaleDialogOpen}
         onClose={() => setTireSaleDialogOpen(false)}
         onSuccess={() => {
-          loadStats(); // Refresh stats after sale
         }}
       />
     </Box>

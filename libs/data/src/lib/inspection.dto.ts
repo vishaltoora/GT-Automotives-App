@@ -30,6 +30,10 @@ export class CreateInspectionDto {
 
   @IsOptional()
   @IsString()
+  repairOrderId?: string;
+
+  @IsOptional()
+  @IsString()
   roNumber?: string;
 
   @IsOptional()

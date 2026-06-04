@@ -25,6 +25,7 @@ export * from './lib/square-payment.dto';
 export * from './lib/square-terminal.dto';
 export * from './lib/tax-report.dto';
 export * from './lib/tire-sale.dto';
+export * from './lib/repair-order.dto';
 
 // Export utility functions
 export * from './lib/utils/index';

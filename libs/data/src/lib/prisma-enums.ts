@@ -364,3 +364,38 @@ export const CommissionStatus = {
 } as const;
 export type CommissionStatus = (typeof CommissionStatus)[keyof typeof CommissionStatus];
 
+export const ROStatus = {
+  OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
+  WAITING_FOR_PARTS: 'WAITING_FOR_PARTS',
+  READY: 'READY',
+  CLOSED: 'CLOSED',
+  INVOICED: 'INVOICED',
+} as const;
+export type ROStatus = (typeof ROStatus)[keyof typeof ROStatus];
+
+export const ROServiceType = {
+  LABOR: 'LABOR',
+  PART: 'PART',
+  OTHER: 'OTHER',
+} as const;
+export type ROServiceType = (typeof ROServiceType)[keyof typeof ROServiceType];
+
+export const ROServiceStatus = {
+  PENDING: 'PENDING',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  DECLINED: 'DECLINED',
+} as const;
+export type ROServiceStatus = (typeof ROServiceStatus)[keyof typeof ROServiceStatus];
+
+export const ROMediaType = {
+  ARRIVAL_CONDITION: 'ARRIVAL_CONDITION',
+  DAMAGE_DOCUMENTATION: 'DAMAGE_DOCUMENTATION',
+  WORK_IN_PROGRESS: 'WORK_IN_PROGRESS',
+  WORK_COMPLETED: 'WORK_COMPLETED',
+  PARTS: 'PARTS',
+  OTHER: 'OTHER',
+} as const;
+export type ROMediaType = (typeof ROMediaType)[keyof typeof ROMediaType];
+

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -77,5 +78,14 @@ export class InspectionsController {
     @CurrentUser() user: any,
   ) {
     return this.inspectionsService.complete(id, user.id, user.role.name);
+  }
+
+  @Delete(':id')
+  @Roles('ADMIN')
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.inspectionsService.remove(id, user.id, user.role.name);
   }
 }

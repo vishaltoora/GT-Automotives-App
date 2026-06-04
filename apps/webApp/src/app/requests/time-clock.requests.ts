@@ -64,6 +64,13 @@ class TimeClockService {
     });
   }
 
+  adminClockOut(employeeId: string, dto: ClockOutDto = {}): Promise<TimeEntryDto> {
+    return this.makeRequest<TimeEntryDto>(`${this.baseUrl}/employees/${employeeId}/clock-out`, {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
   startBreak(dto: StartBreakDto = {}): Promise<TimeEntryDto> {
     return this.makeRequest<TimeEntryDto>(`${this.baseUrl}/start-break`, {
       method: 'POST',

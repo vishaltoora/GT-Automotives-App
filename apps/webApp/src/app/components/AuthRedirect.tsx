@@ -39,9 +39,9 @@ export function AuthRedirect() {
           case 'staff':
             redirectPath = '/staff/dashboard';
             break;
+          // Customer portal disabled — customers stay on the public site.
           case 'customer':
-            redirectPath = '/customer/dashboard';
-            break;
+            return;
           default:
             console.warn('Unknown role:', role);
             return;
@@ -64,8 +64,10 @@ export function AuthRedirect() {
   const isOnPublicPage = publicPaths.includes(currentPath);
   
   // Show loading immediately when authenticated user is detected on public page
-  // Even if user data isn't fully loaded yet
-  const shouldShowLoading = isRedirecting || (isAuthenticated && isOnPublicPage);
+  // Even if user data isn't fully loaded yet. Customers are not redirected
+  // (portal disabled), so they should never see the loading screen.
+  const roleWillRedirect = !role || ['admin', 'supervisor', 'staff'].includes((role || '').toLowerCase());
+  const shouldShowLoading = isRedirecting || (isAuthenticated && isOnPublicPage && roleWillRedirect);
   
   if (shouldShowLoading) {
     const roleDisplayName = role === 'admin' ? 'Admin Panel' :

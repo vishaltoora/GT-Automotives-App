@@ -32,6 +32,7 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
+  Delete as DeleteIcon,
   Edit as EditIcon,
   AssignmentTurnedIn as InspectionIcon,
   MoreVert as MoreVertIcon,
@@ -46,6 +47,8 @@ import {
   inspectionService,
 } from '../../requests/inspection.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const statusColor = (status: string) => {
   if (status === 'COMPLETED' || status === 'FINALIZED') return 'success';
@@ -57,6 +60,8 @@ export function InspectionList() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showApiError, showValidationError } = useErrorHelpers();
+  const { confirm } = useConfirmation();
+  const { isAdmin } = useAuth();
   const [templates, setTemplates] = useState<InspectionTemplate[]>([]);
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -167,7 +172,27 @@ export function InspectionList() {
     setActionInspectionId(null);
   };
 
-  const handleAction = (action: 'open' | 'edit' | 'print') => {
+  const handleDeleteInspection = async (inspection: Inspection) => {
+    const confirmed = await confirm({
+      title: 'Delete Inspection',
+      message: `Are you sure you want to permanently delete this ${inspection.template?.name || 'inspection'}? This action cannot be undone.`,
+      confirmText: 'Delete Inspection',
+      cancelText: 'Keep Inspection',
+      severity: 'error',
+      confirmButtonColor: 'error',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await inspectionService.deleteInspection(inspection.id);
+      setInspections((prev) => prev.filter((item) => item.id !== inspection.id));
+    } catch (error) {
+      showApiError(error, 'Failed to delete inspection');
+    }
+  };
+
+  const handleAction = (action: 'open' | 'edit' | 'print' | 'delete') => {
     if (!actionInspectionId) return;
 
     if (action === 'print') {
@@ -176,6 +201,10 @@ export function InspectionList() {
         return;
       }
       void handlePrintInspection(actionInspectionId);
+    } else if (action === 'delete') {
+      if (actionInspection) {
+        void handleDeleteInspection(actionInspection);
+      }
     } else {
       navigate(`${routePrefix}/inspections/${actionInspectionId}`);
     }
@@ -462,6 +491,14 @@ export function InspectionList() {
                 <PrintIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText>Print</ListItemText>
+            </MenuItem>
+          )}
+          {isAdmin && (
+            <MenuItem onClick={() => handleAction('delete')} sx={{ color: 'error.main' }}>
+              <ListItemIcon>
+                <DeleteIcon fontSize="small" color="error" />
+              </ListItemIcon>
+              <ListItemText>Delete</ListItemText>
             </MenuItem>
           )}
         </Menu>
