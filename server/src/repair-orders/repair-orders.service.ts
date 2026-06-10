@@ -13,6 +13,8 @@ import {
   UpdateROServiceDto,
   ROQueryDto,
   UpdateROMediaDto,
+  CreateServiceCatalogItemDto,
+  UpdateServiceCatalogItemDto,
 } from '@gt-automotive/data';
 
 @Injectable()
@@ -428,5 +430,60 @@ export class RepairOrdersService {
     }
 
     return `${prefix}${String(seq).padStart(4, '0')}`;
+  }
+
+  // ---- Service catalog (managed list for the "Choose a Service" dialog) ----
+
+  async getCatalog(): Promise<any[]> {
+    return this.prisma.serviceCatalogItem.findMany({
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  async createCatalogItem(dto: CreateServiceCatalogItemDto): Promise<any> {
+    return this.prisma.serviceCatalogItem.create({
+      data: {
+        name: dto.name.trim(),
+        category: dto.category?.trim() || null,
+        type: dto.type ?? 'LABOR',
+        labourHours: dto.labourHours ?? 1,
+        unitPrice: dto.unitPrice ?? 0,
+      },
+    });
+  }
+
+  async updateCatalogItem(
+    id: string,
+    dto: UpdateServiceCatalogItemDto,
+  ): Promise<any> {
+    const existing = await this.prisma.serviceCatalogItem.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Service catalog item not found');
+
+    return this.prisma.serviceCatalogItem.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.category !== undefined
+          ? { category: dto.category?.trim() || null }
+          : {}),
+        ...(dto.type !== undefined ? { type: dto.type } : {}),
+        ...(dto.labourHours !== undefined
+          ? { labourHours: dto.labourHours }
+          : {}),
+        ...(dto.unitPrice !== undefined ? { unitPrice: dto.unitPrice } : {}),
+      },
+    });
+  }
+
+  async removeCatalogItem(id: string): Promise<void> {
+    const existing = await this.prisma.serviceCatalogItem.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Service catalog item not found');
+    await this.prisma.serviceCatalogItem.delete({ where: { id } });
   }
 }

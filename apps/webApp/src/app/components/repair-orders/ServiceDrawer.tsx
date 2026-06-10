@@ -30,7 +30,7 @@ import {
 import { ROService, ROServiceStatus, ROServiceType, repairOrderRequests } from '../../requests/repair-order.requests';
 import { ROPhotoSection } from './ROPhotoSection';
 import { ServiceCatalogPicker } from './ServiceCatalogPicker';
-import { CatalogService } from './serviceCatalog';
+import { ServiceCatalogItem } from '../../requests/service-catalog.requests';
 
 interface ServiceDrawerProps {
   open: boolean;
@@ -225,11 +225,12 @@ export function ServiceDrawer({ open, onClose, roId, services, onServicesChange,
     setShowAddForm(true);
   };
 
-  const handleCatalogSelect = (service: CatalogService) => {
-    setNewDesc(service.description);
+  const handleCatalogSelect = (service: ServiceCatalogItem) => {
+    setNewDesc(service.name);
     setNewType(service.type);
-    setNewQty(1);
-    setNewPrice(priceFor(service.type, service.unitPrice));
+    // Pre-fill the catalog's default labour hours; advisor can adjust before adding.
+    setNewQty(service.type === 'LABOR' ? Number(service.labourHours) || 1 : 1);
+    setNewPrice(priceFor(service.type, Number(service.unitPrice)));
     setNewNotes('');
     setShowAddForm(true);
     setCatalogOpen(false);
@@ -363,6 +364,8 @@ export function ServiceDrawer({ open, onClose, roId, services, onServicesChange,
         open={catalogOpen}
         onClose={() => setCatalogOpen(false)}
         onSelect={handleCatalogSelect}
+        canManage={canEdit}
+        canDelete={canDelete}
       />
     </Drawer>
   );

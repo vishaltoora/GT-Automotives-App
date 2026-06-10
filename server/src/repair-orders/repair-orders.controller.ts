@@ -22,6 +22,8 @@ import {
   UpdateROServiceDto,
   ROQueryDto,
   UpdateROMediaDto,
+  CreateServiceCatalogItemDto,
+  UpdateServiceCatalogItemDto,
 } from '@gt-automotive/data';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -36,6 +38,36 @@ export class RepairOrdersController {
     private readonly roService: RepairOrdersService,
     private readonly azureBlobService: AzureBlobService,
   ) {}
+
+  // ---- Service Catalog (managed list for the "Choose a Service" dialog) ----
+  // NOTE: these static 'catalog' routes must precede the ':id' routes below so
+  // that "catalog" is not captured as a repair-order id.
+
+  @Get('catalog')
+  getCatalog() {
+    return this.roService.getCatalog();
+  }
+
+  @Post('catalog')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  createCatalogItem(@Body() dto: CreateServiceCatalogItemDto) {
+    return this.roService.createCatalogItem(dto);
+  }
+
+  @Patch('catalog/:itemId')
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  updateCatalogItem(
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateServiceCatalogItemDto,
+  ) {
+    return this.roService.updateCatalogItem(itemId, dto);
+  }
+
+  @Delete('catalog/:itemId')
+  @Roles('ADMIN', 'SUPERVISOR')
+  removeCatalogItem(@Param('itemId') itemId: string) {
+    return this.roService.removeCatalogItem(itemId);
+  }
 
   // ---- Repair Orders ----
 
