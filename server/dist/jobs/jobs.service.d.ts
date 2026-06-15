@@ -1,5 +1,5 @@
 import { JobRepository } from './repositories/job.repository';
-import { CreateJobDto, UpdateJobDto, JobResponseDto, JobSummaryDto } from '../common/dto/job.dto';
+import { CreateJobDto, UpdateJobDto, JobResponseDto, JobSummaryDto } from '@gt-automotive/data';
 import { Job, JobStatus, JobType } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 export declare class JobsService {

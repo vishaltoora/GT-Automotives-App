@@ -1,5 +1,5 @@
 import { PurchaseInvoicesService } from './purchase-invoices.service';
-import { CreatePurchaseInvoiceDto, UpdatePurchaseInvoiceDto, PurchaseInvoiceResponseDto, PurchaseInvoiceFilterDto } from '../common/dto/purchase-invoice.dto';
+import { CreatePurchaseInvoiceDto, UpdatePurchaseInvoiceDto, PurchaseInvoiceResponseDto, PurchaseInvoiceFilterDto } from '@gt-automotive/data';
 export declare class PurchaseInvoicesController {
     private readonly purchaseInvoicesService;
     constructor(purchaseInvoicesService: PurchaseInvoicesService);

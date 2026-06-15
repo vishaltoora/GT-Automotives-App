@@ -55,6 +55,7 @@ import {
   LocalOffer,
   Calculate,
   AssignmentTurnedIn,
+  CarRepair,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -121,6 +122,7 @@ export function AdminLayout() {
         { text: 'Customers', icon: <People />, path: '/admin/customers' },
         { text: 'Vehicles', icon: <DirectionsCar />, path: '/admin/vehicles' },
         { text: 'Inspections', icon: <AssignmentTurnedIn />, path: '/admin/inspections' },
+        { text: 'Repair Orders', icon: <CarRepair />, path: '/admin/repair-orders' },
         { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
         { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
         { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },

@@ -418,9 +418,9 @@ export class EmailService {
             </ul>
           </div>
 
-          <!-- At Garage Stats -->
+          <!-- At Shop Stats -->
           <div style="background-color: #fff3e0; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #ff9800;">🏪 At Garage Services</h3>
+            <h3 style="margin-top: 0; color: #ff9800;">🏪 At Shop Services</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0;"><strong>Completed Jobs:</strong></td>
@@ -630,11 +630,11 @@ export class EmailService {
             </td>
             <td style="padding: 15px 10px;">
               <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; ${
-                apt.location === 'At Garage'
+                apt.location === 'At Shop'
                   ? 'background-color: #e3f2fd; color: #1976d2;'
                   : 'background-color: #fff3e0; color: #f57c00;'
               }">
-                ${apt.location === 'At Garage' ? '🏢 At Garage' : '🚗 Mobile Service'}
+                ${apt.location === 'At Shop' ? '🏢 At Shop' : '🚗 Mobile Service'}
               </span>
             </td>
           </tr>
@@ -905,7 +905,7 @@ export class EmailService {
                     <td style="background: linear-gradient(135deg, ${isGarage ? '#1976d2' : '#f57c00'} 0%, ${isGarage ? '#1565c0' : '#ef6c00'} 100%); padding: 30px 40px; text-align: center;">
                       <img src="${this.getLogoSrc()}" alt="GT Automotives" style="max-width: 180px; height: auto; margin-bottom: 15px;" />
                       <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">🔔 New Appointment</h1>
-                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">You've been assigned to a ${isMobile ? 'mobile service' : 'garage'} appointment</p>
+                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">You've been assigned to a ${isMobile ? 'mobile service' : 'shop'} appointment</p>
                     </td>
                   </tr>
 
@@ -926,7 +926,7 @@ export class EmailService {
                     <td style="padding: 0 40px 20px 40px;">
                       <div style="display: inline-block; background-color: ${isGarage ? '#e3f2fd' : '#fff3e0'}; border-left: 4px solid ${isGarage ? '#1976d2' : '#f57c00'}; padding: 12px 20px; border-radius: 4px;">
                         <p style="margin: 0; color: ${isGarage ? '#1565c0' : '#e65100'}; font-size: 14px; font-weight: 600;">
-                          ${isGarage ? '🏢 AT GARAGE APPOINTMENT' : '🚗 MOBILE SERVICE APPOINTMENT'}
+                          ${isGarage ? '🏢 AT SHOP APPOINTMENT' : '🚗 MOBILE SERVICE APPOINTMENT'}
                         </p>
                       </div>
                     </td>
@@ -1085,7 +1085,7 @@ export class EmailService {
             name: data.employeeName,
           },
         ],
-        subject: `🔔 New ${isMobile ? 'Mobile Service' : 'Garage'} Appointment - ${data.customerName} (${formattedDate})`,
+        subject: `🔔 New ${isMobile ? 'Mobile Service' : 'Shop'} Appointment - ${data.customerName} (${formattedDate})`,
         htmlContent,
       };
 
@@ -1100,7 +1100,7 @@ export class EmailService {
           data: {
             to: data.employeeEmail,
             from: this.senderEmail,
-            subject: `New ${isMobile ? 'Mobile Service' : 'Garage'} Appointment - ${data.customerName}`,
+            subject: `New ${isMobile ? 'Mobile Service' : 'Shop'} Appointment - ${data.customerName}`,
             type: 'APPOINTMENT_CONFIRMATION',
             status: 'SENT',
             brevoMessageId: messageId,
@@ -1423,7 +1423,7 @@ export class EmailService {
                       <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.8;">
                         <strong>Customer:</strong> ${data.bookingRequest.customerName}<br>
                         <strong>Service Type:</strong> ${data.bookingRequest.serviceType}<br>
-                        <strong>Service Location:</strong> ${data.bookingRequest.appointmentType === 'AT_GARAGE' ? '🏪 At Garage' : '🚗 Mobile Service'}${data.bookingRequest.address ? ` - ${data.bookingRequest.address}` : ''}<br>
+                        <strong>Service Location:</strong> ${data.bookingRequest.appointmentType === 'AT_GARAGE' ? '🏪 At Shop' : '🚗 Mobile Service'}${data.bookingRequest.address ? ` - ${data.bookingRequest.address}` : ''}<br>
                         <strong>Requested Date:</strong> ${data.bookingRequest.requestedDate} at ${data.bookingRequest.requestedTime}
                         ${data.bookingRequest.notes && data.bookingRequest.notes !== 'None' ? `<br><br><strong>Customer Notes:</strong><br><span style="font-style: italic; color: #555;">"${data.bookingRequest.notes}"</span>` : ''}
                       </p>

@@ -19,6 +19,7 @@ import {
   UpdateInspectionResultDto,
 } from '@gt-automotive/data';
 import { defaultInspectionTemplates, InspectionTemplateSeed } from './peace-of-mind-template';
+import { AuditRepository } from '../audit/repositories/audit.repository';
 
 const INSPECTION_INCLUDE = {
   template: {
@@ -44,7 +45,10 @@ const INSPECTION_INCLUDE = {
 
 @Injectable()
 export class InspectionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditRepository: AuditRepository,
+  ) {}
 
   async findTemplates(type?: InspectionType) {
     await this.ensureDefaultTemplates();
@@ -150,6 +154,7 @@ export class InspectionsService {
         vehicleId: dto.vehicleId,
         appointmentId: dto.appointmentId,
         invoiceId: dto.invoiceId,
+        repairOrderId: dto.repairOrderId,
         roNumber: dto.roNumber,
         mileage: dto.mileage,
         status: InspectionStatus.IN_PROGRESS,
@@ -266,6 +271,25 @@ export class InspectionsService {
     });
 
     return this.findOne(id, userRole);
+  }
+
+  async remove(id: string, userId: string, userRole: string): Promise<void> {
+    if (userRole !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can delete inspections');
+    }
+
+    const inspection = await this.ensureInspection(id);
+
+    // Results and media cascade on delete via the schema relations.
+    await this.prisma.inspection.delete({ where: { id } });
+
+    await this.auditRepository.create({
+      userId,
+      action: 'DELETE_INSPECTION',
+      entityType: 'inspection',
+      entityId: id,
+      oldValue: inspection as any,
+    });
   }
 
   private async ensureInspection(id: string) {

@@ -797,7 +797,7 @@ export class SmsService {
         msg += `⚠️ Outstanding: $${data.totalOwed.toFixed(2)}\n`;
       }
 
-      msg += `\n📍 AT GARAGE (${data.atGarageCount} jobs):\n`;
+      msg += `\n📍 AT SHOP (${data.atGarageCount} jobs):\n`;
       msg += `Total: $${data.atGaragePayments.toFixed(2)}\n`;
       if (atGarageBreakdown) {
         msg += `${atGarageBreakdown}\n`;
@@ -821,7 +821,7 @@ export class SmsService {
       message += `⚠️ Outstanding: $${data.totalOwed.toFixed(2)}\n`;
     }
 
-    message += `\n📍 AT GARAGE (${data.atGarageCount} jobs):\n`;
+    message += `\n📍 AT SHOP (${data.atGarageCount} jobs):\n`;
     message += `Total: $${data.atGaragePayments.toFixed(2)}\n`;
     if (atGarageBreakdown) {
       message += `${atGarageBreakdown}\n`;

@@ -14,6 +14,27 @@ export class VehiclesService {
     private readonly prisma: PrismaService,
   ) {}
 
+  /**
+   * Returns the reference list of vehicle makes, each with its models,
+   * used to populate the Make/Model dropdowns in the Add Vehicle dialog.
+   */
+  async getMakesWithModels() {
+    const makes = await this.prisma.vehicleMake.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        models: {
+          orderBy: { name: 'asc' },
+          select: { name: true },
+        },
+      },
+    });
+
+    return makes.map((make) => ({
+      name: make.name,
+      models: make.models.map((m) => m.name),
+    }));
+  }
+
   async create(createVehicleDto: CreateVehicleDto, userId: string, userRole: string) {
     // Verify customer exists
     const customer = await this.customerRepository.findById(createVehicleDto.customerId);

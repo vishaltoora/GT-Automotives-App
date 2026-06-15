@@ -759,7 +759,7 @@ export function DaySummary() {
                     fontWeight="bold"
                     sx={{ fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}
                   >
-                    At Garage
+                    At Shop
                   </Typography>
                 </Box>
                 <Typography
@@ -1213,7 +1213,7 @@ export function DaySummary() {
                                     <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
                                       {appointment.appointmentType === 'MOBILE_SERVICE'
                                         ? 'Mobile Service'
-                                        : 'At Garage'}
+                                        : 'At Shop'}
                                     </Typography>
                                   </Box>
                                   {appointment.vehicle && (
@@ -1568,7 +1568,7 @@ export function DaySummary() {
                                 <Typography variant="body2" sx={{ fontSize: { xs: '0.813rem', sm: '0.875rem' } }}>
                                   {appointment.appointmentType === 'MOBILE_SERVICE'
                                     ? 'Mobile Service'
-                                    : 'At Garage'}
+                                    : 'At Shop'}
                                 </Typography>
                               </Box>
                               {appointment.vehicle && (

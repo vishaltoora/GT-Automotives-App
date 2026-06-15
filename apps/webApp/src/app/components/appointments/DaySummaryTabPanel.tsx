@@ -53,11 +53,11 @@ export const DaySummaryTabPanel: React.FC<DaySummaryTabPanelProps> = ({
         />
       </Grid>
 
-      {/* At Garage Breakdown Card */}
+      {/* At Shop Breakdown Card */}
       <Grid size={{ xs: 12, md: 6 }}>
         <LocationBreakdownCard
           icon={<LocationOnIcon color="primary" />}
-          title="At Garage"
+          title="At Shop"
           completedCount={stats.completedAtGarage}
           totalPayments={stats.atGaragePayments}
           paymentsByMethod={stats.atGaragePaymentsByMethod}

@@ -248,6 +248,13 @@ export class InvoiceResponseDto {
   @IsOptional()
   vehicle?: InvoiceVehicleDto;
 
+  @IsOptional()
+  @IsString()
+  repairOrderId?: string;
+
+  @IsOptional()
+  repairOrder?: { id: string; roNumber: string; status: string };
+
   @IsString()
   companyId!: string;
 

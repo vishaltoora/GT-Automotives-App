@@ -12,6 +12,7 @@ export * from './lib/job.dto';
 export * from './lib/payment.dto';
 export * from './lib/time-clock.dto';
 export * from './lib/service.dto';
+export * from './lib/service-catalog.dto';
 export * from './lib/vendor.dto';
 export * from './lib/purchase-invoice.dto';
 export * from './lib/expense-invoice.dto';
@@ -25,6 +26,7 @@ export * from './lib/square-payment.dto';
 export * from './lib/square-terminal.dto';
 export * from './lib/tax-report.dto';
 export * from './lib/tire-sale.dto';
+export * from './lib/repair-order.dto';
 
 // Export utility functions
 export * from './lib/utils/index';

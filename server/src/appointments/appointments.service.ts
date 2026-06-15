@@ -50,6 +50,13 @@ export class AppointmentsService {
         status: true,
       },
     },
+    // Include linked repair order (manually created via "Create RO" for garage appointments)
+    repairOrder: {
+      select: {
+        id: true,
+        roNumber: true,
+      },
+    },
     bookedByUser: {
       select: {
         id: true,
@@ -183,6 +190,9 @@ export class AppointmentsService {
       },
       include: this.appointmentInclude,
     });
+
+    // NOTE: Repair Orders are NOT auto-created. For AT_GARAGE appointments,
+    // staff explicitly create an RO via the "Create RO" button on the appointment card.
 
     // Send SMS confirmation to customer
     await this.smsService.sendAppointmentConfirmation(appointment.id).catch(err => {

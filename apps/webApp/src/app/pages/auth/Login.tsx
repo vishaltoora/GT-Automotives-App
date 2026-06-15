@@ -43,10 +43,9 @@ export function Login() {
           case 'staff':
             redirectPath = from?.startsWith('/staff') ? from : '/staff/dashboard';
             break;
+          // Customer portal disabled — send customers to the public site.
           case 'customer':
-            redirectPath = from?.startsWith('/customer')
-              ? from
-              : '/customer/dashboard';
+            redirectPath = '/';
             break;
         }
 

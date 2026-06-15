@@ -30,6 +30,7 @@ import {
   LocationOn as LocationOnIcon,
   LocalShipping as LocalShippingIcon,
   Garage as GarageIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import { formatTimeRange } from '../../utils/timeFormat';
@@ -174,11 +175,17 @@ export interface AppointmentCardProps {
       lastName: string;
       email?: string;
     };
+    repairOrder?: {
+      id: string;
+      roNumber: string;
+    };
   };
   onEdit?: (appointment: any) => void;
   onDelete?: (appointmentId: string) => void;
   onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void | Promise<void>;
   onPaymentComplete?: () => void | Promise<void>;
+  onCreateRepairOrder?: (appointment: any) => void | Promise<void>;
+  onViewRepairOrder?: (repairOrderId: string) => void;
   showActions?: boolean;
 }
 
@@ -188,6 +195,8 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onDelete,
   onStatusChange,
   onPaymentComplete,
+  onCreateRepairOrder,
+  onViewRepairOrder,
   showActions = true,
 }) => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -407,7 +416,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                     letterSpacing: '0.3px',
                   }}
                 >
-                  At Garage
+                  At Shop
                 </Typography>
               </>
             )}
@@ -567,7 +576,9 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           {/* Quick Actions */}
           {showActions && onStatusChange && appointment.status !== 'COMPLETED' && (
             <Box sx={{ display: 'flex', gap: 1, mt: 'auto', pt: 2, flexWrap: 'wrap' }}>
-              {(appointment.status === 'SCHEDULED' || appointment.status === 'CONFIRMED') && (
+              {/* Start — mobile appointments only; at-shop uses the RO workflow instead */}
+              {isMobile &&
+                (appointment.status === 'SCHEDULED' || appointment.status === 'CONFIRMED') && (
                 <Button
                   size="small"
                   variant="outlined"
@@ -588,6 +599,35 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 >
                   Complete
                 </Button>
+              )}
+              {/* Repair Order actions — garage appointments only */}
+              {appointment.repairOrder ? (
+                onViewRepairOrder && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                    startIcon={<AssignmentIcon />}
+                    onClick={() => onViewRepairOrder(appointment.repairOrder!.id)}
+                  >
+                    View RO
+                  </Button>
+                )
+              ) : (
+                !isMobile &&
+                appointment.appointmentType === 'AT_GARAGE' &&
+                ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'].includes(appointment.status) &&
+                onCreateRepairOrder && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<AssignmentIcon />}
+                    onClick={() => onCreateRepairOrder(appointment)}
+                  >
+                    Create RO
+                  </Button>
+                )
               )}
               {['SCHEDULED', 'CONFIRMED'].includes(appointment.status) && (
                 <Button

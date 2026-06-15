@@ -36,6 +36,8 @@ interface DayAppointmentsDialogProps {
   onEditAppointment?: (appointment: Appointment) => void;
   onDeleteAppointment?: (appointmentId: string) => void;
   onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void | Promise<void>;
+  onCreateRepairOrder?: (appointment: any) => void | Promise<void>;
+  onViewRepairOrder?: (repairOrderId: string) => void;
   onAddAppointment?: () => void;
   onRefresh?: () => Promise<void>;
 }
@@ -67,6 +69,8 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
   onEditAppointment,
   onDeleteAppointment,
   onStatusChange,
+  onCreateRepairOrder,
+  onViewRepairOrder,
   onAddAppointment,
   onRefresh,
 }) => {
@@ -293,6 +297,8 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
                     onEdit={onEditAppointment}
                     onDelete={onDeleteAppointment}
                     onStatusChange={onStatusChange}
+                    onCreateRepairOrder={onCreateRepairOrder}
+                    onViewRepairOrder={onViewRepairOrder}
                     onPaymentComplete={handlePaymentComplete}
                   />
                 ))}

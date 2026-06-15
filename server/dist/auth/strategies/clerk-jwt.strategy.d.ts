@@ -19,9 +19,9 @@ export declare class ClerkJwtStrategy extends ClerkJwtStrategy_base {
         role: {
             id: string;
             name: import("@prisma/client").$Enums.RoleName;
-            description: string | null;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
             displayName: string;
         };
         isActive: true;

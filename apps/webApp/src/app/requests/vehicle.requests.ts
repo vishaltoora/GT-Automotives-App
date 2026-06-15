@@ -10,6 +10,11 @@ export type Vehicle = VehicleResponseDto;
 export type DecodeVinResponse = DecodeVinResponseDto;
 export type { CreateVehicleDto, UpdateVehicleDto };
 
+export interface VehicleMakeWithModels {
+  name: string;
+  models: string[];
+}
+
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -100,6 +105,13 @@ class VehicleService {
   async getModelsForMake(make: string): Promise<string[]> {
     const response = await axios.get(`${API_URL}/api/vehicles/models`, {
       params: { make },
+      headers: await this.getAuthHeader(),
+    });
+    return response.data;
+  }
+
+  async getMakesWithModels(): Promise<VehicleMakeWithModels[]> {
+    const response = await axios.get(`${API_URL}/api/vehicles/makes`, {
       headers: await this.getAuthHeader(),
     });
     return response.data;

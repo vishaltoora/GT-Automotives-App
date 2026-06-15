@@ -495,6 +495,11 @@ const InvoiceDetails: React.FC = () => {
                 invoice.invoiceDate || invoice.createdAt
               ).toLocaleDateString('en-US', { timeZone: 'UTC' })}
             </Typography>
+            {invoice.repairOrder?.roNumber && (
+              <Typography variant="body2" color="text.secondary">
+                Repair Order: {invoice.repairOrder.roNumber}
+              </Typography>
+            )}
           </Grid>
           <Grid
             size={{ xs: 12, md: 6 }}

@@ -1,5 +1,5 @@
 import { PurchaseInvoice, PurchaseCategory, PurchaseInvoiceStatus } from '@prisma/client';
-import { CreatePurchaseInvoiceDto, UpdatePurchaseInvoiceDto } from '../common/dto/purchase-invoice.dto';
+import { CreatePurchaseInvoiceDto, UpdatePurchaseInvoiceDto } from '@gt-automotive/data';
 export declare class PurchaseInvoiceRepository {
     private prisma;
     create(data: CreatePurchaseInvoiceDto): Promise<PurchaseInvoice>;

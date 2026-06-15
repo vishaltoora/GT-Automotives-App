@@ -49,6 +49,9 @@ export class InvoiceRepository extends BaseRepository<
         customer: true,
         vehicle: true,
         company: true,
+        repairOrder: {
+          select: { id: true, roNumber: true, status: true },
+        },
         items: {
           include: {
             tire: true,

@@ -34,11 +34,11 @@ export function Home() {
         case 'staff':
           redirectPath = '/staff/dashboard';
           break;
-        case 'customer':
-          redirectPath = '/customer/dashboard';
-          break;
+        // Customer portal disabled — customers stay on the public site.
       }
-      navigate(redirectPath, { replace: true });
+      if (redirectPath !== '/') {
+        navigate(redirectPath, { replace: true });
+      }
     }
   }, [isAuthenticated, role, user, navigate, isLoading]);
 

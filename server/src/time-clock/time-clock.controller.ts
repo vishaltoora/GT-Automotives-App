@@ -43,6 +43,15 @@ export class TimeClockController {
     return this.timeClockService.clockIn(employeeId, dto);
   }
 
+  @Post('employees/:employeeId/clock-out')
+  @Roles('ADMIN')
+  adminClockOut(
+    @Param('employeeId') employeeId: string,
+    @Body() dto: ClockOutDto,
+  ) {
+    return this.timeClockService.clockOut(employeeId, dto);
+  }
+
   @Post('start-break')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   startBreak(@Body() dto: StartBreakDto, @CurrentUser() user: any) {

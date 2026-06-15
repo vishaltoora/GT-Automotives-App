@@ -286,7 +286,7 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
                           <StoreIcon sx={{ color: colors.primary.main, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
                           <Box>
                             <Typography variant="body1" fontWeight={600} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-                              At Garage
+                              At Shop
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                               Bring your vehicle to our shop

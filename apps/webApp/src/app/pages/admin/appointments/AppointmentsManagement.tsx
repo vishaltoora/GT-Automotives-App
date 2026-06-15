@@ -36,7 +36,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { AppointmentStatus } from '@gt-automotive/data';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AppointmentDialog } from '../../../components/appointments/AppointmentDialog';
 import { DayAppointmentsDialog } from '../../../components/appointments/DayAppointmentsDialog';
 import { AppointmentCard } from '../../../components/appointments/AppointmentCard';
@@ -47,6 +47,7 @@ import {
   Appointment,
   appointmentService,
 } from '../../../requests/appointment.requests';
+import { repairOrderRequests } from '../../../requests/repair-order.requests';
 import { format12Hour, formatTimeRange } from '../../../utils/timeFormat';
 
 const STATUS_COLORS: Record<
@@ -66,7 +67,7 @@ const getAppointmentTypeIcon = (type: string) => {
 };
 
 const getAppointmentTypeLabel = (type: string) => {
-  return type === 'MOBILE_SERVICE' ? 'Mobile Service' : 'At Garage';
+  return type === 'MOBILE_SERVICE' ? 'Mobile Service' : 'At Shop';
 };
 
 const getAppointmentTypeColor = (type: string) => {
@@ -94,10 +95,15 @@ export const AppointmentsManagement: React.FC = () => {
   const { showError } = useError();
   const { confirm } = useConfirmation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user: currentUser } = useAuth();
 
   // Check if current user is staff (not admin)
   const isStaff = currentUser?.role?.name?.toUpperCase() === 'STAFF';
+
+  // Base path for navigation matches the role-specific layout this page is mounted under
+  // (/admin, /supervisor, /staff)
+  const basePath = `/${location.pathname.split('/')[1] || 'admin'}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -324,6 +330,47 @@ export const AppointmentsManagement: React.FC = () => {
         message: err.message,
       });
     }
+  };
+
+  const handleCreateRepairOrder = async (appointment: any) => {
+    const confirmed = await confirm({
+      title: 'Create Repair Order',
+      message: `Create a repair order for ${
+        appointment.customer.businessName ||
+        `${appointment.customer.firstName} ${appointment.customer.lastName}`
+      }? The appointment notes will be copied to the customer concern.`,
+      confirmText: 'Create RO',
+      severity: 'info',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const employeeIds: string[] =
+        appointment.employees && appointment.employees.length > 0
+          ? appointment.employees.map((ae: any) => ae.employee.id)
+          : appointment.employee
+          ? [appointment.employee.id]
+          : [];
+
+      const ro = await repairOrderRequests.create({
+        appointmentId: appointment.id,
+        customerId: appointment.customer.id,
+        vehicleId: appointment.vehicle?.id,
+        customerConcern: appointment.notes || undefined,
+        employeeIds: employeeIds.length > 0 ? employeeIds : undefined,
+      });
+      navigate(`${basePath}/repair-orders/${ro.id}`);
+    } catch (err: any) {
+      showError({
+        title: 'Failed to create repair order',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleViewRepairOrder = (repairOrderId: string) => {
+    navigate(`${basePath}/repair-orders/${repairOrderId}`);
   };
 
   const handleDelete = async (appointment: Appointment) => {
@@ -1070,6 +1117,8 @@ export const AppointmentsManagement: React.FC = () => {
                                   if (apt) handleDelete(apt);
                                 }}
                                 onStatusChange={handleStatusChange}
+                                onCreateRepairOrder={isStaff ? undefined : handleCreateRepairOrder}
+                                onViewRepairOrder={handleViewRepairOrder}
                                 onPaymentComplete={() => { loadAppointments(); loadTodayAppointments(); }}
                               />
                             </Box>
@@ -1322,7 +1371,7 @@ export const AppointmentsManagement: React.FC = () => {
                 <Tab
                   icon={<LocationOnIcon />}
                   iconPosition="start"
-                  label={`At Garage (${atGarageAppointments.length})`}
+                  label={`At Shop (${atGarageAppointments.length})`}
                   sx={{
                     '& .MuiTab-iconWrapper': {
                       mr: { xs: 0.5, sm: 1 },
@@ -1354,7 +1403,7 @@ export const AppointmentsManagement: React.FC = () => {
                     No appointments found
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {currentTab === 0 ? 'No at-garage appointments found' : 'No mobile service appointments found'}
+                    {currentTab === 0 ? 'No at-shop appointments found' : 'No mobile service appointments found'}
                   </Typography>
                 </Box>
               ) : (
@@ -1468,6 +1517,8 @@ export const AppointmentsManagement: React.FC = () => {
                                   onEdit={handleEdit}
                                   onDelete={handleDeleteById}
                                   onStatusChange={handleStatusChange}
+                                  onCreateRepairOrder={isStaff ? undefined : handleCreateRepairOrder}
+                                  onViewRepairOrder={handleViewRepairOrder}
                                   onPaymentComplete={() => { loadAppointments(); loadTodayAppointments(); }}
                                   showActions={true}
                                 />
@@ -1501,6 +1552,8 @@ export const AppointmentsManagement: React.FC = () => {
           onEditAppointment={handleEdit as any}
           onDeleteAppointment={handleDeleteById}
           onStatusChange={handleStatusChange}
+          onCreateRepairOrder={isStaff ? undefined : handleCreateRepairOrder}
+          onViewRepairOrder={handleViewRepairOrder}
           onAddAppointment={handleCreate}
           onRefresh={async () => {
             // Reload appointments and payment data when payment is received in dialog

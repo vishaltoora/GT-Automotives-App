@@ -6,7 +6,6 @@ import { ErrorProvider } from './contexts/ErrorContext';
 
 // Layouts
 import { PublicLayout } from './layouts/PublicLayout';
-import { CustomerLayout } from './layouts/CustomerLayout';
 import { StaffLayout } from './layouts/StaffLayout';
 import { SupervisorLayout } from './layouts/SupervisorLayout';
 import { AccountantLayout } from './layouts/AccountantLayout';
@@ -29,9 +28,6 @@ import { About } from './pages/public/About';
 import { Products } from './pages/public/Products';
 import { Pricing } from './pages/public/Pricing';
 import { BookAppointment } from './pages/public/BookAppointment';
-
-// Customer Pages
-import { CustomerDashboard } from './pages/customer/Dashboard';
 
 // Staff Pages
 import { StaffDashboard } from './pages/staff/Dashboard';
@@ -102,6 +98,8 @@ import { EmployeePaymentsReport } from './pages/admin/reports/EmployeePaymentsRe
 import { TireSalesManagement, CommissionManagement } from './pages/admin/tire-sales';
 import { InspectionList } from './pages/inspections/InspectionList';
 import { InspectionEditor } from './pages/inspections/InspectionEditor';
+import { ROList } from './pages/repair-orders/ROList';
+import { RODetail } from './pages/repair-orders/RODetail';
 
 export function App() {
   return (
@@ -124,29 +122,8 @@ export function App() {
           <Route path="book-appointment" element={<BookAppointment />} />
         </Route>
 
-        {/* Customer Routes */}
-        <Route
-          path="/customer/*"
-          element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={['customer']}>
-                <CustomerLayout />
-              </RoleGuard>
-            </AuthGuard>
-          }
-        >
-          <Route path="dashboard" element={<CustomerDashboard />} />
-          <Route path="inventory" element={<TireListSimple />} />
-          <Route path="inventory/:id" element={<TireDetails />} />
-          <Route path="vehicles" element={<VehicleList />} />
-          <Route path="vehicles/new" element={<VehicleForm />} />
-          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
-          <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/:id" element={<InvoiceDetails />} />
-          <Route path="appointments" element={<div>My Appointments</div>} />
-          <Route path="profile" element={<div>My Profile</div>} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+        {/* Customer portal disabled — redirect any /customer/* path home */}
+        <Route path="/customer/*" element={<Navigate to="/" replace />} />
 
         {/* Staff Routes */}
         <Route
@@ -183,6 +160,8 @@ export function App() {
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="inspections" element={<InspectionList />} />
           <Route path="inspections/:id" element={<InspectionEditor />} />
+          <Route path="repair-orders" element={<ROList />} />
+          <Route path="repair-orders/:id" element={<RODetail />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="reports" element={<div>Reports</div>} />
           <Route path="settings" element={<div>Settings</div>} />
@@ -222,6 +201,8 @@ export function App() {
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="inspections" element={<InspectionList />} />
           <Route path="inspections/:id" element={<InspectionEditor />} />
+          <Route path="repair-orders" element={<ROList />} />
+          <Route path="repair-orders/:id" element={<RODetail />} />
           <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="employee-schedule" element={<EmployeeSchedule />} />
@@ -291,6 +272,8 @@ export function App() {
           <Route path="appointments" element={<AppointmentsManagement />} />
           <Route path="inspections" element={<InspectionList />} />
           <Route path="inspections/:id" element={<InspectionEditor />} />
+          <Route path="repair-orders" element={<ROList />} />
+          <Route path="repair-orders/:id" element={<RODetail />} />
           <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="availability" element={<EmployeeAvailabilityManagement />} />
           <Route path="sms-history" element={<SmsHistory />} />

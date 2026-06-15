@@ -1,9 +1,8 @@
-import { Box, Typography, Grid, Card, CardContent, Button, Paper, Chip, CircularProgress, Avatar, Divider, Stack, useTheme, useMediaQuery } from '@mui/material';
-import { People, Inventory, Receipt, Schedule, ArrowUpward, ArrowDownward, Build, Assignment, CheckCircle, AccessTime, Description, Pending, Warning, Work, CalendarMonth, TireRepair, Event, AttachMoney, AssignmentTurnedIn } from '@mui/icons-material';
+import { Box, Typography, Grid, Button, Paper, Chip, CircularProgress, Avatar, Divider, Stack, useTheme, useMediaQuery } from '@mui/material';
+import { People, Inventory, Receipt, Schedule, Build, Assignment, AccessTime, Description, Work, CalendarMonth, TireRepair, Event, AttachMoney, AssignmentTurnedIn } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { dashboardService, DashboardStats } from '../../requests/dashboard.requests';
 import { appointmentService, Appointment } from '../../requests/appointment.requests';
 import { colors } from '../../theme/colors';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
@@ -20,8 +19,6 @@ export function StaffDashboard() {
   const { user } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [myJobDialogOpen, setMyJobDialogOpen] = useState(false);
@@ -35,7 +32,6 @@ export function StaffDashboard() {
   const [clockActionLoading, setClockActionLoading] = useState(false);
 
   useEffect(() => {
-    loadStats();
     loadTodayAppointments();
     loadCurrentTimeEntry();
   }, []);
@@ -61,18 +57,6 @@ export function StaffDashboard() {
       console.error('Failed to clock in:', error);
     } finally {
       setClockActionLoading(false);
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const data = await dashboardService.getStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Failed to load dashboard stats:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -230,202 +214,6 @@ export function StaffDashboard() {
           </Box>
         )}
       </Box>
-
-      {/* Today's Metrics - Hidden on mobile */}
-      {!isMobile && (loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
-      ) : stats ? (
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(4, 1fr)',
-          },
-          gap: 2,
-          mb: 3,
-        }}>
-          {/* Today's Jobs Card */}
-          <Card
-            elevation={0}
-            sx={{
-              backgroundColor: colors.primary.main,
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    p: 1,
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Assignment sx={{ fontSize: 24 }} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                    Today's Jobs
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
-                    {stats.appointments.value}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {stats.appointments.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: 14 }} />
-                    ) : (
-                      <ArrowDownward sx={{ fontSize: 14 }} />
-                    )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
-                      {stats.appointments.change}% vs yesterday
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Customers Card */}
-          <Card
-            elevation={0}
-            sx={{
-              backgroundColor: colors.secondary.main,
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    p: 1,
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <People sx={{ fontSize: 24 }} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                    Total Customers
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
-                    {stats.customers.value}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {stats.customers.trend === 'up' ? (
-                      <ArrowUpward sx={{ fontSize: 14 }} />
-                    ) : (
-                      <ArrowDownward sx={{ fontSize: 14 }} />
-                    )}
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
-                      {stats.customers.change}% growth
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Inventory Card */}
-          <Card
-            elevation={0}
-            sx={{
-              backgroundColor: colors.semantic.success,
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    p: 1,
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Inventory sx={{ fontSize: 24 }} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                    Items in Stock
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
-                    {stats.inventory.value.toLocaleString()}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {stats.inventory.lowStock > 0 ? (
-                      <>
-                        <Warning sx={{ fontSize: 14 }} />
-                        <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
-                          {stats.inventory.lowStock} items low stock
-                        </Typography>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle sx={{ fontSize: 14 }} />
-                        <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
-                          All stock levels good
-                        </Typography>
-                      </>
-                    )}
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Pending Quotes Card */}
-          <Card
-            elevation={0}
-            sx={{
-              backgroundColor: colors.semantic.info,
-              color: 'white',
-              border: 'none',
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    p: 1,
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Description sx={{ fontSize: 24 }} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                    Pending Quotes
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, my: 0.25 }}>
-                    8
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Pending sx={{ fontSize: 14 }} />
-                    <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
-                      Awaiting response
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Box>
-      ) : null)}
 
       {/* Main Content Grid */}
       <Grid container spacing={{ xs: 1.5, sm: 3 }}>
@@ -1051,7 +839,6 @@ export function StaffDashboard() {
         onClose={() => setMyJobDialogOpen(false)}
         onSuccess={(job) => {
           setMyJobDialogOpen(false);
-          loadStats(); // Refresh stats after creating job
         }}
         preselectedEmployeeId={user?.id}
         hideEmployeeSelect={true}
@@ -1063,7 +850,6 @@ export function StaffDashboard() {
         onClose={() => setInvoiceDialogOpen(false)}
         onSuccess={() => {
           setInvoiceDialogOpen(false);
-          loadStats();
         }}
       />
 
@@ -1073,7 +859,6 @@ export function StaffDashboard() {
         onClose={() => setQuotationDialogOpen(false)}
         onSuccess={() => {
           setQuotationDialogOpen(false);
-          loadStats();
         }}
       />
 
@@ -1083,7 +868,6 @@ export function StaffDashboard() {
         onClose={() => setCustomerDialogOpen(false)}
         onSuccess={() => {
           setCustomerDialogOpen(false);
-          loadStats();
         }}
       />
 
@@ -1093,8 +877,7 @@ export function StaffDashboard() {
         onClose={() => setAppointmentDialogOpen(false)}
         onSuccess={() => {
           setAppointmentDialogOpen(false);
-          loadStats();
-          loadTodayAppointments(); // Reload today's appointments
+          loadTodayAppointments();
         }}
       />
 
@@ -1104,7 +887,6 @@ export function StaffDashboard() {
         onClose={() => setTireDialogOpen(false)}
         onSuccess={() => {
           setTireDialogOpen(false);
-          loadStats();
         }}
       />
 
@@ -1113,7 +895,6 @@ export function StaffDashboard() {
         open={tireSaleDialogOpen}
         onClose={() => setTireSaleDialogOpen(false)}
         onSuccess={() => {
-          loadStats();
         }}
       />
     </Box>

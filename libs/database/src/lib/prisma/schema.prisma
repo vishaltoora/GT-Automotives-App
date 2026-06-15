@@ -36,6 +36,9 @@ model User {
   tireSales            TireSale[]             @relation("TireSales") // Tire sales made by this user (for commission tracking)
   inspectionsCreated   Inspection[]           @relation("InspectionCreatedBy")
   inspectionsFinalized Inspection[]           @relation("InspectionFinalizedBy")
+  roEmployees          ROEmployee[]           // Repair orders assigned to this employee
+  roServices           ROService[]            @relation("ROServiceCompletedBy") // Service items completed by this user
+  roMedia              ROMedia[]              // Photos uploaded by this user
 }
 
 model Role {
@@ -84,6 +87,7 @@ model Customer {
   invoices        Invoice[]
   inspections     Inspection[]
   vehicles        Vehicle[]
+  repairOrders    RepairOrder[]
   smsMessages     SmsMessage[]
   smsPreference   SmsPreference?
   emailLogs       EmailLog[] // Email logs related to this customer
@@ -105,7 +109,30 @@ model Vehicle {
   appointments Appointment[]
   invoices     Invoice[]
   inspections  Inspection[]
+  repairOrders RepairOrder[]
   customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+// Reference list of vehicle makes used to populate the "Make" dropdown.
+model VehicleMake {
+  id        String         @id @default(cuid())
+  name      String         @unique
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  models    VehicleModel[]
+}
+
+// Reference list of models per make used to populate the "Model" dropdown.
+model VehicleModel {
+  id        String      @id @default(cuid())
+  makeId    String
+  name      String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  make      VehicleMake @relation(fields: [makeId], references: [id], onDelete: Cascade)
+
+  @@unique([makeId, name])
+  @@index([makeId])
 }
 
 model Tire {
@@ -169,6 +196,22 @@ model Service {
   updatedAt   DateTime @updatedAt
 }
 
+// Managed catalog of services shown in the repair-order "Choose a Service"
+// dialog. Each item carries a default labour time (hours); the rate is applied
+// when the service is added to a repair order, and the hours can be adjusted.
+model ServiceCatalogItem {
+  id          String        @id @default(cuid())
+  name        String
+  category    String?
+  type        ROServiceType @default(LABOR)
+  labourHours Decimal       @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal       @default(0) @db.Decimal(10, 2)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([category])
+}
+
 model Company {
   id                 String    @id @default(cuid())
   name               String
@@ -214,7 +257,9 @@ model Invoice {
   inspections    Inspection[]
   squarePayments SquarePayment[] // Square payments for this invoice
   emailLogs      EmailLog[] // Email logs related to this invoice
-  tireSale       TireSale? // Tire sale that generated this invoice (one-to-one)
+  tireSale       TireSale?     // Tire sale that generated this invoice (one-to-one)
+  repairOrder    RepairOrder?  @relation(fields: [repairOrderId], references: [id], onDelete: SetNull)
+  repairOrderId  String?       @unique // Link to repair order that generated this invoice
 
   @@index([customerId])
   @@index([status])
@@ -357,6 +402,7 @@ model Appointment {
   employees         AppointmentEmployee[] // Multiple employees assigned to this appointment
   bookedByUser      User?                 @relation("BookedAppointments", fields: [bookedBy], references: [id])
   invoice           Invoice? // Auto-generated invoice (one-to-one)
+  repairOrder       RepairOrder? // Auto-generated RO (one-to-one)
   inspections       Inspection[]
   squarePayments    SquarePayment[] // Square payments linked to this appointment
   smsMessages       SmsMessage[] // SMS messages related to this appointment
@@ -472,6 +518,7 @@ model Inspection {
   vehicleId       String?
   appointmentId   String?
   invoiceId       String?
+  repairOrderId   String?
   roNumber        String?
   status          InspectionStatus         @default(DRAFT)
   overallStatus   InspectionOverallStatus?
@@ -489,6 +536,7 @@ model Inspection {
   vehicle         Vehicle?                 @relation(fields: [vehicleId], references: [id])
   appointment     Appointment?             @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   invoice         Invoice?                 @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  repairOrder     RepairOrder?             @relation(fields: [repairOrderId], references: [id], onDelete: SetNull)
   createdBy       User                     @relation("InspectionCreatedBy", fields: [createdById], references: [id])
   finalizedBy     User?                    @relation("InspectionFinalizedBy", fields: [finalizedById], references: [id])
   results         InspectionItemResult[]
@@ -1415,4 +1463,137 @@ enum CommissionStatus {
   APPROVED // Approved for payment
   PAID // Commission paid to employee
   CANCELLED // Sale cancelled, no commission
+}
+
+// ============================================
+// Repair Order (RO) System
+// ============================================
+
+model RepairOrder {
+  id              String      @id @default(cuid())
+  roNumber        String      @unique // e.g. RO-202606-0001
+  appointmentId   String      @unique // 1:1 with Appointment
+  customerId      String
+  vehicleId       String?
+  status          ROStatus    @default(OPEN)
+  customerConcern String?     // What the customer reported
+  technicianNotes String?     // Overall technician notes
+  mileageIn       Int?        // Odometer on arrival
+  mileageOut      Int?        // Odometer on departure
+  estimatedCost   Decimal?    @db.Decimal(10, 2)
+  openedAt        DateTime    @default(now())
+  closedAt        DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  appointment  Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id])
+  employees    ROEmployee[]
+  services     ROService[]
+  inspections  Inspection[]
+  media        ROMedia[]
+  invoice      Invoice?
+
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([openedAt])
+  @@map("repair_orders")
+}
+
+model ROEmployee {
+  id            String      @id @default(cuid())
+  repairOrderId String
+  userId        String
+  role          String?     // "Lead", "Assistant"
+  assignedAt    DateTime    @default(now())
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([repairOrderId, userId])
+  @@index([repairOrderId])
+  @@index([userId])
+  @@map("ro_employees")
+}
+
+model ROService {
+  id              String          @id @default(cuid())
+  repairOrderId   String
+  description     String
+  type            ROServiceType   @default(LABOR)
+  quantity        Decimal         @default(1) @db.Decimal(10, 2)
+  unitPrice       Decimal         @default(0) @db.Decimal(10, 2)
+  total           Decimal         @default(0) @db.Decimal(10, 2)
+  technicianNotes String?
+  status          ROServiceStatus @default(PENDING)
+  completedById   String?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  completedBy User?       @relation("ROServiceCompletedBy", fields: [completedById], references: [id])
+  media       ROMedia[]
+
+  @@index([repairOrderId])
+  @@index([status])
+  @@map("ro_services")
+}
+
+model ROMedia {
+  id            String      @id @default(cuid())
+  repairOrderId String
+  roServiceId   String?
+  fileUrl       String
+  blobName      String?
+  containerName String?
+  mimeType      String?
+  fileName      String?
+  size          Int?
+  caption       String?
+  mediaType     ROMediaType @default(OTHER)
+  sortOrder     Int         @default(0)
+  uploadedById  String
+  createdAt     DateTime    @default(now())
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  roService   ROService?  @relation(fields: [roServiceId], references: [id], onDelete: SetNull)
+  uploadedBy  User        @relation(fields: [uploadedById], references: [id])
+
+  @@index([repairOrderId])
+  @@index([roServiceId])
+  @@map("ro_media")
+}
+
+enum ROStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_PARTS
+  READY
+  CLOSED
+  INVOICED
+}
+
+enum ROServiceType {
+  LABOR
+  PART
+  OTHER
+}
+
+enum ROServiceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+}
+
+enum ROMediaType {
+  ARRIVAL_CONDITION
+  DAMAGE_DOCUMENTATION
+  WORK_IN_PROGRESS
+  WORK_COMPLETED
+  PARTS
+  OTHER
 }

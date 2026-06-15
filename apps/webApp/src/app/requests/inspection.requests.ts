@@ -123,6 +123,7 @@ export interface CreateInspectionDto {
   templateId: string;
   customerId: string;
   vehicleId?: string;
+  repairOrderId?: string;
   roNumber?: string;
   mileage?: number;
 }
@@ -363,6 +364,10 @@ class InspectionService {
   async completeInspection(id: string): Promise<Inspection> {
     const response = await apiClient.post(`/inspections/${id}/complete`);
     return response.data;
+  }
+
+  async deleteInspection(id: string): Promise<void> {
+    await apiClient.delete(`/inspections/${id}`);
   }
 
   async printInspection(id: string): Promise<void> {

@@ -247,6 +247,56 @@ export class AzureBlobService {
   }
 
   /**
+   * Upload repair order media (photos) to Azure Blob Storage
+   */
+  async uploadROMedia(
+    buffer: Buffer,
+    originalFileName: string,
+    mimeType: string,
+  ): Promise<UploadResult> {
+    if (!this.isConfigured) {
+      // Dev fallback: no blob storage, so embed the image as a base64 data URL
+      // (the mock http URL pointed nowhere, so thumbnails never rendered).
+      this.logger.warn('⚠️ Azure Storage not configured - returning inline data URL for development');
+      return {
+        blobUrl: `data:${mimeType || 'image/jpeg'};base64,${buffer.toString('base64')}`,
+        blobName: `mock-${Date.now()}-${originalFileName}`,
+        containerName: 'repair-order-media',
+        size: buffer.length,
+      };
+    }
+
+    try {
+      const containerName = 'repair-order-media';
+      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
+      await containerClient.createIfNotExists({ access: 'blob' });
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const cleanName = originalFileName.replace(/[^a-zA-Z0-9.-]/g, '-').toLowerCase();
+      const ext = cleanName.split('.').pop() || 'jpg';
+      const blobName = `${year}/${month}/ro-${Date.now()}.${ext}`;
+
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      await blockBlobClient.upload(buffer, buffer.length, {
+        blobHTTPHeaders: { blobContentType: mimeType },
+      });
+
+      this.logger.log(`Uploaded RO media: ${blobName}`);
+      return {
+        blobName,
+        blobUrl: blockBlobClient.url,
+        containerName,
+        size: buffer.length,
+      };
+    } catch (error) {
+      this.logger.error('Error uploading RO media to Azure Blob Storage', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete invoice image from Azure Blob Storage
    */
   async deleteInvoiceImage(
