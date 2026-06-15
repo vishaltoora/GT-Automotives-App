@@ -1,15 +1,23 @@
 name: GT-CI
 
-# Pull-request quality gate: lint, typecheck, unit tests, build, and backend
-# integration tests (against a real Postgres service container).
+# Quality gate that runs in two modes:
 #
-# This runs on every PR targeting main. Make it a REQUIRED status check in the
-# repo's branch-protection settings so a red branch cannot merge (see
-# .claude/docs/testing.md). It does NOT deploy — gt-build.yml/gt-deploy.yml
-# handle build artifacts and deployment after merge.
+#   • On a PULL REQUEST to main  → fast checks only: lint + typecheck + unit tests
+#                                  (no database, no integration tests).
+#   • On a PUSH/MERGE to main    → full checks: lint + typecheck + unit tests +
+#                                  backend integration tests (real Postgres
+#                                  service container).
+#
+# It does NOT deploy. gt-build.yml / gt-deploy.yml still handle build artifacts
+# and deployment after merge.
+#
+# Make the PR job a REQUIRED status check in branch protection so a red branch
+# cannot merge (see .claude/docs/testing-and-ci.md).
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch:
 
@@ -18,8 +26,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Lint / Typecheck / Test / Build
+  # ---------------------------------------------------------------------------
+  # PULL REQUEST: lint + typecheck + unit tests (fast, no DB)
+  # ---------------------------------------------------------------------------
+  pr-checks:
+    name: PR — Lint / Typecheck / Unit
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for nx affected)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --ignore-engines --network-timeout 100000
+
+      - name: Generate Prisma client
+        run: yarn db:generate
+
+      - name: Derive nx affected SHAs
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Lint (affected)
+        run: npx nx affected -t lint --parallel=3
+
+      - name: Typecheck (affected)
+        run: npx nx affected -t typecheck --parallel=3
+
+      - name: Unit tests (affected)
+        run: npx nx affected -t test --parallel=3
+
+  # ---------------------------------------------------------------------------
+  # MERGE TO MAIN: lint + typecheck + unit + integration (real Postgres)
+  # ---------------------------------------------------------------------------
+  main-checks:
+    name: main — Lint / Unit / Integration
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     services:
@@ -71,9 +120,6 @@ jobs:
 
       - name: Unit tests (affected)
         run: npx nx affected -t test --parallel=3
-
-      - name: Build (affected)
-        run: npx nx affected -t build --parallel=3
 
       - name: Backend integration tests (real Postgres)
         run: npx nx test-integration server

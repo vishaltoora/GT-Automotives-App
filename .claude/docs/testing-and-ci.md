@@ -23,14 +23,16 @@ yarn lint:fix               # eslint --fix across all projects
 
 ## What runs where
 
-| Stage             | Tooling                                    | Local                         | CI (`gt-ci.yml`)     |
-| ----------------- | ------------------------------------------ | ----------------------------- | -------------------- |
-| Lint              | ESLint (`@nx/eslint`)                      | pre-push, `yarn lint`         | ✅ affected          |
-| Typecheck         | `tsc --build`                              | pre-push, `yarn typecheck`    | ✅ affected          |
-| Unit tests        | Jest (`ts-jest`, `@testing-library/react`) | pre-push, `yarn test`         | ✅ affected          |
-| Build             | nx build (webpack/vite)                    | `yarn build`                  | ✅ affected          |
-| Integration tests | Jest + real Prisma + Postgres              | `yarn test:integration:local` | ✅ service container |
-| Formatting        | Prettier (via lint-staged)                 | pre-commit (staged files)     | —                    |
+| Stage             | Tooling                                    | Local                         | CI on **PR** | CI on **merge to main** |
+| ----------------- | ------------------------------------------ | ----------------------------- | ------------ | ----------------------- |
+| Lint              | ESLint (`@nx/eslint`)                      | pre-push, `yarn lint`         | ✅ affected  | ✅ affected             |
+| Typecheck         | `tsc --build`                              | pre-push, `yarn typecheck`    | ✅ affected  | ✅ affected             |
+| Unit tests        | Jest (`ts-jest`, `@testing-library/react`) | pre-push, `yarn test`         | ✅ affected  | ✅ affected             |
+| Integration tests | Jest + real Prisma + Postgres              | `yarn test:integration:local` | —            | ✅ service container    |
+| Formatting        | Prettier (via lint-staged)                 | pre-commit (staged files)     | —            | —                       |
+
+The split keeps PRs fast (no database spin-up) and runs the heavier
+integration suite once, at merge time.
 
 ## Unit tests
 
@@ -94,24 +96,29 @@ docker compose -f docker-compose.test.yml down -v
 Hooks are installed automatically via the `prepare` script (`husky`) on
 `yarn install`.
 
-## CI: `gt-ci.yml` (the merge gate)
+## CI: `gt-ci.yml`
 
-Runs on every `pull_request` targeting `main`:
+Two jobs, selected by event:
 
-1. Install + `prisma generate`
-2. `nx affected` → lint → typecheck → unit tests → build
-3. Backend integration tests against a Postgres **service container**
+- **`pr-checks`** — runs on every `pull_request` targeting `main` (and on manual
+  `workflow_dispatch`). Fast gate, no database:
+  1. Install + `prisma generate`
+  2. `nx affected` → lint → typecheck → unit tests
+- **`main-checks`** — runs on `push` to `main` (i.e. after a merge). Full gate:
+  1. Install + `prisma generate`
+  2. `nx affected` → lint → typecheck → unit tests
+  3. Backend integration tests against a Postgres **service container**
 
 It does **not** deploy. `gt-build.yml` / `gt-deploy.yml` still handle build
 artifacts and deployment after merge.
 
 ### Make it required (branch protection)
 
-CI only blocks merges once it's a required status check. In GitHub:
+The PR gate only blocks merges once it's a required status check. In GitHub:
 
 > Settings → Branches → Branch protection rules → add/edit rule for `main` →
 > ✅ "Require status checks to pass before merging" →
-> select **`Lint / Typecheck / Test / Build`** (the `gt-ci` job) →
+> select **`PR — Lint / Typecheck / Unit`** (the `pr-checks` job) →
 > (recommended) ✅ "Require branches to be up to date before merging".
 
 ## ESLint baseline (important)
