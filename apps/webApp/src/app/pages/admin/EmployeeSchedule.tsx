@@ -143,7 +143,7 @@ export default function EmployeeSchedule() {
         vehicleInfo: apt.vehicle
           ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}`
           : 'No vehicle specified',
-        location: apt.appointmentType === 'AT_GARAGE' ? 'At Garage' : 'Mobile Service',
+        location: apt.appointmentType === 'AT_GARAGE' ? 'At Shop' : 'Mobile Service',
         duration: apt.duration,
         notes: apt.notes,
       }));

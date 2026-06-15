@@ -1,5 +1,5 @@
 import { ExpenseInvoicesService } from './expense-invoices.service';
-import { CreateExpenseInvoiceDto, UpdateExpenseInvoiceDto, ExpenseInvoiceResponseDto, ExpenseInvoiceFilterDto } from '../common/dto/expense-invoice.dto';
+import { CreateExpenseInvoiceDto, UpdateExpenseInvoiceDto, ExpenseInvoiceResponseDto, ExpenseInvoiceFilterDto } from '@gt-automotive/data';
 export declare class ExpenseInvoicesController {
     private readonly expenseInvoicesService;
     constructor(expenseInvoicesService: ExpenseInvoicesService);

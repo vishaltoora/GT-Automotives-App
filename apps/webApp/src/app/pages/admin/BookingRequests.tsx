@@ -419,7 +419,7 @@ export function BookingRequests() {
           {request.appointmentType === 'AT_GARAGE' ? (
             <>
               <StoreIcon fontSize="small" sx={{ color: colors.primary.main }} />
-              <Typography variant="body2">At Garage</Typography>
+              <Typography variant="body2">At Shop</Typography>
             </>
           ) : (
             <>
@@ -532,7 +532,7 @@ export function BookingRequests() {
             {request.appointmentType === 'AT_GARAGE' ? (
               <>
                 <StoreIcon fontSize="small" sx={{ color: colors.primary.main, fontSize: '1rem' }} />
-                <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>At Garage</Typography>
+                <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>At Shop</Typography>
               </>
             ) : (
               <>

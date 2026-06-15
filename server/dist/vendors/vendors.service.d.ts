@@ -1,5 +1,5 @@
 import { VendorRepository } from './vendor.repository';
-import { CreateVendorDto, UpdateVendorDto, VendorResponseDto } from '../common/dto/vendor.dto';
+import { CreateVendorDto, UpdateVendorDto, VendorResponseDto } from '@gt-automotive/data';
 export declare class VendorsService {
     private vendorRepository;
     constructor(vendorRepository: VendorRepository);

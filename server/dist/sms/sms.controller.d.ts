@@ -30,17 +30,17 @@ export declare class SmsController {
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            vehicleId: string | null;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
-            notes: string | null;
-            employeeId: string | null;
             scheduledDate: Date;
+            vehicleId: string | null;
+            employeeId: string | null;
             scheduledTime: string;
             endTime: string | null;
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
             serviceAddress: string | null;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            notes: string | null;
             paymentAmount: number | null;
             paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
             paymentNotes: string | null;
@@ -53,7 +53,6 @@ export declare class SmsController {
         } | null;
         user: {
             id: string;
-            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
             firstName: string | null;
@@ -63,17 +62,17 @@ export declare class SmsController {
             clerkId: string;
             roleId: string;
             lastLogin: Date | null;
+            isActive: boolean;
         } | null;
     } & {
         id: string;
-        type: import("@prisma/client").$Enums.SmsType;
         createdAt: Date;
         updatedAt: Date;
         customerId: string | null;
-        appointmentId: string | null;
         status: import("@prisma/client").$Enums.SmsStatus;
+        appointmentId: string | null;
         userId: string | null;
-        errorMessage: string | null;
+        type: import("@prisma/client").$Enums.SmsType;
         cost: import(".prisma/client/runtime/library").Decimal | null;
         to: string;
         from: string;
@@ -82,6 +81,7 @@ export declare class SmsController {
         body: string;
         telnyxMessageId: string | null;
         segments: number | null;
+        errorMessage: string | null;
     })[]>;
     /**
      * Get customer preferences

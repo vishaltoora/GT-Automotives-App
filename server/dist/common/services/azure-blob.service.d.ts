@@ -37,6 +37,10 @@ export declare class AzureBlobService {
      */
     generateSasUrl(containerName: string, blobName: string, expiryMinutes?: number): Promise<string>;
     /**
+     * Upload repair order media (photos) to Azure Blob Storage
+     */
+    uploadROMedia(buffer: Buffer, originalFileName: string, mimeType: string): Promise<UploadResult>;
+    /**
      * Delete invoice image from Azure Blob Storage
      */
     deleteInvoiceImage(containerName: string, blobName: string): Promise<boolean>;

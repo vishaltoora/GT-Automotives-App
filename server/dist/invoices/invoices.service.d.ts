@@ -1,7 +1,5 @@
 import { InvoiceRepository } from './repositories/invoice.repository';
-import { CreateInvoiceDto } from '../common/dto/invoice.dto';
-import { UpdateInvoiceDto } from '../common/dto/invoice.dto';
-import { CreateServiceDto, UpdateServiceDto } from '../common/dto/service.dto';
+import { CreateInvoiceDto, CreateServiceDto, UpdateInvoiceDto, UpdateServiceDto } from '@gt-automotive/data';
 import { Invoice, InvoiceStatus, PaymentMethod } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
@@ -35,33 +33,33 @@ export declare class InvoicesService {
     getAllServices(): Promise<{
         id: string;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }[]>;
     createService(createServiceDto: CreateServiceDto): Promise<{
         id: string;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     updateService(id: string, updateServiceDto: UpdateServiceDto): Promise<{
         id: string;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     deleteService(id: string): Promise<{
         id: string;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         unitPrice: import(".prisma/client/runtime/library").Decimal;
     }>;
     sendInvoiceEmail(invoiceId: string, userId: string, overrideEmail?: string, saveToCustomer?: boolean): Promise<{

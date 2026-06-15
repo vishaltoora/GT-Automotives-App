@@ -136,6 +136,17 @@ function CurrentTab({
 
   const completedServices = ro.services?.filter((s) => s.status === 'COMPLETED') ?? [];
   const totalServices = ro.services?.length ?? 0;
+
+  // Validation gating: a vehicle must be linked before any photo/inspection/service
+  // work can begin, and at least one photo is required before inspecting or adding services.
+  const hasVehicle = !!ro.vehicle;
+  const hasPhotos = (ro.media?.length ?? 0) > 0;
+  const actionsEnabled = hasVehicle && hasPhotos;
+  const actionDisabledReason = !hasVehicle
+    ? 'Add a vehicle to this repair order first'
+    : !hasPhotos
+    ? 'Add at least one photo first'
+    : '';
   const estimatedTotal = ro.services?.reduce((sum, s) => sum + Number(s.total ?? 0), 0) ?? 0;
   const completedSubtotal = completedServices.reduce((sum, s) => sum + Number(s.total ?? 0), 0);
 
@@ -409,6 +420,8 @@ function CurrentTab({
           photos={ro.media ?? []}
           onPhotosChange={(media) => onROChange({ ...ro, media })}
           canDelete={canEdit}
+          canUpload={canEdit && hasVehicle}
+          uploadDisabledHint="Add a vehicle to this repair order first"
         />
       </Paper>
 
@@ -423,24 +436,32 @@ function CurrentTab({
             View Inspection ({ro.inspections.length})
           </Button>
         ) : (
-          <Tooltip title="Create a digital vehicle inspection linked to this RO">
-            <Button
-              variant="outlined"
-              startIcon={<InspectIcon />}
-              onClick={() => { setViewInspectionId(undefined); setInspectOpen(true); }}
-            >
-              Inspect Vehicle
-            </Button>
+          <Tooltip title={actionsEnabled ? 'Create a digital vehicle inspection linked to this RO' : actionDisabledReason}>
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={<InspectIcon />}
+                onClick={() => { setViewInspectionId(undefined); setInspectOpen(true); }}
+                disabled={!actionsEnabled}
+              >
+                Inspect Vehicle
+              </Button>
+            </span>
           </Tooltip>
         )}
 
-        <Button
-          variant="contained"
-          startIcon={<ServicesIcon />}
-          onClick={() => setServiceDrawerOpen(true)}
-        >
-          Services {totalServices > 0 ? `(${completedServices.length}/${totalServices} done)` : ''}
-        </Button>
+        <Tooltip title={actionsEnabled || totalServices > 0 ? '' : actionDisabledReason}>
+          <span>
+            <Button
+              variant={!actionsEnabled && totalServices === 0 ? 'outlined' : 'contained'}
+              startIcon={<ServicesIcon />}
+              onClick={() => setServiceDrawerOpen(true)}
+              disabled={!actionsEnabled && totalServices === 0}
+            >
+              Services {totalServices > 0 ? `(${completedServices.length}/${totalServices} done)` : ''}
+            </Button>
+          </span>
+        </Tooltip>
       </Stack>
 
       {/* Technician notes */}
@@ -768,7 +789,7 @@ export function RODetail() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 860 }}>
+    <Box sx={{ p: { xs: 2, md: 3 }, width: '100%' }}>
       {/* Back + header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <IconButton size="small" onClick={() => navigate(`${baseRoute}/repair-orders`)}>

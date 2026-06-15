@@ -1,6 +1,6 @@
 import { PaymentRepository } from './repositories/payment.repository';
 import { JobRepository } from '../jobs/repositories/job.repository';
-import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto, PaymentSummaryDto, ProcessPaymentDto } from '../common/dto/payment.dto';
+import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto, PaymentSummaryDto, ProcessPaymentDto } from '@gt-automotive/data';
 import { Payment, PaymentStatus, PaymentMethod } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 export declare class PaymentsService {

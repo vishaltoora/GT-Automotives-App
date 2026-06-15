@@ -454,7 +454,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   <FormControlLabel
                     value="AT_GARAGE"
                     control={<Radio />}
-                    label="At Garage"
+                    label="At Shop"
                   />
                   <FormControlLabel
                     value="MOBILE_SERVICE"

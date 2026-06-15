@@ -1,5 +1,5 @@
-import { ExpenseReportFilterDto, ExpenseReportResponseDto } from '../common/dto/expense-report.dto';
-import { TaxReportFilterDto, TaxReportResponseDto, GstPaidReportResponseDto } from '../common/dto/tax-report.dto';
+import { ExpenseReportFilterDto, ExpenseReportResponseDto } from '@gt-automotive/data';
+import { TaxReportFilterDto, TaxReportResponseDto, GstPaidReportResponseDto } from '@gt-automotive/data';
 export declare class ReportsService {
     private prisma;
     getExpenseReport(filterDto: ExpenseReportFilterDto): Promise<ExpenseReportResponseDto>;

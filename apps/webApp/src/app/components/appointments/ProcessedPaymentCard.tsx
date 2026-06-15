@@ -205,7 +205,7 @@ export const ProcessedPaymentCard: React.FC<ProcessedPaymentCardProps> = ({
                 >
                   {appointment.appointmentType === 'MOBILE_SERVICE'
                     ? 'Mobile Service'
-                    : 'At Garage'}
+                    : 'At Shop'}
                 </Typography>
               </Box>
               {appointment.vehicle && (

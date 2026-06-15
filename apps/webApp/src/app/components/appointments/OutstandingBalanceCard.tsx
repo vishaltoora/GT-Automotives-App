@@ -220,7 +220,7 @@ export const OutstandingBalanceCard: React.FC<OutstandingBalanceCardProps> = ({
                 >
                   {appointment.appointmentType === 'MOBILE_SERVICE'
                     ? 'Mobile Service'
-                    : 'At Garage'}
+                    : 'At Shop'}
                 </Typography>
               </Box>
               {appointment.vehicle && (

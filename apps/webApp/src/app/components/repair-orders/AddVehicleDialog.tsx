@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,15 +15,8 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { DirectionsCar, Search } from '@mui/icons-material';
-import { vehicleService, Vehicle } from '../../requests/vehicle.requests';
+import { vehicleService, Vehicle, VehicleMakeWithModels } from '../../requests/vehicle.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
-
-const VEHICLE_MAKES = [
-  'Acura', 'Audi', 'BMW', 'Buick', 'Cadillac', 'Chevrolet', 'Chrysler',
-  'Dodge', 'Ford', 'GMC', 'Honda', 'Hyundai', 'Infiniti', 'Jeep', 'Kia',
-  'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Mitsubishi', 'Nissan',
-  'Ram', 'Subaru', 'Tesla', 'Toyota', 'Volkswagen', 'Volvo',
-];
 
 const CURRENT_YEAR = new Date().getFullYear() + 1;
 const YEARS = Array.from({ length: 60 }, (_, i) => CURRENT_YEAR - i);
@@ -51,6 +44,22 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
   const [mileage, setMileage] = useState('');
   const [saving, setSaving] = useState(false);
   const [decoding, setDecoding] = useState(false);
+  const [makesData, setMakesData] = useState<VehicleMakeWithModels[]>([]);
+
+  // Load the makes/models reference list once the dialog opens.
+  useEffect(() => {
+    if (!open || makesData.length > 0) return;
+    vehicleService
+      .getMakesWithModels()
+      .then(setMakesData)
+      .catch(() => setMakesData([]));
+  }, [open, makesData.length]);
+
+  const makeOptions = useMemo(() => makesData.map((m) => m.name), [makesData]);
+  const modelOptions = useMemo(
+    () => makesData.find((m) => m.name.toLowerCase() === make.trim().toLowerCase())?.models ?? [],
+    [makesData, make]
+  );
 
   const reset = () => {
     setMake(''); setModel(''); setYear(new Date().getFullYear());
@@ -158,20 +167,30 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Autocomplete
               freeSolo
-              options={VEHICLE_MAKES}
+              options={makeOptions}
               value={make}
               onChange={(_, v) => setMake(v ?? '')}
               onInputChange={(_, v) => setMake(v)}
               sx={{ flex: 1 }}
               renderInput={(params) => <TextField {...params} label="Make" size="small" required />}
             />
-            <TextField
-              label="Model"
-              size="small"
-              sx={{ flex: 1 }}
+            <Autocomplete
+              freeSolo
+              options={modelOptions}
               value={model}
-              onChange={(e) => setModel(e.target.value)}
-              required
+              onChange={(_, v) => setModel(v ?? '')}
+              onInputChange={(_, v) => setModel(v)}
+              disabled={!make.trim()}
+              sx={{ flex: 1 }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Model"
+                  size="small"
+                  required
+                  placeholder={make.trim() ? 'Select or type a model' : 'Choose a make first'}
+                />
+              )}
             />
           </Box>
 
@@ -221,14 +240,19 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={saving}>Cancel</Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          disabled={saving || !make.trim() || !model.trim() || !VIN_PATTERN.test(vin) || !mileage || Number(mileage) <= 0}
-          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <DirectionsCar />}
-        >
-          Add Vehicle
-        </Button>
+        {(() => {
+          const addDisabled = saving || !make.trim() || !model.trim() || !VIN_PATTERN.test(vin) || !mileage || Number(mileage) <= 0;
+          return (
+            <Button
+              variant={addDisabled ? 'outlined' : 'contained'}
+              onClick={handleSave}
+              disabled={addDisabled}
+              startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <DirectionsCar />}
+            >
+              Add Vehicle
+            </Button>
+          );
+        })()}
       </DialogActions>
     </Dialog>
   );

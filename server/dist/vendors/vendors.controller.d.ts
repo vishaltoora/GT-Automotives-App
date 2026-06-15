@@ -1,5 +1,5 @@
 import { VendorsService } from './vendors.service';
-import { CreateVendorDto, UpdateVendorDto, VendorResponseDto, VendorSearchDto } from '../common/dto/vendor.dto';
+import { CreateVendorDto, UpdateVendorDto, VendorResponseDto, VendorSearchDto } from '@gt-automotive/data';
 export declare class VendorsController {
     private readonly vendorsService;
     constructor(vendorsService: VendorsService);

@@ -1,7 +1,7 @@
 import { PrismaService } from '@gt-automotive/database';
 import { Tire, Prisma, TireType } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
-import { TireFiltersDto, TireSearchDto, TireSearchResultDto } from '../../common/dto/tire.dto';
+import { TireFiltersDto, TireSearchDto, TireSearchResultDto } from '@gt-automotive/data';
 export declare class TireRepository extends BaseRepository<Tire> {
     constructor(prisma: PrismaService);
     findAll(filters?: TireFiltersDto): Promise<Tire[]>;

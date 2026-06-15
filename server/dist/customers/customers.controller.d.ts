@@ -1,5 +1,5 @@
+import { CreateCustomerDto, UpdateCustomerDto } from '@gt-automotive/data';
 import { CustomersService } from './customers.service';
-import { CreateCustomerDto, UpdateCustomerDto } from '../common/dto/customer.dto';
 export declare class CustomersController {
     private readonly customersService;
     constructor(customersService: CustomersService);
@@ -32,13 +32,13 @@ export declare class CustomersController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
-            mileage: number | null;
             make: string;
+            customerId: string;
             model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
+            mileage: number | null;
         }[];
         id: string;
         createdAt: Date;
@@ -69,13 +69,13 @@ export declare class CustomersController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
-            mileage: number | null;
             make: string;
+            customerId: string;
             model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
+            mileage: number | null;
         }[];
     } & {
         id: string;
@@ -102,13 +102,13 @@ export declare class CustomersController {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                customerId: string;
-                mileage: number | null;
                 make: string;
+                customerId: string;
                 model: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
+                mileage: number | null;
             } | null;
             employees: ({
                 employee: {
@@ -119,25 +119,25 @@ export declare class CustomersController {
             } & {
                 id: string;
                 createdAt: Date;
-                appointmentId: string;
                 employeeId: string;
+                appointmentId: string;
             })[];
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
-            vehicleId: string | null;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
-            notes: string | null;
-            employeeId: string | null;
             scheduledDate: Date;
+            vehicleId: string | null;
+            employeeId: string | null;
             scheduledTime: string;
             endTime: string | null;
             duration: number;
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
             serviceAddress: string | null;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
+            notes: string | null;
             paymentAmount: number | null;
             paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
             paymentNotes: string | null;
@@ -149,66 +149,67 @@ export declare class CustomersController {
             bookedBy: string | null;
         })[];
         invoices: ({
-            items: {
-                id: string;
-                description: string;
-                createdAt: Date;
-                updatedAt: Date;
-                invoiceId: string;
-                total: import(".prisma/client/runtime/library").Decimal;
-                tireId: string | null;
-                tireName: string | null;
-                itemType: import("@prisma/client").$Enums.InvoiceItemType;
-                quantity: number;
-                unitPrice: import(".prisma/client/runtime/library").Decimal;
-            }[];
             vehicle: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                customerId: string;
-                mileage: number | null;
                 make: string;
+                customerId: string;
                 model: string;
                 year: number;
                 vin: string | null;
                 licensePlate: string | null;
+                mileage: number | null;
             } | null;
+            items: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                total: import(".prisma/client/runtime/library").Decimal;
+                invoiceId: string;
+                tireId: string | null;
+                tireName: string | null;
+                itemType: import("@prisma/client").$Enums.InvoiceItemType;
+                description: string;
+                quantity: number;
+                unitPrice: import(".prisma/client/runtime/library").Decimal;
+            }[];
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             customerId: string;
             vehicleId: string | null;
-            appointmentId: string | null;
             status: import("@prisma/client").$Enums.InvoiceStatus;
-            createdBy: string;
             notes: string | null;
             invoiceNumber: string;
             companyId: string;
+            appointmentId: string | null;
             subtotal: import(".prisma/client/runtime/library").Decimal;
             taxRate: import(".prisma/client/runtime/library").Decimal;
             taxAmount: import(".prisma/client/runtime/library").Decimal;
             total: import(".prisma/client/runtime/library").Decimal;
             paymentMethod: import("@prisma/client").$Enums.PaymentMethod | null;
             invoiceDate: Date;
+            createdBy: string;
             paidAt: Date | null;
             gstAmount: import(".prisma/client/runtime/library").Decimal | null;
             gstRate: import(".prisma/client/runtime/library").Decimal | null;
             pstAmount: import(".prisma/client/runtime/library").Decimal | null;
             pstRate: import(".prisma/client/runtime/library").Decimal | null;
+            repairOrderId: string | null;
         })[];
         vehicles: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
-            mileage: number | null;
             make: string;
+            customerId: string;
             model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
+            mileage: number | null;
         }[];
         smsPreference: {
             id: string;
@@ -242,13 +243,13 @@ export declare class CustomersController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            customerId: string;
-            mileage: number | null;
             make: string;
+            customerId: string;
             model: string;
             year: number;
             vin: string | null;
             licensePlate: string | null;
+            mileage: number | null;
         }[];
     } & {
         id: string;

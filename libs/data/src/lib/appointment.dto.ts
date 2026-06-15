@@ -117,6 +117,14 @@ export class AppointmentInvoiceDto {
   status!: string;
 }
 
+export class AppointmentRepairOrderDto {
+  @IsString()
+  id!: string;
+
+  @IsString()
+  roNumber!: string;
+}
+
 // Create DTO
 export class CreateAppointmentDto {
   @IsString()
@@ -360,6 +368,11 @@ export class AppointmentResponseDto {
   @ValidateNested()
   @Type(() => AppointmentInvoiceDto)
   invoice?: AppointmentInvoiceDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AppointmentRepairOrderDto)
+  repairOrder?: AppointmentRepairOrderDto;
 }
 
 export class AppointmentQueryDto {

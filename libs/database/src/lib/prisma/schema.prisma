@@ -113,6 +113,28 @@ model Vehicle {
   customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
 
+// Reference list of vehicle makes used to populate the "Make" dropdown.
+model VehicleMake {
+  id        String         @id @default(cuid())
+  name      String         @unique
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  models    VehicleModel[]
+}
+
+// Reference list of models per make used to populate the "Model" dropdown.
+model VehicleModel {
+  id        String      @id @default(cuid())
+  makeId    String
+  name      String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  make      VehicleMake @relation(fields: [makeId], references: [id], onDelete: Cascade)
+
+  @@unique([makeId, name])
+  @@index([makeId])
+}
+
 model Tire {
   id             String          @id @default(cuid())
   name           String?

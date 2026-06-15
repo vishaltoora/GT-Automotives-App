@@ -50,6 +50,13 @@ export class AppointmentsService {
         status: true,
       },
     },
+    // Include linked repair order (manually created via "Create RO" for garage appointments)
+    repairOrder: {
+      select: {
+        id: true,
+        roNumber: true,
+      },
+    },
     bookedByUser: {
       select: {
         id: true,
@@ -184,11 +191,8 @@ export class AppointmentsService {
       include: this.appointmentInclude,
     });
 
-    // Auto-create Repair Order for this appointment
-    await this.createRepairOrderForAppointment(appointment, finalEmployeeIds).catch(err => {
-      console.error('[CREATE APPOINTMENT] Failed to auto-create RO:', err);
-      // Non-blocking — appointment was created successfully
-    });
+    // NOTE: Repair Orders are NOT auto-created. For AT_GARAGE appointments,
+    // staff explicitly create an RO via the "Create RO" button on the appointment card.
 
     // Send SMS confirmation to customer
     await this.smsService.sendAppointmentConfirmation(appointment.id).catch(err => {
@@ -237,46 +241,6 @@ export class AppointmentsService {
     }
 
     return appointment;
-  }
-
-  private async createRepairOrderForAppointment(appointment: any, employeeIds: string[]): Promise<void> {
-    // Generate RO number: RO-YYYYMM-NNNN
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const prefix = `RO-${year}${month}-`;
-
-    const latest = await this.prisma.repairOrder.findFirst({
-      where: { roNumber: { startsWith: prefix } },
-      orderBy: { roNumber: 'desc' },
-      select: { roNumber: true },
-    });
-
-    let seq = 1;
-    if (latest?.roNumber) {
-      const parts = latest.roNumber.split('-');
-      seq = (parseInt(parts[parts.length - 1], 10) || 0) + 1;
-    }
-    const roNumber = `${prefix}${String(seq).padStart(4, '0')}`;
-
-    await this.prisma.repairOrder.create({
-      data: {
-        roNumber,
-        appointmentId: appointment.id,
-        customerId: appointment.customerId,
-        vehicleId: appointment.vehicleId ?? undefined,
-        customerConcern: appointment.notes ?? undefined,
-        status: 'OPEN',
-        employees: {
-          create: employeeIds.map((userId: string, index: number) => ({
-            userId,
-            role: index === 0 ? 'Lead' : 'Assistant',
-          })),
-        },
-      },
-    });
-
-    console.log(`[CREATE APPOINTMENT] Auto-created RO ${roNumber} for appointment ${appointment.id}`);
   }
 
   /**

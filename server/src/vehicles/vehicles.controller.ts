@@ -49,6 +49,11 @@ export class VehiclesController {
     );
   }
 
+  @Get('makes')
+  getMakesWithModels() {
+    return this.vehiclesService.getMakesWithModels();
+  }
+
   @Get('models')
   getModelsForMake(@Query('make') make: string) {
     return this.vinDecoderService.getModelsForMake(make);

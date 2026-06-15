@@ -15,6 +15,7 @@ interface AddPhotoButtonProps {
   defaultType?: ROMediaType;
   label?: string;
   size?: 'small' | 'medium';
+  disabled?: boolean;
 }
 
 const MEDIA_TYPES: { value: ROMediaType; label: string }[] = [
@@ -26,7 +27,7 @@ const MEDIA_TYPES: { value: ROMediaType; label: string }[] = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-export function AddPhotoButton({ roId, roServiceId, onUploaded, defaultType, label, size = 'medium' }: AddPhotoButtonProps) {
+export function AddPhotoButton({ roId, roServiceId, onUploaded, defaultType, label, size = 'medium', disabled = false }: AddPhotoButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedType, setSelectedType] = useState<ROMediaType>(defaultType ?? 'OTHER');
@@ -86,7 +87,7 @@ export function AddPhotoButton({ roId, roServiceId, onUploaded, defaultType, lab
         startIcon={uploading ? <CircularProgress size={16} /> : <CameraAlt />}
         endIcon={!defaultType ? <ExpandMore /> : undefined}
         onClick={handleButtonClick}
-        disabled={uploading}
+        disabled={uploading || disabled}
       >
         {uploading ? 'Uploading…' : (label ?? 'Add Photo')}
       </Button>

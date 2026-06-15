@@ -7,6 +7,7 @@ import {
   Chip,
   Stack,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import { Delete, PhotoCamera } from '@mui/icons-material';
 import { ROMedia, ROMediaType, repairOrderRequests } from '../../requests/repair-order.requests';
@@ -19,6 +20,8 @@ interface ROPhotoSectionProps {
   onPhotosChange: (photos: ROMedia[]) => void;
   canDelete?: boolean;
   compact?: boolean; // smaller grid for service items
+  canUpload?: boolean; // when false, Add Photo is disabled
+  uploadDisabledHint?: string; // tooltip explaining why upload is disabled
 }
 
 const TYPE_FILTERS: { value: ROMediaType | 'ALL'; label: string }[] = [
@@ -30,7 +33,7 @@ const TYPE_FILTERS: { value: ROMediaType | 'ALL'; label: string }[] = [
   { value: 'PARTS', label: 'Parts' },
 ];
 
-export function ROPhotoSection({ roId, photos, onPhotosChange, canDelete, compact }: ROPhotoSectionProps) {
+export function ROPhotoSection({ roId, photos, onPhotosChange, canDelete, compact, canUpload = true, uploadDisabledHint }: ROPhotoSectionProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [filter, setFilter] = useState<ROMediaType | 'ALL'>('ALL');
@@ -68,7 +71,15 @@ export function ROPhotoSection({ roId, photos, onPhotosChange, canDelete, compac
             Photos ({photos.length})
           </Typography>
         </Box>
-        <AddPhotoButton roId={roId} onUploaded={handleUploaded} size="small" />
+        {canUpload ? (
+          <AddPhotoButton roId={roId} onUploaded={handleUploaded} size="small" />
+        ) : (
+          <Tooltip title={uploadDisabledHint ?? ''}>
+            <span>
+              <AddPhotoButton roId={roId} onUploaded={handleUploaded} size="small" disabled />
+            </span>
+          </Tooltip>
+        )}
       </Box>
 
       {/* Filter chips */}
@@ -94,7 +105,9 @@ export function ROPhotoSection({ roId, photos, onPhotosChange, canDelete, compac
       {/* Photo grid */}
       {filtered.length === 0 ? (
         <Box sx={{ py: 2, textAlign: 'center', color: 'text.disabled' }}>
-          <Typography variant="caption">No photos yet. Tap Add Photo to capture.</Typography>
+          <Typography variant="caption">
+            {!canUpload && uploadDisabledHint ? uploadDisabledHint : 'No photos yet. Tap Add Photo to capture.'}
+          </Typography>
         </Box>
       ) : (
         <ImageList cols={cols} rowHeight={rowHeight} gap={4} sx={{ mt: 0 }}>

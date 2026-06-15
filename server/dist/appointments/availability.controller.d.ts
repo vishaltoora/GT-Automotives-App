@@ -1,5 +1,5 @@
 import { AvailabilityService } from './availability.service';
-import { SetAvailabilityDto, TimeSlotOverrideDto, CheckAvailabilityDto } from '../common/dto/employee-availability.dto';
+import { SetAvailabilityDto, TimeSlotOverrideDto, CheckAvailabilityDto } from '@gt-automotive/data';
 export declare class AvailabilityController {
     private readonly availabilityService;
     constructor(availabilityService: AvailabilityService);
@@ -69,9 +69,9 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**
@@ -84,9 +84,9 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**
@@ -99,9 +99,9 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -114,9 +114,9 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -143,16 +143,16 @@ export declare class AvailabilityController {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**
      * Check available time slots for a specific date and duration
      * Roles: ADMIN, SUPERVISOR, STAFF, CUSTOMER (for booking)
      */
-    checkAvailability(dto: CheckAvailabilityDto): Promise<import("../common/dto/employee-availability.dto").AvailableSlot[]>;
+    checkAvailability(dto: CheckAvailabilityDto): Promise<import("@gt-automotive/data").AvailableSlot[]>;
     /**
      * Check if specific employee is available at a specific time
      * Roles: ADMIN, SUPERVISOR, STAFF

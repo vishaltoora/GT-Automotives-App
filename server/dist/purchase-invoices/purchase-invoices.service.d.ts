@@ -1,6 +1,6 @@
 import { PurchaseInvoiceRepository } from './purchase-invoice.repository';
 import { AzureBlobService } from '../common/services/azure-blob.service';
-import { CreatePurchaseInvoiceDto, UpdatePurchaseInvoiceDto, PurchaseInvoiceResponseDto, PurchaseInvoiceFilterDto } from '../common/dto/purchase-invoice.dto';
+import { CreatePurchaseInvoiceDto, UpdatePurchaseInvoiceDto, PurchaseInvoiceResponseDto, PurchaseInvoiceFilterDto } from '@gt-automotive/data';
 export declare class PurchaseInvoicesService {
     private purchaseInvoiceRepository;
     private azureBlobService;

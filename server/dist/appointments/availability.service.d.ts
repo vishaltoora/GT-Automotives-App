@@ -1,5 +1,5 @@
 import { PrismaService } from '@gt-automotive/database';
-import { SetAvailabilityDto, TimeSlotOverrideDto, CheckAvailabilityDto, AvailableSlot } from '../common/dto/employee-availability.dto';
+import { SetAvailabilityDto, TimeSlotOverrideDto, CheckAvailabilityDto, AvailableSlot } from '@gt-automotive/data';
 export declare class AvailabilityService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -52,9 +52,9 @@ export declare class AvailabilityService {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**
@@ -66,9 +66,9 @@ export declare class AvailabilityService {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }[]>;
     /**
@@ -80,9 +80,9 @@ export declare class AvailabilityService {
         updatedAt: Date;
         employeeId: string;
         endTime: string;
+        date: Date;
         startTime: string;
         isAvailable: boolean;
-        date: Date;
         reason: string | null;
     }>;
     /**

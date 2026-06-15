@@ -1,5 +1,5 @@
 import { Vendor } from '@prisma/client';
-import { CreateVendorDto, UpdateVendorDto } from '../common/dto/vendor.dto';
+import { CreateVendorDto, UpdateVendorDto } from '@gt-automotive/data';
 export declare class VendorRepository {
     private prisma;
     create(data: CreateVendorDto): Promise<Vendor>;

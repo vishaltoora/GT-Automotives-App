@@ -1,6 +1,6 @@
 import { ExpenseInvoiceRepository } from './expense-invoice.repository';
 import { AzureBlobService } from '../common/services/azure-blob.service';
-import { CreateExpenseInvoiceDto, UpdateExpenseInvoiceDto, ExpenseInvoiceResponseDto, ExpenseInvoiceFilterDto } from '../common/dto/expense-invoice.dto';
+import { CreateExpenseInvoiceDto, UpdateExpenseInvoiceDto, ExpenseInvoiceResponseDto, ExpenseInvoiceFilterDto } from '@gt-automotive/data';
 export declare class ExpenseInvoicesService {
     private expenseInvoiceRepository;
     private azureBlobService;
