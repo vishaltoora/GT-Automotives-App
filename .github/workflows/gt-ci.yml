@@ -1,0 +1,79 @@
+name: GT-CI
+
+# Pull-request quality gate: lint, typecheck, unit tests, build, and backend
+# integration tests (against a real Postgres service container).
+#
+# This runs on every PR targeting main. Make it a REQUIRED status check in the
+# repo's branch-protection settings so a red branch cannot merge (see
+# .claude/docs/testing.md). It does NOT deploy — gt-build.yml/gt-deploy.yml
+# handle build artifacts and deployment after merge.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: gt-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint / Typecheck / Test / Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gt_automotive_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gt_automotive_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      # Integration tests connect here; the DB name contains "test" (required by
+      # the integration global setup safety guard).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gt_automotive_test?schema=public
+
+    steps:
+      - name: Checkout (full history for nx affected)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --ignore-engines --network-timeout 100000
+
+      - name: Generate Prisma client
+        run: yarn db:generate
+
+      - name: Derive nx affected SHAs
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Lint (affected)
+        run: npx nx affected -t lint --parallel=3
+
+      - name: Typecheck (affected)
+        run: npx nx affected -t typecheck --parallel=3
+
+      - name: Unit tests (affected)
+        run: npx nx affected -t test --parallel=3
+
+      - name: Build (affected)
+        run: npx nx affected -t build --parallel=3
+
+      - name: Backend integration tests (real Postgres)
+        run: npx nx test-integration server

@@ -1,5 +1,13 @@
 # Add files here to ignore them from prettier formatting
 /dist
+**/dist
 /coverage
+**/coverage
 /.nx/cache
 /.nx/workspace-data
+**/node_modules
+**/*.d.ts
+**/out-tsc
+apps/webApp/temp_js.js
+libs/database/src/lib/prisma/migrations
+yarn.lock

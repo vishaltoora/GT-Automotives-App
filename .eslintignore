@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+out-tsc
+.nx
+build
+# Generated Prisma client / declaration files committed in source trees
+**/*.d.ts
+# Stray/temporary scratch files (not part of the app)
+apps/webApp/temp_js.js
+**/temp_*.js
