@@ -5,12 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ## Quick Reference
 
 ### 🚨 Critical Rules
+
 - **[Environment Variables](.claude/rules/environment-variables.md)** - **CRITICAL**: Always use `import.meta.env.VITE_*` in frontend, NEVER `process.env.VITE_*`
 - **[Migration Management](.claude/agents/migration-manager.md)** - **CRITICAL**: NEVER modify schema.prisma without creating migrations first ⭐ NEW
 - **Database Migrations** - **CRITICAL**: NEVER use `prisma db push` - ALWAYS use `prisma migrate dev` for local and `prisma migrate deploy` for production. Using `db push` causes schema drift between local and production databases, leading to failed deployments and data issues.
 - **[DTO Single Source of Truth](.claude/docs/dto-single-source-of-truth.md)** - **CRITICAL**: All DTOs live in `libs/data`. Never add DTOs to `server/src/common/dto/`. After Prisma enum changes run `yarn enums:generate`. Never re-add `@nestjs/mapped-types` — use local `PartialType`/`OmitType`/`PickType` from `@gt-automotive/data`. ⭐ NEW
 
 ### 📁 Documentation Structure
+
 - **[Development Status](.claude/docs/development-status.md)** - Current system status and progress overview
 - **[Project Overview](.claude/docs/project-overview.md)** - Application summary, status, and roadmap
 - **[Authentication](.claude/docs/authentication.md)** - Clerk setup, user roles, and permissions
@@ -42,6 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **[Security](.claude/docs/security.md)** - Security measures, authentication, and best practices
 - **[Performance](.claude/docs/performance.md)** - Performance optimization strategies and monitoring
 - **[Testing](.claude/docs/testing.md)** - Testing strategy, frameworks, and best practices
+- **[Testing & CI Pipeline](.claude/docs/testing-and-ci.md)** - Unit/integration tests, lint gate, Husky hooks, and the `gt-ci.yml` PR merge gate ⭐ NEW
 - **[Troubleshooting](.claude/docs/troubleshooting.md)** - Common issues and solutions (includes crash loop resolution)
 - **[Completed Work](.claude/docs/completed-work.md)** - Detailed log of implemented features
 - **[SMS Integration Plan](.claude/docs/sms-integration-plan.md)** - Complete SMS/text messaging integration with Telnyx (Issue #60) ⭐ NEW
@@ -49,6 +52,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ## 🚀 Quick Start
 
 ### Development Mode (No Authentication)
+
 ```bash
 cd gt-automotives-app
 yarn install --ignore-engines
@@ -57,6 +61,7 @@ yarn dev
 ```
 
 ### Production Mode (With Clerk)
+
 ```bash
 cd gt-automotives-app
 yarn install
@@ -67,6 +72,7 @@ yarn dev
 ```
 
 ## 📊 Current Status
+
 - **Production URL:** https://gt-automotives.com ✅ (HTTPS + Custom Auth Domain + Reverse Proxy)
 - **Production WWW:** https://www.gt-automotives.com ✅
 - **Backend API:** https://gt-automotives.com/api ✅ (Reverse Proxy to Internal HTTP)
@@ -90,6 +96,7 @@ yarn dev
 ## 🔑 Key Information
 
 ### Five User Roles
+
 1. **Customer** - Self-service portal (`/customer/*`)
 2. **Staff** - Operational dashboard (`/staff/*`)
 3. **Supervisor** - Elevated permissions (`/supervisor/*`)
@@ -97,12 +104,14 @@ yarn dev
 5. **Admin** - Full system control (`/admin/*`)
 
 ### Technology Highlights
+
 - **Frontend:** React 18 + TypeScript + Material-UI
 - **Backend:** NestJS + Clerk Auth + PostgreSQL
 - **Monorepo:** Nx workspace with shared libraries
 - **Theme:** Custom branding with GT logo animations
 
 ### Important Commands
+
 ```bash
 # Development
 yarn dev           # Start both frontend and backend
@@ -121,12 +130,14 @@ git push origin main
 ```
 
 ## 📚 Additional Resources
+
 - **GitHub:** https://github.com/vishaltoora/GT-Automotives-App
 - **Issues:** https://github.com/vishaltoora/GT-Automotives-App/issues
 - **Detailed Docs:** `/docs/` directory
 - **Permissions Matrix:** `/docs/ROLE_PERMISSIONS.md`
 
 ## 🎯 Development Priorities
+
 1. Always test with all three user roles
 2. Maintain customer data isolation
 3. Use theme colors (no hardcoded values)
@@ -134,6 +145,7 @@ git push origin main
 5. Log all admin actions for audit trail
 
 ## 🤖 Specialized Agents & Workflows
+
 - **Migration Manager** (`.claude/agents/migration-manager.md`) - **CRITICAL**: Enforces proper database migration workflows
 - **Migration Enforcement** (`.claude/workflows/migration-enforcement.md`) - Automated migration validation and CI/CD integration
 - **SMS Feature Manager** (`.claude/agents/sms-feature-manager.md`) - Complete SMS/text messaging management and troubleshooting ⭐ NEW
@@ -146,6 +158,7 @@ git push origin main
   - `/sms test|history|preferences|troubleshoot` - SMS feature management ⭐ NEW
 
 ## ⚠️ Critical Rules
+
 - Customers see ONLY their own data
 - Staff cannot modify prices
 - Financial reports are admin-only
@@ -159,6 +172,7 @@ git push origin main
 ## 🔄 Recent Updates
 
 ### January 19, 2026 - Home Page Redesign & Role Fixes ✅
+
 - ✅ **TireBrandsSection Redesign**: Prominently showcases tire sales as main business
   - Bold "New & Used Tires" headline with "PRINCE GEORGE'S TIRE SPECIALISTS" badge
   - Tire categories grid (All-Season, Winter, Performance, Truck & SUV)
@@ -184,6 +198,7 @@ git push origin main
 - 📝 **Impact**: Professional home page highlighting tire sales, all 5 user roles now redirect properly
 
 ### January 9, 2026 - Invoice & Purchase/Expense Invoice Search Enhancements ✅
+
 - ✅ **Combined Search Field**: Invoice list now has single unified search for Invoice # and Customer Name
 - ✅ **Search-as-you-type**: 300ms debounced search for real-time filtering without button clicks
 - ✅ **OR Search Logic**: Backend updated to search across invoice number, first name, last name, and business name
@@ -203,6 +218,7 @@ git push origin main
 - 📝 **Impact**: Faster invoice lookups, improved UX with real-time search results
 
 ### November 18, 2025 - Critical Production Timezone Fixes ✅
+
 - ✅ **CRITICAL Production Bug Fixed**: Appointment emails showing wrong date (Nov 17 instead of Nov 18)
 - ✅ **Root Cause Identified**: Two-layer timezone issue affecting production after 5 PM PST
 - ✅ **Layer 1 - Date Extraction**: Services using `toISOString().split()` causing UTC conversion
@@ -223,6 +239,7 @@ git push origin main
 - ✅ **TypeScript**: All type checks passing, working tree clean
 
 ### November 14, 2025 - Puppeteer/Chromium Installation for Invoice PDF Generation ✅
+
 - ✅ **Production Invoice Email Fixed**: Resolved "Could not find Chrome" error preventing invoice emails
 - ✅ **Root Cause**: Alpine Docker image didn't include Chromium for Puppeteer PDF generation
 - ✅ **Chromium Installation**: Added Chromium and required dependencies to Alpine production stage
@@ -242,6 +259,7 @@ git push origin main
 - ⚠️ **Image Size**: Chromium adds ~50-80MB to container size (still only ~1.6GB total)
 
 ### November 14, 2025 - Critical Timezone Fixes: DatePicker 8 PM Bug & Appointment Filtering ✅
+
 - ✅ **CRITICAL 8 PM Bug Fixed**: DatePicker dates now work correctly at any time of day
 - ✅ **Root Cause**: DatePicker creates midnight UTC dates, format() applied PST conversion causing -1 day shift at night
 - ✅ **The Pattern**: Worked correctly in morning (9 AM PST), showed wrong date at night (8 PM PST)
@@ -266,6 +284,7 @@ git push origin main
 - ⚠️ **Testing Scenario**: At 8 PM PST, selecting Nov 13 now queries Nov 13 data (not Nov 12)
 
 ### November 6, 2025 - Docker Image Optimization Complete (87% Size Reduction) ✅
+
 - ✅ **Massive Size Reduction**: Docker image optimized from 11.5GB to 1.5GB (87% reduction)
 - ✅ **Deployment Speed**: Image pull time reduced from 56 minutes to ~5-10 minutes (80-90% faster)
 - ✅ **Multi-Stage Alpine Build**: Implemented production-ready Dockerfile with builder and production stages
@@ -289,6 +308,7 @@ git push origin main
 - 💰 **Savings Achieved**: $13/month ($156/year) from infrastructure optimization
 
 ### November 6, 2025 - Backend Downgrade to B1 Complete (Additional $156/year Savings) ✅
+
 - ✅ **Immediate Downgrade**: Backend successfully downgraded from B2 to B1
 - ✅ **Health Verified**: Backend restarted and responding correctly on B1 plan
 - ✅ **Performance**: Identical performance with 1.5GB optimized image
@@ -301,6 +321,7 @@ git push origin main
 - 🎯 **Cumulative Savings**: Combined with GHCR migration ($60-80/year), total annual savings of $216-236
 
 ### November 5, 2025 - EOD Summary Date Parsing Bug Fix & Migration Verification ✅
+
 - ✅ **Critical Bug Fixed**: Nov 3 appointments showing in Nov 2 EOD summary resolved
 - ✅ **Root Cause**: `extractBusinessDate()` parsing YYYY-MM-DD strings as midnight UTC causing 8-hour timezone shift
 - ✅ **Solution**: Added regex check to detect YYYY-MM-DD strings and return as-is (6 lines of code)
@@ -313,6 +334,7 @@ git push origin main
 - 📦 **Docker Image**: `ghcr.io/vishaltoora/gt-backend:build-20251105-210819-3c0747a` (11.5GB)
 
 ### November 4, 2025 - Azure App Service Plan Upgrade to B2 ✅
+
 - ✅ **Backend Plan Upgraded**: B1 → B2 for Docker container support
 - ✅ **Root Cause**: Docker images (10.5-11.6GB) exceeded B1 10GB storage limit
 - ✅ **B2 Specifications**: 3.5GB RAM, unlimited storage, $26/month
@@ -327,6 +349,7 @@ git push origin main
 - 📝 **Impact**: Production fully operational, backend stable with 12+ hours uptime
 
 ### October 29, 2025 - Email Logo Integration Complete ✅
+
 - ✅ **Professional Email Branding**: GT Automotives logo added to all email templates
 - ✅ **Logo Optimization**: Created 108KB email-optimized version (94% reduction from 1.9MB)
 - ✅ **5 Email Templates Enhanced**:
@@ -347,6 +370,7 @@ git push origin main
 - 🚀 **Production**: Logo will display correctly after next deployment to https://gt-automotives.com/logo.png
 
 ### October 28, 2025 - SMS Production Deployment Complete ✅
+
 - ✅ **SMS Now Fully Operational**: Production deployment complete with database migration
 - ✅ **Root Cause Fixed**: Missing database tables - SMS models existed in schema but migration never deployed
 - ✅ **Migration Created**: `20251028230000_add_sms_tables` deployed to production and tracked in version control
@@ -375,6 +399,7 @@ git push origin main
   - `troubleshooting.md` - Added SMS schema drift troubleshooting
 
 ### October 27, 2025 - API Route Structure Standardization ✅
+
 - ✅ **Production DELETE/POST/PATCH 404 Fixed**: Resolved all 404 errors on production for DELETE, PATCH, POST operations
 - ✅ **Root Cause**: Global API prefix `/api` combined with controller-level `api/` prefixes caused route duplication
 - ✅ **Global Prefix Added**: Centralized API prefix in main.ts with `app.setGlobalPrefix('api')`
@@ -400,6 +425,7 @@ git push origin main
 - 🚀 **Production Impact**: All DELETE, PATCH, POST operations now work correctly
 
 ### October 27, 2025 - VITE_API_URL Configuration Fix - Build 164 ✅
+
 - ✅ **Production 401 Errors Resolved**: Fixed all API calls failing with 401 Unauthorized in Build 162
 - ✅ **Root Cause Identified**: `VITE_API_URL` was set to backend URL instead of frontend domain
 - ✅ **Architecture Restored**: Frontend now routes through reverse proxy with security headers
@@ -418,6 +444,7 @@ git push origin main
 - 🚀 **Ready for Deployment**: Build 164 available for manual deployment via GitHub Actions
 
 ### October 23, 2025 - SMS/Text Messaging Integration Complete (Phase 1-3) ✅
+
 - ✅ **SMS Feature Fully Operational**: Complete Telnyx integration with immediate booking confirmations
 - ✅ **Immediate Appointment Confirmation**: Customer receives SMS when appointment is booked
 - ✅ **Staff Assignment Alerts**: All assigned employees receive SMS notification
@@ -452,6 +479,7 @@ git push origin main
 - 💰 **Cost**: $48/year for 500 messages/month (Year 1), $0.004 per message via Telnyx
 
 ### October 21, 2025 - Mark as Paid Feature & Invoice DTO Validation Fixes ✅
+
 - ✅ **Mark as Paid Feature**: Quick payment processing directly from invoice list
 - ✅ **PaymentMethodDialog Component**: Professional dialog for payment method selection
 - ✅ **Payment Methods**: Cash, Credit Card, Debit Card, Check, E-Transfer, Financing
@@ -470,6 +498,7 @@ git push origin main
 - 📝 **Impact**: Faster payment workflow, levy items supported, invoice validation errors resolved
 
 ### October 22, 2025 - Production Configuration Troubleshooting - Reverted to Build 146 ✅
+
 - ✅ **Production Working**: Confirmed Build 146 is stable and operational
 - ✅ **Configuration Reverted**: All Azure and code changes reverted to Build 146 working state
 - ⚠️ **Working Configuration (Build 146)**:
@@ -485,6 +514,7 @@ git push origin main
 - 📝 **Impact**: Production remains stable on Build 146 configuration
 
 ### October 21, 2025 - User Management Phone Support & Initial Production Troubleshooting ✅
+
 - ✅ **Phone Number Field**: Added optional phone field to User model with PhoneInput component integration
 - ✅ **PhoneInput Reuse**: Replaced redundant TextField with existing PhoneInput component for consistency
 - ✅ **Phone Formatting**: Display "555-123-4567", store "5551234567" (strips dashes for backend)
@@ -502,6 +532,7 @@ git push origin main
   - `apps/webApp/src/components/users/EditUserDialog.tsx` (role fix + PhoneInput)
 
 ### October 20, 2025 - CORS Fix & Appointment Scheduling Enhancements ✅
+
 - ✅ **CORS PATCH Method Fix**: Added PATCH to allowed methods in reverse proxy CORS configuration
 - ✅ **Critical Mobile Bug Fixed**: Resolved "Method PATCH is not allowed" error preventing staff from marking jobs complete on iPhone
 - ✅ **15-Minute Time Slots**: Changed appointment booking intervals from 30 minutes to 15 minutes (9:00, 9:15, 9:30, 9:45, etc.)
@@ -523,6 +554,7 @@ git push origin main
 - 📝 **Impact**: Staff can now successfully complete jobs on mobile devices, users have more flexible appointment booking options
 
 ### October 16, 2025 - SMS Integration Plan & GitHub Issues Created ✅
+
 - ✅ **Comprehensive SMS Integration Plan**: Complete 3-week implementation plan for Telnyx SMS integration
 - ✅ **Cost Analysis**: Telnyx selected as cheapest provider at $0.004/message (47% cheaper than Twilio)
 - ✅ **Detailed Documentation**: 16-section plan covering database schema, backend services, frontend UI, testing, and compliance
@@ -540,6 +572,7 @@ git push origin main
 - 📝 **Documentation**: [SMS Integration Plan](.claude/docs/sms-integration-plan.md)
 
 ### October 6, 2025 - Expense Invoice System & API Route Fixes ✅
+
 - ✅ **Expense Invoice UI Complete**: Full expense invoice management interface added
 - ✅ **Backend API Routes Fixed**: Added `/api` prefix to vendors, purchase-invoices, expense-invoices, and reports controllers
 - ✅ **ExpenseInvoiceManagement Page**: Complete admin interface at `/admin/expense-invoices` with filters, table, CRUD
@@ -553,6 +586,7 @@ git push origin main
 - 🔧 **Files Updated**: app.tsx, AdminLayout.tsx, 4 controller files
 
 ### October 6, 2025 - GitHub Container Registry Migration (FREE Registry) ✅
+
 - ✅ **Container Registry Migration**: Moved from Azure Container Registry ($5-7/mo) to GitHub Container Registry (FREE)
 - ✅ **Build Workflow Update**: Updated gt-build.yml to push images to ghcr.io instead of Azure ACR
 - ✅ **Deploy Workflow Update**: Updated gt-deploy.yml to pull from GitHub Container Registry
@@ -564,6 +598,7 @@ git push origin main
 - 💰 **Next Step**: Delete Azure Container Registry after successful deployment
 
 ### October 3, 2025 - CI/CD Workflow Optimization & Cost Reduction ✅
+
 - ✅ **Two-Step Workflow Restored**: GT-Automotive-Build (automatic) + GT-Automotive-Deploy (manual control)
 - ✅ **Backend Migration**: Moved from Azure Container Instance ($73/mo) to Web App B1 ($13/mo)
 - ✅ **Cost Savings**: Reduced total costs from $109-129/mo to $49-54/mo (51-62% reduction)
@@ -575,6 +610,7 @@ git push origin main
 - 💰 **Monthly Savings**: $60-80/month reduction while maintaining same functionality
 
 ### September 28, 2025 - Critical Schema Migration Management Implementation ✅
+
 - ✅ **Production Database Fixed**: Resolved 500 errors on `/api/companies` and `/api/tires` endpoints
 - ✅ **Schema Drift Resolution**: Fixed missing Company, TireBrand, TireSize tables in production
 - ✅ **Production-Safe Migration**: Created custom migration handling existing Invoice data safely
@@ -587,6 +623,7 @@ git push origin main
 - ⭐ **New Rule**: All schema changes must go through migration workflow before commit
 
 ### September 26, 2025 - Final Resolution: Local DTO Migration & Production Deployment Success ✅
+
 - ✅ **Root Cause Identified**: Shared DTO library added unnecessary complexity to container deployment
 - ✅ **Solution Implemented**: Migrated all DTOs to local server definitions in `server/src/common/dto/`
 - ✅ **Dockerfile Simplified**: Removed shared-dto build orchestration and symlink complexity
@@ -602,6 +639,7 @@ git push origin main
 - ⭐ **Critical Takeaway**: Sometimes the best solution is to remove complexity, not add more sophisticated patterns
 
 ### September 24, 2025 - DNS Name Label Fix & Production Integration Resolution ✅
+
 - ✅ **Critical Discovery**: Frontend loading page caused by missing `--dns-name-label` in backend container deployment
 - ✅ **Standard Backend DNS**: Fixed container to use proper FQDN `gt-automotives-backend-prod.canadacentral.azurecontainer.io`
 - ✅ **Reverse Proxy Integration**: Frontend reverse proxy now connects to stable DNS name instead of changing IP addresses
@@ -614,6 +652,7 @@ git push origin main
 - ⚠️ **Key Learning**: Azure Container Instances require `--dns-name-label` for service-to-service communication via stable DNS names
 
 ### September 23, 2025 - MyPersn Pattern Implementation & Docker CMD Path Fix ✅
+
 - ✅ **Docker Build Issue Resolved**: Fixed "target stage 'production' could not be found" error
 - ✅ **MyPersn Single-Stage Pattern**: Converted from multi-stage to proven MyPersn container approach
 - ✅ **GitHub Workflow Fix**: Removed `--target production` flag from Docker build command
@@ -626,6 +665,7 @@ git push origin main
 - ⚠️ **Key Learning**: Cannot blindly copy Docker patterns between projects - must verify actual build output paths
 
 ### September 18, 2025 - Invoice Date Enhancement & Development Server Fixes ✅
+
 - ✅ **Invoice Date Feature**: Added date picker to invoice creation and full editing capabilities
 - ✅ **Database Migration**: Added invoiceDate field to Invoice schema with proper defaults
 - ✅ **Edit Dialog Enhancement**: Status and invoice date now side-by-side in edit dialog
@@ -636,6 +676,7 @@ git push origin main
 - ✅ **Documentation Updated**: Added troubleshooting for shared-dto build errors
 
 ### September 18, 2025 - Development Authentication & Invoice Creation Fix ✅
+
 - ✅ **Backend Module Resolution**: Fixed shared-dto symlink in node_modules for webpack compatibility
 - ✅ **Admin User Database Seeding**: Resolved 401 unauthorized errors by running `yarn db:seed`
 - ✅ **Clerk Development Configuration**: Fixed ClerkProvider to use correct endpoints for dev vs prod
@@ -643,10 +684,11 @@ git push origin main
 - ✅ **Development Environment**: Both frontend (4200) and backend (3000) now running successfully
 - ✅ **Authentication Flow**: Proper development authentication with test Clerk keys
 - ✅ **Invoice Creation**: Admin user can now create invoices in both development and production
-- ✅ **ClerkProvider Enhancement**: Added proper environment detection (PROD + pk_live_ checks)
+- ✅ **ClerkProvider Enhancement**: Added proper environment detection (PROD + pk*live* checks)
 - ✅ **Documentation Updated**: Enhanced authentication troubleshooting with 401 error solutions
 
 ### September 17, 2025 - Shared DTO Deployment Pipeline Resolution ✅
+
 - ✅ **Build Path Discovery**: Fixed shared DTO library path - builds to `dist/libs/shared-dto/` NOT `libs/shared-dto/dist/`
 - ✅ **GitHub Actions Integration**: Added explicit `yarn nx build shared-dto` step before backend packaging
 - ✅ **Dockerfile Path Correction**: Updated all deployment configs to use `dist/libs/shared-dto/src/*` for copying
@@ -658,6 +700,7 @@ git push origin main
 - ⚠️ **Critical Learning**: Nx builds all libraries to `dist/libs/[name]/` - never assume source directory structure
 
 ### September 17, 2025 - Shared DTO Implementation with Mapped Types ✅
+
 - ✅ **Shared DTO Library**: Implemented conditional decorators for browser/server compatibility
 - ✅ **Mapped Types for Update DTOs**: Used `implements Partial<CreateDto>` for better maintainability
 - ✅ **TypeScript Path Mappings**: Added proper module resolution for `@gt-automotive/shared-dto`
@@ -675,6 +718,7 @@ git push origin main
 - ✅ **Latest Build**: build-20250917-144706-3142150 (ready for deployment)
 
 ### September 16, 2025 - Clerk SDK Authorization Fix & Backend Deployment ✅
+
 - ✅ **Clerk SDK Authorization Issue Resolved**: Fixed "Failed to create user in Clerk: Unauthorized" errors
 - ✅ **Backend Code Updates**: Updated `users.service.ts` and `auth.service.ts` to use `createClerkClient` with proper configuration
 - ✅ **Environment Variables**: Added missing `CLERK_API_URL=https://api.clerk.com` to production backend container
@@ -686,6 +730,7 @@ git push origin main
 - ⚠️ **Known Issues**: User creation and POST request issues persist in both production and local environments (requires local debugging)
 
 ### September 15, 2025 - Backend Container Architecture Resolution & Azure Deployment ✅
+
 - ✅ **Architecture Analysis**: Identified webpack bundling anti-pattern causing Prisma client failures
 - ✅ **Webpack Externals Fix**: Configured externals for @prisma/client, .prisma/client, and @gt-automotive/shared-dto
 - ✅ **Shared Library Resolution**: Fixed node_modules structure for monorepo shared libraries
@@ -696,6 +741,7 @@ git push origin main
 - ✅ **Comprehensive Documentation**: Created complete backend container deployment configuration guide
 
 ### September 12, 2025 - Mixed Content Resolution & Reverse Proxy Implementation ✅
+
 - ✅ **Mixed Content Errors Resolved**: Fixed HTTPS/HTTP blocking that prevented API communication
 - ✅ **Web App Reverse Proxy**: Implemented Express.js proxy using http-proxy-middleware
 - ✅ **GitHub Actions Update**: Modified deployment to create integrated proxy server
@@ -706,6 +752,7 @@ git push origin main
 - ✅ **Documentation**: Created comprehensive reverse proxy implementation guide
 
 ### September 11, 2025 - Production Deployment Complete with Custom Auth Domain ✅
+
 - ✅ **Azure Web App Deployment**: Migrated from Azure Storage to Web App Service for better reliability
 - ✅ **GitHub Actions CI/CD**: Automated deployment pipeline with proper Nx monorepo build support
 - ✅ **Clerk Custom Domain Setup**: Successfully configured clerk.gt-automotives.com with full DNS verification
@@ -718,6 +765,7 @@ git push origin main
 - ✅ **Documentation Updates**: Created comprehensive guides for Clerk custom domain and troubleshooting
 
 ### September 9, 2025 - Complete Production HTTPS Deployment ✅
+
 - ✅ **Custom Domain HTTPS**: Successfully configured https://gt-automotives.com with SSL
 - ✅ **Cloudflare Integration**: Flexible SSL mode with Page Rules for Azure Storage compatibility
 - ✅ **Environment Variable Fix**: Updated getEnvVar utility for proper Vite environment variable access
@@ -727,6 +775,7 @@ git push origin main
 - ✅ **Security Architecture**: Maintained Azure backend/database isolation with Cloudflare SSL termination
 
 ### September 8, 2025 - Production Deployment & HTTPS Setup
+
 - ✅ **Cloudflare SSL/CDN**: Complete HTTPS setup with custom domain (gt-automotives.com)
 - ✅ **Azure Container Deployment**: Production backend deployed to Azure Container Instances
 - ✅ **Frontend Deployment**: Static website hosting via Azure Storage with CDN
@@ -735,6 +784,7 @@ git push origin main
 - ✅ **Documentation Update**: Comprehensive production deployment guides
 
 ### September 5, 2025 - Azure Infrastructure Setup
+
 - ✅ **Azure Resource Setup**: Resource group, database, container registry, and storage
 - ✅ **Database Migration**: Azure PostgreSQL Flexible Server configuration
 - ✅ **Container Registry**: Docker image management for backend deployment
@@ -742,6 +792,7 @@ git push origin main
 - ✅ **Monitoring Foundation**: Basic health checks and logging setup
 
 ### September 4, 2025 - System Stability & Bug Fixes
+
 - ✅ **Quotation System Fixes**: Resolved "Failed to load quotations" and update failures
 - ✅ **Admin Layout Improvements**: Fixed full-height drawer and transparent app bar positioning
 - ✅ **Dashboard Navigation**: Fixed broken quick navigation links and three-dot menus
@@ -750,6 +801,7 @@ git push origin main
 - ✅ **Modern Popover Menus**: Enhanced user experience with Material-UI popovers
 
 ### August 27, 2025 - User Management System & Material-UI Modernization
+
 - ✅ **Complete User Management**: Full admin interface for creating/managing staff and admin users
 - ✅ **Professional User Dialogs**: CreateUserDialog and EditUserDialog with validation and Clerk integration
 - ✅ **Username Support**: Dual login capability (username or email) with enhanced authentication flow
@@ -761,9 +813,10 @@ git push origin main
 - ✅ **Enhanced Documentation**: Created comprehensive user management and Grid modernization docs
 
 ### August 26, 2025 - TypeScript Build System & Development Environment Fixes
+
 - ✅ **Build System Resolution**: Fixed all TypeScript compilation errors preventing CI/CD builds
 - ✅ **Server-Side TypeScript Fixes**: Resolved DTOs with definite assignment assertions, auth strategy issues, repository inheritance
-- ✅ **Module Compatibility**: Fixed CommonJS/ESM compatibility issues in shared libraries for Node.js server compatibility  
+- ✅ **Module Compatibility**: Fixed CommonJS/ESM compatibility issues in shared libraries for Node.js server compatibility
 - ✅ **Enum Import Resolution**: Updated tire-related components to import TireType/TireCondition from @prisma/client instead of shared interfaces
 - ✅ **Development Servers**: Both frontend (localhost:4200) and backend (localhost:3000) now running successfully
 - ✅ **Production Build**: Vite build now completes successfully in ~29.5 seconds with proper chunking
@@ -771,6 +824,7 @@ git push origin main
 - ✅ **Error Handling**: Enhanced error handling with proper type checking and audit log fixes
 
 ### August 26, 2025 - Customer System Overhaul & UI Enhancements
+
 - ✅ **Customer Independence**: Removed User-Customer relationship - customers are now external entities
 - ✅ **Direct Properties**: firstName, lastName, email (optional), phone (optional) stored directly on Customer
 - ✅ **Data Migration**: Successfully migrated existing customer data from User to Customer records
@@ -781,8 +835,8 @@ git push origin main
 - ✅ **Printable Invoice Fix**: Fixed customer name display and removed contact info from printed invoices
 - ✅ **Invoice List Enhancement**: Removed vehicle column, improved customer name display, replaced browser alerts with custom dialogs
 
-
 ### August 2025 - Customer Management & Invoice System Enhancements
+
 - ✅ **Business Name Support**: Added optional business name field for commercial customers
 - ✅ **Enhanced Customer Forms**: Updated CustomerForm and CustomerList with business name support
 - ✅ **Invoice Dialog Improvements**: Enhanced invoice creation workflow with better state management
@@ -795,6 +849,7 @@ git push origin main
 - ✅ **Build System Fixes**: Resolved ESM/CommonJS compatibility issues in shared libraries
 
 ### August 2025 - Home Page Component Refactoring
+
 - ✅ **Component Modularization**: Split 1900-line Home.tsx into 9 focused components
 - ✅ **Better Organization**: Created `/components/home` directory structure
 - ✅ **Improved Maintainability**: Each component has single responsibility
@@ -802,6 +857,7 @@ git push origin main
 - ✅ **Performance**: Better code splitting with smaller components
 
 ### December 2024 - Invoice Printing Enhancements
+
 - ✅ **Logo Integration**: Implemented actual GT logo from `/images-and-logos/logo.png`
 - ✅ **Business Registration**: Added "16472991 Canada INC." to invoice headers
 - ✅ **Print Quality**: Improved print CSS to minimize browser headers/footers
@@ -809,6 +865,7 @@ git push origin main
 - ✅ **Brand Consistency**: Applied GT brand colors throughout invoices
 
 ### August 2025 - Tire System Improvements & UI Enhancements
+
 - ✅ **Tire Model Field Removal**: Eliminated tire model field from schema to simplify tire identification
 - ✅ **Image Display Fixes**: Fixed tire image sizing issues in both table and grid views
 - ✅ **Table View Enhancement**: Replaced tire images with emoji-based type indicators for cleaner display
@@ -825,6 +882,7 @@ git push origin main
 ## 🔧 Essential Migration Commands
 
 ### Slash Commands (Recommended)
+
 ```bash
 /migration check              # Check status and detect drift
 /migration create "name"      # Create migration for schema changes
@@ -834,6 +892,7 @@ git push origin main
 ```
 
 ### Direct Script Commands
+
 ```bash
 # Check migration status before any schema work
 ./.claude/scripts/migration-check.sh
@@ -852,6 +911,7 @@ git push origin main
 ```
 
 ### Manual Prisma Commands (Advanced)
+
 ```bash
 # Create migration manually
 DATABASE_URL="postgresql://postgres@localhost:5432/gt_automotive?schema=public" npx prisma migrate dev --name "descriptive_name" --schema=libs/database/src/lib/prisma/schema.prisma
@@ -859,7 +919,6 @@ DATABASE_URL="postgresql://postgres@localhost:5432/gt_automotive?schema=public" 
 # Deploy to production manually
 DATABASE_URL="postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.postgres.database.azure.com:5432/gt_automotive?sslmode=require" yarn prisma migrate deploy --schema=libs/database/src/lib/prisma/schema.prisma
 ```
-
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
@@ -872,6 +931,5 @@ DATABASE_URL="postgresql://gtadmin:P4dFPF6b5HasYFyrwcgOSfSdb@gt-automotives-db.p
 - When working in individual projects, use the `nx_project_details` mcp tool to analyze and understand the specific project structure and dependencies
 - For questions around nx configuration, best practices or if you're unsure, use the `nx_docs` tool to get relevant, up-to-date docs. Always use this instead of assuming things about nx configuration
 - If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
-
 
 <!-- nx configuration end-->

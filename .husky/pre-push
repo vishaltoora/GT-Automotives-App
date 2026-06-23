@@ -1,0 +1,14 @@
+# Hard gate before pushing: lint + typecheck + unit tests on affected projects.
+# Mirrors the CI pipeline (gt-ci.yml). Integration tests are NOT run here (they
+# need a Postgres test DB) — CI runs those.
+#
+# To bypass in an emergency: git push --no-verify
+echo "🔒 Pre-push gate: lint + typecheck + unit tests (affected vs origin/main)..."
+
+# Compare against origin/main when available, otherwise the local main branch.
+BASE="origin/main"
+if ! git rev-parse --verify --quiet "$BASE" >/dev/null; then
+  BASE="main"
+fi
+
+npx nx affected --base="$BASE" -t lint typecheck test --parallel=3

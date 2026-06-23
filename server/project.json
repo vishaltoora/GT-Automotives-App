@@ -73,6 +73,13 @@
         }
       }
     },
+    "test-integration": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/server-integration"],
+      "options": {
+        "jestConfig": "server/jest.integration.config.ts"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "cache": true,

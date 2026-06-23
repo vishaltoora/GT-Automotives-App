@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /Users/vishaltoora/projects/gt-automotives-app/.husky/pre-commit /Users/vishaltoora/projects/gt-automotives-app/.husky/pre-push)",
+      "Bash(git config *)"
+    ]
+  }
+}

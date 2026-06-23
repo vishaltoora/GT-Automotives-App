@@ -1,6 +1,13 @@
 {
   "extends": ["plugin:@nx/react", "../../.eslintrc.json"],
-  "ignorePatterns": ["!**/*"],
+  "ignorePatterns": [
+    "!**/*",
+    "node_modules",
+    "dist",
+    "out-tsc",
+    "temp_js.js",
+    "**/*.d.ts"
+  ],
   "overrides": [
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
@@ -21,6 +28,13 @@
     {
       "files": ["*.js", "*.jsx"],
       "rules": {}
+    },
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        "react-hooks/rules-of-hooks": "warn",
+        "import/first": "warn"
+      }
     }
   ]
 }

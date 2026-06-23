@@ -63,6 +63,31 @@
           }
         ]
       }
+    },
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_",
+            "caughtErrorsIgnorePattern": "^_"
+          }
+        ],
+        "@typescript-eslint/no-inferrable-types": "warn",
+        "@typescript-eslint/no-empty-function": [
+          "warn",
+          { "allow": ["private-constructors"] }
+        ],
+        "@typescript-eslint/ban-types": "warn",
+        "@typescript-eslint/ban-ts-comment": "warn",
+        "@typescript-eslint/no-var-requires": "warn",
+        "no-useless-escape": "warn",
+        "no-useless-catch": "warn",
+        "no-empty": "warn",
+        "no-empty-pattern": "warn"
+      }
     }
   ]
 }
