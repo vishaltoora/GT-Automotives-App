@@ -43,9 +43,8 @@ export class AzureBlobService {
     const connectionString = this.configService.get<string>(
       'AZURE_STORAGE_CONNECTION_STRING'
     );
-    this.accountName = this.configService.get<string>(
-      'AZURE_STORAGE_ACCOUNT_NAME'
-    ) || null;
+    this.accountName =
+      this.configService.get<string>('AZURE_STORAGE_ACCOUNT_NAME') || null;
 
     if (!connectionString || !this.accountName) {
       this.logger.warn(
@@ -73,20 +72,17 @@ export class AzureBlobService {
   /**
    * Validate file before upload
    */
-  validateFile(
-    file: any | Buffer,
-    mimeType?: string
-  ): FileValidationResult {
-    const fileSize =
-      file instanceof Buffer ? file.length : file.size;
-    const fileMimeType =
-      file instanceof Buffer ? mimeType : file.mimetype;
+  validateFile(file: any | Buffer, mimeType?: string): FileValidationResult {
+    const fileSize = file instanceof Buffer ? file.length : file.size;
+    const fileMimeType = file instanceof Buffer ? mimeType : file.mimetype;
 
     // Check file size
     if (fileSize > this.MAX_FILE_SIZE) {
       return {
         valid: false,
-        error: `File size exceeds maximum allowed size of ${this.MAX_FILE_SIZE / 1024 / 1024}MB`,
+        error: `File size exceeds maximum allowed size of ${
+          this.MAX_FILE_SIZE / 1024 / 1024
+        }MB`,
       };
     }
 
@@ -94,7 +90,9 @@ export class AzureBlobService {
     if (fileMimeType && !this.ALLOWED_MIME_TYPES.includes(fileMimeType)) {
       return {
         valid: false,
-        error: `File type ${fileMimeType} is not allowed. Allowed types: ${this.ALLOWED_MIME_TYPES.join(', ')}`,
+        error: `File type ${fileMimeType} is not allowed. Allowed types: ${this.ALLOWED_MIME_TYPES.join(
+          ', '
+        )}`,
       };
     }
 
@@ -136,7 +134,9 @@ export class AzureBlobService {
     mimeType?: string
   ): Promise<UploadResult> {
     if (!this.isConfigured) {
-      this.logger.warn('⚠️ Azure Storage not configured - returning mock URL for development');
+      this.logger.warn(
+        '⚠️ Azure Storage not configured - returning mock URL for development'
+      );
       return {
         blobUrl: `http://localhost:3000/uploads/mock/${invoiceType}/${originalFileName}`,
         blobName: `mock-${Date.now()}-${originalFileName}`,
@@ -168,15 +168,11 @@ export class AzureBlobService {
 
       // Upload
       const fileBuffer = file instanceof Buffer ? file : file.buffer;
-      await blockBlobClient.upload(
-        fileBuffer,
-        fileBuffer.length,
-        {
-          blobHTTPHeaders: {
-            blobContentType: mimeType || (file as any).mimetype,
-          },
-        }
-      );
+      await blockBlobClient.upload(fileBuffer, fileBuffer.length, {
+        blobHTTPHeaders: {
+          blobContentType: mimeType || (file as any).mimetype,
+        },
+      });
 
       this.logger.log(
         `Uploaded blob: ${blobName} to container: ${containerName}`
@@ -200,10 +196,12 @@ export class AzureBlobService {
   async generateSasUrl(
     containerName: string,
     blobName: string,
-    expiryMinutes: number = 60
+    expiryMinutes = 60
   ): Promise<string> {
     if (!this.isConfigured) {
-      throw new Error('Azure Storage is not configured. SAS URL generation is disabled in development mode.');
+      throw new Error(
+        'Azure Storage is not configured. SAS URL generation is disabled in development mode.'
+      );
     }
 
     try {
@@ -252,14 +250,18 @@ export class AzureBlobService {
   async uploadROMedia(
     buffer: Buffer,
     originalFileName: string,
-    mimeType: string,
+    mimeType: string
   ): Promise<UploadResult> {
     if (!this.isConfigured) {
       // Dev fallback: no blob storage, so embed the image as a base64 data URL
       // (the mock http URL pointed nowhere, so thumbnails never rendered).
-      this.logger.warn('⚠️ Azure Storage not configured - returning inline data URL for development');
+      this.logger.warn(
+        '⚠️ Azure Storage not configured - returning inline data URL for development'
+      );
       return {
-        blobUrl: `data:${mimeType || 'image/jpeg'};base64,${buffer.toString('base64')}`,
+        blobUrl: `data:${mimeType || 'image/jpeg'};base64,${buffer.toString(
+          'base64'
+        )}`,
         blobName: `mock-${Date.now()}-${originalFileName}`,
         containerName: 'repair-order-media',
         size: buffer.length,
@@ -268,13 +270,21 @@ export class AzureBlobService {
 
     try {
       const containerName = 'repair-order-media';
-      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
-      await containerClient.createIfNotExists({ access: 'blob' });
+      const containerClient =
+        this.blobServiceClient!.getContainerClient(containerName);
+      // Create a PRIVATE container — the storage account has "Allow Blob public
+      // access" disabled, so requesting `access: 'blob'` throws
+      // PublicAccessNotPermitted and the upload fails. Media is served via
+      // short-lived SAS URLs on read (see RepairOrdersService), mirroring the
+      // purchase/expense invoice image flow.
+      await containerClient.createIfNotExists();
 
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
-      const cleanName = originalFileName.replace(/[^a-zA-Z0-9.-]/g, '-').toLowerCase();
+      const cleanName = originalFileName
+        .replace(/[^a-zA-Z0-9.-]/g, '-')
+        .toLowerCase();
       const ext = cleanName.split('.').pop() || 'jpg';
       const blobName = `${year}/${month}/ro-${Date.now()}.${ext}`;
 
@@ -291,7 +301,10 @@ export class AzureBlobService {
         size: buffer.length,
       };
     } catch (error) {
-      this.logger.error('Error uploading RO media to Azure Blob Storage', error);
+      this.logger.error(
+        'Error uploading RO media to Azure Blob Storage',
+        error
+      );
       throw error;
     }
   }
@@ -304,7 +317,9 @@ export class AzureBlobService {
     blobName: string
   ): Promise<boolean> {
     if (!this.isConfigured) {
-      this.logger.warn('⚠️ Azure Storage not configured - skipping file deletion in development');
+      this.logger.warn(
+        '⚠️ Azure Storage not configured - skipping file deletion in development'
+      );
       return true;
     }
 
@@ -329,12 +344,11 @@ export class AzureBlobService {
   /**
    * Get blob metadata (size, content type, etc.)
    */
-  async getBlobMetadata(
-    containerName: string,
-    blobName: string
-  ): Promise<any> {
+  async getBlobMetadata(containerName: string, blobName: string): Promise<any> {
     if (!this.isConfigured) {
-      throw new Error('Azure Storage is not configured. Blob metadata retrieval is disabled in development mode.');
+      throw new Error(
+        'Azure Storage is not configured. Blob metadata retrieval is disabled in development mode.'
+      );
     }
 
     try {
@@ -361,7 +375,9 @@ export class AzureBlobService {
    */
   async listBlobs(containerName: string): Promise<string[]> {
     if (!this.isConfigured) {
-      throw new Error('Azure Storage is not configured. Blob listing is disabled in development mode.');
+      throw new Error(
+        'Azure Storage is not configured. Blob listing is disabled in development mode.'
+      );
     }
 
     try {

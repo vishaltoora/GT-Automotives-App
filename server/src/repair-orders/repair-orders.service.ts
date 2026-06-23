@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
+import { AzureBlobService } from '../common/services/azure-blob.service';
 import { ROStatus } from '@prisma/client';
 import {
   CreateRepairOrderDto,
@@ -64,7 +65,62 @@ export class RepairOrdersService {
     },
   };
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private azureBlob: AzureBlobService
+  ) {}
+
+  /**
+   * The repair-order-media container is private (the storage account forbids
+   * public blob access), so the stored fileUrl is not directly viewable.
+   * Swap it for a short-lived SAS URL on read — same pattern as invoice images.
+   * Dev/mock entries (inline data URLs, no blob metadata) are left untouched.
+   */
+  private async withMediaSasUrl(media: any): Promise<any> {
+    if (!media || !media.blobName || !media.containerName) return media;
+    if (
+      media.blobName.startsWith('mock-') ||
+      (typeof media.fileUrl === 'string' &&
+        (media.fileUrl.startsWith('data:') ||
+          media.fileUrl.includes('localhost')))
+    ) {
+      return media;
+    }
+    try {
+      const fileUrl = await this.azureBlob.generateSasUrl(
+        media.containerName,
+        media.blobName,
+        120
+      );
+      return { ...media, fileUrl };
+    } catch {
+      // If SAS generation fails, fall back to the stored URL rather than 500.
+      return media;
+    }
+  }
+
+  /** Apply SAS URLs to the media nested directly on a repair order and on its services. */
+  private async applyMediaSasUrls(ro: any): Promise<any> {
+    if (!ro) return ro;
+    if (Array.isArray(ro.media)) {
+      ro.media = await Promise.all(
+        ro.media.map((m: any) => this.withMediaSasUrl(m))
+      );
+    }
+    if (Array.isArray(ro.services)) {
+      ro.services = await Promise.all(
+        ro.services.map(async (svc: any) => {
+          if (Array.isArray(svc.media)) {
+            svc.media = await Promise.all(
+              svc.media.map((m: any) => this.withMediaSasUrl(m))
+            );
+          }
+          return svc;
+        })
+      );
+    }
+    return ro;
+  }
 
   async create(dto: CreateRepairOrderDto): Promise<any> {
     const roNumber = await this.generateRoNumber();
@@ -93,7 +149,11 @@ export class RepairOrdersService {
     });
   }
 
-  async findAll(query: ROQueryDto, roleName: string, userId: string): Promise<any[]> {
+  async findAll(
+    query: ROQueryDto,
+    roleName: string,
+    userId: string
+  ): Promise<any[]> {
     const where: any = {};
 
     if (query.status) where.status = query.status;
@@ -120,9 +180,21 @@ export class RepairOrdersService {
     if (query.search) {
       where.OR = [
         { roNumber: { contains: query.search, mode: 'insensitive' } },
-        { customer: { firstName: { contains: query.search, mode: 'insensitive' } } },
-        { customer: { lastName: { contains: query.search, mode: 'insensitive' } } },
-        { customer: { businessName: { contains: query.search, mode: 'insensitive' } } },
+        {
+          customer: {
+            firstName: { contains: query.search, mode: 'insensitive' },
+          },
+        },
+        {
+          customer: {
+            lastName: { contains: query.search, mode: 'insensitive' },
+          },
+        },
+        {
+          customer: {
+            businessName: { contains: query.search, mode: 'insensitive' },
+          },
+        },
       ];
     }
 
@@ -158,7 +230,7 @@ export class RepairOrdersService {
       throw new ForbiddenException('You are not assigned to this repair order');
     }
 
-    return ro;
+    return this.applyMediaSasUrls(ro);
   }
 
   async findByVehicle(vehicleId: string): Promise<any[]> {
@@ -171,20 +243,30 @@ export class RepairOrdersService {
             user: { select: { id: true, firstName: true, lastName: true } },
           },
         },
-        services: { select: { id: true, description: true, status: true, total: true } },
-        invoice: { select: { id: true, invoiceNumber: true, status: true, total: true } },
+        services: {
+          select: { id: true, description: true, status: true, total: true },
+        },
+        invoice: {
+          select: { id: true, invoiceNumber: true, status: true, total: true },
+        },
       },
       orderBy: { openedAt: 'desc' },
     });
   }
 
-  async update(id: string, dto: UpdateRepairOrderDto, roleName: string): Promise<any> {
+  async update(
+    id: string,
+    dto: UpdateRepairOrderDto,
+    roleName: string
+  ): Promise<any> {
     await this.assertExists(id);
 
     const data: any = { ...dto };
     if (dto.status === ROStatus.CLOSED || dto.status === ROStatus.INVOICED) {
       if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
-        throw new ForbiddenException('Only admin or supervisor can close a repair order');
+        throw new ForbiddenException(
+          'Only admin or supervisor can close a repair order'
+        );
       }
       data.closedAt = new Date();
     }
@@ -219,7 +301,12 @@ export class RepairOrdersService {
     });
   }
 
-  async updateService(roId: string, serviceId: string, dto: UpdateROServiceDto, userId: string): Promise<any> {
+  async updateService(
+    roId: string,
+    serviceId: string,
+    dto: UpdateROServiceDto,
+    userId: string
+  ): Promise<any> {
     const service = await this.prisma.rOService.findFirst({
       where: { id: serviceId, repairOrderId: roId },
     });
@@ -262,7 +349,7 @@ export class RepairOrdersService {
     uploadedById: string,
     mediaType: string,
     caption?: string,
-    roServiceId?: string,
+    roServiceId?: string
   ): Promise<any> {
     await this.assertExists(roId);
 
@@ -274,7 +361,7 @@ export class RepairOrdersService {
     });
     const sortOrder = (lastMedia?.sortOrder ?? -1) + 1;
 
-    return this.prisma.rOMedia.create({
+    const created = await this.prisma.rOMedia.create({
       data: {
         repairOrderId: roId,
         roServiceId: roServiceId ?? null,
@@ -293,9 +380,16 @@ export class RepairOrdersService {
         uploadedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
+
+    // Return a viewable SAS URL so the just-uploaded photo renders immediately.
+    return this.withMediaSasUrl(created);
   }
 
-  async updateMedia(roId: string, mediaId: string, dto: UpdateROMediaDto): Promise<any> {
+  async updateMedia(
+    roId: string,
+    mediaId: string,
+    dto: UpdateROMediaDto
+  ): Promise<any> {
     const media = await this.prisma.rOMedia.findFirst({
       where: { id: mediaId, repairOrderId: roId },
     });
@@ -303,7 +397,11 @@ export class RepairOrdersService {
     return this.prisma.rOMedia.update({ where: { id: mediaId }, data: dto });
   }
 
-  async removeMedia(roId: string, mediaId: string, azureBlobService: any): Promise<void> {
+  async removeMedia(
+    roId: string,
+    mediaId: string,
+    azureBlobService: any
+  ): Promise<void> {
     const media = await this.prisma.rOMedia.findFirst({
       where: { id: mediaId, repairOrderId: roId },
     });
@@ -319,9 +417,15 @@ export class RepairOrdersService {
 
   // ---- Close → Invoice ----
 
-  async closeAndConvert(id: string, companyId: string, roleName: string): Promise<any> {
+  async closeAndConvert(
+    id: string,
+    companyId: string,
+    roleName: string
+  ): Promise<any> {
     if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
-      throw new ForbiddenException('Only admin or supervisor can close a repair order');
+      throw new ForbiddenException(
+        'Only admin or supervisor can close a repair order'
+      );
     }
 
     const ro = await this.prisma.repairOrder.findUnique({
@@ -334,10 +438,16 @@ export class RepairOrdersService {
     });
 
     if (!ro) throw new NotFoundException('Repair order not found');
-    if (ro.invoice) throw new BadRequestException('Invoice already exists for this repair order');
+    if (ro.invoice)
+      throw new BadRequestException(
+        'Invoice already exists for this repair order'
+      );
 
     const completedServices = ro.services;
-    const subtotal = completedServices.reduce((sum: number, s: any) => sum + Number(s.total), 0);
+    const subtotal = completedServices.reduce(
+      (sum: number, s: any) => sum + Number(s.total),
+      0
+    );
     const gstRate = 0.05;
     const pstRate = 0.07;
     const gstAmount = subtotal * gstRate;
@@ -387,7 +497,10 @@ export class RepairOrdersService {
   // ---- Helpers ----
 
   private async assertExists(id: string): Promise<void> {
-    const ro = await this.prisma.repairOrder.findUnique({ where: { id }, select: { id: true } });
+    const ro = await this.prisma.repairOrder.findUnique({
+      where: { id },
+      select: { id: true },
+    });
     if (!ro) throw new NotFoundException(`Repair order ${id} not found`);
   }
 
@@ -405,7 +518,9 @@ export class RepairOrdersService {
 
     let sequence = 1;
     if (lastInvoice?.invoiceNumber) {
-      sequence = (parseInt(lastInvoice.invoiceNumber.split('-').pop() || '0', 10) || 0) + 1;
+      sequence =
+        (parseInt(lastInvoice.invoiceNumber.split('-').pop() || '0', 10) || 0) +
+        1;
     }
 
     return `${prefix}-${String(sequence).padStart(4, '0')}`;
@@ -454,13 +569,14 @@ export class RepairOrdersService {
 
   async updateCatalogItem(
     id: string,
-    dto: UpdateServiceCatalogItemDto,
+    dto: UpdateServiceCatalogItemDto
   ): Promise<any> {
     const existing = await this.prisma.serviceCatalogItem.findUnique({
       where: { id },
       select: { id: true },
     });
-    if (!existing) throw new NotFoundException('Service catalog item not found');
+    if (!existing)
+      throw new NotFoundException('Service catalog item not found');
 
     return this.prisma.serviceCatalogItem.update({
       where: { id },
@@ -483,7 +599,8 @@ export class RepairOrdersService {
       where: { id },
       select: { id: true },
     });
-    if (!existing) throw new NotFoundException('Service catalog item not found');
+    if (!existing)
+      throw new NotFoundException('Service catalog item not found');
     await this.prisma.serviceCatalogItem.delete({ where: { id } });
   }
 }
