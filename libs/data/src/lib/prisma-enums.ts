@@ -2,8 +2,6 @@
 
 // Run `yarn enums:generate` after changing Prisma enums.
 
-
-
 export const PayType = {
   HOURLY: 'HOURLY',
   SALARIED: 'SALARIED',
@@ -18,14 +16,16 @@ export const TimeEntryStatus = {
   ADJUSTED: 'ADJUSTED',
   VOIDED: 'VOIDED',
 } as const;
-export type TimeEntryStatus = (typeof TimeEntryStatus)[keyof typeof TimeEntryStatus];
+export type TimeEntryStatus =
+  (typeof TimeEntryStatus)[keyof typeof TimeEntryStatus];
 
 export const TimeEntrySource = {
   EMPLOYEE: 'EMPLOYEE',
   ADMIN: 'ADMIN',
   SYSTEM: 'SYSTEM',
 } as const;
-export type TimeEntrySource = (typeof TimeEntrySource)[keyof typeof TimeEntrySource];
+export type TimeEntrySource =
+  (typeof TimeEntrySource)[keyof typeof TimeEntrySource];
 
 export const BreakType = {
   MEAL: 'MEAL',
@@ -41,7 +41,8 @@ export const PayrollAdjustmentType = {
   DEDUCTION: 'DEDUCTION',
   OTHER: 'OTHER',
 } as const;
-export type PayrollAdjustmentType = (typeof PayrollAdjustmentType)[keyof typeof PayrollAdjustmentType];
+export type PayrollAdjustmentType =
+  (typeof PayrollAdjustmentType)[keyof typeof PayrollAdjustmentType];
 
 export const JobStatus = {
   PENDING: 'PENDING',
@@ -81,7 +82,8 @@ export const SquarePaymentStatus = {
   REFUNDED: 'REFUNDED',
   PARTIAL_REFUND: 'PARTIAL_REFUND',
 } as const;
-export type SquarePaymentStatus = (typeof SquarePaymentStatus)[keyof typeof SquarePaymentStatus];
+export type SquarePaymentStatus =
+  (typeof SquarePaymentStatus)[keyof typeof SquarePaymentStatus];
 
 export const PeriodType = {
   WEEKLY: 'WEEKLY',
@@ -149,7 +151,8 @@ export const InvoiceItemType = {
   DISCOUNT_PERCENTAGE: 'DISCOUNT_PERCENTAGE',
   TIPS: 'TIPS',
 } as const;
-export type InvoiceItemType = (typeof InvoiceItemType)[keyof typeof InvoiceItemType];
+export type InvoiceItemType =
+  (typeof InvoiceItemType)[keyof typeof InvoiceItemType];
 
 export const AppointmentStatus = {
   SCHEDULED: 'SCHEDULED',
@@ -159,13 +162,15 @@ export const AppointmentStatus = {
   CANCELLED: 'CANCELLED',
   NO_SHOW: 'NO_SHOW',
 } as const;
-export type AppointmentStatus = (typeof AppointmentStatus)[keyof typeof AppointmentStatus];
+export type AppointmentStatus =
+  (typeof AppointmentStatus)[keyof typeof AppointmentStatus];
 
 export const AppointmentType = {
   AT_GARAGE: 'AT_GARAGE',
   MOBILE_SERVICE: 'MOBILE_SERVICE',
 } as const;
-export type AppointmentType = (typeof AppointmentType)[keyof typeof AppointmentType];
+export type AppointmentType =
+  (typeof AppointmentType)[keyof typeof AppointmentType];
 
 export const InspectionType = {
   PEACE_OF_MIND: 'PEACE_OF_MIND',
@@ -174,7 +179,8 @@ export const InspectionType = {
   SEASONAL: 'SEASONAL',
   CUSTOM: 'CUSTOM',
 } as const;
-export type InspectionType = (typeof InspectionType)[keyof typeof InspectionType];
+export type InspectionType =
+  (typeof InspectionType)[keyof typeof InspectionType];
 
 export const InspectionStatus = {
   DRAFT: 'DRAFT',
@@ -183,7 +189,8 @@ export const InspectionStatus = {
   FINALIZED: 'FINALIZED',
   CANCELLED: 'CANCELLED',
 } as const;
-export type InspectionStatus = (typeof InspectionStatus)[keyof typeof InspectionStatus];
+export type InspectionStatus =
+  (typeof InspectionStatus)[keyof typeof InspectionStatus];
 
 export const InspectionOverallStatus = {
   GOOD: 'GOOD',
@@ -191,7 +198,8 @@ export const InspectionOverallStatus = {
   NEEDS_REPAIR: 'NEEDS_REPAIR',
   UNSAFE: 'UNSAFE',
 } as const;
-export type InspectionOverallStatus = (typeof InspectionOverallStatus)[keyof typeof InspectionOverallStatus];
+export type InspectionOverallStatus =
+  (typeof InspectionOverallStatus)[keyof typeof InspectionOverallStatus];
 
 export const InspectionItemKind = {
   CONDITION: 'CONDITION',
@@ -199,7 +207,8 @@ export const InspectionItemKind = {
   MULTI_SELECT: 'MULTI_SELECT',
   TEXT: 'TEXT',
 } as const;
-export type InspectionItemKind = (typeof InspectionItemKind)[keyof typeof InspectionItemKind];
+export type InspectionItemKind =
+  (typeof InspectionItemKind)[keyof typeof InspectionItemKind];
 
 export const InspectionItemStatus = {
   GOOD: 'GOOD',
@@ -208,13 +217,15 @@ export const InspectionItemStatus = {
   NOT_APPLICABLE: 'NOT_APPLICABLE',
   NOT_INSPECTED: 'NOT_INSPECTED',
 } as const;
-export type InspectionItemStatus = (typeof InspectionItemStatus)[keyof typeof InspectionItemStatus];
+export type InspectionItemStatus =
+  (typeof InspectionItemStatus)[keyof typeof InspectionItemStatus];
 
 export const InspectionPositionGroup = {
   TIRE_SET: 'TIRE_SET',
   BRAKE_SET: 'BRAKE_SET',
 } as const;
-export type InspectionPositionGroup = (typeof InspectionPositionGroup)[keyof typeof InspectionPositionGroup];
+export type InspectionPositionGroup =
+  (typeof InspectionPositionGroup)[keyof typeof InspectionPositionGroup];
 
 export const QuotationStatus = {
   DRAFT: 'DRAFT',
@@ -224,7 +235,8 @@ export const QuotationStatus = {
   EXPIRED: 'EXPIRED',
   CONVERTED: 'CONVERTED',
 } as const;
-export type QuotationStatus = (typeof QuotationStatus)[keyof typeof QuotationStatus];
+export type QuotationStatus =
+  (typeof QuotationStatus)[keyof typeof QuotationStatus];
 
 export const PurchaseCategory = {
   TIRES: 'TIRES',
@@ -233,7 +245,8 @@ export const PurchaseCategory = {
   SUPPLIES: 'SUPPLIES',
   OTHER: 'OTHER',
 } as const;
-export type PurchaseCategory = (typeof PurchaseCategory)[keyof typeof PurchaseCategory];
+export type PurchaseCategory =
+  (typeof PurchaseCategory)[keyof typeof PurchaseCategory];
 
 export const ExpenseCategory = {
   RENT: 'RENT',
@@ -249,7 +262,8 @@ export const ExpenseCategory = {
   SOFTWARE: 'SOFTWARE',
   OTHER: 'OTHER',
 } as const;
-export type ExpenseCategory = (typeof ExpenseCategory)[keyof typeof ExpenseCategory];
+export type ExpenseCategory =
+  (typeof ExpenseCategory)[keyof typeof ExpenseCategory];
 
 export const PurchaseInvoiceStatus = {
   PENDING: 'PENDING',
@@ -257,7 +271,8 @@ export const PurchaseInvoiceStatus = {
   OVERDUE: 'OVERDUE',
   CANCELLED: 'CANCELLED',
 } as const;
-export type PurchaseInvoiceStatus = (typeof PurchaseInvoiceStatus)[keyof typeof PurchaseInvoiceStatus];
+export type PurchaseInvoiceStatus =
+  (typeof PurchaseInvoiceStatus)[keyof typeof PurchaseInvoiceStatus];
 
 export const RecurringPeriod = {
   WEEKLY: 'WEEKLY',
@@ -265,13 +280,15 @@ export const RecurringPeriod = {
   QUARTERLY: 'QUARTERLY',
   YEARLY: 'YEARLY',
 } as const;
-export type RecurringPeriod = (typeof RecurringPeriod)[keyof typeof RecurringPeriod];
+export type RecurringPeriod =
+  (typeof RecurringPeriod)[keyof typeof RecurringPeriod];
 
 export const PurchaseExpenseType = {
   PURCHASE: 'PURCHASE',
   EXPENSE: 'EXPENSE',
 } as const;
-export type PurchaseExpenseType = (typeof PurchaseExpenseType)[keyof typeof PurchaseExpenseType];
+export type PurchaseExpenseType =
+  (typeof PurchaseExpenseType)[keyof typeof PurchaseExpenseType];
 
 export const PurchaseExpenseCategory = {
   TIRES: 'TIRES',
@@ -293,7 +310,8 @@ export const PurchaseExpenseCategory = {
   SOFTWARE: 'SOFTWARE',
   OTHER: 'OTHER',
 } as const;
-export type PurchaseExpenseCategory = (typeof PurchaseExpenseCategory)[keyof typeof PurchaseExpenseCategory];
+export type PurchaseExpenseCategory =
+  (typeof PurchaseExpenseCategory)[keyof typeof PurchaseExpenseCategory];
 
 export const SmsStatus = {
   PENDING: 'PENDING',
@@ -354,7 +372,8 @@ export const BookingRequestStatus = {
   CONVERTED: 'CONVERTED',
   PROCESSED: 'PROCESSED',
 } as const;
-export type BookingRequestStatus = (typeof BookingRequestStatus)[keyof typeof BookingRequestStatus];
+export type BookingRequestStatus =
+  (typeof BookingRequestStatus)[keyof typeof BookingRequestStatus];
 
 export const CommissionStatus = {
   PENDING: 'PENDING',
@@ -362,7 +381,8 @@ export const CommissionStatus = {
   PAID: 'PAID',
   CANCELLED: 'CANCELLED',
 } as const;
-export type CommissionStatus = (typeof CommissionStatus)[keyof typeof CommissionStatus];
+export type CommissionStatus =
+  (typeof CommissionStatus)[keyof typeof CommissionStatus];
 
 export const ROStatus = {
   OPEN: 'OPEN',
@@ -387,7 +407,8 @@ export const ROServiceStatus = {
   COMPLETED: 'COMPLETED',
   DECLINED: 'DECLINED',
 } as const;
-export type ROServiceStatus = (typeof ROServiceStatus)[keyof typeof ROServiceStatus];
+export type ROServiceStatus =
+  (typeof ROServiceStatus)[keyof typeof ROServiceStatus];
 
 export const ROMediaType = {
   ARRIVAL_CONDITION: 'ARRIVAL_CONDITION',
@@ -399,3 +420,11 @@ export const ROMediaType = {
 } as const;
 export type ROMediaType = (typeof ROMediaType)[keyof typeof ROMediaType];
 
+export const CarfaxSyncStatus = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+  SKIPPED: 'SKIPPED',
+} as const;
+export type CarfaxSyncStatus =
+  (typeof CarfaxSyncStatus)[keyof typeof CarfaxSyncStatus];
