@@ -142,6 +142,15 @@ export class InvoicesService {
       taxRate = createInvoiceDto.taxRate ?? 0.0825;
     }
 
+    // PST-exempt customers are charged 0% PST regardless of what the client sent.
+    // This server-side gate is authoritative.
+    const customerForTax = await this.customerRepository.findById(customerId);
+    if (customerForTax?.pstExempt) {
+      pstRate = 0;
+      pstAmount = 0;
+      taxRate = gstRate ?? 0;
+    }
+
     const taxAmount = taxableSubtotal * taxRate;
     const total = subtotal + taxAmount;
 
@@ -250,6 +259,12 @@ export class InvoicesService {
     // Log will track changes for audit purposes
     const oldValue = { ...invoice };
 
+    // PST-exempt customers are always charged 0% PST (authoritative server-side gate)
+    const customerForTax = await this.customerRepository.findById(
+      invoice.customerId
+    );
+    const pstExempt = !!customerForTax?.pstExempt;
+
     // Prepare update data
     const updateData: any = {};
 
@@ -297,10 +312,12 @@ export class InvoicesService {
         updateInvoiceDto.gstRate !== undefined
           ? updateInvoiceDto.gstRate
           : Number(invoice.gstRate || 0);
-      const pstRate =
-        updateInvoiceDto.pstRate !== undefined
-          ? updateInvoiceDto.pstRate
-          : Number(invoice.pstRate || 0);
+      // PST-exempt customers are forced to 0% PST
+      const pstRate = pstExempt
+        ? 0
+        : updateInvoiceDto.pstRate !== undefined
+        ? updateInvoiceDto.pstRate
+        : Number(invoice.pstRate || 0);
       const taxRate = gstRate + pstRate;
       const gstAmount = subtotal * gstRate;
       const pstAmount = subtotal * pstRate;
@@ -320,7 +337,11 @@ export class InvoicesService {
       if (updateInvoiceDto.gstRate !== undefined) {
         updateData.gstRate = new Decimal(updateInvoiceDto.gstRate);
       }
-      if (updateInvoiceDto.pstRate !== undefined) {
+      if (pstExempt) {
+        // PST-exempt customers never carry PST
+        updateData.pstRate = new Decimal(0);
+        updateData.pstAmount = new Decimal(0);
+      } else if (updateInvoiceDto.pstRate !== undefined) {
         updateData.pstRate = new Decimal(updateInvoiceDto.pstRate);
       }
       if (updateInvoiceDto.subtotal !== undefined) {
@@ -536,7 +557,7 @@ export class InvoicesService {
   async sendInvoiceEmail(
     invoiceId: string,
     userId: string,
-    overrideEmail?: string,
+    emails?: string[],
     saveToCustomer?: boolean
   ) {
     // Get invoice with all relations including customer
@@ -548,30 +569,67 @@ export class InvoicesService {
     // Get customer separately to ensure proper typing
     const customer = await this.customerRepository.findById(invoice.customerId);
 
-    // Use override email or customer email
-    const emailToUse = overrideEmail || customer?.email;
+    // Clean + de-duplicate the provided recipients
+    const providedEmails = Array.from(
+      new Set((emails ?? []).map((e) => e.trim()).filter((e) => e !== ''))
+    );
 
-    // Check if we have an email to send to
-    if (!emailToUse) {
+    // Use the explicitly selected recipients, falling back to the customer's primary email
+    const recipients =
+      providedEmails.length > 0
+        ? providedEmails
+        : customer?.email
+        ? [customer.email]
+        : [];
+
+    // Check if we have at least one email to send to
+    if (recipients.length === 0) {
       throw new BadRequestException(
         'No email address provided and customer does not have an email address'
       );
     }
 
-    // If saveToCustomer is true and customer exists, update customer email
-    if (saveToCustomer && customer && overrideEmail && !customer.email) {
-      await this.customerRepository.update(customer.id, {
-        email: overrideEmail,
-      });
+    // If saveToCustomer is true and customer exists, persist any new emails back to the customer
+    if (saveToCustomer && customer) {
+      const knownEmails = [
+        customer.email,
+        ...(customer.additionalEmails ?? []),
+      ].filter((e): e is string => !!e);
+      let primary = customer.email ?? undefined;
+      const additional = [...(customer.additionalEmails ?? [])];
+
+      for (const email of recipients) {
+        if (knownEmails.includes(email)) continue;
+        if (!primary) {
+          primary = email;
+        } else {
+          additional.push(email);
+        }
+        knownEmails.push(email);
+      }
+
+      const dedupedAdditional = Array.from(new Set(additional)).filter(
+        (e) => e !== primary
+      );
+
+      if (
+        primary !== (customer.email ?? undefined) ||
+        dedupedAdditional.length !== (customer.additionalEmails ?? []).length
+      ) {
+        await this.customerRepository.update(customer.id, {
+          email: primary,
+          additionalEmails: dedupedAdditional,
+        });
+      }
     }
 
     try {
       // Generate PDF
       const pdfBase64 = await this.pdfService.generateInvoicePdf(invoice);
 
-      // Send email
+      // Send email to all recipients
       const emailResult = await this.emailService.sendInvoiceEmail(
-        emailToUse,
+        recipients,
         invoice.invoiceNumber,
         pdfBase64
       );
@@ -588,17 +646,17 @@ export class InvoicesService {
         entityType: 'Invoice',
         entityId: invoiceId,
         details: {
-          email: emailToUse,
+          emails: recipients,
           invoiceNumber: invoice.invoiceNumber,
           messageId: emailResult.messageId,
-          emailSavedToCustomer: saveToCustomer && !!overrideEmail,
+          emailsSavedToCustomer: !!saveToCustomer,
         },
       });
 
       return {
         success: true,
         message: 'Invoice email sent successfully',
-        emailUsed: emailToUse,
+        emailUsed: recipients.join(', '),
       };
     } catch (error) {
       throw new BadRequestException(

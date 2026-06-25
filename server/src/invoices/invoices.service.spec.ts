@@ -24,7 +24,11 @@ describe('InvoicesService.create — totals calculation', () => {
       createWithItems,
     };
     const auditRepository = { create: jest.fn().mockResolvedValue({}) };
-    const customerRepository = { create: jest.fn() };
+    const customerRepository = {
+      create: jest.fn(),
+      // Non-exempt by default so PST is applied in these tests
+      findById: jest.fn().mockResolvedValue({ pstExempt: false }),
+    };
     const serviceRepository = {};
     const pdfService = {};
     const emailService = {};

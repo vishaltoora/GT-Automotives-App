@@ -11,11 +11,22 @@ import {
   CircularProgress,
   FormControlLabel,
   Switch,
+  Checkbox,
+  IconButton,
 } from '@mui/material';
-import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import {
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { customerService, CreateCustomerDto, UpdateCustomerDto } from '../../requests/customer.requests';
+import {
+  customerService,
+  CreateCustomerDto,
+  UpdateCustomerDto,
+} from '../../requests/customer.requests';
 import { PhoneInput } from '../../components/common/PhoneInput';
 import { AddressAutocomplete } from '../../components/common/AddressAutocomplete';
 import axios from 'axios';
@@ -40,7 +51,9 @@ export function CustomerForm() {
     phone: '',
     address: 'Prince George, BC',
     businessName: '',
+    pstExempt: false,
   });
+  const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
 
   useEffect(() => {
     if (isEdit && id) {
@@ -59,7 +72,9 @@ export function CustomerForm() {
         phone: customer.phone || '',
         address: customer.address || '',
         businessName: customer.businessName || '',
+        pstExempt: customer.pstExempt ?? false,
       });
+      setAdditionalEmails(customer.additionalEmails || []);
 
       // Load SMS preferences
       try {
@@ -70,7 +85,7 @@ export function CustomerForm() {
             headers: {
               'Content-Type': 'application/json',
               ...(token && { Authorization: `Bearer ${token}` }),
-            }
+            },
           }
         );
         setSmsEnabled(prefsResponse.data.optedIn || false);
@@ -94,11 +109,22 @@ export function CustomerForm() {
 
       let customerId = id;
 
+      // Drop blank rows and trim before sending
+      const cleanedAdditionalEmails = additionalEmails
+        .map((email) => email.trim())
+        .filter((email) => email !== '');
+
       if (isEdit && id) {
-        const updateData: UpdateCustomerDto = { ...formData };
+        const updateData: UpdateCustomerDto = {
+          ...formData,
+          additionalEmails: cleanedAdditionalEmails,
+        };
         await customerService.updateCustomer(id, updateData);
       } else {
-        const createData: CreateCustomerDto = { ...formData };
+        const createData: CreateCustomerDto = {
+          ...formData,
+          additionalEmails: cleanedAdditionalEmails,
+        };
         const newCustomer = await customerService.createCustomer(createData);
         customerId = newCustomer.id;
       }
@@ -119,7 +145,7 @@ export function CustomerForm() {
             headers: {
               'Content-Type': 'application/json',
               ...(token && { Authorization: `Bearer ${token}` }),
-            }
+            },
           }
         );
       }
@@ -132,23 +158,45 @@ export function CustomerForm() {
     }
   };
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-  };
+  const handleChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+    };
 
   const handlePhoneChange = (value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       phone: value,
     }));
   };
 
+  const handleAdditionalEmailChange =
+    (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setAdditionalEmails((prev) =>
+        prev.map((email, i) => (i === index ? value : email))
+      );
+    };
+
+  const handleAddEmail = () => {
+    setAdditionalEmails((prev) => [...prev, '']);
+  };
+
+  const handleRemoveEmail = (index: number) => {
+    setAdditionalEmails((prev) => prev.filter((_, i) => i !== index));
+  };
+
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -198,7 +246,46 @@ export function CustomerForm() {
                   value={formData.email}
                   onChange={handleChange('email')}
                   disabled={saving}
+                  helperText="Primary email"
                 />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box>
+                  {additionalEmails.map((email, index) => (
+                    <Box
+                      key={index}
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      mb={2}
+                    >
+                      <TextField
+                        fullWidth
+                        type="email"
+                        label={`Email ${index + 2}`}
+                        value={email}
+                        onChange={handleAdditionalEmailChange(index)}
+                        disabled={saving}
+                      />
+                      <IconButton
+                        aria-label="Remove email"
+                        onClick={() => handleRemoveEmail(index)}
+                        disabled={saving}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={handleAddEmail}
+                    disabled={saving}
+                    size="small"
+                    sx={{ mt: 0.5 }}
+                  >
+                    Add Email
+                  </Button>
+                </Box>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <PhoneInput
@@ -221,7 +308,9 @@ export function CustomerForm() {
                     }
                     label={
                       <Box>
-                        <Typography variant="body1">Enable SMS Notifications</Typography>
+                        <Typography variant="body1">
+                          Enable SMS Notifications
+                        </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {formData.phone
                             ? 'Receive appointment reminders, service updates, and promotional messages'
@@ -252,6 +341,32 @@ export function CustomerForm() {
                 />
               </Grid>
               <Grid size={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.pstExempt}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          pstExempt: e.target.checked,
+                        })
+                      }
+                      disabled={saving}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body1">PST Exempt</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        When enabled, all invoices for this customer are charged
+                        0% PST (GST still applies)
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Grid>
+              <Grid size={12}>
                 <Box display="flex" gap={2} justifyContent="flex-end">
                   <Button
                     variant="outlined"
@@ -267,7 +382,7 @@ export function CustomerForm() {
                     startIcon={<SaveIcon />}
                     disabled={saving}
                   >
-                    {saving ? 'Saving...' : (isEdit ? 'Update' : 'Create')}
+                    {saving ? 'Saving...' : isEdit ? 'Update' : 'Create'}
                   </Button>
                 </Box>
               </Grid>

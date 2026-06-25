@@ -51,7 +51,9 @@ class InvoiceService {
 
     return `
       <h3 style="margin: 0; line-height: 1.1;">Vehicle Information:</h3>
-      <p style="margin: 0;">${vehicleDescription ? `${vehicleDescription}<br>` : ''}
+      <p style="margin: 0;">${
+        vehicleDescription ? `${vehicleDescription}<br>` : ''
+      }
       ${vehicle.vin ? `<strong>VIN Number:</strong> ${vehicle.vin}<br>` : ''}
       ${
         vehicle.licensePlate
@@ -137,12 +139,17 @@ class InvoiceService {
 
   async sendInvoiceEmail(
     id: string,
-    email?: string,
+    emails?: string | string[],
     saveToCustomer?: boolean
   ): Promise<{ success: boolean; message: string; emailUsed?: string }> {
+    const emailList = Array.isArray(emails)
+      ? emails
+      : emails
+      ? [emails]
+      : undefined;
     const response = await axios.post(
       `${API_URL}/api/invoices/${id}/send-email`,
-      { email, saveToCustomer },
+      { emails: emailList, saveToCustomer },
       {
         headers: await this.getHeaders(),
       }

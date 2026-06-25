@@ -34,7 +34,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
     children: React.ReactElement;
   },
-  ref: React.Ref<unknown>,
+  ref: React.Ref<unknown>
 ) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -54,7 +54,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   invoice = null,
   quotationId,
 }) => {
-  const { } = useAuth();
+  const {} = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [customers, setCustomers] = useState<any[]>([]);
@@ -65,7 +65,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const isEditMode = Boolean(invoice);
-  
+
   const [customerForm, setCustomerForm] = useState({
     firstName: '',
     lastName: '',
@@ -74,7 +74,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     phone: '',
     email: '',
   });
-  
+
   const [formData, setFormData] = useState({
     customerId: '',
     vehicleId: '',
@@ -86,7 +86,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     status: 'PENDING',
     invoiceDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
   });
-  
+
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [newItem, setNewItem] = useState<InvoiceItem>({
     itemType: InvoiceItemType.SERVICE,
@@ -99,7 +99,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   });
 
   const formatTireType = (type: string) => {
-    return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    return type
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const calculateItemTotal = (item: InvoiceItem) => {
@@ -110,20 +113,24 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       return {
         subtotal: baseTotal,
         discountAmount: 0,
-        total: baseTotal // baseTotal is already negative for DISCOUNT items
+        total: baseTotal, // baseTotal is already negative for DISCOUNT items
       };
     }
 
     // For DISCOUNT_PERCENTAGE items, calculate based on other items
     if (item.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE) {
       const otherItemsSubtotal = items
-        .filter(i => i.itemType !== InvoiceItemType.DISCOUNT && i.itemType !== InvoiceItemType.DISCOUNT_PERCENTAGE)
-        .reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
+        .filter(
+          (i) =>
+            i.itemType !== InvoiceItemType.DISCOUNT &&
+            i.itemType !== InvoiceItemType.DISCOUNT_PERCENTAGE
+        )
+        .reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
       const percentageDiscount = (otherItemsSubtotal * item.unitPrice) / 100;
       return {
         subtotal: baseTotal,
         discountAmount: 0,
-        total: -percentageDiscount // Negative value for discount
+        total: -percentageDiscount, // Negative value for discount
       };
     }
 
@@ -140,7 +147,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     return {
       subtotal: baseTotal,
       discountAmount,
-      total: baseTotal - discountAmount
+      total: baseTotal - discountAmount,
     };
   };
 
@@ -180,7 +187,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       phone: '',
       email: '',
     });
-    const defaultCompany = companies.find(c => c.isDefault) || companies[0];
+    const defaultCompany = companies.find((c) => c.isDefault) || companies[0];
     setFormData({
       customerId: '',
       vehicleId: '',
@@ -230,7 +237,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       paymentMethod: invoiceData.paymentMethod || '',
       notes: invoiceData.notes || '',
       status: invoiceData.status || 'PENDING',
-      invoiceDate: invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      invoiceDate: invoiceData.invoiceDate
+        ? new Date(invoiceData.invoiceDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
     });
 
     // Populate items
@@ -257,12 +266,13 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const loadData = async () => {
     try {
       // Use getCustomersSimple() for faster loading - no stats needed for autocomplete
-      const [customersData, tiresResult, servicesData, companiesData] = await Promise.all([
-        customerService.getCustomersSimple(),
-        TireService.getTires({ page: 1, limit: 100 }),
-        serviceService.getAll(),
-        companyService.getCompanies(),
-      ]);
+      const [customersData, tiresResult, servicesData, companiesData] =
+        await Promise.all([
+          customerService.getCustomersSimple(),
+          TireService.getTires({ page: 1, limit: 100 }),
+          serviceService.getAll(),
+          companyService.getCompanies(),
+        ]);
       setCustomers(customersData);
       setTires(tiresResult.items || []);
       setServices(servicesData);
@@ -270,8 +280,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
       // Set default company if not in edit mode
       if (!isEditMode && companiesData.length > 0) {
-        const defaultCompany = companiesData.find(c => c.isDefault) || companiesData[0];
-        setFormData(prev => ({ ...prev, companyId: defaultCompany.id }));
+        const defaultCompany =
+          companiesData.find((c) => c.isDefault) || companiesData[0];
+        setFormData((prev) => ({ ...prev, companyId: defaultCompany.id }));
       }
 
       // Return loaded data for use in initialization
@@ -297,7 +308,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     }
   };
 
-  const loadQuotationData = async (quoteId: string, companiesList: Company[]) => {
+  const loadQuotationData = async (
+    quoteId: string,
+    companiesList: Company[]
+  ) => {
     try {
       const quotation = await quotationService.getQuote(quoteId);
 
@@ -315,8 +329,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setIsNewCustomer(true);
 
       // Set form data with companies passed as parameter
-      const defaultCompany = companiesList.find(c => c.isDefault) || companiesList[0];
-      setFormData(prev => ({
+      const defaultCompany =
+        companiesList.find((c) => c.isDefault) || companiesList[0];
+      setFormData((prev) => ({
         ...prev,
         customerId: '', // Explicitly clear customerId for new customer
         vehicleId: '', // Clear vehicle selection
@@ -328,7 +343,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       }));
 
       // Convert quotation items to invoice items
-      const invoiceItems: InvoiceItem[] = quotation.items.map(item => ({
+      const invoiceItems: InvoiceItem[] = quotation.items.map((item) => ({
         itemType: item.itemType as InvoiceItemType,
         description: item.description,
         quantity: item.quantity,
@@ -387,7 +402,14 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
       invoiceData = {
         items: items.map((item) => {
-          const { itemType, description, quantity, unitPrice, tireId, tireName } = item;
+          const {
+            itemType,
+            description,
+            quantity,
+            unitPrice,
+            tireId,
+            tireName,
+          } = item;
           const itemData: any = {
             itemType,
             description,
@@ -430,7 +452,11 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         if (customerId) {
           // When using existing customer, only send customerId
           invoiceData.customerId = customerId;
-        } else if (isNewCustomer && customerForm.firstName && customerForm.lastName) {
+        } else if (
+          isNewCustomer &&
+          customerForm.firstName &&
+          customerForm.lastName
+        ) {
           // When creating new customer, send customerData
           invoiceData.customerData = {
             firstName: customerForm.firstName,
@@ -478,7 +504,10 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           : error.response.data.message || 'Unknown error';
         alert(`Error creating invoice: ${errorMessage}`);
       } else {
-        alert(`Error ${isEditMode ? 'updating' : 'creating'} invoice: ` + error.message);
+        alert(
+          `Error ${isEditMode ? 'updating' : 'creating'} invoice: ` +
+            error.message
+        );
       }
     } finally {
       setLoading(false);
@@ -487,7 +516,14 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
   const handleCustomerSelect = (customer: any) => {
     if (customer) {
-      setFormData({ ...formData, customerId: customer.id, vehicleId: '' });
+      // PST-exempt customers are charged 0% PST; reflect it in the form so the
+      // displayed total matches what the backend will compute.
+      setFormData({
+        ...formData,
+        customerId: customer.id,
+        vehicleId: '',
+        pstRate: customer.pstExempt ? 0 : 0.07,
+      });
       setCustomerForm({
         firstName: customer.firstName || '',
         lastName: customer.lastName || '',
@@ -510,16 +546,19 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   };
 
   const handleAddItem = () => {
-    if (newItem.description && (
-      newItem.itemType === InvoiceItemType.DISCOUNT ? newItem.unitPrice < 0 :
-      newItem.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE ? newItem.unitPrice > 0 && newItem.unitPrice <= 100 :
-      newItem.unitPrice > 0
-    )) {
+    if (
+      newItem.description &&
+      (newItem.itemType === InvoiceItemType.DISCOUNT
+        ? newItem.unitPrice < 0
+        : newItem.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE
+        ? newItem.unitPrice > 0 && newItem.unitPrice <= 100
+        : newItem.unitPrice > 0)
+    ) {
       const calculation = calculateItemTotal(newItem);
       const itemWithCalculations = {
         ...newItem,
         discountAmount: calculation.discountAmount,
-        total: calculation.total
+        total: calculation.total,
       };
       console.log('Adding item to invoice:', itemWithCalculations);
 
@@ -554,7 +593,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   };
 
   const handleTireSelect = (tireId: string) => {
-    const tire = tires.find(t => t.id === tireId);
+    const tire = tires.find((t) => t.id === tireId);
     if (tire) {
       console.log('Selected tire:', tire);
       console.log('Tire name:', tire.name);
@@ -562,7 +601,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         ...newItem,
         tireId: tire.id,
         itemType: InvoiceItemType.TIRE,
-        description: `${tire.brand} ${formatTireType(tire.type)} - ${tire.size}`,
+        description: `${tire.brand} ${formatTireType(tire.type)} - ${
+          tire.size
+        }`,
         unitPrice: parseFloat(tire.price),
         tireName: tire.name || undefined,
       };
@@ -587,8 +628,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             display: 'flex',
             flexDirection: 'column',
             height: '100vh',
-          })
-        }
+          }),
+        },
       }}
     >
       <DialogTitle
@@ -602,11 +643,18 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           px: { xs: 2, sm: 3 },
           ...(isMobile && {
             flexShrink: 0,
-          })
+          }),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-          <ReceiptIcon sx={{ fontSize: { xs: 24, sm: 28 }, display: { xs: 'none', sm: 'block' } }} />
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}
+        >
+          <ReceiptIcon
+            sx={{
+              fontSize: { xs: 24, sm: 28 },
+              display: { xs: 'none', sm: 'block' },
+            }}
+          />
           <Box>
             <Typography
               variant={isMobile ? 'h6' : 'h5'}
@@ -616,7 +664,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             </Typography>
             {!isMobile && (
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {isEditMode ? 'Update invoice details and items' : 'Generate professional invoices for your customers'}
+                {isEditMode
+                  ? 'Update invoice details and items'
+                  : 'Generate professional invoices for your customers'}
               </Typography>
             )}
           </Box>
@@ -626,7 +676,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           size={isMobile ? 'small' : 'medium'}
           sx={{
             color: 'white',
-            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
           }}
         >
           <CloseIcon fontSize={isMobile ? 'small' : 'medium'} />
@@ -640,7 +690,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             flex: '1 1 auto',
             overflowY: 'auto',
             minHeight: 0,
-          })
+          }),
         }}
       >
         <InvoiceFormContent
@@ -676,7 +726,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           ...(isMobile && {
             flexShrink: 0,
             backgroundColor: 'white',
-          })
+          }),
         }}
       >
         <Button
@@ -690,8 +740,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             color: colors.text.secondary,
             '&:hover': {
               borderColor: colors.neutral[600],
-              background: colors.neutral[50]
-            }
+              background: colors.neutral[50],
+            },
           }}
         >
           Cancel
@@ -701,27 +751,36 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           variant="contained"
           size="large"
           fullWidth={isMobile}
-          disabled={loading || (!formData.customerId && (!customerForm.firstName || !customerForm.lastName)) || items.length === 0}
+          disabled={
+            loading ||
+            (!formData.customerId &&
+              (!customerForm.firstName || !customerForm.lastName)) ||
+            items.length === 0
+          }
           sx={{
             background: colors.primary.main,
             color: 'white',
             minWidth: 140,
-            '&:hover': { 
+            '&:hover': {
               background: colors.primary.dark,
             },
             '&:disabled': {
               background: colors.neutral[300],
-              color: colors.neutral[500]
-            }
+              color: colors.neutral[500],
+            },
           }}
         >
           {loading
-            ? (isEditMode ? 'Updating...' : 'Creating...')
-            : (isEditMode
-                ? (isMobile ? 'Update' : 'Update Invoice')
-                : (isMobile ? 'Create' : 'Create Invoice')
-              )
-          }
+            ? isEditMode
+              ? 'Updating...'
+              : 'Creating...'
+            : isEditMode
+            ? isMobile
+              ? 'Update'
+              : 'Update Invoice'
+            : isMobile
+            ? 'Create'
+            : 'Create Invoice'}
         </Button>
       </DialogActions>
     </Dialog>
