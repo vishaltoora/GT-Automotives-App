@@ -10,7 +10,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceDto, CreateServiceDto, UpdateInvoiceDto, UpdateServiceDto } from '@gt-automotive/data';
+import {
+  CreateInvoiceDto,
+  CreateServiceDto,
+  UpdateInvoiceDto,
+  UpdateServiceDto,
+} from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -47,7 +52,7 @@ export class InvoicesController {
     @Query('endDate') endDate?: string,
     @Query('status') status?: InvoiceStatus,
     @Query('companyId') companyId?: string,
-    @CurrentUser() user?: any,
+    @CurrentUser() user?: any
   ) {
     return this.invoicesService.searchInvoices(
       {
@@ -58,7 +63,7 @@ export class InvoicesController {
         status,
         companyId,
       },
-      user,
+      user
     );
   }
 
@@ -74,7 +79,10 @@ export class InvoicesController {
   @Get('customer/:customerId')
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
-  getCustomerInvoices(@Param('customerId') customerId: string, @CurrentUser() user: any) {
+  getCustomerInvoices(
+    @Param('customerId') customerId: string,
+    @CurrentUser() user: any
+  ) {
     return this.invoicesService.getCustomerInvoices(customerId, user);
   }
 
@@ -91,7 +99,7 @@ export class InvoicesController {
   update(
     @Param('id') id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.invoicesService.update(id, updateInvoiceDto, user.id);
   }
@@ -102,7 +110,7 @@ export class InvoicesController {
   markAsPaid(
     @Param('id') id: string,
     @Body('paymentMethod') paymentMethod: PaymentMethod,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.invoicesService.markAsPaid(id, paymentMethod, user.id);
   }
@@ -112,10 +120,23 @@ export class InvoicesController {
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   sendEmail(
     @Param('id') id: string,
-    @Body() body: { email?: string; saveToCustomer?: boolean },
-    @CurrentUser() user: any,
+    @Body()
+    body: { email?: string; emails?: string[]; saveToCustomer?: boolean },
+    @CurrentUser() user: any
   ) {
-    return this.invoicesService.sendInvoiceEmail(id, user.id, body.email, body.saveToCustomer);
+    // Accept either a single `email` (legacy) or an `emails` array (multi-recipient)
+    const emails =
+      body.emails && body.emails.length > 0
+        ? body.emails
+        : body.email
+        ? [body.email]
+        : undefined;
+    return this.invoicesService.sendInvoiceEmail(
+      id,
+      user.id,
+      emails,
+      body.saveToCustomer
+    );
   }
 
   @Delete(':id')
@@ -143,7 +164,10 @@ export class InvoicesController {
   @Patch('services/:id')
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
-  updateService(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
+  updateService(
+    @Param('id') id: string,
+    @Body() updateServiceDto: UpdateServiceDto
+  ) {
     return this.invoicesService.updateService(id, updateServiceDto);
   }
 

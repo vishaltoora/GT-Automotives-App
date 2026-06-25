@@ -78,6 +78,8 @@ model Customer {
   firstName       String
   lastName        String
   email           String?
+  additionalEmails String[]        @default([]) // Extra emails (e.g. spouse, business) for invoice sending
+  pstExempt       Boolean          @default(false) // When true, invoices for this customer are charged 0% PST
   phone           String?
   address         String?
   businessName    String?

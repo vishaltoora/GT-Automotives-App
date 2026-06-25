@@ -17,6 +17,7 @@ import {
   useMediaQuery,
   FormControlLabel,
   Switch,
+  Checkbox,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -24,9 +25,16 @@ import {
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { TransitionProps} from '@mui/material/transitions';
-import { customerService, Customer, CreateCustomerDto, UpdateCustomerDto } from '../../requests/customer.requests';
+import { TransitionProps } from '@mui/material/transitions';
+import {
+  customerService,
+  Customer,
+  CreateCustomerDto,
+  UpdateCustomerDto,
+} from '../../requests/customer.requests';
 import { colors } from '../../theme/colors';
 import { PhoneInput } from '../common/PhoneInput';
 import { AddressAutocomplete } from '../common/AddressAutocomplete';
@@ -39,7 +47,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
     children: React.ReactElement;
   },
-  ref: React.Ref<unknown>,
+  ref: React.Ref<unknown>
 ) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -73,7 +81,9 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     address: 'Prince George, BC',
     businessName: '',
     smsEnabled: true,
+    pstExempt: false,
   });
+  const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -87,7 +97,9 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           address: initialCustomer.address || '',
           businessName: initialCustomer.businessName || '',
           smsEnabled: initialCustomer.smsPreference?.optedIn ?? true,
+          pstExempt: initialCustomer.pstExempt ?? false,
         });
+        setAdditionalEmails(initialCustomer.additionalEmails || []);
       } else if (customerId) {
         // Load customer data if only ID is provided
         loadCustomer(customerId);
@@ -101,7 +113,9 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           address: 'Prince George, BC',
           businessName: '',
           smsEnabled: true,
+          pstExempt: false,
         });
+        setAdditionalEmails([]);
       }
       setError(null);
     }
@@ -119,7 +133,9 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         address: customer.address || '',
         businessName: customer.businessName || '',
         smsEnabled: customer.smsPreference?.optedIn ?? true,
+        pstExempt: customer.pstExempt ?? false,
       });
+      setAdditionalEmails(customer.additionalEmails || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load customer');
     } finally {
@@ -136,9 +152,16 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
       let customerId_local = customerId;
 
+      // Drop blank rows and trim before sending
+      const cleanedAdditionalEmails = additionalEmails
+        .map((email) => email.trim())
+        .filter((email) => email !== '');
+
       if (isEdit && customerId) {
         const updateData: UpdateCustomerDto = {
           email: formData.email,
+          additionalEmails: cleanedAdditionalEmails,
+          pstExempt: formData.pstExempt,
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
@@ -149,6 +172,8 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
       } else {
         const createData: CreateCustomerDto = {
           email: formData.email,
+          additionalEmails: cleanedAdditionalEmails,
+          pstExempt: formData.pstExempt,
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
@@ -194,18 +219,35 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     }
   };
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-  };
+  const handleChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+    };
 
   const handlePhoneChange = (value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       phone: value,
     }));
+  };
+
+  const handleAdditionalEmailChange =
+    (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setAdditionalEmails((prev) =>
+        prev.map((email, i) => (i === index ? value : email))
+      );
+    };
+
+  const handleAddEmail = () => {
+    setAdditionalEmails((prev) => [...prev, '']);
+  };
+
+  const handleRemoveEmail = (index: number) => {
+    setAdditionalEmails((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -224,8 +266,8 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
             display: 'flex',
             flexDirection: 'column',
             height: '100vh',
-          })
-        }
+          }),
+        },
       }}
     >
       <DialogTitle
@@ -240,9 +282,19 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           flexShrink: 0,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-          {!isMobile && (isEdit ? <EditIcon sx={{ fontSize: 24 }} /> : <PersonAddIcon sx={{ fontSize: 24 }} />)}
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}
+        >
+          {!isMobile &&
+            (isEdit ? (
+              <EditIcon sx={{ fontSize: 24 }} />
+            ) : (
+              <PersonAddIcon sx={{ fontSize: 24 }} />
+            ))}
+          <Typography
+            variant={isMobile ? 'subtitle1' : 'h6'}
+            sx={{ fontWeight: 600 }}
+          >
             {isEdit ? 'Edit Customer' : 'Add New Customer'}
           </Typography>
         </Box>
@@ -250,7 +302,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           onClick={onClose}
           sx={{
             color: 'white',
-            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
           }}
         >
           <CloseIcon />
@@ -265,12 +317,17 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           flex: '1 1 auto',
           minHeight: 0,
           '&:first-of-type': {
-            paddingTop: { xs: 2, sm: 3 }
-          }
+            paddingTop: { xs: 2, sm: 3 },
+          },
         }}
       >
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="300px"
+          >
             <CircularProgress />
           </Box>
         ) : (
@@ -313,7 +370,47 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   onChange={handleChange('email')}
                   disabled={saving}
                   size={isMobile ? 'small' : 'medium'}
+                  helperText="Primary email"
                 />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box>
+                  {additionalEmails.map((email, index) => (
+                    <Box
+                      key={index}
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      mb={2}
+                    >
+                      <TextField
+                        fullWidth
+                        size={isMobile ? 'small' : 'medium'}
+                        type="email"
+                        label={`Email ${index + 2}`}
+                        value={email}
+                        onChange={handleAdditionalEmailChange(index)}
+                        disabled={saving}
+                      />
+                      <IconButton
+                        aria-label="Remove email"
+                        onClick={() => handleRemoveEmail(index)}
+                        disabled={saving}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={handleAddEmail}
+                    disabled={saving}
+                    size="small"
+                    sx={{ mt: 0.5 }}
+                  >
+                    Add Email
+                  </Button>
+                </Box>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <PhoneInput
@@ -345,6 +442,34 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 />
               </Grid>
 
+              {/* PST Exempt */}
+              <Grid size={{ xs: 12 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.pstExempt}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          pstExempt: e.target.checked,
+                        })
+                      }
+                      disabled={saving}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body1">PST Exempt</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        When enabled, all invoices for this customer are charged
+                        0% PST (GST still applies)
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Grid>
+
               {/* SMS Notifications Toggle */}
               <Grid size={{ xs: 12 }}>
                 <Box sx={{ mt: 1 }}>
@@ -352,14 +477,21 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     control={
                       <Switch
                         checked={formData.smsEnabled}
-                        onChange={(e) => setFormData({ ...formData, smsEnabled: e.target.checked })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            smsEnabled: e.target.checked,
+                          })
+                        }
                         disabled={saving || !formData.phone}
                         color="primary"
                       />
                     }
                     label={
                       <Box>
-                        <Typography variant="body1">Enable SMS Notifications</Typography>
+                        <Typography variant="body1">
+                          Enable SMS Notifications
+                        </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {formData.phone
                             ? 'Receive appointment reminders, service updates, and promotional messages'
@@ -375,13 +507,15 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         )}
       </DialogContent>
 
-      <DialogActions sx={{
-        p: { xs: 2, sm: 2.5 },
-        borderTop: `1px solid ${colors.neutral[200]}`,
-        flexShrink: 0,
-        gap: { xs: 1, sm: 0 },
-        flexDirection: isMobile ? 'column-reverse' : 'row'
-      }}>
+      <DialogActions
+        sx={{
+          p: { xs: 2, sm: 2.5 },
+          borderTop: `1px solid ${colors.neutral[200]}`,
+          flexShrink: 0,
+          gap: { xs: 1, sm: 0 },
+          flexDirection: isMobile ? 'column-reverse' : 'row',
+        }}
+      >
         <Button
           onClick={onClose}
           variant="outlined"
@@ -403,10 +537,10 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
             background: colors.gradients.primary,
             '&:hover': {
               background: colors.gradients.primary,
-            }
+            },
           }}
         >
-          {saving ? 'Saving...' : (isEdit ? 'Update' : 'Create')}
+          {saving ? 'Saving...' : isEdit ? 'Update' : 'Create'}
         </Button>
       </DialogActions>
     </Dialog>

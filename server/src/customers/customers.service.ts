@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateCustomerDto, UpdateCustomerDto } from '@gt-automotive/data';
 import { CustomerRepository } from './repositories/customer.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
@@ -9,15 +13,19 @@ export class CustomersService {
   constructor(
     private readonly customerRepository: CustomerRepository,
     private readonly auditRepository: AuditRepository,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaService
   ) {}
 
   async create(createCustomerDto: CreateCustomerDto, createdBy: string) {
     // Check for existing customer with same email if provided
     if (createCustomerDto.email) {
-      const existingCustomer = await this.customerRepository.findByEmail(createCustomerDto.email);
+      const existingCustomer = await this.customerRepository.findByEmail(
+        createCustomerDto.email
+      );
       if (existingCustomer) {
-        throw new BadRequestException('A customer with this email already exists');
+        throw new BadRequestException(
+          'A customer with this email already exists'
+        );
       }
     }
 
@@ -27,6 +35,8 @@ export class CustomersService {
         firstName: createCustomerDto.firstName,
         lastName: createCustomerDto.lastName,
         email: createCustomerDto.email,
+        additionalEmails: createCustomerDto.additionalEmails ?? [],
+        pstExempt: createCustomerDto.pstExempt ?? false,
         phone: createCustomerDto.phone,
         address: createCustomerDto.address,
         businessName: createCustomerDto.businessName,
@@ -36,20 +46,23 @@ export class CustomersService {
     // Auto-create SMS preferences if customer has a phone number
     // Use provided preferences or default to opted-in for better user experience
     if (customer.phone) {
-      await this.prisma.smsPreference.create({
-        data: {
-          customer: {
-            connect: { id: customer.id },
+      await this.prisma.smsPreference
+        .create({
+          data: {
+            customer: {
+              connect: { id: customer.id },
+            },
+            optedIn: createCustomerDto.smsOptedIn ?? true,
+            appointmentReminders:
+              createCustomerDto.smsAppointmentReminders ?? true,
+            serviceUpdates: createCustomerDto.smsServiceUpdates ?? true,
+            promotional: createCustomerDto.smsPromotional ?? false,
           },
-          optedIn: createCustomerDto.smsOptedIn ?? true,
-          appointmentReminders: createCustomerDto.smsAppointmentReminders ?? true,
-          serviceUpdates: createCustomerDto.smsServiceUpdates ?? true,
-          promotional: createCustomerDto.smsPromotional ?? false,
-        },
-      }).catch(err => {
-        console.error('Failed to create SMS preferences for customer:', err);
-        // Don't throw error - customer was created successfully
-      });
+        })
+        .catch((err) => {
+          console.error('Failed to create SMS preferences for customer:', err);
+          // Don't throw error - customer was created successfully
+        });
     }
 
     // Log the action
@@ -100,6 +113,8 @@ export class CustomersService {
         firstName: true,
         lastName: true,
         email: true,
+        additionalEmails: true,
+        pstExempt: true,
         phone: true,
         address: true,
         businessName: true,
@@ -124,7 +139,12 @@ export class CustomersService {
     };
   }
 
-  async update(id: string, updateCustomerDto: UpdateCustomerDto, userId: string, userRole: string) {
+  async update(
+    id: string,
+    updateCustomerDto: UpdateCustomerDto,
+    userId: string,
+    userRole: string
+  ) {
     const customer = await this.customerRepository.findById(id);
 
     if (!customer) {
@@ -135,12 +155,30 @@ export class CustomersService {
     const updatedCustomer = await this.prisma.customer.update({
       where: { id },
       data: {
-        ...(updateCustomerDto.firstName && { firstName: updateCustomerDto.firstName }),
-        ...(updateCustomerDto.lastName && { lastName: updateCustomerDto.lastName }),
-        ...(updateCustomerDto.email !== undefined && { email: updateCustomerDto.email }),
-        ...(updateCustomerDto.phone !== undefined && { phone: updateCustomerDto.phone }),
-        ...(updateCustomerDto.address !== undefined && { address: updateCustomerDto.address }),
-        ...(updateCustomerDto.businessName !== undefined && { businessName: updateCustomerDto.businessName }),
+        ...(updateCustomerDto.firstName && {
+          firstName: updateCustomerDto.firstName,
+        }),
+        ...(updateCustomerDto.lastName && {
+          lastName: updateCustomerDto.lastName,
+        }),
+        ...(updateCustomerDto.email !== undefined && {
+          email: updateCustomerDto.email,
+        }),
+        ...(updateCustomerDto.additionalEmails !== undefined && {
+          additionalEmails: updateCustomerDto.additionalEmails,
+        }),
+        ...(updateCustomerDto.pstExempt !== undefined && {
+          pstExempt: updateCustomerDto.pstExempt,
+        }),
+        ...(updateCustomerDto.phone !== undefined && {
+          phone: updateCustomerDto.phone,
+        }),
+        ...(updateCustomerDto.address !== undefined && {
+          address: updateCustomerDto.address,
+        }),
+        ...(updateCustomerDto.businessName !== undefined && {
+          businessName: updateCustomerDto.businessName,
+        }),
       },
       include: {
         vehicles: true,
@@ -148,12 +186,13 @@ export class CustomersService {
     });
 
     // Update SMS preferences if provided and customer has phone
-    if (updatedCustomer.phone && (
-      updateCustomerDto.smsOptedIn !== undefined ||
-      updateCustomerDto.smsAppointmentReminders !== undefined ||
-      updateCustomerDto.smsServiceUpdates !== undefined ||
-      updateCustomerDto.smsPromotional !== undefined
-    )) {
+    if (
+      updatedCustomer.phone &&
+      (updateCustomerDto.smsOptedIn !== undefined ||
+        updateCustomerDto.smsAppointmentReminders !== undefined ||
+        updateCustomerDto.smsServiceUpdates !== undefined ||
+        updateCustomerDto.smsPromotional !== undefined)
+    ) {
       // Check if SMS preferences exist
       const existingPrefs = await this.prisma.smsPreference.findUnique({
         where: { customerId: id },
@@ -161,32 +200,45 @@ export class CustomersService {
 
       if (existingPrefs) {
         // Update existing preferences
-        await this.prisma.smsPreference.update({
-          where: { customerId: id },
-          data: {
-            ...(updateCustomerDto.smsOptedIn !== undefined && { optedIn: updateCustomerDto.smsOptedIn }),
-            ...(updateCustomerDto.smsAppointmentReminders !== undefined && { appointmentReminders: updateCustomerDto.smsAppointmentReminders }),
-            ...(updateCustomerDto.smsServiceUpdates !== undefined && { serviceUpdates: updateCustomerDto.smsServiceUpdates }),
-            ...(updateCustomerDto.smsPromotional !== undefined && { promotional: updateCustomerDto.smsPromotional }),
-          },
-        }).catch(err => {
-          console.error('Failed to update SMS preferences:', err);
-        });
+        await this.prisma.smsPreference
+          .update({
+            where: { customerId: id },
+            data: {
+              ...(updateCustomerDto.smsOptedIn !== undefined && {
+                optedIn: updateCustomerDto.smsOptedIn,
+              }),
+              ...(updateCustomerDto.smsAppointmentReminders !== undefined && {
+                appointmentReminders: updateCustomerDto.smsAppointmentReminders,
+              }),
+              ...(updateCustomerDto.smsServiceUpdates !== undefined && {
+                serviceUpdates: updateCustomerDto.smsServiceUpdates,
+              }),
+              ...(updateCustomerDto.smsPromotional !== undefined && {
+                promotional: updateCustomerDto.smsPromotional,
+              }),
+            },
+          })
+          .catch((err) => {
+            console.error('Failed to update SMS preferences:', err);
+          });
       } else {
         // Create new preferences
-        await this.prisma.smsPreference.create({
-          data: {
-            customer: {
-              connect: { id },
+        await this.prisma.smsPreference
+          .create({
+            data: {
+              customer: {
+                connect: { id },
+              },
+              optedIn: updateCustomerDto.smsOptedIn ?? true,
+              appointmentReminders:
+                updateCustomerDto.smsAppointmentReminders ?? true,
+              serviceUpdates: updateCustomerDto.smsServiceUpdates ?? true,
+              promotional: updateCustomerDto.smsPromotional ?? false,
             },
-            optedIn: updateCustomerDto.smsOptedIn ?? true,
-            appointmentReminders: updateCustomerDto.smsAppointmentReminders ?? true,
-            serviceUpdates: updateCustomerDto.smsServiceUpdates ?? true,
-            promotional: updateCustomerDto.smsPromotional ?? false,
-          },
-        }).catch(err => {
-          console.error('Failed to create SMS preferences:', err);
-        });
+          })
+          .catch((err) => {
+            console.error('Failed to create SMS preferences:', err);
+          });
       }
     }
 
@@ -220,7 +272,7 @@ export class CustomersService {
 
     if (hasInvoices > 0 || hasAppointments > 0) {
       throw new BadRequestException(
-        'Cannot delete customer with existing invoices or appointments.',
+        'Cannot delete customer with existing invoices or appointments.'
       );
     }
 
@@ -244,5 +296,4 @@ export class CustomersService {
   async search(searchTerm: string, userId: string, userRole: string) {
     return this.customerRepository.search(searchTerm);
   }
-
 }

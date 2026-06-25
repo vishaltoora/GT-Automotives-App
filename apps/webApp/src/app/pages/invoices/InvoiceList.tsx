@@ -48,7 +48,6 @@ import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { PaymentMethod } from '../../../enums';
 
-
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -73,7 +72,9 @@ const InvoiceList: React.FC = () => {
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState<Invoice | null>(null);
+  const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState<Invoice | null>(
+    null
+  );
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [invoiceForEmail, setInvoiceForEmail] = useState<Invoice | null>(null);
 
@@ -137,14 +138,19 @@ const InvoiceList: React.FC = () => {
 
   const handleSearch = async () => {
     try {
-      const hasFilters = searchParams.status || searchParams.search || searchParams.companyId || searchParams.startDate || searchParams.endDate;
+      const hasFilters =
+        searchParams.status ||
+        searchParams.search ||
+        searchParams.companyId ||
+        searchParams.startDate ||
+        searchParams.endDate;
 
       const filtered = hasFilters
         ? await invoiceService.searchInvoices({
             // Pass combined search to both customerName and invoiceNumber
             customerName: searchParams.search || undefined,
             invoiceNumber: searchParams.search || undefined,
-            status: searchParams.status as any || undefined,
+            status: (searchParams.status as any) || undefined,
             companyId: searchParams.companyId || undefined,
             startDate: searchParams.startDate || undefined,
             endDate: searchParams.endDate || undefined,
@@ -158,7 +164,10 @@ const InvoiceList: React.FC = () => {
     }
   };
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (
+    _event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
     setPage(value);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -166,7 +175,6 @@ const InvoiceList: React.FC = () => {
   const handlePrint = (invoice: Invoice) => {
     invoiceService.printInvoice(invoice);
   };
-
 
   const handleDelete = async (invoice: Invoice) => {
     const confirmed = await confirm({
@@ -202,7 +210,10 @@ const InvoiceList: React.FC = () => {
     if (!invoiceToMarkPaid) return;
 
     try {
-      await invoiceService.markInvoiceAsPaid(invoiceToMarkPaid.id, paymentMethod);
+      await invoiceService.markInvoiceAsPaid(
+        invoiceToMarkPaid.id,
+        paymentMethod
+      );
       loadInvoices(); // Refresh the list
       setInvoiceToMarkPaid(null);
     } catch (error) {
@@ -211,54 +222,50 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleSendEmail = async (invoice: Invoice) => {
-    // If customer has no email, open the email prompt dialog
-    if (!invoice.customer?.email) {
-      setInvoiceForEmail(invoice);
-      setEmailDialogOpen(true);
-      return;
-    }
-
-    // Customer has email, confirm and send directly
-    const confirmed = await confirm({
-      title: 'Send Invoice Email',
-      message: `Send invoice ${invoice.invoiceNumber} to ${invoice.customer.email}?\n\nThis will generate a PDF and send it via email to the customer.`,
-      confirmText: 'Send Email',
-      cancelText: 'Cancel',
-    });
-
-    if (confirmed) {
-      try {
-        await invoiceService.sendInvoiceEmail(invoice.id);
-        await confirm({
-          title: 'Invoice Sent Successfully!',
-          message: `Invoice ${invoice.invoiceNumber} has been emailed to ${invoice.customer.email}`,
-          confirmText: 'OK',
-          showCancelButton: false,
-        });
-      } catch (error) {
-        showApiError(error, 'Failed to send invoice email');
-      }
-    }
+    // Always open the dialog so the user can pick which email(s) to send to
+    setInvoiceForEmail(invoice);
+    setEmailDialogOpen(true);
   };
 
-  const handleEmailPromptSubmit = async (email: string, saveToCustomer: boolean) => {
+  const handleEmailPromptSubmit = async (
+    emails: string[],
+    saveToCustomer: boolean
+  ) => {
     if (!invoiceForEmail) return;
+    const invoice = invoiceForEmail;
 
     try {
-      const result = await invoiceService.sendInvoiceEmail(invoiceForEmail.id, email, saveToCustomer);
-      await confirm({
-        title: 'Invoice Sent Successfully!',
-        message: `Invoice ${invoiceForEmail.invoiceNumber} has been emailed to ${result.emailUsed || email}${saveToCustomer ? '\n\nEmail has been saved to customer profile.' : ''}`,
-        confirmText: 'OK',
-        showCancelButton: false,
-      });
+      const result = await invoiceService.sendInvoiceEmail(
+        invoice.id,
+        emails,
+        saveToCustomer
+      );
+
+      // Close the email dialog first so its loading spinner doesn't linger
+      // behind the success confirmation dialog.
+      setEmailDialogOpen(false);
+      setInvoiceForEmail(null);
+
       // Refresh invoices to show updated customer email if saved
       if (saveToCustomer) {
         loadInvoices();
       }
+
+      await confirm({
+        title: 'Invoice Sent Successfully!',
+        message: `Invoice ${invoice.invoiceNumber} has been emailed to ${
+          result.emailUsed || emails.join(', ')
+        }${
+          saveToCustomer
+            ? '\n\nNew emails have been saved to the customer profile.'
+            : ''
+        }`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
     } catch (error) {
       showApiError(error, 'Failed to send invoice email');
-      throw error; // Re-throw to keep dialog open
+      throw error; // Re-throw to keep dialog open on failure
     }
   };
 
@@ -269,7 +276,16 @@ const InvoiceList: React.FC = () => {
     setEditingInvoice(null);
     // Optionally navigate to the invoice details (only for new invoices)
     if (!editingInvoice) {
-      const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+      const basePath =
+        role === 'admin'
+          ? '/admin'
+          : role === 'supervisor'
+          ? '/supervisor'
+          : role === 'staff'
+          ? '/staff'
+          : role === 'accountant'
+          ? '/accountant'
+          : '/customer';
       navigate(`${basePath}/invoices/${invoice.id}`);
     }
   };
@@ -315,8 +331,10 @@ const InvoiceList: React.FC = () => {
     return date.toLocaleDateString('en-US', { timeZone: 'UTC' });
   };
 
-  const canCreateInvoice = role === 'staff' || role === 'supervisor' || role === 'admin';
-  const canManageInvoice = role === 'staff' || role === 'supervisor' || role === 'admin';
+  const canCreateInvoice =
+    role === 'staff' || role === 'supervisor' || role === 'admin';
+  const canManageInvoice =
+    role === 'staff' || role === 'supervisor' || role === 'admin';
   const canDeleteInvoice = role === 'admin';
 
   const getInvoiceActions = (invoice: Invoice): ActionItem[] => {
@@ -326,7 +344,16 @@ const InvoiceList: React.FC = () => {
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => {
-          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+          const basePath =
+            role === 'admin'
+              ? '/admin'
+              : role === 'supervisor'
+              ? '/supervisor'
+              : role === 'staff'
+              ? '/staff'
+              : role === 'accountant'
+              ? '/accountant'
+              : '/customer';
           navigate(`${basePath}/invoices/${invoice.id}`);
         },
         show: true,
@@ -378,14 +405,16 @@ const InvoiceList: React.FC = () => {
 
   return (
     <Box sx={{ p: { xs: 1, sm: 3 } }}>
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        mb: { xs: 2, sm: 3 },
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: { xs: 2, sm: 0 },
-        alignItems: isMobile ? 'stretch' : 'center'
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          mb: { xs: 2, sm: 3 },
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: { xs: 2, sm: 0 },
+          alignItems: isMobile ? 'stretch' : 'center',
+        }}
+      >
         <Typography variant={isMobile ? 'h5' : 'h4'} component="h1">
           Invoices
         </Typography>
@@ -413,9 +442,27 @@ const InvoiceList: React.FC = () => {
           }}
           onClick={() => isMobile && setFiltersExpanded(!filtersExpanded)}
         >
-          <FilterListIcon sx={{ color: theme.palette.primary.main, fontSize: isMobile ? 20 : 24 }} />
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
-            Filters {isMobile && `(${[searchParams.status, searchParams.search, searchParams.companyId, searchParams.startDate, searchParams.endDate].filter(Boolean).length})`}
+          <FilterListIcon
+            sx={{
+              color: theme.palette.primary.main,
+              fontSize: isMobile ? 20 : 24,
+            }}
+          />
+          <Typography
+            variant={isMobile ? 'subtitle1' : 'h6'}
+            sx={{ fontWeight: 600 }}
+          >
+            Filters{' '}
+            {isMobile &&
+              `(${
+                [
+                  searchParams.status,
+                  searchParams.search,
+                  searchParams.companyId,
+                  searchParams.startDate,
+                  searchParams.endDate,
+                ].filter(Boolean).length
+              })`}
           </Typography>
           {isMobile && (
             <IconButton size="small" sx={{ ml: 'auto' }}>
@@ -449,7 +496,9 @@ const InvoiceList: React.FC = () => {
                 select
                 label="Status"
                 value={searchParams.status}
-                onChange={(e) => setSearchParams({ ...searchParams, status: e.target.value })}
+                onChange={(e) =>
+                  setSearchParams({ ...searchParams, status: e.target.value })
+                }
                 size={isMobile ? 'small' : 'medium'}
               >
                 <MenuItem value="">All</MenuItem>
@@ -466,7 +515,12 @@ const InvoiceList: React.FC = () => {
                 select
                 label="Company"
                 value={searchParams.companyId}
-                onChange={(e) => setSearchParams({ ...searchParams, companyId: e.target.value })}
+                onChange={(e) =>
+                  setSearchParams({
+                    ...searchParams,
+                    companyId: e.target.value,
+                  })
+                }
                 size={isMobile ? 'small' : 'medium'}
               >
                 <MenuItem value="">All Companies</MenuItem>
@@ -483,7 +537,12 @@ const InvoiceList: React.FC = () => {
                 type="date"
                 label="Start Date"
                 value={searchParams.startDate}
-                onChange={(e) => setSearchParams({ ...searchParams, startDate: e.target.value })}
+                onChange={(e) =>
+                  setSearchParams({
+                    ...searchParams,
+                    startDate: e.target.value,
+                  })
+                }
                 size={isMobile ? 'small' : 'medium'}
                 InputLabelProps={{ shrink: true }}
               />
@@ -494,7 +553,9 @@ const InvoiceList: React.FC = () => {
                 type="date"
                 label="End Date"
                 value={searchParams.endDate}
-                onChange={(e) => setSearchParams({ ...searchParams, endDate: e.target.value })}
+                onChange={(e) =>
+                  setSearchParams({ ...searchParams, endDate: e.target.value })
+                }
                 size={isMobile ? 'small' : 'medium'}
                 InputLabelProps={{ shrink: true }}
               />
@@ -521,31 +582,57 @@ const InvoiceList: React.FC = () => {
                   p: 1.5,
                   border: `1px solid ${theme.palette.divider}`,
                   borderLeft: `4px solid ${
-                    invoice.status === 'PAID' ? theme.palette.success.main :
-                    invoice.status === 'PENDING' ? theme.palette.warning.main :
-                    invoice.status === 'CANCELLED' ? theme.palette.error.main :
-                    theme.palette.grey[400]
+                    invoice.status === 'PAID'
+                      ? theme.palette.success.main
+                      : invoice.status === 'PENDING'
+                      ? theme.palette.warning.main
+                      : invoice.status === 'CANCELLED'
+                      ? theme.palette.error.main
+                      : theme.palette.grey[400]
                   }`,
                 }}
               >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 0.75,
+                  }}
+                >
                   <Box sx={{ flex: 1 }}>
                     <Link
                       onClick={() => {
-                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+                        const basePath =
+                          role === 'admin'
+                            ? '/admin'
+                            : role === 'supervisor'
+                            ? '/supervisor'
+                            : role === 'staff'
+                            ? '/staff'
+                            : role === 'accountant'
+                            ? '/accountant'
+                            : '/customer';
                         navigate(`${basePath}/invoices/${invoice.id}`);
                       }}
                       sx={{
                         cursor: 'pointer',
                         textDecoration: 'none',
-                        '&:hover': { textDecoration: 'underline' }
+                        '&:hover': { textDecoration: 'underline' },
                       }}
                     >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25, fontSize: '0.875rem' }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: 700, mb: 0.25, fontSize: '0.875rem' }}
+                      >
                         {invoice.invoiceNumber}
                       </Typography>
                     </Link>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.7rem' }}
+                    >
                       {formatDate(invoice.invoiceDate || invoice.createdAt)}
                     </Typography>
                   </Box>
@@ -556,11 +643,16 @@ const InvoiceList: React.FC = () => {
                   />
                 </Box>
 
-                <Typography variant="body2" sx={{ mb: 0.75, fontSize: '0.8rem' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ mb: 0.75, fontSize: '0.8rem' }}
+                >
                   {(() => {
                     const customer = invoice.customer;
                     if (customer?.firstName || customer?.lastName) {
-                      const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+                      const fullName = `${customer.firstName || ''} ${
+                        customer.lastName || ''
+                      }`.trim();
                       if (customer.businessName) {
                         return `${fullName} (${customer.businessName})`;
                       }
@@ -570,7 +662,9 @@ const InvoiceList: React.FC = () => {
                   })()}
                 </Typography>
 
-                <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
+                <Box
+                  sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}
+                >
                   <Chip
                     label={invoice.status}
                     color={getStatusColor(invoice.status)}
@@ -589,17 +683,44 @@ const InvoiceList: React.FC = () => {
                 <Divider sx={{ my: 1 }} />
 
                 <Stack spacing={0.5}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.7rem' }}
+                    >
                       Total
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: theme.palette.success.main, fontSize: '0.875rem' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 700,
+                        color: theme.palette.success.main,
+                        fontSize: '0.875rem',
+                      }}
+                    >
                       {formatCurrency(invoice.total)}
                     </Typography>
                   </Box>
                   {invoice.paymentMethod && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.7rem' }}
+                      >
                         Payment
                       </Typography>
                       <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
@@ -634,25 +755,38 @@ const InvoiceList: React.FC = () => {
                   <TableCell>
                     <Link
                       onClick={() => {
-                        const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
+                        const basePath =
+                          role === 'admin'
+                            ? '/admin'
+                            : role === 'supervisor'
+                            ? '/supervisor'
+                            : role === 'staff'
+                            ? '/staff'
+                            : role === 'accountant'
+                            ? '/accountant'
+                            : '/customer';
                         navigate(`${basePath}/invoices/${invoice.id}`);
                       }}
                       sx={{
                         cursor: 'pointer',
                         textDecoration: 'none',
                         fontWeight: 600,
-                        '&:hover': { textDecoration: 'underline' }
+                        '&:hover': { textDecoration: 'underline' },
                       }}
                     >
                       {invoice.invoiceNumber}
                     </Link>
                   </TableCell>
-                  <TableCell>{formatDate(invoice.invoiceDate || invoice.createdAt)}</TableCell>
+                  <TableCell>
+                    {formatDate(invoice.invoiceDate || invoice.createdAt)}
+                  </TableCell>
                   <TableCell>
                     {(() => {
                       const customer = invoice.customer;
                       if (customer?.firstName || customer?.lastName) {
-                        const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+                        const fullName = `${customer.firstName || ''} ${
+                          customer.lastName || ''
+                        }`.trim();
                         if (customer.businessName) {
                           return `${fullName} (${customer.businessName})`;
                         }
@@ -665,7 +799,9 @@ const InvoiceList: React.FC = () => {
                     <Chip
                       label={invoice.company?.name || 'Unknown'}
                       size="small"
-                      color={getCompanyColor(invoice.company?.name || 'Unknown')}
+                      color={getCompanyColor(
+                        invoice.company?.name || 'Unknown'
+                      )}
                       variant="filled"
                     />
                   </TableCell>
@@ -678,7 +814,9 @@ const InvoiceList: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    {invoice.paymentMethod ? invoice.paymentMethod.replace(/_/g, ' ') : '-'}
+                    {invoice.paymentMethod
+                      ? invoice.paymentMethod.replace(/_/g, ' ')
+                      : '-'}
                   </TableCell>
                   <TableCell align="center">
                     <ActionsMenu
@@ -703,7 +841,14 @@ const InvoiceList: React.FC = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: { xs: 2, sm: 3 }, mb: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            mt: { xs: 2, sm: 3 },
+            mb: 2,
+          }}
+        >
           <Pagination
             count={totalPages}
             page={page}
@@ -738,18 +883,29 @@ const InvoiceList: React.FC = () => {
         invoiceNumber={invoiceToMarkPaid?.invoiceNumber || ''}
       />
 
-      {/* Email Prompt Dialog - For sending email when customer has no email */}
+      {/* Email Prompt Dialog - Select one or more recipient emails */}
       <EmailPromptDialog
         open={emailDialogOpen}
         onClose={() => {
           setEmailDialogOpen(false);
           setInvoiceForEmail(null);
         }}
-        onSubmit={handleEmailPromptSubmit}
+        multiple
+        onSubmit={async () => undefined}
+        onSubmitMultiple={handleEmailPromptSubmit}
+        availableEmails={(() => {
+          const customer = invoiceForEmail?.customer;
+          return [
+            ...(customer?.email ? [customer.email] : []),
+            ...(customer?.additionalEmails ?? []),
+          ];
+        })()}
         customerName={(() => {
           const customer = invoiceForEmail?.customer;
           if (customer?.firstName || customer?.lastName) {
-            return `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+            return `${customer.firstName || ''} ${
+              customer.lastName || ''
+            }`.trim();
           }
           return 'Customer';
         })()}
