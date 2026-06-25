@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import { InvoiceRepository } from '../invoices/repositories/invoice.repository';
 import { Invoice, InvoiceItemType, Appointment } from '@prisma/client';
@@ -46,7 +51,7 @@ export class AppointmentInvoiceService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly invoiceRepository: InvoiceRepository,
+    private readonly invoiceRepository: InvoiceRepository
   ) {}
 
   /**
@@ -54,7 +59,7 @@ export class AppointmentInvoiceService {
    * Automatically calculates GST (5%) and PST (7%) from the service amount
    */
   async createInvoiceFromAppointment(
-    params: CreateInvoiceFromAppointmentParams,
+    params: CreateInvoiceFromAppointmentParams
   ): Promise<Invoice> {
     const {
       appointmentId,
@@ -93,15 +98,27 @@ export class AppointmentInvoiceService {
 
     if (existingInvoice) {
       this.logger.warn(
-        `Invoice already exists for appointment ${appointmentId}: ${existingInvoice.invoiceNumber}`,
+        `Invoice already exists for appointment ${appointmentId}: ${existingInvoice.invoiceNumber}`
       );
       throw new BadRequestException(
-        `Invoice ${existingInvoice.invoiceNumber} already exists for this appointment`,
+        `Invoice ${existingInvoice.invoiceNumber} already exists for this appointment`
       );
     }
 
     // 3. Calculate taxes (GST 5% + PST 7%) - tip is NOT taxed
     const taxes = calculateTaxes(serviceAmount);
+
+    // PST-exempt customers are charged 0% PST
+    const apptCustomer = await this.prisma.customer.findUnique({
+      where: { id: appointment.customerId },
+      select: { pstExempt: true },
+    });
+    if (apptCustomer?.pstExempt) {
+      taxes.pstRate = 0;
+      taxes.pstAmount = 0;
+      taxes.totalAmount = Number((taxes.subtotal + taxes.gstAmount).toFixed(2));
+    }
+
     const tip = tipAmount || 0;
     const totalWithTip = taxes.totalAmount + tip;
 
@@ -121,7 +138,9 @@ export class AppointmentInvoiceService {
     const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber();
 
     this.logger.log(
-      `Creating invoice for appointment ${appointmentId}: ${serviceDescription} - $${totalWithTip}${tip > 0 ? ` (includes $${tip} tip)` : ''}`,
+      `Creating invoice for appointment ${appointmentId}: ${serviceDescription} - $${totalWithTip}${
+        tip > 0 ? ` (includes $${tip} tip)` : ''
+      }`
     );
 
     // 7. Build invoice items array. If a product sale is included, split it
@@ -150,9 +169,7 @@ export class AppointmentInvoiceService {
     if (productAmount > 0) {
       const productLabel =
         productSaleItems && productSaleItems.length > 0
-          ? productSaleItems
-              .map((p) => PRODUCT_LABELS[p] || p)
-              .join(', ')
+          ? productSaleItems.map((p) => PRODUCT_LABELS[p] || p).join(', ')
           : 'Product Sale';
       // Use TIRE itemType when only tires, otherwise PART for the generic case.
       const onlyTires =
@@ -194,11 +211,13 @@ export class AppointmentInvoiceService {
         createdBy: userId,
         paidAt: status === 'PAID' ? new Date() : undefined,
       },
-      invoiceItems,
+      invoiceItems
     );
 
     this.logger.log(
-      `Invoice ${invoiceNumber} created successfully for appointment ${appointmentId} (status: ${status}, method: ${paymentMethod})${squarePaymentId ? ` (linked to Square payment ${squarePaymentId})` : ''}`,
+      `Invoice ${invoiceNumber} created successfully for appointment ${appointmentId} (status: ${status}, method: ${paymentMethod})${
+        squarePaymentId ? ` (linked to Square payment ${squarePaymentId})` : ''
+      }`
     );
 
     return invoice;
@@ -223,7 +242,9 @@ export class AppointmentInvoiceService {
   /**
    * Get invoice for an appointment (if exists)
    */
-  async getInvoiceForAppointment(appointmentId: string): Promise<Invoice | null> {
+  async getInvoiceForAppointment(
+    appointmentId: string
+  ): Promise<Invoice | null> {
     return this.prisma.invoice.findFirst({
       where: { appointmentId },
       include: {

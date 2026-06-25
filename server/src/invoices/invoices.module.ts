@@ -8,9 +8,10 @@ import { ServiceRepository } from './repositories/service.repository';
 import { PrismaService } from '@gt-automotive/database';
 import { PdfModule } from '../pdf/pdf.module';
 import { EmailModule } from '../email/email.module';
+import { CarfaxModule } from '../carfax/carfax.module';
 
 @Module({
-  imports: [PdfModule, EmailModule],
+  imports: [PdfModule, EmailModule, CarfaxModule],
   controllers: [InvoicesController],
   providers: [
     InvoicesService,

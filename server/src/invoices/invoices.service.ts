@@ -1,13 +1,30 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InvoiceRepository } from './repositories/invoice.repository';
-import { CreateInvoiceDto, CreateServiceDto, UpdateInvoiceDto, UpdateServiceDto } from '@gt-automotive/data';
-import { Invoice, InvoiceStatus, PaymentMethod, InvoiceItemType } from '@prisma/client';
+import {
+  CreateInvoiceDto,
+  CreateServiceDto,
+  UpdateInvoiceDto,
+  UpdateServiceDto,
+} from '@gt-automotive/data';
+import {
+  Invoice,
+  InvoiceStatus,
+  PaymentMethod,
+  InvoiceItemType,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
 import { ServiceRepository } from './repositories/service.repository';
 import { PdfService } from '../pdf/pdf.service';
 import { EmailService } from '../email/email.service';
+import { CarfaxService } from '../carfax/carfax.service';
 
 @Injectable()
 export class InvoicesService {
@@ -18,15 +35,20 @@ export class InvoicesService {
     private readonly serviceRepository: ServiceRepository,
     private readonly pdfService: PdfService,
     private readonly emailService: EmailService,
+    private readonly carfaxService: CarfaxService
   ) {}
 
-  async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
+  async create(
+    createInvoiceDto: CreateInvoiceDto,
+    userId: string
+  ): Promise<Invoice> {
     let customerId = createInvoiceDto.customerId;
 
     // Create customer ONLY if customerData is provided AND no customerId exists
     // This prevents creating duplicate customers when an existing customer is selected
     if (!customerId && createInvoiceDto.customerData) {
-      const { firstName, lastName, businessName, address, phone, email } = createInvoiceDto.customerData;
+      const { firstName, lastName, businessName, address, phone, email } =
+        createInvoiceDto.customerData;
 
       try {
         // Create customer directly without user relationship
@@ -42,20 +64,26 @@ export class InvoicesService {
         const newCustomer = await this.customerRepository.create(customerData);
         customerId = newCustomer.id;
       } catch (error) {
-        throw new BadRequestException(`Failed to create customer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new BadRequestException(
+          `Failed to create customer: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        );
       }
     }
 
     // Validate that we have a customerId
     if (!customerId) {
-      throw new BadRequestException('Either customerId or customerData must be provided');
+      throw new BadRequestException(
+        'Either customerId or customerData must be provided'
+      );
     }
 
     // Calculate totals - handle discount items specially
     // TIPS are included in subtotal but NOT taxed
     let subtotal = 0;
     let taxableSubtotal = 0;
-    const items = createInvoiceDto.items.map(item => {
+    const items = createInvoiceDto.items.map((item) => {
       // For DISCOUNT items, the total should be negative
       // For DISCOUNT_PERCENTAGE items, calculate percentage of other items
       let total = item.quantity * item.unitPrice;
@@ -67,8 +95,13 @@ export class InvoicesService {
         // DISCOUNT_PERCENTAGE: unitPrice is the percentage value
         // Calculate percentage of non-discount items (excluding TIPS)
         const otherItemsSubtotal = createInvoiceDto.items
-          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE' && i.itemType !== 'TIPS')
-          .reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
+          .filter(
+            (i) =>
+              i.itemType !== 'DISCOUNT' &&
+              i.itemType !== 'DISCOUNT_PERCENTAGE' &&
+              i.itemType !== 'TIPS'
+          )
+          .reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
         total = -(otherItemsSubtotal * item.unitPrice) / 100;
       }
 
@@ -94,7 +127,10 @@ export class InvoicesService {
     let gstAmount: number | undefined;
     let pstAmount: number | undefined;
 
-    if (createInvoiceDto.gstRate !== undefined || createInvoiceDto.pstRate !== undefined) {
+    if (
+      createInvoiceDto.gstRate !== undefined ||
+      createInvoiceDto.pstRate !== undefined
+    ) {
       // Use separate GST/PST rates
       gstRate = createInvoiceDto.gstRate ?? 0;
       pstRate = createInvoiceDto.pstRate ?? 0;
@@ -106,9 +142,17 @@ export class InvoicesService {
       taxRate = createInvoiceDto.taxRate ?? 0.0825;
     }
 
+    // PST-exempt customers are charged 0% PST regardless of what the client sent.
+    // This server-side gate is authoritative.
+    const customerForTax = await this.customerRepository.findById(customerId);
+    if (customerForTax?.pstExempt) {
+      pstRate = 0;
+      pstAmount = 0;
+      taxRate = gstRate ?? 0;
+    }
+
     const taxAmount = taxableSubtotal * taxRate;
     const total = subtotal + taxAmount;
-
 
     // Generate invoice number
     const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber();
@@ -118,7 +162,9 @@ export class InvoicesService {
       {
         invoiceNumber,
         customer: { connect: { id: customerId } },
-        vehicle: createInvoiceDto.vehicleId ? { connect: { id: createInvoiceDto.vehicleId } } : undefined,
+        vehicle: createInvoiceDto.vehicleId
+          ? { connect: { id: createInvoiceDto.vehicleId } }
+          : undefined,
         company: { connect: { id: createInvoiceDto.companyId } },
         subtotal: new Decimal(subtotal),
         taxRate: new Decimal(taxRate),
@@ -133,7 +179,9 @@ export class InvoicesService {
         notes: createInvoiceDto.notes,
         createdBy: userId,
         paidAt: createInvoiceDto.paymentMethod ? new Date() : undefined,
-        invoiceDate: createInvoiceDto.invoiceDate ? new Date(createInvoiceDto.invoiceDate) : new Date(),
+        invoiceDate: createInvoiceDto.invoiceDate
+          ? new Date(createInvoiceDto.invoiceDate)
+          : new Date(),
       },
       items
     );
@@ -147,6 +195,11 @@ export class InvoicesService {
       details: invoice as any,
     });
 
+    // Report to CARFAX if the invoice was created already paid (non-blocking).
+    if (invoice.status === 'PAID') {
+      void this.carfaxService.reportInvoice(invoice.id).catch(() => undefined);
+    }
+
     return invoice;
   }
 
@@ -159,7 +212,7 @@ export class InvoicesService {
       }
       return this.invoiceRepository.findByCustomer(customerId, true);
     }
-    
+
     // Staff and Admin can see all invoices
     return this.invoiceRepository.findAll({
       include: {
@@ -178,7 +231,7 @@ export class InvoicesService {
 
   async findOne(id: string, user: any): Promise<Invoice> {
     const invoice = await this.invoiceRepository.findWithDetails(id);
-    
+
     if (!invoice) {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
@@ -191,7 +244,11 @@ export class InvoicesService {
     return invoice;
   }
 
-  async update(id: string, updateInvoiceDto: UpdateInvoiceDto, userId: string): Promise<Invoice> {
+  async update(
+    id: string,
+    updateInvoiceDto: UpdateInvoiceDto,
+    userId: string
+  ): Promise<Invoice> {
     const invoice = await this.invoiceRepository.findById(id);
 
     if (!invoice) {
@@ -202,6 +259,12 @@ export class InvoicesService {
     // Log will track changes for audit purposes
     const oldValue = { ...invoice };
 
+    // PST-exempt customers are always charged 0% PST (authoritative server-side gate)
+    const customerForTax = await this.customerRepository.findById(
+      invoice.customerId
+    );
+    const pstExempt = !!customerForTax?.pstExempt;
+
     // Prepare update data
     const updateData: any = {};
 
@@ -211,13 +274,15 @@ export class InvoicesService {
       items = updateInvoiceDto.items.map(({ tire: _tire, ...itemFields }) => ({
         ...itemFields,
         itemType: itemFields.itemType as InvoiceItemType,
-        total: new Decimal(itemFields.total || itemFields.quantity * itemFields.unitPrice),
+        total: new Decimal(
+          itemFields.total || itemFields.quantity * itemFields.unitPrice
+        ),
         unitPrice: new Decimal(itemFields.unitPrice),
       }));
 
       // Recalculate totals based on new items - handle discount items specially
       let subtotal = 0;
-      items.forEach(item => {
+      items.forEach((item) => {
         let total = item.quantity * Number(item.unitPrice);
 
         if (item.itemType === 'DISCOUNT') {
@@ -227,8 +292,15 @@ export class InvoicesService {
           // DISCOUNT_PERCENTAGE: unitPrice is the percentage value
           // Calculate percentage of non-discount items
           const otherItemsSubtotal = (items || [])
-            .filter((i: any) => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE')
-            .reduce((sum: number, i: any) => sum + (i.quantity * Number(i.unitPrice)), 0);
+            .filter(
+              (i: any) =>
+                i.itemType !== 'DISCOUNT' &&
+                i.itemType !== 'DISCOUNT_PERCENTAGE'
+            )
+            .reduce(
+              (sum: number, i: any) => sum + i.quantity * Number(i.unitPrice),
+              0
+            );
           total = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;
         }
 
@@ -236,8 +308,16 @@ export class InvoicesService {
       });
 
       // Use provided rates or keep existing ones
-      const gstRate = updateInvoiceDto.gstRate !== undefined ? updateInvoiceDto.gstRate : Number(invoice.gstRate || 0);
-      const pstRate = updateInvoiceDto.pstRate !== undefined ? updateInvoiceDto.pstRate : Number(invoice.pstRate || 0);
+      const gstRate =
+        updateInvoiceDto.gstRate !== undefined
+          ? updateInvoiceDto.gstRate
+          : Number(invoice.gstRate || 0);
+      // PST-exempt customers are forced to 0% PST
+      const pstRate = pstExempt
+        ? 0
+        : updateInvoiceDto.pstRate !== undefined
+        ? updateInvoiceDto.pstRate
+        : Number(invoice.pstRate || 0);
       const taxRate = gstRate + pstRate;
       const gstAmount = subtotal * gstRate;
       const pstAmount = subtotal * pstRate;
@@ -257,7 +337,11 @@ export class InvoicesService {
       if (updateInvoiceDto.gstRate !== undefined) {
         updateData.gstRate = new Decimal(updateInvoiceDto.gstRate);
       }
-      if (updateInvoiceDto.pstRate !== undefined) {
+      if (pstExempt) {
+        // PST-exempt customers never carry PST
+        updateData.pstRate = new Decimal(0);
+        updateData.pstAmount = new Decimal(0);
+      } else if (updateInvoiceDto.pstRate !== undefined) {
         updateData.pstRate = new Decimal(updateInvoiceDto.pstRate);
       }
       if (updateInvoiceDto.subtotal !== undefined) {
@@ -282,7 +366,9 @@ export class InvoicesService {
       updateData.notes = updateInvoiceDto.notes;
     }
     if (updateInvoiceDto.vehicleId !== undefined) {
-      updateData.vehicle = updateInvoiceDto.vehicleId ? { connect: { id: updateInvoiceDto.vehicleId } } : { disconnect: true };
+      updateData.vehicle = updateInvoiceDto.vehicleId
+        ? { connect: { id: updateInvoiceDto.vehicleId } }
+        : { disconnect: true };
     }
     if (updateInvoiceDto.paidAt) {
       updateData.paidAt = new Date(updateInvoiceDto.paidAt);
@@ -331,14 +417,17 @@ export class InvoicesService {
     });
   }
 
-  async searchInvoices(searchParams: {
-    customerName?: string;
-    invoiceNumber?: string;
-    startDate?: string;
-    endDate?: string;
-    status?: InvoiceStatus;
-    companyId?: string;
-  }, user: any): Promise<Invoice[]> {
+  async searchInvoices(
+    searchParams: {
+      customerName?: string;
+      invoiceNumber?: string;
+      startDate?: string;
+      endDate?: string;
+      status?: InvoiceStatus;
+      companyId?: string;
+    },
+    user: any
+  ): Promise<Invoice[]> {
     const params: any = { ...searchParams };
 
     if (searchParams.startDate) {
@@ -353,7 +442,7 @@ export class InvoicesService {
 
     // Filter for customers
     if (user.role === 'CUSTOMER') {
-      return invoices.filter(inv => inv.customerId === user.customerId);
+      return invoices.filter((inv) => inv.customerId === user.customerId);
     }
 
     return invoices;
@@ -362,7 +451,9 @@ export class InvoicesService {
   async getDailyCashReport(date: string, user: any): Promise<any> {
     // Only staff and admin can view cash reports
     if (user.role === 'CUSTOMER') {
-      throw new ForbiddenException('You do not have permission to view cash reports');
+      throw new ForbiddenException(
+        'You do not have permission to view cash reports'
+      );
     }
 
     const reportDate = new Date(date);
@@ -378,9 +469,13 @@ export class InvoicesService {
     return this.invoiceRepository.findByCustomer(customerId, true);
   }
 
-  async markAsPaid(id: string, paymentMethod: PaymentMethod, userId: string): Promise<Invoice> {
+  async markAsPaid(
+    id: string,
+    paymentMethod: PaymentMethod,
+    userId: string
+  ): Promise<Invoice> {
     const invoice = await this.invoiceRepository.findById(id);
-    
+
     if (!invoice) {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
@@ -404,6 +499,9 @@ export class InvoicesService {
       newValue: { paymentMethod, paidAt: new Date() } as any,
     });
 
+    // Report the now-paid service to CARFAX (non-blocking).
+    void this.carfaxService.reportInvoice(id).catch(() => undefined);
+
     return updated;
   }
 
@@ -414,9 +512,13 @@ export class InvoicesService {
 
   async createService(createServiceDto: CreateServiceDto) {
     // Check if service with same name already exists
-    const existing = await this.serviceRepository.findByName(createServiceDto.name);
+    const existing = await this.serviceRepository.findByName(
+      createServiceDto.name
+    );
     if (existing) {
-      throw new ConflictException(`Service with name "${createServiceDto.name}" already exists`);
+      throw new ConflictException(
+        `Service with name "${createServiceDto.name}" already exists`
+      );
     }
     return this.serviceRepository.create(createServiceDto);
   }
@@ -430,9 +532,13 @@ export class InvoicesService {
 
     // If name is being updated, check for conflicts
     if (updateServiceDto.name) {
-      const existing = await this.serviceRepository.findByName(updateServiceDto.name);
+      const existing = await this.serviceRepository.findByName(
+        updateServiceDto.name
+      );
       if (existing && existing.id !== id) {
-        throw new ConflictException(`Service with name "${updateServiceDto.name}" already exists`);
+        throw new ConflictException(
+          `Service with name "${updateServiceDto.name}" already exists`
+        );
       }
     }
 
@@ -448,7 +554,12 @@ export class InvoicesService {
     return this.serviceRepository.delete(id);
   }
 
-  async sendInvoiceEmail(invoiceId: string, userId: string, overrideEmail?: string, saveToCustomer?: boolean) {
+  async sendInvoiceEmail(
+    invoiceId: string,
+    userId: string,
+    emails?: string[],
+    saveToCustomer?: boolean
+  ) {
     // Get invoice with all relations including customer
     const invoice = await this.invoiceRepository.findWithDetails(invoiceId);
     if (!invoice) {
@@ -458,28 +569,69 @@ export class InvoicesService {
     // Get customer separately to ensure proper typing
     const customer = await this.customerRepository.findById(invoice.customerId);
 
-    // Use override email or customer email
-    const emailToUse = overrideEmail || customer?.email;
+    // Clean + de-duplicate the provided recipients
+    const providedEmails = Array.from(
+      new Set((emails ?? []).map((e) => e.trim()).filter((e) => e !== ''))
+    );
 
-    // Check if we have an email to send to
-    if (!emailToUse) {
-      throw new BadRequestException('No email address provided and customer does not have an email address');
+    // Use the explicitly selected recipients, falling back to the customer's primary email
+    const recipients =
+      providedEmails.length > 0
+        ? providedEmails
+        : customer?.email
+        ? [customer.email]
+        : [];
+
+    // Check if we have at least one email to send to
+    if (recipients.length === 0) {
+      throw new BadRequestException(
+        'No email address provided and customer does not have an email address'
+      );
     }
 
-    // If saveToCustomer is true and customer exists, update customer email
-    if (saveToCustomer && customer && overrideEmail && !customer.email) {
-      await this.customerRepository.update(customer.id, { email: overrideEmail });
+    // If saveToCustomer is true and customer exists, persist any new emails back to the customer
+    if (saveToCustomer && customer) {
+      const knownEmails = [
+        customer.email,
+        ...(customer.additionalEmails ?? []),
+      ].filter((e): e is string => !!e);
+      let primary = customer.email ?? undefined;
+      const additional = [...(customer.additionalEmails ?? [])];
+
+      for (const email of recipients) {
+        if (knownEmails.includes(email)) continue;
+        if (!primary) {
+          primary = email;
+        } else {
+          additional.push(email);
+        }
+        knownEmails.push(email);
+      }
+
+      const dedupedAdditional = Array.from(new Set(additional)).filter(
+        (e) => e !== primary
+      );
+
+      if (
+        primary !== (customer.email ?? undefined) ||
+        dedupedAdditional.length !== (customer.additionalEmails ?? []).length
+      ) {
+        await this.customerRepository.update(customer.id, {
+          email: primary,
+          additionalEmails: dedupedAdditional,
+        });
+      }
     }
 
     try {
       // Generate PDF
       const pdfBase64 = await this.pdfService.generateInvoicePdf(invoice);
 
-      // Send email
+      // Send email to all recipients
       const emailResult = await this.emailService.sendInvoiceEmail(
-        emailToUse,
+        recipients,
         invoice.invoiceNumber,
-        pdfBase64,
+        pdfBase64
       );
 
       // Check if email was sent successfully
@@ -494,17 +646,23 @@ export class InvoicesService {
         entityType: 'Invoice',
         entityId: invoiceId,
         details: {
-          email: emailToUse,
+          emails: recipients,
           invoiceNumber: invoice.invoiceNumber,
           messageId: emailResult.messageId,
-          emailSavedToCustomer: saveToCustomer && !!overrideEmail,
+          emailsSavedToCustomer: !!saveToCustomer,
         },
       });
 
-      return { success: true, message: 'Invoice email sent successfully', emailUsed: emailToUse };
+      return {
+        success: true,
+        message: 'Invoice email sent successfully',
+        emailUsed: recipients.join(', '),
+      };
     } catch (error) {
       throw new BadRequestException(
-        `Failed to send invoice email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to send invoice email: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }

@@ -17,17 +17,30 @@ export class EmailService {
 
   constructor(private readonly prisma: PrismaService) {
     this.enabled = process.env.EMAIL_ENABLED === 'true';
-    this.senderEmail = process.env.BREVO_SENDER_EMAIL || 'gt-automotives@outlook.com';
+    this.senderEmail =
+      process.env.BREVO_SENDER_EMAIL || 'gt-automotives@outlook.com';
     this.senderName = process.env.BREVO_SENDER_NAME || 'GT Automotives';
 
     // Load logo as base64 for email embedding
     try {
-      const logoPath = path.join(process.cwd(), 'apps', 'webApp', 'public', 'logo-email.png');
+      const logoPath = path.join(
+        process.cwd(),
+        'apps',
+        'webApp',
+        'public',
+        'logo-email.png'
+      );
       if (fs.existsSync(logoPath)) {
         const logoBuffer = fs.readFileSync(logoPath);
-        this.logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-        this.logger.log(`✅ Logo loaded for email embedding (${logoBuffer.length} bytes, base64: ${this.logoBase64.length} chars)`);
-        this.logger.log(`📸 Logo preview: ${this.logoBase64.substring(0, 100)}...`);
+        this.logoBase64 = `data:image/png;base64,${logoBuffer.toString(
+          'base64'
+        )}`;
+        this.logger.log(
+          `✅ Logo loaded for email embedding (${logoBuffer.length} bytes, base64: ${this.logoBase64.length} chars)`
+        );
+        this.logger.log(
+          `📸 Logo preview: ${this.logoBase64.substring(0, 100)}...`
+        );
       } else {
         // Fallback: use production URL
         this.logoBase64 = '';
@@ -42,7 +55,9 @@ export class EmailService {
       try {
         const apiKey = process.env.BREVO_API_KEY;
         if (!apiKey) {
-          this.logger.error('BREVO_API_KEY is not set - Email will be disabled');
+          this.logger.error(
+            'BREVO_API_KEY is not set - Email will be disabled'
+          );
           (this as any).enabled = false;
           return;
         }
@@ -56,11 +71,16 @@ export class EmailService {
         this.logger.log('✅ Email Service initialized with Brevo');
         this.logger.log(`📧 Sender: ${this.senderName} <${this.senderEmail}>`);
       } catch (error) {
-        this.logger.error('Failed to initialize Brevo SDK - Email will be disabled:', error);
+        this.logger.error(
+          'Failed to initialize Brevo SDK - Email will be disabled:',
+          error
+        );
         (this as any).enabled = false;
       }
     } else {
-      this.logger.warn('⚠️ Email Service is disabled (EMAIL_ENABLED is not true)');
+      this.logger.warn(
+        '⚠️ Email Service is disabled (EMAIL_ENABLED is not true)'
+      );
     }
   }
 
@@ -88,11 +108,19 @@ export class EmailService {
     customerId?: string;
     attachments?: Array<{ name: string; content: string }>; // Base64 encoded
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    this.logger.log(`[EMAIL] sendEmail called - enabled: ${this.enabled}, to: ${params.to}, type: ${params.type}`);
+    this.logger.log(
+      `[EMAIL] sendEmail called - enabled: ${this.enabled}, to: ${params.to}, type: ${params.type}`
+    );
 
     if (!this.enabled) {
-      this.logger.warn('[EMAIL] Email Service is DISABLED. Set EMAIL_ENABLED=true to enable.');
-      this.logger.warn('[EMAIL] Would send:', { to: params.to, subject: params.subject, type: params.type });
+      this.logger.warn(
+        '[EMAIL] Email Service is DISABLED. Set EMAIL_ENABLED=true to enable.'
+      );
+      this.logger.warn('[EMAIL] Would send:', {
+        to: params.to,
+        subject: params.subject,
+        type: params.type,
+      });
       return { success: false, error: 'Email service is disabled' };
     }
 
@@ -148,9 +176,9 @@ export class EmailService {
 
       this.logger.log(`✅ Email sent successfully: ${messageId}`);
       return { success: true, messageId };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`❌ Failed to send email: ${errorMessage}`, errorStack);
 
@@ -169,9 +197,13 @@ export class EmailService {
   /**
    * Send a simple test email
    */
-  async sendTestEmail(to: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendTestEmail(
+    to: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const logoSrc = this.getLogoSrc();
-    this.logger.log(`📧 Sending test email with logo src length: ${logoSrc.length} chars`);
+    this.logger.log(
+      `📧 Sending test email with logo src length: ${logoSrc.length} chars`
+    );
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -224,7 +256,9 @@ export class EmailService {
    * Send appointment confirmation email
    */
   async sendAppointmentConfirmation(appointmentId: string): Promise<void> {
-    this.logger.log(`[EMAIL] sendAppointmentConfirmation called for appointment: ${appointmentId}`);
+    this.logger.log(
+      `[EMAIL] sendAppointmentConfirmation called for appointment: ${appointmentId}`
+    );
 
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -241,22 +275,45 @@ export class EmailService {
     }
 
     if (!appointment.customer.email) {
-      this.logger.warn(`[EMAIL] Customer ${appointment.customer.id} has no email address. Skipping email.`);
+      this.logger.warn(
+        `[EMAIL] Customer ${appointment.customer.id} has no email address. Skipping email.`
+      );
       return;
     }
 
-    const employeeNames = appointment.employees
-      .map(ae => `${ae.employee.firstName} ${ae.employee.lastName}`)
-      .join(', ') || 'TBD';
+    const employeeNames =
+      appointment.employees
+        .map((ae) => `${ae.employee.firstName} ${ae.employee.lastName}`)
+        .join(', ') || 'TBD';
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
 
     // CRITICAL: Format date from business date string directly to avoid timezone issues
     // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const weekdayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
 
     const [year, month, day] = businessDate.split('-').map(Number);
     const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
@@ -299,12 +356,24 @@ export class EmailService {
             <p><strong>Service:</strong> ${appointment.serviceType}</p>
             <p><strong>Date:</strong> ${formattedDate}</p>
             <p><strong>Time:</strong> ${formattedTime}</p>
-            ${appointment.vehicle ? `<p><strong>Vehicle:</strong> ${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}</p>` : ''}
+            ${
+              appointment.vehicle
+                ? `<p><strong>Vehicle:</strong> ${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}</p>`
+                : ''
+            }
             <p><strong>Technician(s):</strong> ${employeeNames}</p>
-            <p><strong>Location:</strong> ${appointment.appointmentType === 'AT_GARAGE' ? 'GT Automotives Shop' : 'Mobile Service'}</p>
+            <p><strong>Location:</strong> ${
+              appointment.appointmentType === 'AT_GARAGE'
+                ? 'GT Automotives Shop'
+                : 'Mobile Service'
+            }</p>
           </div>
 
-          ${appointment.notes ? `<p><strong>Notes:</strong> ${appointment.notes}</p>` : ''}
+          ${
+            appointment.notes
+              ? `<p><strong>Notes:</strong> ${appointment.notes}</p>`
+              : ''
+          }
 
           <p>Need to reschedule? Call us at <strong>(250) 986-9191</strong></p>
         </div>
@@ -346,7 +415,10 @@ export class EmailService {
     totalEmployeePayments?: number;
     employeePaymentsCount?: number;
     employeePaymentsByMethod?: Record<string, number>;
-    employeePaymentsByPerson?: Record<string, { name: string; amount: number; count: number }>;
+    employeePaymentsByPerson?: Record<
+      string,
+      { name: string; amount: number; count: number }
+    >;
     totalCashCollected?: number;
     adjustedCash?: number;
   }): Promise<{ success: boolean; sent: number; failed: number }> {
@@ -365,7 +437,9 @@ export class EmailService {
     });
 
     // Filter for users with email addresses
-    const adminUsers = allAdminUsers.filter(user => user.email != null && user.email !== '');
+    const adminUsers = allAdminUsers.filter(
+      (user) => user.email != null && user.email !== ''
+    );
 
     if (adminUsers.length === 0) {
       this.logger.warn('[EMAIL] No admin users with email addresses found');
@@ -375,7 +449,10 @@ export class EmailService {
     // Format payment methods
     const formatPaymentMethods = (methods: Record<string, number>): string => {
       return Object.entries(methods)
-        .map(([method, amount]) => `<li><strong>${method}</strong>: $${amount.toFixed(2)}</li>`)
+        .map(
+          ([method, amount]) =>
+            `<li><strong>${method}</strong>: $${amount.toFixed(2)}</li>`
+        )
         .join('');
     };
 
@@ -404,11 +481,15 @@ export class EmailService {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0;"><strong>Total Payments Collected:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-size: 18px; font-weight: bold;">$${data.totalPayments.toFixed(2)}</td>
+                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-size: 18px; font-weight: bold;">$${data.totalPayments.toFixed(
+                  2
+                )}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Total Amount Owed:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #f44336; font-size: 18px; font-weight: bold;">$${data.totalOwed.toFixed(2)}</td>
+                <td style="padding: 8px 0; text-align: right; color: #f44336; font-size: 18px; font-weight: bold;">$${data.totalOwed.toFixed(
+                  2
+                )}</td>
               </tr>
             </table>
 
@@ -424,20 +505,28 @@ export class EmailService {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0;"><strong>Completed Jobs:</strong></td>
-                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${data.atGarageCount}</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${
+                  data.atGarageCount
+                }</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Total Collected:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">$${data.atGaragePayments.toFixed(2)}</td>
+                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">$${data.atGaragePayments.toFixed(
+                  2
+                )}</td>
               </tr>
             </table>
 
-            ${Object.keys(data.atGaragePaymentsByMethod).length > 0 ? `
+            ${
+              Object.keys(data.atGaragePaymentsByMethod).length > 0
+                ? `
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Payment Methods:</h4>
               <ul style="list-style: none; padding: 0;">
                 ${formatPaymentMethods(data.atGaragePaymentsByMethod)}
               </ul>
-            ` : '<p style="color: #666; margin-top: 10px;">No payments collected</p>'}
+            `
+                : '<p style="color: #666; margin-top: 10px;">No payments collected</p>'
+            }
           </div>
 
           <!-- Mobile Service Stats -->
@@ -446,78 +535,121 @@ export class EmailService {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0;"><strong>Completed Jobs:</strong></td>
-                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${data.mobileServiceCount}</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${
+                  data.mobileServiceCount
+                }</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Total Collected:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">$${data.mobileServicePayments.toFixed(2)}</td>
+                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">$${data.mobileServicePayments.toFixed(
+                  2
+                )}</td>
               </tr>
             </table>
 
-            ${Object.keys(data.mobileServicePaymentsByMethod).length > 0 ? `
+            ${
+              Object.keys(data.mobileServicePaymentsByMethod).length > 0
+                ? `
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Payment Methods:</h4>
               <ul style="list-style: none; padding: 0;">
                 ${formatPaymentMethods(data.mobileServicePaymentsByMethod)}
               </ul>
-            ` : '<p style="color: #666; margin-top: 10px;">No payments collected</p>'}
+            `
+                : '<p style="color: #666; margin-top: 10px;">No payments collected</p>'
+            }
           </div>
 
-          ${data.totalEmployeePayments && data.totalEmployeePayments > 0 ? `
+          ${
+            data.totalEmployeePayments && data.totalEmployeePayments > 0
+              ? `
           <!-- Employee Payments Stats -->
           <div style="background-color: #fff3e0; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ff9800;">
             <h3 style="margin-top: 0; color: #ff9800;">👥 Employee Payments - Cash Given Out</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0;"><strong>Number of Payments:</strong></td>
-                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${data.employeePaymentsCount || 0}</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${
+                  data.employeePaymentsCount || 0
+                }</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Total Cash Given Out:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #f44336; font-weight: bold; font-size: 18px;">-$${data.totalEmployeePayments.toFixed(2)}</td>
+                <td style="padding: 8px 0; text-align: right; color: #f44336; font-weight: bold; font-size: 18px;">-$${data.totalEmployeePayments.toFixed(
+                  2
+                )}</td>
               </tr>
             </table>
 
-            ${data.employeePaymentsByPerson && Object.keys(data.employeePaymentsByPerson).length > 0 ? `
+            ${
+              data.employeePaymentsByPerson &&
+              Object.keys(data.employeePaymentsByPerson).length > 0
+                ? `
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Payments by Employee:</h4>
               <ul style="list-style: none; padding: 0;">
-                ${Object.entries(data.employeePaymentsByPerson).map(([empId, empData]) =>
-                  `<li><strong>${empData.name}</strong>: $${empData.amount.toFixed(2)} (${empData.count} payment${empData.count > 1 ? 's' : ''})</li>`
-                ).join('')}
+                ${Object.entries(data.employeePaymentsByPerson)
+                  .map(
+                    ([empId, empData]) =>
+                      `<li><strong>${
+                        empData.name
+                      }</strong>: $${empData.amount.toFixed(2)} (${
+                        empData.count
+                      } payment${empData.count > 1 ? 's' : ''})</li>`
+                  )
+                  .join('')}
               </ul>
-            ` : ''}
+            `
+                : ''
+            }
 
-            ${data.employeePaymentsByMethod && Object.keys(data.employeePaymentsByMethod).length > 0 ? `
+            ${
+              data.employeePaymentsByMethod &&
+              Object.keys(data.employeePaymentsByMethod).length > 0
+                ? `
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Payment Methods Used:</h4>
               <ul style="list-style: none; padding: 0;">
                 ${formatPaymentMethods(data.employeePaymentsByMethod)}
               </ul>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
-          ${data.adjustedCash !== undefined ? `
+          ${
+            data.adjustedCash !== undefined
+              ? `
           <!-- Net Cash Position -->
           <div style="background-color: #c8e6c9; padding: 20px; border-radius: 5px; margin: 20px 0; border: 3px solid #4caf50;">
             <h3 style="margin-top: 0; color: #2e7d32;">💰 Net Cash Position (Adjusted)</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0;"><strong>Cash from Customers:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">+$${(data.totalCashCollected || 0).toFixed(2)}</td>
+                <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">+$${(
+                  data.totalCashCollected || 0
+                ).toFixed(2)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Cash to Employees:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #f44336; font-weight: bold;">-$${data.totalEmployeePayments?.toFixed(2) || '0.00'}</td>
+                <td style="padding: 8px 0; text-align: right; color: #f44336; font-weight: bold;">-$${
+                  data.totalEmployeePayments?.toFixed(2) || '0.00'
+                }</td>
               </tr>
               <tr style="border-top: 2px solid #4caf50;">
                 <td style="padding: 12px 0;"><strong style="font-size: 16px;">Net Cash on Hand:</strong></td>
-                <td style="padding: 12px 0; text-align: right; color: #2e7d32; font-weight: bold; font-size: 20px;">=$${data.adjustedCash.toFixed(2)}</td>
+                <td style="padding: 12px 0; text-align: right; color: #2e7d32; font-weight: bold; font-size: 20px;">=$${data.adjustedCash.toFixed(
+                  2
+                )}</td>
               </tr>
             </table>
             <p style="color: #666; margin-top: 10px; font-size: 12px;">
               This is the expected cash that should be in the cash drawer at the end of the day (CASH payments only).
             </p>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <div style="margin-top: 30px; padding: 15px; background-color: #f5f5f5; border-left: 4px solid #1976d2;">
             <p style="margin: 0; color: #666;">
@@ -556,15 +688,22 @@ export class EmailService {
           this.logger.log(`✅ EOD summary sent to ${admin.email}`);
         } else {
           failed++;
-          this.logger.error(`❌ Failed to send EOD summary to ${admin.email}: ${result.error}`);
+          this.logger.error(
+            `❌ Failed to send EOD summary to ${admin.email}: ${result.error}`
+          );
         }
       } catch (error) {
         failed++;
-        this.logger.error(`❌ Error sending EOD summary to ${admin.email}:`, error);
+        this.logger.error(
+          `❌ Error sending EOD summary to ${admin.email}:`,
+          error
+        );
       }
     }
 
-    this.logger.log(`[EMAIL] EOD Summary complete: ${sent} sent, ${failed} failed`);
+    this.logger.log(
+      `[EMAIL] EOD Summary complete: ${sent} sent, ${failed} failed`
+    );
     return { success: sent > 0, sent, failed };
   }
 
@@ -585,7 +724,9 @@ export class EmailService {
       notes?: string;
     }>;
   }): Promise<{ success: boolean; messageId?: string }> {
-    this.logger.log(`[EMAIL] Sending employee day schedule to ${data.employeeEmail}`);
+    this.logger.log(
+      `[EMAIL] Sending employee day schedule to ${data.employeeEmail}`
+    );
 
     if (!this.enabled) {
       this.logger.warn('[EMAIL] Email service is disabled');
@@ -603,9 +744,29 @@ export class EmailService {
 
       // CRITICAL: Format date from business date string directly to avoid timezone issues
       // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'];
-      const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      const weekdayNames = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
 
       const [year, month, day] = businessDate.split('-').map(Number);
       const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
@@ -614,19 +775,28 @@ export class EmailService {
       const formattedDate = `${weekday}, ${monthName} ${day}, ${year}`;
 
       // Build appointments table rows
-      const appointmentsHtml = data.appointments.length > 0
-        ? data.appointments
-            .map(
-              (apt, index) => `
+      const appointmentsHtml =
+        data.appointments.length > 0
+          ? data.appointments
+              .map(
+                (apt, index) => `
           <tr style="border-bottom: 1px solid #e0e0e0;">
-            <td style="padding: 15px 10px; font-weight: 500; color: #1976d2;">${apt.time}</td>
+            <td style="padding: 15px 10px; font-weight: 500; color: #1976d2;">${
+              apt.time
+            }</td>
             <td style="padding: 15px 10px;">
-              <div style="font-weight: 500; margin-bottom: 4px;">${apt.customerName}</div>
-              <div style="color: #666; font-size: 14px;">${apt.vehicleInfo}</div>
+              <div style="font-weight: 500; margin-bottom: 4px;">${
+                apt.customerName
+              }</div>
+              <div style="color: #666; font-size: 14px;">${
+                apt.vehicleInfo
+              }</div>
             </td>
             <td style="padding: 15px 10px;">
               <div style="margin-bottom: 4px;">${apt.serviceType}</div>
-              <div style="color: #666; font-size: 14px;">${apt.duration} min</div>
+              <div style="color: #666; font-size: 14px;">${
+                apt.duration
+              } min</div>
             </td>
             <td style="padding: 15px 10px;">
               <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; ${
@@ -634,7 +804,11 @@ export class EmailService {
                   ? 'background-color: #e3f2fd; color: #1976d2;'
                   : 'background-color: #fff3e0; color: #f57c00;'
               }">
-                ${apt.location === 'At Shop' ? '🏢 At Shop' : '🚗 Mobile Service'}
+                ${
+                  apt.location === 'At Shop'
+                    ? '🏢 At Shop'
+                    : '🚗 Mobile Service'
+                }
               </span>
             </td>
           </tr>
@@ -648,9 +822,9 @@ export class EmailService {
               : ''
           }
         `
-            )
-            .join('')
-        : `
+              )
+              .join('')
+          : `
           <tr>
             <td colspan="4" style="padding: 30px; text-align: center; color: #999;">
               No appointments scheduled for this day
@@ -703,7 +877,9 @@ export class EmailService {
                     <td style="padding: 0 40px 20px 40px;">
                       <div style="background-color: #e3f2fd; border-left: 4px solid #1976d2; padding: 15px 20px; border-radius: 4px;">
                         <p style="margin: 0; color: #1565c0; font-size: 16px;">
-                          <strong>${data.appointments.length} Appointment${data.appointments.length !== 1 ? 's' : ''}</strong> scheduled for today
+                          <strong>${data.appointments.length} Appointment${
+                          data.appointments.length !== 1 ? 's' : ''
+                        }</strong> scheduled for today
                         </p>
                       </div>
                     </td>
@@ -793,7 +969,9 @@ export class EmailService {
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       const messageId = response.body?.messageId || 'unknown';
 
-      this.logger.log(`[EMAIL] Employee schedule sent successfully. Message ID: ${messageId}`);
+      this.logger.log(
+        `[EMAIL] Employee schedule sent successfully. Message ID: ${messageId}`
+      );
 
       // Log to database
       try {
@@ -837,7 +1015,9 @@ export class EmailService {
     address?: string;
     notes?: string;
   }): Promise<{ success: boolean; messageId?: string }> {
-    this.logger.log(`[EMAIL] Sending appointment assignment to ${data.employeeEmail}`);
+    this.logger.log(
+      `[EMAIL] Sending appointment assignment to ${data.employeeEmail}`
+    );
 
     if (!this.enabled) {
       this.logger.warn('[EMAIL] Email service is disabled');
@@ -855,9 +1035,29 @@ export class EmailService {
 
       // CRITICAL: Format date from business date string directly to avoid timezone issues
       // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'];
-      const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      const weekdayNames = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
 
       const [year, month, day] = businessDate.split('-').map(Number);
       const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
@@ -902,10 +1102,16 @@ export class EmailService {
 
                   <!-- Header -->
                   <tr>
-                    <td style="background: linear-gradient(135deg, ${isGarage ? '#1976d2' : '#f57c00'} 0%, ${isGarage ? '#1565c0' : '#ef6c00'} 100%); padding: 30px 40px; text-align: center;">
+                    <td style="background: linear-gradient(135deg, ${
+                      isGarage ? '#1976d2' : '#f57c00'
+                    } 0%, ${
+        isGarage ? '#1565c0' : '#ef6c00'
+      } 100%); padding: 30px 40px; text-align: center;">
                       <img src="${this.getLogoSrc()}" alt="GT Automotives" style="max-width: 180px; height: auto; margin-bottom: 15px;" />
                       <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">🔔 New Appointment</h1>
-                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">You've been assigned to a ${isMobile ? 'mobile service' : 'shop'} appointment</p>
+                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">You've been assigned to a ${
+                        isMobile ? 'mobile service' : 'shop'
+                      } appointment</p>
                     </td>
                   </tr>
 
@@ -924,9 +1130,19 @@ export class EmailService {
                   <!-- Appointment Type Badge -->
                   <tr>
                     <td style="padding: 0 40px 20px 40px;">
-                      <div style="display: inline-block; background-color: ${isGarage ? '#e3f2fd' : '#fff3e0'}; border-left: 4px solid ${isGarage ? '#1976d2' : '#f57c00'}; padding: 12px 20px; border-radius: 4px;">
-                        <p style="margin: 0; color: ${isGarage ? '#1565c0' : '#e65100'}; font-size: 14px; font-weight: 600;">
-                          ${isGarage ? '🏢 AT SHOP APPOINTMENT' : '🚗 MOBILE SERVICE APPOINTMENT'}
+                      <div style="display: inline-block; background-color: ${
+                        isGarage ? '#e3f2fd' : '#fff3e0'
+                      }; border-left: 4px solid ${
+        isGarage ? '#1976d2' : '#f57c00'
+      }; padding: 12px 20px; border-radius: 4px;">
+                        <p style="margin: 0; color: ${
+                          isGarage ? '#1565c0' : '#e65100'
+                        }; font-size: 14px; font-weight: 600;">
+                          ${
+                            isGarage
+                              ? '🏢 AT SHOP APPOINTMENT'
+                              : '🚗 MOBILE SERVICE APPOINTMENT'
+                          }
                         </p>
                       </div>
                     </td>
@@ -944,7 +1160,9 @@ export class EmailService {
                               <span style="font-size: 24px; margin-right: 12px;">📅</span>
                               <div>
                                 <div style="font-weight: 600; color: #333; font-size: 18px; margin-bottom: 4px;">${formattedDate}</div>
-                                <div style="color: #1976d2; font-size: 16px; font-weight: 500;">${startTimeStr} - ${endTimeStr} (${data.duration} minutes)</div>
+                                <div style="color: #1976d2; font-size: 16px; font-weight: 500;">${startTimeStr} - ${endTimeStr} (${
+        data.duration
+      } minutes)</div>
                               </div>
                             </div>
                           </td>
@@ -954,8 +1172,14 @@ export class EmailService {
                         <tr>
                           <td style="padding: 15px 20px; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: #666; width: 140px;">Customer</td>
                           <td style="padding: 15px 20px; border-bottom: 1px solid #e0e0e0;">
-                            <div style="font-weight: 500; color: #333; margin-bottom: 4px;">${data.customerName}</div>
-                            ${data.customerPhone ? `<div style="color: #666; font-size: 14px;">📞 ${data.customerPhone}</div>` : ''}
+                            <div style="font-weight: 500; color: #333; margin-bottom: 4px;">${
+                              data.customerName
+                            }</div>
+                            ${
+                              data.customerPhone
+                                ? `<div style="color: #666; font-size: 14px;">📞 ${data.customerPhone}</div>`
+                                : ''
+                            }
                           </td>
                         </tr>
 
@@ -984,8 +1208,12 @@ export class EmailService {
                         <tr>
                           <td style="padding: 15px 20px; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: #666;">Location</td>
                           <td style="padding: 15px 20px; border-bottom: 1px solid #e0e0e0;">
-                            <div style="color: #333; margin-bottom: 4px;">📍 ${data.address}</div>
-                            <a href="https://maps.google.com/?q=${encodeURIComponent(data.address)}" style="color: #1976d2; text-decoration: none; font-size: 14px;">
+                            <div style="color: #333; margin-bottom: 4px;">📍 ${
+                              data.address
+                            }</div>
+                            <a href="https://maps.google.com/?q=${encodeURIComponent(
+                              data.address
+                            )}" style="color: #1976d2; text-decoration: none; font-size: 14px;">
                               Open in Google Maps →
                             </a>
                           </td>
@@ -1033,10 +1261,22 @@ export class EmailService {
                         <h3 style="margin: 0 0 12px 0; color: #333; font-size: 16px; font-weight: 600;">✓ What to do next:</h3>
                         <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
                           <li>Review the appointment details above</li>
-                          ${isMobile ? '<li>Verify the service location and plan your route</li>' : '<li>Prepare the necessary tools and parts</li>'}
-                          ${data.customerPhone ? '<li>Contact the customer if you have any questions</li>' : ''}
+                          ${
+                            isMobile
+                              ? '<li>Verify the service location and plan your route</li>'
+                              : '<li>Prepare the necessary tools and parts</li>'
+                          }
+                          ${
+                            data.customerPhone
+                              ? '<li>Contact the customer if you have any questions</li>'
+                              : ''
+                          }
                           <li>Update the job status in the system when you start and complete the work</li>
-                          ${isMobile ? '<li>Ensure you have all mobile service equipment ready</li>' : '<li>Check the bay availability before the scheduled time</li>'}
+                          ${
+                            isMobile
+                              ? '<li>Ensure you have all mobile service equipment ready</li>'
+                              : '<li>Check the bay availability before the scheduled time</li>'
+                          }
                         </ul>
                       </div>
                     </td>
@@ -1085,14 +1325,18 @@ export class EmailService {
             name: data.employeeName,
           },
         ],
-        subject: `🔔 New ${isMobile ? 'Mobile Service' : 'Shop'} Appointment - ${data.customerName} (${formattedDate})`,
+        subject: `🔔 New ${
+          isMobile ? 'Mobile Service' : 'Shop'
+        } Appointment - ${data.customerName} (${formattedDate})`,
         htmlContent,
       };
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       const messageId = response.body?.messageId || 'unknown';
 
-      this.logger.log(`[EMAIL] Appointment assignment sent successfully. Message ID: ${messageId}`);
+      this.logger.log(
+        `[EMAIL] Appointment assignment sent successfully. Message ID: ${messageId}`
+      );
 
       // Log to database
       try {
@@ -1100,7 +1344,9 @@ export class EmailService {
           data: {
             to: data.employeeEmail,
             from: this.senderEmail,
-            subject: `New ${isMobile ? 'Mobile Service' : 'Shop'} Appointment - ${data.customerName}`,
+            subject: `New ${
+              isMobile ? 'Mobile Service' : 'Shop'
+            } Appointment - ${data.customerName}`,
             type: 'APPOINTMENT_CONFIRMATION',
             status: 'SENT',
             brevoMessageId: messageId,
@@ -1114,7 +1360,10 @@ export class EmailService {
 
       return { success: true, messageId };
     } catch (error) {
-      this.logger.error('[EMAIL] Failed to send appointment assignment:', error);
+      this.logger.error(
+        '[EMAIL] Failed to send appointment assignment:',
+        error
+      );
       return { success: false };
     }
   }
@@ -1123,17 +1372,35 @@ export class EmailService {
    * Send invoice email with PDF attachment
    */
   async sendInvoiceEmail(
-    customerEmail: string,
+    customerEmail: string | string[],
     invoiceNumber: string,
-    pdfBase64: string,
+    pdfBase64: string
   ): Promise<{ success: boolean; messageId?: string }> {
     if (!this.enabled) {
-      this.logger.warn('[EMAIL] Email service disabled - skipping invoice email');
+      this.logger.warn(
+        '[EMAIL] Email service disabled - skipping invoice email'
+      );
+      return { success: false };
+    }
+
+    // Normalize to a de-duplicated list of recipients
+    const recipients = Array.from(
+      new Set(
+        (Array.isArray(customerEmail) ? customerEmail : [customerEmail])
+          .map((e) => e.trim())
+          .filter((e) => e !== '')
+      )
+    );
+
+    if (recipients.length === 0) {
+      this.logger.warn('[EMAIL] No valid recipients for invoice email');
       return { success: false };
     }
 
     try {
-      this.logger.log(`[EMAIL] Sending invoice ${invoiceNumber} to ${customerEmail}`);
+      this.logger.log(
+        `[EMAIL] Sending invoice ${invoiceNumber} to ${recipients.join(', ')}`
+      );
 
       const logoImg = this.logoBase64
         ? `<img src="${this.logoBase64}" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`
@@ -1196,7 +1463,7 @@ export class EmailService {
 
       const sendSmtpEmail: SendSmtpEmail = {
         sender: { name: this.senderName, email: this.senderEmail },
-        to: [{ email: customerEmail }],
+        to: recipients.map((email) => ({ email })),
         subject: `Invoice ${invoiceNumber} - GT Automotives`,
         htmlContent,
         attachment: [
@@ -1210,14 +1477,16 @@ export class EmailService {
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       const messageId = (response as any)?.messageId || 'unknown';
 
-      this.logger.log(`[EMAIL] Invoice email sent successfully. Message ID: ${messageId}`);
+      this.logger.log(
+        `[EMAIL] Invoice email sent successfully. Message ID: ${messageId}`
+      );
 
       // Log to database
       try {
         await this.prisma.emailLog.create({
           data: {
             type: EmailType.INVOICE_DELIVERY,
-            to: customerEmail,
+            to: recipients.join(', '),
             from: this.senderEmail,
             subject: `Invoice ${invoiceNumber} - GT Automotives`,
             status: EmailStatus.SENT,
@@ -1225,13 +1494,20 @@ export class EmailService {
           },
         });
       } catch (dbError) {
-        this.logger.error('[EMAIL] Failed to log invoice email to database:', dbError);
+        this.logger.error(
+          '[EMAIL] Failed to log invoice email to database:',
+          dbError
+        );
       }
 
       return { success: true, messageId };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`[EMAIL] Failed to send invoice email: ${errorMessage}`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `[EMAIL] Failed to send invoice email: ${errorMessage}`,
+        error
+      );
       return { success: false };
     }
   }
@@ -1242,15 +1518,19 @@ export class EmailService {
   async sendQuotationEmail(
     customerEmail: string,
     quotationNumber: string,
-    pdfBase64: string,
+    pdfBase64: string
   ): Promise<{ success: boolean; messageId?: string }> {
     if (!this.enabled) {
-      this.logger.warn('[EMAIL] Email service disabled - skipping quotation email');
+      this.logger.warn(
+        '[EMAIL] Email service disabled - skipping quotation email'
+      );
       return { success: false };
     }
 
     try {
-      this.logger.log(`[EMAIL] Sending quotation ${quotationNumber} to ${customerEmail}`);
+      this.logger.log(
+        `[EMAIL] Sending quotation ${quotationNumber} to ${customerEmail}`
+      );
 
       const logoImg = this.logoBase64
         ? `<img src="${this.logoBase64}" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`
@@ -1331,7 +1611,9 @@ export class EmailService {
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       const messageId = (response as any)?.messageId || 'unknown';
 
-      this.logger.log(`[EMAIL] Quotation email sent successfully. Message ID: ${messageId}`);
+      this.logger.log(
+        `[EMAIL] Quotation email sent successfully. Message ID: ${messageId}`
+      );
 
       // Log to database
       try {
@@ -1346,7 +1628,10 @@ export class EmailService {
           },
         });
       } catch (dbError) {
-        this.logger.error('[EMAIL] Failed to log quotation email to database:', dbError);
+        this.logger.error(
+          '[EMAIL] Failed to log quotation email to database:',
+          dbError
+        );
       }
 
       return { success: true, messageId };
@@ -1374,7 +1659,9 @@ export class EmailService {
       notes: string;
     };
   }): Promise<{ success: boolean; messageId?: string }> {
-    this.logger.log(`[EMAIL] Sending booking request notification to ${data.recipientEmail}`);
+    this.logger.log(
+      `[EMAIL] Sending booking request notification to ${data.recipientEmail}`
+    );
 
     if (!this.enabled) {
       this.logger.warn('[EMAIL] Email service is disabled');
@@ -1414,18 +1701,37 @@ export class EmailService {
                     </p>
 
                     <p style="margin: 0 0 30px; font-size: 16px; color: #333333; line-height: 1.6;">
-                      A new booking request has been received from <strong>${data.bookingRequest.customerName}</strong>.
+                      A new booking request has been received from <strong>${
+                        data.bookingRequest.customerName
+                      }</strong>.
                     </p>
 
                     <!-- Booking Summary -->
                     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
                       <h3 style="margin: 0 0 15px; color: #1e3a5f; font-size: 16px;">Booking Summary</h3>
                       <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.8;">
-                        <strong>Customer:</strong> ${data.bookingRequest.customerName}<br>
-                        <strong>Service Type:</strong> ${data.bookingRequest.serviceType}<br>
-                        <strong>Service Location:</strong> ${data.bookingRequest.appointmentType === 'AT_GARAGE' ? '🏪 At Shop' : '🚗 Mobile Service'}${data.bookingRequest.address ? ` - ${data.bookingRequest.address}` : ''}<br>
-                        <strong>Requested Date:</strong> ${data.bookingRequest.requestedDate} at ${data.bookingRequest.requestedTime}
-                        ${data.bookingRequest.notes && data.bookingRequest.notes !== 'None' ? `<br><br><strong>Customer Notes:</strong><br><span style="font-style: italic; color: #555;">"${data.bookingRequest.notes}"</span>` : ''}
+                        <strong>Customer:</strong> ${
+                          data.bookingRequest.customerName
+                        }<br>
+                        <strong>Service Type:</strong> ${
+                          data.bookingRequest.serviceType
+                        }<br>
+                        <strong>Service Location:</strong> ${
+                          data.bookingRequest.appointmentType === 'AT_GARAGE'
+                            ? '🏪 At Shop'
+                            : '🚗 Mobile Service'
+                        }${
+      data.bookingRequest.address ? ` - ${data.bookingRequest.address}` : ''
+    }<br>
+                        <strong>Requested Date:</strong> ${
+                          data.bookingRequest.requestedDate
+                        } at ${data.bookingRequest.requestedTime}
+                        ${
+                          data.bookingRequest.notes &&
+                          data.bookingRequest.notes !== 'None'
+                            ? `<br><br><strong>Customer Notes:</strong><br><span style="font-style: italic; color: #555;">"${data.bookingRequest.notes}"</span>`
+                            : ''
+                        }
                       </p>
                     </div>
 
@@ -1475,7 +1781,10 @@ export class EmailService {
 
       return result;
     } catch (error) {
-      this.logger.error('[EMAIL] Failed to send booking request notification:', error);
+      this.logger.error(
+        '[EMAIL] Failed to send booking request notification:',
+        error
+      );
       return { success: false };
     }
   }

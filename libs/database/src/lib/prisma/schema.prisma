@@ -78,6 +78,8 @@ model Customer {
   firstName       String
   lastName        String
   email           String?
+  additionalEmails String[]        @default([]) // Extra emails (e.g. spouse, business) for invoice sending
+  pstExempt       Boolean          @default(false) // When true, invoices for this customer are charged 0% PST
   phone           String?
   address         String?
   businessName    String?
@@ -260,6 +262,7 @@ model Invoice {
   tireSale       TireSale?     // Tire sale that generated this invoice (one-to-one)
   repairOrder    RepairOrder?  @relation(fields: [repairOrderId], references: [id], onDelete: SetNull)
   repairOrderId  String?       @unique // Link to repair order that generated this invoice
+  carfaxSync     CarfaxSync?   // CARFAX Service Data Transfer record for this invoice
 
   @@index([customerId])
   @@index([status])
@@ -1596,4 +1599,44 @@ enum ROMediaType {
   WORK_COMPLETED
   PARTS
   OTHER
+}
+
+// ============================================================================
+// CARFAX Service Data Transfer (HTTPS push)
+// One record per invoice. We push completed service records (VIN, service date,
+// odometer, services performed, shop/location id) to CARFAX. NO customer PII is
+// sent. Requires a CARFAX (Canada) Service Data Transfer Facilitation Agreement
+// and HTTPS endpoint + credentials (set via CARFAX_* env vars).
+// See .claude/docs/carfax-integration.md
+// ============================================================================
+model CarfaxSync {
+  id        String           @id @default(cuid())
+  invoiceId String           @unique
+  invoice   Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // Snapshot of what was/should be reported (anonymous - no customer PII)
+  vin         String?
+  serviceDate DateTime?
+  odometer    Int?
+  payload     Json? // Provisional CARFAX record payload (shape finalized in Phase 0)
+
+  status     CarfaxSyncStatus @default(PENDING)
+  attempts   Int              @default(0)
+  externalId String? // CARFAX-assigned confirmation/record id (from response)
+  lastError  String?
+
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("carfax_syncs")
+}
+
+enum CarfaxSyncStatus {
+  PENDING // Queued, not yet sent
+  SENT // Accepted by CARFAX
+  FAILED // Send failed (eligible for retry)
+  SKIPPED // Not reportable (e.g. no VIN, no reportable services, CARFAX disabled)
 }

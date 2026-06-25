@@ -53,7 +53,13 @@ import {
   CreditCard as CreditCardIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
-import { customerService, Customer, Vehicle, Invoice, Appointment } from '../../requests/customer.requests';
+import {
+  customerService,
+  Customer,
+  Vehicle,
+  Invoice,
+  Appointment,
+} from '../../requests/customer.requests';
 import { appointmentService } from '../../requests/appointment.requests';
 import { colors } from '../../theme/colors';
 import { formatPhoneForDisplay } from '../../utils/phone';
@@ -72,7 +78,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
     children: React.ReactElement;
   },
-  ref: React.Ref<unknown>,
+  ref: React.Ref<unknown>
 ) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -121,16 +127,24 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(
+    null
+  );
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
-  const [customerDetailsExpanded, setCustomerDetailsExpanded] = useState(!isMobile);
+  const [customerDetailsExpanded, setCustomerDetailsExpanded] = useState(
+    !isMobile
+  );
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
+    useState<Invoice | null>(null);
   const [squarePaymentDialogOpen, setSquarePaymentDialogOpen] = useState(false);
-  const [selectedInvoiceForSquare, setSelectedInvoiceForSquare] = useState<Invoice | null>(null);
-  const [appointmentPaymentDialogOpen, setAppointmentPaymentDialogOpen] = useState(false);
-  const [selectedAppointmentForPayment, setSelectedAppointmentForPayment] = useState<Appointment | null>(null);
+  const [selectedInvoiceForSquare, setSelectedInvoiceForSquare] =
+    useState<Invoice | null>(null);
+  const [appointmentPaymentDialogOpen, setAppointmentPaymentDialogOpen] =
+    useState(false);
+  const [selectedAppointmentForPayment, setSelectedAppointmentForPayment] =
+    useState<Appointment | null>(null);
 
   useEffect(() => {
     if (open && customerId) {
@@ -152,21 +166,26 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
       const data = await customerService.getCustomer(customerId);
       setCustomer(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load customer details');
+      setError(
+        err.response?.data?.message || 'Failed to load customer details'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const getInitials = (firstName?: string, lastName?: string) => {
-    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+    return `${firstName?.charAt(0) || ''}${
+      lastName?.charAt(0) || ''
+    }`.toUpperCase();
   };
 
   const formatCurrency = (amount: number) => {
+    const value = Number(amount) || 0;
     return new Intl.NumberFormat('en-CA', {
       style: 'currency',
       currency: 'CAD',
-    }).format(amount);
+    }).format(value);
   };
 
   const formatDate = (dateString: string) => {
@@ -177,7 +196,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
     }
   };
 
-  const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'info' | 'default' => {
+  const getStatusColor = (
+    status: string
+  ): 'success' | 'warning' | 'error' | 'info' | 'default' => {
     switch (status) {
       case 'PAID':
       case 'COMPLETED':
@@ -242,11 +263,15 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
     }
   };
 
-  const handleStatusChange = async (appointmentId: string, newStatus: string, paymentData?: any) => {
+  const handleStatusChange = async (
+    appointmentId: string,
+    newStatus: string,
+    paymentData?: any
+  ) => {
     try {
       await appointmentService.updateAppointment(appointmentId, {
         status: newStatus as any,
-        ...paymentData
+        ...paymentData,
       });
       loadCustomer();
     } catch (err) {
@@ -274,7 +299,10 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
     if (!selectedInvoiceForPayment) return;
 
     try {
-      await invoiceService.markInvoiceAsPaid(selectedInvoiceForPayment.id, paymentMethod);
+      await invoiceService.markInvoiceAsPaid(
+        selectedInvoiceForPayment.id,
+        paymentMethod
+      );
       loadCustomer(); // Refresh to update outstanding balance
       onPaymentSuccess?.(); // Notify parent to refresh list
     } catch (err) {
@@ -324,18 +352,28 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
 
       // Update appointment with payment data
       // IMPORTANT: Always keep the ORIGINAL expectedAmount - don't overwrite with remaining amount
-      await appointmentService.updateAppointment(selectedAppointmentForPayment.id, {
-        paymentAmount: (selectedAppointmentForPayment.paymentAmount || 0) + paymentData.totalAmount,
-        // Keep original expectedAmount, only set if not already set
-        expectedAmount: selectedAppointmentForPayment.expectedAmount,
-        paymentBreakdown: [...((existingBreakdown as any[]) || []), ...paymentData.payments],
-        completionEmployeeIds: paymentData.completionEmployeeIds,
-        productSaleAmount: paymentData.productSaleAmount,
-        productSaleItems: paymentData.productSaleItems,
-        notes: paymentData.paymentNotes ?
-          `${selectedAppointmentForPayment.notes || ''}\nPayment: ${paymentData.paymentNotes}`.trim() :
-          selectedAppointmentForPayment.notes,
-      });
+      await appointmentService.updateAppointment(
+        selectedAppointmentForPayment.id,
+        {
+          paymentAmount:
+            (selectedAppointmentForPayment.paymentAmount || 0) +
+            paymentData.totalAmount,
+          // Keep original expectedAmount, only set if not already set
+          expectedAmount: selectedAppointmentForPayment.expectedAmount,
+          paymentBreakdown: [
+            ...((existingBreakdown as any[]) || []),
+            ...paymentData.payments,
+          ],
+          completionEmployeeIds: paymentData.completionEmployeeIds,
+          productSaleAmount: paymentData.productSaleAmount,
+          productSaleItems: paymentData.productSaleItems,
+          notes: paymentData.paymentNotes
+            ? `${selectedAppointmentForPayment.notes || ''}\nPayment: ${
+                paymentData.paymentNotes
+              }`.trim()
+            : selectedAppointmentForPayment.notes,
+        }
+      );
       loadCustomer(); // Refresh to update outstanding balance
       onPaymentSuccess?.(); // Notify parent to refresh list
     } catch (err) {
@@ -374,59 +412,72 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
         businessName: customer?.businessName,
         address: customer?.address,
       },
-      vehicle: apt.vehicle ? {
-        id: apt.vehicle.id,
-        year: apt.vehicle.year,
-        make: apt.vehicle.make,
-        model: apt.vehicle.model,
-        licensePlate: apt.vehicle.licensePlate,
-      } : undefined,
+      vehicle: apt.vehicle
+        ? {
+            id: apt.vehicle.id,
+            year: apt.vehicle.year,
+            make: apt.vehicle.make,
+            model: apt.vehicle.model,
+            licensePlate: apt.vehicle.licensePlate,
+          }
+        : undefined,
       employees: apt.employees,
     };
   };
 
   // Separate upcoming and past appointments
-  const upcomingAppointments = customer?.appointments?.filter(
-    (apt) => isAfter(parseISO(apt.scheduledDate), new Date()) && !['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(apt.status)
-  ) || [];
+  const upcomingAppointments =
+    customer?.appointments?.filter(
+      (apt) =>
+        isAfter(parseISO(apt.scheduledDate), new Date()) &&
+        !['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(apt.status)
+    ) || [];
 
-  const pastAppointments = customer?.appointments?.filter(
-    (apt) => !isAfter(parseISO(apt.scheduledDate), new Date()) || ['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(apt.status)
-  ) || [];
+  const pastAppointments =
+    customer?.appointments?.filter(
+      (apt) =>
+        !isAfter(parseISO(apt.scheduledDate), new Date()) ||
+        ['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(apt.status)
+    ) || [];
 
   // Separate unpaid and paid invoices
-  const unpaidInvoices = customer?.invoices?.filter(
-    (inv) => ['PENDING', 'DRAFT'].includes(inv.status)
-  ) || [];
+  const unpaidInvoices =
+    customer?.invoices?.filter((inv) =>
+      ['PENDING', 'DRAFT'].includes(inv.status)
+    ) || [];
 
-  const paidInvoices = customer?.invoices?.filter(
-    (inv) => inv.status === 'PAID'
-  ) || [];
+  const paidInvoices =
+    customer?.invoices?.filter((inv) => inv.status === 'PAID') || [];
 
   // Find completed appointments with outstanding balance (unpaid or partially paid)
-  const unpaidAppointments = customer?.appointments?.filter((apt) => {
-    if (apt.status !== 'COMPLETED') return false;
-    const expected = apt.expectedAmount || 0;
-    const paid = apt.paymentAmount || 0;
-    return expected > 0 && paid < expected;
-  }) || [];
+  const unpaidAppointments =
+    customer?.appointments?.filter((apt) => {
+      if (apt.status !== 'COMPLETED') return false;
+      const expected = Number(apt.expectedAmount) || 0;
+      const paid = Number(apt.paymentAmount) || 0;
+      return expected > 0 && paid < expected;
+    }) || [];
 
-  // Calculate outstanding balance from unpaid invoices AND unpaid appointments
+  // Calculate outstanding balance from unpaid invoices AND unpaid appointments.
+  // Amounts arrive from the API as Prisma Decimal strings, so coerce to numbers
+  // before arithmetic — otherwise `+` concatenates strings and yields NaN.
   const invoiceOutstanding = unpaidInvoices.reduce(
-    (sum, inv) => sum + (inv.total || 0),
+    (sum, inv) => sum + (Number(inv.total) || 0),
     0
   );
 
   const appointmentOutstanding = unpaidAppointments.reduce((sum, apt) => {
-    const expected = apt.expectedAmount || 0;
-    const paid = apt.paymentAmount || 0;
+    const expected = Number(apt.expectedAmount) || 0;
+    const paid = Number(apt.paymentAmount) || 0;
     return sum + (expected - paid);
   }, 0);
 
-  const calculatedOutstandingBalance = invoiceOutstanding + appointmentOutstanding;
+  const calculatedOutstandingBalance =
+    invoiceOutstanding + appointmentOutstanding;
 
   // Count total outstanding items
-  const outstandingItemsCount = unpaidInvoices.length + unpaidAppointments.length;
+  const outstandingItemsCount =
+    unpaidInvoices.length + unpaidAppointments.length;
 
   return (
     <Dialog
@@ -444,8 +495,8 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
             display: 'flex',
             flexDirection: 'column',
             height: '100vh',
-          })
-        }
+          }),
+        },
       }}
     >
       <DialogTitle
@@ -460,9 +511,14 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
           flexShrink: 0,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}
+        >
           <PersonIcon sx={{ fontSize: { xs: 20, sm: 28 } }} />
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+          <Typography
+            variant={isMobile ? 'subtitle1' : 'h6'}
+            sx={{ fontWeight: 600 }}
+          >
             Customer Details
           </Typography>
         </Box>
@@ -473,7 +529,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                 onClick={handleEditClick}
                 sx={{
                   color: 'white',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
                 }}
               >
                 <EditIcon />
@@ -484,7 +540,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
             onClick={onClose}
             sx={{
               color: 'white',
-              '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+              '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
             }}
           >
             <CloseIcon />
@@ -501,7 +557,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
         }}
       >
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="400px"
+          >
             <CircularProgress />
           </Box>
         ) : error ? (
@@ -522,7 +583,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     gap: 1.5,
                     cursor: 'pointer',
                   }}
-                  onClick={() => setCustomerDetailsExpanded(!customerDetailsExpanded)}
+                  onClick={() =>
+                    setCustomerDetailsExpanded(!customerDetailsExpanded)
+                  }
                 >
                   <Avatar
                     sx={{
@@ -539,7 +602,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                       {customer.firstName} {customer.lastName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" noWrap>
-                      {customer.phone ? formatPhoneForDisplay(customer.phone) : 'No phone'}
+                      {customer.phone
+                        ? formatPhoneForDisplay(customer.phone)
+                        : 'No phone'}
                       {customer.businessName && ` • ${customer.businessName}`}
                     </Typography>
                   </Box>
@@ -554,7 +619,11 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                       />
                     )}
                     <IconButton size="small">
-                      {customerDetailsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      {customerDetailsExpanded ? (
+                        <ExpandLessIcon />
+                      ) : (
+                        <ExpandMoreIcon />
+                      )}
                     </IconButton>
                   </Box>
                 </Box>
@@ -567,18 +636,32 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                       {customer.email && (
                         <Box display="flex" alignItems="center" gap={1}>
                           <EmailIcon fontSize="small" color="action" />
-                          <Typography variant="body2">{customer.email}</Typography>
+                          <Typography variant="body2">
+                            {customer.email}
+                          </Typography>
                         </Box>
                       )}
                       {customer.address && (
                         <Box display="flex" alignItems="flex-start" gap={1}>
-                          <LocationIcon fontSize="small" color="action" sx={{ mt: 0.2 }} />
-                          <Typography variant="body2">{customer.address}</Typography>
+                          <LocationIcon
+                            fontSize="small"
+                            color="action"
+                            sx={{ mt: 0.2 }}
+                          />
+                          <Typography variant="body2">
+                            {customer.address}
+                          </Typography>
                         </Box>
                       )}
                       {customer.stats?.lastVisitDate && (
                         <Typography variant="caption" color="text.secondary">
-                          Last visit: {formatDistanceToNow(parseISO(customer.stats.lastVisitDate as unknown as string), { addSuffix: true })}
+                          Last visit:{' '}
+                          {formatDistanceToNow(
+                            parseISO(
+                              customer.stats.lastVisitDate as unknown as string
+                            ),
+                            { addSuffix: true }
+                          )}
                         </Typography>
                       )}
                     </Stack>
@@ -588,22 +671,53 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                       <Grid size={6}>
                         <Card sx={{ bgcolor: 'success.light' }}>
                           <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                            <Typography variant="caption" color="success.dark" fontWeight="medium">
+                            <Typography
+                              variant="caption"
+                              color="success.dark"
+                              fontWeight="medium"
+                            >
                               Total Spent
                             </Typography>
-                            <Typography variant="body2" fontWeight="bold" color="success.dark">
+                            <Typography
+                              variant="body2"
+                              fontWeight="bold"
+                              color="success.dark"
+                            >
                               {formatCurrency(customer.stats?.totalSpent || 0)}
                             </Typography>
                           </CardContent>
                         </Card>
                       </Grid>
                       <Grid size={6}>
-                        <Card sx={{ bgcolor: calculatedOutstandingBalance > 0 ? 'warning.light' : colors.neutral[100] }}>
+                        <Card
+                          sx={{
+                            bgcolor:
+                              calculatedOutstandingBalance > 0
+                                ? 'warning.light'
+                                : colors.neutral[100],
+                          }}
+                        >
                           <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                            <Typography variant="caption" color={calculatedOutstandingBalance > 0 ? 'warning.dark' : 'text.secondary'} fontWeight="medium">
+                            <Typography
+                              variant="caption"
+                              color={
+                                calculatedOutstandingBalance > 0
+                                  ? 'warning.dark'
+                                  : 'text.secondary'
+                              }
+                              fontWeight="medium"
+                            >
                               Outstanding
                             </Typography>
-                            <Typography variant="body2" fontWeight="bold" color={calculatedOutstandingBalance > 0 ? 'warning.dark' : 'text.secondary'}>
+                            <Typography
+                              variant="body2"
+                              fontWeight="bold"
+                              color={
+                                calculatedOutstandingBalance > 0
+                                  ? 'warning.dark'
+                                  : 'text.secondary'
+                              }
+                            >
                               {formatCurrency(calculatedOutstandingBalance)}
                             </Typography>
                           </CardContent>
@@ -635,7 +749,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                           {customer.firstName} {customer.lastName}
                         </Typography>
                         {customer.businessName && (
-                          <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
+                          <Box
+                            display="flex"
+                            alignItems="center"
+                            gap={0.5}
+                            mt={0.5}
+                          >
                             <BusinessIcon fontSize="small" color="action" />
                             <Typography variant="body2" color="text.secondary">
                               {customer.businessName}
@@ -646,7 +765,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                           <Box display="flex" alignItems="center" gap={1}>
                             <PhoneIcon fontSize="small" color="action" />
                             <Typography variant="body2">
-                              {customer.phone ? formatPhoneForDisplay(customer.phone) : 'No phone'}
+                              {customer.phone
+                                ? formatPhoneForDisplay(customer.phone)
+                                : 'No phone'}
                             </Typography>
                           </Box>
                           <Box display="flex" alignItems="center" gap={1}>
@@ -657,14 +778,31 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                           </Box>
                           {customer.address && (
                             <Box display="flex" alignItems="flex-start" gap={1}>
-                              <LocationIcon fontSize="small" color="action" sx={{ mt: 0.2 }} />
-                              <Typography variant="body2">{customer.address}</Typography>
+                              <LocationIcon
+                                fontSize="small"
+                                color="action"
+                                sx={{ mt: 0.2 }}
+                              />
+                              <Typography variant="body2">
+                                {customer.address}
+                              </Typography>
                             </Box>
                           )}
                         </Stack>
                         {customer.stats?.lastVisitDate && (
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            Last visit: {formatDistanceToNow(parseISO(customer.stats.lastVisitDate as unknown as string), { addSuffix: true })}
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 1, display: 'block' }}
+                          >
+                            Last visit:{' '}
+                            {formatDistanceToNow(
+                              parseISO(
+                                customer.stats
+                                  .lastVisitDate as unknown as string
+                              ),
+                              { addSuffix: true }
+                            )}
                           </Typography>
                         )}
                       </Box>
@@ -678,13 +816,29 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                       <Grid size={6}>
                         <Card sx={{ height: '100%', bgcolor: 'success.light' }}>
                           <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                            <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
-                              <TrendingUpIcon fontSize="small" sx={{ color: 'success.dark' }} />
-                              <Typography variant="caption" color="success.dark" fontWeight="medium">
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              gap={0.5}
+                              mb={0.5}
+                            >
+                              <TrendingUpIcon
+                                fontSize="small"
+                                sx={{ color: 'success.dark' }}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="success.dark"
+                                fontWeight="medium"
+                              >
                                 Total Spent
                               </Typography>
                             </Box>
-                            <Typography variant="h6" fontWeight="bold" color="success.dark">
+                            <Typography
+                              variant="h6"
+                              fontWeight="bold"
+                              color="success.dark"
+                            >
                               {formatCurrency(customer.stats?.totalSpent || 0)}
                             </Typography>
                           </CardContent>
@@ -693,20 +847,40 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
 
                       {/* Outstanding Balance */}
                       <Grid size={6}>
-                        <Card sx={{
-                          height: '100%',
-                          bgcolor: calculatedOutstandingBalance > 0 ? 'warning.light' : colors.neutral[100]
-                        }}>
+                        <Card
+                          sx={{
+                            height: '100%',
+                            bgcolor:
+                              calculatedOutstandingBalance > 0
+                                ? 'warning.light'
+                                : colors.neutral[100],
+                          }}
+                        >
                           <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                            <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              gap={0.5}
+                              mb={0.5}
+                            >
                               {calculatedOutstandingBalance > 0 ? (
-                                <WarningIcon fontSize="small" sx={{ color: 'warning.dark' }} />
+                                <WarningIcon
+                                  fontSize="small"
+                                  sx={{ color: 'warning.dark' }}
+                                />
                               ) : (
-                                <CheckCircleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                                <CheckCircleIcon
+                                  fontSize="small"
+                                  sx={{ color: 'text.secondary' }}
+                                />
                               )}
                               <Typography
                                 variant="caption"
-                                color={calculatedOutstandingBalance > 0 ? 'warning.dark' : 'text.secondary'}
+                                color={
+                                  calculatedOutstandingBalance > 0
+                                    ? 'warning.dark'
+                                    : 'text.secondary'
+                                }
                                 fontWeight="medium"
                               >
                                 Outstanding
@@ -715,7 +889,11 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                             <Typography
                               variant="h6"
                               fontWeight="bold"
-                              color={calculatedOutstandingBalance > 0 ? 'warning.dark' : 'text.secondary'}
+                              color={
+                                calculatedOutstandingBalance > 0
+                                  ? 'warning.dark'
+                                  : 'text.secondary'
+                              }
                             >
                               {formatCurrency(calculatedOutstandingBalance)}
                             </Typography>
@@ -731,7 +909,13 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
             <Divider />
 
             {/* Tabs Section - Outstanding, Appointments, Invoices, Vehicles */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', px: { xs: 1, sm: 2 } }}>
+            <Box
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                px: { xs: 1, sm: 2 },
+              }}
+            >
               <Tabs
                 value={tabValue}
                 onChange={handleTabChange}
@@ -741,43 +925,66 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                 <Tab
                   icon={<WalletIcon />}
                   iconPosition="start"
-                  label={isMobile ? '' : `Outstanding (${outstandingItemsCount})`}
+                  label={
+                    isMobile ? '' : `Outstanding (${outstandingItemsCount})`
+                  }
                   sx={{
                     minHeight: 48,
-                    color: outstandingItemsCount > 0 ? 'warning.main' : undefined,
+                    color:
+                      outstandingItemsCount > 0 ? 'warning.main' : undefined,
                     '&.Mui-selected': {
-                      color: outstandingItemsCount > 0 ? 'warning.dark' : undefined,
-                    }
+                      color:
+                        outstandingItemsCount > 0 ? 'warning.dark' : undefined,
+                    },
                   }}
                 />
                 <Tab
                   icon={<CalendarIcon />}
                   iconPosition="start"
-                  label={isMobile ? '' : `Appointments (${customer.appointments?.length || 0})`}
+                  label={
+                    isMobile
+                      ? ''
+                      : `Appointments (${customer.appointments?.length || 0})`
+                  }
                   sx={{ minHeight: 48 }}
                 />
                 <Tab
                   icon={<ReceiptIcon />}
                   iconPosition="start"
-                  label={isMobile ? '' : `Invoices (${customer.invoices?.length || 0})`}
+                  label={
+                    isMobile
+                      ? ''
+                      : `Invoices (${customer.invoices?.length || 0})`
+                  }
                   sx={{ minHeight: 48 }}
                 />
                 <Tab
                   icon={<CarIcon />}
                   iconPosition="start"
-                  label={isMobile ? '' : `Vehicles (${customer.vehicles?.length || 0})`}
+                  label={
+                    isMobile
+                      ? ''
+                      : `Vehicles (${customer.vehicles?.length || 0})`
+                  }
                   sx={{ minHeight: 48 }}
                 />
               </Tabs>
             </Box>
 
-            <Box sx={{
-              p: { xs: 1.5, sm: 3 },
-              minHeight: { xs: 250, sm: 400 },
-              maxHeight: { xs: customerDetailsExpanded ? 'calc(100vh - 450px)' : 'calc(100vh - 220px)', sm: 400 },
-              overflow: 'auto',
-              flex: 1,
-            }}>
+            <Box
+              sx={{
+                p: { xs: 1.5, sm: 3 },
+                minHeight: { xs: 250, sm: 400 },
+                maxHeight: {
+                  xs: customerDetailsExpanded
+                    ? 'calc(100vh - 450px)'
+                    : 'calc(100vh - 220px)',
+                  sm: 400,
+                },
+                overflow: 'auto',
+                flex: 1,
+              }}
+            >
               {/* Outstanding Tab (index 0) */}
               <TabPanel value={tabValue} index={0}>
                 {outstandingItemsCount > 0 ? (
@@ -785,24 +992,49 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     {/* Summary Card */}
                     <Card sx={{ mb: 3, bgcolor: 'warning.light' }}>
                       <CardContent sx={{ py: 2 }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          flexWrap="wrap"
+                          gap={2}
+                        >
                           <Box>
-                            <Typography variant="subtitle2" color="warning.dark">
+                            <Typography
+                              variant="subtitle2"
+                              color="warning.dark"
+                            >
                               Total Outstanding Balance
                             </Typography>
-                            <Typography variant="h4" fontWeight="bold" color="warning.dark">
+                            <Typography
+                              variant="h4"
+                              fontWeight="bold"
+                              color="warning.dark"
+                            >
                               {formatCurrency(calculatedOutstandingBalance)}
                             </Typography>
                           </Box>
                           <Box textAlign="right">
                             {unpaidInvoices.length > 0 && (
-                              <Typography variant="caption" color="warning.dark" display="block">
-                                {unpaidInvoices.length} unpaid invoice{unpaidInvoices.length !== 1 ? 's' : ''}: {formatCurrency(invoiceOutstanding)}
+                              <Typography
+                                variant="caption"
+                                color="warning.dark"
+                                display="block"
+                              >
+                                {unpaidInvoices.length} unpaid invoice
+                                {unpaidInvoices.length !== 1 ? 's' : ''}:{' '}
+                                {formatCurrency(invoiceOutstanding)}
                               </Typography>
                             )}
                             {unpaidAppointments.length > 0 && (
-                              <Typography variant="caption" color="warning.dark" display="block">
-                                {unpaidAppointments.length} unpaid appointment{unpaidAppointments.length !== 1 ? 's' : ''}: {formatCurrency(appointmentOutstanding)}
+                              <Typography
+                                variant="caption"
+                                color="warning.dark"
+                                display="block"
+                              >
+                                {unpaidAppointments.length} unpaid appointment
+                                {unpaidAppointments.length !== 1 ? 's' : ''}:{' '}
+                                {formatCurrency(appointmentOutstanding)}
                               </Typography>
                             )}
                           </Box>
@@ -813,7 +1045,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     {/* Unpaid Invoice Cards */}
                     {unpaidInvoices.length > 0 && (
                       <Box mb={3}>
-                        <Typography variant="subtitle2" color="warning.main" fontWeight="bold" mb={2}>
+                        <Typography
+                          variant="subtitle2"
+                          color="warning.main"
+                          fontWeight="bold"
+                          mb={2}
+                        >
                           Unpaid Invoices ({unpaidInvoices.length})
                         </Typography>
                         <Grid container spacing={2}>
@@ -821,21 +1058,37 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                             <Grid size={{ xs: 12, sm: 6 }} key={invoice.id}>
                               <Card variant="outlined" sx={{ height: '100%' }}>
                                 <CardContent>
-                                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                                  <Box
+                                    display="flex"
+                                    justifyContent="space-between"
+                                    alignItems="flex-start"
+                                    mb={2}
+                                  >
                                     <Box>
                                       <Typography
                                         variant="subtitle1"
                                         fontWeight="bold"
                                         sx={{
                                           cursor: 'pointer',
-                                          '&:hover': { color: 'primary.main', textDecoration: 'underline' }
+                                          '&:hover': {
+                                            color: 'primary.main',
+                                            textDecoration: 'underline',
+                                          },
                                         }}
-                                        onClick={() => handleInvoiceClick(invoice.id)}
+                                        onClick={() =>
+                                          handleInvoiceClick(invoice.id)
+                                        }
                                       >
                                         #{invoice.invoiceNumber}
                                       </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        {formatDate(invoice.invoiceDate || invoice.createdAt)}
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {formatDate(
+                                          invoice.invoiceDate ||
+                                            invoice.createdAt
+                                        )}
                                       </Typography>
                                     </Box>
                                     <Chip
@@ -846,18 +1099,39 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                   </Box>
 
                                   {invoice.vehicle && (
-                                    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
-                                      <CarIcon fontSize="small" color="action" />
-                                      <Typography variant="body2" color="text.secondary">
-                                        {invoice.vehicle.year} {invoice.vehicle.make} {invoice.vehicle.model}
+                                    <Box
+                                      display="flex"
+                                      alignItems="center"
+                                      gap={0.5}
+                                      mb={1}
+                                    >
+                                      <CarIcon
+                                        fontSize="small"
+                                        color="action"
+                                      />
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        {invoice.vehicle.year}{' '}
+                                        {invoice.vehicle.make}{' '}
+                                        {invoice.vehicle.model}
                                       </Typography>
                                     </Box>
                                   )}
 
                                   <Divider sx={{ my: 1.5 }} />
 
-                                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                                    <Typography variant="h6" fontWeight="bold" color="warning.dark">
+                                  <Box
+                                    display="flex"
+                                    justifyContent="space-between"
+                                    alignItems="center"
+                                  >
+                                    <Typography
+                                      variant="h6"
+                                      fontWeight="bold"
+                                      color="warning.dark"
+                                    >
                                       {formatCurrency(invoice.total)}
                                     </Typography>
                                     <Box display="flex" gap={1}>
@@ -866,7 +1140,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                         color="primary"
                                         size="small"
                                         startIcon={<CreditCardIcon />}
-                                        onClick={() => handlePayInvoiceWithSquare(invoice)}
+                                        onClick={() =>
+                                          handlePayInvoiceWithSquare(invoice)
+                                        }
                                       >
                                         Card
                                       </Button>
@@ -875,7 +1151,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                         color="success"
                                         size="small"
                                         startIcon={<PaymentIcon />}
-                                        onClick={() => handlePayInvoice(invoice)}
+                                        onClick={() =>
+                                          handlePayInvoice(invoice)
+                                        }
                                       >
                                         Pay
                                       </Button>
@@ -892,7 +1170,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     {/* Unpaid Appointments Cards */}
                     {unpaidAppointments.length > 0 && (
                       <Box>
-                        <Typography variant="subtitle2" color="warning.main" fontWeight="bold" mb={2}>
+                        <Typography
+                          variant="subtitle2"
+                          color="warning.main"
+                          fontWeight="bold"
+                          mb={2}
+                        >
                           Unpaid Appointments ({unpaidAppointments.length})
                         </Typography>
                         <Grid container spacing={2}>
@@ -904,29 +1187,60 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
 
                             return (
                               <Grid size={{ xs: 12, sm: 6 }} key={apt.id}>
-                                <Card variant="outlined" sx={{ height: '100%', borderColor: 'warning.main' }}>
+                                <Card
+                                  variant="outlined"
+                                  sx={{
+                                    height: '100%',
+                                    borderColor: 'warning.main',
+                                  }}
+                                >
                                   <CardContent>
-                                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                                    <Box
+                                      display="flex"
+                                      justifyContent="space-between"
+                                      alignItems="flex-start"
+                                      mb={2}
+                                    >
                                       <Box>
-                                        <Typography variant="subtitle1" fontWeight="bold">
+                                        <Typography
+                                          variant="subtitle1"
+                                          fontWeight="bold"
+                                        >
                                           {apt.serviceType.replace(/_/g, ' ')}
                                         </Typography>
-                                        <Typography variant="caption" color="text.secondary">
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                        >
                                           {formatDate(apt.scheduledDate)}
                                         </Typography>
                                       </Box>
                                       <Chip
-                                        label={isPartialPaid ? 'Partial' : 'Unpaid'}
+                                        label={
+                                          isPartialPaid ? 'Partial' : 'Unpaid'
+                                        }
                                         size="small"
                                         color="warning"
                                       />
                                     </Box>
 
                                     {apt.vehicle && (
-                                      <Box display="flex" alignItems="center" gap={0.5} mb={1}>
-                                        <CarIcon fontSize="small" color="action" />
-                                        <Typography variant="body2" color="text.secondary">
-                                          {apt.vehicle.year} {apt.vehicle.make} {apt.vehicle.model}
+                                      <Box
+                                        display="flex"
+                                        alignItems="center"
+                                        gap={0.5}
+                                        mb={1}
+                                      >
+                                        <CarIcon
+                                          fontSize="small"
+                                          color="action"
+                                        />
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          {apt.vehicle.year} {apt.vehicle.make}{' '}
+                                          {apt.vehicle.model}
                                         </Typography>
                                       </Box>
                                     )}
@@ -934,8 +1248,15 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                     <Divider sx={{ my: 1.5 }} />
 
                                     <Box>
-                                      <Box display="flex" justifyContent="space-between" mb={0.5}>
-                                        <Typography variant="body2" color="text.secondary">
+                                      <Box
+                                        display="flex"
+                                        justifyContent="space-between"
+                                        mb={0.5}
+                                      >
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
                                           Expected:
                                         </Typography>
                                         <Typography variant="body2">
@@ -943,21 +1264,43 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                         </Typography>
                                       </Box>
                                       {isPartialPaid && (
-                                        <Box display="flex" justifyContent="space-between" mb={0.5}>
-                                          <Typography variant="body2" color="text.secondary">
+                                        <Box
+                                          display="flex"
+                                          justifyContent="space-between"
+                                          mb={0.5}
+                                        >
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                          >
                                             Paid:
                                           </Typography>
-                                          <Typography variant="body2" color="success.main">
+                                          <Typography
+                                            variant="body2"
+                                            color="success.main"
+                                          >
                                             {formatCurrency(paid)}
                                           </Typography>
                                         </Box>
                                       )}
-                                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                                      <Box
+                                        display="flex"
+                                        justifyContent="space-between"
+                                        alignItems="center"
+                                      >
                                         <Box>
-                                          <Typography variant="body2" fontWeight="bold" color="warning.dark">
+                                          <Typography
+                                            variant="body2"
+                                            fontWeight="bold"
+                                            color="warning.dark"
+                                          >
                                             Outstanding:
                                           </Typography>
-                                          <Typography variant="h6" fontWeight="bold" color="warning.dark">
+                                          <Typography
+                                            variant="h6"
+                                            fontWeight="bold"
+                                            color="warning.dark"
+                                          >
                                             {formatCurrency(outstanding)}
                                           </Typography>
                                         </Box>
@@ -966,7 +1309,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                           color="success"
                                           size="small"
                                           startIcon={<PaymentIcon />}
-                                          onClick={() => handleReceiveAppointmentPayment(apt)}
+                                          onClick={() =>
+                                            handleReceiveAppointmentPayment(apt)
+                                          }
                                         >
                                           Receive
                                         </Button>
@@ -983,8 +1328,14 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                   </Box>
                 ) : (
                   <Box textAlign="center" py={4}>
-                    <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
-                    <Typography variant="h6" color="success.main" fontWeight="medium">
+                    <CheckCircleIcon
+                      sx={{ fontSize: 48, color: 'success.main', mb: 1 }}
+                    />
+                    <Typography
+                      variant="h6"
+                      color="success.main"
+                      fontWeight="medium"
+                    >
                       All Paid Up!
                     </Typography>
                     <Typography color="text.secondary">
@@ -1001,14 +1352,21 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     {/* Upcoming Appointments Section */}
                     {upcomingAppointments.length > 0 && (
                       <Box mb={3}>
-                        <Typography variant="subtitle2" color="info.main" fontWeight="bold" mb={2}>
+                        <Typography
+                          variant="subtitle2"
+                          color="info.main"
+                          fontWeight="bold"
+                          mb={2}
+                        >
                           Upcoming Appointments ({upcomingAppointments.length})
                         </Typography>
                         <Grid container spacing={2}>
                           {upcomingAppointments.map((apt: Appointment) => (
                             <Grid size={{ xs: 12, md: 6 }} key={apt.id}>
                               <AppointmentCard
-                                appointment={convertToAppointmentCardFormat(apt)}
+                                appointment={convertToAppointmentCardFormat(
+                                  apt
+                                )}
                                 showActions={true}
                                 onEdit={handleEditAppointment}
                                 onDelete={handleDeleteAppointment}
@@ -1024,26 +1382,40 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     {/* Past Appointments Section */}
                     {pastAppointments.length > 0 && (
                       <Box>
-                        <Typography variant="subtitle2" color="text.secondary" fontWeight="bold" mb={2}>
+                        <Typography
+                          variant="subtitle2"
+                          color="text.secondary"
+                          fontWeight="bold"
+                          mb={2}
+                        >
                           Appointment History ({pastAppointments.length})
                         </Typography>
                         <Grid container spacing={2}>
-                          {pastAppointments.slice(0, 6).map((apt: Appointment) => (
-                            <Grid size={{ xs: 12, md: 6 }} key={apt.id}>
-                              <AppointmentCard
-                                appointment={convertToAppointmentCardFormat(apt)}
-                                showActions={true}
-                                onEdit={handleEditAppointment}
-                                onDelete={handleDeleteAppointment}
-                                onStatusChange={handleStatusChange}
-                                onPaymentComplete={loadCustomer}
-                              />
-                            </Grid>
-                          ))}
+                          {pastAppointments
+                            .slice(0, 6)
+                            .map((apt: Appointment) => (
+                              <Grid size={{ xs: 12, md: 6 }} key={apt.id}>
+                                <AppointmentCard
+                                  appointment={convertToAppointmentCardFormat(
+                                    apt
+                                  )}
+                                  showActions={true}
+                                  onEdit={handleEditAppointment}
+                                  onDelete={handleDeleteAppointment}
+                                  onStatusChange={handleStatusChange}
+                                  onPaymentComplete={loadCustomer}
+                                />
+                              </Grid>
+                            ))}
                         </Grid>
                         {pastAppointments.length > 6 && (
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-                            Showing 6 of {pastAppointments.length} past appointments
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 2, display: 'block' }}
+                          >
+                            Showing 6 of {pastAppointments.length} past
+                            appointments
                           </Typography>
                         )}
                       </Box>
@@ -1051,8 +1423,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                   </Box>
                 ) : (
                   <Box textAlign="center" py={4}>
-                    <CalendarIcon sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }} />
-                    <Typography color="text.secondary">No appointments found</Typography>
+                    <CalendarIcon
+                      sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }}
+                    />
+                    <Typography color="text.secondary">
+                      No appointments found
+                    </Typography>
                   </Box>
                 )}
               </TabPanel>
@@ -1064,7 +1440,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     {/* Unpaid Invoices Section */}
                     {unpaidInvoices.length > 0 && (
                       <Box mb={3}>
-                        <Typography variant="subtitle2" color="warning.main" fontWeight="bold" mb={1}>
+                        <Typography
+                          variant="subtitle2"
+                          color="warning.main"
+                          fontWeight="bold"
+                          mb={1}
+                        >
                           Unpaid Invoices ({unpaidInvoices.length})
                         </Typography>
                         <TableContainer component={Paper} variant="outlined">
@@ -1080,28 +1461,48 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                             </TableHead>
                             <TableBody>
                               {unpaidInvoices.map((invoice: Invoice) => (
-                                <TableRow key={invoice.id} sx={{ bgcolor: 'warning.light' }}>
+                                <TableRow
+                                  key={invoice.id}
+                                  sx={{ bgcolor: 'warning.light' }}
+                                >
                                   <TableCell>
                                     <Link
                                       component="button"
                                       variant="body2"
                                       fontWeight="medium"
-                                      onClick={() => handleInvoiceClick(invoice.id)}
+                                      onClick={() =>
+                                        handleInvoiceClick(invoice.id)
+                                      }
                                       sx={{
                                         cursor: 'pointer',
                                         textDecoration: 'none',
-                                        '&:hover': { textDecoration: 'underline' },
+                                        '&:hover': {
+                                          textDecoration: 'underline',
+                                        },
                                       }}
                                     >
                                       {invoice.invoiceNumber}
                                     </Link>
                                     {isMobile && (
-                                      <Typography variant="caption" color="text.secondary" display="block">
-                                        {formatDate(invoice.invoiceDate || invoice.createdAt)}
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        display="block"
+                                      >
+                                        {formatDate(
+                                          invoice.invoiceDate ||
+                                            invoice.createdAt
+                                        )}
                                       </Typography>
                                     )}
                                   </TableCell>
-                                  {!isMobile && <TableCell>{formatDate(invoice.invoiceDate || invoice.createdAt)}</TableCell>}
+                                  {!isMobile && (
+                                    <TableCell>
+                                      {formatDate(
+                                        invoice.invoiceDate || invoice.createdAt
+                                      )}
+                                    </TableCell>
+                                  )}
                                   {!isMobile && (
                                     <TableCell>
                                       {invoice.vehicle
@@ -1117,7 +1518,10 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                     />
                                   </TableCell>
                                   <TableCell align="right">
-                                    <Typography fontWeight="bold" color="warning.dark">
+                                    <Typography
+                                      fontWeight="bold"
+                                      color="warning.dark"
+                                    >
                                       {formatCurrency(invoice.total)}
                                     </Typography>
                                   </TableCell>
@@ -1132,7 +1536,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     {/* Paid/Other Invoices Section */}
                     {paidInvoices.length > 0 && (
                       <Box>
-                        <Typography variant="subtitle2" color="text.secondary" fontWeight="bold" mb={1}>
+                        <Typography
+                          variant="subtitle2"
+                          color="text.secondary"
+                          fontWeight="bold"
+                          mb={1}
+                        >
                           Invoice History
                         </Typography>
                         <TableContainer component={Paper} variant="outlined">
@@ -1147,52 +1556,76 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {paidInvoices.slice(0, 5).map((invoice: Invoice) => (
-                                <TableRow key={invoice.id} hover>
-                                  <TableCell>
-                                    <Link
-                                      component="button"
-                                      variant="body2"
-                                      onClick={() => handleInvoiceClick(invoice.id)}
-                                      sx={{
-                                        cursor: 'pointer',
-                                        textDecoration: 'none',
-                                        '&:hover': { textDecoration: 'underline' },
-                                      }}
-                                    >
-                                      {invoice.invoiceNumber}
-                                    </Link>
-                                    {isMobile && (
-                                      <Typography variant="caption" color="text.secondary" display="block">
-                                        {formatDate(invoice.invoiceDate || invoice.createdAt)}
-                                      </Typography>
-                                    )}
-                                  </TableCell>
-                                  {!isMobile && <TableCell>{formatDate(invoice.invoiceDate || invoice.createdAt)}</TableCell>}
-                                  {!isMobile && (
+                              {paidInvoices
+                                .slice(0, 5)
+                                .map((invoice: Invoice) => (
+                                  <TableRow key={invoice.id} hover>
                                     <TableCell>
-                                      {invoice.vehicle
-                                        ? `${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}`
-                                        : '-'}
+                                      <Link
+                                        component="button"
+                                        variant="body2"
+                                        onClick={() =>
+                                          handleInvoiceClick(invoice.id)
+                                        }
+                                        sx={{
+                                          cursor: 'pointer',
+                                          textDecoration: 'none',
+                                          '&:hover': {
+                                            textDecoration: 'underline',
+                                          },
+                                        }}
+                                      >
+                                        {invoice.invoiceNumber}
+                                      </Link>
+                                      {isMobile && (
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          display="block"
+                                        >
+                                          {formatDate(
+                                            invoice.invoiceDate ||
+                                              invoice.createdAt
+                                          )}
+                                        </Typography>
+                                      )}
                                     </TableCell>
-                                  )}
-                                  <TableCell>
-                                    <Chip
-                                      label={invoice.status}
-                                      size="small"
-                                      color={getStatusColor(invoice.status)}
-                                    />
-                                  </TableCell>
-                                  <TableCell align="right">
-                                    {formatCurrency(invoice.total)}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                                    {!isMobile && (
+                                      <TableCell>
+                                        {formatDate(
+                                          invoice.invoiceDate ||
+                                            invoice.createdAt
+                                        )}
+                                      </TableCell>
+                                    )}
+                                    {!isMobile && (
+                                      <TableCell>
+                                        {invoice.vehicle
+                                          ? `${invoice.vehicle.year} ${invoice.vehicle.make} ${invoice.vehicle.model}`
+                                          : '-'}
+                                      </TableCell>
+                                    )}
+                                    <TableCell>
+                                      <Chip
+                                        label={invoice.status}
+                                        size="small"
+                                        color={getStatusColor(invoice.status)}
+                                      />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      {formatCurrency(invoice.total)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
                             </TableBody>
                           </Table>
                         </TableContainer>
                         {paidInvoices.length > 5 && (
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 1, display: 'block' }}
+                          >
                             Showing 5 of {paidInvoices.length} paid invoices
                           </Typography>
                         )}
@@ -1201,8 +1634,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                   </Box>
                 ) : (
                   <Box textAlign="center" py={4}>
-                    <ReceiptIcon sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }} />
-                    <Typography color="text.secondary">No invoices found</Typography>
+                    <ReceiptIcon
+                      sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }}
+                    />
+                    <Typography color="text.secondary">
+                      No invoices found
+                    </Typography>
                   </Box>
                 )}
               </TabPanel>
@@ -1215,25 +1652,43 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                       <Grid size={{ xs: 12, sm: 6, md: 4 }} key={vehicle.id}>
                         <Card variant="outlined">
                           <CardContent>
-                            <Box display="flex" alignItems="center" gap={1} mb={1}>
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              gap={1}
+                              mb={1}
+                            >
                               <CarIcon color="primary" />
-                              <Typography variant="subtitle1" fontWeight="medium">
+                              <Typography
+                                variant="subtitle1"
+                                fontWeight="medium"
+                              >
                                 {vehicle.year} {vehicle.make} {vehicle.model}
                               </Typography>
                             </Box>
                             <Stack spacing={0.5}>
                               {vehicle.licensePlate && (
-                                <Typography variant="body2" color="text.secondary">
-                                  License: <strong>{vehicle.licensePlate}</strong>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  License:{' '}
+                                  <strong>{vehicle.licensePlate}</strong>
                                 </Typography>
                               )}
                               {vehicle.vin && (
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
                                   VIN: {vehicle.vin}
                                 </Typography>
                               )}
                               {vehicle.mileage && (
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
                                   Mileage: {vehicle.mileage.toLocaleString()} km
                                 </Typography>
                               )}
@@ -1245,8 +1700,12 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                   </Grid>
                 ) : (
                   <Box textAlign="center" py={4}>
-                    <CarIcon sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }} />
-                    <Typography color="text.secondary">No vehicles registered</Typography>
+                    <CarIcon
+                      sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }}
+                    />
+                    <Typography color="text.secondary">
+                      No vehicles registered
+                    </Typography>
                   </Box>
                 )}
               </TabPanel>
@@ -1293,12 +1752,16 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
           appointmentId={selectedAppointmentForPayment.id}
           defaultExpectedAmount={
             // Show REMAINING amount (expected - already paid), not full expected
-            (selectedAppointmentForPayment.expectedAmount || 0) - (selectedAppointmentForPayment.paymentAmount || 0)
+            (selectedAppointmentForPayment.expectedAmount || 0) -
+            (selectedAppointmentForPayment.paymentAmount || 0)
           }
           // Don't pass existingPayments - we want a fresh payment entry for the remaining balance
           assignedEmployeeIds={
-            selectedAppointmentForPayment.employees && selectedAppointmentForPayment.employees.length > 0
-              ? selectedAppointmentForPayment.employees.map((ae) => ae.employee.id)
+            selectedAppointmentForPayment.employees &&
+            selectedAppointmentForPayment.employees.length > 0
+              ? selectedAppointmentForPayment.employees.map(
+                  (ae) => ae.employee.id
+                )
               : []
           }
         />

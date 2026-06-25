@@ -31,6 +31,7 @@ import { PayoutRulesModule } from '../payout-rules/payout-rules.module';
 import { TimeClockModule } from '../time-clock/time-clock.module';
 import { InspectionsModule } from '../inspections/inspections.module';
 import { RepairOrdersModule } from '../repair-orders/repair-orders.module';
+import { CarfaxModule } from '../carfax/carfax.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -68,6 +69,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     TimeClockModule,
     InspectionsModule,
     RepairOrdersModule,
+    CarfaxModule,
   ],
   controllers: [AppController],
   providers: [
