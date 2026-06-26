@@ -173,6 +173,7 @@ export interface CustomerVehicleDto {
   vin?: string;
   licensePlate?: string;
   mileage?: number;
+  engineType?: string;
   _count?: {
     invoices: number;
     appointments: number;

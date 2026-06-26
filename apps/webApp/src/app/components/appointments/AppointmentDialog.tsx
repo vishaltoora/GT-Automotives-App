@@ -28,6 +28,7 @@ import {
 import { customerService, Customer } from '../../requests/customer.requests';
 import { userService, User } from '../../requests/user.requests';
 import { CustomerDialog } from '../customers/CustomerDialog';
+import { AddVehicleDialog } from '../repair-orders/AddVehicleDialog';
 import { CustomerSelectionField } from './CustomerSelectionField';
 import { DateTimeSelector } from './DateTimeSelector';
 import { ServiceTypeSelector } from './ServiceTypeSelector';
@@ -65,6 +66,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [addVehicleOpen, setAddVehicleOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     customerId: preselectedCustomerId || '',
@@ -80,7 +82,9 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     notes: '',
   });
 
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [selectedEmployees, setSelectedEmployees] = useState<User[]>([]);
 
   useEffect(() => {
@@ -94,9 +98,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           (appointment.employeeId ? [appointment.employeeId] : []);
 
         // Parse date without timezone conversion - extract YYYY-MM-DD and create local date
-        const dateStr = appointment.scheduledDate instanceof Date
-          ? appointment.scheduledDate.toISOString().split('T')[0]
-          : String(appointment.scheduledDate).split('T')[0];
+        const dateStr =
+          appointment.scheduledDate instanceof Date
+            ? appointment.scheduledDate.toISOString().split('T')[0]
+            : String(appointment.scheduledDate).split('T')[0];
         const [year, month, day] = dateStr.split('-').map(Number);
         const localDate = new Date(year, month - 1, day); // Creates local midnight
 
@@ -159,7 +164,14 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       // Check availability on dialog open (for default date/time)
       checkAvailability();
     }
-  }, [open, appointment, preselectedCustomerId, preselectedServiceType, preselectedAppointmentType, preselectedServiceAddress]);
+  }, [
+    open,
+    appointment,
+    preselectedCustomerId,
+    preselectedServiceType,
+    preselectedAppointmentType,
+    preselectedServiceAddress,
+  ]);
 
   // Auto-adjust time if date changes to today and selected time is in the past
   useEffect(() => {
@@ -274,7 +286,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       }
 
       // Validate service address for mobile service
-      if (formData.appointmentType === 'MOBILE_SERVICE' && !formData.serviceAddress) {
+      if (
+        formData.appointmentType === 'MOBILE_SERVICE' &&
+        !formData.serviceAddress
+      ) {
         setError('Please enter the service address for mobile service');
         return;
       }
@@ -285,7 +300,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         for (const empId of formData.employeeIds) {
           const employeeSlot = availableSlots.find(
             (slot) =>
-              slot.employeeId === empId && slot.startTime === formData.scheduledTime
+              slot.employeeId === empId &&
+              slot.startTime === formData.scheduledTime
           );
 
           if (employeeSlot && !employeeSlot.available) {
@@ -316,7 +332,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           duration: formData.duration,
           serviceType: formData.serviceType,
           appointmentType: formData.appointmentType,
-          serviceAddress: formData.appointmentType === 'MOBILE_SERVICE' ? formData.serviceAddress : undefined,
+          serviceAddress:
+            formData.appointmentType === 'MOBILE_SERVICE'
+              ? formData.serviceAddress
+              : undefined,
           notes: formData.notes || undefined,
         });
       } else {
@@ -330,7 +349,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           duration: formData.duration,
           serviceType: formData.serviceType,
           appointmentType: formData.appointmentType,
-          serviceAddress: formData.appointmentType === 'MOBILE_SERVICE' ? formData.serviceAddress : undefined,
+          serviceAddress:
+            formData.appointmentType === 'MOBILE_SERVICE'
+              ? formData.serviceAddress
+              : undefined,
           notes: formData.notes || undefined,
         });
       }
@@ -341,7 +363,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       // Handle specific error types
       if (err.response?.status === 409) {
         // Conflict error - scheduling conflict
-        const message = err.response?.data?.message || 'Scheduling conflict detected';
+        const message =
+          err.response?.data?.message || 'Scheduling conflict detected';
         setError(
           `${message}. The selected time slot may already be booked. Please choose a different time or employee.`
         );
@@ -412,8 +435,15 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
             {appointment ? 'Edit Appointment' : 'New Appointment'}
           </Box>
           {appointment?.bookedByUser && (
-            <Box sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)', mt: 0.5 }}>
-              Booked by: {appointment.bookedByUser.firstName} {appointment.bookedByUser.lastName}
+            <Box
+              sx={{
+                fontSize: '0.75rem',
+                color: 'rgba(255,255,255,0.85)',
+                mt: 0.5,
+              }}
+            >
+              Booked by: {appointment.bookedByUser.firstName}{' '}
+              {appointment.bookedByUser.lastName}
             </Box>
           )}
           <IconButton
@@ -447,7 +477,9 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      appointmentType: e.target.value as 'AT_GARAGE' | 'MOBILE_SERVICE',
+                      appointmentType: e.target.value as
+                        | 'AT_GARAGE'
+                        | 'MOBILE_SERVICE',
                     }))
                   }
                 >
@@ -471,13 +503,20 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 <AddressAutocomplete
                   value={formData.serviceAddress}
                   onChange={(address) =>
-                    setFormData((prev) => ({ ...prev, serviceAddress: address }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      serviceAddress: address,
+                    }))
                   }
                   label="Service Address"
                   required
-                  error={formData.appointmentType === 'MOBILE_SERVICE' && !formData.serviceAddress}
+                  error={
+                    formData.appointmentType === 'MOBILE_SERVICE' &&
+                    !formData.serviceAddress
+                  }
                   helperText={
-                    formData.appointmentType === 'MOBILE_SERVICE' && !formData.serviceAddress
+                    formData.appointmentType === 'MOBILE_SERVICE' &&
+                    !formData.serviceAddress
                       ? 'Address is required for mobile service'
                       : ''
                   }
@@ -498,12 +537,15 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               />
             </Grid>
 
-            {/* 3. Vehicle Selection (conditional) */}
+            {/* 3. Vehicle Selection (with inline Add Vehicle) */}
             <VehicleSelector
               customer={selectedCustomer}
               selectedVehicleId={formData.vehicleId}
               onVehicleChange={(vehicleId) =>
                 setFormData((prev) => ({ ...prev, vehicleId }))
+              }
+              onAddVehicle={
+                selectedCustomer ? () => setAddVehicleOpen(true) : undefined
               }
             />
 
@@ -512,7 +554,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               date={formData.scheduledDate}
               time={formData.scheduledTime}
               onDateChange={(date) =>
-                date && setFormData((prev) => ({ ...prev, scheduledDate: date }))
+                date &&
+                setFormData((prev) => ({ ...prev, scheduledDate: date }))
               }
               onTimeChange={(time) =>
                 setFormData((prev) => ({ ...prev, scheduledTime: time }))
@@ -581,6 +624,26 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           await loadCustomers();
         }}
       />
+
+      {/* Add Vehicle inline during booking (VIN optional at this stage) */}
+      {selectedCustomer && (
+        <AddVehicleDialog
+          open={addVehicleOpen}
+          onClose={() => setAddVehicleOpen(false)}
+          customerId={selectedCustomer.id}
+          customerName={
+            selectedCustomer.businessName ||
+            `${selectedCustomer.firstName} ${selectedCustomer.lastName}`.trim()
+          }
+          requireVin={false}
+          onAdded={async (vehicle) => {
+            setAddVehicleOpen(false);
+            // Refresh the customer so the new vehicle appears, then select it.
+            await loadCustomerDetails(selectedCustomer.id);
+            setFormData((prev) => ({ ...prev, vehicleId: vehicle.id }));
+          }}
+        />
+      )}
     </LocalizationProvider>
   );
 };
