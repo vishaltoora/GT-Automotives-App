@@ -443,6 +443,42 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 />
               </Grid>
 
+              {/* Inline vehicle management (available once the customer exists) */}
+              <Grid size={{ xs: 12 }}>
+                {(() => {
+                  const editCustomerId = customerId || initialCustomer?.id;
+                  if (editCustomerId) {
+                    return (
+                      <Box
+                        sx={{
+                          py: 2,
+                          borderTop: `1px solid ${colors.neutral[200]}`,
+                          borderBottom: `1px solid ${colors.neutral[200]}`,
+                        }}
+                      >
+                        <CustomerVehiclesSection
+                          customerId={editCustomerId}
+                          customerName={
+                            formData.businessName ||
+                            `${formData.firstName} ${formData.lastName}`.trim() ||
+                            'this customer'
+                          }
+                        />
+                      </Box>
+                    );
+                  }
+                  return (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block' }}
+                    >
+                      Save the customer first to add their vehicles.
+                    </Typography>
+                  );
+                })()}
+              </Grid>
+
               {/* PST Exempt */}
               <Grid size={{ xs: 12 }}>
                 <FormControlLabel
@@ -506,41 +542,6 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
             </Grid>
           </form>
         )}
-
-        {/* Inline vehicle management (available once the customer exists) */}
-        {(() => {
-          const editCustomerId = customerId || initialCustomer?.id;
-          if (loading) return null;
-          if (editCustomerId) {
-            return (
-              <Box
-                sx={{
-                  mt: 3,
-                  pt: 2,
-                  borderTop: `1px solid ${colors.neutral[200]}`,
-                }}
-              >
-                <CustomerVehiclesSection
-                  customerId={editCustomerId}
-                  customerName={
-                    formData.businessName ||
-                    `${formData.firstName} ${formData.lastName}`.trim() ||
-                    'this customer'
-                  }
-                />
-              </Box>
-            );
-          }
-          return (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mt: 2 }}
-            >
-              Save the customer first to add their vehicles.
-            </Typography>
-          );
-        })()}
       </DialogContent>
 
       <DialogActions

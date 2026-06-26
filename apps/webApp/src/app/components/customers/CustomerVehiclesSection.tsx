@@ -8,7 +8,6 @@ import {
   IconButton,
   CircularProgress,
   Tooltip,
-  Divider,
 } from '@mui/material';
 import {
   DirectionsCar,
@@ -185,8 +184,6 @@ export function CustomerVehiclesSection({
           ))}
         </Stack>
       )}
-
-      <Divider sx={{ mt: 2 }} />
 
       <AddVehicleDialog
         open={dialogOpen}
