@@ -47,6 +47,9 @@ export function CustomerVehiclesSection({
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Note: intentionally depends only on customerId. `showApiError` from
+  // useErrorHelpers() is a fresh function each render, so including it would
+  // re-create this callback every render and put the load effect in a loop.
   const loadVehicles = useCallback(async () => {
     if (!customerId) return;
     setLoading(true);
@@ -58,7 +61,8 @@ export function CustomerVehiclesSection({
     } finally {
       setLoading(false);
     }
-  }, [customerId, showApiError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
 
   useEffect(() => {
     loadVehicles();
