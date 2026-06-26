@@ -29,6 +29,7 @@ import {
 } from '../../requests/customer.requests';
 import { PhoneInput } from '../../components/common/PhoneInput';
 import { AddressAutocomplete } from '../../components/common/AddressAutocomplete';
+import { CustomerVehiclesSection } from '../../components/customers/CustomerVehiclesSection';
 import axios from 'axios';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
@@ -390,6 +391,22 @@ export function CustomerForm() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Inline vehicle management (available once the customer exists) */}
+      {isEdit && id && (
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <CustomerVehiclesSection
+              customerId={id}
+              customerName={
+                formData.businessName ||
+                `${formData.firstName} ${formData.lastName}`.trim() ||
+                'this customer'
+              }
+            />
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }

@@ -38,6 +38,7 @@ import {
 import { colors } from '../../theme/colors';
 import { PhoneInput } from '../common/PhoneInput';
 import { AddressAutocomplete } from '../common/AddressAutocomplete';
+import { CustomerVehiclesSection } from './CustomerVehiclesSection';
 import axios from 'axios';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
@@ -504,6 +505,29 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
               </Grid>
             </Grid>
           </form>
+        )}
+
+        {/* Inline vehicle management (available once the customer exists) */}
+        {!loading && isEdit && customerId && (
+          <Box sx={{ mt: 3 }}>
+            <CustomerVehiclesSection
+              customerId={customerId}
+              customerName={
+                formData.businessName ||
+                `${formData.firstName} ${formData.lastName}`.trim() ||
+                'this customer'
+              }
+            />
+          </Box>
+        )}
+        {!loading && !isEdit && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mt: 2 }}
+          >
+            Save the customer first to add their vehicles.
+          </Typography>
         )}
       </DialogContent>
 
