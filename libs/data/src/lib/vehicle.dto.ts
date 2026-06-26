@@ -30,6 +30,10 @@ export class CreateVehicleDto {
   @Type(() => Number)
   mileage?: number;
 
+  @IsOptional()
+  @IsString()
+  engineType?: string;
+
   @IsString()
   customerId!: string;
 }
@@ -101,6 +105,10 @@ export class VehicleResponseDto {
   @IsNumber()
   @Type(() => Number)
   mileage?: number;
+
+  @IsOptional()
+  @IsString()
+  engineType?: string;
 
   @IsString()
   customerId!: string;

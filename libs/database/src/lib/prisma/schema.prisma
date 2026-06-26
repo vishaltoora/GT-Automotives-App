@@ -106,6 +106,7 @@ model Vehicle {
   vin          String?       @unique
   licensePlate String?
   mileage      Int?
+  engineType   String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]

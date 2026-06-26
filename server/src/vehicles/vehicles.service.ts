@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { VehicleRepository } from './repositories/vehicle.repository';
 import { CustomerRepository } from '../customers/repositories/customer.repository';
 import { CreateVehicleDto, UpdateVehicleDto } from '@gt-automotive/data';
@@ -11,7 +16,7 @@ export class VehiclesService {
     private readonly vehicleRepository: VehicleRepository,
     private readonly customerRepository: CustomerRepository,
     private readonly auditRepository: AuditRepository,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaService
   ) {}
 
   /**
@@ -35,9 +40,15 @@ export class VehiclesService {
     }));
   }
 
-  async create(createVehicleDto: CreateVehicleDto, userId: string, userRole: string) {
+  async create(
+    createVehicleDto: CreateVehicleDto,
+    userId: string,
+    userRole: string
+  ) {
     // Verify customer exists
-    const customer = await this.customerRepository.findById(createVehicleDto.customerId);
+    const customer = await this.customerRepository.findById(
+      createVehicleDto.customerId
+    );
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
@@ -46,12 +57,16 @@ export class VehiclesService {
     // Customer role validation would require proper customer-user mapping
     // For now, only staff and admin can create vehicles
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle creation needs proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle creation needs proper customer context implementation'
+      );
     }
 
     // Check for duplicate VIN if provided
     if (createVehicleDto.vin) {
-      const existingVehicle = await this.vehicleRepository.findByVin(createVehicleDto.vin);
+      const existingVehicle = await this.vehicleRepository.findByVin(
+        createVehicleDto.vin
+      );
       if (existingVehicle) {
         throw new BadRequestException('A vehicle with this VIN already exists');
       }
@@ -65,6 +80,7 @@ export class VehiclesService {
       vin: createVehicleDto.vin,
       licensePlate: createVehicleDto.licensePlate,
       mileage: createVehicleDto.mileage,
+      engineType: createVehicleDto.engineType,
     });
 
     // Log the action
@@ -82,7 +98,9 @@ export class VehiclesService {
   async findAll(userId: string, userRole: string) {
     // Customer role access requires proper customer-user context mapping
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle access needs proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle access needs proper customer context implementation'
+      );
     }
 
     // Staff and admin can see all vehicles
@@ -98,7 +116,9 @@ export class VehiclesService {
 
     // Customer role validation requires proper customer context
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle access needs proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle access needs proper customer context implementation'
+      );
     }
 
     return this.vehicleRepository.findByCustomer(customerId);
@@ -113,7 +133,9 @@ export class VehiclesService {
 
     // Customer role validation requires proper customer context
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle access needs proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle access needs proper customer context implementation'
+      );
     }
 
     // Get vehicle statistics
@@ -125,7 +147,12 @@ export class VehiclesService {
     };
   }
 
-  async update(id: string, updateVehicleDto: UpdateVehicleDto, userId: string, userRole: string) {
+  async update(
+    id: string,
+    updateVehicleDto: UpdateVehicleDto,
+    userId: string,
+    userRole: string
+  ) {
     const vehicle = await this.vehicleRepository.findById(id);
 
     if (!vehicle) {
@@ -134,28 +161,36 @@ export class VehiclesService {
 
     // Customer role validation requires proper customer context
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle updates need proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle updates need proper customer context implementation'
+      );
     }
 
     // Check for duplicate VIN if updating
     if (updateVehicleDto.vin && updateVehicleDto.vin !== vehicle.vin) {
-      const existingVehicle = await this.vehicleRepository.findByVin(updateVehicleDto.vin);
+      const existingVehicle = await this.vehicleRepository.findByVin(
+        updateVehicleDto.vin
+      );
       if (existingVehicle) {
         throw new BadRequestException('A vehicle with this VIN already exists');
       }
     }
 
-    const updatedVehicle = await this.vehicleRepository.update(
-      id,
-      {
-        ...(updateVehicleDto.make && { make: updateVehicleDto.make }),
-        ...(updateVehicleDto.model && { model: updateVehicleDto.model }),
-        ...(updateVehicleDto.year && { year: updateVehicleDto.year }),
-        ...(updateVehicleDto.vin !== undefined && { vin: updateVehicleDto.vin }),
-        ...(updateVehicleDto.licensePlate !== undefined && { licensePlate: updateVehicleDto.licensePlate }),
-        ...(updateVehicleDto.mileage !== undefined && { mileage: updateVehicleDto.mileage }),
-      }
-    );
+    const updatedVehicle = await this.vehicleRepository.update(id, {
+      ...(updateVehicleDto.make && { make: updateVehicleDto.make }),
+      ...(updateVehicleDto.model && { model: updateVehicleDto.model }),
+      ...(updateVehicleDto.year && { year: updateVehicleDto.year }),
+      ...(updateVehicleDto.vin !== undefined && { vin: updateVehicleDto.vin }),
+      ...(updateVehicleDto.licensePlate !== undefined && {
+        licensePlate: updateVehicleDto.licensePlate,
+      }),
+      ...(updateVehicleDto.mileage !== undefined && {
+        mileage: updateVehicleDto.mileage,
+      }),
+      ...(updateVehicleDto.engineType !== undefined && {
+        engineType: updateVehicleDto.engineType,
+      }),
+    });
 
     // Log the action if not a self-update
     if (userRole !== 'CUSTOMER') {
@@ -181,7 +216,9 @@ export class VehiclesService {
 
     // Customer role validation requires proper customer context
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle deletion needs proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle deletion needs proper customer context implementation'
+      );
     } else if (userRole !== 'ADMIN') {
       throw new ForbiddenException('Only administrators can delete vehicles');
     }
@@ -197,7 +234,7 @@ export class VehiclesService {
 
     if (hasInvoices > 0 || hasAppointments > 0) {
       throw new BadRequestException(
-        'Cannot delete vehicle with existing service history. Please contact an administrator.',
+        'Cannot delete vehicle with existing service history. Please contact an administrator.'
       );
     }
 
@@ -220,13 +257,20 @@ export class VehiclesService {
 
     // Filter results for customers
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle search needs proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle search needs proper customer context implementation'
+      );
     }
 
     return vehicles;
   }
 
-  async updateMileage(id: string, mileage: number, userId: string, userRole: string) {
+  async updateMileage(
+    id: string,
+    mileage: number,
+    userId: string,
+    userRole: string
+  ) {
     const vehicle = await this.vehicleRepository.findById(id);
 
     if (!vehicle) {
@@ -240,13 +284,12 @@ export class VehiclesService {
 
     // Customer role validation requires proper customer context
     if (userRole === 'CUSTOMER') {
-      throw new ForbiddenException('Customer vehicle updates need proper customer context implementation');
+      throw new ForbiddenException(
+        'Customer vehicle updates need proper customer context implementation'
+      );
     }
 
-    const updatedVehicle = await this.vehicleRepository.update(
-      id,
-      { mileage }
-    );
+    const updatedVehicle = await this.vehicleRepository.update(id, { mileage });
 
     // Log the action
     await this.auditRepository.create({

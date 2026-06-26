@@ -15,7 +15,11 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { DirectionsCar, Search } from '@mui/icons-material';
-import { vehicleService, Vehicle, VehicleMakeWithModels } from '../../requests/vehicle.requests';
+import {
+  vehicleService,
+  Vehicle,
+  VehicleMakeWithModels,
+} from '../../requests/vehicle.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 
 const CURRENT_YEAR = new Date().getFullYear() + 1;
@@ -23,7 +27,10 @@ const YEARS = Array.from({ length: 60 }, (_, i) => CURRENT_YEAR - i);
 
 const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/;
 const normalizeVin = (value: string) =>
-  value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '').slice(0, 17);
+  value
+    .toUpperCase()
+    .replace(/[^A-HJ-NPR-Z0-9]/g, '')
+    .slice(0, 17);
 
 interface AddVehicleDialogProps {
   open: boolean;
@@ -31,9 +38,23 @@ interface AddVehicleDialogProps {
   customerId: string;
   customerName: string;
   onAdded: (vehicle: Vehicle) => void;
+  /**
+   * When true (default) a valid 17-character VIN and mileage are required –
+   * the behaviour used when adding a vehicle for a repair order.
+   * Pass false for lighter-weight flows (e.g. appointment booking) where the
+   * VIN can be captured later and mileage is optional.
+   */
+  requireVin?: boolean;
 }
 
-export function AddVehicleDialog({ open, onClose, customerId, customerName, onAdded }: AddVehicleDialogProps) {
+export function AddVehicleDialog({
+  open,
+  onClose,
+  customerId,
+  customerName,
+  onAdded,
+  requireVin = true,
+}: AddVehicleDialogProps) {
   const { showApiError, showValidationError } = useErrorHelpers();
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
@@ -42,6 +63,7 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
   const [licensePlate, setLicensePlate] = useState('');
   const [color, setColor] = useState('');
   const [mileage, setMileage] = useState('');
+  const [engineType, setEngineType] = useState('');
   const [saving, setSaving] = useState(false);
   const [decoding, setDecoding] = useState(false);
   const [makesData, setMakesData] = useState<VehicleMakeWithModels[]>([]);
@@ -57,13 +79,21 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
 
   const makeOptions = useMemo(() => makesData.map((m) => m.name), [makesData]);
   const modelOptions = useMemo(
-    () => makesData.find((m) => m.name.toLowerCase() === make.trim().toLowerCase())?.models ?? [],
+    () =>
+      makesData.find((m) => m.name.toLowerCase() === make.trim().toLowerCase())
+        ?.models ?? [],
     [makesData, make]
   );
 
   const reset = () => {
-    setMake(''); setModel(''); setYear(new Date().getFullYear());
-    setVin(''); setLicensePlate(''); setColor(''); setMileage('');
+    setMake('');
+    setModel('');
+    setYear(new Date().getFullYear());
+    setVin('');
+    setLicensePlate('');
+    setColor('');
+    setMileage('');
+    setEngineType('');
   };
 
   const handleClose = () => {
@@ -75,7 +105,9 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
   const handleDecodeVin = async () => {
     const normalized = normalizeVin(vin);
     if (!VIN_PATTERN.test(normalized)) {
-      showValidationError('Enter a 17-character VIN. VINs cannot contain I, O, or Q.');
+      showValidationError(
+        'Enter a 17-character VIN. VINs cannot contain I, O, or Q.'
+      );
       return;
     }
     setDecoding(true);
@@ -85,6 +117,7 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
       if (decoded.make) setMake(decoded.make);
       if (decoded.model) setModel(decoded.model);
       if (decoded.year) setYear(decoded.year);
+      if (decoded.engine) setEngineType(decoded.engine);
     } catch (error) {
       showApiError(error, 'Failed to decode VIN.');
     } finally {
@@ -97,11 +130,20 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
       showValidationError('Make, model, and year are required.');
       return;
     }
-    if (!VIN_PATTERN.test(vin)) {
-      showValidationError('A valid 17-character VIN is required. VINs cannot contain I, O, or Q.');
+    if (requireVin && !VIN_PATTERN.test(vin)) {
+      showValidationError(
+        'A valid 17-character VIN is required. VINs cannot contain I, O, or Q.'
+      );
       return;
     }
-    if (!mileage || Number(mileage) <= 0) {
+    // If a VIN is supplied it must always be valid, even when optional.
+    if (vin && !VIN_PATTERN.test(vin)) {
+      showValidationError(
+        'Enter a valid 17-character VIN, or leave it blank. VINs cannot contain I, O, or Q.'
+      );
+      return;
+    }
+    if (requireVin && (!mileage || Number(mileage) <= 0)) {
       showValidationError('Mileage is required.');
       return;
     }
@@ -116,6 +158,7 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
         licensePlate: licensePlate.trim() || undefined,
         color: color.trim() || undefined,
         mileage: mileage ? Number(mileage) : undefined,
+        engineType: engineType.trim() || undefined,
       });
       onAdded(vehicle);
       reset();
@@ -139,15 +182,19 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
         <Stack spacing={2}>
           {/* VIN + decode */}
           <TextField
-            label="VIN"
-            required
+            label={requireVin ? 'VIN' : 'VIN (optional)'}
+            required={requireVin}
             fullWidth
             size="small"
             value={vin}
             onChange={(e) => setVin(normalizeVin(e.target.value))}
             placeholder="17-character VIN"
             error={vin.length > 0 && !VIN_PATTERN.test(vin)}
-            helperText={vin.length > 0 && !VIN_PATTERN.test(vin) ? `${vin.length}/17 characters` : ' '}
+            helperText={
+              vin.length > 0 && !VIN_PATTERN.test(vin)
+                ? `${vin.length}/17 characters`
+                : ' '
+            }
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -155,7 +202,13 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
                     size="small"
                     onClick={handleDecodeVin}
                     disabled={decoding || !vin}
-                    startIcon={decoding ? <CircularProgress size={14} /> : <Search fontSize="small" />}
+                    startIcon={
+                      decoding ? (
+                        <CircularProgress size={14} />
+                      ) : (
+                        <Search fontSize="small" />
+                      )
+                    }
                   >
                     Decode
                   </Button>
@@ -172,7 +225,9 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
               onChange={(_, v) => setMake(v ?? '')}
               onInputChange={(_, v) => setMake(v)}
               sx={{ flex: 1 }}
-              renderInput={(params) => <TextField {...params} label="Make" size="small" required />}
+              renderInput={(params) => (
+                <TextField {...params} label="Make" size="small" required />
+              )}
             />
             <Autocomplete
               freeSolo
@@ -188,7 +243,11 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
                   label="Model"
                   size="small"
                   required
-                  placeholder={make.trim() ? 'Select or type a model' : 'Choose a make first'}
+                  placeholder={
+                    make.trim()
+                      ? 'Select or type a model'
+                      : 'Choose a make first'
+                  }
                 />
               )}
             />
@@ -205,7 +264,9 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
               required
             >
               {YEARS.map((y) => (
-                <MenuItem key={y} value={y}>{y}</MenuItem>
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
               ))}
             </TextField>
             <TextField
@@ -226,28 +287,57 @@ export function AddVehicleDialog({ open, onClose, customerId, customerName, onAd
               onChange={(e) => setLicensePlate(e.target.value)}
             />
             <TextField
-              label="Mileage"
-              required
+              label={requireVin ? 'Mileage' : 'Mileage (optional)'}
+              required={requireVin}
               type="number"
               size="small"
               sx={{ flex: 1 }}
               value={mileage}
               onChange={(e) => setMileage(e.target.value)}
-              InputProps={{ endAdornment: <InputAdornment position="end">km</InputAdornment> }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">km</InputAdornment>
+                ),
+              }}
             />
           </Box>
+
+          <TextField
+            label="Engine Type (optional)"
+            size="small"
+            fullWidth
+            value={engineType}
+            onChange={(e) => setEngineType(e.target.value)}
+            placeholder="Auto-filled from VIN decode, e.g. 2.0L L4"
+            helperText="Populated automatically when you decode a VIN; you can also enter it manually."
+          />
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} disabled={saving}>Cancel</Button>
+        <Button onClick={handleClose} disabled={saving}>
+          Cancel
+        </Button>
         {(() => {
-          const addDisabled = saving || !make.trim() || !model.trim() || !VIN_PATTERN.test(vin) || !mileage || Number(mileage) <= 0;
+          const vinOk = requireVin
+            ? VIN_PATTERN.test(vin)
+            : !vin || VIN_PATTERN.test(vin);
+          const mileageOk = requireVin
+            ? Boolean(mileage) && Number(mileage) > 0
+            : true;
+          const addDisabled =
+            saving || !make.trim() || !model.trim() || !vinOk || !mileageOk;
           return (
             <Button
               variant={addDisabled ? 'outlined' : 'contained'}
               onClick={handleSave}
               disabled={addDisabled}
-              startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <DirectionsCar />}
+              startIcon={
+                saving ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <DirectionsCar />
+                )
+              }
             >
               Add Vehicle
             </Button>
