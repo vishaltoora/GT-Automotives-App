@@ -449,13 +449,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   const editCustomerId = customerId || initialCustomer?.id;
                   if (editCustomerId) {
                     return (
-                      <Box
-                        sx={{
-                          py: 2,
-                          borderTop: `1px solid ${colors.neutral[200]}`,
-                          borderBottom: `1px solid ${colors.neutral[200]}`,
-                        }}
-                      >
+                      <Box sx={{ py: 1 }}>
                         <CustomerVehiclesSection
                           customerId={editCustomerId}
                           customerName={
