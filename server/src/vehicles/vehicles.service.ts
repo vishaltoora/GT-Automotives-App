@@ -223,16 +223,22 @@ export class VehiclesService {
       throw new ForbiddenException('Only administrators can delete vehicles');
     }
 
-    // Check for existing invoices or appointments
-    const hasInvoices = await this.prisma.invoice.count({
-      where: { vehicleId: id },
-    });
+    // Block deletion when the vehicle has any service history so it can't be
+    // orphaned: invoices, appointments, repair orders, or inspections.
+    const [hasInvoices, hasAppointments, hasRepairOrders, hasInspections] =
+      await Promise.all([
+        this.prisma.invoice.count({ where: { vehicleId: id } }),
+        this.prisma.appointment.count({ where: { vehicleId: id } }),
+        this.prisma.repairOrder.count({ where: { vehicleId: id } }),
+        this.prisma.inspection.count({ where: { vehicleId: id } }),
+      ]);
 
-    const hasAppointments = await this.prisma.appointment.count({
-      where: { vehicleId: id },
-    });
-
-    if (hasInvoices > 0 || hasAppointments > 0) {
+    if (
+      hasInvoices > 0 ||
+      hasAppointments > 0 ||
+      hasRepairOrders > 0 ||
+      hasInspections > 0
+    ) {
       throw new BadRequestException(
         'Cannot delete vehicle with existing service history. Please contact an administrator.'
       );

@@ -35,6 +35,8 @@ describe('VehiclesService', () => {
       vehicleMake: { findMany: jest.fn() },
       invoice: { count: jest.fn() },
       appointment: { count: jest.fn() },
+      repairOrder: { count: jest.fn() },
+      inspection: { count: jest.fn() },
     };
 
     service = new VehiclesService(
@@ -274,6 +276,21 @@ describe('VehiclesService', () => {
       vehicleRepository.findById.mockResolvedValue({ id: 'v1' });
       prisma.invoice.count.mockResolvedValue(1);
       prisma.appointment.count.mockResolvedValue(0);
+      prisma.repairOrder.count.mockResolvedValue(0);
+      prisma.inspection.count.mockResolvedValue(0);
+
+      await expect(
+        service.remove('v1', 'user-1', 'ADMIN')
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(vehicleRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when the vehicle has repair orders or inspections', async () => {
+      vehicleRepository.findById.mockResolvedValue({ id: 'v1' });
+      prisma.invoice.count.mockResolvedValue(0);
+      prisma.appointment.count.mockResolvedValue(0);
+      prisma.repairOrder.count.mockResolvedValue(2);
+      prisma.inspection.count.mockResolvedValue(0);
 
       await expect(
         service.remove('v1', 'user-1', 'ADMIN')
@@ -285,6 +302,8 @@ describe('VehiclesService', () => {
       vehicleRepository.findById.mockResolvedValue({ id: 'v1' });
       prisma.invoice.count.mockResolvedValue(0);
       prisma.appointment.count.mockResolvedValue(0);
+      prisma.repairOrder.count.mockResolvedValue(0);
+      prisma.inspection.count.mockResolvedValue(0);
       vehicleRepository.delete.mockResolvedValue({});
 
       const result = await service.remove('v1', 'user-1', 'ADMIN');

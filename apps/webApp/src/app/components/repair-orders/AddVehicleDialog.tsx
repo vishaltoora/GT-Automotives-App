@@ -45,6 +45,11 @@ interface AddVehicleDialogProps {
    * VIN can be captured later and mileage is optional.
    */
   requireVin?: boolean;
+  /**
+   * When provided the dialog edits this existing vehicle instead of creating a
+   * new one. The same form is reused; on save the vehicle is updated.
+   */
+  vehicle?: Vehicle | null;
 }
 
 export function AddVehicleDialog({
@@ -54,7 +59,9 @@ export function AddVehicleDialog({
   customerName,
   onAdded,
   requireVin = true,
+  vehicle: editVehicle = null,
 }: AddVehicleDialogProps) {
+  const isEdit = !!editVehicle;
   const { showApiError, showValidationError } = useErrorHelpers();
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
@@ -76,6 +83,26 @@ export function AddVehicleDialog({
       .then(setMakesData)
       .catch(() => setMakesData([]));
   }, [open, makesData.length]);
+
+  // When opened for editing, prefill the form from the existing vehicle.
+  useEffect(() => {
+    if (!open) return;
+    if (editVehicle) {
+      setMake(editVehicle.make ?? '');
+      setModel(editVehicle.model ?? '');
+      setYear(editVehicle.year ?? new Date().getFullYear());
+      setVin(editVehicle.vin ? normalizeVin(editVehicle.vin) : '');
+      setLicensePlate(editVehicle.licensePlate ?? '');
+      setColor(editVehicle.color ?? '');
+      setMileage(
+        editVehicle.mileage != null ? String(editVehicle.mileage) : ''
+      );
+      setEngineType(editVehicle.engineType ?? '');
+    } else {
+      reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editVehicle?.id]);
 
   const makeOptions = useMemo(() => makesData.map((m) => m.name), [makesData]);
   const modelOptions = useMemo(
@@ -149,21 +176,38 @@ export function AddVehicleDialog({
     }
     setSaving(true);
     try {
-      const vehicle = await vehicleService.createVehicle({
-        customerId,
-        make: make.trim(),
-        model: model.trim(),
-        year: Number(year),
-        vin: vin.trim() || undefined,
-        licensePlate: licensePlate.trim() || undefined,
-        color: color.trim() || undefined,
-        mileage: mileage ? Number(mileage) : undefined,
-        engineType: engineType.trim() || undefined,
-      });
+      let vehicle: Vehicle;
+      if (editVehicle) {
+        vehicle = await vehicleService.updateVehicle(editVehicle.id, {
+          make: make.trim(),
+          model: model.trim(),
+          year: Number(year),
+          vin: vin.trim() || null,
+          licensePlate: licensePlate.trim() || null,
+          color: color.trim() || undefined,
+          mileage: mileage ? Number(mileage) : undefined,
+          engineType: engineType.trim() || undefined,
+        });
+      } else {
+        vehicle = await vehicleService.createVehicle({
+          customerId,
+          make: make.trim(),
+          model: model.trim(),
+          year: Number(year),
+          vin: vin.trim() || undefined,
+          licensePlate: licensePlate.trim() || undefined,
+          color: color.trim() || undefined,
+          mileage: mileage ? Number(mileage) : undefined,
+          engineType: engineType.trim() || undefined,
+        });
+      }
       onAdded(vehicle);
       reset();
     } catch (error) {
-      showApiError(error, 'Failed to add vehicle.');
+      showApiError(
+        error,
+        isEdit ? 'Failed to update vehicle.' : 'Failed to add vehicle.'
+      );
     } finally {
       setSaving(false);
     }
@@ -172,11 +216,13 @@ export function AddVehicleDialog({
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <DirectionsCar color="action" /> Add Vehicle
+        <DirectionsCar color="action" />{' '}
+        {isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
       </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Adding a vehicle for <strong>{customerName}</strong>.
+          {isEdit ? 'Editing a vehicle for ' : 'Adding a vehicle for '}
+          <strong>{customerName}</strong>.
         </Typography>
 
         <Stack spacing={2}>
@@ -339,7 +385,7 @@ export function AddVehicleDialog({
                 )
               }
             >
-              Add Vehicle
+              {isEdit ? 'Save Vehicle' : 'Add Vehicle'}
             </Button>
           );
         })()}
