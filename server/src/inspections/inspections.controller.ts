@@ -16,7 +16,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import {
   CreateInspectionDto,
+  CreateInspectionFeeItemDto,
+  GenerateInspectionInvoiceDto,
   UpdateInspectionDto,
+  UpdateInspectionFeeItemDto,
   UpdateInspectionResultDto,
 } from '@gt-automotive/data';
 import { InspectionsService } from './inspections.service';
@@ -32,24 +35,51 @@ export class InspectionsController {
     return this.inspectionsService.findTemplates(type);
   }
 
+  // --- Admin-managed inspection fee catalog ---
+  // Declared before the ':id' routes so 'fee-items' is not captured as an id.
+
+  @Get('fee-items')
+  findFeeItems(@CurrentUser() user: any) {
+    return this.inspectionsService.findFeeItems(user.role.name);
+  }
+
+  @Post('fee-items')
+  @Roles('ADMIN')
+  createFeeItem(
+    @Body() dto: CreateInspectionFeeItemDto,
+    @CurrentUser() user: any
+  ) {
+    return this.inspectionsService.createFeeItem(dto, user.role.name);
+  }
+
+  @Patch('fee-items/:itemId')
+  @Roles('ADMIN')
+  updateFeeItem(
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateInspectionFeeItemDto,
+    @CurrentUser() user: any
+  ) {
+    return this.inspectionsService.updateFeeItem(itemId, dto, user.role.name);
+  }
+
+  @Delete('fee-items/:itemId')
+  @Roles('ADMIN')
+  removeFeeItem(@Param('itemId') itemId: string, @CurrentUser() user: any) {
+    return this.inspectionsService.removeFeeItem(itemId, user.role.name);
+  }
+
   @Get()
   findAll(@CurrentUser() user: any) {
     return this.inspectionsService.findAll(user.role.name);
   }
 
   @Post()
-  create(
-    @Body() dto: CreateInspectionDto,
-    @CurrentUser() user: any,
-  ) {
+  create(@Body() dto: CreateInspectionDto, @CurrentUser() user: any) {
     return this.inspectionsService.create(dto, user.id, user.role.name);
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
     return this.inspectionsService.findOne(id, user.role.name);
   }
 
@@ -57,7 +87,7 @@ export class InspectionsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateInspectionDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.inspectionsService.update(id, dto, user.role.name);
   }
@@ -67,25 +97,39 @@ export class InspectionsController {
     @Param('inspectionId') inspectionId: string,
     @Param('resultId') resultId: string,
     @Body() dto: UpdateInspectionResultDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
-    return this.inspectionsService.updateResult(inspectionId, resultId, dto, user.role.name);
+    return this.inspectionsService.updateResult(
+      inspectionId,
+      resultId,
+      dto,
+      user.role.name
+    );
   }
 
   @Post(':id/complete')
-  complete(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  complete(@Param('id') id: string, @CurrentUser() user: any) {
     return this.inspectionsService.complete(id, user.id, user.role.name);
+  }
+
+  @Post(':id/generate-invoice')
+  @Roles('ADMIN', 'SUPERVISOR')
+  generateInvoice(
+    @Param('id') id: string,
+    @Body() dto: GenerateInspectionInvoiceDto,
+    @CurrentUser() user: any
+  ) {
+    return this.inspectionsService.generateInvoice(
+      id,
+      dto,
+      user.id,
+      user.role.name
+    );
   }
 
   @Delete(':id')
   @Roles('ADMIN')
-  remove(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.inspectionsService.remove(id, user.id, user.role.name);
   }
 }
