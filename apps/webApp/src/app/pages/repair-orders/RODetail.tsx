@@ -38,6 +38,7 @@ import {
   Chat as ChatIcon,
   DirectionsCar,
   Edit,
+  Print as PrintIcon,
   ReceiptLong,
   Save,
 } from '@mui/icons-material';
@@ -58,6 +59,7 @@ import {
   inspectionService,
   InspectionFeeItem,
 } from '../../requests/inspection.requests';
+import { invoiceService } from '../../requests/invoice.requests';
 import { colors } from '../../theme/colors';
 
 // ---- Status config ----
@@ -124,7 +126,7 @@ function CurrentTab({
   baseRoute: string;
 }) {
   const navigate = useNavigate();
-  const { showApiError, showSuccess, showValidationError } = useErrorHelpers();
+  const { showApiError, showValidationError } = useErrorHelpers();
   const [serviceDrawerOpen, setServiceDrawerOpen] = useState(false);
   const [editingConcern, setEditingConcern] = useState(false);
   const [concern, setConcern] = useState(ro.customerConcern ?? '');
@@ -140,6 +142,13 @@ function CurrentTab({
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [feeItems, setFeeItems] = useState<InspectionFeeItem[]>([]);
   const [selectedFeeItemId, setSelectedFeeItemId] = useState('');
+  // After a successful close, the dialog switches to a print-actions state.
+  const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
+  const [createdInvoiceNumber, setCreatedInvoiceNumber] = useState('');
+  const [invoicedInspectionId, setInvoicedInspectionId] = useState<
+    string | null
+  >(null);
+  const [printing, setPrinting] = useState(false);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
   const [viewInspectionId, setViewInspectionId] = useState<string | undefined>(
@@ -261,6 +270,8 @@ function CurrentTab({
       showValidationError('Select an inspection fee to invoice.');
       return;
     }
+    // Captured before the refresh clears the "invoiceable" inspection.
+    const inspectionToPrint = invoiceableInspection?.id ?? null;
     setClosing(true);
     try {
       await repairOrderRequests.close(
@@ -270,16 +281,47 @@ function CurrentTab({
       );
       const refreshed = await repairOrderRequests.getById(ro.id);
       onROChange(refreshed);
-      setCloseDialogOpen(false);
-      showSuccess(
-        `Invoice ${refreshed.invoice?.invoiceNumber ?? ''} created from ${
-          ro.roNumber
-        }.`.trim()
-      );
+      // Switch the dialog into a print-actions state instead of closing it.
+      setCreatedInvoiceId(refreshed.invoice?.id ?? null);
+      setCreatedInvoiceNumber(refreshed.invoice?.invoiceNumber ?? '');
+      setInvoicedInspectionId(inspectionToPrint);
     } catch (error) {
       showApiError(error, 'Failed to close repair order and create invoice.');
     } finally {
       setClosing(false);
+    }
+  };
+
+  const handleCloseDialogDismiss = () => {
+    setCloseDialogOpen(false);
+    setCreatedInvoiceId(null);
+    setCreatedInvoiceNumber('');
+    setInvoicedInspectionId(null);
+    setSelectedFeeItemId('');
+  };
+
+  const handlePrintCreatedInvoice = async () => {
+    if (!createdInvoiceId) return;
+    setPrinting(true);
+    try {
+      const invoice = await invoiceService.getInvoice(createdInvoiceId);
+      invoiceService.printInvoice(invoice);
+    } catch (error) {
+      showApiError(error, 'Failed to print invoice.');
+    } finally {
+      setPrinting(false);
+    }
+  };
+
+  const handlePrintInvoicedInspection = async () => {
+    if (!invoicedInspectionId) return;
+    setPrinting(true);
+    try {
+      await inspectionService.printInspection(invoicedInspectionId);
+    } catch (error) {
+      showApiError(error, 'Failed to print inspection report.');
+    } finally {
+      setPrinting(false);
     }
   };
 
@@ -814,128 +856,197 @@ function CurrentTab({
       {/* Close & Invoice dialog */}
       <Dialog
         open={closeDialogOpen}
-        onClose={() => !closing && setCloseDialogOpen(false)}
+        onClose={() => !closing && !printing && handleCloseDialogDismiss()}
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Close & Invoice {ro.roNumber}</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {invoiceableInspection
-              ? `A draft invoice will be created from the inspection fee${
-                  completedServices.length > 0
-                    ? ` plus ${completedServices.length} completed service item(s)`
-                    : ''
-                }. Select the inspection fee and company to invoice under.`
-              : `A draft invoice will be created from the ${completedServices.length} completed service item(s). Select the company to invoice under.`}
-          </Typography>
-          {companiesLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-              <CircularProgress size={24} />
-            </Box>
-          ) : (
-            <Stack spacing={2}>
-              {invoiceableInspection && (
-                <FormControl fullWidth size="small">
-                  <InputLabel>Inspection Fee</InputLabel>
-                  <Select
-                    value={selectedFeeItemId}
-                    label="Inspection Fee"
-                    onChange={(e) => setSelectedFeeItemId(e.target.value)}
-                  >
-                    {feeItems.length === 0 && (
-                      <MenuItem value="" disabled>
-                        No active inspection fee items — add them under
-                        Inspection Items &amp; Pricing
-                      </MenuItem>
-                    )}
-                    {feeItems.map((f) => (
-                      <MenuItem key={f.id} value={f.id}>
-                        {f.name} — ${Number(f.price).toFixed(2)}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-              <FormControl fullWidth size="small">
-                <InputLabel>Company</InputLabel>
-                <Select
-                  value={selectedCompanyId}
-                  label="Company"
-                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+        {createdInvoiceId ? (
+          <>
+            <DialogTitle>Invoice Created</DialogTitle>
+            <DialogContent>
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Invoice {createdInvoiceNumber} was created from {ro.roNumber}.
+              </Alert>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Print the documents you need
+                {invoicedInspectionId
+                  ? ' — the invoice and the inspection report print as separate documents.'
+                  : '.'}
+              </Typography>
+              <Stack spacing={1.5} sx={{ mt: 1 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<PrintIcon />}
+                  onClick={handlePrintCreatedInvoice}
+                  disabled={printing}
+                  fullWidth
                 >
-                  {companies.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.name.replace(/[()]/g, '')}
-                      {c.isDefault ? ' (default)' : ''}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
-          )}
-          {(() => {
-            const feePrice = selectedFeeItem
-              ? Number(selectedFeeItem.price)
-              : 0;
-            const previewSubtotal = completedSubtotal + feePrice;
-            return (
-              <Box
-                sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}
+                  Print Invoice
+                </Button>
+                {invoicedInspectionId && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<PrintIcon />}
+                    onClick={handlePrintInvoicedInspection}
+                    disabled={printing}
+                    fullWidth
+                  >
+                    Print Inspection Report
+                  </Button>
+                )}
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() =>
+                  navigate(`${baseRoute}/invoices/${createdInvoiceId}`)
+                }
+                disabled={printing}
               >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Subtotal
-                  </Typography>
-                  <Typography variant="body2">
-                    ${previewSubtotal.toFixed(2)}
-                  </Typography>
+                View Invoice
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleCloseDialogDismiss}
+                disabled={printing}
+              >
+                Done
+              </Button>
+            </DialogActions>
+          </>
+        ) : (
+          <>
+            <DialogTitle>Close & Invoice {ro.roNumber}</DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {invoiceableInspection
+                  ? `A draft invoice will be created from the inspection fee${
+                      completedServices.length > 0
+                        ? ` plus ${completedServices.length} completed service item(s)`
+                        : ''
+                    }. Select the inspection fee and company to invoice under.`
+                  : `A draft invoice will be created from the ${completedServices.length} completed service item(s). Select the company to invoice under.`}
+              </Typography>
+              {companiesLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress size={24} />
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    GST (5%) + PST (7%)
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    ${(previewSubtotal * 0.12).toFixed(2)}
-                  </Typography>
-                </Box>
-                <Divider sx={{ my: 0.75 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" fontWeight={700}>
-                    Invoice Total
-                  </Typography>
-                  <Typography variant="body2" fontWeight={700}>
-                    ${(previewSubtotal * 1.12).toFixed(2)}
-                  </Typography>
-                </Box>
-              </Box>
-            );
-          })()}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCloseDialogOpen(false)} disabled={closing}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={
-              closing ? (
-                <CircularProgress size={16} color="inherit" />
               ) : (
-                <ReceiptLong />
-              )
-            }
-            onClick={handleConfirmClose}
-            disabled={
-              closing ||
-              !selectedCompanyId ||
-              (Boolean(invoiceableInspection) && !selectedFeeItemId)
-            }
-          >
-            Create Invoice
-          </Button>
-        </DialogActions>
+                <Stack spacing={2}>
+                  {invoiceableInspection && (
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Inspection Fee</InputLabel>
+                      <Select
+                        value={selectedFeeItemId}
+                        label="Inspection Fee"
+                        onChange={(e) => setSelectedFeeItemId(e.target.value)}
+                      >
+                        {feeItems.length === 0 && (
+                          <MenuItem value="" disabled>
+                            No active inspection fee items — add them under
+                            Inspection Items &amp; Pricing
+                          </MenuItem>
+                        )}
+                        {feeItems.map((f) => (
+                          <MenuItem key={f.id} value={f.id}>
+                            {f.name} — ${Number(f.price).toFixed(2)}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Company</InputLabel>
+                    <Select
+                      value={selectedCompanyId}
+                      label="Company"
+                      onChange={(e) => setSelectedCompanyId(e.target.value)}
+                    >
+                      {companies.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.name.replace(/[()]/g, '')}
+                          {c.isDefault ? ' (default)' : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
+              )}
+              {(() => {
+                const feePrice = selectedFeeItem
+                  ? Number(selectedFeeItem.price)
+                  : 0;
+                const previewSubtotal = completedSubtotal + feePrice;
+                return (
+                  <Box
+                    sx={{
+                      mt: 2,
+                      p: 1.5,
+                      bgcolor: 'action.hover',
+                      borderRadius: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        Subtotal
+                      </Typography>
+                      <Typography variant="body2">
+                        ${previewSubtotal.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        GST (5%) + PST (7%)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ${(previewSubtotal * 0.12).toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Divider sx={{ my: 0.75 }} />
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2" fontWeight={700}>
+                        Invoice Total
+                      </Typography>
+                      <Typography variant="body2" fontWeight={700}>
+                        ${(previewSubtotal * 1.12).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                );
+              })()}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialogDismiss} disabled={closing}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={
+                  closing ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <ReceiptLong />
+                  )
+                }
+                onClick={handleConfirmClose}
+                disabled={
+                  closing ||
+                  !selectedCompanyId ||
+                  (Boolean(invoiceableInspection) && !selectedFeeItemId)
+                }
+              >
+                Create Invoice
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
 
       {/* Add vehicle dialog */}
