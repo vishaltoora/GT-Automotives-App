@@ -29,11 +29,34 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-export type InspectionType = 'PEACE_OF_MIND' | 'OUT_OF_PROVINCE' | 'PRE_PURCHASE' | 'SEASONAL' | 'CUSTOM';
-export type InspectionStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'FINALIZED' | 'CANCELLED';
-export type InspectionItemKind = 'CONDITION' | 'MEASUREMENT' | 'MULTI_SELECT' | 'TEXT';
-export type InspectionItemStatus = 'GOOD' | 'FAIR' | 'POOR' | 'NOT_APPLICABLE' | 'NOT_INSPECTED';
-export type InspectionOverallStatus = 'GOOD' | 'ATTENTION_SOON' | 'NEEDS_REPAIR' | 'UNSAFE';
+export type InspectionType =
+  | 'PEACE_OF_MIND'
+  | 'OUT_OF_PROVINCE'
+  | 'PRE_PURCHASE'
+  | 'SEASONAL'
+  | 'CUSTOM';
+export type InspectionStatus =
+  | 'DRAFT'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'FINALIZED'
+  | 'CANCELLED';
+export type InspectionItemKind =
+  | 'CONDITION'
+  | 'MEASUREMENT'
+  | 'MULTI_SELECT'
+  | 'TEXT';
+export type InspectionItemStatus =
+  | 'GOOD'
+  | 'FAIR'
+  | 'POOR'
+  | 'NOT_APPLICABLE'
+  | 'NOT_INSPECTED';
+export type InspectionOverallStatus =
+  | 'GOOD'
+  | 'ATTENTION_SOON'
+  | 'NEEDS_REPAIR'
+  | 'UNSAFE';
 
 export interface InspectionTemplate {
   id: string;
@@ -85,6 +108,8 @@ export interface Inspection {
   templateId: string;
   customerId: string;
   vehicleId?: string;
+  invoiceId?: string;
+  repairOrderId?: string;
   roNumber?: string;
   status: InspectionStatus;
   overallStatus?: InspectionOverallStatus;
@@ -135,6 +160,33 @@ export interface UpdateInspectionResultDto {
   selectedOptions?: string[];
 }
 
+export interface InspectionFeeItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  type?: InspectionType | null;
+  price: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInspectionFeeItemDto {
+  name: string;
+  description?: string;
+  type?: InspectionType;
+  price: number;
+  isActive?: boolean;
+}
+
+export type UpdateInspectionFeeItemDto = Partial<CreateInspectionFeeItemDto>;
+
+export interface GenerateInspectionInvoiceDto {
+  feeItemId: string;
+  companyId: string;
+  paymentMethod?: string;
+}
+
 class InspectionService {
   private escapeHtml(value: unknown): string {
     return String(value ?? '')
@@ -151,14 +203,22 @@ class InspectionService {
   }
 
   private generatePrintHtml(inspection: Inspection): string {
-    const customerName = [inspection.customer.firstName, inspection.customer.lastName].filter(Boolean).join(' ') || inspection.customer.businessName || 'Customer';
+    const customerName =
+      [inspection.customer.firstName, inspection.customer.lastName]
+        .filter(Boolean)
+        .join(' ') ||
+      inspection.customer.businessName ||
+      'Customer';
     const vehicleName = inspection.vehicle
       ? `${inspection.vehicle.year} ${inspection.vehicle.make} ${inspection.vehicle.model}`
       : 'Vehicle not selected';
     const resultByItemId = new Map<string, InspectionResult[]>();
 
     for (const result of inspection.results) {
-      resultByItemId.set(result.itemId, [...(resultByItemId.get(result.itemId) || []), result]);
+      resultByItemId.set(result.itemId, [
+        ...(resultByItemId.get(result.itemId) || []),
+        result,
+      ]);
     }
 
     const statusCounts = inspection.results.reduce(
@@ -172,43 +232,89 @@ class InspectionService {
     );
 
     const metaRow = (label: string, value: unknown) => {
-      if (value === undefined || value === null || String(value).trim() === '') {
+      if (
+        value === undefined ||
+        value === null ||
+        String(value).trim() === ''
+      ) {
         return '';
       }
 
-      return `<div class="meta-row"><span class="meta-label">${this.escapeHtml(label)}:</span><span>${this.escapeHtml(value)}</span></div>`;
+      return `<div class="meta-row"><span class="meta-label">${this.escapeHtml(
+        label
+      )}:</span><span>${this.escapeHtml(value)}</span></div>`;
     };
 
-    const sectionsHtml = inspection.template.sections.map((section) => `
+    const sectionsHtml = inspection.template.sections
+      .map(
+        (section) => `
       <section class="section">
         <h2>${this.escapeHtml(section.title)}</h2>
-        ${section.items.map((item) => {
-          const results = resultByItemId.get(item.id) || [];
-          return `
+        ${section.items
+          .map((item) => {
+            const results = resultByItemId.get(item.id) || [];
+            return `
             <div class="item">
               <h3>${this.escapeHtml(item.label)}</h3>
-              ${results.map((result) => `
+              ${results
+                .map(
+                  (result) => `
                 <div class="result">
                   <div class="result-main">
-                    <span class="position">${result.position === 'GENERAL' ? '' : this.escapeHtml(result.position)}</span>
-                    <span class="status ${String(result.status || 'empty').toLowerCase()}">${this.escapeHtml(this.formatStatus(result.status))}</span>
-                    ${result.value ? `<span class="value">${this.escapeHtml(result.value)}${item.unit ? ` ${this.escapeHtml(item.unit)}` : ''}</span>` : ''}
+                    <span class="position">${
+                      result.position === 'GENERAL'
+                        ? ''
+                        : this.escapeHtml(result.position)
+                    }</span>
+                    <span class="status ${String(
+                      result.status || 'empty'
+                    ).toLowerCase()}">${this.escapeHtml(
+                    this.formatStatus(result.status)
+                  )}</span>
+                    ${
+                      result.value
+                        ? `<span class="value">${this.escapeHtml(
+                            result.value
+                          )}${
+                            item.unit ? ` ${this.escapeHtml(item.unit)}` : ''
+                          }</span>`
+                        : ''
+                    }
                   </div>
-                  ${result.selectedOptions?.length ? `<p><strong>Affected part(s):</strong> ${this.escapeHtml(result.selectedOptions.join(', '))}</p>` : ''}
-                  ${result.notes ? `<p><strong>Notes:</strong> ${this.escapeHtml(result.notes)}</p>` : ''}
+                  ${
+                    result.selectedOptions?.length
+                      ? `<p><strong>Affected part(s):</strong> ${this.escapeHtml(
+                          result.selectedOptions.join(', ')
+                        )}</p>`
+                      : ''
+                  }
+                  ${
+                    result.notes
+                      ? `<p><strong>Notes:</strong> ${this.escapeHtml(
+                          result.notes
+                        )}</p>`
+                      : ''
+                  }
                 </div>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
           `;
-        }).join('')}
+          })
+          .join('')}
       </section>
-    `).join('');
+    `
+      )
+      .join('');
 
     return `
       <!doctype html>
       <html>
         <head>
-          <title>${this.escapeHtml(inspection.template.name)} - ${this.escapeHtml(customerName)}</title>
+          <title>${this.escapeHtml(
+            inspection.template.name
+          )} - ${this.escapeHtml(customerName)}</title>
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; color: #172033; margin: 0; padding: 24px; background: #f6f8fb; }
@@ -283,7 +389,9 @@ class InspectionService {
             <div class="header">
               <div class="company-info">
                 <div class="company-brand">
-                  <img class="logo" src="${this.escapeHtml(gtLogoImage)}" alt="GT Automotives Logo" />
+                  <img class="logo" src="${this.escapeHtml(
+                    gtLogoImage
+                  )}" alt="GT Automotives Logo" />
                   <div>
                     <h1>GT Automotives</h1>
                     <p style="font-size: 14px; color: #666;">Professional Tire & Auto Services</p>
@@ -296,10 +404,18 @@ class InspectionService {
               </div>
               <div class="report-details">
                 <h2>INSPECTION REPORT</h2>
-                <p><strong>Type:</strong> ${this.escapeHtml(inspection.template.name)}<br>
-                <strong>RO:</strong> ${this.escapeHtml(inspection.roNumber || '-')}<br>
-                <strong>Status:</strong> ${this.escapeHtml(inspection.status.replace('_', ' '))}<br>
-                <strong>Date:</strong> ${this.escapeHtml(new Date(inspection.createdAt).toLocaleDateString())}</p>
+                <p><strong>Type:</strong> ${this.escapeHtml(
+                  inspection.template.name
+                )}<br>
+                <strong>RO:</strong> ${this.escapeHtml(
+                  inspection.roNumber || '-'
+                )}<br>
+                <strong>Status:</strong> ${this.escapeHtml(
+                  inspection.status.replace('_', ' ')
+                )}<br>
+                <strong>Date:</strong> ${this.escapeHtml(
+                  new Date(inspection.createdAt).toLocaleDateString()
+                )}</p>
               </div>
             </div>
             <div class="meta">
@@ -310,7 +426,10 @@ class InspectionService {
               </div>
               <div class="meta-right">
                 ${metaRow('Phone', inspection.customer.phone)}
-                ${metaRow('Mileage', inspection.mileage || inspection.vehicle?.mileage)}
+                ${metaRow(
+                  'Mileage',
+                  inspection.mileage || inspection.vehicle?.mileage
+                )}
                 ${metaRow('Plate', inspection.vehicle?.licensePlate)}
               </div>
             </div>
@@ -320,7 +439,9 @@ class InspectionService {
               <div>Poor<br>${statusCounts.poor}</div>
             </div>
             ${sectionsHtml}
-            <div class="footer">Generated from GT Automotives on ${this.escapeHtml(new Date().toLocaleString())}</div>
+            <div class="footer">Generated from GT Automotives on ${this.escapeHtml(
+              new Date().toLocaleString()
+            )}</div>
           </div>
         </body>
       </html>
@@ -352,11 +473,17 @@ class InspectionService {
     resultId: string,
     data: UpdateInspectionResultDto
   ): Promise<Inspection> {
-    const response = await apiClient.patch(`/inspections/${inspectionId}/results/${resultId}`, data);
+    const response = await apiClient.patch(
+      `/inspections/${inspectionId}/results/${resultId}`,
+      data
+    );
     return response.data;
   }
 
-  async updateInspection(id: string, data: { technicianNotes?: string; customerNotes?: string; mileage?: number }): Promise<Inspection> {
+  async updateInspection(
+    id: string,
+    data: { technicianNotes?: string; customerNotes?: string; mileage?: number }
+  ): Promise<Inspection> {
     const response = await apiClient.patch(`/inspections/${id}`, data);
     return response.data;
   }
@@ -370,6 +497,46 @@ class InspectionService {
     await apiClient.delete(`/inspections/${id}`);
   }
 
+  // --- Admin-managed inspection fee catalog ---
+
+  async getFeeItems(): Promise<InspectionFeeItem[]> {
+    const response = await apiClient.get('/inspections/fee-items');
+    return response.data;
+  }
+
+  async createFeeItem(
+    data: CreateInspectionFeeItemDto
+  ): Promise<InspectionFeeItem> {
+    const response = await apiClient.post('/inspections/fee-items', data);
+    return response.data;
+  }
+
+  async updateFeeItem(
+    id: string,
+    data: UpdateInspectionFeeItemDto
+  ): Promise<InspectionFeeItem> {
+    const response = await apiClient.patch(
+      `/inspections/fee-items/${id}`,
+      data
+    );
+    return response.data;
+  }
+
+  async deleteFeeItem(id: string): Promise<void> {
+    await apiClient.delete(`/inspections/fee-items/${id}`);
+  }
+
+  async generateInvoice(
+    id: string,
+    data: GenerateInspectionInvoiceDto
+  ): Promise<Inspection> {
+    const response = await apiClient.post(
+      `/inspections/${id}/generate-invoice`,
+      data
+    );
+    return response.data;
+  }
+
   async printInspection(id: string): Promise<void> {
     const inspection = await this.getInspection(id);
     const htmlContent = this.generatePrintHtml(inspection);
@@ -381,9 +548,12 @@ class InspectionService {
       const fallbackWindow = window.open(url, '_blank');
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       if (!fallbackWindow) {
-        throw new Error('Popup blocked by browser. Please allow popups for printing.');
+        throw new Error(
+          'Popup blocked by browser. Please allow popups for printing.'
+        );
       }
-      fallbackWindow.onload = () => setTimeout(() => fallbackWindow.print(), 500);
+      fallbackWindow.onload = () =>
+        setTimeout(() => fallbackWindow.print(), 500);
       return;
     }
 

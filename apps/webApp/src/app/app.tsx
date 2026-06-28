@@ -51,7 +51,6 @@ import { PaymentsManagement } from './pages/admin/payroll/PaymentsManagement';
 import { PayoutRulesManagement } from './pages/admin/payroll/PayoutRulesManagement';
 import { TimeClockManagement } from './pages/admin/payroll/TimeClockManagement';
 
-
 // Inventory Pages
 import TireListSimple from './pages/inventory/TireListSimple';
 import TireFormSimple from './pages/inventory/TireFormSimple';
@@ -95,9 +94,13 @@ import Reports from './pages/admin/Reports';
 import { EmployeePaymentsReport } from './pages/admin/reports/EmployeePaymentsReport';
 
 // Tire Sales Pages
-import { TireSalesManagement, CommissionManagement } from './pages/admin/tire-sales';
+import {
+  TireSalesManagement,
+  CommissionManagement,
+} from './pages/admin/tire-sales';
 import { InspectionList } from './pages/inspections/InspectionList';
 import { InspectionEditor } from './pages/inspections/InspectionEditor';
+import { InspectionFeeItemManagement } from './pages/admin/inspection-fee-items/InspectionFeeItemManagement';
 import { ROList } from './pages/repair-orders/ROList';
 import { RODetail } from './pages/repair-orders/RODetail';
 
@@ -108,195 +111,231 @@ export function App() {
       <ErrorProvider>
         <ConfirmationProvider>
           <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<PublicLayout />}>
-          <Route index element={<Home />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
-          <Route path="unauthorized" element={<Unauthorized />} />
-          <Route path="services" element={<Services />} />
-          <Route path="products" element={<Products />} />
-          <Route path="pricing" element={<Pricing />} />
-          <Route path="about" element={<About />} />
-          <Route path="contact" element={<Contact />} />
-          <Route path="book-appointment" element={<BookAppointment />} />
-        </Route>
+            {/* Public Routes */}
+            <Route path="/" element={<PublicLayout />}>
+              <Route index element={<Home />} />
+              <Route path="login" element={<Login />} />
+              <Route path="register" element={<Register />} />
+              <Route path="unauthorized" element={<Unauthorized />} />
+              <Route path="services" element={<Services />} />
+              <Route path="products" element={<Products />} />
+              <Route path="pricing" element={<Pricing />} />
+              <Route path="about" element={<About />} />
+              <Route path="contact" element={<Contact />} />
+              <Route path="book-appointment" element={<BookAppointment />} />
+            </Route>
 
-        {/* Customer portal disabled — redirect any /customer/* path home */}
-        <Route path="/customer/*" element={<Navigate to="/" replace />} />
+            {/* Customer portal disabled — redirect any /customer/* path home */}
+            <Route path="/customer/*" element={<Navigate to="/" replace />} />
 
-        {/* Staff Routes */}
-        <Route
-          path="/staff/*"
-          element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={['staff', 'admin']}>
-                <StaffLayout />
-              </RoleGuard>
-            </AuthGuard>
-          }
-        >
-          <Route path="dashboard" element={<StaffDashboard />} />
-          <Route path="customers" element={<CustomerList />} />
-          <Route path="customers/new" element={<CustomerForm />} />
-          <Route path="customers/:id/edit" element={<CustomerForm />} />
-          <Route path="vehicles" element={<VehicleList />} />
-          <Route path="vehicles/new" element={<VehicleForm />} />
-          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
-          <Route path="inventory" element={<TireListSimple />} />
-          <Route path="inventory/new" element={<TireFormSimple />} />
-          <Route path="inventory/:id" element={<TireDetails />} />
-          <Route path="inventory/:id/edit" element={<TireFormSimple />} />
-          <Route path="inventory/dashboard" element={<InventoryDashboard />} />
-          <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/:id" element={<InvoiceDetails />} />
-          <Route path="invoices/cash-report" element={<CashReport />} />
-          <Route path="quotations" element={<QuoteList />} />
-          <Route path="quotations/:id" element={<QuotationDetails />} />
-          <Route path="jobs" element={<MyJobs />} />
-          <Route path="time-clock" element={<TimeClock />} />
-          <Route path="earnings" element={<MyEarnings />} />
-          <Route path="commission" element={<MyCommission />} />
-          <Route path="appointments" element={<AppointmentsManagement />} />
-          <Route path="inspections" element={<InspectionList />} />
-          <Route path="inspections/:id" element={<InspectionEditor />} />
-          <Route path="repair-orders" element={<ROList />} />
-          <Route path="repair-orders/:id" element={<RODetail />} />
-          <Route path="availability" element={<EmployeeAvailabilityManagement />} />
-          <Route path="reports" element={<div>Reports</div>} />
-          <Route path="settings" element={<div>Settings</div>} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+            {/* Staff Routes */}
+            <Route
+              path="/staff/*"
+              element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={['staff', 'admin']}>
+                    <StaffLayout />
+                  </RoleGuard>
+                </AuthGuard>
+              }
+            >
+              <Route path="dashboard" element={<StaffDashboard />} />
+              <Route path="customers" element={<CustomerList />} />
+              <Route path="customers/new" element={<CustomerForm />} />
+              <Route path="customers/:id/edit" element={<CustomerForm />} />
+              <Route path="vehicles" element={<VehicleList />} />
+              <Route path="vehicles/new" element={<VehicleForm />} />
+              <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+              <Route path="inventory" element={<TireListSimple />} />
+              <Route path="inventory/new" element={<TireFormSimple />} />
+              <Route path="inventory/:id" element={<TireDetails />} />
+              <Route path="inventory/:id/edit" element={<TireFormSimple />} />
+              <Route
+                path="inventory/dashboard"
+                element={<InventoryDashboard />}
+              />
+              <Route path="invoices" element={<InvoiceList />} />
+              <Route path="invoices/:id" element={<InvoiceDetails />} />
+              <Route path="invoices/cash-report" element={<CashReport />} />
+              <Route path="quotations" element={<QuoteList />} />
+              <Route path="quotations/:id" element={<QuotationDetails />} />
+              <Route path="jobs" element={<MyJobs />} />
+              <Route path="time-clock" element={<TimeClock />} />
+              <Route path="earnings" element={<MyEarnings />} />
+              <Route path="commission" element={<MyCommission />} />
+              <Route path="appointments" element={<AppointmentsManagement />} />
+              <Route path="inspections" element={<InspectionList />} />
+              <Route path="inspections/:id" element={<InspectionEditor />} />
+              <Route path="repair-orders" element={<ROList />} />
+              <Route path="repair-orders/:id" element={<RODetail />} />
+              <Route
+                path="availability"
+                element={<EmployeeAvailabilityManagement />}
+              />
+              <Route path="reports" element={<div>Reports</div>} />
+              <Route path="settings" element={<div>Settings</div>} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Route>
 
-        {/* Supervisor Routes */}
-        <Route
-          path="/supervisor/*"
-          element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={['supervisor', 'admin']}>
-                <SupervisorLayout />
-              </RoleGuard>
-            </AuthGuard>
-          }
-        >
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="day-summary" element={<DaySummary />} />
-          <Route path="customers" element={<CustomerList />} />
-          <Route path="customers/new" element={<CustomerForm />} />
-          <Route path="customers/:id/edit" element={<CustomerForm />} />
-          <Route path="vehicles" element={<VehicleList />} />
-          <Route path="vehicles/new" element={<VehicleForm />} />
-          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
-          <Route path="inventory" element={<TireListSimple />} />
-          <Route path="inventory/new" element={<TireFormSimple />} />
-          <Route path="inventory/:id" element={<TireDetails />} />
-          <Route path="inventory/:id/edit" element={<TireFormSimple />} />
-          <Route path="inventory/dashboard" element={<InventoryDashboard />} />
-          <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/:id" element={<InvoiceDetails />} />
-          <Route path="invoices/cash-report" element={<CashReport />} />
-          <Route path="quotations" element={<QuoteList />} />
-          <Route path="quotations/:id" element={<QuotationDetails />} />
-          <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
-          <Route path="appointments" element={<AppointmentsManagement />} />
-          <Route path="inspections" element={<InspectionList />} />
-          <Route path="inspections/:id" element={<InspectionEditor />} />
-          <Route path="repair-orders" element={<ROList />} />
-          <Route path="repair-orders/:id" element={<RODetail />} />
-          <Route path="booking-requests" element={<BookingRequests />} />
-          <Route path="availability" element={<EmployeeAvailabilityManagement />} />
-          <Route path="employee-schedule" element={<EmployeeSchedule />} />
-          <Route path="jobs" element={<JobsManagement />} />
-          <Route path="jobs/:employeeId" element={<JobsManagement />} />
-          <Route path="time-clock" element={<TimeClockManagement />} />
-          <Route path="my-jobs" element={<MyJobs />} />
-          <Route path="my-time-clock" element={<TimeClock />} />
-          <Route path="my-earnings" element={<MyEarnings />} />
-          <Route path="my-commission" element={<MyCommission />} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+            {/* Supervisor Routes */}
+            <Route
+              path="/supervisor/*"
+              element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={['supervisor', 'admin']}>
+                    <SupervisorLayout />
+                  </RoleGuard>
+                </AuthGuard>
+              }
+            >
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="day-summary" element={<DaySummary />} />
+              <Route path="customers" element={<CustomerList />} />
+              <Route path="customers/new" element={<CustomerForm />} />
+              <Route path="customers/:id/edit" element={<CustomerForm />} />
+              <Route path="vehicles" element={<VehicleList />} />
+              <Route path="vehicles/new" element={<VehicleForm />} />
+              <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+              <Route path="inventory" element={<TireListSimple />} />
+              <Route path="inventory/new" element={<TireFormSimple />} />
+              <Route path="inventory/:id" element={<TireDetails />} />
+              <Route path="inventory/:id/edit" element={<TireFormSimple />} />
+              <Route
+                path="inventory/dashboard"
+                element={<InventoryDashboard />}
+              />
+              <Route path="invoices" element={<InvoiceList />} />
+              <Route path="invoices/:id" element={<InvoiceDetails />} />
+              <Route path="invoices/cash-report" element={<CashReport />} />
+              <Route path="quotations" element={<QuoteList />} />
+              <Route path="quotations/:id" element={<QuotationDetails />} />
+              <Route
+                path="purchase-invoices"
+                element={<PurchaseExpenseInvoiceManagement />}
+              />
+              <Route path="appointments" element={<AppointmentsManagement />} />
+              <Route path="inspections" element={<InspectionList />} />
+              <Route path="inspections/:id" element={<InspectionEditor />} />
+              <Route path="repair-orders" element={<ROList />} />
+              <Route path="repair-orders/:id" element={<RODetail />} />
+              <Route path="booking-requests" element={<BookingRequests />} />
+              <Route
+                path="availability"
+                element={<EmployeeAvailabilityManagement />}
+              />
+              <Route path="employee-schedule" element={<EmployeeSchedule />} />
+              <Route path="jobs" element={<JobsManagement />} />
+              <Route path="jobs/:employeeId" element={<JobsManagement />} />
+              <Route path="time-clock" element={<TimeClockManagement />} />
+              <Route path="my-jobs" element={<MyJobs />} />
+              <Route path="my-time-clock" element={<TimeClock />} />
+              <Route path="my-earnings" element={<MyEarnings />} />
+              <Route path="my-commission" element={<MyCommission />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Route>
 
-        {/* Accountant Routes */}
-        <Route
-          path="/accountant/*"
-          element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={['accountant', 'admin']}>
-                <AccountantLayout />
-              </RoleGuard>
-            </AuthGuard>
-          }
-        >
-          <Route path="dashboard" element={<AccountantDashboard />} />
-          <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/:id" element={<InvoiceDetails />} />
-          <Route path="cash-report" element={<CashReport />} />
-          <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="analytics" element={<div>Analytics</div>} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+            {/* Accountant Routes */}
+            <Route
+              path="/accountant/*"
+              element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={['accountant', 'admin']}>
+                    <AccountantLayout />
+                  </RoleGuard>
+                </AuthGuard>
+              }
+            >
+              <Route path="dashboard" element={<AccountantDashboard />} />
+              <Route path="invoices" element={<InvoiceList />} />
+              <Route path="invoices/:id" element={<InvoiceDetails />} />
+              <Route path="cash-report" element={<CashReport />} />
+              <Route
+                path="purchase-invoices"
+                element={<PurchaseExpenseInvoiceManagement />}
+              />
+              <Route path="reports" element={<Reports />} />
+              <Route path="analytics" element={<div>Analytics</div>} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Route>
 
-        {/* Admin Routes */}
-        <Route
-          path="/admin/*"
-          element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={['admin']}>
-                <AdminLayout />
-              </RoleGuard>
-            </AuthGuard>
-          }
-        >
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="day-summary" element={<DaySummary />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="customers" element={<CustomerList />} />
-          <Route path="customers/new" element={<CustomerForm />} />
-          <Route path="customers/:id/edit" element={<CustomerForm />} />
-          <Route path="vehicles" element={<VehicleList />} />
-          <Route path="vehicles/new" element={<VehicleForm />} />
-          <Route path="vehicles/:id/edit" element={<VehicleForm />} />
-          <Route path="inventory" element={<TireListSimple />} />
-          <Route path="inventory/new" element={<TireFormSimple />} />
-          <Route path="inventory/:id" element={<TireDetails />} />
-          <Route path="inventory/:id/edit" element={<TireFormSimple />} />
-          <Route path="inventory/dashboard" element={<InventoryDashboard />} />
-          <Route path="invoices" element={<InvoiceList />} />
-          <Route path="invoices/:id" element={<InvoiceDetails />} />
-          <Route path="invoices/cash-report" element={<CashReport />} />
-          <Route path="quotations" element={<QuoteList />} />
-          <Route path="quotations/:id" element={<QuotationDetails />} />
-          <Route path="purchase-invoices" element={<PurchaseExpenseInvoiceManagement />} />
-          {/* Unified purchase & expense invoices */}
-          <Route path="appointments" element={<AppointmentsManagement />} />
-          <Route path="inspections" element={<InspectionList />} />
-          <Route path="inspections/:id" element={<InspectionEditor />} />
-          <Route path="repair-orders" element={<ROList />} />
-          <Route path="repair-orders/:id" element={<RODetail />} />
-          <Route path="booking-requests" element={<BookingRequests />} />
-          <Route path="availability" element={<EmployeeAvailabilityManagement />} />
-          <Route path="sms-history" element={<SmsHistory />} />
-          <Route path="employee-schedule" element={<EmployeeSchedule />} />
-          <Route path="payroll" element={<PayrollDashboard />} />
-          <Route path="time-clock" element={<TimeClockManagement />} />
-          <Route path="jobs" element={<JobsManagement />} />
-          <Route path="jobs/:employeeId" element={<JobsManagement />} />
-          <Route path="payments" element={<PaymentsManagement />} />
-          <Route path="payout-rules" element={<PayoutRulesManagement />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="employee-payments-report" element={<EmployeePaymentsReport />} />
-          <Route path="analytics" element={<div>Analytics</div>} />
-          <Route path="security" element={<div>Security Settings</div>} />
-          <Route path="settings" element={<div>System Settings</div>} />
-          <Route path="tire-commissions" element={<CommissionManagement />} />
-          <Route path="tire-sales" element={<TireSalesManagement />} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+            {/* Admin Routes */}
+            <Route
+              path="/admin/*"
+              element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={['admin']}>
+                    <AdminLayout />
+                  </RoleGuard>
+                </AuthGuard>
+              }
+            >
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="day-summary" element={<DaySummary />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="customers" element={<CustomerList />} />
+              <Route path="customers/new" element={<CustomerForm />} />
+              <Route path="customers/:id/edit" element={<CustomerForm />} />
+              <Route path="vehicles" element={<VehicleList />} />
+              <Route path="vehicles/new" element={<VehicleForm />} />
+              <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+              <Route path="inventory" element={<TireListSimple />} />
+              <Route path="inventory/new" element={<TireFormSimple />} />
+              <Route path="inventory/:id" element={<TireDetails />} />
+              <Route path="inventory/:id/edit" element={<TireFormSimple />} />
+              <Route
+                path="inventory/dashboard"
+                element={<InventoryDashboard />}
+              />
+              <Route path="invoices" element={<InvoiceList />} />
+              <Route path="invoices/:id" element={<InvoiceDetails />} />
+              <Route path="invoices/cash-report" element={<CashReport />} />
+              <Route path="quotations" element={<QuoteList />} />
+              <Route path="quotations/:id" element={<QuotationDetails />} />
+              <Route
+                path="purchase-invoices"
+                element={<PurchaseExpenseInvoiceManagement />}
+              />
+              {/* Unified purchase & expense invoices */}
+              <Route path="appointments" element={<AppointmentsManagement />} />
+              <Route path="inspections" element={<InspectionList />} />
+              <Route path="inspections/:id" element={<InspectionEditor />} />
+              <Route
+                path="inspection-items"
+                element={<InspectionFeeItemManagement />}
+              />
+              <Route path="repair-orders" element={<ROList />} />
+              <Route path="repair-orders/:id" element={<RODetail />} />
+              <Route path="booking-requests" element={<BookingRequests />} />
+              <Route
+                path="availability"
+                element={<EmployeeAvailabilityManagement />}
+              />
+              <Route path="sms-history" element={<SmsHistory />} />
+              <Route path="employee-schedule" element={<EmployeeSchedule />} />
+              <Route path="payroll" element={<PayrollDashboard />} />
+              <Route path="time-clock" element={<TimeClockManagement />} />
+              <Route path="jobs" element={<JobsManagement />} />
+              <Route path="jobs/:employeeId" element={<JobsManagement />} />
+              <Route path="payments" element={<PaymentsManagement />} />
+              <Route path="payout-rules" element={<PayoutRulesManagement />} />
+              <Route path="reports" element={<Reports />} />
+              <Route
+                path="employee-payments-report"
+                element={<EmployeePaymentsReport />}
+              />
+              <Route path="analytics" element={<div>Analytics</div>} />
+              <Route path="security" element={<div>Security Settings</div>} />
+              <Route path="settings" element={<div>System Settings</div>} />
+              <Route
+                path="tire-commissions"
+                element={<CommissionManagement />}
+              />
+              <Route path="tire-sales" element={<TireSalesManagement />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Route>
 
-
-        {/* Catch all redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Catch all redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ConfirmationProvider>
       </ErrorProvider>

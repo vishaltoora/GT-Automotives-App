@@ -119,9 +119,13 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           notes: appointment.notes || '',
         });
 
-        // Set selected customer for autocomplete
+        // Set selected customer for autocomplete. Load full details so the
+        // vehicle dropdown is populated (appointment.customer omits vehicles).
         if (appointment.customer) {
           setSelectedCustomer(appointment.customer as Customer);
+        }
+        if (appointment.customerId) {
+          loadCustomerDetails(appointment.customerId);
         }
 
         // Set selected employees for autocomplete
@@ -246,13 +250,25 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     }
   };
 
-  const handleCustomerChange = (customer: Customer | null) => {
+  const handleCustomerChange = async (customer: Customer | null) => {
     setSelectedCustomer(customer);
     setFormData({
       ...formData,
       customerId: customer?.id || '',
       vehicleId: '',
     });
+
+    // The autocomplete list comes from the lightweight `/customers/simple`
+    // endpoint, which omits vehicles. Fetch full details so the vehicle
+    // dropdown can be populated and enabled.
+    if (customer?.id) {
+      try {
+        const fullCustomer = await customerService.getCustomer(customer.id);
+        setSelectedCustomer(fullCustomer);
+      } catch (err) {
+        // Keep the basic customer if details fail to load
+      }
+    }
   };
 
   const handleEmployeeToggle = (employee: User) => {

@@ -17,7 +17,7 @@ import {
   Divider,
   Chip,
   Tooltip,
-  Collapse
+  Collapse,
 } from '@mui/material';
 import {
   Dashboard,
@@ -68,7 +68,9 @@ const drawerCollapsedWidth = 72;
 export function AdminLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [drawerCollapsed, setDrawerCollapsed] = React.useState(false);
-  const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({
+  const [expandedSections, setExpandedSections] = React.useState<
+    Record<string, boolean>
+  >({
     business: true,
     scheduling: true,
     operations: true,
@@ -98,9 +100,9 @@ export function AdminLayout() {
   };
 
   const handleSectionToggle = (section: string) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
   };
 
@@ -109,9 +111,17 @@ export function AdminLayout() {
       title: 'Overview',
       items: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
-        { text: 'Day Summary', icon: <Assessment />, path: '/admin/day-summary' },
-        { text: 'Booking Requests', icon: <RequestPage />, path: '/admin/booking-requests' },
-      ]
+        {
+          text: 'Day Summary',
+          icon: <Assessment />,
+          path: '/admin/day-summary',
+        },
+        {
+          text: 'Booking Requests',
+          icon: <RequestPage />,
+          path: '/admin/booking-requests',
+        },
+      ],
     },
     {
       id: 'business',
@@ -121,24 +131,57 @@ export function AdminLayout() {
         { text: 'Users', icon: <SupervisorAccount />, path: '/admin/users' },
         { text: 'Customers', icon: <People />, path: '/admin/customers' },
         { text: 'Vehicles', icon: <DirectionsCar />, path: '/admin/vehicles' },
-        { text: 'Inspections', icon: <AssignmentTurnedIn />, path: '/admin/inspections' },
-        { text: 'Repair Orders', icon: <CarRepair />, path: '/admin/repair-orders' },
+        {
+          text: 'Inspections',
+          icon: <AssignmentTurnedIn />,
+          path: '/admin/inspections',
+        },
+        {
+          text: 'Inspection Items & Pricing',
+          icon: <LocalOffer />,
+          path: '/admin/inspection-items',
+        },
+        {
+          text: 'Repair Orders',
+          icon: <CarRepair />,
+          path: '/admin/repair-orders',
+        },
         { text: 'Inventory', icon: <Inventory />, path: '/admin/inventory' },
         { text: 'Invoices', icon: <Receipt />, path: '/admin/invoices' },
-        { text: 'Quotations', icon: <Description />, path: '/admin/quotations' },
-        { text: 'Purchase & Expense Invoices', icon: <ShoppingCart />, path: '/admin/purchase-invoices' },
-      ]
+        {
+          text: 'Quotations',
+          icon: <Description />,
+          path: '/admin/quotations',
+        },
+        {
+          text: 'Purchase & Expense Invoices',
+          icon: <ShoppingCart />,
+          path: '/admin/purchase-invoices',
+        },
+      ],
     },
     {
       id: 'scheduling',
       title: 'Scheduling',
       icon: <Event />,
       items: [
-        { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments' },
-        { text: 'Availability', icon: <Schedule />, path: '/admin/availability' },
-        { text: 'Employee Schedule', icon: <Email />, path: '/admin/employee-schedule' },
+        {
+          text: 'Appointments',
+          icon: <CalendarMonth />,
+          path: '/admin/appointments',
+        },
+        {
+          text: 'Availability',
+          icon: <Schedule />,
+          path: '/admin/availability',
+        },
+        {
+          text: 'Employee Schedule',
+          icon: <Email />,
+          path: '/admin/employee-schedule',
+        },
         { text: 'SMS History', icon: <Sms />, path: '/admin/sms-history' },
-      ]
+      ],
     },
     {
       id: 'operations',
@@ -147,11 +190,19 @@ export function AdminLayout() {
       items: [
         { text: 'Jobs', icon: <Work />, path: '/admin/jobs' },
         { text: 'Time Clock', icon: <AccessTime />, path: '/admin/time-clock' },
-        { text: 'Commission', icon: <LocalMall />, path: '/admin/tire-commissions' },
+        {
+          text: 'Commission',
+          icon: <LocalMall />,
+          path: '/admin/tire-commissions',
+        },
         { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
         { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
-        { text: 'Payout Rules', icon: <Calculate />, path: '/admin/payout-rules' },
-      ]
+        {
+          text: 'Payout Rules',
+          icon: <Calculate />,
+          path: '/admin/payout-rules',
+        },
+      ],
     },
     {
       id: 'analytics',
@@ -159,9 +210,13 @@ export function AdminLayout() {
       icon: <BarChart />,
       items: [
         { text: 'Reports', icon: <Analytics />, path: '/admin/reports' },
-        { text: 'Employee Payments', icon: <Payment />, path: '/admin/employee-payments-report' },
+        {
+          text: 'Employee Payments',
+          icon: <Payment />,
+          path: '/admin/employee-payments-report',
+        },
         { text: 'Analytics', icon: <Analytics />, path: '/admin/analytics' },
-      ]
+      ],
     },
     {
       id: 'system',
@@ -170,30 +225,39 @@ export function AdminLayout() {
       items: [
         { text: 'Security', icon: <Security />, path: '/admin/security' },
         { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
-      ]
+      ],
     },
     {
       title: 'Quick Links',
-      items: [
-        { text: 'Pricing', icon: <LocalOffer />, path: '/pricing' },
-      ]
+      items: [{ text: 'Pricing', icon: <LocalOffer />, path: '/pricing' }],
     },
   ];
 
   const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    return (
+      location.pathname === path || location.pathname.startsWith(path + '/')
+    );
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
-      <Toolbar sx={{
-        py: 2,
-        px: drawerCollapsed ? 1 : 2,
-        background: colors.primary.main,
-        borderBottom: `1px solid ${colors.neutral[200]}`,
-        justifyContent: drawerCollapsed ? 'center' : 'flex-start',
-        minHeight: 80,
-      }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'white',
+      }}
+    >
+      <Toolbar
+        sx={{
+          py: 2,
+          px: drawerCollapsed ? 1 : 2,
+          background: colors.primary.main,
+          borderBottom: `1px solid ${colors.neutral[200]}`,
+          justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+          minHeight: 80,
+        }}
+      >
         <Box
           component={Link}
           to="/admin/dashboard"
@@ -238,10 +302,25 @@ export function AdminLayout() {
           </Box>
           {!drawerCollapsed && (
             <Box sx={{ whiteSpace: 'nowrap' }}>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, lineHeight: 1, whiteSpace: 'nowrap' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: 'white',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 GT Automotives
               </Typography>
-              <Typography variant="caption" sx={{ color: colors.neutral[100], fontWeight: 500, whiteSpace: 'nowrap' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: colors.neutral[100],
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 16472991 Canada INC.
               </Typography>
             </Box>
@@ -250,7 +329,14 @@ export function AdminLayout() {
       </Toolbar>
 
       {/* Collapse Toggle Button - Only on Desktop */}
-      <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: drawerCollapsed ? 'center' : 'flex-end', px: 1, py: 0.5 }}>
+      <Box
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          justifyContent: drawerCollapsed ? 'center' : 'flex-end',
+          px: 1,
+          py: 0.5,
+        }}
+      >
         <IconButton
           onClick={handleDrawerCollapse}
           size="small"
@@ -266,7 +352,14 @@ export function AdminLayout() {
         </IconButton>
       </Box>
 
-      <List sx={{ flex: 1, py: 1, px: drawerCollapsed ? 0.5 : 1, overflowY: 'auto' }}>
+      <List
+        sx={{
+          flex: 1,
+          py: 1,
+          px: drawerCollapsed ? 0.5 : 1,
+          overflowY: 'auto',
+        }}
+      >
         {menuSections.map((section, sectionIndex) => (
           <React.Fragment key={section.title}>
             {/* Section without expand (Overview) */}
@@ -283,22 +376,34 @@ export function AdminLayout() {
                         mx: 0.5,
                         mb: 0.5,
                         transition: 'all 0.2s',
-                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                        borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
-                        border: active ? `1px solid ${colors.neutral[200]}` : '1px solid transparent',
+                        backgroundColor: active
+                          ? colors.primary.lighter + '20'
+                          : 'transparent',
+                        borderLeft: active
+                          ? `3px solid ${colors.primary.main}`
+                          : '3px solid transparent',
+                        border: active
+                          ? `1px solid ${colors.neutral[200]}`
+                          : '1px solid transparent',
                         borderLeftWidth: active ? '3px' : '1px',
-                        justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                        justifyContent: drawerCollapsed
+                          ? 'center'
+                          : 'flex-start',
                         px: drawerCollapsed ? 0 : 2,
                         '&:hover': {
                           backgroundColor: colors.neutral[100],
                         },
                       }}
                     >
-                      <ListItemIcon sx={{
-                        color: active ? colors.primary.main : colors.neutral[600],
-                        minWidth: drawerCollapsed ? 0 : 40,
-                        justifyContent: 'center',
-                      }}>
+                      <ListItemIcon
+                        sx={{
+                          color: active
+                            ? colors.primary.main
+                            : colors.neutral[600],
+                          minWidth: drawerCollapsed ? 0 : 40,
+                          justifyContent: 'center',
+                        }}
+                      >
                         {item.icon}
                       </ListItemIcon>
                       {!drawerCollapsed && (
@@ -307,7 +412,9 @@ export function AdminLayout() {
                           primaryTypographyProps={{
                             fontSize: '0.95rem',
                             fontWeight: active ? 600 : 400,
-                            color: active ? colors.primary.main : colors.text.primary,
+                            color: active
+                              ? colors.primary.main
+                              : colors.text.primary,
                           }}
                         />
                       )}
@@ -326,7 +433,13 @@ export function AdminLayout() {
                     </ListItem>
                   );
                 })}
-                <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+                <Divider
+                  sx={{
+                    my: 1.5,
+                    mx: drawerCollapsed ? 1 : 0,
+                    borderColor: colors.neutral[200],
+                  }}
+                />
               </>
             )}
 
@@ -349,11 +462,13 @@ export function AdminLayout() {
                         },
                       }}
                     >
-                      <ListItemIcon sx={{
-                        color: colors.neutral[700],
-                        minWidth: 0,
-                        justifyContent: 'center',
-                      }}>
+                      <ListItemIcon
+                        sx={{
+                          color: colors.neutral[700],
+                          minWidth: 0,
+                          justifyContent: 'center',
+                        }}
+                      >
                         {section.icon}
                       </ListItemIcon>
                     </ListItemButton>
@@ -375,10 +490,12 @@ export function AdminLayout() {
                       },
                     }}
                   >
-                    <ListItemIcon sx={{
-                      color: colors.primary.main,
-                      minWidth: 40,
-                    }}>
+                    <ListItemIcon
+                      sx={{
+                        color: colors.primary.main,
+                        minWidth: 40,
+                      }}
+                    >
                       {section.icon}
                     </ListItemIcon>
                     <ListItemText
@@ -392,15 +509,23 @@ export function AdminLayout() {
                       }}
                     />
                     {expandedSections[section.id] ? (
-                      <ExpandLess sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                      <ExpandLess
+                        sx={{ color: colors.primary.main, fontSize: '1.2rem' }}
+                      />
                     ) : (
-                      <ExpandMore sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                      <ExpandMore
+                        sx={{ color: colors.primary.main, fontSize: '1.2rem' }}
+                      />
                     )}
                   </ListItemButton>
                 )}
 
                 {/* Section items - always show when collapsed, conditionally when expanded */}
-                <Collapse in={drawerCollapsed || expandedSections[section.id]} timeout="auto" unmountOnExit>
+                <Collapse
+                  in={drawerCollapsed || expandedSections[section.id]}
+                  timeout="auto"
+                  unmountOnExit
+                >
                   <List component="div" disablePadding>
                     {section.items.map((item) => {
                       const active = isActive(item.path);
@@ -414,19 +539,29 @@ export function AdminLayout() {
                             mb: 0.5,
                             pl: drawerCollapsed ? 0 : 4,
                             transition: 'all 0.2s',
-                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                            borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
-                            justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                            backgroundColor: active
+                              ? colors.primary.lighter + '20'
+                              : 'transparent',
+                            borderLeft: active
+                              ? `3px solid ${colors.primary.main}`
+                              : '3px solid transparent',
+                            justifyContent: drawerCollapsed
+                              ? 'center'
+                              : 'flex-start',
                             '&:hover': {
                               backgroundColor: colors.neutral[100],
                             },
                           }}
                         >
-                          <ListItemIcon sx={{
-                            color: active ? colors.primary.main : colors.neutral[600],
-                            minWidth: drawerCollapsed ? 0 : 40,
-                            justifyContent: 'center',
-                          }}>
+                          <ListItemIcon
+                            sx={{
+                              color: active
+                                ? colors.primary.main
+                                : colors.neutral[600],
+                              minWidth: drawerCollapsed ? 0 : 40,
+                              justifyContent: 'center',
+                            }}
+                          >
                             {item.icon}
                           </ListItemIcon>
                           {!drawerCollapsed && (
@@ -435,7 +570,9 @@ export function AdminLayout() {
                               primaryTypographyProps={{
                                 fontSize: '0.9rem',
                                 fontWeight: active ? 600 : 400,
-                                color: active ? colors.primary.main : colors.text.primary,
+                                color: active
+                                  ? colors.primary.main
+                                  : colors.text.primary,
                               }}
                             />
                           )}
@@ -458,7 +595,13 @@ export function AdminLayout() {
                 </Collapse>
 
                 {sectionIndex < menuSections.length - 1 && (
-                  <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+                  <Divider
+                    sx={{
+                      my: 1.5,
+                      mx: drawerCollapsed ? 1 : 0,
+                      borderColor: colors.neutral[200],
+                    }}
+                  />
                 )}
               </>
             )}
@@ -513,7 +656,10 @@ export function AdminLayout() {
       <Box
         component="nav"
         sx={{
-          width: { sm: drawerCollapsed ? drawerCollapsedWidth : drawerWidth, md: drawerCollapsed ? drawerCollapsedWidth : drawerWidth },
+          width: {
+            sm: drawerCollapsed ? drawerCollapsedWidth : drawerWidth,
+            md: drawerCollapsed ? drawerCollapsedWidth : drawerWidth,
+          },
           flexShrink: { sm: 0 },
           transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
         }}
@@ -563,16 +709,21 @@ export function AdminLayout() {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          width: { md: `calc(100% - ${drawerCollapsed ? drawerCollapsedWidth : drawerWidth}px)` },
+          width: {
+            md: `calc(100% - ${
+              drawerCollapsed ? drawerCollapsedWidth : drawerWidth
+            }px)`,
+          },
           height: '100vh',
           overflow: 'hidden',
-          transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+          transition:
+            'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
         }}
       >
-        <AppBar 
-          position="static" 
+        <AppBar
+          position="static"
           elevation={0}
-          sx={{ 
+          sx={{
             backgroundColor: 'transparent',
             color: 'text.primary',
             boxShadow: 'none',
@@ -582,15 +733,15 @@ export function AdminLayout() {
             <IconButton
               edge="start"
               onClick={handleDrawerToggle}
-              sx={{ 
-                mr: 2, 
+              sx={{
+                mr: 2,
                 display: { md: 'none' },
                 color: colors.primary.main,
               }}
             >
               <MenuIcon />
             </IconButton>
-            
+
             {/* Logo for mobile - Clickable */}
             <Box
               component={Link}
@@ -668,17 +819,17 @@ export function AdminLayout() {
                 icon={<AccountCircle />}
                 label={`${user?.firstName || user?.email || 'Admin'}`}
                 variant="outlined"
-                sx={{ 
+                sx={{
                   display: { xs: 'none', sm: 'flex' },
                   borderColor: colors.primary.main,
                   color: colors.primary.main,
                   fontWeight: 500,
                 }}
               />
-              <Button 
+              <Button
                 variant="contained"
                 size="small"
-                onClick={handleSignOut} 
+                onClick={handleSignOut}
                 startIcon={<Logout />}
                 sx={{
                   backgroundColor: colors.secondary.main,
@@ -693,7 +844,7 @@ export function AdminLayout() {
               </Button>
               <IconButton
                 onClick={handleSignOut}
-                sx={{ 
+                sx={{
                   display: { xs: 'flex', sm: 'none' },
                   color: colors.secondary.main,
                 }}
@@ -703,7 +854,7 @@ export function AdminLayout() {
             </Box>
           </Toolbar>
         </AppBar>
-        
+
         <Box
           sx={{
             flexGrow: 1,

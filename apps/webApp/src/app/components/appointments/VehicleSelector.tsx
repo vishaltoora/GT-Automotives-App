@@ -49,10 +49,22 @@ export const VehicleSelector: React.FC<VehicleSelectorProps> = ({
             <MenuItem value="">None</MenuItem>
             {vehicles.map((vehicle) => (
               <MenuItem key={vehicle.id} value={vehicle.id}>
-                {vehicle.year} {vehicle.make} {vehicle.model}
-                {vehicle.engineType ? ` • ${vehicle.engineType}` : ''}
-                {vehicle.licensePlate ? ` • ${vehicle.licensePlate}` : ''}
-                {vehicle.vin ? ` • VIN ${vehicle.vin.slice(-6)}` : ''}
+                <Box>
+                  <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                    {vehicle.year} {vehicle.make} {vehicle.model}
+                    {vehicle.engineType ? ` • ${vehicle.engineType}` : ''}
+                    {vehicle.licensePlate ? ` • ${vehicle.licensePlate}` : ''}
+                  </Typography>
+                  {vehicle.vin && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', lineHeight: 1.2 }}
+                    >
+                      VIN {vehicle.vin}
+                    </Typography>
+                  )}
+                </Box>
               </MenuItem>
             ))}
           </Select>

@@ -36,7 +36,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 export class RepairOrdersController {
   constructor(
     private readonly roService: RepairOrdersService,
-    private readonly azureBlobService: AzureBlobService,
+    private readonly azureBlobService: AzureBlobService
   ) {}
 
   // ---- Service Catalog (managed list for the "Choose a Service" dialog) ----
@@ -58,7 +58,7 @@ export class RepairOrdersController {
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   updateCatalogItem(
     @Param('itemId') itemId: string,
-    @Body() dto: UpdateServiceCatalogItemDto,
+    @Body() dto: UpdateServiceCatalogItemDto
   ) {
     return this.roService.updateCatalogItem(itemId, dto);
   }
@@ -97,7 +97,7 @@ export class RepairOrdersController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateRepairOrderDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.roService.update(id, dto, user.role.name);
   }
@@ -107,20 +107,24 @@ export class RepairOrdersController {
   closeAndConvert(
     @Param('id') id: string,
     @Body('companyId') companyId: string,
-    @CurrentUser() user: any,
+    @Body('feeItemId') feeItemId: string | undefined,
+    @CurrentUser() user: any
   ) {
     if (!companyId) throw new BadRequestException('companyId is required');
-    return this.roService.closeAndConvert(id, companyId, user.role.name);
+    return this.roService.closeAndConvert(
+      id,
+      companyId,
+      user.role.name,
+      user.id,
+      feeItemId
+    );
   }
 
   // ---- Services ----
 
   @Post(':id/services')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  addService(
-    @Param('id') id: string,
-    @Body() dto: CreateROServiceDto,
-  ) {
+  addService(@Param('id') id: string, @Body() dto: CreateROServiceDto) {
     return this.roService.addService(id, dto);
   }
 
@@ -130,7 +134,7 @@ export class RepairOrdersController {
     @Param('id') id: string,
     @Param('serviceId') serviceId: string,
     @Body() dto: UpdateROServiceDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.roService.updateService(id, serviceId, dto, user.id);
   }
@@ -139,7 +143,7 @@ export class RepairOrdersController {
   @Roles('ADMIN', 'SUPERVISOR')
   removeService(
     @Param('id') id: string,
-    @Param('serviceId') serviceId: string,
+    @Param('serviceId') serviceId: string
   ) {
     return this.roService.removeService(id, serviceId);
   }
@@ -155,7 +159,7 @@ export class RepairOrdersController {
     @Body('mediaType') mediaType: string,
     @Body('caption') caption: string,
     @Body('roServiceId') roServiceId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     if (!file) throw new BadRequestException('File is required');
 
@@ -168,7 +172,12 @@ export class RepairOrdersController {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const sharp = require('sharp');
       buffer = await sharp(buffer)
-        .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
+        .resize({
+          width: 1920,
+          height: 1920,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
         .jpeg({ quality: 80 })
         .toBuffer();
     } catch {
@@ -178,7 +187,7 @@ export class RepairOrdersController {
     const uploadResult = await this.azureBlobService.uploadROMedia(
       buffer,
       file.originalname,
-      file.mimetype,
+      file.mimetype
     );
 
     return this.roService.addMedia(
@@ -194,7 +203,7 @@ export class RepairOrdersController {
       user.id,
       mediaType ?? 'OTHER',
       caption,
-      roServiceId || undefined,
+      roServiceId || undefined
     );
   }
 
@@ -207,7 +216,7 @@ export class RepairOrdersController {
     @UploadedFile() file: any,
     @Body('mediaType') mediaType: string,
     @Body('caption') caption: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     if (!file) throw new BadRequestException('File is required');
 
@@ -219,7 +228,12 @@ export class RepairOrdersController {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const sharp = require('sharp');
       buffer = await sharp(buffer)
-        .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
+        .resize({
+          width: 1920,
+          height: 1920,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
         .jpeg({ quality: 80 })
         .toBuffer();
     } catch {
@@ -229,7 +243,7 @@ export class RepairOrdersController {
     const uploadResult = await this.azureBlobService.uploadROMedia(
       buffer,
       file.originalname,
-      file.mimetype,
+      file.mimetype
     );
 
     return this.roService.addMedia(
@@ -245,7 +259,7 @@ export class RepairOrdersController {
       user.id,
       mediaType ?? 'WORK_IN_PROGRESS',
       caption,
-      serviceId,
+      serviceId
     );
   }
 
@@ -254,17 +268,14 @@ export class RepairOrdersController {
   updateMedia(
     @Param('id') id: string,
     @Param('mediaId') mediaId: string,
-    @Body() dto: UpdateROMediaDto,
+    @Body() dto: UpdateROMediaDto
   ) {
     return this.roService.updateMedia(id, mediaId, dto);
   }
 
   @Delete(':id/media/:mediaId')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  removeMedia(
-    @Param('id') id: string,
-    @Param('mediaId') mediaId: string,
-  ) {
+  removeMedia(@Param('id') id: string, @Param('mediaId') mediaId: string) {
     return this.roService.removeMedia(id, mediaId, this.azureBlobService);
   }
 }
