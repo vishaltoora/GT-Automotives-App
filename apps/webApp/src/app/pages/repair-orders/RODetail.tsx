@@ -41,7 +41,11 @@ import {
   ReceiptLong,
   Save,
 } from '@mui/icons-material';
-import { repairOrderRequests, RepairOrder, ROStatus } from '../../requests/repair-order.requests';
+import {
+  repairOrderRequests,
+  RepairOrder,
+  ROStatus,
+} from '../../requests/repair-order.requests';
 import { ServiceDrawer } from '../../components/repair-orders/ServiceDrawer';
 import { AddVehicleDialog } from '../../components/repair-orders/AddVehicleDialog';
 import { InspectVehicleDialog } from '../../components/repair-orders/InspectVehicleDialog';
@@ -50,26 +54,43 @@ import { useAuth } from '../../hooks/useAuth';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { companyService, Company } from '../../requests/company.requests';
 import { vehicleService, Vehicle } from '../../requests/vehicle.requests';
+import {
+  inspectionService,
+  InspectionFeeItem,
+} from '../../requests/inspection.requests';
 import { colors } from '../../theme/colors';
 
 // ---- Status config ----
 
-const STATUS_META: Record<ROStatus, { label: string; color: 'default' | 'info' | 'warning' | 'success' | 'error' | 'primary' | 'secondary' }> = {
-  OPEN:                { label: 'Open',              color: 'info' },
-  IN_PROGRESS:         { label: 'In Progress',       color: 'primary' },
-  WAITING_FOR_PARTS:   { label: 'Waiting for Parts', color: 'warning' },
-  READY:               { label: 'Ready',             color: 'success' },
-  CLOSED:              { label: 'Closed',            color: 'default' },
-  INVOICED:            { label: 'Invoiced',          color: 'secondary' },
+const STATUS_META: Record<
+  ROStatus,
+  {
+    label: string;
+    color:
+      | 'default'
+      | 'info'
+      | 'warning'
+      | 'success'
+      | 'error'
+      | 'primary'
+      | 'secondary';
+  }
+> = {
+  OPEN: { label: 'Open', color: 'info' },
+  IN_PROGRESS: { label: 'In Progress', color: 'primary' },
+  WAITING_FOR_PARTS: { label: 'Waiting for Parts', color: 'warning' },
+  READY: { label: 'Ready', color: 'success' },
+  CLOSED: { label: 'Closed', color: 'default' },
+  INVOICED: { label: 'Invoiced', color: 'secondary' },
 };
 
 const STATUS_TRANSITIONS: Record<ROStatus, ROStatus[]> = {
-  OPEN:              ['IN_PROGRESS'],
-  IN_PROGRESS:       ['WAITING_FOR_PARTS', 'READY'],
+  OPEN: ['IN_PROGRESS'],
+  IN_PROGRESS: ['WAITING_FOR_PARTS', 'READY'],
   WAITING_FOR_PARTS: ['IN_PROGRESS', 'READY'],
-  READY:             ['IN_PROGRESS'],
-  CLOSED:            [],
-  INVOICED:          [],
+  READY: ['IN_PROGRESS'],
+  CLOSED: [],
+  INVOICED: [],
 };
 
 // ---- Helpers ----
@@ -103,7 +124,7 @@ function CurrentTab({
   baseRoute: string;
 }) {
   const navigate = useNavigate();
-  const { showApiError, showSuccess } = useErrorHelpers();
+  const { showApiError, showSuccess, showValidationError } = useErrorHelpers();
   const [serviceDrawerOpen, setServiceDrawerOpen] = useState(false);
   const [editingConcern, setEditingConcern] = useState(false);
   const [concern, setConcern] = useState(ro.customerConcern ?? '');
@@ -117,9 +138,13 @@ function CurrentTab({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [feeItems, setFeeItems] = useState<InspectionFeeItem[]>([]);
+  const [selectedFeeItemId, setSelectedFeeItemId] = useState('');
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
-  const [viewInspectionId, setViewInspectionId] = useState<string | undefined>(undefined);
+  const [viewInspectionId, setViewInspectionId] = useState<string | undefined>(
+    undefined
+  );
   const [linkingVehicle, setLinkingVehicle] = useState(false);
   const [changingVehicle, setChangingVehicle] = useState(false);
   const [customerVehicles, setCustomerVehicles] = useState<Vehicle[]>([]);
@@ -134,8 +159,19 @@ function CurrentTab({
       .catch(() => setCustomerVehicles([]));
   }, [showVehiclePicker, ro.customerId]);
 
-  const completedServices = ro.services?.filter((s) => s.status === 'COMPLETED') ?? [];
+  const completedServices =
+    ro.services?.filter((s) => s.status === 'COMPLETED') ?? [];
   const totalServices = ro.services?.length ?? 0;
+
+  // A completed, not-yet-invoiced inspection lets us bill its fee even when the
+  // RO itself has no service items (the inspection IS the billable work).
+  const invoiceableInspection = ro.inspections?.find(
+    (i) =>
+      (i.status === 'COMPLETED' || i.status === 'FINALIZED') && !i.invoiceId
+  );
+  const selectedFeeItem = feeItems.find((f) => f.id === selectedFeeItemId);
+  const hasInvoiceableWork =
+    completedServices.length > 0 || Boolean(invoiceableInspection);
 
   // Validation gating: a vehicle must be linked before any photo/inspection/service
   // work can begin, and at least one photo is required before inspecting or adding services.
@@ -147,8 +183,12 @@ function CurrentTab({
     : !hasPhotos
     ? 'Add at least one photo first'
     : '';
-  const estimatedTotal = ro.services?.reduce((sum, s) => sum + Number(s.total ?? 0), 0) ?? 0;
-  const completedSubtotal = completedServices.reduce((sum, s) => sum + Number(s.total ?? 0), 0);
+  const estimatedTotal =
+    ro.services?.reduce((sum, s) => sum + Number(s.total ?? 0), 0) ?? 0;
+  const completedSubtotal = completedServices.reduce(
+    (sum, s) => sum + Number(s.total ?? 0),
+    0
+  );
 
   const handleStatusChange = async (status: ROStatus) => {
     setSavingStatus(true);
@@ -163,7 +203,9 @@ function CurrentTab({
   const handleSaveConcern = async () => {
     setSavingConcern(true);
     try {
-      const updated = await repairOrderRequests.update(ro.id, { customerConcern: concern });
+      const updated = await repairOrderRequests.update(ro.id, {
+        customerConcern: concern,
+      });
       onROChange({ ...ro, ...updated });
       setEditingConcern(false);
     } finally {
@@ -174,7 +216,9 @@ function CurrentTab({
   const handleSaveNotes = async () => {
     setSavingNotes(true);
     try {
-      const updated = await repairOrderRequests.update(ro.id, { technicianNotes: notes });
+      const updated = await repairOrderRequests.update(ro.id, {
+        technicianNotes: notes,
+      });
       onROChange({ ...ro, ...updated });
       setEditingNotes(false);
     } finally {
@@ -186,10 +230,24 @@ function CurrentTab({
     setCloseDialogOpen(true);
     setCompaniesLoading(true);
     try {
-      const list = await companyService.getCompanies();
+      const requests: [Promise<Company[]>, Promise<InspectionFeeItem[]>] = [
+        companyService.getCompanies(),
+        invoiceableInspection
+          ? inspectionService.getFeeItems()
+          : Promise.resolve([] as InspectionFeeItem[]),
+      ];
+      const [list, fees] = await Promise.all(requests);
       setCompanies(list);
       const preset = list.find((c) => c.isDefault) ?? list[0];
       if (preset) setSelectedCompanyId(preset.id);
+
+      if (invoiceableInspection) {
+        const activeFees = fees.filter((f) => f.isActive);
+        setFeeItems(activeFees);
+        const inspType = invoiceableInspection.template?.type;
+        const match = activeFees.find((f) => f.type && f.type === inspType);
+        setSelectedFeeItemId(match?.id ?? activeFees[0]?.id ?? '');
+      }
     } catch (error) {
       showApiError(error, 'Failed to load companies.');
     } finally {
@@ -199,14 +257,24 @@ function CurrentTab({
 
   const handleConfirmClose = async () => {
     if (!selectedCompanyId) return;
+    if (invoiceableInspection && !selectedFeeItemId) {
+      showValidationError('Select an inspection fee to invoice.');
+      return;
+    }
     setClosing(true);
     try {
-      await repairOrderRequests.close(ro.id, selectedCompanyId);
+      await repairOrderRequests.close(
+        ro.id,
+        selectedCompanyId,
+        invoiceableInspection ? selectedFeeItemId : undefined
+      );
       const refreshed = await repairOrderRequests.getById(ro.id);
       onROChange(refreshed);
       setCloseDialogOpen(false);
       showSuccess(
-        `Invoice ${refreshed.invoice?.invoiceNumber ?? ''} created from ${ro.roNumber}.`.trim()
+        `Invoice ${refreshed.invoice?.invoiceNumber ?? ''} created from ${
+          ro.roNumber
+        }.`.trim()
       );
     } catch (error) {
       showApiError(error, 'Failed to close repair order and create invoice.');
@@ -222,12 +290,17 @@ function CurrentTab({
     }
     setLinkingVehicle(true);
     try {
-      const updated = await repairOrderRequests.update(ro.id, { vehicleId: vehicle.id });
+      const updated = await repairOrderRequests.update(ro.id, {
+        vehicleId: vehicle.id,
+      });
       onROChange(updated);
       setAddVehicleOpen(false);
       setChangingVehicle(false);
     } catch (error) {
-      showApiError(error, 'Vehicle was created but could not be linked to this repair order.');
+      showApiError(
+        error,
+        'Vehicle was created but could not be linked to this repair order.'
+      );
     } finally {
       setLinkingVehicle(false);
     }
@@ -239,7 +312,14 @@ function CurrentTab({
     <Box>
       {/* Status bar */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+          }}
+        >
           <Chip
             label={STATUS_META[ro.status].label}
             color={STATUS_META[ro.status].color}
@@ -247,7 +327,13 @@ function CurrentTab({
           />
           {transitions.length > 0 && canEdit && (
             <>
-              <Typography variant="caption" color="text.secondary" sx={{ mx: 0.5 }}>→</Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mx: 0.5 }}
+              >
+                →
+              </Typography>
               {transitions.map((s) => (
                 <Chip
                   key={s}
@@ -271,11 +357,23 @@ function CurrentTab({
 
       {/* Customer & vehicle info */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>Customer</Typography>
-        <Typography variant="body1" fontWeight={600}>{customerFullName(ro)}</Typography>
+        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          Customer
+        </Typography>
+        <Typography variant="body1" fontWeight={600}>
+          {customerFullName(ro)}
+        </Typography>
         <Stack direction="row" spacing={2} sx={{ mt: 0.5 }} flexWrap="wrap">
-          {ro.customer.phone && <Typography variant="body2" color="text.secondary">{ro.customer.phone}</Typography>}
-          {ro.customer.email && <Typography variant="body2" color="text.secondary">{ro.customer.email}</Typography>}
+          {ro.customer.phone && (
+            <Typography variant="body2" color="text.secondary">
+              {ro.customer.phone}
+            </Typography>
+          )}
+          {ro.customer.email && (
+            <Typography variant="body2" color="text.secondary">
+              {ro.customer.email}
+            </Typography>
+          )}
         </Stack>
 
         {ro.vehicle && !changingVehicle && (
@@ -283,25 +381,43 @@ function CurrentTab({
             <Divider sx={{ my: 1.5 }} />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <DirectionsCar fontSize="small" color="action" />
-              <Typography variant="body1" fontWeight={500} sx={{ flexGrow: 1 }}>{vehicleLabel(ro)}</Typography>
+              <Typography variant="body1" fontWeight={500} sx={{ flexGrow: 1 }}>
+                {vehicleLabel(ro)}
+              </Typography>
               {canEdit && (
-                <Button size="small" startIcon={<Edit fontSize="small" />} onClick={() => setChangingVehicle(true)}>
+                <Button
+                  size="small"
+                  startIcon={<Edit fontSize="small" />}
+                  onClick={() => setChangingVehicle(true)}
+                >
                   Change
                 </Button>
               )}
             </Box>
             <Stack direction="row" spacing={2} sx={{ mt: 0.5 }} flexWrap="wrap">
               {ro.vehicle.licensePlate && (
-                <Typography variant="body2" color="text.secondary">Plate: {ro.vehicle.licensePlate}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Plate: {ro.vehicle.licensePlate}
+                </Typography>
               )}
               {ro.vehicle.vin && (
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>VIN: {ro.vehicle.vin}</Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: 11 }}
+                >
+                  VIN: {ro.vehicle.vin}
+                </Typography>
               )}
               {ro.mileageIn != null && (
-                <Typography variant="body2" color="text.secondary">Mileage in: {ro.mileageIn.toLocaleString()} km</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Mileage in: {ro.mileageIn.toLocaleString()} km
+                </Typography>
               )}
               {ro.mileageOut != null && (
-                <Typography variant="body2" color="text.secondary">Mileage out: {ro.mileageOut.toLocaleString()} km</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Mileage out: {ro.mileageOut.toLocaleString()} km
+                </Typography>
               )}
             </Stack>
           </>
@@ -310,14 +426,30 @@ function CurrentTab({
         {showVehiclePicker && (
           <>
             <Divider sx={{ my: 1.5 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: canEdit ? 1.5 : 0 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: canEdit ? 1.5 : 0,
+              }}
+            >
               <DirectionsCar fontSize="small" color="disabled" />
               <Typography variant="body2" color="text.disabled">
-                {changingVehicle ? 'Select a different vehicle for this repair order.' : 'No vehicle on this repair order.'}
+                {changingVehicle
+                  ? 'Select a different vehicle for this repair order.'
+                  : 'No vehicle on this repair order.'}
               </Typography>
             </Box>
             {canEdit && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  flexWrap: 'wrap',
+                }}
+              >
                 {customerVehicles.length > 0 && (
                   <Autocomplete
                     size="small"
@@ -326,27 +458,45 @@ function CurrentTab({
                     disabled={linkingVehicle}
                     getOptionDisabled={(v) => v.id === ro.vehicle?.id}
                     getOptionLabel={(v) =>
-                      [`${v.year} ${v.make} ${v.model}`.trim(), v.licensePlate ? `(${v.licensePlate})` : '', v.id === ro.vehicle?.id ? '— current' : '']
+                      [
+                        `${v.year} ${v.make} ${v.model}`.trim(),
+                        v.licensePlate ? `(${v.licensePlate})` : '',
+                        v.id === ro.vehicle?.id ? '— current' : '',
+                      ]
                         .filter(Boolean)
                         .join(' ')
                     }
                     onChange={(_, v) => v && handleVehicleAdded(v)}
                     renderInput={(params) => (
-                      <TextField {...params} label="Select existing vehicle" placeholder="Choose from customer's vehicles" />
+                      <TextField
+                        {...params}
+                        label="Select existing vehicle"
+                        placeholder="Choose from customer's vehicles"
+                      />
                     )}
                   />
                 )}
                 <Button
                   size="small"
                   variant="outlined"
-                  startIcon={linkingVehicle ? <CircularProgress size={14} /> : <DirectionsCar />}
+                  startIcon={
+                    linkingVehicle ? (
+                      <CircularProgress size={14} />
+                    ) : (
+                      <DirectionsCar />
+                    )
+                  }
                   onClick={() => setAddVehicleOpen(true)}
                   disabled={linkingVehicle}
                 >
                   Add New
                 </Button>
                 {changingVehicle && (
-                  <Button size="small" onClick={() => setChangingVehicle(false)} disabled={linkingVehicle}>
+                  <Button
+                    size="small"
+                    onClick={() => setChangingVehicle(false)}
+                    disabled={linkingVehicle}
+                  >
                     Cancel
                   </Button>
                 )}
@@ -359,7 +509,9 @@ function CurrentTab({
           <>
             <Divider sx={{ my: 1.5 }} />
             <Typography variant="body2" color="text.secondary">
-              Appointment: {new Date(ro.appointment.scheduledDate).toLocaleDateString()} @ {ro.appointment.scheduledTime} · {ro.appointment.serviceType}
+              Appointment:{' '}
+              {new Date(ro.appointment.scheduledDate).toLocaleDateString()} @{' '}
+              {ro.appointment.scheduledTime} · {ro.appointment.serviceType}
             </Typography>
           </>
         )}
@@ -368,7 +520,15 @@ function CurrentTab({
           <>
             <Divider sx={{ my: 1.5 }} />
             <Typography variant="body2" color="text.secondary">
-              Assigned: {ro.employees.map((e) => `${e.user.firstName} ${e.user.lastName}${e.role ? ` (${e.role})` : ''}`).join(', ')}
+              Assigned:{' '}
+              {ro.employees
+                .map(
+                  (e) =>
+                    `${e.user.firstName} ${e.user.lastName}${
+                      e.role ? ` (${e.role})` : ''
+                    }`
+                )
+                .join(', ')}
             </Typography>
           </>
         )}
@@ -377,9 +537,17 @@ function CurrentTab({
       {/* Customer concern */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ flexGrow: 1 }}>Customer Concern</Typography>
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{ flexGrow: 1 }}
+          >
+            Customer Concern
+          </Typography>
           {canEdit && !editingConcern && (
-            <IconButton size="small" onClick={() => setEditingConcern(true)}><Edit fontSize="small" /></IconButton>
+            <IconButton size="small" onClick={() => setEditingConcern(true)}>
+              <Edit fontSize="small" />
+            </IconButton>
           )}
         </Box>
         {editingConcern ? (
@@ -394,27 +562,50 @@ function CurrentTab({
               placeholder="What is the customer reporting?"
             />
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Button size="small" variant="contained" onClick={handleSaveConcern} disabled={savingConcern}>
-                {savingConcern ? <CircularProgress size={16} /> : <Save fontSize="small" />}
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleSaveConcern}
+                disabled={savingConcern}
+              >
+                {savingConcern ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <Save fontSize="small" />
+                )}
               </Button>
-              <Button size="small" onClick={() => { setEditingConcern(false); setConcern(ro.customerConcern ?? ''); }}>Cancel</Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  setEditingConcern(false);
+                  setConcern(ro.customerConcern ?? '');
+                }}
+              >
+                Cancel
+              </Button>
             </Stack>
           </Box>
         ) : (
           <Typography
             variant="body2"
             color={concern ? 'text.primary' : 'text.disabled'}
-            sx={{ fontStyle: concern ? 'normal' : 'italic', cursor: canEdit ? 'pointer' : undefined }}
+            sx={{
+              fontStyle: concern ? 'normal' : 'italic',
+              cursor: canEdit ? 'pointer' : undefined,
+            }}
             onClick={() => canEdit && setEditingConcern(true)}
           >
-            {concern || (canEdit ? 'Tap to add customer concern…' : 'Not recorded')}
+            {concern ||
+              (canEdit ? 'Tap to add customer concern…' : 'Not recorded')}
           </Typography>
         )}
       </Paper>
 
       {/* Arrival photos */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>Photos</Typography>
+        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          Photos
+        </Typography>
         <ROPhotoSection
           roId={ro.id}
           photos={ro.media ?? []}
@@ -426,22 +617,38 @@ function CurrentTab({
       </Paper>
 
       {/* Action buttons */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1.5}
+        sx={{ mb: 2 }}
+      >
         {ro.inspections?.length > 0 ? (
           <Button
             variant="outlined"
             startIcon={<InspectIcon />}
-            onClick={() => { setViewInspectionId(ro.inspections[0].id); setInspectOpen(true); }}
+            onClick={() => {
+              setViewInspectionId(ro.inspections[0].id);
+              setInspectOpen(true);
+            }}
           >
             View Inspection ({ro.inspections.length})
           </Button>
         ) : (
-          <Tooltip title={actionsEnabled ? 'Create a digital vehicle inspection linked to this RO' : actionDisabledReason}>
+          <Tooltip
+            title={
+              actionsEnabled
+                ? 'Create a digital vehicle inspection linked to this RO'
+                : actionDisabledReason
+            }
+          >
             <span>
               <Button
                 variant="outlined"
                 startIcon={<InspectIcon />}
-                onClick={() => { setViewInspectionId(undefined); setInspectOpen(true); }}
+                onClick={() => {
+                  setViewInspectionId(undefined);
+                  setInspectOpen(true);
+                }}
                 disabled={!actionsEnabled}
               >
                 Inspect Vehicle
@@ -450,15 +657,26 @@ function CurrentTab({
           </Tooltip>
         )}
 
-        <Tooltip title={actionsEnabled || totalServices > 0 ? '' : actionDisabledReason}>
+        <Tooltip
+          title={
+            actionsEnabled || totalServices > 0 ? '' : actionDisabledReason
+          }
+        >
           <span>
             <Button
-              variant={!actionsEnabled && totalServices === 0 ? 'outlined' : 'contained'}
+              variant={
+                !actionsEnabled && totalServices === 0
+                  ? 'outlined'
+                  : 'contained'
+              }
               startIcon={<ServicesIcon />}
               onClick={() => setServiceDrawerOpen(true)}
               disabled={!actionsEnabled && totalServices === 0}
             >
-              Services {totalServices > 0 ? `(${completedServices.length}/${totalServices} done)` : ''}
+              Services{' '}
+              {totalServices > 0
+                ? `(${completedServices.length}/${totalServices} done)`
+                : ''}
             </Button>
           </span>
         </Tooltip>
@@ -467,9 +685,17 @@ function CurrentTab({
       {/* Technician notes */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ flexGrow: 1 }}>Technician Notes</Typography>
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{ flexGrow: 1 }}
+          >
+            Technician Notes
+          </Typography>
           {canEdit && !editingNotes && (
-            <IconButton size="small" onClick={() => setEditingNotes(true)}><Edit fontSize="small" /></IconButton>
+            <IconButton size="small" onClick={() => setEditingNotes(true)}>
+              <Edit fontSize="small" />
+            </IconButton>
           )}
         </Box>
         {editingNotes ? (
@@ -484,17 +710,38 @@ function CurrentTab({
               placeholder="Findings, measurements, technician observations…"
             />
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Button size="small" variant="contained" onClick={handleSaveNotes} disabled={savingNotes}>
-                {savingNotes ? <CircularProgress size={16} /> : <Save fontSize="small" />}
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleSaveNotes}
+                disabled={savingNotes}
+              >
+                {savingNotes ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <Save fontSize="small" />
+                )}
               </Button>
-              <Button size="small" onClick={() => { setEditingNotes(false); setNotes(ro.technicianNotes ?? ''); }}>Cancel</Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  setEditingNotes(false);
+                  setNotes(ro.technicianNotes ?? '');
+                }}
+              >
+                Cancel
+              </Button>
             </Stack>
           </Box>
         ) : (
           <Typography
             variant="body2"
             color={notes ? 'text.primary' : 'text.disabled'}
-            sx={{ fontStyle: notes ? 'normal' : 'italic', cursor: canEdit ? 'pointer' : undefined, whiteSpace: 'pre-wrap' }}
+            sx={{
+              fontStyle: notes ? 'normal' : 'italic',
+              cursor: canEdit ? 'pointer' : undefined,
+              whiteSpace: 'pre-wrap',
+            }}
             onClick={() => canEdit && setEditingNotes(true)}
           >
             {notes || (canEdit ? 'Tap to add technician notes…' : 'No notes')}
@@ -503,21 +750,34 @@ function CurrentTab({
       </Paper>
 
       {/* Footer: total + close */}
-      {(ro.status !== 'INVOICED' && ro.status !== 'CLOSED') && (
-        <Paper variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+      {ro.status !== 'INVOICED' && ro.status !== 'CLOSED' && (
+        <Paper
+          variant="outlined"
+          sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}
+        >
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="body2" color="text.secondary">Estimated Total</Typography>
-            <Typography variant="h6" fontWeight={700}>${estimatedTotal.toFixed(2)}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Estimated Total
+            </Typography>
+            <Typography variant="h6" fontWeight={700}>
+              ${estimatedTotal.toFixed(2)}
+            </Typography>
           </Box>
           {canClose && (
-            <Tooltip title={completedServices.length === 0 ? 'Mark at least one service item complete first' : ''}>
+            <Tooltip
+              title={
+                hasInvoiceableWork
+                  ? ''
+                  : 'Mark a service item complete or complete an inspection first'
+              }
+            >
               <span>
                 <Button
                   variant="contained"
                   color="success"
                   startIcon={<ReceiptLong />}
                   onClick={handleOpenCloseDialog}
-                  disabled={closing || completedServices.length === 0}
+                  disabled={closing || !hasInvoiceableWork}
                 >
                   Close & Invoice
                 </Button>
@@ -528,11 +788,18 @@ function CurrentTab({
       )}
 
       {ro.invoice && (
-        <Paper variant="outlined" sx={{ p: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Paper
+          variant="outlined"
+          sx={{ p: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}
+        >
           <ReceiptLong color="success" />
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="body2" color="text.secondary">Invoice Created</Typography>
-            <Typography variant="body1" fontWeight={600}>{ro.invoice.invoiceNumber}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Invoice Created
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              {ro.invoice.invoiceNumber}
+            </Typography>
           </Box>
           <Button
             size="small"
@@ -545,55 +812,126 @@ function CurrentTab({
       )}
 
       {/* Close & Invoice dialog */}
-      <Dialog open={closeDialogOpen} onClose={() => !closing && setCloseDialogOpen(false)} fullWidth maxWidth="xs">
+      <Dialog
+        open={closeDialogOpen}
+        onClose={() => !closing && setCloseDialogOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
         <DialogTitle>Close & Invoice {ro.roNumber}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            A draft invoice will be created from the {completedServices.length} completed service item(s).
-            Select the company to invoice under.
+            {invoiceableInspection
+              ? `A draft invoice will be created from the inspection fee${
+                  completedServices.length > 0
+                    ? ` plus ${completedServices.length} completed service item(s)`
+                    : ''
+                }. Select the inspection fee and company to invoice under.`
+              : `A draft invoice will be created from the ${completedServices.length} completed service item(s). Select the company to invoice under.`}
           </Typography>
           {companiesLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
           ) : (
-            <FormControl fullWidth size="small">
-              <InputLabel>Company</InputLabel>
-              <Select
-                value={selectedCompanyId}
-                label="Company"
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-              >
-                {companies.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {c.name.replace(/[()]/g, '')}{c.isDefault ? ' (default)' : ''}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Stack spacing={2}>
+              {invoiceableInspection && (
+                <FormControl fullWidth size="small">
+                  <InputLabel>Inspection Fee</InputLabel>
+                  <Select
+                    value={selectedFeeItemId}
+                    label="Inspection Fee"
+                    onChange={(e) => setSelectedFeeItemId(e.target.value)}
+                  >
+                    {feeItems.length === 0 && (
+                      <MenuItem value="" disabled>
+                        No active inspection fee items — add them under
+                        Inspection Items &amp; Pricing
+                      </MenuItem>
+                    )}
+                    {feeItems.map((f) => (
+                      <MenuItem key={f.id} value={f.id}>
+                        {f.name} — ${Number(f.price).toFixed(2)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              <FormControl fullWidth size="small">
+                <InputLabel>Company</InputLabel>
+                <Select
+                  value={selectedCompanyId}
+                  label="Company"
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                >
+                  {companies.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.name.replace(/[()]/g, '')}
+                      {c.isDefault ? ' (default)' : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
           )}
-          <Box sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">Subtotal (completed items)</Typography>
-              <Typography variant="body2">${completedSubtotal.toFixed(2)}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="caption" color="text.secondary">GST (5%) + PST (7%)</Typography>
-              <Typography variant="caption" color="text.secondary">${(completedSubtotal * 0.12).toFixed(2)}</Typography>
-            </Box>
-            <Divider sx={{ my: 0.75 }} />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" fontWeight={700}>Invoice Total</Typography>
-              <Typography variant="body2" fontWeight={700}>${(completedSubtotal * 1.12).toFixed(2)}</Typography>
-            </Box>
-          </Box>
+          {(() => {
+            const feePrice = selectedFeeItem
+              ? Number(selectedFeeItem.price)
+              : 0;
+            const previewSubtotal = completedSubtotal + feePrice;
+            return (
+              <Box
+                sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Subtotal
+                  </Typography>
+                  <Typography variant="body2">
+                    ${previewSubtotal.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    GST (5%) + PST (7%)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    ${(previewSubtotal * 0.12).toFixed(2)}
+                  </Typography>
+                </Box>
+                <Divider sx={{ my: 0.75 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" fontWeight={700}>
+                    Invoice Total
+                  </Typography>
+                  <Typography variant="body2" fontWeight={700}>
+                    ${(previewSubtotal * 1.12).toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })()}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCloseDialogOpen(false)} disabled={closing}>Cancel</Button>
+          <Button onClick={() => setCloseDialogOpen(false)} disabled={closing}>
+            Cancel
+          </Button>
           <Button
             variant="contained"
             color="success"
-            startIcon={closing ? <CircularProgress size={16} color="inherit" /> : <ReceiptLong />}
+            startIcon={
+              closing ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <ReceiptLong />
+              )
+            }
             onClick={handleConfirmClose}
-            disabled={closing || !selectedCompanyId}
+            disabled={
+              closing ||
+              !selectedCompanyId ||
+              (Boolean(invoiceableInspection) && !selectedFeeItemId)
+            }
           >
             Create Invoice
           </Button>
@@ -612,7 +950,10 @@ function CurrentTab({
       {/* Inspect vehicle dialog */}
       <InspectVehicleDialog
         open={inspectOpen}
-        onClose={() => { setInspectOpen(false); setViewInspectionId(undefined); }}
+        onClose={() => {
+          setInspectOpen(false);
+          setViewInspectionId(undefined);
+        }}
         repairOrderId={ro.id}
         customerId={ro.customerId}
         vehicleId={ro.vehicle?.id}
@@ -622,7 +963,10 @@ function CurrentTab({
         defaultMileage={ro.vehicle?.mileage ?? ro.mileageIn}
         existingInspectionId={viewInspectionId}
         onChanged={() => {
-          repairOrderRequests.getById(ro.id).then(onROChange).catch(() => {});
+          repairOrderRequests
+            .getById(ro.id)
+            .then(onROChange)
+            .catch(() => {});
         }}
       />
 
@@ -649,7 +993,10 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!ro.vehicle?.id && !ro.customerId) { setLoading(false); return; }
+    if (!ro.vehicle?.id && !ro.customerId) {
+      setLoading(false);
+      return;
+    }
 
     const fetch = ro.vehicle?.id
       ? repairOrderRequests.getByVehicle(ro.vehicle.id)
@@ -661,16 +1008,27 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
       .finally(() => setLoading(false));
   }, [ro.id, ro.vehicle?.id, ro.customerId]);
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>;
+  if (loading)
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
 
   return (
     <Box>
       <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-        {ro.vehicle ? `Previous ROs for this vehicle` : `Previous ROs for this customer`}
+        {ro.vehicle
+          ? `Previous ROs for this vehicle`
+          : `Previous ROs for this customer`}
       </Typography>
 
       {pastROs.length === 0 ? (
-        <Typography variant="body2" color="text.disabled" sx={{ py: 4, textAlign: 'center' }}>
+        <Typography
+          variant="body2"
+          color="text.disabled"
+          sx={{ py: 4, textAlign: 'center' }}
+        >
           No previous repair orders found.
         </Typography>
       ) : (
@@ -678,34 +1036,60 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ bgcolor: 'action.hover' }}>
-                <TableCell><strong>RO #</strong></TableCell>
-                <TableCell><strong>Date</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
-                <TableCell><strong>Services</strong></TableCell>
-                <TableCell align="right"><strong>Total</strong></TableCell>
+                <TableCell>
+                  <strong>RO #</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Date</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Status</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Services</strong>
+                </TableCell>
+                <TableCell align="right">
+                  <strong>Total</strong>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {pastROs.map((r) => {
-                const total = r.services?.reduce((sum, s) => sum + Number(s.total ?? 0), 0) ?? 0;
+                const total =
+                  r.services?.reduce(
+                    (sum, s) => sum + Number(s.total ?? 0),
+                    0
+                  ) ?? 0;
                 const meta = STATUS_META[r.status];
                 return (
                   <TableRow
                     key={r.id}
                     hover
-                    onClick={() => navigate(`${baseRoute}/repair-orders/${r.id}`)}
+                    onClick={() =>
+                      navigate(`${baseRoute}/repair-orders/${r.id}`)
+                    }
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell>
-                      <Typography variant="body2" fontWeight={600} sx={{ color: colors.primary.main }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        sx={{ color: colors.primary.main }}
+                      >
                         {r.roNumber}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{new Date(r.openedAt).toLocaleDateString()}</Typography>
+                      <Typography variant="body2">
+                        {new Date(r.openedAt).toLocaleDateString()}
+                      </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip label={meta.label} size="small" color={meta.color} />
+                      <Chip
+                        label={meta.label}
+                        size="small"
+                        color={meta.color}
+                      />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
@@ -713,7 +1097,9 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="body2">${total.toFixed(2)}</Typography>
+                      <Typography variant="body2">
+                        ${total.toFixed(2)}
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 );
@@ -730,11 +1116,23 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
 
 function ChatTab() {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8, gap: 2 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 8,
+        gap: 2,
+      }}
+    >
       <ChatIcon sx={{ fontSize: 56, color: 'text.disabled' }} />
-      <Typography variant="h6" color="text.secondary">Chat coming soon</Typography>
+      <Typography variant="h6" color="text.secondary">
+        Chat coming soon
+      </Typography>
       <Typography variant="body2" color="text.disabled" textAlign="center">
-        Internal messaging between service advisors and technicians will appear here.
+        Internal messaging between service advisors and technicians will appear
+        here.
       </Typography>
     </Box>
   );
@@ -792,15 +1190,23 @@ export function RODetail() {
     <Box sx={{ p: { xs: 2, md: 3 }, width: '100%' }}>
       {/* Back + header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <IconButton size="small" onClick={() => navigate(`${baseRoute}/repair-orders`)}>
+        <IconButton
+          size="small"
+          onClick={() => navigate(`${baseRoute}/repair-orders`)}
+        >
           <ArrowBack />
         </IconButton>
         <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: colors.primary.main }}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            sx={{ color: colors.primary.main }}
+          >
             {ro.roNumber}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {customerFullName(ro)}{ro.vehicle ? ` · ${vehicleLabel(ro)}` : ''}
+            {customerFullName(ro)}
+            {ro.vehicle ? ` · ${vehicleLabel(ro)}` : ''}
           </Typography>
         </Box>
       </Box>
@@ -813,7 +1219,11 @@ export function RODetail() {
       >
         <Tab label="Current" />
         <Tab label="History" />
-        <Tab label="Chat" icon={<ChatIcon fontSize="small" />} iconPosition="end" />
+        <Tab
+          label="Chat"
+          icon={<ChatIcon fontSize="small" />}
+          iconPosition="end"
+        />
       </Tabs>
 
       {tab === 0 && (

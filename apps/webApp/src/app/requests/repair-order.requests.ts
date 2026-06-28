@@ -24,10 +24,26 @@ apiClient.interceptors.request.use(async (config) => {
 
 // ---- Types ----
 
-export type ROStatus = 'OPEN' | 'IN_PROGRESS' | 'WAITING_FOR_PARTS' | 'READY' | 'CLOSED' | 'INVOICED';
+export type ROStatus =
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'WAITING_FOR_PARTS'
+  | 'READY'
+  | 'CLOSED'
+  | 'INVOICED';
 export type ROServiceType = 'LABOR' | 'PART' | 'OTHER';
-export type ROServiceStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'DECLINED';
-export type ROMediaType = 'ARRIVAL_CONDITION' | 'DAMAGE_DOCUMENTATION' | 'WORK_IN_PROGRESS' | 'WORK_COMPLETED' | 'PARTS' | 'OTHER';
+export type ROServiceStatus =
+  | 'PENDING'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'DECLINED';
+export type ROMediaType =
+  | 'ARRIVAL_CONDITION'
+  | 'DAMAGE_DOCUMENTATION'
+  | 'WORK_IN_PROGRESS'
+  | 'WORK_COMPLETED'
+  | 'PARTS'
+  | 'OTHER';
 
 export interface ROEmployee {
   id: string;
@@ -120,68 +136,149 @@ export interface RepairOrder {
     id: string;
     status: string;
     overallStatus?: string;
+    invoiceId?: string | null;
     createdAt: string;
     completedAt?: string;
+    template?: { type?: string; name?: string };
   }>;
   media: ROMedia[];
-  invoice?: { id: string; invoiceNumber: string; status: string; total: number };
+  invoice?: {
+    id: string;
+    invoiceNumber: string;
+    status: string;
+    total: number;
+  };
 }
 
 // ---- API functions ----
 
 export const repairOrderRequests = {
   getAll: (params?: Record<string, string>) =>
-    apiClient.get<RepairOrder[]>('/repair-orders', { params }).then((r) => r.data),
+    apiClient
+      .get<RepairOrder[]>('/repair-orders', { params })
+      .then((r) => r.data),
 
   getById: (id: string) =>
     apiClient.get<RepairOrder>(`/repair-orders/${id}`).then((r) => r.data),
 
   getByVehicle: (vehicleId: string) =>
-    apiClient.get<RepairOrder[]>(`/repair-orders/vehicle/${vehicleId}`).then((r) => r.data),
+    apiClient
+      .get<RepairOrder[]>(`/repair-orders/vehicle/${vehicleId}`)
+      .then((r) => r.data),
 
-  create: (data: { appointmentId: string; customerId: string; vehicleId?: string; customerConcern?: string; employeeIds?: string[] }) =>
-    apiClient.post<RepairOrder>('/repair-orders', data).then((r) => r.data),
+  create: (data: {
+    appointmentId: string;
+    customerId: string;
+    vehicleId?: string;
+    customerConcern?: string;
+    employeeIds?: string[];
+  }) => apiClient.post<RepairOrder>('/repair-orders', data).then((r) => r.data),
 
-  update: (id: string, data: Partial<{ status: ROStatus; vehicleId: string; customerConcern: string; technicianNotes: string; mileageIn: number; mileageOut: number; estimatedCost: number }>) =>
-    apiClient.patch<RepairOrder>(`/repair-orders/${id}`, data).then((r) => r.data),
+  update: (
+    id: string,
+    data: Partial<{
+      status: ROStatus;
+      vehicleId: string;
+      customerConcern: string;
+      technicianNotes: string;
+      mileageIn: number;
+      mileageOut: number;
+      estimatedCost: number;
+    }>
+  ) =>
+    apiClient
+      .patch<RepairOrder>(`/repair-orders/${id}`, data)
+      .then((r) => r.data),
 
-  close: (id: string, companyId: string) =>
-    apiClient.post(`/repair-orders/${id}/close`, { companyId }).then((r) => r.data),
+  close: (id: string, companyId: string, feeItemId?: string) =>
+    apiClient
+      .post(`/repair-orders/${id}/close`, { companyId, feeItemId })
+      .then((r) => r.data),
 
   // Services
-  addService: (roId: string, data: { description: string; type?: ROServiceType; quantity?: number; unitPrice?: number; technicianNotes?: string }) =>
-    apiClient.post<ROService>(`/repair-orders/${roId}/services`, data).then((r) => r.data),
+  addService: (
+    roId: string,
+    data: {
+      description: string;
+      type?: ROServiceType;
+      quantity?: number;
+      unitPrice?: number;
+      technicianNotes?: string;
+    }
+  ) =>
+    apiClient
+      .post<ROService>(`/repair-orders/${roId}/services`, data)
+      .then((r) => r.data),
 
-  updateService: (roId: string, serviceId: string, data: Partial<{ description: string; type: ROServiceType; quantity: number; unitPrice: number; technicianNotes: string; status: ROServiceStatus }>) =>
-    apiClient.patch<ROService>(`/repair-orders/${roId}/services/${serviceId}`, data).then((r) => r.data),
+  updateService: (
+    roId: string,
+    serviceId: string,
+    data: Partial<{
+      description: string;
+      type: ROServiceType;
+      quantity: number;
+      unitPrice: number;
+      technicianNotes: string;
+      status: ROServiceStatus;
+    }>
+  ) =>
+    apiClient
+      .patch<ROService>(`/repair-orders/${roId}/services/${serviceId}`, data)
+      .then((r) => r.data),
 
   removeService: (roId: string, serviceId: string) =>
     apiClient.delete(`/repair-orders/${roId}/services/${serviceId}`),
 
   // Media
-  uploadMedia: (roId: string, file: File, mediaType: ROMediaType, caption?: string, roServiceId?: string) => {
+  uploadMedia: (
+    roId: string,
+    file: File,
+    mediaType: ROMediaType,
+    caption?: string,
+    roServiceId?: string
+  ) => {
     const form = new FormData();
     form.append('file', file);
     form.append('mediaType', mediaType);
     if (caption) form.append('caption', caption);
     if (roServiceId) form.append('roServiceId', roServiceId);
-    return apiClient.post<ROMedia>(`/repair-orders/${roId}/media`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then((r) => r.data);
+    return apiClient
+      .post<ROMedia>(`/repair-orders/${roId}/media`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data);
   },
 
-  uploadServiceMedia: (roId: string, serviceId: string, file: File, mediaType: ROMediaType, caption?: string) => {
+  uploadServiceMedia: (
+    roId: string,
+    serviceId: string,
+    file: File,
+    mediaType: ROMediaType,
+    caption?: string
+  ) => {
     const form = new FormData();
     form.append('file', file);
     form.append('mediaType', mediaType);
     if (caption) form.append('caption', caption);
-    return apiClient.post<ROMedia>(`/repair-orders/${roId}/services/${serviceId}/media`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then((r) => r.data);
+    return apiClient
+      .post<ROMedia>(
+        `/repair-orders/${roId}/services/${serviceId}/media`,
+        form,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      )
+      .then((r) => r.data);
   },
 
-  updateMedia: (roId: string, mediaId: string, data: { caption?: string; mediaType?: ROMediaType }) =>
-    apiClient.patch<ROMedia>(`/repair-orders/${roId}/media/${mediaId}`, data).then((r) => r.data),
+  updateMedia: (
+    roId: string,
+    mediaId: string,
+    data: { caption?: string; mediaType?: ROMediaType }
+  ) =>
+    apiClient
+      .patch<ROMedia>(`/repair-orders/${roId}/media/${mediaId}`, data)
+      .then((r) => r.data),
 
   removeMedia: (roId: string, mediaId: string) =>
     apiClient.delete(`/repair-orders/${roId}/media/${mediaId}`),

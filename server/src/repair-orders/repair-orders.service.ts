@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '@gt-automotive/database';
 import { AzureBlobService } from '../common/services/azure-blob.service';
 import { ROStatus } from '@prisma/client';
+import { InspectionsService } from '../inspections/inspections.service';
 import {
   CreateRepairOrderDto,
   UpdateRepairOrderDto,
@@ -55,8 +56,10 @@ export class RepairOrdersService {
         id: true,
         status: true,
         overallStatus: true,
+        invoiceId: true,
         createdAt: true,
         completedAt: true,
+        template: { select: { type: true, name: true } },
       },
     },
     media: { orderBy: { sortOrder: 'asc' as const } },
@@ -67,7 +70,8 @@ export class RepairOrdersService {
 
   constructor(
     private prisma: PrismaService,
-    private azureBlob: AzureBlobService
+    private azureBlob: AzureBlobService,
+    private inspectionsService: InspectionsService
   ) {}
 
   /**
@@ -420,7 +424,9 @@ export class RepairOrdersService {
   async closeAndConvert(
     id: string,
     companyId: string,
-    roleName: string
+    roleName: string,
+    userId: string,
+    feeItemId?: string
   ): Promise<any> {
     if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
       throw new ForbiddenException(
@@ -434,6 +440,14 @@ export class RepairOrdersService {
         customer: true,
         services: { where: { status: 'COMPLETED' } },
         invoice: true,
+        inspections: {
+          where: {
+            invoiceId: null,
+            status: { in: ['COMPLETED', 'FINALIZED'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true },
+        },
       },
     });
 
@@ -442,6 +456,25 @@ export class RepairOrdersService {
       throw new BadRequestException(
         'Invoice already exists for this repair order'
       );
+
+    // When a completed inspection is linked, the inspection drives the invoice:
+    // its fee becomes a line item alongside any completed RO services/parts.
+    // Delegate so tax rules, the PST-exempt gate, numbering, and the
+    // inspection<->invoice<->RO linkage all stay consistent in one place.
+    const linkedInspection = ro.inspections[0];
+    if (linkedInspection) {
+      if (!feeItemId) {
+        throw new BadRequestException(
+          'Select an inspection fee to invoice this repair order'
+        );
+      }
+      return this.inspectionsService.generateInvoice(
+        linkedInspection.id,
+        { feeItemId, companyId },
+        userId,
+        roleName
+      );
+    }
 
     const completedServices = ro.services;
     const subtotal = completedServices.reduce(
