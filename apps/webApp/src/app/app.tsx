@@ -166,10 +166,6 @@ export function App() {
               <Route path="appointments" element={<AppointmentsManagement />} />
               <Route path="inspections" element={<InspectionList />} />
               <Route path="inspections/:id" element={<InspectionEditor />} />
-              <Route
-                path="inspection-items"
-                element={<InspectionFeeItemManagement />}
-              />
               <Route path="repair-orders" element={<ROList />} />
               <Route path="repair-orders/:id" element={<RODetail />} />
               <Route
@@ -303,6 +299,10 @@ export function App() {
               <Route path="appointments" element={<AppointmentsManagement />} />
               <Route path="inspections" element={<InspectionList />} />
               <Route path="inspections/:id" element={<InspectionEditor />} />
+              <Route
+                path="inspection-items"
+                element={<InspectionFeeItemManagement />}
+              />
               <Route path="repair-orders" element={<ROList />} />
               <Route path="repair-orders/:id" element={<RODetail />} />
               <Route path="booking-requests" element={<BookingRequests />} />
