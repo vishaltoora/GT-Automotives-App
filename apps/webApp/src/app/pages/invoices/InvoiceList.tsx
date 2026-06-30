@@ -207,16 +207,12 @@ const InvoiceList: React.FC = () => {
   };
 
   const handlePaymentConfirm = async (
-    paymentMethod: PaymentMethod,
-    amount?: number
+    entries: { paymentMethod: PaymentMethod; amount?: number }[]
   ) => {
     if (!invoiceToMarkPaid) return;
 
     try {
-      await invoiceService.recordInvoicePayment(invoiceToMarkPaid.id, {
-        paymentMethod,
-        amount,
-      });
+      await invoiceService.recordInvoicePayments(invoiceToMarkPaid.id, entries);
       loadInvoices(); // Refresh the list
       setInvoiceToMarkPaid(null);
     } catch (error) {

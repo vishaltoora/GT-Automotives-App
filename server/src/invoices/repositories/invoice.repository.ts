@@ -239,10 +239,10 @@ export class InvoiceRepository extends BaseRepository<
     });
   }
 
-  /** Append a payment row and update the invoice totals/status atomically. */
-  async addPayment(
+  /** Append one or more payment rows and update the invoice atomically. */
+  async addPayments(
     invoiceId: string,
-    payment: {
+    payments: Array<{
       invoiceId: string;
       amount: number;
       paymentMethod: PaymentMethod;
@@ -250,21 +250,23 @@ export class InvoiceRepository extends BaseRepository<
       createdBy: string;
       notes?: string;
       reference?: string;
-    },
+    }>,
     invoiceUpdate: Prisma.InvoiceUpdateInput
   ): Promise<Invoice> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.invoicePayment.create({
-        data: {
-          invoiceId,
-          amount: new Decimal(payment.amount),
-          paymentMethod: payment.paymentMethod,
-          paidAt: payment.paidAt,
-          createdBy: payment.createdBy,
-          notes: payment.notes,
-          reference: payment.reference,
-        },
-      });
+      for (const payment of payments) {
+        await tx.invoicePayment.create({
+          data: {
+            invoiceId,
+            amount: new Decimal(payment.amount),
+            paymentMethod: payment.paymentMethod,
+            paidAt: payment.paidAt,
+            createdBy: payment.createdBy,
+            notes: payment.notes,
+            reference: payment.reference,
+          },
+        });
+      }
       return tx.invoice.update({
         where: { id: invoiceId },
         data: invoiceUpdate,

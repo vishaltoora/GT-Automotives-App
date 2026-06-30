@@ -142,13 +142,32 @@ export class InvoicesController {
     @Body()
     body: {
       amount?: number;
-      paymentMethod: PaymentMethod;
+      paymentMethod?: PaymentMethod;
       notes?: string;
       reference?: string;
+      // Split payment: multiple method/amount entries in one transaction
+      payments?: Array<{
+        amount?: number;
+        paymentMethod: PaymentMethod;
+        notes?: string;
+        reference?: string;
+      }>;
     },
     @CurrentUser() user: any
   ) {
-    return this.invoicesService.recordPayment(id, body, user.id);
+    if (body.payments && body.payments.length > 0) {
+      return this.invoicesService.recordPayments(id, body.payments, user.id);
+    }
+    return this.invoicesService.recordPayment(
+      id,
+      {
+        amount: body.amount,
+        paymentMethod: body.paymentMethod as PaymentMethod,
+        notes: body.notes,
+        reference: body.reference,
+      },
+      user.id
+    );
   }
 
   @Post('combine')

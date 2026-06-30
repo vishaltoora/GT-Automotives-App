@@ -498,21 +498,26 @@ export class InvoicesService {
   }
 
   /**
-   * Record a payment against an invoice. Supports partial and split payments:
-   * each call appends an InvoicePayment row, recomputes `amountPaid`, and moves
-   * the invoice through PENDING -> PARTIALLY_PAID -> PAID. When `amount` is
-   * omitted the full remaining balance is paid (the old "mark as paid").
+   * Record one or more payment entries against an invoice in a single
+   * transaction. Supports partial payments and split payments (e.g. $40 cash +
+   * $60 card). Recomputes `amountPaid` once and moves the invoice through
+   * PENDING -> PARTIALLY_PAID -> PAID. A single entry with no `amount` pays the
+   * full remaining balance (the old "mark as paid").
    */
-  async recordPayment(
+  async recordPayments(
     id: string,
-    payment: {
+    entries: Array<{
       amount?: number;
       paymentMethod: PaymentMethod;
       notes?: string;
       reference?: string;
-    },
+    }>,
     userId: string
   ): Promise<Invoice> {
+    if (!entries || entries.length === 0) {
+      throw new BadRequestException('At least one payment entry is required');
+    }
+
     const invoice = await this.invoiceRepository.findById(id);
 
     if (!invoice) {
@@ -529,16 +534,26 @@ export class InvoicesService {
     let total = Number(invoice.total);
     const hasTax = Number(invoice.taxAmount ?? 0) > 0;
 
-    // CASH_NO_TAX strips GST/PST off the invoice, but only before any money has
-    // been collected — an invoice can't be half taxed and half not. (GA-30.)
-    const stripTax = payment.paymentMethod === 'CASH_NO_TAX' && hasTax;
-    if (stripTax) {
-      if (currentPaid > 0) {
+    // CASH_NO_TAX strips GST/PST off the invoice. It can't be mixed into a split
+    // (an invoice is taxed or not, not half-and-half) and only applies before
+    // any money has been collected. (GA-30.)
+    const usesNoTax = entries.some((e) => e.paymentMethod === 'CASH_NO_TAX');
+    let stripTax = false;
+    if (usesNoTax) {
+      if (entries.length > 1) {
         throw new BadRequestException(
-          'Cash (no GST/PST) cannot be applied to an invoice that already has tax and a recorded payment'
+          'Cash (no GST/PST) cannot be combined with other methods in a split payment'
         );
       }
-      total = Number(invoice.subtotal);
+      if (hasTax) {
+        if (currentPaid > 0) {
+          throw new BadRequestException(
+            'Cash (no GST/PST) cannot be applied to an invoice that already has tax and a recorded payment'
+          );
+        }
+        stripTax = true;
+        total = Number(invoice.subtotal);
+      }
     }
 
     const remaining = Math.max(0, total - currentPaid);
@@ -546,26 +561,41 @@ export class InvoicesService {
       throw new BadRequestException('Invoice is already paid in full');
     }
 
-    const payAmount = payment.amount ?? remaining;
-    if (payAmount <= 0) {
-      throw new BadRequestException('Payment amount must be greater than zero');
-    }
-    if (payAmount > remaining + 0.005) {
+    // A lone entry with no amount means "pay the remaining balance".
+    const resolved = entries.map((e) => ({
+      ...e,
+      amount: e.amount ?? (entries.length === 1 ? remaining : undefined),
+    }));
+
+    if (resolved.some((e) => e.amount == null)) {
       throw new BadRequestException(
-        `Payment of ${payAmount} exceeds the remaining balance of ${remaining.toFixed(
-          2
-        )}`
+        'Each split payment entry must have an amount'
+      );
+    }
+    if (resolved.some((e) => (e.amount as number) <= 0)) {
+      throw new BadRequestException(
+        'Payment amounts must be greater than zero'
       );
     }
 
-    const newPaid = currentPaid + payAmount;
+    const totalPay = resolved.reduce((s, e) => s + (e.amount as number), 0);
+    if (totalPay > remaining + 0.005) {
+      throw new BadRequestException(
+        `Payment of ${totalPay.toFixed(
+          2
+        )} exceeds the remaining balance of ${remaining.toFixed(2)}`
+      );
+    }
+
+    const newPaid = currentPaid + totalPay;
     const fullyPaid = newPaid + 0.005 >= total;
     const now = new Date();
+    const lastMethod = resolved[resolved.length - 1].paymentMethod;
 
     const invoiceUpdate: any = {
       amountPaid: new Decimal(newPaid),
       status: fullyPaid ? 'PAID' : 'PARTIALLY_PAID',
-      paymentMethod: payment.paymentMethod,
+      paymentMethod: lastMethod,
       paidAt: fullyPaid ? now : null,
     };
     if (stripTax) {
@@ -578,17 +608,17 @@ export class InvoicesService {
       invoiceUpdate.total = new Decimal(total);
     }
 
-    const updated = await this.invoiceRepository.addPayment(
+    const updated = await this.invoiceRepository.addPayments(
       id,
-      {
+      resolved.map((e) => ({
         invoiceId: id,
-        amount: payAmount,
-        paymentMethod: payment.paymentMethod,
+        amount: e.amount as number,
+        paymentMethod: e.paymentMethod,
         paidAt: now,
         createdBy: userId,
-        notes: payment.notes,
-        reference: payment.reference,
-      },
+        notes: e.notes,
+        reference: e.reference,
+      })),
       invoiceUpdate
     );
 
@@ -596,7 +626,7 @@ export class InvoicesService {
     if (fullyPaid) {
       await this.invoiceRepository.settleConsolidatedChildren(
         id,
-        payment.paymentMethod,
+        lastMethod,
         now
       );
     }
@@ -607,8 +637,10 @@ export class InvoicesService {
       entityType: 'invoice',
       entityId: id,
       newValue: {
-        amount: payAmount,
-        paymentMethod: payment.paymentMethod,
+        entries: resolved.map((e) => ({
+          amount: e.amount,
+          paymentMethod: e.paymentMethod,
+        })),
         amountPaid: newPaid,
         status: invoiceUpdate.status,
       } as any,
@@ -620,6 +652,20 @@ export class InvoicesService {
     }
 
     return updated;
+  }
+
+  /** Record a single (possibly partial) payment. */
+  async recordPayment(
+    id: string,
+    payment: {
+      amount?: number;
+      paymentMethod: PaymentMethod;
+      notes?: string;
+      reference?: string;
+    },
+    userId: string
+  ): Promise<Invoice> {
+    return this.recordPayments(id, [payment], userId);
   }
 
   /**

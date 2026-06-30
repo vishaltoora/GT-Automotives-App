@@ -156,6 +156,25 @@ class InvoiceService {
     return response.data;
   }
 
+  // Record several payment entries (split payment) against an invoice in one
+  // transaction, e.g. [{ amount: 40, method: CASH }, { amount: 60, method: CREDIT_CARD }].
+  async recordInvoicePayments(
+    id: string,
+    payments: Array<{
+      amount?: number;
+      paymentMethod: Invoice['paymentMethod'];
+      notes?: string;
+      reference?: string;
+    }>
+  ): Promise<Invoice> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/${id}/payments`,
+      { payments },
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
   // Roll a customer's open invoices into a single combined invoice.
   async combineInvoices(customerId: string): Promise<Invoice> {
     const response = await axios.post(
