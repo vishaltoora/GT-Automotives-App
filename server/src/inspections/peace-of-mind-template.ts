@@ -1,4 +1,9 @@
-import { InspectionItemKind, InspectionPositionGroup, InspectionType, Prisma } from '@prisma/client';
+import {
+  InspectionItemKind,
+  InspectionPositionGroup,
+  InspectionType,
+  Prisma,
+} from '@prisma/client';
 
 export const PEACE_OF_MIND_TEMPLATE_SLUG = 'peace-of-mind-inspection';
 export const OUT_OF_PROVINCE_TEMPLATE_SLUG = 'bc-out-of-province-inspection';
@@ -25,7 +30,10 @@ export interface InspectionTemplateSeed {
   sections: InspectionTemplateSectionSeed[];
 }
 
-const conditionItem = (label: string, affectedParts: string[] = []): InspectionTemplateItemSeed => ({
+const conditionItem = (
+  label: string,
+  affectedParts: string[] = []
+): InspectionTemplateItemSeed => ({
   label,
   kind: InspectionItemKind.CONDITION,
   options: affectedParts.length ? { affectedParts } : undefined,
@@ -55,16 +63,19 @@ export const peaceOfMindTemplate: InspectionTemplateSeed = {
           'Interior dome light',
           'Dashboard warning light',
         ]),
-        conditionItem('Windshield Washer Spray / Wiper Operation / Wiper Blades / Including Rear (if applicable)', [
-          'Front wiper blade',
-          'Rear wiper blade',
-          'Washer nozzle',
-          'Washer pump',
-          'Washer hose',
-          'Washer fluid reservoir',
-          'Wiper arm',
-          'Wiper motor',
-        ]),
+        conditionItem(
+          'Windshield Washer Spray / Wiper Operation / Wiper Blades / Including Rear (if applicable)',
+          [
+            'Front wiper blade',
+            'Rear wiper blade',
+            'Washer nozzle',
+            'Washer pump',
+            'Washer hose',
+            'Washer fluid reservoir',
+            'Wiper arm',
+            'Wiper motor',
+          ]
+        ),
         conditionItem('Windshield / Window Condition', [
           'Windshield',
           'Rear window',
@@ -127,29 +138,35 @@ export const peaceOfMindTemplate: InspectionTemplateSeed = {
           'Battery tray',
           'Ground strap',
         ]),
-        conditionItem('Check Condition of Battery (Storage Capacity Test if Applicable)', [
-          'Battery state of charge',
-          'Battery cold cranking amps',
-          'Battery case',
-          'Battery age',
-          'Charging system',
-          'Alternator output',
-        ]),
+        conditionItem(
+          'Check Condition of Battery (Storage Capacity Test if Applicable)',
+          [
+            'Battery state of charge',
+            'Battery cold cranking amps',
+            'Battery case',
+            'Battery age',
+            'Charging system',
+            'Alternator output',
+          ]
+        ),
       ],
     },
     {
       title: 'Under Hood',
       items: [
-        conditionItem('Fluids: Oil / Coolant / Power Steering / Brake Fluid / Washer', [
-          'Engine oil',
-          'Coolant',
-          'Brake fluid',
-          'Power steering fluid',
-          'Washer fluid',
-          'Transmission fluid',
-          'Fluid leak',
-          'Fluid contamination',
-        ]),
+        conditionItem(
+          'Fluids: Oil / Coolant / Power Steering / Brake Fluid / Washer',
+          [
+            'Engine oil',
+            'Coolant',
+            'Brake fluid',
+            'Power steering fluid',
+            'Washer fluid',
+            'Transmission fluid',
+            'Fluid leak',
+            'Fluid contamination',
+          ]
+        ),
         conditionItem('Engine Air Filter', [
           'Engine air filter',
           'Air filter housing',
@@ -167,25 +184,31 @@ export const peaceOfMindTemplate: InspectionTemplateSeed = {
           'Fraying',
           'Glazing',
         ]),
-        conditionItem('Cooling System Hoses / Heater Hoses / Air Conditioning Hoses and Connections', [
-          'Upper radiator hose',
-          'Lower radiator hose',
-          'Heater hose',
-          'Coolant bypass hose',
-          'A/C hose',
-          'Hose clamp',
-          'Coolant reservoir',
-          'Water pump',
-          'Thermostat housing',
-        ]),
-        conditionItem('Radiator Core / Air Conditioning Condenser (if equipped)', [
-          'Radiator core',
-          'Radiator fins',
-          'A/C condenser',
-          'Cooling fan',
-          'Fan shroud',
-          'Radiator cap',
-        ]),
+        conditionItem(
+          'Cooling System Hoses / Heater Hoses / Air Conditioning Hoses and Connections',
+          [
+            'Upper radiator hose',
+            'Lower radiator hose',
+            'Heater hose',
+            'Coolant bypass hose',
+            'A/C hose',
+            'Hose clamp',
+            'Coolant reservoir',
+            'Water pump',
+            'Thermostat housing',
+          ]
+        ),
+        conditionItem(
+          'Radiator Core / Air Conditioning Condenser (if equipped)',
+          [
+            'Radiator core',
+            'Radiator fins',
+            'A/C condenser',
+            'Cooling fan',
+            'Fan shroud',
+            'Radiator cap',
+          ]
+        ),
       ],
     },
     {
@@ -201,16 +224,19 @@ export const peaceOfMindTemplate: InspectionTemplateSeed = {
           'Suspension bushing',
           'Wheel bearing',
         ]),
-        conditionItem('Steering Gear Box / Linkage and Boots / Ball Joints / Dust Covers', [
-          'Steering rack',
-          'Steering gear box',
-          'Inner tie rod',
-          'Outer tie rod',
-          'Ball joint',
-          'Dust boot',
-          'Power steering line',
-          'Steering linkage',
-        ]),
+        conditionItem(
+          'Steering Gear Box / Linkage and Boots / Ball Joints / Dust Covers',
+          [
+            'Steering rack',
+            'Steering gear box',
+            'Inner tie rod',
+            'Outer tie rod',
+            'Ball joint',
+            'Dust boot',
+            'Power steering line',
+            'Steering linkage',
+          ]
+        ),
         conditionItem('Muffler / Exhaust Pipes / Mountings', [
           'Muffler',
           'Exhaust pipe',
@@ -230,35 +256,44 @@ export const peaceOfMindTemplate: InspectionTemplateSeed = {
           'Differential fluid leak',
           'Transfer case leak',
         ]),
-        conditionItem('Drive Shaft Boots / Constant Velocity Boots / U-joints / Transmission Linkage (if equipped)', [
-          'CV boot',
-          'CV axle',
-          'U-joint',
-          'Drive shaft',
-          'Transmission linkage',
-          'Shift cable',
-          'Axle seal',
-        ]),
-        conditionItem('Transmission / Differential / Transfer Case (Check Fluid Level, Fluid Condition and Fluid Leaks)', [
-          'Transmission pan',
-          'Transmission cooler line',
-          'Front differential',
-          'Rear differential',
-          'Transfer case',
-          'Drain plug',
-          'Fill plug',
-          'Axle seal',
-        ]),
-        conditionItem('Fuel Lines and Connections / Fuel Tank Band / Fuel Tank Vapor Vent System Hoses', [
-          'Fuel line',
-          'Fuel filter',
-          'Fuel tank strap',
-          'Fuel tank',
-          'EVAP hose',
-          'Vapor line',
-          'Charcoal canister',
-          'Fuel filler hose',
-        ]),
+        conditionItem(
+          'Drive Shaft Boots / Constant Velocity Boots / U-joints / Transmission Linkage (if equipped)',
+          [
+            'CV boot',
+            'CV axle',
+            'U-joint',
+            'Drive shaft',
+            'Transmission linkage',
+            'Shift cable',
+            'Axle seal',
+          ]
+        ),
+        conditionItem(
+          'Transmission / Differential / Transfer Case (Check Fluid Level, Fluid Condition and Fluid Leaks)',
+          [
+            'Transmission pan',
+            'Transmission cooler line',
+            'Front differential',
+            'Rear differential',
+            'Transfer case',
+            'Drain plug',
+            'Fill plug',
+            'Axle seal',
+          ]
+        ),
+        conditionItem(
+          'Fuel Lines and Connections / Fuel Tank Band / Fuel Tank Vapor Vent System Hoses',
+          [
+            'Fuel line',
+            'Fuel filter',
+            'Fuel tank strap',
+            'Fuel tank',
+            'EVAP hose',
+            'Vapor line',
+            'Charcoal canister',
+            'Fuel filler hose',
+          ]
+        ),
         conditionItem('Inspect Nuts and Bolts on Body Chassis', [
           'Subframe bolt',
           'Body mount',
@@ -278,20 +313,42 @@ export const peaceOfMindTemplate: InspectionTemplateSeed = {
           isRequired: true,
           positionGroup: InspectionPositionGroup.TIRE_SET,
           unit: '1/32"',
-          options: { values: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], positions: ['LF', 'RF', 'LR', 'RR', 'Spare'] },
+          options: {
+            values: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+            positions: ['LF', 'RF', 'LR', 'RR', 'Spare'],
+          },
         },
         {
           label: 'Tire Pressure',
           kind: InspectionItemKind.MEASUREMENT,
           isRequired: true,
+          positionGroup: InspectionPositionGroup.TIRE_SET,
           unit: 'PSI',
-          options: { values: ['26', '29', '30', '32', '33', '34', '35', '36', '38', '40', '42'] },
+          options: {
+            values: [
+              '26',
+              '29',
+              '30',
+              '32',
+              '33',
+              '34',
+              '35',
+              '36',
+              '38',
+              '40',
+              '42',
+            ],
+            positions: ['LF', 'RF', 'LR', 'RR'],
+          },
         },
         {
           label: 'Abnormal Wear Pattern of Tires',
           kind: InspectionItemKind.MULTI_SELECT,
           positionGroup: InspectionPositionGroup.TIRE_SET,
-          options: { values: ['Inner Wear', 'Outer Wear', 'Cupping', 'Feathering'], positions: ['LF', 'RF', 'LR', 'RR'] },
+          options: {
+            values: ['Inner Wear', 'Outer Wear', 'Cupping', 'Feathering'],
+            positions: ['LF', 'RF', 'LR', 'RR'],
+          },
         },
       ],
     },
@@ -304,7 +361,22 @@ export const peaceOfMindTemplate: InspectionTemplateSeed = {
           isRequired: true,
           positionGroup: InspectionPositionGroup.BRAKE_SET,
           unit: 'mm',
-          options: { values: ['DNI', 'VI', 'Drum', '1', '2', '3', '4', '5', '6', '7', '8'] },
+          options: {
+            values: [
+              'DNI',
+              'VI',
+              'Drum',
+              '1',
+              '2',
+              '3',
+              '4',
+              '5',
+              '6',
+              '7',
+              '8',
+            ],
+            positions: ['LF', 'RF', 'LR', 'RR'],
+          },
         },
       ],
     },
@@ -315,40 +387,50 @@ export const outOfProvinceTemplate: InspectionTemplateSeed = {
   name: 'BC Out of Province Inspection',
   slug: OUT_OF_PROVINCE_TEMPLATE_SLUG,
   type: InspectionType.OUT_OF_PROVINCE,
-  description: 'BC compliance-oriented inspection template for private vehicles registering from another jurisdiction.',
+  description:
+    'BC compliance-oriented inspection template for private vehicles registering from another jurisdiction.',
   sections: [
     {
       title: 'Vehicle Identification & Required Records',
       items: [
-        conditionItem('VIN / public VIN / compliance label / odometer recording', [
-          'Public VIN plate',
-          'Federal compliance label',
-          'Odometer',
-          'Registration document',
-          'Licence plate',
-          'Vehicle description mismatch',
-        ]),
-        conditionItem('Modifications / non-OEM equipment / unsafe alterations', [
-          'Suspension modification',
-          'Lighting modification',
-          'Exhaust modification',
-          'Body modification',
-          'Wheel/tire modification',
-          'Aftermarket electrical accessory',
-        ]),
+        conditionItem(
+          'VIN / public VIN / compliance label / odometer recording',
+          [
+            'Public VIN plate',
+            'Federal compliance label',
+            'Odometer',
+            'Registration document',
+            'Licence plate',
+            'Vehicle description mismatch',
+          ]
+        ),
+        conditionItem(
+          'Modifications / non-OEM equipment / unsafe alterations',
+          [
+            'Suspension modification',
+            'Lighting modification',
+            'Exhaust modification',
+            'Body modification',
+            'Wheel/tire modification',
+            'Aftermarket electrical accessory',
+          ]
+        ),
       ],
     },
     {
       title: 'Power Train & Fuel System',
       items: [
-        conditionItem('Throttle / accelerator pedal / linkage / return springs', [
-          'Accelerator pedal',
-          'Throttle cable',
-          'Throttle body',
-          'Return spring',
-          'Linkage',
-          'Pedal mount',
-        ]),
+        conditionItem(
+          'Throttle / accelerator pedal / linkage / return springs',
+          [
+            'Accelerator pedal',
+            'Throttle cable',
+            'Throttle body',
+            'Return spring',
+            'Linkage',
+            'Pedal mount',
+          ]
+        ),
         conditionItem('Engine / transmission mounts and driveline security', [
           'Engine mount',
           'Transmission mount',
@@ -413,14 +495,17 @@ export const outOfProvinceTemplate: InspectionTemplateSeed = {
     {
       title: 'Hydraulic Brakes',
       items: [
-        conditionItem('Brake pedal / booster / master cylinder / warning lamp', [
-          'Brake pedal',
-          'Brake booster',
-          'Master cylinder',
-          'Brake warning lamp',
-          'ABS warning lamp',
-          'Brake fluid reservoir',
-        ]),
+        conditionItem(
+          'Brake pedal / booster / master cylinder / warning lamp',
+          [
+            'Brake pedal',
+            'Brake booster',
+            'Master cylinder',
+            'Brake warning lamp',
+            'ABS warning lamp',
+            'Brake fluid reservoir',
+          ]
+        ),
         conditionItem('Brake lines / hoses / fittings / leaks', [
           'Metal brake line',
           'Flexible brake hose',
@@ -518,40 +603,49 @@ export const outOfProvinceTemplate: InspectionTemplateSeed = {
           'Hazard lamp',
           'Daytime running lamp',
         ]),
-        conditionItem('Licence plate / reverse / marker / fog lamps / reflectors', [
-          'Licence plate lamp',
-          'Reverse lamp',
-          'Side marker lamp',
-          'Fog lamp',
-          'Reflex reflector',
-          'Lamp lens',
-          'Lamp housing',
-        ]),
-        conditionItem('Wiring / connectors / battery securement / circuit protection', [
-          'Wiring insulation',
-          'Electrical connector',
-          'Ground connection',
-          'Battery terminal',
-          'Battery hold-down',
-          'Fuse',
-          'Relay',
-          'Aftermarket wiring',
-        ]),
+        conditionItem(
+          'Licence plate / reverse / marker / fog lamps / reflectors',
+          [
+            'Licence plate lamp',
+            'Reverse lamp',
+            'Side marker lamp',
+            'Fog lamp',
+            'Reflex reflector',
+            'Lamp lens',
+            'Lamp housing',
+          ]
+        ),
+        conditionItem(
+          'Wiring / connectors / battery securement / circuit protection',
+          [
+            'Wiring insulation',
+            'Electrical connector',
+            'Ground connection',
+            'Battery terminal',
+            'Battery hold-down',
+            'Fuse',
+            'Relay',
+            'Aftermarket wiring',
+          ]
+        ),
       ],
     },
     {
       title: 'Frame, Body, Glazing & Occupant Area',
       items: [
-        conditionItem('Frame / unibody / body mounts / corrosion / structural damage', [
-          'Frame rail',
-          'Unibody structure',
-          'Rocker panel',
-          'Floor pan',
-          'Body mount',
-          'Crossmember',
-          'Rust perforation',
-          'Collision damage',
-        ]),
+        conditionItem(
+          'Frame / unibody / body mounts / corrosion / structural damage',
+          [
+            'Frame rail',
+            'Unibody structure',
+            'Rocker panel',
+            'Floor pan',
+            'Body mount',
+            'Crossmember',
+            'Rust perforation',
+            'Collision damage',
+          ]
+        ),
         conditionItem('Doors / hood / trunk / latches / hinges', [
           'Driver door',
           'Passenger door',
@@ -562,16 +656,19 @@ export const outOfProvinceTemplate: InspectionTemplateSeed = {
           'Door handle',
           'Weatherstrip',
         ]),
-        conditionItem('Windshield / windows / tint / mirrors / bumpers / mudflaps', [
-          'Windshield',
-          'Side glass',
-          'Rear glass',
-          'Window tint',
-          'Mirror',
-          'Front bumper',
-          'Rear bumper',
-          'Mudflap',
-        ]),
+        conditionItem(
+          'Windshield / windows / tint / mirrors / bumpers / mudflaps',
+          [
+            'Windshield',
+            'Side glass',
+            'Rear glass',
+            'Window tint',
+            'Mirror',
+            'Front bumper',
+            'Rear bumper',
+            'Mudflap',
+          ]
+        ),
       ],
     },
     {
@@ -586,7 +683,15 @@ export const outOfProvinceTemplate: InspectionTemplateSeed = {
           options: {
             values: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
             positions: ['LF', 'RF', 'LR', 'RR', 'Spare'],
-            affectedParts: ['Tread depth', 'Sidewall', 'Tread separation', 'Cord exposure', 'Uneven wear', 'Tire size mismatch', 'Load rating'],
+            affectedParts: [
+              'Tread depth',
+              'Sidewall',
+              'Tread separation',
+              'Cord exposure',
+              'Uneven wear',
+              'Tire size mismatch',
+              'Load rating',
+            ],
           },
         },
         conditionItem('Wheels / rims / studs / nuts / hubcaps', [
@@ -604,22 +709,28 @@ export const outOfProvinceTemplate: InspectionTemplateSeed = {
     {
       title: 'Road Test & Final Compliance',
       items: [
-        conditionItem('Service brake operation / parking brake hold / steering response', [
-          'Brake pull',
-          'Brake vibration',
-          'Parking brake hold',
-          'Steering pull',
-          'Steering wander',
-          'Abnormal noise',
-        ]),
-        conditionItem('Warning lamps / drivability / roadworthiness confirmation', [
-          'Check engine light',
-          'ABS light',
-          'Airbag light',
-          'Traction control light',
-          'Transmission operation',
-          'Road test concern',
-        ]),
+        conditionItem(
+          'Service brake operation / parking brake hold / steering response',
+          [
+            'Brake pull',
+            'Brake vibration',
+            'Parking brake hold',
+            'Steering pull',
+            'Steering wander',
+            'Abnormal noise',
+          ]
+        ),
+        conditionItem(
+          'Warning lamps / drivability / roadworthiness confirmation',
+          [
+            'Check engine light',
+            'ABS light',
+            'Airbag light',
+            'Traction control light',
+            'Transmission operation',
+            'Road test concern',
+          ]
+        ),
       ],
     },
   ],
