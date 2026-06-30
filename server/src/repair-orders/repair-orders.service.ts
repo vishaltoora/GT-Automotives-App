@@ -8,6 +8,7 @@ import { PrismaService } from '@gt-automotive/database';
 import { AzureBlobService } from '../common/services/azure-blob.service';
 import { ROStatus } from '@prisma/client';
 import { InspectionsService } from '../inspections/inspections.service';
+import { buildAdjustmentItems } from '../invoices/invoice-adjustments';
 import {
   CreateRepairOrderDto,
   UpdateRepairOrderDto,
@@ -477,12 +478,37 @@ export class RepairOrdersService {
     }
 
     const completedServices = ro.services;
-    const subtotal = completedServices.reduce(
-      (sum: number, s: any) => sum + Number(s.total),
+    const baseItems = completedServices.map((s: any) => ({
+      description: s.description,
+      itemType: s.type === 'PART' ? 'PART' : 'SERVICE',
+      quantity: Number(s.quantity),
+      unitPrice: Number(s.unitPrice),
+      total: Number(s.total),
+    }));
+
+    // Add 4% shop supplies (always on RO invoices) and a 10% fleet discount on
+    // services for fleet customers. Both are removable later by editing.
+    const extraItems = buildAdjustmentItems(baseItems, {
+      addShopSupplies: true,
+      fleetDiscount: !!ro.customer?.fleetDiscount,
+    }).map((e) => ({
+      description: e.description,
+      itemType: e.itemType,
+      quantity: e.quantity,
+      unitPrice: e.unitPrice,
+      total:
+        e.itemType === 'DISCOUNT'
+          ? -Math.abs(e.quantity * e.unitPrice)
+          : e.quantity * e.unitPrice,
+    }));
+
+    const allItems = [...baseItems, ...extraItems];
+    const subtotal = allItems.reduce(
+      (sum: number, i: any) => sum + Number(i.total),
       0
     );
     const gstRate = 0.05;
-    const pstRate = 0.07;
+    const pstRate = ro.customer?.pstExempt ? 0 : 0.07;
     const gstAmount = subtotal * gstRate;
     const pstAmount = subtotal * pstRate;
     const total = subtotal + gstAmount + pstAmount;
@@ -508,13 +534,7 @@ export class RepairOrdersService {
         status: 'DRAFT',
         createdBy: 'system',
         items: {
-          create: completedServices.map((s: any) => ({
-            description: s.description,
-            itemType: s.type === 'PART' ? 'PART' : 'SERVICE',
-            quantity: Number(s.quantity),
-            unitPrice: Number(s.unitPrice),
-            total: Number(s.total),
-          })),
+          create: allItems,
         },
       },
     });

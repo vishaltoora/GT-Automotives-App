@@ -53,6 +53,7 @@ export function CustomerForm() {
     address: 'Prince George, BC',
     businessName: '',
     pstExempt: false,
+    fleetDiscount: false,
   });
   const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
 
@@ -74,6 +75,7 @@ export function CustomerForm() {
         address: customer.address || '',
         businessName: customer.businessName || '',
         pstExempt: customer.pstExempt ?? false,
+        fleetDiscount: customer.fleetDiscount ?? false,
       });
       setAdditionalEmails(customer.additionalEmails || []);
 
@@ -362,6 +364,33 @@ export function CustomerForm() {
                       <Typography variant="caption" color="text.secondary">
                         When enabled, all invoices for this customer are charged
                         0% PST (GST still applies)
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Grid>
+              <Grid size={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.fleetDiscount}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          fleetDiscount: e.target.checked,
+                        })
+                      }
+                      disabled={saving}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body1">Fleet Customer</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        When enabled, a 10% discount on service items is added
+                        to this customer's invoices (not on parts). Removable
+                        per invoice.
                       </Typography>
                     </Box>
                   }

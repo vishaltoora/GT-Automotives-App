@@ -25,6 +25,7 @@ import { ServiceRepository } from './repositories/service.repository';
 import { PdfService } from '../pdf/pdf.service';
 import { EmailService } from '../email/email.service';
 import { CarfaxService } from '../carfax/carfax.service';
+import { buildAdjustmentItems } from './invoice-adjustments';
 
 @Injectable()
 export class InvoicesService {
@@ -40,7 +41,8 @@ export class InvoicesService {
 
   async create(
     createInvoiceDto: CreateInvoiceDto,
-    userId: string
+    userId: string,
+    options?: { addShopSupplies?: boolean }
   ): Promise<Invoice> {
     let customerId = createInvoiceDto.customerId;
 
@@ -79,11 +81,24 @@ export class InvoicesService {
       );
     }
 
+    // Fetch the customer once — drives both the PST-exempt gate and the
+    // auto-applied fleet discount / shop-supplies lines.
+    const customer = await this.customerRepository.findById(customerId);
+
+    // Append auto-adjustment lines: 4% shop supplies (RO invoices only) and a
+    // 10% fleet discount on services (fleet customers). Both are idempotent and
+    // can be removed later by editing the invoice.
+    const adjustmentItems = buildAdjustmentItems(createInvoiceDto.items, {
+      addShopSupplies: options?.addShopSupplies,
+      fleetDiscount: !!customer?.fleetDiscount,
+    });
+    const sourceItems = [...createInvoiceDto.items, ...adjustmentItems];
+
     // Calculate totals - handle discount items specially
     // TIPS are included in subtotal but NOT taxed
     let subtotal = 0;
     let taxableSubtotal = 0;
-    const items = createInvoiceDto.items.map((item) => {
+    const items = sourceItems.map((item) => {
       // For DISCOUNT items, the total should be negative
       // For DISCOUNT_PERCENTAGE items, calculate percentage of other items
       let total = item.quantity * item.unitPrice;
@@ -94,7 +109,7 @@ export class InvoicesService {
       } else if (item.itemType === 'DISCOUNT_PERCENTAGE') {
         // DISCOUNT_PERCENTAGE: unitPrice is the percentage value
         // Calculate percentage of non-discount items (excluding TIPS)
-        const otherItemsSubtotal = createInvoiceDto.items
+        const otherItemsSubtotal = sourceItems
           .filter(
             (i) =>
               i.itemType !== 'DISCOUNT' &&
@@ -144,8 +159,7 @@ export class InvoicesService {
 
     // PST-exempt customers are charged 0% PST regardless of what the client sent.
     // This server-side gate is authoritative.
-    const customerForTax = await this.customerRepository.findById(customerId);
-    if (customerForTax?.pstExempt) {
+    if (customer?.pstExempt) {
       pstRate = 0;
       pstAmount = 0;
       taxRate = gstRate ?? 0;

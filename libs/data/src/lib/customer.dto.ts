@@ -33,6 +33,10 @@ export class CreateCustomerDto {
   @IsBoolean()
   pstExempt?: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  fleetDiscount?: boolean;
+
   @ValidateIf(
     (o) => o.phone !== '' && o.phone !== null && o.phone !== undefined
   )
@@ -98,6 +102,10 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsBoolean()
   pstExempt?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  fleetDiscount?: boolean;
 
   @ValidateIf(
     (o) => o.phone !== '' && o.phone !== null && o.phone !== undefined
@@ -258,6 +266,10 @@ export class CustomerResponseDto {
   @IsOptional()
   @IsBoolean()
   pstExempt?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  fleetDiscount?: boolean;
 
   @IsOptional()
   @IsString()
