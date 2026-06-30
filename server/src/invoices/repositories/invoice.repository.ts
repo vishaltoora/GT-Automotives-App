@@ -237,6 +237,27 @@ export class InvoiceRepository extends BaseRepository<
 
   // ---- Payment ledger (partial / split payments) -------------------------
 
+  /** Insert a single payment ledger row (without touching the invoice). */
+  async recordLedgerRow(payment: {
+    invoiceId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    paidAt: Date;
+    createdBy: string;
+    notes?: string;
+  }): Promise<void> {
+    await this.prisma.invoicePayment.create({
+      data: {
+        invoiceId: payment.invoiceId,
+        amount: new Decimal(payment.amount),
+        paymentMethod: payment.paymentMethod,
+        paidAt: payment.paidAt,
+        createdBy: payment.createdBy,
+        notes: payment.notes,
+      },
+    });
+  }
+
   /** Append one or more payment rows and update the invoice atomically. */
   async addPayments(
     invoiceId: string,

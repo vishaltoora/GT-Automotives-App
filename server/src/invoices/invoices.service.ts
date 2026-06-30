@@ -417,10 +417,54 @@ export class InvoicesService {
       updateData.invoiceDate = new Date(updateInvoiceDto.invoiceDate);
     }
 
+    // If this edit marks the invoice paid, reconcile the payment ledger so the
+    // money appears in the Day Summary (which sums InvoicePayment rows). Without
+    // this, setting status -> PAID via the edit dialog leaves amountPaid = 0 and
+    // no ledger row, so the payment is invisible to the Day Summary.
+    const effectiveTotal =
+      updateData.total !== undefined
+        ? Number(updateData.total)
+        : Number(invoice.total);
+    const currentPaid = Number(invoice.amountPaid ?? 0);
+    let ledgerTopUp: { amount: number; paymentMethod: PaymentMethod } | null =
+      null;
+
+    if (
+      updateInvoiceDto.status === 'PAID' &&
+      currentPaid + 0.005 < effectiveTotal
+    ) {
+      const method =
+        (updateInvoiceDto.paymentMethod as PaymentMethod) ||
+        (invoice.paymentMethod as PaymentMethod) ||
+        'CASH';
+      ledgerTopUp = {
+        amount: effectiveTotal - currentPaid,
+        paymentMethod: method,
+      };
+      updateData.amountPaid = new Decimal(effectiveTotal);
+      updateData.paymentMethod = method;
+      if (updateData.paidAt === undefined) {
+        updateData.paidAt = new Date();
+      }
+    }
+
     // Use updateWithItems if items are provided, otherwise use regular update
     const updated = items
       ? await this.invoiceRepository.updateWithItems(id, updateData, items)
       : await this.invoiceRepository.update(id, updateData);
+
+    if (ledgerTopUp) {
+      await this.invoiceRepository.recordLedgerRow({
+        invoiceId: id,
+        amount: ledgerTopUp.amount,
+        paymentMethod: ledgerTopUp.paymentMethod,
+        paidAt: updateData.paidAt as Date,
+        createdBy: userId,
+        notes: 'Recorded when invoice was marked paid via edit',
+      });
+      // Marking the invoice paid also completes its linked appointment.
+      await this.invoiceRepository.completeAppointmentForInvoice(id);
+    }
 
     // Log the update
     await this.auditRepository.create({
