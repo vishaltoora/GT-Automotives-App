@@ -1431,36 +1431,19 @@ export function DaySummary() {
                 {(outstanding?.cumulative?.byCustomer || []).length > 0 && (
                   <>
                     <Divider sx={{ my: 1.5 }} />
-                    <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {(outstanding.cumulative.byCustomer as any[]).map((c) => (
-                        <Box
+                        <Chip
                           key={c.customerId}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 1,
-                            flexWrap: 'wrap',
-                          }}
-                        >
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600 }}
-                            >
-                              {c.customerName}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {c.count} pending · $
-                              {Number(c.outstanding).toFixed(2)} owed
-                            </Typography>
-                          </Box>
-                        </Box>
+                          size="small"
+                          variant="outlined"
+                          color="warning"
+                          label={`${c.customerName} · $${Number(
+                            c.outstanding
+                          ).toFixed(2)}${c.count > 1 ? ` (${c.count})` : ''}`}
+                        />
                       ))}
-                    </Stack>
+                    </Box>
                   </>
                 )}
               </Paper>
