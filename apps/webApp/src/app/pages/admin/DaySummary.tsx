@@ -346,6 +346,22 @@ export function DaySummary() {
       }
     );
 
+    // Fold invoice money into the At Shop / Mobile location splits too.
+    const atGarageInvoiceTotal = invoiceDay?.atGarage?.total || 0;
+    const mobileInvoiceTotal = invoiceDay?.mobileService?.total || 0;
+    Object.entries(invoiceDay?.atGarage?.byPaymentMethod || {}).forEach(
+      ([method, amount]) => {
+        atGaragePaymentsByMethod[method] =
+          (atGaragePaymentsByMethod[method] || 0) + Number(amount);
+      }
+    );
+    Object.entries(invoiceDay?.mobileService?.byPaymentMethod || {}).forEach(
+      ([method, amount]) => {
+        mobileServicePaymentsByMethod[method] =
+          (mobileServicePaymentsByMethod[method] || 0) + Number(amount);
+      }
+    );
+
     const combinedTotalPayments = totalPayments + invoiceTotal;
     const combinedPaymentsCount = sortedPayments.length + invoiceCount;
 
@@ -369,10 +385,10 @@ export function DaySummary() {
       totalExpected,
       totalOwed,
       paymentsByMethod,
-      atGaragePayments: atGarageTotalPayments,
+      atGaragePayments: atGarageTotalPayments + atGarageInvoiceTotal,
       completedAtGarage: atGaragePayments.length,
       atGaragePaymentsByMethod,
-      mobileServicePayments: mobileServiceTotalPayments,
+      mobileServicePayments: mobileServiceTotalPayments + mobileInvoiceTotal,
       completedMobileService: mobileServicePayments.length,
       mobileServicePaymentsByMethod,
 

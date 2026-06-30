@@ -397,21 +397,42 @@ export class InvoiceRepository extends BaseRepository<
     const rows = await this.prisma.$queryRaw<any[]>`
       SELECT ip.id, ip.amount, ip."paymentMethod", ip."paidAt",
              i.id AS "invoiceId", i."invoiceNumber",
-             c."firstName", c."lastName", c."businessName"
+             c."firstName", c."lastName", c."businessName",
+             COALESCE(a."appointmentType", roa."appointmentType") AS "appointmentType"
       FROM "InvoicePayment" ip
       JOIN "Invoice" i ON i.id = ip."invoiceId"
       JOIN "Customer" c ON c.id = i."customerId"
+      LEFT JOIN "Appointment" a ON a.id = i."appointmentId"
+      LEFT JOIN "repair_orders" ro ON ro.id = i."repairOrderId"
+      LEFT JOIN "Appointment" roa ON roa.id = ro."appointmentId"
       WHERE DATE(ip."paidAt" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) = ${dateOnly}::date
       ORDER BY ip."paidAt" DESC
     `;
 
     const byPaymentMethod: Record<string, number> = {};
+    // Invoice money split by service location. Mobile-service invoices go to
+    // mobile; everything else (at-garage or no linked appointment) is At Shop.
+    const atGarage = {
+      total: 0,
+      byPaymentMethod: {} as Record<string, number>,
+    };
+    const mobileService = {
+      total: 0,
+      byPaymentMethod: {} as Record<string, number>,
+    };
     let total = 0;
     const payments = rows.map((r) => {
       const amount = Number(r.amount);
       total += amount;
       byPaymentMethod[r.paymentMethod] =
         (byPaymentMethod[r.paymentMethod] || 0) + amount;
+
+      const bucket =
+        r.appointmentType === 'MOBILE_SERVICE' ? mobileService : atGarage;
+      bucket.total += amount;
+      bucket.byPaymentMethod[r.paymentMethod] =
+        (bucket.byPaymentMethod[r.paymentMethod] || 0) + amount;
+
       const customerName =
         r.businessName ||
         `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim() ||
@@ -424,6 +445,7 @@ export class InvoiceRepository extends BaseRepository<
         invoiceId: r.invoiceId,
         invoiceNumber: r.invoiceNumber,
         customerName,
+        appointmentType: r.appointmentType ?? null,
       };
     });
 
@@ -432,6 +454,8 @@ export class InvoiceRepository extends BaseRepository<
       total,
       count: payments.length,
       byPaymentMethod,
+      atGarage,
+      mobileService,
       payments,
     };
   }
