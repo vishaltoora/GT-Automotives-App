@@ -72,9 +72,6 @@ export function DaySummary() {
   >([]); // Employee payments made on this date
   const [invoiceDay, setInvoiceDay] = useState<any>(null); // Invoice payments collected on this date (deduped vs appointments)
   const [outstanding, setOutstanding] = useState<any>(null); // Pending-invoice outstanding (today + cumulative)
-  const [combiningCustomerId, setCombiningCustomerId] = useState<string | null>(
-    null
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sendingEOD, setSendingEOD] = useState(false);
@@ -486,33 +483,6 @@ export function DaySummary() {
   const handleProcessPayment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setPaymentDialogOpen(true);
-  };
-
-  // Combine a customer's open invoices into one and email it.
-  const handleCombineAndEmail = async (customerId: string) => {
-    try {
-      setCombiningCustomerId(customerId);
-      const combined = await invoiceService.combineInvoices(customerId);
-      const result = await invoiceService.sendInvoiceEmail(combined.id);
-      setSnackbar({
-        open: true,
-        message: `Combined invoice ${
-          combined.invoiceNumber
-        } created and emailed to ${result.emailUsed || 'the customer'}.`,
-        severity: 'success',
-      });
-      fetchData();
-    } catch (error: any) {
-      setSnackbar({
-        open: true,
-        message:
-          error.response?.data?.message ||
-          'Failed to combine and email invoices',
-        severity: 'error',
-      });
-    } finally {
-      setCombiningCustomerId(null);
-    }
   };
 
   const handlePaymentSubmit = async (paymentData: any) => {
@@ -1417,69 +1387,6 @@ export function DaySummary() {
               </Paper>
             </Grid>
 
-            {/* Invoice Payments collected today (deduped vs appointment payments) */}
-            <Grid size={12}>
-              <Paper elevation={2} sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-                <Box
-                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}
-                >
-                  <MoneyIcon color="primary" />
-                  <Typography variant="h6">
-                    Invoice Payments - Collected{' '}
-                    {isViewingToday ? 'Today' : `on ${dateLabel}`}
-                  </Typography>
-                </Box>
-                {invoiceDay && invoiceDay.count > 0 ? (
-                  <>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-                      ${Number(invoiceDay.total || 0).toFixed(2)}{' '}
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        ({invoiceDay.count} payment
-                        {invoiceDay.count === 1 ? '' : 's'})
-                      </Typography>
-                    </Typography>
-                    <Grid container spacing={2}>
-                      {Object.entries(invoiceDay.byPaymentMethod || {}).map(
-                        ([method, amount]) => (
-                          <Grid size={{ xs: 6, sm: 4, md: 3 }} key={method}>
-                            <Paper variant="outlined" sx={{ p: 1.5 }}>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {method === 'CASH'
-                                  ? 'Cash (with GST/PST)'
-                                  : method === 'CASH_NO_TAX'
-                                  ? 'Cash (no GST/PST)'
-                                  : method.replace(/_/g, ' ')}
-                              </Typography>
-                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                ${Number(amount as number).toFixed(2)}
-                              </Typography>
-                            </Paper>
-                          </Grid>
-                        )
-                      )}
-                    </Grid>
-                  </>
-                ) : (
-                  <Box
-                    sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}
-                  >
-                    <MoneyIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                    <Typography variant="body2">
-                      No invoice payments collected{' '}
-                      {isViewingToday ? 'today' : 'on this date'}
-                    </Typography>
-                  </Box>
-                )}
-              </Paper>
-            </Grid>
-
             {/* Pending Invoices - Outstanding balance (today + cumulative) */}
             <Grid size={12}>
               <Paper
@@ -1549,26 +1456,8 @@ export function DaySummary() {
                             >
                               {c.count} pending · $
                               {Number(c.outstanding).toFixed(2)} owed
-                              {!c.email ? ' · no email on file' : ''}
                             </Typography>
                           </Box>
-                          {(c.combinableCount ?? c.count) > 1 && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<SendIcon />}
-                              disabled={
-                                combiningCustomerId === c.customerId || !c.email
-                              }
-                              onClick={() =>
-                                handleCombineAndEmail(c.customerId)
-                              }
-                            >
-                              {combiningCustomerId === c.customerId
-                                ? 'Working…'
-                                : 'Combine & Email'}
-                            </Button>
-                          )}
                         </Box>
                       ))}
                     </Stack>
