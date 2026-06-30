@@ -37,6 +37,10 @@ export class CreateCustomerDto {
   @IsBoolean()
   fleetDiscount?: boolean;
 
+  @IsOptional()
+  @IsString()
+  pstNumber?: string;
+
   @ValidateIf(
     (o) => o.phone !== '' && o.phone !== null && o.phone !== undefined
   )
@@ -106,6 +110,10 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsBoolean()
   fleetDiscount?: boolean;
+
+  @IsOptional()
+  @IsString()
+  pstNumber?: string;
 
   @ValidateIf(
     (o) => o.phone !== '' && o.phone !== null && o.phone !== undefined
@@ -270,6 +278,10 @@ export class CustomerResponseDto {
   @IsOptional()
   @IsBoolean()
   fleetDiscount?: boolean;
+
+  @IsOptional()
+  @IsString()
+  pstNumber?: string;
 
   @IsOptional()
   @IsString()

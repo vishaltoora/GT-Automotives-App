@@ -84,6 +84,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
     smsEnabled: true,
     pstExempt: false,
     fleetDiscount: false,
+    pstNumber: '',
   });
   const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
 
@@ -101,6 +102,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           smsEnabled: initialCustomer.smsPreference?.optedIn ?? true,
           pstExempt: initialCustomer.pstExempt ?? false,
           fleetDiscount: initialCustomer.fleetDiscount ?? false,
+          pstNumber: initialCustomer.pstNumber || '',
         });
         setAdditionalEmails(initialCustomer.additionalEmails || []);
       } else if (customerId) {
@@ -118,6 +120,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           smsEnabled: true,
           pstExempt: false,
           fleetDiscount: false,
+          pstNumber: '',
         });
         setAdditionalEmails([]);
       }
@@ -139,6 +142,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
         smsEnabled: customer.smsPreference?.optedIn ?? true,
         pstExempt: customer.pstExempt ?? false,
         fleetDiscount: customer.fleetDiscount ?? false,
+        pstNumber: customer.pstNumber || '',
       });
       setAdditionalEmails(customer.additionalEmails || []);
     } catch (err: any) {
@@ -155,6 +159,13 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
       setSaving(true);
       setError(null);
 
+      // PST-exempt customers must provide a PST number (printed on invoices).
+      if (formData.pstExempt && !formData.pstNumber.trim()) {
+        setError('Please enter a PST number for PST-exempt customers.');
+        setSaving(false);
+        return;
+      }
+
       let customerId_local = customerId;
 
       // Drop blank rows and trim before sending
@@ -167,6 +178,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           email: formData.email,
           additionalEmails: cleanedAdditionalEmails,
           pstExempt: formData.pstExempt,
+          pstNumber: formData.pstExempt ? formData.pstNumber.trim() : '',
           fleetDiscount: formData.fleetDiscount,
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -180,6 +192,7 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
           email: formData.email,
           additionalEmails: cleanedAdditionalEmails,
           pstExempt: formData.pstExempt,
+          pstNumber: formData.pstExempt ? formData.pstNumber.trim() : '',
           fleetDiscount: formData.fleetDiscount,
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -506,6 +519,23 @@ export const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   }
                 />
               </Grid>
+
+              {/* PST Number — required when PST exempt, printed on invoices */}
+              {formData.pstExempt && (
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="PST Number"
+                    value={formData.pstNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, pstNumber: e.target.value })
+                    }
+                    disabled={saving}
+                    helperText="Shown on this customer's invoices as proof of PST exemption"
+                  />
+                </Grid>
+              )}
 
               {/* Fleet Discount */}
               <Grid size={{ xs: 12 }}>

@@ -37,6 +37,7 @@ export class CustomersService {
         email: createCustomerDto.email,
         additionalEmails: createCustomerDto.additionalEmails ?? [],
         pstExempt: createCustomerDto.pstExempt ?? false,
+        pstNumber: createCustomerDto.pstNumber || null,
         fleetDiscount: createCustomerDto.fleetDiscount ?? false,
         phone: createCustomerDto.phone,
         address: createCustomerDto.address,
@@ -170,6 +171,9 @@ export class CustomersService {
         }),
         ...(updateCustomerDto.pstExempt !== undefined && {
           pstExempt: updateCustomerDto.pstExempt,
+        }),
+        ...(updateCustomerDto.pstNumber !== undefined && {
+          pstNumber: updateCustomerDto.pstNumber || null,
         }),
         ...(updateCustomerDto.fleetDiscount !== undefined && {
           fleetDiscount: updateCustomerDto.fleetDiscount,

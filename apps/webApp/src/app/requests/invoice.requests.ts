@@ -550,6 +550,20 @@ ${
         }
 
         ${
+          invoice.customer?.pstExempt
+            ? `
+          <div class="pst-exempt" style="margin-top: 12px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
+            <p style="margin: 0;"><strong>This business is PST exempt.</strong>${
+              invoice.customer?.pstNumber
+                ? ` PST Number: ${invoice.customer.pstNumber}`
+                : ''
+            }</p>
+          </div>
+        `
+            : ''
+        }
+
+        ${
           invoice.paymentMethod
             ? `
           <div class="payment-info">
@@ -800,6 +814,20 @@ ${
           <div style="margin-top: 12px;">
             <h3 style="margin-bottom: 8px;">Notes:</h3>
             <p style="margin: 0;">${invoice.notes}</p>
+          </div>
+        `
+            : ''
+        }
+
+        ${
+          invoice.customer?.pstExempt
+            ? `
+          <div style="margin-top: 12px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
+            <p style="margin: 0; font-size: 13px;"><strong>This business is PST exempt.</strong>${
+              invoice.customer?.pstNumber
+                ? ` PST Number: ${invoice.customer.pstNumber}`
+                : ''
+            }</p>
           </div>
         `
             : ''

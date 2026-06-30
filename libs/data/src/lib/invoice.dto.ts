@@ -219,6 +219,7 @@ export interface InvoiceCustomerDto {
   email?: string | null;
   additionalEmails?: string[] | null;
   pstExempt?: boolean | null;
+  pstNumber?: string | null;
   phone?: string | null;
   address?: string | null;
 }
