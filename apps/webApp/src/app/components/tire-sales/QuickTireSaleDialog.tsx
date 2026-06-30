@@ -37,7 +37,11 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TireService from '../../requests/tire.requests';
 import { customerService } from '../../requests/customer.requests';
-import { TireSaleService, CreateTireSaleRequest, TireSaleItemRequest } from '../../requests/tire-sale.requests';
+import {
+  TireSaleService,
+  CreateTireSaleRequest,
+  TireSaleItemRequest,
+} from '../../requests/tire-sale.requests';
 import { userService, User } from '../../requests/user.requests';
 import { PaymentMethod } from '../../../enums';
 import { TireDialog } from '../inventory/TireDialog';
@@ -60,7 +64,8 @@ interface QuickTireSaleDialogProps {
 }
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  [PaymentMethod.CASH]: 'Cash',
+  [PaymentMethod.CASH]: 'Cash (with GST/PST)',
+  [PaymentMethod.CASH_NO_TAX]: 'Cash (no GST/PST)',
   [PaymentMethod.CREDIT_CARD]: 'Credit Card',
   [PaymentMethod.DEBIT_CARD]: 'Debit Card',
   [PaymentMethod.E_TRANSFER]: 'E-Transfer',
@@ -85,13 +90,18 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
   const [showAddTireDialog, setShowAddTireDialog] = useState(false);
 
   // Salesperson selection (defaults to current user)
-  const [selectedSalespersonId, setSelectedSalespersonId] = useState<string>('');
+  const [selectedSalespersonId, setSelectedSalespersonId] =
+    useState<string>('');
 
   // Payment method
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    PaymentMethod.CASH
+  );
 
   // Customer (for non-cash)
-  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
+  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>(
+    'existing'
+  );
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [newCustomer, setNewCustomer] = useState({
@@ -104,12 +114,15 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quantityErrors, setQuantityErrors] = useState<Record<string, string>>({});
+  const [quantityErrors, setQuantityErrors] = useState<Record<string, string>>(
+    {}
+  );
 
   // Fetch tires
   const { data: tiresData, isLoading: tiresLoading } = useQuery({
     queryKey: ['tires', 'quick-sale', searchQuery],
-    queryFn: () => TireService.getTires({ search: searchQuery, inStock: true, limit: 50 }),
+    queryFn: () =>
+      TireService.getTires({ search: searchQuery, inStock: true, limit: 50 }),
     enabled: open,
     staleTime: 30000,
   });
@@ -133,13 +146,18 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
   const tires = tiresData?.items || [];
   const customers = customersData || [];
   // Filter to only staff, supervisor, and admin roles
-  const employees = (employeesData || []).filter((u: User) =>
-    u.role?.name && ['STAFF', 'SUPERVISOR', 'ADMIN'].includes(u.role.name.toUpperCase())
+  const employees = (employeesData || []).filter(
+    (u: User) =>
+      u.role?.name &&
+      ['STAFF', 'SUPERVISOR', 'ADMIN'].includes(u.role.name.toUpperCase())
   );
 
   // Calculate totals
   const subtotal = useMemo(() => {
-    return selectedTires.reduce((sum, tire) => sum + tire.quantity * tire.unitPrice, 0);
+    return selectedTires.reduce(
+      (sum, tire) => sum + tire.quantity * tire.unitPrice,
+      0
+    );
   }, [selectedTires]);
 
   const isCashSale = paymentMethod === PaymentMethod.CASH;
@@ -149,7 +167,8 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
 
   // Calculate commission preview
   const totalTires = selectedTires.reduce((sum, t) => sum + t.quantity, 0);
-  const commissionRate = totalTires <= 30 ? 3 : totalTires <= 50 ? 4 : totalTires <= 70 ? 5 : 7;
+  const commissionRate =
+    totalTires <= 30 ? 3 : totalTires <= 50 ? 4 : totalTires <= 70 ? 5 : 7;
   const commissionAmount = totalTires * commissionRate;
 
   // Reset state when dialog opens/closes
@@ -178,13 +197,21 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
       // Increase quantity if already selected
       if (existing.quantity < existing.availableStock) {
         setSelectedTires((prev) =>
-          prev.map((t) => (t.tireId === tire.id ? { ...t, quantity: t.quantity + 1 } : t))
+          prev.map((t) =>
+            t.tireId === tire.id ? { ...t, quantity: t.quantity + 1 } : t
+          )
         );
       }
     } else {
       // Add new tire - handle both nested objects and flat strings from API
-      const brandName = typeof tire.brand === 'string' ? tire.brand : (tire.brand?.name || tire.brandName || 'Unknown');
-      const sizeName = typeof tire.size === 'string' ? tire.size : (tire.size?.size || tire.sizeName || 'Unknown');
+      const brandName =
+        typeof tire.brand === 'string'
+          ? tire.brand
+          : tire.brand?.name || tire.brandName || 'Unknown';
+      const sizeName =
+        typeof tire.size === 'string'
+          ? tire.size
+          : tire.size?.size || tire.sizeName || 'Unknown';
 
       setSelectedTires((prev) => [
         ...prev,
@@ -212,7 +239,9 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
 
     // Allow empty string while typing
     if (value === '') {
-      setSelectedTires((prev) => prev.map((t) => (t.tireId === tireId ? { ...t, quantity: 0 } : t)));
+      setSelectedTires((prev) =>
+        prev.map((t) => (t.tireId === tireId ? { ...t, quantity: 0 } : t))
+      );
       setQuantityErrors((prev) => ({ ...prev, [tireId]: '' }));
       return;
     }
@@ -221,11 +250,18 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
     if (isNaN(newQuantity)) return;
 
     // Set the value and check for errors
-    setSelectedTires((prev) => prev.map((t) => (t.tireId === tireId ? { ...t, quantity: newQuantity } : t)));
+    setSelectedTires((prev) =>
+      prev.map((t) =>
+        t.tireId === tireId ? { ...t, quantity: newQuantity } : t
+      )
+    );
 
     // Show error if exceeds available stock
     if (newQuantity > tire.availableStock) {
-      setQuantityErrors((prev) => ({ ...prev, [tireId]: `Max ${tire.availableStock} available` }));
+      setQuantityErrors((prev) => ({
+        ...prev,
+        [tireId]: `Max ${tire.availableStock} available`,
+      }));
     } else if (newQuantity < 1) {
       setQuantityErrors((prev) => ({ ...prev, [tireId]: 'Min 1 required' }));
     } else {
@@ -240,7 +276,9 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
     // Clamp on blur to valid range
     const qty = Math.max(1, Math.min(tire.quantity, tire.availableStock));
     if (qty !== tire.quantity) {
-      setSelectedTires((prev) => prev.map((t) => (t.tireId === tireId ? { ...t, quantity: qty } : t)));
+      setSelectedTires((prev) =>
+        prev.map((t) => (t.tireId === tireId ? { ...t, quantity: qty } : t))
+      );
     }
     // Clear error on blur since we clamped the value
     setQuantityErrors((prev) => ({ ...prev, [tireId]: '' }));
@@ -261,7 +299,10 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
         setError('Please select a customer');
         return;
       }
-      if (customerMode === 'new' && (!newCustomer.firstName || !newCustomer.lastName)) {
+      if (
+        customerMode === 'new' &&
+        (!newCustomer.firstName || !newCustomer.lastName)
+      ) {
         setError('Please enter customer name');
         return;
       }
@@ -305,7 +346,11 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Failed to create tire sale:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to create tire sale');
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to create tire sale'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -372,14 +417,18 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
               <InputLabel>Payment Method</InputLabel>
               <Select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                onChange={(e) =>
+                  setPaymentMethod(e.target.value as PaymentMethod)
+                }
                 label="Payment Method"
               >
-                {Object.entries(PAYMENT_METHOD_LABELS).map(([method, label]) => (
-                  <MenuItem key={method} value={method}>
-                    {label}
-                  </MenuItem>
-                ))}
+                {Object.entries(PAYMENT_METHOD_LABELS).map(
+                  ([method, label]) => (
+                    <MenuItem key={method} value={method}>
+                      {label}
+                    </MenuItem>
+                  )
+                )}
               </Select>
             </FormControl>
           </Grid>
@@ -390,8 +439,14 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
           <Autocomplete
             options={tires}
             getOptionLabel={(option: any) => {
-              const size = typeof option.size === 'string' ? option.size : (option.size?.size || option.sizeName || '');
-              const brand = typeof option.brand === 'string' ? option.brand : (option.brand?.name || option.brandName || '');
+              const size =
+                typeof option.size === 'string'
+                  ? option.size
+                  : option.size?.size || option.sizeName || '';
+              const brand =
+                typeof option.brand === 'string'
+                  ? option.brand
+                  : option.brand?.name || option.brandName || '';
               return `${size} - ${brand} ${option.type} (${option.quantity} in stock)`;
             }}
             inputValue={searchQuery}
@@ -411,62 +466,82 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
                   ...params.InputProps,
                   endAdornment: (
                     <>
-                      {tiresLoading && <CircularProgress color="inherit" size={20} />}
+                      {tiresLoading && (
+                        <CircularProgress color="inherit" size={20} />
+                      )}
                       {params.InputProps.endAdornment}
                     </>
                   ),
                 }}
               />
-          )}
-          renderOption={(props, option: any) => {
-            const { key, ...otherProps } = props;
-            const size = typeof option.size === 'string' ? option.size : (option.size?.size || option.sizeName || '');
-            const brand = typeof option.brand === 'string' ? option.brand : (option.brand?.name || option.brandName || '');
-            return (
-              <li key={key} {...otherProps}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                  <Box>
-                    <Typography variant="body2">
-                      <strong>{size}</strong> - {brand}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {option.type} • {option.condition}
-                    </Typography>
+            )}
+            renderOption={(props, option: any) => {
+              const { key, ...otherProps } = props;
+              const size =
+                typeof option.size === 'string'
+                  ? option.size
+                  : option.size?.size || option.sizeName || '';
+              const brand =
+                typeof option.brand === 'string'
+                  ? option.brand
+                  : option.brand?.name || option.brandName || '';
+              return (
+                <li key={key} {...otherProps}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="body2">
+                        <strong>{size}</strong> - {brand}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.type} • {option.condition}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="body2" fontWeight="bold">
+                        ${parseFloat(option.price).toFixed(2)}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color={
+                          option.quantity < 5 ? 'warning.main' : 'success.main'
+                        }
+                      >
+                        {option.quantity} in stock
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" fontWeight="bold">
-                      ${parseFloat(option.price).toFixed(2)}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color={option.quantity < 5 ? 'warning.main' : 'success.main'}
-                    >
-                      {option.quantity} in stock
-                    </Typography>
-                  </Box>
-                </Box>
-              </li>
-            );
-          }}
-          value={null}
-          blurOnSelect
-          clearOnBlur
-          noOptionsText={
-            <Box sx={{ textAlign: 'center', py: 1 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                No tires found
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => setShowAddTireDialog(true)}
-              >
-                Add New Tire
-              </Button>
-            </Box>
-          }
-        />
+                </li>
+              );
+            }}
+            value={null}
+            blurOnSelect
+            clearOnBlur
+            noOptionsText={
+              <Box sx={{ textAlign: 'center', py: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
+                  No tires found
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => setShowAddTireDialog(true)}
+                >
+                  Add New Tire
+                </Button>
+              </Box>
+            }
+          />
           <Tooltip title="Add new tire to inventory">
             <Button
               variant="outlined"
@@ -515,7 +590,9 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
                       type="text"
                       inputMode="numeric"
                       value={tire.quantity === 0 ? '' : tire.quantity}
-                      onChange={(e) => handleQuantityChange(tire.tireId, e.target.value)}
+                      onChange={(e) =>
+                        handleQuantityChange(tire.tireId, e.target.value)
+                      }
                       onBlur={() => handleQuantityBlur(tire.tireId)}
                       onFocus={(e) => e.target.select()}
                       size="small"
@@ -523,10 +600,18 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
                       sx={{ width: 70 }}
                     />
                   </Tooltip>
-                  <Typography variant="body2" fontWeight="bold" sx={{ minWidth: 60, textAlign: 'right' }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight="bold"
+                    sx={{ minWidth: 60, textAlign: 'right' }}
+                  >
                     ${(tire.quantity * tire.unitPrice).toFixed(2)}
                   </Typography>
-                  <IconButton size="small" color="error" onClick={() => handleRemoveTire(tire.tireId)}>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleRemoveTire(tire.tireId)}
+                  >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Box>
@@ -537,17 +622,27 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="body2">Subtotal:</Typography>
-              <Typography variant="body2" fontWeight="bold">${subtotal.toFixed(2)}</Typography>
+              <Typography variant="body2" fontWeight="bold">
+                ${subtotal.toFixed(2)}
+              </Typography>
             </Box>
             {!isCashSale && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="caption" color="text.secondary">Tax (12%):</Typography>
-                <Typography variant="caption" color="text.secondary">${taxAmount.toFixed(2)}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Tax (12%):
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ${taxAmount.toFixed(2)}
+                </Typography>
               </Box>
             )}
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body1" fontWeight="bold">Total:</Typography>
-              <Typography variant="body1" fontWeight="bold">${total.toFixed(2)}</Typography>
+              <Typography variant="body1" fontWeight="bold">
+                Total:
+              </Typography>
+              <Typography variant="body1" fontWeight="bold">
+                ${total.toFixed(2)}
+              </Typography>
             </Box>
           </Paper>
         )}
@@ -562,99 +657,148 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
         {/* Customer Section */}
         <Paper variant="outlined" sx={{ p: 1.5 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Customer Information {isCashSale && <Typography component="span" variant="caption" color="text.secondary">(Optional)</Typography>}
+            Customer Information{' '}
+            {isCashSale && (
+              <Typography
+                component="span"
+                variant="caption"
+                color="text.secondary"
+              >
+                (Optional)
+              </Typography>
+            )}
           </Typography>
 
-            <RadioGroup
-              value={customerMode}
-              onChange={(e) => setCustomerMode(e.target.value as 'existing' | 'new')}
-              row
-              sx={{ mb: 1 }}
-            >
-              <FormControlLabel value="existing" control={<Radio size="small" />} label="Existing" />
-              <FormControlLabel value="new" control={<Radio size="small" />} label="New" />
-            </RadioGroup>
+          <RadioGroup
+            value={customerMode}
+            onChange={(e) =>
+              setCustomerMode(e.target.value as 'existing' | 'new')
+            }
+            row
+            sx={{ mb: 1 }}
+          >
+            <FormControlLabel
+              value="existing"
+              control={<Radio size="small" />}
+              label="Existing"
+            />
+            <FormControlLabel
+              value="new"
+              control={<Radio size="small" />}
+              label="New"
+            />
+          </RadioGroup>
 
-            {customerMode === 'existing' ? (
-              <Autocomplete
-                options={customers}
-                getOptionLabel={(option: any) =>
-                  `${option.firstName} ${option.lastName}${option.businessName ? ` (${option.businessName})` : ''}`
-                }
-                inputValue={customerSearch}
-                onInputChange={(_, value) => setCustomerSearch(value)}
-                onChange={(_, value: any) => setSelectedCustomerId(value?.id || '')}
-                size="small"
-                renderInput={(params) => (
-                  <TextField {...params} label="Search Customer" placeholder="Name or phone..." fullWidth />
-                )}
-                renderOption={(props, option: any) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <li key={key} {...otherProps}>
-                      <Box>
-                        <Typography variant="body2">
-                          {option.firstName} {option.lastName}
+          {customerMode === 'existing' ? (
+            <Autocomplete
+              options={customers}
+              getOptionLabel={(option: any) =>
+                `${option.firstName} ${option.lastName}${
+                  option.businessName ? ` (${option.businessName})` : ''
+                }`
+              }
+              inputValue={customerSearch}
+              onInputChange={(_, value) => setCustomerSearch(value)}
+              onChange={(_, value: any) =>
+                setSelectedCustomerId(value?.id || '')
+              }
+              size="small"
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Search Customer"
+                  placeholder="Name or phone..."
+                  fullWidth
+                />
+              )}
+              renderOption={(props, option: any) => {
+                const { key, ...otherProps } = props;
+                return (
+                  <li key={key} {...otherProps}>
+                    <Box>
+                      <Typography variant="body2">
+                        {option.firstName} {option.lastName}
+                      </Typography>
+                      {option.phone && (
+                        <Typography variant="caption" color="text.secondary">
+                          {option.phone}
                         </Typography>
-                        {option.phone && (
-                          <Typography variant="caption" color="text.secondary">
-                            {option.phone}
-                          </Typography>
-                        )}
-                      </Box>
-                    </li>
-                  );
-                }}
-              />
-            ) : (
-              <Grid container spacing={1}>
-                <Grid size={{ xs: 6 }}>
-                  <TextField
-                    label="First Name"
-                    value={newCustomer.firstName}
-                    onChange={(e) => setNewCustomer((prev) => ({ ...prev, firstName: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    required
-                  />
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <TextField
-                    label="Last Name"
-                    value={newCustomer.lastName}
-                    onChange={(e) => setNewCustomer((prev) => ({ ...prev, lastName: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    required
-                  />
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <TextField
-                    label="Phone"
-                    value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer((prev) => ({ ...prev, phone: e.target.value }))}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <TextField
-                    label="Email"
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer((prev) => ({ ...prev, email: e.target.value }))}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
+                      )}
+                    </Box>
+                  </li>
+                );
+              }}
+            />
+          ) : (
+            <Grid container spacing={1}>
+              <Grid size={{ xs: 6 }}>
+                <TextField
+                  label="First Name"
+                  value={newCustomer.firstName}
+                  onChange={(e) =>
+                    setNewCustomer((prev) => ({
+                      ...prev,
+                      firstName: e.target.value,
+                    }))
+                  }
+                  fullWidth
+                  size="small"
+                  required
+                />
               </Grid>
-            )}
-          </Paper>
+              <Grid size={{ xs: 6 }}>
+                <TextField
+                  label="Last Name"
+                  value={newCustomer.lastName}
+                  onChange={(e) =>
+                    setNewCustomer((prev) => ({
+                      ...prev,
+                      lastName: e.target.value,
+                    }))
+                  }
+                  fullWidth
+                  size="small"
+                  required
+                />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <TextField
+                  label="Phone"
+                  value={newCustomer.phone}
+                  onChange={(e) =>
+                    setNewCustomer((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <TextField
+                  label="Email"
+                  value={newCustomer.email}
+                  onChange={(e) =>
+                    setNewCustomer((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+            </Grid>
+          )}
+        </Paper>
 
         {/* Commission Preview */}
         {selectedTires.length > 0 && (
           <Alert severity="success" icon={<MoneyIcon />} sx={{ mt: 2 }}>
             <Typography variant="body2">
-              Commission: <strong>${commissionAmount.toFixed(2)}</strong> ({totalTires} tires × ${commissionRate}/tire)
+              Commission: <strong>${commissionAmount.toFixed(2)}</strong> (
+              {totalTires} tires × ${commissionRate}/tire)
             </Typography>
           </Alert>
         )}
@@ -668,8 +812,12 @@ export const QuickTireSaleDialog: React.FC<QuickTireSaleDialogProps> = ({
           variant="contained"
           color="primary"
           onClick={handleSubmit}
-          disabled={isSubmitting || selectedTires.length === 0 || hasQuantityErrors}
-          startIcon={isSubmitting ? <CircularProgress size={20} /> : <CheckIcon />}
+          disabled={
+            isSubmitting || selectedTires.length === 0 || hasQuantityErrors
+          }
+          startIcon={
+            isSubmitting ? <CircularProgress size={20} /> : <CheckIcon />
+          }
         >
           {isSubmitting ? 'Processing...' : 'Complete Sale'}
         </Button>

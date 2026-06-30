@@ -51,7 +51,8 @@ import { PaymentMethod, CommissionStatus } from '../../../../enums';
 import { userService, User } from '../../../requests/user.requests';
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  [PaymentMethod.CASH]: 'Cash',
+  [PaymentMethod.CASH]: 'Cash (with GST/PST)',
+  [PaymentMethod.CASH_NO_TAX]: 'Cash (no GST/PST)',
   [PaymentMethod.CREDIT_CARD]: 'Credit Card',
   [PaymentMethod.DEBIT_CARD]: 'Debit Card',
   [PaymentMethod.E_TRANSFER]: 'E-Transfer',
@@ -60,7 +61,10 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.BANK_DEPOSIT]: 'Bank Deposit',
 };
 
-const COMMISSION_STATUS_COLORS: Record<CommissionStatus, 'default' | 'warning' | 'success' | 'error'> = {
+const COMMISSION_STATUS_COLORS: Record<
+  CommissionStatus,
+  'default' | 'warning' | 'success' | 'error'
+> = {
   [CommissionStatus.PENDING]: 'warning',
   [CommissionStatus.APPROVED]: 'default',
   [CommissionStatus.PAID]: 'success',
@@ -69,9 +73,12 @@ const COMMISSION_STATUS_COLORS: Record<CommissionStatus, 'default' | 'warning' |
 
 // Tier colors based on tires sold
 const getTierInfo = (tireCount: number) => {
-  if (tireCount >= 71) return { tier: 'Platinum', color: '#E5E4E2', textColor: '#000' };
-  if (tireCount >= 51) return { tier: 'Gold', color: '#FFD700', textColor: '#000' };
-  if (tireCount >= 31) return { tier: 'Silver', color: '#C0C0C0', textColor: '#000' };
+  if (tireCount >= 71)
+    return { tier: 'Platinum', color: '#E5E4E2', textColor: '#000' };
+  if (tireCount >= 51)
+    return { tier: 'Gold', color: '#FFD700', textColor: '#000' };
+  if (tireCount >= 31)
+    return { tier: 'Silver', color: '#C0C0C0', textColor: '#000' };
   return { tier: 'Bronze', color: '#CD7F32', textColor: '#fff' };
 };
 
@@ -108,12 +115,17 @@ export function TireSalesManagement() {
   // Load employee name if filtering by employee
   useEffect(() => {
     if (employeeIdFromUrl) {
-      userService.getUsers().then((users: User[]) => {
-        const emp = users.find((u) => u.id === employeeIdFromUrl);
-        if (emp) {
-          setEmployeeName(`${emp.firstName || ''} ${emp.lastName || ''}`.trim());
-        }
-      }).catch(() => {});
+      userService
+        .getUsers()
+        .then((users: User[]) => {
+          const emp = users.find((u) => u.id === employeeIdFromUrl);
+          if (emp) {
+            setEmployeeName(
+              `${emp.firstName || ''} ${emp.lastName || ''}`.trim()
+            );
+          }
+        })
+        .catch(() => {});
     } else {
       setEmployeeName(null);
     }
@@ -169,8 +181,10 @@ export function TireSalesManagement() {
     const newFilters: TireSaleFilters = {};
     if (startDate) newFilters.startDate = startDate;
     if (endDate) newFilters.endDate = endDate;
-    if (paymentMethod) newFilters.paymentMethod = paymentMethod as PaymentMethod;
-    if (commissionStatus) newFilters.commissionStatus = commissionStatus as CommissionStatus;
+    if (paymentMethod)
+      newFilters.paymentMethod = paymentMethod as PaymentMethod;
+    if (commissionStatus)
+      newFilters.commissionStatus = commissionStatus as CommissionStatus;
     setFilters(newFilters);
     setPage(0);
   };
@@ -190,12 +204,17 @@ export function TireSalesManagement() {
 
   // Load employees for edit dialog
   useEffect(() => {
-    userService.getUsers().then((users: User[]) => {
-      const staffUsers = users.filter((u) =>
-        u.role?.name && ['STAFF', 'SUPERVISOR', 'ADMIN'].includes(u.role.name.toUpperCase())
-      );
-      setEmployees(staffUsers);
-    }).catch(() => {});
+    userService
+      .getUsers()
+      .then((users: User[]) => {
+        const staffUsers = users.filter(
+          (u) =>
+            u.role?.name &&
+            ['STAFF', 'SUPERVISOR', 'ADMIN'].includes(u.role.name.toUpperCase())
+        );
+        setEmployees(staffUsers);
+      })
+      .catch(() => {});
   }, []);
 
   const handleEditClick = (sale: TireSale) => {
@@ -209,7 +228,9 @@ export function TireSalesManagement() {
 
     try {
       setEditLoading(true);
-      await TireSaleService.update(editingSale.id, { soldById: newSalespersonId });
+      await TireSaleService.update(editingSale.id, {
+        soldById: newSalespersonId,
+      });
       setEditDialogOpen(false);
       setEditingSale(null);
       loadSales(); // Refresh the list
@@ -224,19 +245,34 @@ export function TireSalesManagement() {
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {employeeIdFromUrl && (
-            <IconButton onClick={() => navigate('/admin/tire-commissions')} sx={{ mr: 1 }}>
+            <IconButton
+              onClick={() => navigate('/admin/tire-commissions')}
+              sx={{ mr: 1 }}
+            >
               <BackIcon />
             </IconButton>
           )}
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary.main }}>
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 700, color: colors.primary.main }}
+            >
               {employeeName ? `${employeeName}'s Tire Sales` : 'Tire Sales'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {employeeName ? `Viewing tire sales for ${employeeName}` : 'Track and manage tire sales and commissions'}
+              {employeeName
+                ? `Viewing tire sales for ${employeeName}`
+                : 'Track and manage tire sales and commissions'}
             </Typography>
           </Box>
         </Box>
@@ -250,55 +286,69 @@ export function TireSalesManagement() {
       </Box>
 
       {/* Monthly Stats Card */}
-      {monthlyStats && (() => {
-        const tierInfo = getTierInfo(monthlyStats.totalTiresSold);
-        return (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <Card sx={{ bgcolor: tierInfo.color, color: tierInfo.textColor }}>
-              <CardContent>
-                <Typography variant="overline">{tierInfo.tier}</Typography>
-                <Typography variant="h4" fontWeight="bold">
-                  {monthlyStats.totalTiresSold} Tires
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <Card sx={{ bgcolor: colors.semantic.success, color: 'white' }}>
-              <CardContent>
-                <Typography variant="overline">MTD Commission</Typography>
-                <Typography variant="h4" fontWeight="bold">
-                  ${(monthlyStats.totalTiresSold * monthlyStats.currentRate).toFixed(0)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="overline" color="text.secondary">Current Rate</Typography>
-                <Typography variant="h4" fontWeight="bold" color="success.main">
-                  ${monthlyStats.currentRate}/tire
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          {monthlyStats.nextThreshold && (
-            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-              <Card>
-                <CardContent>
-                  <Typography variant="overline" color="text.secondary">Next Tier</Typography>
-                  <Typography variant="h4" fontWeight="bold">
-                    {monthlyStats.tiresToNextThreshold} more needed
-                  </Typography>
-                </CardContent>
-              </Card>
+      {monthlyStats &&
+        (() => {
+          const tierInfo = getTierInfo(monthlyStats.totalTiresSold);
+          return (
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                <Card
+                  sx={{ bgcolor: tierInfo.color, color: tierInfo.textColor }}
+                >
+                  <CardContent>
+                    <Typography variant="overline">{tierInfo.tier}</Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                      {monthlyStats.totalTiresSold} Tires
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                <Card sx={{ bgcolor: colors.semantic.success, color: 'white' }}>
+                  <CardContent>
+                    <Typography variant="overline">MTD Commission</Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                      $
+                      {(
+                        monthlyStats.totalTiresSold * monthlyStats.currentRate
+                      ).toFixed(0)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="overline" color="text.secondary">
+                      Current Rate
+                    </Typography>
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      color="success.main"
+                    >
+                      ${monthlyStats.currentRate}/tire
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              {monthlyStats.nextThreshold && (
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="overline" color="text.secondary">
+                        Next Tier
+                      </Typography>
+                      <Typography variant="h4" fontWeight="bold">
+                        {monthlyStats.tiresToNextThreshold} more needed
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
             </Grid>
-          )}
-        </Grid>
-      );
-      })()}
+          );
+        })()}
 
       {/* Commission Tiers Banner */}
       <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
@@ -308,7 +358,14 @@ export function TireSalesManagement() {
         <Grid container spacing={2}>
           <Grid size={{ xs: 6, sm: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#CD7F32' }} />
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  bgcolor: '#CD7F32',
+                }}
+              />
               <Typography variant="body2">
                 <strong>Bronze:</strong> 1-30 tires = $3/tire
               </Typography>
@@ -316,7 +373,14 @@ export function TireSalesManagement() {
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#C0C0C0' }} />
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  bgcolor: '#C0C0C0',
+                }}
+              />
               <Typography variant="body2">
                 <strong>Silver:</strong> 31-50 tires = $4/tire
               </Typography>
@@ -324,7 +388,14 @@ export function TireSalesManagement() {
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FFD700' }} />
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  bgcolor: '#FFD700',
+                }}
+              />
               <Typography variant="body2">
                 <strong>Gold:</strong> 51-70 tires = $5/tire
               </Typography>
@@ -332,7 +403,14 @@ export function TireSalesManagement() {
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#E5E4E2' }} />
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  bgcolor: '#E5E4E2',
+                }}
+              />
               <Typography variant="body2">
                 <strong>Platinum:</strong> 71+ tires = $7/tire
               </Typography>
@@ -376,7 +454,9 @@ export function TireSalesManagement() {
               >
                 <MenuItem value="">All</MenuItem>
                 {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -452,15 +532,21 @@ export function TireSalesManagement() {
               ) : sales.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                    <TireIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                    <Typography color="text.secondary">No tire sales found</Typography>
+                    <TireIcon
+                      sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }}
+                    />
+                    <Typography color="text.secondary">
+                      No tire sales found
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 sales.map((sale) => (
                   <TableRow key={sale.id} hover>
                     <TableCell>
-                      <Typography fontWeight="medium">{sale.saleNumber}</Typography>
+                      <Typography fontWeight="medium">
+                        {sale.saleNumber}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       {format(new Date(sale.saleDate), 'MMM d, yyyy')}
@@ -554,7 +640,10 @@ export function TireSalesManagement() {
                 Sale: <strong>{editingSale.saleNumber}</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Current: <strong>{editingSale.soldBy.firstName} {editingSale.soldBy.lastName}</strong>
+                Current:{' '}
+                <strong>
+                  {editingSale.soldBy.firstName} {editingSale.soldBy.lastName}
+                </strong>
               </Typography>
               <FormControl fullWidth>
                 <InputLabel>New Salesperson</InputLabel>
@@ -574,7 +663,10 @@ export function TireSalesManagement() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)} disabled={editLoading}>
+          <Button
+            onClick={() => setEditDialogOpen(false)}
+            disabled={editLoading}
+          >
             Cancel
           </Button>
           <Button

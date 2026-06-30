@@ -12,12 +12,12 @@ export declare class AuthService {
     constructor(userRepository: UserRepository, roleRepository: RoleRepository, auditRepository: AuditRepository, jwtService: JwtService, configService: ConfigService);
     validateClerkUser(clerkUserId: string): Promise<({
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -35,12 +35,12 @@ export declare class AuthService {
     }): Promise<void>;
     validateToken(token: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -61,9 +61,9 @@ export declare class AuthService {
         lastName: string | null;
         role: {
             id: string;
-            name: import("@prisma/client").$Enums.RoleName;
             createdAt: Date;
             updatedAt: Date;
+            name: import("@prisma/client").$Enums.RoleName;
             description: string | null;
             displayName: string;
         };

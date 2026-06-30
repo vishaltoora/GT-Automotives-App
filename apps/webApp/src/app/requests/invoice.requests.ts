@@ -137,6 +137,55 @@ class InvoiceService {
     return response.data;
   }
 
+  // Record a (possibly partial) payment against an invoice. Omit `amount` to
+  // pay the full remaining balance.
+  async recordInvoicePayment(
+    id: string,
+    payment: {
+      amount?: number;
+      paymentMethod: Invoice['paymentMethod'];
+      notes?: string;
+      reference?: string;
+    }
+  ): Promise<Invoice> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/${id}/payments`,
+      payment,
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  // Roll a customer's open invoices into a single combined invoice.
+  async combineInvoices(customerId: string): Promise<Invoice> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/combine`,
+      { customerId },
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  // Day Summary: invoice payments collected on a date (deduped vs appointments).
+  async getInvoiceDaySummary(date?: string): Promise<any> {
+    const queryParam = date ? `?date=${date}` : '';
+    const response = await axios.get(
+      `${API_URL}/api/invoices/day-summary${queryParam}`,
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  // Day Summary: outstanding pending-invoice balance (today + cumulative).
+  async getOutstandingInvoices(date?: string): Promise<any> {
+    const queryParam = date ? `?date=${date}` : '';
+    const response = await axios.get(
+      `${API_URL}/api/invoices/outstanding${queryParam}`,
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
   async sendInvoiceEmail(
     id: string,
     emails?: string | string[],

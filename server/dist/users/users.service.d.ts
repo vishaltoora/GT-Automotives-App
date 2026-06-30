@@ -13,12 +13,12 @@ export declare class UsersService {
         isActive?: boolean;
     }): Promise<({
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -28,12 +28,12 @@ export declare class UsersService {
     })[]>;
     findById(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -43,12 +43,12 @@ export declare class UsersService {
     }>;
     findByEmail(email: string): Promise<({
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -65,12 +65,12 @@ export declare class UsersService {
         createdBy: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -90,12 +90,12 @@ export declare class UsersService {
     }): Promise<{
         clerkCreated: boolean;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -111,12 +111,12 @@ export declare class UsersService {
         updatedBy: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -126,12 +126,12 @@ export declare class UsersService {
     }>;
     assignRole(userId: string, roleId: string, assignedBy: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -141,12 +141,12 @@ export declare class UsersService {
     }>;
     assignRoleByName(userId: string, roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF', assignedBy: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;
@@ -156,12 +156,12 @@ export declare class UsersService {
     }>;
     delete(id: string, deletedBy: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         firstName: string | null;
         lastName: string | null;
         email: string;
         phone: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         clerkId: string;
         roleId: string;
         lastLogin: Date | null;

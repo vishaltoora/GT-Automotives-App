@@ -206,18 +206,21 @@ const InvoiceList: React.FC = () => {
     setPaymentDialogOpen(true);
   };
 
-  const handlePaymentConfirm = async (paymentMethod: PaymentMethod) => {
+  const handlePaymentConfirm = async (
+    paymentMethod: PaymentMethod,
+    amount?: number
+  ) => {
     if (!invoiceToMarkPaid) return;
 
     try {
-      await invoiceService.markInvoiceAsPaid(
-        invoiceToMarkPaid.id,
-        paymentMethod
-      );
+      await invoiceService.recordInvoicePayment(invoiceToMarkPaid.id, {
+        paymentMethod,
+        amount,
+      });
       loadInvoices(); // Refresh the list
       setInvoiceToMarkPaid(null);
     } catch (error) {
-      showApiError(error, 'Failed to mark invoice as paid');
+      showApiError(error, 'Failed to record payment');
     }
   };
 
@@ -881,6 +884,15 @@ const InvoiceList: React.FC = () => {
         }}
         onConfirm={handlePaymentConfirm}
         invoiceNumber={invoiceToMarkPaid?.invoiceNumber || ''}
+        total={invoiceToMarkPaid ? Number(invoiceToMarkPaid.total) : undefined}
+        amountPaid={
+          invoiceToMarkPaid
+            ? Number((invoiceToMarkPaid as any).amountPaid ?? 0)
+            : 0
+        }
+        hasTax={
+          invoiceToMarkPaid ? Number(invoiceToMarkPaid.taxAmount) > 0 : false
+        }
       />
 
       {/* Email Prompt Dialog - Select one or more recipient emails */}

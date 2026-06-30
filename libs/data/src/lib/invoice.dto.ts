@@ -299,6 +299,10 @@ export class InvoiceResponseDto {
   @IsNumber()
   total!: number;
 
+  @IsOptional()
+  @IsNumber()
+  amountPaid?: number;
+
   @IsEnum(InvoiceStatus)
   status!: InvoiceStatus;
 

@@ -4,24 +4,24 @@ export declare class CompaniesController {
     constructor(companiesService: CompaniesService);
     findAll(): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string | null;
         phone: string | null;
         address: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;
     }[]>;
     findDefault(): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string | null;
         phone: string | null;
         address: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;

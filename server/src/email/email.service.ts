@@ -421,6 +421,10 @@ export class EmailService {
     >;
     totalCashCollected?: number;
     adjustedCash?: number;
+    invoiceCollected?: number;
+    invoiceByPaymentMethod?: Record<string, number>;
+    pendingOutstandingToday?: number;
+    pendingOutstandingTotal?: number;
   }): Promise<{ success: boolean; sent: number; failed: number }> {
     this.logger.log('[EMAIL] sendEODSummary called');
 
@@ -612,6 +616,51 @@ export class EmailService {
             `
                 : ''
             }
+          </div>
+          `
+              : ''
+          }
+
+          ${
+            (data.invoiceCollected ?? 0) > 0 ||
+            (data.pendingOutstandingTotal ?? 0) > 0
+              ? `
+          <!-- Invoice money + pending invoices -->
+          <div style="background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin: 20px 0; border: 2px solid #1976d2;">
+            <h3 style="margin-top: 0; color: #0d47a1;">🧾 Invoice Payments & Outstanding</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0;"><strong>Collected via invoices:</strong></td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">$${(
+                  data.invoiceCollected || 0
+                ).toFixed(2)}</td>
+              </tr>
+              ${Object.entries(data.invoiceByPaymentMethod || {})
+                .map(([method, amount]) => {
+                  const label =
+                    method === 'CASH'
+                      ? 'Cash (with GST/PST)'
+                      : method === 'CASH_NO_TAX'
+                      ? 'Cash (no GST/PST)'
+                      : method.replace(/_/g, ' ');
+                  return `<tr><td style="padding: 4px 0 4px 16px; color: #555;">${label}:</td><td style="padding: 4px 0; text-align: right; color: #555;">$${Number(
+                    amount
+                  ).toFixed(2)}</td></tr>`;
+                })
+                .join('')}
+              <tr>
+                <td style="padding: 8px 0;">Pending invoices (today):</td>
+                <td style="padding: 8px 0; text-align: right;">$${(
+                  data.pendingOutstandingToday || 0
+                ).toFixed(2)}</td>
+              </tr>
+              <tr style="border-top: 2px solid #1976d2;">
+                <td style="padding: 12px 0;"><strong>Pending invoices (total owed):</strong></td>
+                <td style="padding: 12px 0; text-align: right; color: #b71c1c; font-weight: bold; font-size: 18px;">$${(
+                  data.pendingOutstandingTotal || 0
+                ).toFixed(2)}</td>
+              </tr>
+            </table>
           </div>
           `
               : ''

@@ -242,6 +242,7 @@ model Invoice {
   total          Decimal         @db.Decimal(10, 2)
   status         InvoiceStatus
   paymentMethod  PaymentMethod?
+  amountPaid     Decimal         @default(0) @db.Decimal(10, 2) // Cached sum of InvoicePayment rows
   notes          String?
   invoiceDate    DateTime        @default(now())
   createdBy      String
@@ -252,11 +253,14 @@ model Invoice {
   gstRate        Decimal?        @db.Decimal(5, 4)
   pstAmount      Decimal?        @db.Decimal(10, 2)
   pstRate        Decimal?        @db.Decimal(5, 4)
+  // Combined-invoice consolidation: a parent invoice rolls up several pending children
+  combinedInvoiceId String?
   customer       Customer        @relation(fields: [customerId], references: [id])
   vehicle        Vehicle?        @relation(fields: [vehicleId], references: [id])
   company        Company         @relation(fields: [companyId], references: [id])
   appointment    Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   items          InvoiceItem[]
+  payments       InvoicePayment[] // Payment ledger (supports partial/split payments)
   inspections    Inspection[]
   squarePayments SquarePayment[] // Square payments for this invoice
   emailLogs      EmailLog[] // Email logs related to this invoice
@@ -264,11 +268,31 @@ model Invoice {
   repairOrder    RepairOrder?  @relation(fields: [repairOrderId], references: [id], onDelete: SetNull)
   repairOrderId  String?       @unique // Link to repair order that generated this invoice
   carfaxSync     CarfaxSync?   // CARFAX Service Data Transfer record for this invoice
+  combinedInvoice      Invoice?  @relation("CombinedInvoice", fields: [combinedInvoiceId], references: [id], onDelete: SetNull)
+  consolidatedInvoices Invoice[] @relation("CombinedInvoice")
 
   @@index([customerId])
   @@index([status])
   @@index([companyId])
   @@index([appointmentId])
+  @@index([combinedInvoiceId])
+}
+
+model InvoicePayment {
+  id            String        @id @default(cuid())
+  invoiceId     String
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  paidAt        DateTime      @default(now())
+  createdBy     String
+  notes         String?
+  reference     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([paidAt])
 }
 
 model InvoiceItem {
@@ -892,6 +916,7 @@ enum TireCondition {
 enum InvoiceStatus {
   DRAFT
   PENDING
+  PARTIALLY_PAID
   PAID
   CANCELLED
   REFUNDED
@@ -899,6 +924,7 @@ enum InvoiceStatus {
 
 enum PaymentMethod {
   CASH
+  CASH_NO_TAX
   CREDIT_CARD
   DEBIT_CARD
   CHECK

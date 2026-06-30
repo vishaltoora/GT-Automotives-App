@@ -151,8 +151,23 @@ export class InvoicesService {
       taxRate = gstRate ?? 0;
     }
 
-    const taxAmount = taxableSubtotal * taxRate;
+    let taxAmount = taxableSubtotal * taxRate;
+
+    // CASH_NO_TAX is an untaxed cash sale: zero out GST/PST so the recorded
+    // total matches the cash actually collected. (Agreed behavior — GA-30.)
+    if (createInvoiceDto.paymentMethod === 'CASH_NO_TAX') {
+      gstRate = 0;
+      pstRate = 0;
+      gstAmount = 0;
+      pstAmount = 0;
+      taxRate = 0;
+      taxAmount = 0;
+    }
+
     const total = subtotal + taxAmount;
+
+    // An invoice created with a payment method is collected in full up front.
+    const paidInFull = !!createInvoiceDto.paymentMethod;
 
     // Generate invoice number
     const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber();
@@ -174,17 +189,30 @@ export class InvoicesService {
         ...(pstRate !== undefined && { pstRate: new Decimal(pstRate) }),
         ...(pstAmount !== undefined && { pstAmount: new Decimal(pstAmount) }),
         total: new Decimal(total),
-        status: createInvoiceDto.paymentMethod ? 'PAID' : 'PENDING',
+        amountPaid: new Decimal(paidInFull ? total : 0),
+        status: paidInFull ? 'PAID' : 'PENDING',
         paymentMethod: createInvoiceDto.paymentMethod,
         notes: createInvoiceDto.notes,
         createdBy: userId,
-        paidAt: createInvoiceDto.paymentMethod ? new Date() : undefined,
+        paidAt: paidInFull ? new Date() : undefined,
         invoiceDate: createInvoiceDto.invoiceDate
           ? new Date(createInvoiceDto.invoiceDate)
           : new Date(),
       },
       items
     );
+
+    // Record the up-front payment in the ledger so it appears in the Day
+    // Summary (which reads InvoicePayment rows, not invoice status).
+    if (paidInFull) {
+      await this.invoiceRepository.createPayment({
+        invoiceId: invoice.id,
+        amount: total,
+        paymentMethod: createInvoiceDto.paymentMethod as PaymentMethod,
+        paidAt: new Date(),
+        createdBy: userId,
+      });
+    }
 
     // Log the creation
     await this.auditRepository.create({
@@ -469,9 +497,20 @@ export class InvoicesService {
     return this.invoiceRepository.findByCustomer(customerId, true);
   }
 
-  async markAsPaid(
+  /**
+   * Record a payment against an invoice. Supports partial and split payments:
+   * each call appends an InvoicePayment row, recomputes `amountPaid`, and moves
+   * the invoice through PENDING -> PARTIALLY_PAID -> PAID. When `amount` is
+   * omitted the full remaining balance is paid (the old "mark as paid").
+   */
+  async recordPayment(
     id: string,
-    paymentMethod: PaymentMethod,
+    payment: {
+      amount?: number;
+      paymentMethod: PaymentMethod;
+      notes?: string;
+      reference?: string;
+    },
     userId: string
   ): Promise<Invoice> {
     const invoice = await this.invoiceRepository.findById(id);
@@ -480,29 +519,222 @@ export class InvoicesService {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
 
-    if (invoice.status === 'PAID') {
-      throw new BadRequestException('Invoice is already paid');
+    if (invoice.status === 'CANCELLED' || invoice.status === 'REFUNDED') {
+      throw new BadRequestException(
+        `Cannot record a payment on a ${invoice.status.toLowerCase()} invoice`
+      );
     }
 
-    const updated = await this.invoiceRepository.update(id, {
-      status: 'PAID',
-      paymentMethod,
-      paidAt: new Date(),
-    });
+    const currentPaid = Number(invoice.amountPaid ?? 0);
+    let total = Number(invoice.total);
+    const hasTax = Number(invoice.taxAmount ?? 0) > 0;
 
-    // Log the payment
+    // CASH_NO_TAX strips GST/PST off the invoice, but only before any money has
+    // been collected — an invoice can't be half taxed and half not. (GA-30.)
+    const stripTax = payment.paymentMethod === 'CASH_NO_TAX' && hasTax;
+    if (stripTax) {
+      if (currentPaid > 0) {
+        throw new BadRequestException(
+          'Cash (no GST/PST) cannot be applied to an invoice that already has tax and a recorded payment'
+        );
+      }
+      total = Number(invoice.subtotal);
+    }
+
+    const remaining = Math.max(0, total - currentPaid);
+    if (remaining <= 0.005) {
+      throw new BadRequestException('Invoice is already paid in full');
+    }
+
+    const payAmount = payment.amount ?? remaining;
+    if (payAmount <= 0) {
+      throw new BadRequestException('Payment amount must be greater than zero');
+    }
+    if (payAmount > remaining + 0.005) {
+      throw new BadRequestException(
+        `Payment of ${payAmount} exceeds the remaining balance of ${remaining.toFixed(
+          2
+        )}`
+      );
+    }
+
+    const newPaid = currentPaid + payAmount;
+    const fullyPaid = newPaid + 0.005 >= total;
+    const now = new Date();
+
+    const invoiceUpdate: any = {
+      amountPaid: new Decimal(newPaid),
+      status: fullyPaid ? 'PAID' : 'PARTIALLY_PAID',
+      paymentMethod: payment.paymentMethod,
+      paidAt: fullyPaid ? now : null,
+    };
+    if (stripTax) {
+      invoiceUpdate.gstRate = new Decimal(0);
+      invoiceUpdate.gstAmount = new Decimal(0);
+      invoiceUpdate.pstRate = new Decimal(0);
+      invoiceUpdate.pstAmount = new Decimal(0);
+      invoiceUpdate.taxRate = new Decimal(0);
+      invoiceUpdate.taxAmount = new Decimal(0);
+      invoiceUpdate.total = new Decimal(total);
+    }
+
+    const updated = await this.invoiceRepository.addPayment(
+      id,
+      {
+        invoiceId: id,
+        amount: payAmount,
+        paymentMethod: payment.paymentMethod,
+        paidAt: now,
+        createdBy: userId,
+        notes: payment.notes,
+        reference: payment.reference,
+      },
+      invoiceUpdate
+    );
+
+    // Paying a combined parent in full settles its consolidated children.
+    if (fullyPaid) {
+      await this.invoiceRepository.settleConsolidatedChildren(
+        id,
+        payment.paymentMethod,
+        now
+      );
+    }
+
     await this.auditRepository.create({
       userId,
-      action: 'MARK_INVOICE_PAID',
+      action: 'RECORD_INVOICE_PAYMENT',
       entityType: 'invoice',
       entityId: id,
-      newValue: { paymentMethod, paidAt: new Date() } as any,
+      newValue: {
+        amount: payAmount,
+        paymentMethod: payment.paymentMethod,
+        amountPaid: newPaid,
+        status: invoiceUpdate.status,
+      } as any,
     });
 
-    // Report the now-paid service to CARFAX (non-blocking).
-    void this.carfaxService.reportInvoice(id).catch(() => undefined);
+    // Report the fully-paid service to CARFAX (non-blocking).
+    if (fullyPaid) {
+      void this.carfaxService.reportInvoice(id).catch(() => undefined);
+    }
 
     return updated;
+  }
+
+  /**
+   * Backward-compatible "mark as paid": records a single payment for the full
+   * remaining balance.
+   */
+  async markAsPaid(
+    id: string,
+    paymentMethod: PaymentMethod,
+    userId: string
+  ): Promise<Invoice> {
+    return this.recordPayment(id, { paymentMethod }, userId);
+  }
+
+  /**
+   * Day Summary invoice money: InvoicePayment rows collected on `date`,
+   * deduped against appointment payments so money isn't counted twice.
+   */
+  async getDaySummaryInvoices(date: string, user: any): Promise<any> {
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException(
+        'You do not have permission to view the day summary'
+      );
+    }
+    return this.invoiceRepository.getDaySummaryInvoicePayments(date);
+  }
+
+  /**
+   * Pending-invoice outstanding balance for the Day Summary: today's pending
+   * and the cumulative total owed, grouped by customer.
+   */
+  async getOutstandingInvoices(date: string, user: any): Promise<any> {
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException(
+        'You do not have permission to view outstanding invoices'
+      );
+    }
+    return this.invoiceRepository.getPendingInvoiceOutstanding(date);
+  }
+
+  /**
+   * Roll a customer's open (PENDING / PARTIALLY_PAID) invoices into one
+   * combined invoice. Each line item is a source invoice's remaining balance;
+   * no extra tax is applied since the source totals are already taxed. Sources
+   * are linked to the parent and drop out of the outstanding lists. (GA-33.)
+   */
+  async combineInvoices(customerId: string, userId: string): Promise<Invoice> {
+    const sources = await this.invoiceRepository.findCombinableForCustomer(
+      customerId
+    );
+
+    if (sources.length < 2) {
+      throw new BadRequestException(
+        'A combined invoice needs at least two open invoices for this customer'
+      );
+    }
+
+    const lineItems = sources.map((inv) => {
+      const remaining = Number(inv.total) - Number(inv.amountPaid ?? 0);
+      const dateLabel = new Date(inv.invoiceDate).toISOString().split('T')[0];
+      return {
+        itemType: 'OTHER' as InvoiceItemType,
+        description: `Invoice ${inv.invoiceNumber} (${dateLabel})`,
+        quantity: 1,
+        unitPrice: new Decimal(remaining),
+        total: new Decimal(remaining),
+      };
+    });
+
+    const total = lineItems.reduce((sum, i) => sum + Number(i.total), 0);
+    const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber();
+
+    const combined = await this.invoiceRepository.createWithItems(
+      {
+        invoiceNumber,
+        customer: { connect: { id: customerId } },
+        company: { connect: { id: sources[0].companyId } },
+        subtotal: new Decimal(total),
+        taxRate: new Decimal(0),
+        taxAmount: new Decimal(0),
+        gstRate: new Decimal(0),
+        gstAmount: new Decimal(0),
+        pstRate: new Decimal(0),
+        pstAmount: new Decimal(0),
+        total: new Decimal(total),
+        amountPaid: new Decimal(0),
+        status: 'PENDING',
+        notes: `Combined invoice for ${sources.length} invoices: ${sources
+          .map((s) => s.invoiceNumber)
+          .join(', ')}`,
+        createdBy: userId,
+      },
+      lineItems
+    );
+
+    await this.invoiceRepository.linkConsolidatedChildren(
+      combined.id,
+      sources.map((s) => s.id)
+    );
+
+    await this.auditRepository.create({
+      userId,
+      action: 'COMBINE_INVOICES',
+      entityType: 'invoice',
+      entityId: combined.id,
+      newValue: {
+        sourceInvoiceIds: sources.map((s) => s.id),
+        sourceInvoiceNumbers: sources.map((s) => s.invoiceNumber),
+        total,
+      } as any,
+    });
+
+    return this.invoiceRepository.findWithDetails(
+      combined.id
+    ) as Promise<Invoice>;
   }
 
   // Service methods
