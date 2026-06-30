@@ -295,18 +295,20 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
     setPaymentDialogOpen(true);
   };
 
-  const handlePaymentConfirm = async (paymentMethod: PaymentMethod) => {
+  const handlePaymentConfirm = async (
+    entries: { paymentMethod: PaymentMethod; amount?: number }[]
+  ) => {
     if (!selectedInvoiceForPayment) return;
 
     try {
-      await invoiceService.markInvoiceAsPaid(
+      await invoiceService.recordInvoicePayments(
         selectedInvoiceForPayment.id,
-        paymentMethod
+        entries
       );
       loadCustomer(); // Refresh to update outstanding balance
       onPaymentSuccess?.(); // Notify parent to refresh list
     } catch (err) {
-      console.error('Error marking invoice as paid:', err);
+      console.error('Error recording invoice payment:', err);
     }
     setPaymentDialogOpen(false);
     setSelectedInvoiceForPayment(null);
@@ -1033,7 +1035,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                 display="block"
                               >
                                 {unpaidAppointments.length} unpaid appointment
-                                {unpaidAppointments.length !== 1 ? 's' : ''}:{' '}
+                                {unpaidAppointments.length !== 1
+                                  ? 's'
+                                  : ''}:{' '}
                                 {formatCurrency(appointmentOutstanding)}
                               </Typography>
                             )}
@@ -1740,6 +1744,11 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
           onClose={handlePaymentDialogClose}
           onConfirm={handlePaymentConfirm}
           invoiceNumber={selectedInvoiceForPayment.invoiceNumber}
+          total={Number(selectedInvoiceForPayment.total)}
+          amountPaid={Number(
+            (selectedInvoiceForPayment as any).amountPaid ?? 0
+          )}
+          hasTax={Number((selectedInvoiceForPayment as any).taxAmount ?? 0) > 0}
         />
       )}
 

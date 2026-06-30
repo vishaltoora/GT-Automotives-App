@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Invoice, InvoiceStatus } from '@prisma/client';
+import { Prisma, Invoice, InvoiceStatus, PaymentMethod } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { BaseRepository } from '../../common/repositories/base.repository';
 import { PrismaService } from '@gt-automotive/database';
-import { extractBusinessDate } from '../../config/timezone.config';
+import {
+  extractBusinessDate,
+  POSTGRES_TIMEZONE,
+} from '../../config/timezone.config';
 
 @Injectable()
 export class InvoiceRepository extends BaseRepository<
@@ -15,17 +19,22 @@ export class InvoiceRepository extends BaseRepository<
     super(prisma, 'invoice');
   }
 
-  async findByCustomer(customerId: string, includeItems = false): Promise<Invoice[]> {
+  async findByCustomer(
+    customerId: string,
+    includeItems = false
+  ): Promise<Invoice[]> {
     return this.prisma.invoice.findMany({
       where: { customerId },
       include: {
         customer: true,
         vehicle: true,
-        items: includeItems ? {
-          include: {
-            tire: true,
-          },
-        } : false,
+        items: includeItems
+          ? {
+              include: {
+                tire: true,
+              },
+            }
+          : false,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -63,7 +72,15 @@ export class InvoiceRepository extends BaseRepository<
 
   async createWithItems(
     invoiceData: Prisma.InvoiceCreateInput,
-    items: Prisma.InvoiceItemCreateWithoutInvoiceInput[]
+    items: Prisma.InvoiceItemCreateWithoutInvoiceInput[],
+    // Optional up-front payment recorded in the SAME transaction so an invoice
+    // created as paid never exists without its ledger row.
+    initialPayment?: {
+      amount: number;
+      paymentMethod: PaymentMethod;
+      paidAt: Date;
+      createdBy: string;
+    }
   ): Promise<Invoice> {
     return this.prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.create({
@@ -99,16 +116,32 @@ export class InvoiceRepository extends BaseRepository<
         }
       }
 
+      if (initialPayment) {
+        await tx.invoicePayment.create({
+          data: {
+            invoiceId: invoice.id,
+            amount: new Decimal(initialPayment.amount),
+            paymentMethod: initialPayment.paymentMethod,
+            paidAt: initialPayment.paidAt,
+            createdBy: initialPayment.createdBy,
+          },
+        });
+      }
+
       return invoice;
     });
   }
 
-  async updateStatus(id: string, status: InvoiceStatus, paidAt?: Date): Promise<Invoice> {
+  async updateStatus(
+    id: string,
+    status: InvoiceStatus,
+    paidAt?: Date
+  ): Promise<Invoice> {
     return this.prisma.invoice.update({
       where: { id },
       data: {
         status,
-        paidAt: status === 'PAID' ? (paidAt || new Date()) : undefined,
+        paidAt: status === 'PAID' ? paidAt || new Date() : undefined,
       },
       include: {
         customer: true,
@@ -202,10 +235,312 @@ export class InvoiceRepository extends BaseRepository<
     });
   }
 
+  // ---- Payment ledger (partial / split payments) -------------------------
+
+  /** Insert a single payment ledger row (without touching the invoice). */
+  async recordLedgerRow(payment: {
+    invoiceId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    paidAt: Date;
+    createdBy: string;
+    notes?: string;
+  }): Promise<void> {
+    await this.prisma.invoicePayment.create({
+      data: {
+        invoiceId: payment.invoiceId,
+        amount: new Decimal(payment.amount),
+        paymentMethod: payment.paymentMethod,
+        paidAt: payment.paidAt,
+        createdBy: payment.createdBy,
+        notes: payment.notes,
+      },
+    });
+  }
+
+  /** Append one or more payment rows and update the invoice atomically. */
+  async addPayments(
+    invoiceId: string,
+    payments: Array<{
+      invoiceId: string;
+      amount: number;
+      paymentMethod: PaymentMethod;
+      paidAt: Date;
+      createdBy: string;
+      notes?: string;
+      reference?: string;
+    }>,
+    invoiceUpdate: Prisma.InvoiceUpdateInput
+  ): Promise<Invoice> {
+    return this.prisma.$transaction(async (tx) => {
+      for (const payment of payments) {
+        await tx.invoicePayment.create({
+          data: {
+            invoiceId,
+            amount: new Decimal(payment.amount),
+            paymentMethod: payment.paymentMethod,
+            paidAt: payment.paidAt,
+            createdBy: payment.createdBy,
+            notes: payment.notes,
+            reference: payment.reference,
+          },
+        });
+      }
+      return tx.invoice.update({
+        where: { id: invoiceId },
+        data: invoiceUpdate,
+        include: {
+          customer: true,
+          vehicle: true,
+          company: true,
+          items: { include: { tire: true } },
+        },
+      });
+    });
+  }
+
+  /** When a combined parent is fully paid, mark its children paid too. */
+  async settleConsolidatedChildren(
+    parentId: string,
+    paymentMethod: PaymentMethod,
+    paidAt: Date
+  ): Promise<void> {
+    const children = await this.prisma.invoice.findMany({
+      where: {
+        combinedInvoiceId: parentId,
+        status: { in: ['PENDING', 'PARTIALLY_PAID'] },
+      },
+      select: { id: true, total: true },
+    });
+    for (const child of children) {
+      await this.prisma.invoice.update({
+        where: { id: child.id },
+        data: {
+          status: 'PAID',
+          paymentMethod,
+          paidAt,
+          amountPaid: child.total,
+        },
+      });
+      // A consolidated child is typically an RO invoice — complete its appointment.
+      await this.completeAppointmentForInvoice(child.id);
+    }
+  }
+
+  /**
+   * Mark the appointment linked to an invoice as COMPLETED. Resolves the
+   * appointment either directly (`invoice.appointmentId`) or via the invoice's
+   * repair order (`invoice.repairOrder.appointmentId`). Only money is tracked on
+   * the invoice ledger — the appointment's payment fields are intentionally left
+   * untouched (no double counting in the Day Summary). No-op when there is no
+   * linked appointment or it's already completed/cancelled.
+   */
+  async completeAppointmentForInvoice(invoiceId: string): Promise<void> {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      select: {
+        appointmentId: true,
+        repairOrder: { select: { appointmentId: true } },
+      },
+    });
+    const appointmentId =
+      invoice?.appointmentId ?? invoice?.repairOrder?.appointmentId ?? null;
+    if (!appointmentId) return;
+
+    await this.prisma.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        status: { notIn: ['COMPLETED', 'CANCELLED', 'NO_SHOW'] },
+      },
+      data: { status: 'COMPLETED' },
+    });
+  }
+
+  async linkConsolidatedChildren(
+    parentId: string,
+    childIds: string[]
+  ): Promise<void> {
+    await this.prisma.invoice.updateMany({
+      where: { id: { in: childIds } },
+      data: { combinedInvoiceId: parentId },
+    });
+  }
+
+  /** Open invoices that can be rolled into a combined invoice (excludes parents). */
+  async findCombinableForCustomer(customerId: string): Promise<any[]> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        customerId,
+        status: { in: ['PENDING', 'PARTIALLY_PAID'] },
+        combinedInvoiceId: null,
+      },
+      include: { consolidatedInvoices: { select: { id: true } } },
+      orderBy: { invoiceDate: 'asc' },
+    });
+    return invoices.filter((inv) => inv.consolidatedInvoices.length === 0);
+  }
+
+  // ---- Day Summary: invoice money + outstanding --------------------------
+
+  /**
+   * Invoice payments collected on `date` (business timezone), grouped by
+   * payment method.
+   *
+   * No appointment-dedup is needed: appointment-flow money lives on the
+   * appointment (paymentBreakdown) and is summed from the appointment fetch,
+   * and that flow never writes InvoicePayment rows — so the ledger holds only
+   * invoice-originated money. (An earlier dedup against appointment.paymentDate
+   * caused undercounts and is intentionally removed.)
+   */
+  async getDaySummaryInvoicePayments(date: string): Promise<any> {
+    const dateOnly = extractBusinessDate(date);
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT ip.id, ip.amount, ip."paymentMethod", ip."paidAt",
+             i.id AS "invoiceId", i."invoiceNumber",
+             c."firstName", c."lastName", c."businessName",
+             COALESCE(a."appointmentType", roa."appointmentType") AS "appointmentType"
+      FROM "InvoicePayment" ip
+      JOIN "Invoice" i ON i.id = ip."invoiceId"
+      JOIN "Customer" c ON c.id = i."customerId"
+      LEFT JOIN "Appointment" a ON a.id = i."appointmentId"
+      LEFT JOIN "repair_orders" ro ON ro.id = i."repairOrderId"
+      LEFT JOIN "Appointment" roa ON roa.id = ro."appointmentId"
+      WHERE DATE(ip."paidAt" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) = ${dateOnly}::date
+      ORDER BY ip."paidAt" DESC
+    `;
+
+    const byPaymentMethod: Record<string, number> = {};
+    // Invoice money split by service location. Mobile-service invoices go to
+    // mobile; everything else (at-garage or no linked appointment) is At Shop.
+    const atGarage = {
+      total: 0,
+      byPaymentMethod: {} as Record<string, number>,
+    };
+    const mobileService = {
+      total: 0,
+      byPaymentMethod: {} as Record<string, number>,
+    };
+    let total = 0;
+    const payments = rows.map((r) => {
+      const amount = Number(r.amount);
+      total += amount;
+      byPaymentMethod[r.paymentMethod] =
+        (byPaymentMethod[r.paymentMethod] || 0) + amount;
+
+      const bucket =
+        r.appointmentType === 'MOBILE_SERVICE' ? mobileService : atGarage;
+      bucket.total += amount;
+      bucket.byPaymentMethod[r.paymentMethod] =
+        (bucket.byPaymentMethod[r.paymentMethod] || 0) + amount;
+
+      const customerName =
+        r.businessName ||
+        `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim() ||
+        'Unknown';
+      return {
+        id: r.id,
+        amount,
+        paymentMethod: r.paymentMethod,
+        paidAt: r.paidAt,
+        invoiceId: r.invoiceId,
+        invoiceNumber: r.invoiceNumber,
+        customerName,
+        appointmentType: r.appointmentType ?? null,
+      };
+    });
+
+    return {
+      date: dateOnly,
+      total,
+      count: payments.length,
+      byPaymentMethod,
+      atGarage,
+      mobileService,
+      payments,
+    };
+  }
+
+  /**
+   * Outstanding pending-invoice balance: today's pending invoices and the
+   * cumulative total owed grouped by customer. Uses remaining balance
+   * (total - amountPaid) and excludes consolidated children.
+   */
+  async getPendingInvoiceOutstanding(date: string): Promise<any> {
+    const dateOnly = extractBusinessDate(date);
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        status: { in: ['PENDING', 'PARTIALLY_PAID'] },
+        combinedInvoiceId: null,
+      },
+      include: {
+        customer: true,
+        _count: { select: { consolidatedInvoices: true } },
+      },
+      orderBy: { invoiceDate: 'desc' },
+    });
+
+    let cumulativeTotal = 0;
+    let cumulativeCount = 0;
+    let todayTotal = 0;
+    let todayCount = 0;
+    const byCustomerMap = new Map<string, any>();
+
+    for (const inv of invoices) {
+      const remaining = Number(inv.total) - Number(inv.amountPaid ?? 0);
+      if (remaining <= 0.005) continue;
+
+      cumulativeTotal += remaining;
+      cumulativeCount += 1;
+
+      if (extractBusinessDate(inv.invoiceDate) === dateOnly) {
+        todayTotal += remaining;
+        todayCount += 1;
+      }
+
+      const c: any = inv.customer;
+      const name =
+        c?.businessName ||
+        `${c?.firstName ?? ''} ${c?.lastName ?? ''}`.trim() ||
+        'Unknown';
+      const existing = byCustomerMap.get(inv.customerId) || {
+        customerId: inv.customerId,
+        customerName: name,
+        email: c?.email ?? null,
+        count: 0,
+        // How many of these can actually be rolled into a combined invoice —
+        // combined parents are excluded (matches findCombinableForCustomer), so
+        // the "Combine & Email" button only shows when there are >= 2 sources.
+        combinableCount: 0,
+        outstanding: 0,
+        invoiceIds: [] as string[],
+      };
+      const isCombinedParent = (inv as any)._count?.consolidatedInvoices > 0;
+      existing.count += 1;
+      if (!isCombinedParent) existing.combinableCount += 1;
+      existing.outstanding += remaining;
+      existing.invoiceIds.push(inv.id);
+      byCustomerMap.set(inv.customerId, existing);
+    }
+
+    const byCustomer = Array.from(byCustomerMap.values()).sort(
+      (a, b) => b.outstanding - a.outstanding
+    );
+
+    return {
+      date: dateOnly,
+      today: { total: todayTotal, count: todayCount },
+      cumulative: {
+        total: cumulativeTotal,
+        count: cumulativeCount,
+        byCustomer,
+      },
+    };
+  }
+
   async getDailyCashReport(date: Date): Promise<any> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
@@ -258,8 +593,11 @@ export class InvoiceRepository extends BaseRepository<
 
     // When both customerName and invoiceNumber have the same value,
     // treat it as a combined search (OR condition)
-    if (searchParams.invoiceNumber && searchParams.customerName &&
-        searchParams.invoiceNumber === searchParams.customerName) {
+    if (
+      searchParams.invoiceNumber &&
+      searchParams.customerName &&
+      searchParams.invoiceNumber === searchParams.customerName
+    ) {
       const searchTerm = searchParams.invoiceNumber;
       where.OR = [
         {
@@ -376,7 +714,9 @@ export class InvoiceRepository extends BaseRepository<
 
     let sequence = 1;
     if (lastInvoice) {
-      const lastSequence = parseInt(lastInvoice.invoiceNumber.split('-').pop() || '0');
+      const lastSequence = parseInt(
+        lastInvoice.invoiceNumber.split('-').pop() || '0'
+      );
       sequence = lastSequence + 1;
     }
 

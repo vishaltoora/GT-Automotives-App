@@ -53,6 +53,8 @@ export function CustomerForm() {
     address: 'Prince George, BC',
     businessName: '',
     pstExempt: false,
+    fleetDiscount: false,
+    pstNumber: '',
   });
   const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
 
@@ -74,6 +76,8 @@ export function CustomerForm() {
         address: customer.address || '',
         businessName: customer.businessName || '',
         pstExempt: customer.pstExempt ?? false,
+        fleetDiscount: customer.fleetDiscount ?? false,
+        pstNumber: customer.pstNumber || '',
       });
       setAdditionalEmails(customer.additionalEmails || []);
 
@@ -107,6 +111,13 @@ export function CustomerForm() {
     try {
       setSaving(true);
       setError(null);
+
+      // PST-exempt customers must provide a PST number (printed on invoices).
+      if (formData.pstExempt && !formData.pstNumber.trim()) {
+        setError('Please enter a PST number for PST-exempt customers.');
+        setSaving(false);
+        return;
+      }
 
       let customerId = id;
 
@@ -362,6 +373,46 @@ export function CustomerForm() {
                       <Typography variant="caption" color="text.secondary">
                         When enabled, all invoices for this customer are charged
                         0% PST (GST still applies)
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Grid>
+              {formData.pstExempt && (
+                <Grid size={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="PST Number"
+                    value={formData.pstNumber}
+                    onChange={handleChange('pstNumber')}
+                    disabled={saving}
+                    helperText="Shown on this customer's invoices as proof of PST exemption"
+                  />
+                </Grid>
+              )}
+              <Grid size={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.fleetDiscount}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          fleetDiscount: e.target.checked,
+                        })
+                      }
+                      disabled={saving}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body1">Fleet Customer</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        When enabled, a 10% discount on service items is added
+                        to this customer's invoices (not on parts). Removable
+                        per invoice.
                       </Typography>
                     </Box>
                   }

@@ -13,18 +13,26 @@ import {
 export type EnumDisplayMeta = {
   label: string;
   description?: string;
-  chipColor?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+  chipColor?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'info';
   icon?: string;
 };
 
 export const enumOptions = <T extends string>(
   values: Record<string, T>,
   display: Record<T, EnumDisplayMeta>
-) => Object.values(values).map((value) => ({
-  value,
-  label: display[value].label,
-  description: display[value].description,
-}));
+) =>
+  Object.values(values).map((value) => ({
+    value,
+    label: display[value].label,
+    description: display[value].description,
+  }));
 
 export const getEnumLabel = <T extends string>(
   display: Record<T, EnumDisplayMeta>,
@@ -37,13 +45,15 @@ export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   READY: 'Ready for Payment',
   PAID: 'Paid',
   CANCELLED: 'Cancelled',
-  PARTIALLY_PAID: 'Partially Paid'
+  PARTIALLY_PAID: 'Partially Paid',
 };
 
-export const JOB_STATUS_OPTIONS = Object.entries(JOB_STATUS_LABELS).map(([value, label]) => ({
-  value: value as JobStatus,
-  label
-}));
+export const JOB_STATUS_OPTIONS = Object.entries(JOB_STATUS_LABELS).map(
+  ([value, label]) => ({
+    value: value as JobStatus,
+    label,
+  })
+);
 
 // Job Type mappings
 export const JOB_TYPE_LABELS: Record<JobType, string> = {
@@ -53,42 +63,49 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   COMMISSION: 'Commission',
   FLAT_RATE: 'Flat Rate',
   EXPENSE: 'Expense Reimbursement',
-  OTHER: 'Other'
+  OTHER: 'Other',
 };
 
-export const JOB_TYPE_OPTIONS = Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({
-  value: value as JobType,
-  label
-}));
+export const JOB_TYPE_OPTIONS = Object.entries(JOB_TYPE_LABELS).map(
+  ([value, label]) => ({
+    value: value as JobType,
+    label,
+  })
+);
 
 // Payment Status mappings
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   PENDING: 'Pending',
   PAID: 'Paid',
   FAILED: 'Failed',
-  CANCELLED: 'Cancelled'
+  CANCELLED: 'Cancelled',
 };
 
-export const PAYMENT_STATUS_OPTIONS = Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => ({
-  value: value as PaymentStatus,
-  label
-}));
+export const PAYMENT_STATUS_OPTIONS = Object.entries(PAYMENT_STATUS_LABELS).map(
+  ([value, label]) => ({
+    value: value as PaymentStatus,
+    label,
+  })
+);
 
 // Payment Method mappings
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  CASH: 'Cash',
+  CASH: 'Cash (with GST/PST)',
+  CASH_NO_TAX: 'Cash (no GST/PST)',
   CREDIT_CARD: 'Credit Card',
   DEBIT_CARD: 'Debit Card',
   CHECK: 'Check',
   E_TRANSFER: 'E-Transfer',
   FINANCING: 'Financing',
-  BANK_DEPOSIT: 'Bank Deposit'
+  BANK_DEPOSIT: 'Bank Deposit',
 };
 
-export const PAYMENT_METHOD_OPTIONS = Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-  value: value as PaymentMethod,
-  label
-}));
+export const PAYMENT_METHOD_OPTIONS = Object.entries(PAYMENT_METHOD_LABELS).map(
+  ([value, label]) => ({
+    value: value as PaymentMethod,
+    label,
+  })
+);
 
 export const TIRE_TYPE_DISPLAY: Record<TireType, EnumDisplayMeta> = {
   ALL_SEASON: {
@@ -160,9 +177,15 @@ export const TIRE_CONDITION_DISPLAY: Record<TireCondition, EnumDisplayMeta> = {
   },
 };
 
-export const TIRE_CONDITION_OPTIONS = enumOptions(TireCondition, TIRE_CONDITION_DISPLAY);
+export const TIRE_CONDITION_OPTIONS = enumOptions(
+  TireCondition,
+  TIRE_CONDITION_DISPLAY
+);
 
-export const PURCHASE_CATEGORY_DISPLAY: Record<PurchaseCategory, EnumDisplayMeta> = {
+export const PURCHASE_CATEGORY_DISPLAY: Record<
+  PurchaseCategory,
+  EnumDisplayMeta
+> = {
   TIRES: { label: 'Tires' },
   PARTS: { label: 'Parts' },
   TOOLS: { label: 'Tools' },
@@ -170,9 +193,15 @@ export const PURCHASE_CATEGORY_DISPLAY: Record<PurchaseCategory, EnumDisplayMeta
   OTHER: { label: 'Other' },
 };
 
-export const PURCHASE_CATEGORY_OPTIONS = enumOptions(PurchaseCategory, PURCHASE_CATEGORY_DISPLAY);
+export const PURCHASE_CATEGORY_OPTIONS = enumOptions(
+  PurchaseCategory,
+  PURCHASE_CATEGORY_DISPLAY
+);
 
-export const EXPENSE_CATEGORY_DISPLAY: Record<ExpenseCategory, EnumDisplayMeta> = {
+export const EXPENSE_CATEGORY_DISPLAY: Record<
+  ExpenseCategory,
+  EnumDisplayMeta
+> = {
   RENT: { label: 'Rent' },
   UTILITIES: { label: 'Utilities' },
   INSURANCE: { label: 'Insurance' },
@@ -187,9 +216,15 @@ export const EXPENSE_CATEGORY_DISPLAY: Record<ExpenseCategory, EnumDisplayMeta> 
   OTHER: { label: 'Other' },
 };
 
-export const EXPENSE_CATEGORY_OPTIONS = enumOptions(ExpenseCategory, EXPENSE_CATEGORY_DISPLAY);
+export const EXPENSE_CATEGORY_OPTIONS = enumOptions(
+  ExpenseCategory,
+  EXPENSE_CATEGORY_DISPLAY
+);
 
-export const PURCHASE_INVOICE_STATUS_DISPLAY: Record<PurchaseInvoiceStatus, EnumDisplayMeta> = {
+export const PURCHASE_INVOICE_STATUS_DISPLAY: Record<
+  PurchaseInvoiceStatus,
+  EnumDisplayMeta
+> = {
   PENDING: { label: 'Pending', chipColor: 'warning' },
   PAID: { label: 'Paid', chipColor: 'success' },
   OVERDUE: { label: 'Overdue', chipColor: 'error' },

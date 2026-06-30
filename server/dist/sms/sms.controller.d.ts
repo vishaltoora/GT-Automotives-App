@@ -16,14 +16,29 @@ export declare class SmsController {
     getHistory(customerId?: string, userId?: string, limit?: string): Promise<({
         customer: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             firstName: string;
             lastName: string;
             email: string | null;
+            additionalEmails: string[];
+            pstExempt: boolean;
             phone: string | null;
             address: string | null;
             businessName: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        user: {
+            id: string;
+            firstName: string | null;
+            lastName: string | null;
+            email: string;
+            phone: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            clerkId: string;
+            roleId: string;
+            lastLogin: Date | null;
+            isActive: boolean;
         } | null;
         appointment: {
             id: string;
@@ -31,7 +46,9 @@ export declare class SmsController {
             updatedAt: Date;
             customerId: string;
             scheduledDate: Date;
+            status: import("@prisma/client").$Enums.AppointmentStatus;
             vehicleId: string | null;
+            notes: string | null;
             employeeId: string | null;
             scheduledTime: string;
             endTime: string | null;
@@ -39,8 +56,6 @@ export declare class SmsController {
             serviceType: string;
             appointmentType: import("@prisma/client").$Enums.AppointmentType;
             serviceAddress: string | null;
-            status: import("@prisma/client").$Enums.AppointmentStatus;
-            notes: string | null;
             paymentAmount: number | null;
             paymentBreakdown: import(".prisma/client/runtime/library").JsonValue | null;
             paymentNotes: string | null;
@@ -50,19 +65,6 @@ export declare class SmsController {
             paymentDate: Date | null;
             reminderSent: boolean;
             bookedBy: string | null;
-        } | null;
-        user: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            firstName: string | null;
-            lastName: string | null;
-            email: string;
-            phone: string | null;
-            clerkId: string;
-            roleId: string;
-            lastLogin: Date | null;
-            isActive: boolean;
         } | null;
     } & {
         id: string;

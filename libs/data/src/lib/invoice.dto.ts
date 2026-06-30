@@ -219,6 +219,7 @@ export interface InvoiceCustomerDto {
   email?: string | null;
   additionalEmails?: string[] | null;
   pstExempt?: boolean | null;
+  pstNumber?: string | null;
   phone?: string | null;
   address?: string | null;
 }
@@ -298,6 +299,10 @@ export class InvoiceResponseDto {
 
   @IsNumber()
   total!: number;
+
+  @IsOptional()
+  @IsNumber()
+  amountPaid?: number;
 
   @IsEnum(InvoiceStatus)
   status!: InvoiceStatus;

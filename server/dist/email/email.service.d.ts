@@ -71,6 +71,10 @@ export declare class EmailService {
         }>;
         totalCashCollected?: number;
         adjustedCash?: number;
+        invoiceCollected?: number;
+        invoiceByPaymentMethod?: Record<string, number>;
+        pendingOutstandingToday?: number;
+        pendingOutstandingTotal?: number;
     }): Promise<{
         success: boolean;
         sent: number;
@@ -120,7 +124,7 @@ export declare class EmailService {
     /**
      * Send invoice email with PDF attachment
      */
-    sendInvoiceEmail(customerEmail: string, invoiceNumber: string, pdfBase64: string): Promise<{
+    sendInvoiceEmail(customerEmail: string | string[], invoiceNumber: string, pdfBase64: string): Promise<{
         success: boolean;
         messageId?: string;
     }>;

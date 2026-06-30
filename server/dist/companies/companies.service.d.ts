@@ -4,36 +4,36 @@ export declare class CompaniesService {
     constructor(prisma: PrismaService);
     findAll(): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string | null;
         phone: string | null;
         address: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;
     }[]>;
     findDefault(): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string | null;
         phone: string | null;
         address: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;
     } | null>;
     findById(id: string): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string | null;
         phone: string | null;
         address: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         registrationNumber: string;
         businessType: string | null;
         isDefault: boolean;

@@ -137,6 +137,74 @@ class InvoiceService {
     return response.data;
   }
 
+  // Record a (possibly partial) payment against an invoice. Omit `amount` to
+  // pay the full remaining balance.
+  async recordInvoicePayment(
+    id: string,
+    payment: {
+      amount?: number;
+      paymentMethod: Invoice['paymentMethod'];
+      notes?: string;
+      reference?: string;
+    }
+  ): Promise<Invoice> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/${id}/payments`,
+      payment,
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  // Record several payment entries (split payment) against an invoice in one
+  // transaction, e.g. [{ amount: 40, method: CASH }, { amount: 60, method: CREDIT_CARD }].
+  async recordInvoicePayments(
+    id: string,
+    payments: Array<{
+      amount?: number;
+      paymentMethod: Invoice['paymentMethod'];
+      notes?: string;
+      reference?: string;
+    }>
+  ): Promise<Invoice> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/${id}/payments`,
+      { payments },
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  // Roll a customer's open invoices into a single combined invoice.
+  async combineInvoices(customerId: string): Promise<Invoice> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/combine`,
+      { customerId },
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  // Day Summary: invoice payments collected on a date (deduped vs appointments).
+  async getInvoiceDaySummary(date?: string): Promise<any> {
+    const queryParam = date ? `?date=${date}` : '';
+    const response = await axios.get(
+      `${API_URL}/api/invoices/day-summary${queryParam}`,
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  // Day Summary: outstanding pending-invoice balance (today + cumulative).
+  async getOutstandingInvoices(date?: string): Promise<any> {
+    const queryParam = date ? `?date=${date}` : '';
+    const response = await axios.get(
+      `${API_URL}/api/invoices/outstanding${queryParam}`,
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
   async sendInvoiceEmail(
     id: string,
     emails?: string | string[],
@@ -482,6 +550,20 @@ ${
         }
 
         ${
+          invoice.customer?.pstExempt
+            ? `
+          <div class="pst-exempt" style="margin-top: 12px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
+            <p style="margin: 0;"><strong>This business is PST exempt.</strong>${
+              invoice.customer?.pstNumber
+                ? ` PST Number: ${invoice.customer.pstNumber}`
+                : ''
+            }</p>
+          </div>
+        `
+            : ''
+        }
+
+        ${
           invoice.paymentMethod
             ? `
           <div class="payment-info">
@@ -732,6 +814,20 @@ ${
           <div style="margin-top: 12px;">
             <h3 style="margin-bottom: 8px;">Notes:</h3>
             <p style="margin: 0;">${invoice.notes}</p>
+          </div>
+        `
+            : ''
+        }
+
+        ${
+          invoice.customer?.pstExempt
+            ? `
+          <div style="margin-top: 12px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
+            <p style="margin: 0; font-size: 13px;"><strong>This business is PST exempt.</strong>${
+              invoice.customer?.pstNumber
+                ? ` PST Number: ${invoice.customer.pstNumber}`
+                : ''
+            }</p>
           </div>
         `
             : ''

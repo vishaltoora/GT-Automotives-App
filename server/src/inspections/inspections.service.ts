@@ -471,7 +471,10 @@ export class InspectionsService {
         status: 'PENDING' as any,
         paymentMethod: dto.paymentMethod,
       } as any,
-      userId
+      userId,
+      // RO-originated invoice: add the 4% shop supplies line (and the fleet
+      // discount is applied automatically for fleet customers inside create()).
+      { addShopSupplies: true }
     );
 
     // Link invoice back to the inspection (and RO, if present) and finalize.

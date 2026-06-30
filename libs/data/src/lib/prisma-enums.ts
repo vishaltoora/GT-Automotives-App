@@ -122,6 +122,7 @@ export type TireCondition = (typeof TireCondition)[keyof typeof TireCondition];
 export const InvoiceStatus = {
   DRAFT: 'DRAFT',
   PENDING: 'PENDING',
+  PARTIALLY_PAID: 'PARTIALLY_PAID',
   PAID: 'PAID',
   CANCELLED: 'CANCELLED',
   REFUNDED: 'REFUNDED',
@@ -130,6 +131,7 @@ export type InvoiceStatus = (typeof InvoiceStatus)[keyof typeof InvoiceStatus];
 
 export const PaymentMethod = {
   CASH: 'CASH',
+  CASH_NO_TAX: 'CASH_NO_TAX',
   CREDIT_CARD: 'CREDIT_CARD',
   DEBIT_CARD: 'DEBIT_CARD',
   CHECK: 'CHECK',

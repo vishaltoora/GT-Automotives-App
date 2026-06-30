@@ -16,6 +16,7 @@ export enum TireCondition {
 
 export enum PaymentMethod {
   CASH = 'CASH',
+  CASH_NO_TAX = 'CASH_NO_TAX',
   CREDIT_CARD = 'CREDIT_CARD',
   DEBIT_CARD = 'DEBIT_CARD',
   CHECK = 'CHECK',

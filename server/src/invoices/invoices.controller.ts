@@ -86,6 +86,25 @@ export class InvoicesController {
     return this.invoicesService.getCustomerInvoices(customerId, user);
   }
 
+  @Get('day-summary')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  getDaySummaryInvoices(@Query('date') date: string, @CurrentUser() user: any) {
+    const reportDate = date || getCurrentBusinessDate();
+    return this.invoicesService.getDaySummaryInvoices(reportDate, user);
+  }
+
+  @Get('outstanding')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  getOutstandingInvoices(
+    @Query('date') date: string,
+    @CurrentUser() user: any
+  ) {
+    const reportDate = date || getCurrentBusinessDate();
+    return this.invoicesService.getOutstandingInvoices(reportDate, user);
+  }
+
   @Get(':id')
   @UseGuards(RoleGuard)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
@@ -113,6 +132,52 @@ export class InvoicesController {
     @CurrentUser() user: any
   ) {
     return this.invoicesService.markAsPaid(id, paymentMethod, user.id);
+  }
+
+  @Post(':id/payments')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  recordPayment(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      amount?: number;
+      paymentMethod?: PaymentMethod;
+      notes?: string;
+      reference?: string;
+      // Split payment: multiple method/amount entries in one transaction
+      payments?: Array<{
+        amount?: number;
+        paymentMethod: PaymentMethod;
+        notes?: string;
+        reference?: string;
+      }>;
+    },
+    @CurrentUser() user: any
+  ) {
+    if (body.payments && body.payments.length > 0) {
+      return this.invoicesService.recordPayments(id, body.payments, user.id);
+    }
+    return this.invoicesService.recordPayment(
+      id,
+      {
+        amount: body.amount,
+        paymentMethod: body.paymentMethod as PaymentMethod,
+        notes: body.notes,
+        reference: body.reference,
+      },
+      user.id
+    );
+  }
+
+  @Post('combine')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  combineInvoices(
+    @Body('customerId') customerId: string,
+    @CurrentUser() user: any
+  ) {
+    return this.invoicesService.combineInvoices(customerId, user.id);
   }
 
   @Post(':id/send-email')
