@@ -148,9 +148,26 @@ export class RepairOrdersService {
       };
     }
 
-    return this.prisma.repairOrder.create({
-      data,
-      include: this.roInclude,
+    return this.prisma.$transaction(async (tx) => {
+      const ro = await tx.repairOrder.create({
+        data,
+        include: this.roInclude,
+      });
+
+      // Opening an RO moves its appointment into IN_PROGRESS. Guarded to only
+      // advance not-yet-started appointments — never reopen a completed one or
+      // touch a cancelled / no-show.
+      if (dto.appointmentId) {
+        await tx.appointment.updateMany({
+          where: {
+            id: dto.appointmentId,
+            status: { in: ['SCHEDULED', 'CONFIRMED'] },
+          },
+          data: { status: 'IN_PROGRESS' },
+        });
+      }
+
+      return ro;
     });
   }
 
