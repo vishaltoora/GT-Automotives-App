@@ -1508,7 +1508,7 @@ export function DaySummary() {
                               {!c.email ? ' · no email on file' : ''}
                             </Typography>
                           </Box>
-                          {c.count > 1 && (
+                          {(c.combinableCount ?? c.count) > 1 && (
                             <Button
                               size="small"
                               variant="outlined"

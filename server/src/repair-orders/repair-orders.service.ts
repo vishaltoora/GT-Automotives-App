@@ -534,7 +534,7 @@ export class RepairOrdersService {
         status: 'DRAFT',
         createdBy: 'system',
         items: {
-          create: allItems,
+          create: allItems as any,
         },
       },
     });

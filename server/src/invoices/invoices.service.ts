@@ -92,7 +92,7 @@ export class InvoicesService {
       addShopSupplies: options?.addShopSupplies,
       fleetDiscount: !!customer?.fleetDiscount,
     });
-    const sourceItems = [...createInvoiceDto.items, ...adjustmentItems];
+    const sourceItems: any[] = [...createInvoiceDto.items, ...adjustmentItems];
 
     // Calculate totals - handle discount items specially
     // TIPS are included in subtotal but NOT taxed
@@ -213,20 +213,18 @@ export class InvoicesService {
           ? new Date(createInvoiceDto.invoiceDate)
           : new Date(),
       },
-      items
+      items,
+      // When the invoice is created already paid, record the up-front payment in
+      // the same transaction so the Day Summary ledger can never be out of sync.
+      paidInFull
+        ? {
+            amount: total,
+            paymentMethod: createInvoiceDto.paymentMethod as PaymentMethod,
+            paidAt: new Date(),
+            createdBy: userId,
+          }
+        : undefined
     );
-
-    // Record the up-front payment in the ledger so it appears in the Day
-    // Summary (which reads InvoicePayment rows, not invoice status).
-    if (paidInFull) {
-      await this.invoiceRepository.createPayment({
-        invoiceId: invoice.id,
-        amount: total,
-        paymentMethod: createInvoiceDto.paymentMethod as PaymentMethod,
-        paidAt: new Date(),
-        createdBy: userId,
-      });
-    }
 
     // Log the creation
     await this.auditRepository.create({
@@ -734,6 +732,15 @@ export class InvoicesService {
     if (sources.length < 2) {
       throw new BadRequestException(
         'A combined invoice needs at least two open invoices for this customer'
+      );
+    }
+
+    // A combined invoice belongs to a single company — never roll invoices from
+    // different companies into one (it would misattribute amounts/PDF branding).
+    const companyIds = new Set(sources.map((s) => s.companyId));
+    if (companyIds.size > 1) {
+      throw new BadRequestException(
+        'This customer has open invoices under more than one company; combine them per company instead'
       );
     }
 

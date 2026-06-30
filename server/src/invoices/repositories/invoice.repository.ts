@@ -72,7 +72,15 @@ export class InvoiceRepository extends BaseRepository<
 
   async createWithItems(
     invoiceData: Prisma.InvoiceCreateInput,
-    items: Prisma.InvoiceItemCreateWithoutInvoiceInput[]
+    items: Prisma.InvoiceItemCreateWithoutInvoiceInput[],
+    // Optional up-front payment recorded in the SAME transaction so an invoice
+    // created as paid never exists without its ledger row.
+    initialPayment?: {
+      amount: number;
+      paymentMethod: PaymentMethod;
+      paidAt: Date;
+      createdBy: string;
+    }
   ): Promise<Invoice> {
     return this.prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.create({
@@ -106,6 +114,18 @@ export class InvoiceRepository extends BaseRepository<
             },
           });
         }
+      }
+
+      if (initialPayment) {
+        await tx.invoicePayment.create({
+          data: {
+            invoiceId: invoice.id,
+            amount: new Decimal(initialPayment.amount),
+            paymentMethod: initialPayment.paymentMethod,
+            paidAt: initialPayment.paidAt,
+            createdBy: initialPayment.createdBy,
+          },
+        });
       }
 
       return invoice;
@@ -217,28 +237,6 @@ export class InvoiceRepository extends BaseRepository<
 
   // ---- Payment ledger (partial / split payments) -------------------------
 
-  async createPayment(payment: {
-    invoiceId: string;
-    amount: number;
-    paymentMethod: PaymentMethod;
-    paidAt: Date;
-    createdBy: string;
-    notes?: string;
-    reference?: string;
-  }): Promise<void> {
-    await this.prisma.invoicePayment.create({
-      data: {
-        invoiceId: payment.invoiceId,
-        amount: new Decimal(payment.amount),
-        paymentMethod: payment.paymentMethod,
-        paidAt: payment.paidAt,
-        createdBy: payment.createdBy,
-        notes: payment.notes,
-        reference: payment.reference,
-      },
-    });
-  }
-
   /** Append one or more payment rows and update the invoice atomically. */
   async addPayments(
     invoiceId: string,
@@ -334,8 +332,13 @@ export class InvoiceRepository extends BaseRepository<
 
   /**
    * Invoice payments collected on `date` (business timezone), grouped by
-   * payment method. Deduped against appointment payments so money booked on an
-   * appointment isn't also counted here.
+   * payment method.
+   *
+   * No appointment-dedup is needed: appointment-flow money lives on the
+   * appointment (paymentBreakdown) and is summed from the appointment fetch,
+   * and that flow never writes InvoicePayment rows — so the ledger holds only
+   * invoice-originated money. (An earlier dedup against appointment.paymentDate
+   * caused undercounts and is intentionally removed.)
    */
   async getDaySummaryInvoicePayments(date: string): Promise<any> {
     const dateOnly = extractBusinessDate(date);
@@ -346,9 +349,7 @@ export class InvoiceRepository extends BaseRepository<
       FROM "InvoicePayment" ip
       JOIN "Invoice" i ON i.id = ip."invoiceId"
       JOIN "Customer" c ON c.id = i."customerId"
-      LEFT JOIN "Appointment" a ON a.id = i."appointmentId"
       WHERE DATE(ip."paidAt" AT TIME ZONE 'UTC' AT TIME ZONE ${POSTGRES_TIMEZONE}) = ${dateOnly}::date
-        AND (i."appointmentId" IS NULL OR a."paymentDate" IS NULL)
       ORDER BY ip."paidAt" DESC
     `;
 
@@ -395,7 +396,10 @@ export class InvoiceRepository extends BaseRepository<
         status: { in: ['PENDING', 'PARTIALLY_PAID'] },
         combinedInvoiceId: null,
       },
-      include: { customer: true },
+      include: {
+        customer: true,
+        _count: { select: { consolidatedInvoices: true } },
+      },
       orderBy: { invoiceDate: 'desc' },
     });
 
@@ -427,10 +431,16 @@ export class InvoiceRepository extends BaseRepository<
         customerName: name,
         email: c?.email ?? null,
         count: 0,
+        // How many of these can actually be rolled into a combined invoice —
+        // combined parents are excluded (matches findCombinableForCustomer), so
+        // the "Combine & Email" button only shows when there are >= 2 sources.
+        combinableCount: 0,
         outstanding: 0,
         invoiceIds: [] as string[],
       };
+      const isCombinedParent = (inv as any)._count?.consolidatedInvoices > 0;
       existing.count += 1;
+      if (!isCombinedParent) existing.combinableCount += 1;
       existing.outstanding += remaining;
       existing.invoiceIds.push(inv.id);
       byCustomerMap.set(inv.customerId, existing);

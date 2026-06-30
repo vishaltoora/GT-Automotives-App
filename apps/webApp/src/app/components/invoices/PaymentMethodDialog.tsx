@@ -135,9 +135,12 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
     onClose();
   };
 
-  // Disable confirm when split amounts are missing/over-allocated.
-  const splitInvalid =
-    isSplit &&
+  // Whenever an explicit amount is in play (a split, or a single line that
+  // isn't "pay in full"), every line needs a positive amount and the total
+  // can't exceed the remaining balance.
+  const needsAmounts = isSplit || !payInFull;
+  const confirmDisabled =
+    needsAmounts &&
     (lines.some((l) => !(parseFloat(l.amount) > 0)) ||
       (remaining != null && allocated > remaining + 0.005));
 
@@ -278,7 +281,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
           onClick={handleConfirm}
           variant="contained"
           color="success"
-          disabled={splitInvalid}
+          disabled={confirmDisabled}
         >
           Record Payment
         </Button>
