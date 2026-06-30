@@ -29,6 +29,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { CreateJobDto, JobType } from '@gt-automotive/data';
+import { NumberInput } from '../../components/common';
 import { jobService } from '../../requests/job.requests';
 import { userService } from '../../requests/user.requests';
 import { useAuth } from '../../hooks/useAuth';
@@ -38,7 +39,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
     children: React.ReactElement;
   },
-  ref: React.Ref<unknown>,
+  ref: React.Ref<unknown>
 ) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -103,7 +104,12 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     try {
       const users = await userService.getUsers();
       // Include STAFF, ADMIN, and SUPERVISOR users in the dropdown
-      const staffAndAdmins = users.filter(u => u.role?.name === 'STAFF' || u.role?.name === 'ADMIN' || u.role?.name === 'SUPERVISOR');
+      const staffAndAdmins = users.filter(
+        (u) =>
+          u.role?.name === 'STAFF' ||
+          u.role?.name === 'ADMIN' ||
+          u.role?.name === 'SUPERVISOR'
+      );
       setEmployees(staffAndAdmins);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
@@ -112,14 +118,19 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   };
 
   const handleInputChange = (field: keyof CreateJobDto, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSubmit = async () => {
-    if (!formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0) {
+    if (
+      !formData.employeeId ||
+      !formData.title ||
+      !formData.payAmount ||
+      Number(formData.payAmount) <= 0
+    ) {
       setError('Please fill in all required fields');
       return;
     }
@@ -133,7 +144,8 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         title: formData.title,
         payAmount: Number(formData.payAmount),
         jobType: formData.jobType,
-        ...(formData.description && formData.description.trim() && { description: formData.description }),
+        ...(formData.description &&
+          formData.description.trim() && { description: formData.description }),
         ...(formData.dueDate && { dueDate: formData.dueDate }),
       };
 
@@ -148,7 +160,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   };
 
   const getEmployeeName = (employee: Employee) => {
-    const name = [employee.firstName, employee.lastName].filter(Boolean).join(' ');
+    const name = [employee.firstName, employee.lastName]
+      .filter(Boolean)
+      .join(' ');
     return name || employee.email;
   };
 
@@ -169,7 +183,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             display: 'flex',
             flexDirection: 'column',
             height: '100vh',
-          })
+          }),
         },
       }}
     >
@@ -184,7 +198,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
           px: { xs: 2, sm: 3 },
           ...(isMobile && {
             flexShrink: 0,
-          })
+          }),
         }}
       >
         <WorkIcon />
@@ -204,11 +218,18 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             flex: '1 1 auto',
             overflowY: 'auto',
             minHeight: 0,
-          })
+          }),
         }}
       >
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 3 }, p: { xs: 2, sm: 3 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: { xs: 2, sm: 3 },
+              p: { xs: 2, sm: 3 },
+            }}
+          >
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
@@ -220,7 +241,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 <InputLabel>Employee</InputLabel>
                 <Select
                   value={formData.employeeId}
-                  onChange={(e) => handleInputChange('employeeId', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange('employeeId', e.target.value)
+                  }
                   label="Employee"
                 >
                   {employees.map((employee) => (
@@ -254,18 +277,16 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             />
 
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
+              <NumberInput
                 fullWidth
                 required
-                type="number"
+                allowDecimals
+                min={0}
                 label="Payment Amount"
                 value={formData.payAmount}
-                onChange={(e) => handleInputChange('payAmount', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                onKeyDown={(e) => {
-                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                    e.preventDefault();
-                  }
-                }}
+                onChange={(v) =>
+                  handleInputChange('payAmount', (v ?? '') as unknown as number)
+                }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -273,7 +294,6 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                     </InputAdornment>
                   ),
                 }}
-                inputProps={{ min: 0, step: 0.01 }}
                 autoComplete="off"
               />
 
@@ -296,7 +316,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             <DateTimePicker
               label="Due Date (Optional)"
               value={formData.dueDate ? new Date(formData.dueDate) : null}
-              onChange={(date) => handleInputChange('dueDate', date?.toISOString() || '')}
+              onChange={(date) =>
+                handleInputChange('dueDate', date?.toISOString() || '')
+              }
               slotProps={{
                 textField: {
                   fullWidth: true,
@@ -316,7 +338,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             flexShrink: 0,
             backgroundColor: 'white',
             borderTop: `1px solid ${colors.neutral[200]}`,
-          })
+          }),
         }}
       >
         <Button
@@ -330,13 +352,29 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         </Button>
         <Button
           onClick={handleSubmit}
-          variant={!formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0 ? 'outlined' : 'contained'}
+          variant={
+            !formData.employeeId ||
+            !formData.title ||
+            !formData.payAmount ||
+            Number(formData.payAmount) <= 0
+              ? 'outlined'
+              : 'contained'
+          }
           size="large"
-          disabled={loading || !formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0}
+          disabled={
+            loading ||
+            !formData.employeeId ||
+            !formData.title ||
+            !formData.payAmount ||
+            Number(formData.payAmount) <= 0
+          }
           fullWidth={isMobile}
           sx={{
             minWidth: isMobile ? 'auto' : 120,
-            ...(!formData.employeeId || !formData.title || !formData.payAmount || Number(formData.payAmount) <= 0
+            ...(!formData.employeeId ||
+            !formData.title ||
+            !formData.payAmount ||
+            Number(formData.payAmount) <= 0
               ? {
                   borderColor: colors.neutral[300],
                   color: colors.neutral[400],

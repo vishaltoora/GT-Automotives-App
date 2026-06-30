@@ -13,7 +13,11 @@ import {
   IconButton,
   Alert,
 } from '@mui/material';
-import { CloudUpload as UploadIcon, Delete as DeleteIcon, Close as CloseIcon } from '@mui/icons-material';
+import {
+  CloudUpload as UploadIcon,
+  Delete as DeleteIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
 import { PaymentMethod } from '@gt-automotive/data';
 import {
   ExpenseInvoice,
@@ -22,6 +26,7 @@ import {
 } from '../../requests/expense-invoice.requests';
 import vendorService, { Vendor } from '../../requests/vendor.requests';
 import VendorSelect from '../vendors/VendorSelect';
+import { NumberInput } from '../common';
 
 interface ExpenseInvoiceDialogProps {
   open: boolean;
@@ -45,7 +50,12 @@ const categories: ExpenseCategory[] = [
   'SOFTWARE',
   'OTHER',
 ];
-const statuses: ExpenseInvoiceStatus[] = ['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
+const statuses: ExpenseInvoiceStatus[] = [
+  'PENDING',
+  'PAID',
+  'OVERDUE',
+  'CANCELLED',
+];
 const paymentMethods = [
   PaymentMethod.CASH,
   PaymentMethod.CREDIT_CARD,
@@ -93,13 +103,17 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
         vendorId: invoice.vendorId || '',
         vendorName: invoice.vendorName || '',
         description: invoice.description || '',
-        invoiceDate: invoice.invoiceDate ? invoice.invoiceDate.split('T')[0] : '',
+        invoiceDate: invoice.invoiceDate
+          ? invoice.invoiceDate.split('T')[0]
+          : '',
         amount: invoice.amount || 0,
         taxAmount: invoice.taxAmount || 0,
         totalAmount: invoice.totalAmount || 0,
         category: invoice.category,
         status: invoice.status,
-        paymentDate: invoice.paymentDate ? invoice.paymentDate.split('T')[0] : '',
+        paymentDate: invoice.paymentDate
+          ? invoice.paymentDate.split('T')[0]
+          : '',
         paymentMethod: (invoice.paymentMethod as PaymentMethod) || '',
         notes: invoice.notes || '',
       });
@@ -132,17 +146,29 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
     }
   };
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData({ ...formData, [field]: value });
+  const handleChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setFormData({ ...formData, [field]: value });
+    };
 
-    // Auto-calculate total if amount or tax changes
-    if (field === 'amount' || field === 'taxAmount') {
-      const amount = field === 'amount' ? parseFloat(value) || 0 : parseFloat(String(formData.amount)) || 0;
-      const tax = field === 'taxAmount' ? parseFloat(value) || 0 : parseFloat(String(formData.taxAmount)) || 0;
-      setFormData((prev) => ({ ...prev, totalAmount: amount + tax, [field]: parseFloat(value) || 0 }));
-    }
-  };
+  // Handle amount / tax numeric changes and auto-calculate total
+  const handleAmountChange =
+    (field: 'amount' | 'taxAmount') => (value: number | undefined) => {
+      const amount =
+        field === 'amount'
+          ? value ?? 0
+          : parseFloat(String(formData.amount)) || 0;
+      const tax =
+        field === 'taxAmount'
+          ? value ?? 0
+          : parseFloat(String(formData.taxAmount)) || 0;
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value ?? '',
+        totalAmount: amount + tax,
+      }));
+    };
 
   const handleVendorChange = (vendorId: string, vendorName: string) => {
     setFormData({
@@ -175,7 +201,9 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
     const submitData: any = {
       ...formData,
       amount: parseFloat(formData.amount.toString()),
-      taxAmount: formData.taxAmount ? parseFloat(formData.taxAmount.toString()) : undefined,
+      taxAmount: formData.taxAmount
+        ? parseFloat(formData.taxAmount.toString())
+        : undefined,
       totalAmount: parseFloat(formData.totalAmount.toString()),
     };
 
@@ -200,7 +228,13 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
   return (
     <Dialog open={open} maxWidth="md" fullWidth disableEscapeKeyDown>
       <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           {invoice ? 'Edit Expense Invoice' : 'Add Expense Invoice'}
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
@@ -273,40 +307,42 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
             </Grid>
 
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
+              <NumberInput
                 fullWidth
                 required
-                type="number"
+                allowDecimals
+                min={0}
                 label="Amount"
                 value={formData.amount}
-                onChange={handleChange('amount')}
-                inputProps={{ step: '0.01', min: '0' }}
-                autoComplete="off"
+                onChange={handleAmountChange('amount')}
+                inputProps={{ autoComplete: 'off' }}
               />
             </Grid>
 
             <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
+              <NumberInput
                 fullWidth
-                type="number"
+                allowDecimals
+                min={0}
                 label="Tax Amount"
                 value={formData.taxAmount}
-                onChange={handleChange('taxAmount')}
-                inputProps={{ step: '0.01', min: '0' }}
-                autoComplete="off"
+                onChange={handleAmountChange('taxAmount')}
+                inputProps={{ autoComplete: 'off' }}
               />
             </Grid>
 
             <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
+              <NumberInput
                 fullWidth
                 required
-                type="number"
+                allowDecimals
+                min={0}
                 label="Total Amount"
                 value={formData.totalAmount}
-                onChange={handleChange('totalAmount')}
-                inputProps={{ step: '0.01', min: '0' }}
-                autoComplete="off"
+                onChange={(v) =>
+                  setFormData({ ...formData, totalAmount: v ?? '' })
+                }
+                inputProps={{ autoComplete: 'off' }}
               />
             </Grid>
 
@@ -370,7 +406,14 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
 
             {invoice && (
               <Grid size={{ xs: 12 }}>
-                <Box sx={{ border: '1px dashed', borderColor: 'divider', p: 2, borderRadius: 1 }}>
+                <Box
+                  sx={{
+                    border: '1px dashed',
+                    borderColor: 'divider',
+                    p: 2,
+                    borderRadius: 1,
+                  }}
+                >
                   <Typography variant="subtitle2" gutterBottom>
                     Invoice Image
                   </Typography>
@@ -379,9 +422,18 @@ const ExpenseInvoiceDialog: React.FC<ExpenseInvoiceDialogProps> = ({
                       Current image: {invoice.imageName}
                     </Alert>
                   )}
-                  <Button variant="outlined" component="label" startIcon={<UploadIcon />}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<UploadIcon />}
+                  >
                     {selectedFile ? selectedFile.name : 'Upload New Image'}
-                    <input type="file" hidden accept="image/*,.pdf" onChange={handleFileChange} />
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*,.pdf"
+                      onChange={handleFileChange}
+                    />
                   </Button>
                   {selectedFile && (
                     <IconButton

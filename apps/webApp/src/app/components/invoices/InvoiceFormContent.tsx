@@ -52,6 +52,7 @@ import { InvoiceItemType } from '../../../enums';
 import { colors } from '../../theme/colors';
 import ServiceSelect from '../services/ServiceSelect';
 import { PhoneInput } from '../common/PhoneInput';
+import { NumberInput } from '../common';
 
 interface InvoiceFormContentProps {
   customers: any[];
@@ -121,10 +122,16 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   const [menuItemIndex, setMenuItemIndex] = useState<number | null>(null);
 
   const formatTireType = (type: string) => {
-    return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    return type
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    index: number
+  ) => {
     setMenuAnchorEl(event.currentTarget);
     setMenuItemIndex(index);
   };
@@ -141,7 +148,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
     }
   };
 
-  const handleServiceChange = (serviceId: string, serviceName: string, unitPrice: number) => {
+  const handleServiceChange = (
+    serviceId: string,
+    serviceName: string,
+    unitPrice: number
+  ) => {
     setNewItem({
       ...newItem,
       itemType: InvoiceItemType.SERVICE,
@@ -163,8 +174,13 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
       // For DISCOUNT_PERCENTAGE items, calculate based on other items (excluding TIPS and discounts)
       if (item.itemType === 'DISCOUNT_PERCENTAGE' && item.unitPrice) {
         const otherItemsSubtotal = items
-          .filter(i => i.itemType !== 'DISCOUNT' && i.itemType !== 'DISCOUNT_PERCENTAGE' && i.itemType !== 'TIPS')
-          .reduce((s, i) => s + (i.quantity * i.unitPrice), 0);
+          .filter(
+            (i) =>
+              i.itemType !== 'DISCOUNT' &&
+              i.itemType !== 'DISCOUNT_PERCENTAGE' &&
+              i.itemType !== 'TIPS'
+          )
+          .reduce((s, i) => s + i.quantity * i.unitPrice, 0);
         itemTotal = -(otherItemsSubtotal * item.unitPrice) / 100;
       }
 
@@ -199,11 +215,13 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
       {/* COMPANY SELECTION */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <Card sx={{
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          border: `1px solid ${colors.neutral[200]}`,
-        }}>
+        <Card
+          sx={{
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${colors.neutral[200]}`,
+          }}
+        >
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               {!isMobile && <BuildIcon sx={{ color: colors.primary.main }} />}
@@ -218,11 +236,17 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
               <InputLabel>Select Company</InputLabel>
               <Select
                 value={formData.companyId}
-                onChange={(e) => setFormData({ ...formData, companyId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, companyId: e.target.value })
+                }
                 label="Select Company"
                 sx={{
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary.light },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary.main }
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: colors.primary.light,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: colors.primary.main,
+                  },
                 }}
               >
                 {companies.map((company) => (
@@ -232,7 +256,8 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         {company.name.replace(/[()]/g, '')}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {company.registrationNumber} {company.businessType && `• ${company.businessType}`}
+                        {company.registrationNumber}{' '}
+                        {company.businessType && `• ${company.businessType}`}
                       </Typography>
                     </Box>
                   </MenuItem>
@@ -247,16 +272,34 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
         <Grid container spacing={{ xs: 2, sm: 3 }}>
           <Grid size={{ xs: 12, lg: 6 }}>
-            <Card sx={{
-              borderRadius: 2,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              border: `1px solid ${colors.neutral[200]}`,
-              height: '100%',
-              minHeight: isMobile ? 'auto' : 280
-            }}>
-              <CardContent sx={{ p: { xs: 2, sm: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
-                  {!isMobile && <PersonIcon sx={{ color: colors.primary.main }} />}
+            <Card
+              sx={{
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                border: `1px solid ${colors.neutral[200]}`,
+                height: '100%',
+                minHeight: isMobile ? 'auto' : 280,
+              }}
+            >
+              <CardContent
+                sx={{
+                  p: { xs: 2, sm: 3 },
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: { xs: 2, sm: 3 },
+                  }}
+                >
+                  {!isMobile && (
+                    <PersonIcon sx={{ color: colors.primary.main }} />
+                  )}
                   <Typography
                     variant={isMobile ? 'subtitle1' : 'h6'}
                     sx={{ fontWeight: 600, color: colors.text.primary }}
@@ -264,8 +307,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     Customer Information
                   </Typography>
                 </Box>
-                
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                  }}
+                >
                   {/* Customer Search */}
                   <Autocomplete
                     freeSolo
@@ -282,14 +332,20 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             {option.firstName} {option.lastName}
                           </Typography>
                           {(option.phone || option.email) && (
-                            <Typography variant="caption" color="text.secondary">
-                              {option.phone} {option.email && `• ${option.email}`}
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {option.phone}{' '}
+                              {option.email && `• ${option.email}`}
                             </Typography>
                           )}
                         </Box>
                       </li>
                     )}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value.id
+                    }
                     filterOptions={(options, state) => {
                       const inputValue = state.inputValue.toLowerCase().trim();
 
@@ -298,32 +354,42 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       }
 
                       return options.filter((option) => {
-                        const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
+                        const fullName =
+                          `${option.firstName} ${option.lastName}`.toLowerCase();
                         const phone = (option.phone || '').toLowerCase();
                         const email = (option.email || '').toLowerCase();
-                        return fullName.includes(inputValue) ||
-                               phone.includes(inputValue) ||
-                               email.includes(inputValue);
+                        return (
+                          fullName.includes(inputValue) ||
+                          phone.includes(inputValue) ||
+                          email.includes(inputValue)
+                        );
                       });
                     }}
-                    value={customers.find(c => c.id === formData.customerId) || null}
+                    value={
+                      customers.find((c) => c.id === formData.customerId) ||
+                      null
+                    }
                     onChange={(_, newValue) => {
                       if (typeof newValue === 'string') {
                         const searchTerm = newValue.trim().toLowerCase();
 
-                        const matchingCustomer = customers.find(c => {
-                          const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
+                        const matchingCustomer = customers.find((c) => {
+                          const fullName =
+                            `${c.firstName} ${c.lastName}`.toLowerCase();
                           const firstName = c.firstName.toLowerCase();
                           const lastName = c.lastName.toLowerCase();
                           const phone = (c.phone || '').toLowerCase();
                           const email = (c.email || '').toLowerCase();
 
-                          return fullName === searchTerm ||
-                                 firstName === searchTerm ||
-                                 lastName === searchTerm ||
-                                 phone === searchTerm ||
-                                 email === searchTerm ||
-                                 (searchTerm.includes(' ') && fullName.includes(searchTerm));
+                          return (
+                            fullName === searchTerm ||
+                            firstName === searchTerm ||
+                            lastName === searchTerm ||
+                            phone === searchTerm ||
+                            email === searchTerm ||
+                            (searchTerm.includes(' ') &&
+                              fullName.includes(searchTerm))
+                          );
                         });
 
                         if (matchingCustomer) {
@@ -332,7 +398,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           const nameParts = newValue.trim().split(' ');
                           const firstName = nameParts[0] || '';
                           const lastName = nameParts.slice(1).join(' ') || '';
-                          setCustomerForm({ ...customerForm, firstName, lastName });
+                          setCustomerForm({
+                            ...customerForm,
+                            firstName,
+                            lastName,
+                          });
                           setFormData({ ...formData, customerId: '' });
                           onCustomerSelect(null);
                         }
@@ -341,18 +411,22 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       }
                     }}
                     renderInput={(params) => (
-                      <TextField 
-                        {...params} 
-                        label="Search or Add Customer" 
+                      <TextField
+                        {...params}
+                        label="Search or Add Customer"
                         placeholder="Search by name, phone, or email"
                         fullWidth
                         variant="outlined"
                         size="small"
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            '&:hover fieldset': { borderColor: colors.primary.light },
-                            '&.Mui-focused fieldset': { borderColor: colors.primary.main }
-                          }
+                            '&:hover fieldset': {
+                              borderColor: colors.primary.light,
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: colors.primary.main,
+                            },
+                          },
                         }}
                       />
                     )}
@@ -368,7 +442,10 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         value={customerForm.firstName}
                         disabled={isEditMode}
                         onChange={(e) => {
-                          setCustomerForm({ ...customerForm, firstName: e.target.value });
+                          setCustomerForm({
+                            ...customerForm,
+                            firstName: e.target.value,
+                          });
                           // If user types in the name field and there's no customer selected, mark as new customer
                           if (!formData.customerId) {
                             onCustomerSelect(null);
@@ -376,7 +453,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         }}
                         required
                         InputProps={{
-                          startAdornment: <PersonIcon sx={{ color: colors.text.secondary, mr: 1, fontSize: 20 }} />,
+                          startAdornment: (
+                            <PersonIcon
+                              sx={{
+                                color: colors.text.secondary,
+                                mr: 1,
+                                fontSize: 20,
+                              }}
+                            />
+                          ),
                         }}
                       />
                     </Grid>
@@ -388,7 +473,10 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         value={customerForm.lastName}
                         disabled={isEditMode}
                         onChange={(e) => {
-                          setCustomerForm({ ...customerForm, lastName: e.target.value });
+                          setCustomerForm({
+                            ...customerForm,
+                            lastName: e.target.value,
+                          });
                           // If user types in the name field and there's no customer selected, mark as new customer
                           if (!formData.customerId) {
                             onCustomerSelect(null);
@@ -404,7 +492,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         label="Business Name"
                         value={customerForm.businessName}
                         disabled={isEditMode}
-                        onChange={(e) => setCustomerForm({ ...customerForm, businessName: e.target.value })}
+                        onChange={(e) =>
+                          setCustomerForm({
+                            ...customerForm,
+                            businessName: e.target.value,
+                          })
+                        }
                         placeholder="Optional"
                       />
                     </Grid>
@@ -415,7 +508,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         label="Address"
                         value={customerForm.address}
                         disabled={isEditMode}
-                        onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })}
+                        onChange={(e) =>
+                          setCustomerForm({
+                            ...customerForm,
+                            address: e.target.value,
+                          })
+                        }
                         placeholder="Street address, city, province, postal code"
                       />
                     </Grid>
@@ -425,7 +523,9 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         size="small"
                         value={customerForm.phone}
                         disabled={isEditMode}
-                        onChange={(value) => setCustomerForm({ ...customerForm, phone: value })}
+                        onChange={(value) =>
+                          setCustomerForm({ ...customerForm, phone: value })
+                        }
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -436,7 +536,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         type="email"
                         value={customerForm.email}
                         disabled={isEditMode}
-                        onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                        onChange={(e) =>
+                          setCustomerForm({
+                            ...customerForm,
+                            email: e.target.value,
+                          })
+                        }
                         placeholder="customer@email.com"
                       />
                     </Grid>
@@ -448,14 +553,24 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       <InputLabel>Vehicle (Optional)</InputLabel>
                       <Select
                         value={formData.vehicleId}
-                        onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            vehicleId: e.target.value,
+                          })
+                        }
                         label="Vehicle (Optional)"
-                        startAdornment={<CarIcon sx={{ color: colors.text.secondary, ml: 1, mr: 1 }} />}
+                        startAdornment={
+                          <CarIcon
+                            sx={{ color: colors.text.secondary, ml: 1, mr: 1 }}
+                          />
+                        }
                       >
                         <MenuItem value="">No Vehicle</MenuItem>
-                        {vehicles.map(vehicle => (
+                        {vehicles.map((vehicle) => (
                           <MenuItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.year} {vehicle.make} {vehicle.model} - {vehicle.licensePlate || vehicle.vin}
+                            {vehicle.year} {vehicle.make} {vehicle.model} -{' '}
+                            {vehicle.licensePlate || vehicle.vin}
                           </MenuItem>
                         ))}
                       </Select>
@@ -474,16 +589,34 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
 
           {/* Payment & Notes - Top Row Right */}
           <Grid size={{ xs: 12, lg: 6 }}>
-            <Card sx={{ 
-              borderRadius: 2,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              border: `1px solid ${colors.neutral[200]}`,
-              height: '100%',
-              minHeight: isMobile ? 'auto' : 280
-            }}>
-              <CardContent sx={{ p: { xs: 2, sm: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
-                  {!isMobile && <PaymentIcon sx={{ color: colors.primary.main }} />}
+            <Card
+              sx={{
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                border: `1px solid ${colors.neutral[200]}`,
+                height: '100%',
+                minHeight: isMobile ? 'auto' : 280,
+              }}
+            >
+              <CardContent
+                sx={{
+                  p: { xs: 2, sm: 3 },
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: { xs: 2, sm: 3 },
+                  }}
+                >
+                  {!isMobile && (
+                    <PaymentIcon sx={{ color: colors.primary.main }} />
+                  )}
                   <Typography
                     variant={isMobile ? 'subtitle1' : 'h6'}
                     sx={{ fontWeight: 600, color: colors.text.primary }}
@@ -492,14 +625,23 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                   </Typography>
                 </Box>
 
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                  }}
+                >
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <FormControl fullWidth>
                         <InputLabel>Status</InputLabel>
                         <Select
                           value={formData.status}
-                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, status: e.target.value })
+                          }
                           label="Status"
                         >
                           <MenuItem value="DRAFT">📝 Draft</MenuItem>
@@ -516,14 +658,21 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         type="date"
                         label="Invoice Date"
                         value={formData.invoiceDate}
-                        onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            invoiceDate: e.target.value,
+                          })
+                        }
                         InputLabelProps={{
                           shrink: true,
                         }}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            '&:hover fieldset': { borderColor: colors.primary.light }
-                          }
+                            '&:hover fieldset': {
+                              borderColor: colors.primary.light,
+                            },
+                          },
                         }}
                       />
                     </Grid>
@@ -542,7 +691,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             ...formData,
                             paymentMethod,
                             gstRate: 0,
-                            pstRate: 0
+                            pstRate: 0,
                           });
                         } else if (formData.paymentMethod === 'CASH') {
                           // Switching from Cash to another method - restore default rates
@@ -550,7 +699,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             ...formData,
                             paymentMethod,
                             gstRate: 0.05,
-                            pstRate: 0.07
+                            pstRate: 0.07,
                           });
                         } else {
                           setFormData({ ...formData, paymentMethod });
@@ -575,18 +724,25 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     rows={4}
                     label="Invoice Notes (Optional)"
                     value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
                     placeholder="Add any special instructions or notes for this invoice..."
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': { borderColor: colors.primary.light }
-                      }
+                        '&:hover fieldset': {
+                          borderColor: colors.primary.light,
+                        },
+                      },
                     }}
                   />
 
                   {formData.paymentMethod && (
                     <Alert severity="info" sx={{ mt: 'auto' }}>
-                      Payment Method: <strong>{formData.paymentMethod.replace(/_/g, ' ')}</strong>
+                      Payment Method:{' '}
+                      <strong>
+                        {formData.paymentMethod.replace(/_/g, ' ')}
+                      </strong>
                     </Alert>
                   )}
                 </Box>
@@ -598,14 +754,25 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
 
       {/* SECOND ROW: Add Items Section - Full Width */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <Card sx={{
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          border: `1px solid ${colors.neutral[200]}`
-        }}>
+        <Card
+          sx={{
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${colors.neutral[200]}`,
+          }}
+        >
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 } }}>
-              {!isMobile && <ShoppingCartIcon sx={{ color: colors.primary.main }} />}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: { xs: 2, sm: 3 },
+              }}
+            >
+              {!isMobile && (
+                <ShoppingCartIcon sx={{ color: colors.primary.main }} />
+              )}
               <Typography
                 variant={isMobile ? 'subtitle1' : 'h6'}
                 sx={{ fontWeight: 600, color: colors.text.primary }}
@@ -614,15 +781,19 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
               </Typography>
             </Box>
 
-            <Box sx={{ 
-              p: 2, 
-              borderRadius: 2, 
-              background: colors.neutral[50],
-              border: `1px solid ${colors.neutral[200]}`,
-              mb: 3
-            }}>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                background: colors.neutral[50],
+                border: `1px solid ${colors.neutral[200]}`,
+                mb: 3,
+              }}
+            >
               <Grid container spacing={2} alignItems="center">
-                <Grid size={{ xs: 12, md: newItem.itemType === 'TIPS' ? 4 : 2 }}>
+                <Grid
+                  size={{ xs: 12, md: newItem.itemType === 'TIPS' ? 4 : 2 }}
+                >
                   <FormControl fullWidth size="small">
                     <InputLabel>Type</InputLabel>
                     <Select
@@ -665,49 +836,71 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       label="Type"
                     >
                       <MenuItem value="TIRE">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           <span style={{ fontSize: '18px' }}>🛞</span>
                           Tire
                         </Box>
                       </MenuItem>
                       <MenuItem value="SERVICE">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           <BuildIcon fontSize="small" />
                           Service
                         </Box>
                       </MenuItem>
                       <MenuItem value="PART">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           <ExtensionIcon fontSize="small" />
                           Part
                         </Box>
                       </MenuItem>
                       <MenuItem value="OTHER">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           <CategoryIcon fontSize="small" />
                           Other
                         </Box>
                       </MenuItem>
                       <MenuItem value="LEVY">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           <AccountBalanceIcon fontSize="small" />
                           Levy
                         </Box>
                       </MenuItem>
                       <MenuItem value="DISCOUNT">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AttachMoneyIcon fontSize="small" sx={{ color: 'red' }} />
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <AttachMoneyIcon
+                            fontSize="small"
+                            sx={{ color: 'red' }}
+                          />
                           $ Discount
                         </Box>
                       </MenuItem>
                       <MenuItem value="DISCOUNT_PERCENTAGE">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AttachMoneyIcon fontSize="small" sx={{ color: 'red' }} />
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <AttachMoneyIcon
+                            fontSize="small"
+                            sx={{ color: 'red' }}
+                          />
                           % Discount
                         </Box>
                       </MenuItem>
                       <MenuItem value="TIPS">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           <TipsIcon fontSize="small" sx={{ color: 'green' }} />
                           Tips
                         </Box>
@@ -717,11 +910,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 </Grid>
 
                 {/* Description/Selection field - hidden for TIPS */}
-                {newItem.itemType === 'TIPS' ? null : newItem.itemType === 'TIRE' ? (
+                {newItem.itemType === 'TIPS' ? null : newItem.itemType ===
+                  'TIRE' ? (
                   <Grid size={{ xs: 12, md: 4 }}>
                     <Autocomplete
-                      options={tires.filter(t => t.quantity > 0)}
-                      value={tires.find(t => t.id === newItem.tireId) || null}
+                      options={tires.filter((t) => t.quantity > 0)}
+                      value={tires.find((t) => t.id === newItem.tireId) || null}
                       onChange={(event, newValue) => {
                         if (newValue) {
                           onTireSelect(newValue.id);
@@ -729,28 +923,48 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       }}
                       getOptionLabel={(tire) => {
                         const name = tire.name || '';
-                        const details = `${tire.brand} ${formatTireType(tire.type)} - ${tire.size}`;
+                        const details = `${tire.brand} ${formatTireType(
+                          tire.type
+                        )} - ${tire.size}`;
                         return name ? `${name} - ${details}` : details;
                       }}
                       renderOption={(props, tire) => {
                         const { key, ...otherProps } = props;
                         return (
                           <Box component="li" key={key} {...otherProps}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                width: '100%',
+                                alignItems: 'center',
+                              }}
+                            >
                               <Box>
                                 {tire.name && (
-                                  <Typography variant="body2" fontWeight="medium">
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="medium"
+                                  >
                                     {tire.name}
                                   </Typography>
                                 )}
-                                <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
-                                  {tire.brand} {formatTireType(tire.type)} - {tire.size}
+                                <Typography
+                                  variant="body2"
+                                  color={
+                                    tire.name ? 'text.secondary' : 'inherit'
+                                  }
+                                >
+                                  {tire.brand} {formatTireType(tire.type)} -{' '}
+                                  {tire.size}
                                 </Typography>
                               </Box>
                               <Chip
                                 label={`Stock: ${tire.quantity}`}
                                 size="small"
-                                color={tire.quantity < 5 ? 'warning' : 'success'}
+                                color={
+                                  tire.quantity < 5 ? 'warning' : 'success'
+                                }
                                 sx={{ ml: 1 }}
                               />
                             </Box>
@@ -786,9 +1000,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       size="small"
                       label="Description"
                       value={newItem.description}
-                      onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, description: e.target.value })
+                      }
                       placeholder={
-                        newItem.itemType === 'DISCOUNT' || newItem.itemType === 'DISCOUNT_PERCENTAGE'
+                        newItem.itemType === 'DISCOUNT' ||
+                        newItem.itemType === 'DISCOUNT_PERCENTAGE'
                           ? 'e.g., Holiday discount, Loyalty discount...'
                           : 'Enter item description'
                       }
@@ -799,67 +1016,96 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 {/* Quantity field - hidden for TIPS */}
                 {newItem.itemType !== 'TIPS' && (
                   <Grid size={{ xs: 6, md: 2 }}>
-                    <TextField
+                    <NumberInput
                       fullWidth
                       size="small"
-                      type="number"
                       label="Quantity"
                       value={newItem.quantity}
-                      onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
-                      inputProps={{ min: 1 }}
+                      onChange={(v) =>
+                        setNewItem({
+                          ...newItem,
+                          quantity: (v ?? '') as unknown as number,
+                        })
+                      }
+                      min={1}
                     />
                   </Grid>
                 )}
 
-                <Grid size={{ xs: newItem.itemType === 'TIPS' ? 12 : 6, md: newItem.itemType === 'TIPS' ? 6 : 2 }}>
-                  <TextField
+                <Grid
+                  size={{
+                    xs: newItem.itemType === 'TIPS' ? 12 : 6,
+                    md: newItem.itemType === 'TIPS' ? 6 : 2,
+                  }}
+                >
+                  <NumberInput
                     fullWidth
                     size="small"
-                    type="number"
-                    label={newItem.itemType === 'DISCOUNT' ? 'Discount Amount' : newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 'Discount Percentage' : newItem.itemType === 'TIPS' ? 'Tips Amount' : 'Unit Price'}
-                    value={newItem.itemType === 'DISCOUNT' ? (newItem.unitPrice ? Math.abs(newItem.unitPrice) : '') : newItem.unitPrice}
-                    onChange={(e) => {
-                      // Allow empty string for clearing the field
-                      if (e.target.value === '') {
-                        setNewItem({ ...newItem, unitPrice: '' as unknown as number });
+                    allowDecimals
+                    label={
+                      newItem.itemType === 'DISCOUNT'
+                        ? 'Discount Amount'
+                        : newItem.itemType === 'DISCOUNT_PERCENTAGE'
+                        ? 'Discount Percentage'
+                        : newItem.itemType === 'TIPS'
+                        ? 'Tips Amount'
+                        : 'Unit Price'
+                    }
+                    value={
+                      newItem.itemType === 'DISCOUNT'
+                        ? newItem.unitPrice
+                          ? Math.abs(newItem.unitPrice)
+                          : ''
+                        : newItem.unitPrice
+                    }
+                    onChange={(v) => {
+                      // Allow empty for clearing the field
+                      if (v === undefined) {
+                        setNewItem({
+                          ...newItem,
+                          unitPrice: '' as unknown as number,
+                        });
                         return;
                       }
-                      const value = parseFloat(e.target.value) || 0;
                       // For discount amount items, automatically make the value negative
                       // For percentage items, keep it positive (we'll handle the negative in calculation)
-                      let finalValue = value;
-                      if (newItem.itemType === 'DISCOUNT' && value > 0) {
-                        finalValue = -value;
+                      let finalValue = v;
+                      if (newItem.itemType === 'DISCOUNT' && v > 0) {
+                        finalValue = -v;
                       }
                       setNewItem({ ...newItem, unitPrice: finalValue });
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                        e.preventDefault();
-                      }
-                    }}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start">
-                        {newItem.itemType === 'DISCOUNT' ? '-$' : newItem.itemType === 'DISCOUNT_PERCENTAGE' ? '' : '$'}
-                      </InputAdornment>,
-                      endAdornment: newItem.itemType === 'DISCOUNT_PERCENTAGE' ? <InputAdornment position="end">%</InputAdornment> : undefined,
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          {newItem.itemType === 'DISCOUNT'
+                            ? '-$'
+                            : newItem.itemType === 'DISCOUNT_PERCENTAGE'
+                            ? ''
+                            : '$'}
+                        </InputAdornment>
+                      ),
+                      endAdornment:
+                        newItem.itemType === 'DISCOUNT_PERCENTAGE' ? (
+                          <InputAdornment position="end">%</InputAdornment>
+                        ) : undefined,
                     }}
-                    inputProps={{
-                      min: newItem.itemType === 'DISCOUNT' ? undefined : 0,
-                      max: newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 100 : undefined,
-                      step: newItem.itemType === 'DISCOUNT_PERCENTAGE' ? 0.1 : 0.01
-                    }}
+                    min={newItem.itemType === 'DISCOUNT' ? undefined : 0}
+                    max={
+                      newItem.itemType === 'DISCOUNT_PERCENTAGE'
+                        ? 100
+                        : undefined
+                    }
                     placeholder={
                       newItem.itemType === 'DISCOUNT'
                         ? 'Enter positive amount'
                         : newItem.itemType === 'DISCOUNT_PERCENTAGE'
-                          ? 'Enter percentage (0-100)'
-                          : undefined
+                        ? 'Enter percentage (0-100)'
+                        : undefined
                     }
                     autoComplete="off"
                   />
                 </Grid>
-
 
                 <Grid size={{ xs: 12, md: 2 }}>
                   <Button
@@ -867,21 +1113,24 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={onAddItem}
-                    disabled={!newItem.description || (
-                      newItem.itemType === 'DISCOUNT' ? newItem.unitPrice === 0 :
-                      newItem.itemType === 'DISCOUNT_PERCENTAGE' ? newItem.unitPrice <= 0 || newItem.unitPrice > 100 :
-                      newItem.unitPrice <= 0
-                    )}
+                    disabled={
+                      !newItem.description ||
+                      (newItem.itemType === 'DISCOUNT'
+                        ? newItem.unitPrice === 0
+                        : newItem.itemType === 'DISCOUNT_PERCENTAGE'
+                        ? newItem.unitPrice <= 0 || newItem.unitPrice > 100
+                        : newItem.unitPrice <= 0)
+                    }
                     sx={{
                       background: colors.primary.main,
                       color: 'white',
-                      '&:hover': { 
+                      '&:hover': {
                         background: colors.primary.dark,
                       },
                       '&:disabled': {
                         background: colors.neutral[300],
-                        color: colors.neutral[500]
-                      }
+                        color: colors.neutral[500],
+                      },
                     }}
                   >
                     Add Item
@@ -891,33 +1140,56 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
             </Box>
 
             {/* Items List */}
-            {items.length > 0 && (
-              isMobile ? (
+            {items.length > 0 &&
+              (isMobile ? (
                 // Mobile Card View - Compact Design
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box
+                  sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
+                >
                   {items.map((item, index) => (
-                    <Card key={index} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
+                    <Card
+                      key={index}
+                      sx={{ border: `1px solid ${colors.neutral[200]}` }}
+                    >
                       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                         {/* Header Row: Type + Description + Action */}
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 1,
+                            mb: 1,
+                          }}
+                        >
                           <Chip
                             label={item.itemType}
                             size="small"
                             sx={{
                               height: 20,
                               fontSize: '0.688rem',
-                              background: item.itemType === 'TIRE'
-                                ? colors.tire?.new || colors.primary.main
-                                : item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE'
+                              background:
+                                item.itemType === 'TIRE'
+                                  ? colors.tire?.new || colors.primary.main
+                                  : item.itemType === 'DISCOUNT' ||
+                                    item.itemType === 'DISCOUNT_PERCENTAGE'
                                   ? '#f44336'
-                                  : colors.service?.maintenance || colors.secondary.main,
+                                  : colors.service?.maintenance ||
+                                    colors.secondary.main,
                               color: 'white',
                               flexShrink: 0,
                             }}
                           />
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             {(item as any).tireName && (
-                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.813rem', lineHeight: 1.3, mb: 0.25 }}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={600}
+                                sx={{
+                                  fontSize: '0.813rem',
+                                  lineHeight: 1.3,
+                                  mb: 0.25,
+                                }}
+                              >
                                 {(item as any).tireName}
                               </Typography>
                             )}
@@ -926,7 +1198,9 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                               sx={{
                                 fontSize: '0.813rem',
                                 lineHeight: 1.3,
-                                color: (item as any).tireName ? 'text.secondary' : 'text.primary',
+                                color: (item as any).tireName
+                                  ? 'text.secondary'
+                                  : 'text.primary',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 display: '-webkit-box',
@@ -947,21 +1221,51 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                         </Box>
 
                         {/* Compact Info Row */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 2,
+                            }}
+                          >
                             <Box>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: '0.688rem' }}
+                              >
                                 Qty
                               </Typography>
-                              <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.813rem' }}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={500}
+                                sx={{ fontSize: '0.813rem' }}
+                              >
                                 {item.quantity}
                               </Typography>
                             </Box>
                             <Box>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: '0.688rem' }}
+                              >
                                 Price
                               </Typography>
-                              <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.813rem' }}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={500}
+                                sx={{ fontSize: '0.813rem' }}
+                              >
                                 {item.itemType === 'DISCOUNT_PERCENTAGE'
                                   ? `${item.unitPrice}%`
                                   : formatCurrency(item.unitPrice)}
@@ -969,7 +1273,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                             </Box>
                           </Box>
                           <Box sx={{ textAlign: 'right' }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.688rem' }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontSize: '0.688rem' }}
+                            >
                               Total
                             </Typography>
                             <Typography
@@ -977,10 +1285,16 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                               fontWeight={600}
                               sx={{
                                 fontSize: '0.938rem',
-                                color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : colors.primary.main
+                                color:
+                                  item.itemType === 'DISCOUNT' ||
+                                  item.itemType === 'DISCOUNT_PERCENTAGE'
+                                    ? '#f44336'
+                                    : colors.primary.main,
                               }}
                             >
-                              {formatCurrency(item.total || (item.quantity * item.unitPrice))}
+                              {formatCurrency(
+                                item.total || item.quantity * item.unitPrice
+                              )}
                             </Typography>
                           </Box>
                         </Box>
@@ -990,20 +1304,32 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 </Box>
               ) : (
                 // Desktop Table View
-                <TableContainer sx={{
-                  borderRadius: 2,
-                  border: `1px solid ${colors.neutral[200]}`,
-                  overflow: 'hidden'
-                }}>
+                <TableContainer
+                  sx={{
+                    borderRadius: 2,
+                    border: `1px solid ${colors.neutral[200]}`,
+                    overflow: 'hidden',
+                  }}
+                >
                   <Table>
                     <TableHead>
                       <TableRow sx={{ background: colors.neutral[100] }}>
                         <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 600 }}>Qty</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 600 }}>Action</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>
+                          Description
+                        </TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>
+                          Qty
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>
+                          Unit Price
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>
+                          Total
+                        </TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>
+                          Action
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -1012,7 +1338,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           key={index}
                           sx={{
                             '&:hover': { background: colors.neutral[50] },
-                            '&:last-child td': { border: 0 }
+                            '&:last-child td': { border: 0 },
                           }}
                         >
                           <TableCell>
@@ -1020,12 +1346,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                               label={item.itemType}
                               size="small"
                               sx={{
-                                background: item.itemType === 'TIRE'
-                                  ? colors.tire?.new || colors.primary.main
-                                  : item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE'
+                                background:
+                                  item.itemType === 'TIRE'
+                                    ? colors.tire?.new || colors.primary.main
+                                    : item.itemType === 'DISCOUNT' ||
+                                      item.itemType === 'DISCOUNT_PERCENTAGE'
                                     ? '#f44336'
-                                    : colors.service?.maintenance || colors.secondary.main,
-                                color: 'white'
+                                    : colors.service?.maintenance ||
+                                      colors.secondary.main,
+                                color: 'white',
                               }}
                             />
                           </TableCell>
@@ -1035,7 +1364,14 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                                 {(item as any).tireName}
                               </Typography>
                             )}
-                            <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                            <Typography
+                              variant="body2"
+                              color={
+                                (item as any).tireName
+                                  ? 'text.secondary'
+                                  : 'inherit'
+                              }
+                            >
                               {item.description}
                             </Typography>
                           </TableCell>
@@ -1045,11 +1381,20 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                               ? `${item.unitPrice}%`
                               : formatCurrency(item.unitPrice)}
                           </TableCell>
-                          <TableCell align="right" sx={{
-                            fontWeight: 600,
-                            color: item.itemType === 'DISCOUNT' || item.itemType === 'DISCOUNT_PERCENTAGE' ? '#f44336' : 'inherit'
-                          }}>
-                            {formatCurrency(item.total || (item.quantity * item.unitPrice))}
+                          <TableCell
+                            align="right"
+                            sx={{
+                              fontWeight: 600,
+                              color:
+                                item.itemType === 'DISCOUNT' ||
+                                item.itemType === 'DISCOUNT_PERCENTAGE'
+                                  ? '#f44336'
+                                  : 'inherit',
+                            }}
+                          >
+                            {formatCurrency(
+                              item.total || item.quantity * item.unitPrice
+                            )}
                           </TableCell>
                           <TableCell align="center">
                             <Tooltip title="Remove item">
@@ -1058,7 +1403,9 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                                 onClick={() => onRemoveItem(index)}
                                 sx={{
                                   color: colors.semantic?.error || 'red',
-                                  '&:hover': { background: 'rgba(255,0,0,0.1)' }
+                                  '&:hover': {
+                                    background: 'rgba(255,0,0,0.1)',
+                                  },
                                 }}
                               >
                                 <DeleteIcon />
@@ -1070,8 +1417,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     </TableBody>
                   </Table>
                 </TableContainer>
-              )
-            )}
+              ))}
 
             {items.length === 0 && (
               <Alert severity="info" sx={{ borderRadius: 2 }}>
@@ -1084,86 +1430,144 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
               <>
                 <Divider sx={{ my: 3 }} />
 
-                <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: isMobile ? '100%' : 400 }}>
-            {/* Subtotal */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body1" color="text.secondary">
-                Subtotal:
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                {formatCurrency(subtotal)}
-              </Typography>
-            </Box>
-            
-            {/* GST */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="body1" color="text.secondary">
-                  GST:
-                </Typography>
-                <TextField
-                  size="small"
-                  type="number"
-                  value={(formData.gstRate * 100).toFixed(1)}
-                  onChange={(e) => setFormData({ ...formData, gstRate: parseFloat(e.target.value) / 100 || 0 })}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: { xs: 'flex-start', sm: 'flex-end' },
                   }}
-                  inputProps={{ min: 0, max: 100, step: 0.1 }}
-                  sx={{ width: 100 }}
-                />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                {formatCurrency(gstAmount)}
-              </Typography>
-            </Box>
-            
-            {/* PST */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="body1" color="text.secondary">
-                  PST:
-                </Typography>
-                <TextField
-                  size="small"
-                  type="number"
-                  value={(formData.pstRate * 100).toFixed(1)}
-                  onChange={(e) => setFormData({ ...formData, pstRate: parseFloat(e.target.value) / 100 || 0 })}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  }}
-                  inputProps={{ min: 0, max: 100, step: 0.1 }}
-                  sx={{ width: 100 }}
-                />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                {formatCurrency(pstAmount)}
-              </Typography>
-            </Box>
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                      width: isMobile ? '100%' : 400,
+                    }}
+                  >
+                    {/* Subtotal */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography variant="body1" color="text.secondary">
+                        Subtotal:
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                        {formatCurrency(subtotal)}
+                      </Typography>
+                    </Box>
 
-            <Divider sx={{ my: 1 }} />
-            
-            {/* Grand Total */}
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              p: 2,
-              borderRadius: 2,
-              background: colors.primary.main + '10'
-            }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: colors.primary.main }}>
-                Invoice Total:
-              </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary.main }}>
-                {formatCurrency(total)}
-              </Typography>
-            </Box>
-            </Box>
-            </Box>
-            </>
-          )}
+                    {/* GST */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                      >
+                        <Typography variant="body1" color="text.secondary">
+                          GST:
+                        </Typography>
+                        <NumberInput
+                          size="small"
+                          allowDecimals
+                          value={(formData.gstRate * 100).toFixed(1)}
+                          onChange={(v) =>
+                            setFormData({
+                              ...formData,
+                              gstRate: (v ?? 0) / 100,
+                            })
+                          }
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">%</InputAdornment>
+                            ),
+                          }}
+                          min={0}
+                          max={100}
+                          sx={{ width: 100 }}
+                        />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                        {formatCurrency(gstAmount)}
+                      </Typography>
+                    </Box>
+
+                    {/* PST */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                      >
+                        <Typography variant="body1" color="text.secondary">
+                          PST:
+                        </Typography>
+                        <NumberInput
+                          size="small"
+                          allowDecimals
+                          value={(formData.pstRate * 100).toFixed(1)}
+                          onChange={(v) =>
+                            setFormData({
+                              ...formData,
+                              pstRate: (v ?? 0) / 100,
+                            })
+                          }
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">%</InputAdornment>
+                            ),
+                          }}
+                          min={0}
+                          max={100}
+                          sx={{ width: 100 }}
+                        />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                        {formatCurrency(pstAmount)}
+                      </Typography>
+                    </Box>
+
+                    <Divider sx={{ my: 1 }} />
+
+                    {/* Grand Total */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        p: 2,
+                        borderRadius: 2,
+                        background: colors.primary.main + '10',
+                      }}
+                    >
+                      <Typography
+                        variant="h5"
+                        sx={{ fontWeight: 600, color: colors.primary.main }}
+                      >
+                        Invoice Total:
+                      </Typography>
+                      <Typography
+                        variant="h4"
+                        sx={{ fontWeight: 700, color: colors.primary.main }}
+                      >
+                        {formatCurrency(total)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </>
+            )}
 
             {items.length > 0 && (
               <Alert severity="success" sx={{ mt: 3 }}>

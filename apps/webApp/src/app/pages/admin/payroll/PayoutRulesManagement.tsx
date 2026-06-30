@@ -35,6 +35,7 @@ import {
   CreatePayoutRuleDto,
   DEFAULT_PAYOUT_PERCENTAGE,
 } from '../../../requests/payout-rule.requests';
+import { NumberInput } from '../../../components/common';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { useError } from '../../../contexts/ErrorContext';
 
@@ -45,7 +46,12 @@ interface RuleDialogProps {
   onSave: (dto: CreatePayoutRuleDto) => Promise<void>;
 }
 
-const RuleDialog: React.FC<RuleDialogProps> = ({ open, rule, onClose, onSave }) => {
+const RuleDialog: React.FC<RuleDialogProps> = ({
+  open,
+  rule,
+  onClose,
+  onSave,
+}) => {
   const [triggerAmount, setTriggerAmount] = useState('');
   const [payoutAmount, setPayoutAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -85,7 +91,9 @@ const RuleDialog: React.FC<RuleDialogProps> = ({ open, rule, onClose, onSave }) 
       });
       onClose();
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to save rule');
+      setError(
+        err?.response?.data?.message || err?.message || 'Failed to save rule'
+      );
     } finally {
       setSaving(false);
     }
@@ -101,21 +109,31 @@ const RuleDialog: React.FC<RuleDialogProps> = ({ open, rule, onClose, onSave }) 
               {error}
             </Typography>
           )}
-          <TextField
+          <NumberInput
             label="Appointment Total (Trigger)"
-            type="number"
+            allowDecimals
+            min={0}
             value={triggerAmount}
-            onChange={(e) => setTriggerAmount(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+            onChange={(v) => setTriggerAmount(v === undefined ? '' : String(v))}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">$</InputAdornment>
+              ),
+            }}
             helperText="When the appointment payment equals this amount, this rule applies"
             fullWidth
           />
-          <TextField
+          <NumberInput
             label="Total Payout (Pool)"
-            type="number"
+            allowDecimals
+            min={0}
             value={payoutAmount}
-            onChange={(e) => setPayoutAmount(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+            onChange={(v) => setPayoutAmount(v === undefined ? '' : String(v))}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">$</InputAdornment>
+              ),
+            }}
             helperText="Pool split equally among the employees who completed the appointment"
             fullWidth
           />
@@ -127,8 +145,13 @@ const RuleDialog: React.FC<RuleDialogProps> = ({ open, rule, onClose, onSave }) 
             fullWidth
           />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-            <Typography variant="body2">{isActive ? 'Active' : 'Inactive'}</Typography>
+            <Switch
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
+            <Typography variant="body2">
+              {isActive ? 'Active' : 'Inactive'}
+            </Typography>
           </Box>
         </Stack>
       </DialogContent>
@@ -202,15 +225,26 @@ export const PayoutRulesManagement: React.FC = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 1, flexWrap: 'wrap' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2,
+          gap: 1,
+          flexWrap: 'wrap',
+        }}
+      >
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700 }}>
             Appointment Payout Rules
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            When an appointment is completed for one of these amounts, the payout pool below
-            is split equally among the employees who completed it. Anything not in the table
-            falls back to {Math.round(DEFAULT_PAYOUT_PERCENTAGE * 100)}% of the appointment total.
+            When an appointment is completed for one of these amounts, the
+            payout pool below is split equally among the employees who completed
+            it. Anything not in the table falls back to{' '}
+            {Math.round(DEFAULT_PAYOUT_PERCENTAGE * 100)}% of the appointment
+            total.
           </Typography>
         </Box>
         <Button
@@ -234,7 +268,8 @@ export const PayoutRulesManagement: React.FC = () => {
           <Box sx={{ p: 4, textAlign: 'center' }}>
             <CalculateIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              No payout rules yet. All completed appointments will use the {Math.round(DEFAULT_PAYOUT_PERCENTAGE * 100)}% default.
+              No payout rules yet. All completed appointments will use the{' '}
+              {Math.round(DEFAULT_PAYOUT_PERCENTAGE * 100)}% default.
             </Typography>
           </Box>
         ) : (
@@ -270,12 +305,22 @@ export const PayoutRulesManagement: React.FC = () => {
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => { setEditing(rule); setDialogOpen(true); }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setEditing(rule);
+                              setDialogOpen(true);
+                            }}
+                          >
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Delete">
-                          <IconButton size="small" color="error" onClick={() => handleDelete(rule)}>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDelete(rule)}
+                          >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>

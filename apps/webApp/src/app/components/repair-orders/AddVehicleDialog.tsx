@@ -21,6 +21,7 @@ import {
   VehicleMakeWithModels,
 } from '../../requests/vehicle.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { NumberInput } from '../common';
 
 const CURRENT_YEAR = new Date().getFullYear() + 1;
 const YEARS = Array.from({ length: 60 }, (_, i) => CURRENT_YEAR - i);
@@ -332,14 +333,14 @@ export function AddVehicleDialog({
               value={licensePlate}
               onChange={(e) => setLicensePlate(e.target.value)}
             />
-            <TextField
+            <NumberInput
               label={requireVin ? 'Mileage' : 'Mileage (optional)'}
               required={requireVin}
-              type="number"
               size="small"
               sx={{ flex: 1 }}
               value={mileage}
-              onChange={(e) => setMileage(e.target.value)}
+              onChange={(v) => setMileage(v === undefined ? '' : String(v))}
+              min={0}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">km</InputAdornment>

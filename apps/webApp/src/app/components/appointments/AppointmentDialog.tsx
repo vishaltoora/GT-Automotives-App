@@ -586,7 +586,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 setFormData((prev) => ({ ...prev, serviceType }))
               }
               onDurationChange={(duration) =>
-                setFormData((prev) => ({ ...prev, duration }))
+                setFormData((prev) => ({
+                  ...prev,
+                  duration: (duration ?? '') as unknown as number,
+                }))
               }
             />
 

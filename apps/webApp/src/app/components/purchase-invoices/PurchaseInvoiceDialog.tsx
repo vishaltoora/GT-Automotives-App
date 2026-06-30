@@ -13,7 +13,11 @@ import {
   Alert,
   IconButton,
 } from '@mui/material';
-import { CloudUpload as UploadIcon, Image as ImageIcon, Close as CloseIcon } from '@mui/icons-material';
+import {
+  CloudUpload as UploadIcon,
+  Image as ImageIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
 import {
   PurchaseInvoice,
   PurchaseCategory,
@@ -24,15 +28,26 @@ import {
 } from '../../requests/expense-invoice.requests';
 import vendorService, { Vendor } from '../../requests/vendor.requests';
 import VendorSelect from '../vendors/VendorSelect';
+import { NumberInput } from '../common';
 
 interface PurchaseInvoiceDialogProps {
   open: boolean;
   invoice: PurchaseInvoice | ExpenseInvoice | null;
   onClose: () => void;
-  onSave: (data: any, file: File | null, invoiceType: 'purchase' | 'expense') => void;
+  onSave: (
+    data: any,
+    file: File | null,
+    invoiceType: 'purchase' | 'expense'
+  ) => void;
 }
 
-const purchaseCategories: PurchaseCategory[] = ['TIRES', 'PARTS', 'TOOLS', 'SUPPLIES', 'OTHER'];
+const purchaseCategories: PurchaseCategory[] = [
+  'TIRES',
+  'PARTS',
+  'TOOLS',
+  'SUPPLIES',
+  'OTHER',
+];
 const expenseCategories: ExpenseCategory[] = [
   'RENT',
   'UTILITIES',
@@ -56,7 +71,9 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
 }) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [invoiceType, setInvoiceType] = useState<'purchase' | 'expense'>('purchase');
+  const [invoiceType, setInvoiceType] = useState<'purchase' | 'expense'>(
+    'purchase'
+  );
   const [formData, setFormData] = useState({
     vendorId: '',
     vendorName: '',
@@ -76,14 +93,18 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
   useEffect(() => {
     if (invoice) {
       // Detect invoice type based on category
-      const isPurchase = purchaseCategories.includes(invoice.category as PurchaseCategory);
+      const isPurchase = purchaseCategories.includes(
+        invoice.category as PurchaseCategory
+      );
       setInvoiceType(isPurchase ? 'purchase' : 'expense');
 
       setFormData({
         vendorId: invoice.vendorId || '',
         vendorName: invoice.vendorName || '',
         description: invoice.description || '',
-        invoiceDate: invoice.invoiceDate ? invoice.invoiceDate.split('T')[0] : '',
+        invoiceDate: invoice.invoiceDate
+          ? invoice.invoiceDate.split('T')[0]
+          : '',
         totalAmount: invoice.totalAmount || 0,
         category: invoice.category,
         notes: invoice.notes || '',
@@ -112,10 +133,11 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
     }
   };
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData({ ...formData, [field]: value });
-  };
+  const handleChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setFormData({ ...formData, [field]: value });
+    };
 
   const handleVendorChange = (vendorId: string, vendorName: string) => {
     setFormData({
@@ -140,7 +162,13 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
       alert('File size must be less than 10MB');
       return false;
     }
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    const validTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'application/pdf',
+    ];
     if (!validTypes.includes(file.type)) {
       alert('Only PDF, JPG, PNG, and WEBP files are allowed');
       return false;
@@ -201,7 +229,8 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
     onSave(submitData, selectedFile, invoiceType);
   };
 
-  const currentCategories = invoiceType === 'purchase' ? purchaseCategories : expenseCategories;
+  const currentCategories =
+    invoiceType === 'purchase' ? purchaseCategories : expenseCategories;
 
   const isValid =
     formData.vendorName.trim().length > 0 &&
@@ -211,7 +240,13 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
   return (
     <Dialog open={open} maxWidth="sm" fullWidth disableEscapeKeyDown>
       <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           {invoice ? 'Edit Invoice' : 'Add Invoice'}
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
@@ -294,14 +329,19 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
 
             {/* Total Amount */}
             <Grid size={{ xs: 12 }}>
-              <TextField
+              <NumberInput
                 fullWidth
                 required
-                type="number"
+                allowDecimals
+                min={0}
                 label="Total Amount"
                 value={formData.totalAmount}
-                onChange={handleChange('totalAmount')}
-                inputProps={{ step: '0.01', min: '0' }}
+                onChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    totalAmount: (v ?? '') as unknown as number,
+                  })
+                }
                 helperText="Total amount including taxes"
               />
             </Grid>
@@ -310,7 +350,9 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
             <Grid size={{ xs: 12 }}>
               {invoice?.imageUrl && (
                 <Alert severity="info" sx={{ mb: 1, py: 0.5 }}>
-                  <Typography variant="caption">Current: {invoice.imageName}</Typography>
+                  <Typography variant="caption">
+                    Current: {invoice.imageName}
+                  </Typography>
                 </Alert>
               )}
 
@@ -335,7 +377,13 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
                 }}
               >
                 {selectedFile ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <ImageIcon sx={{ fontSize: 32, color: 'primary.main' }} />
                       <Box sx={{ textAlign: 'left' }}>
@@ -358,15 +406,31 @@ const PurchaseInvoiceDialog: React.FC<PurchaseInvoiceDialogProps> = ({
                   </Box>
                 ) : (
                   <Box>
-                    <UploadIcon sx={{ fontSize: 32, color: 'text.secondary', mb: 1 }} />
+                    <UploadIcon
+                      sx={{ fontSize: 32, color: 'text.secondary', mb: 1 }}
+                    />
                     <Typography variant="body2" gutterBottom>
                       Drag & drop invoice here
                     </Typography>
-                    <Button variant="outlined" component="label" size="small" startIcon={<UploadIcon />}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      size="small"
+                      startIcon={<UploadIcon />}
+                    >
                       Choose File
-                      <input type="file" hidden accept="image/*,.pdf" onChange={handleFileChange} />
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*,.pdf"
+                        onChange={handleFileChange}
+                      />
                     </Button>
-                    <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+                    <Typography
+                      variant="caption"
+                      display="block"
+                      sx={{ mt: 1, color: 'text.secondary' }}
+                    >
                       PDF, JPG, PNG, WEBP (Max 10MB)
                     </Typography>
                   </Box>

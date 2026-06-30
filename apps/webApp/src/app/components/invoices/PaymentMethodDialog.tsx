@@ -14,7 +14,6 @@ import {
   IconButton,
   FormControlLabel,
   Checkbox,
-  TextField,
   Alert,
 } from '@mui/material';
 import {
@@ -24,6 +23,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { PaymentMethod } from '../../../enums';
+import { NumberInput } from '../common';
 
 export interface PaymentEntryInput {
   paymentMethod: PaymentMethod;
@@ -207,14 +207,16 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
               </FormControl>
 
               {(isSplit || !payInFull) && (
-                <TextField
-                  type="number"
+                <NumberInput
+                  allowDecimals
                   label="Amount"
                   value={line.amount}
-                  onChange={(e) =>
-                    updateLine(index, { amount: e.target.value })
+                  onChange={(v) =>
+                    updateLine(index, {
+                      amount: v === undefined ? '' : String(v),
+                    })
                   }
-                  inputProps={{ min: 0, step: '0.01' }}
+                  min={0}
                   sx={{ width: 130 }}
                 />
               )}
