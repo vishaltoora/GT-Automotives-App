@@ -301,7 +301,38 @@ export class InvoiceRepository extends BaseRepository<
           amountPaid: child.total,
         },
       });
+      // A consolidated child is typically an RO invoice — complete its appointment.
+      await this.completeAppointmentForInvoice(child.id);
     }
+  }
+
+  /**
+   * Mark the appointment linked to an invoice as COMPLETED. Resolves the
+   * appointment either directly (`invoice.appointmentId`) or via the invoice's
+   * repair order (`invoice.repairOrder.appointmentId`). Only money is tracked on
+   * the invoice ledger — the appointment's payment fields are intentionally left
+   * untouched (no double counting in the Day Summary). No-op when there is no
+   * linked appointment or it's already completed/cancelled.
+   */
+  async completeAppointmentForInvoice(invoiceId: string): Promise<void> {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      select: {
+        appointmentId: true,
+        repairOrder: { select: { appointmentId: true } },
+      },
+    });
+    const appointmentId =
+      invoice?.appointmentId ?? invoice?.repairOrder?.appointmentId ?? null;
+    if (!appointmentId) return;
+
+    await this.prisma.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        status: { notIn: ['COMPLETED', 'CANCELLED', 'NO_SHOW'] },
+      },
+      data: { status: 'COMPLETED' },
+    });
   }
 
   async linkConsolidatedChildren(

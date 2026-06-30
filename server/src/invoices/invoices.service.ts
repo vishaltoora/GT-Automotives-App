@@ -634,13 +634,15 @@ export class InvoicesService {
       invoiceUpdate
     );
 
-    // Paying a combined parent in full settles its consolidated children.
     if (fullyPaid) {
+      // Paying a combined parent in full settles its consolidated children.
       await this.invoiceRepository.settleConsolidatedChildren(
         id,
         lastMethod,
         now
       );
+      // Completing an RO invoice completes the appointment behind it.
+      await this.invoiceRepository.completeAppointmentForInvoice(id);
     }
 
     await this.auditRepository.create({
