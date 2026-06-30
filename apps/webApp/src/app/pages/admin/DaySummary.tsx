@@ -335,8 +335,23 @@ export function DaySummary() {
       }
     });
 
-    // NOW calculate adjusted cash using only CASH payments (not credit card, debit, etc.)
-    const totalCashCollected = paymentsByMethod['CASH'] || 0;
+    // Fold invoice payments collected today into the headline total + method
+    // breakdown so "Total Amount Collected" reflects invoice money too.
+    const invoiceTotal = invoiceDay?.total || 0;
+    const invoiceCount = invoiceDay?.count || 0;
+    Object.entries(invoiceDay?.byPaymentMethod || {}).forEach(
+      ([method, amount]) => {
+        paymentsByMethod[method] =
+          (paymentsByMethod[method] || 0) + Number(amount);
+      }
+    );
+
+    const combinedTotalPayments = totalPayments + invoiceTotal;
+    const combinedPaymentsCount = sortedPayments.length + invoiceCount;
+
+    // Cash on hand = physical cash (taxed + no-tax) minus cash paid to employees.
+    const totalCashCollected =
+      (paymentsByMethod['CASH'] || 0) + (paymentsByMethod['CASH_NO_TAX'] || 0);
     adjustedCash = totalCashCollected - totalEmployeePayments;
 
     return {
@@ -346,9 +361,11 @@ export function DaySummary() {
       totalHours: (totalDuration / 60).toFixed(1),
       statusCounts,
 
-      // Customer payments processed today info
-      paymentsProcessedCount: sortedPayments.length,
-      totalPayments,
+      // Customer payments processed today info (appointment + invoice money)
+      paymentsProcessedCount: combinedPaymentsCount,
+      totalPayments: combinedTotalPayments,
+      appointmentPayments: totalPayments,
+      invoicePayments: invoiceTotal,
       totalExpected,
       totalOwed,
       paymentsByMethod,
@@ -375,6 +392,7 @@ export function DaySummary() {
     atGaragePayments,
     mobileServicePayments,
     employeePayments,
+    invoiceDay,
   ]);
 
   const handleSendEOD = async () => {
@@ -794,6 +812,16 @@ export function DaySummary() {
                       >
                         ${stats.totalPayments.toFixed(2)}
                       </Typography>
+                      {stats.invoicePayments > 0 && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mt: 0.5 }}
+                        >
+                          ${stats.appointmentPayments.toFixed(2)} appointments +
+                          ${stats.invoicePayments.toFixed(2)} invoices
+                        </Typography>
+                      )}
                     </Grid>
                     {stats.totalOwed > 0 && (
                       <Grid size={{ xs: 12, sm: 6 }}>
