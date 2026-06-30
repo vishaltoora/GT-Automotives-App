@@ -23,6 +23,8 @@ import { format } from 'date-fns';
 import { AppointmentResponseDto as Appointment } from '@gt-automotive/data';
 import { PaymentDialog } from './PaymentDialog';
 import { appointmentService } from '../../requests/appointment.requests';
+import { invoiceService } from '../../requests/invoice.requests';
+import { extractDateString } from '../../utils/dateUtils';
 import { AppointmentCard } from './AppointmentCard';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { DaySummaryTabPanel } from './DaySummaryTabPanel';
@@ -35,7 +37,11 @@ interface DayAppointmentsDialogProps {
   appointments: Appointment[];
   onEditAppointment?: (appointment: Appointment) => void;
   onDeleteAppointment?: (appointmentId: string) => void;
-  onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void | Promise<void>;
+  onStatusChange?: (
+    appointmentId: string,
+    newStatus: string,
+    paymentData?: any
+  ) => void | Promise<void>;
   onCreateRepairOrder?: (appointment: any) => void | Promise<void>;
   onViewRepairOrder?: (repairOrderId: string) => void;
   onAddAppointment?: () => void;
@@ -76,8 +82,10 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
 }) => {
   const [currentTab, setCurrentTab] = useState(0);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
   const [paymentsProcessed, setPaymentsProcessed] = useState<Appointment[]>([]);
+  const [invoiceDay, setInvoiceDay] = useState<any>(null);
 
   // Fetch payments processed on this date
   React.useEffect(() => {
@@ -90,11 +98,18 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     if (!date) return;
 
     try {
-      const payments = await appointmentService.getByPaymentDate(date);
+      const dateStr = extractDateString(date);
+      const [payments, invoicePayments] = await Promise.all([
+        appointmentService.getByPaymentDate(date),
+        // Invoice money collected this day (fed into the same summary cards)
+        invoiceService.getInvoiceDaySummary(dateStr).catch(() => null),
+      ]);
       setPaymentsProcessed(payments);
+      setInvoiceDay(invoicePayments);
     } catch (error) {
       console.error('Error fetching payments processed:', error);
       setPaymentsProcessed([]);
+      setInvoiceDay(null);
     }
   };
 
@@ -106,7 +121,6 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     });
   }, [appointments]);
 
-
   // Sort payments processed by time
   const sortedPayments = useMemo(() => {
     if (!paymentsProcessed || paymentsProcessed.length === 0) return [];
@@ -115,10 +129,45 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     });
   }, [paymentsProcessed]);
 
-  // Calculate statistics using utility function
+  // Calculate statistics using utility function, then fold in invoice money so
+  // the summary cards (total, At Shop, Mobile) match the main Day Summary page.
   const stats = useMemo(() => {
-    return calculatePaymentStats(sortedAppointments, sortedPayments);
-  }, [sortedAppointments, sortedPayments]);
+    const base = calculatePaymentStats(sortedAppointments, sortedPayments);
+    if (!invoiceDay) return base;
+
+    const merged = {
+      ...base,
+      paymentsByMethod: { ...base.paymentsByMethod },
+      atGaragePaymentsByMethod: { ...base.atGaragePaymentsByMethod },
+      mobileServicePaymentsByMethod: { ...base.mobileServicePaymentsByMethod },
+    };
+
+    const fold = (
+      target: Record<string, number>,
+      source: Record<string, number> | undefined
+    ) => {
+      Object.entries(source || {}).forEach(([method, amount]) => {
+        target[method] = (target[method] || 0) + Number(amount);
+      });
+    };
+
+    fold(merged.paymentsByMethod, invoiceDay.byPaymentMethod);
+    fold(merged.atGaragePaymentsByMethod, invoiceDay.atGarage?.byPaymentMethod);
+    fold(
+      merged.mobileServicePaymentsByMethod,
+      invoiceDay.mobileService?.byPaymentMethod
+    );
+
+    merged.totalPayments = base.totalPayments + (invoiceDay.total || 0);
+    merged.paymentsProcessedCount =
+      base.paymentsProcessedCount + (invoiceDay.count || 0);
+    merged.atGaragePayments =
+      base.atGaragePayments + (invoiceDay.atGarage?.total || 0);
+    merged.mobileServicePayments =
+      base.mobileServicePayments + (invoiceDay.mobileService?.total || 0);
+
+    return merged;
+  }, [sortedAppointments, sortedPayments, invoiceDay]);
 
   // Early return AFTER all hooks have been called
   if (!date) return null;
@@ -150,13 +199,18 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
         existingBreakdown = [];
       }
     }
-    const mergedBreakdown = [...(existingBreakdown || []), ...paymentData.payments];
+    const mergedBreakdown = [
+      ...(existingBreakdown || []),
+      ...paymentData.payments,
+    ];
 
     const updateData = {
       totalAmount: newTotal,
       payments: mergedBreakdown,
       paymentNotes: paymentData.paymentNotes
-        ? `${selectedAppointment.paymentNotes || ''}\n${paymentData.paymentNotes}`.trim()
+        ? `${selectedAppointment.paymentNotes || ''}\n${
+            paymentData.paymentNotes
+          }`.trim()
         : selectedAppointment.paymentNotes,
       expectedAmount: selectedAppointment.expectedAmount,
       completionEmployeeIds: paymentData.completionEmployeeIds,
@@ -165,7 +219,11 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
     };
 
     // Call the status change handler (it won't change status, just update payment)
-    await onStatusChange(selectedAppointment.id, selectedAppointment.status, updateData);
+    await onStatusChange(
+      selectedAppointment.id,
+      selectedAppointment.status,
+      updateData
+    );
 
     // Close payment dialog first
     setPaymentDialogOpen(false);
@@ -232,9 +290,12 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
             <Typography variant="h6" component="div" sx={{ color: 'white' }}>
               {formattedDate}
             </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-              {stats.total} {stats.total === 1 ? 'appointment' : 'appointments'} •{' '}
-              {stats.totalHours} hours
+            <Typography
+              variant="body2"
+              sx={{ color: 'rgba(255, 255, 255, 0.8)' }}
+            >
+              {stats.total} {stats.total === 1 ? 'appointment' : 'appointments'}{' '}
+              • {stats.totalHours} hours
             </Typography>
           </Box>
         </Box>
@@ -243,7 +304,9 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', px: { xs: 1, sm: 3 } }}>
+      <Box
+        sx={{ borderBottom: 1, borderColor: 'divider', px: { xs: 1, sm: 3 } }}
+      >
         <Tabs
           value={currentTab}
           onChange={handleTabChange}
@@ -290,18 +353,18 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
             />
           ) : (
             <Stack spacing={2}>
-                {sortedAppointments.map((appointment) => (
-                  <AppointmentCard
-                    key={appointment.id}
-                    appointment={appointment}
-                    onEdit={onEditAppointment}
-                    onDelete={onDeleteAppointment}
-                    onStatusChange={onStatusChange}
-                    onCreateRepairOrder={onCreateRepairOrder}
-                    onViewRepairOrder={onViewRepairOrder}
-                    onPaymentComplete={handlePaymentComplete}
-                  />
-                ))}
+              {sortedAppointments.map((appointment) => (
+                <AppointmentCard
+                  key={appointment.id}
+                  appointment={appointment}
+                  onEdit={onEditAppointment}
+                  onDelete={onDeleteAppointment}
+                  onStatusChange={onStatusChange}
+                  onCreateRepairOrder={onCreateRepairOrder}
+                  onViewRepairOrder={onViewRepairOrder}
+                  onPaymentComplete={handlePaymentComplete}
+                />
+              ))}
             </Stack>
           )}
         </TabPanel>
@@ -324,7 +387,10 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
           gap: 1,
           flexShrink: 0,
           minHeight: { xs: 64, sm: 'auto' },
-          paddingBottom: { xs: 'max(16px, env(safe-area-inset-bottom))', sm: 2 },
+          paddingBottom: {
+            xs: 'max(16px, env(safe-area-inset-bottom))',
+            sm: 2,
+          },
         }}
       >
         <Button
@@ -366,11 +432,13 @@ export const DayAppointmentsDialog: React.FC<DayAppointmentsDialogProps> = ({
           appointmentId={selectedAppointment.id}
           defaultExpectedAmount={
             selectedAppointment.expectedAmount
-              ? selectedAppointment.expectedAmount - (selectedAppointment.paymentAmount || 0)
+              ? selectedAppointment.expectedAmount -
+                (selectedAppointment.paymentAmount || 0)
               : 0
           }
           assignedEmployeeIds={
-            selectedAppointment.employees && selectedAppointment.employees.length > 0
+            selectedAppointment.employees &&
+            selectedAppointment.employees.length > 0
               ? selectedAppointment.employees.map((ae) => ae.employee.id)
               : selectedAppointment.employee
               ? [selectedAppointment.employee.id]
