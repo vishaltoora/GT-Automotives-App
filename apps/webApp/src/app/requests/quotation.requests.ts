@@ -90,9 +90,13 @@ class QuoteService {
   }
 
   async updateQuote(id: string, data: UpdateQuoteDto): Promise<Quote> {
-    const response = await axios.patch(`${API_URL}/api/quotations/${id}`, data, {
-      headers: await this.getHeaders(),
-    });
+    const response = await axios.patch(
+      `${API_URL}/api/quotations/${id}`,
+      data,
+      {
+        headers: await this.getHeaders(),
+      }
+    );
     return response.data;
   }
 
@@ -114,13 +118,20 @@ class QuoteService {
       if (value) queryParams.append(key, value);
     });
 
-    const response = await axios.get(`${API_URL}/api/quotations/search?${queryParams}`, {
-      headers: await this.getHeaders(),
-    });
+    const response = await axios.get(
+      `${API_URL}/api/quotations/search?${queryParams}`,
+      {
+        headers: await this.getHeaders(),
+      }
+    );
     return response.data;
   }
 
-  async convertToInvoice(quoteId: string, customerId: string, vehicleId?: string): Promise<any> {
+  async convertToInvoice(
+    quoteId: string,
+    customerId: string,
+    vehicleId?: string
+  ): Promise<any> {
     const response = await axios.post(
       `${API_URL}/api/quotations/${quoteId}/convert`,
       { customerId, vehicleId },
@@ -131,7 +142,11 @@ class QuoteService {
     return response.data;
   }
 
-  async sendQuotationEmail(id: string, email?: string, saveToQuote?: boolean): Promise<{ success: boolean; message: string; emailUsed?: string }> {
+  async sendQuotationEmail(
+    id: string,
+    email?: string,
+    saveToQuote?: boolean
+  ): Promise<{ success: boolean; message: string; emailUsed?: string }> {
     const response = await axios.post(
       `${API_URL}/api/quotations/${id}/send-email`,
       { email, saveToQuote },
@@ -145,10 +160,12 @@ class QuoteService {
   // Helper method to generate print-friendly HTML
   generatePrintHTML(quote: Quote): string {
     const formatCurrency = (amount: number | string) => {
-      const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+      const numAmount =
+        typeof amount === 'string' ? parseFloat(amount) : amount;
       return `$${(numAmount || 0).toFixed(2)}`;
     };
-    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
+    const formatDate = (dateStr: string) =>
+      new Date(dateStr).toLocaleDateString();
 
     // GT Logo - using actual logo.png
     const gtLogo = `<img src="${gtLogoImage}" alt="GT Automotivess Logo" style="width: 80px; height: 80px; object-fit: contain;" />`;
@@ -274,27 +291,45 @@ class QuoteService {
           <div class="quote-details">
             <h2>QUOTE</h2>
             <p><strong>Quote #:</strong> ${quote.quotationNumber}<br>
-            <strong>Date:</strong> ${formatDate(quote.createdAt)}<br>
-            <strong>Valid Until:</strong> ${quote.validUntil ? formatDate(quote.validUntil) : 'N/A'}<br>
+            <strong>Date:</strong> ${formatDate(
+              quote.quotationDate || quote.createdAt
+            )}<br>
+            <strong>Valid Until:</strong> ${
+              quote.validUntil ? formatDate(quote.validUntil) : 'N/A'
+            }<br>
             <strong>Status:</strong> ${quote.status}</p>
           </div>
         </div>
 
         <div class="customer-info">
           <h3>Quoted To:</h3>
-          <p>${quote.businessName ? `<strong>${quote.businessName}</strong><br>` : ''}
+          <p>${
+            quote.businessName
+              ? `<strong>${quote.businessName}</strong><br>`
+              : ''
+          }
           ${quote.customerName}<br>
-          ${quote.phone ? `Phone: ${formatPhoneForDisplay(quote.phone)}<br>` : ''}
+          ${
+            quote.phone
+              ? `Phone: ${formatPhoneForDisplay(quote.phone)}<br>`
+              : ''
+          }
           ${quote.email ? `Email: ${quote.email}<br>` : ''}
           ${quote.address || ''}</p>
         </div>
 
-        ${quote.vehicleMake ? `
+        ${
+          quote.vehicleMake
+            ? `
         <div class="customer-info">
           <h3>Vehicle Information:</h3>
-          <p>${quote.vehicleYear || ''} ${quote.vehicleMake} ${quote.vehicleModel || ''}</p>
+          <p>${quote.vehicleYear || ''} ${quote.vehicleMake} ${
+                quote.vehicleModel || ''
+              }</p>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <table class="items-table">
           <thead>
@@ -307,18 +342,34 @@ class QuoteService {
             </tr>
           </thead>
           <tbody>
-            ${quote.items.map(item => `
+            ${quote.items
+              .map(
+                (item) => `
               <tr>
                 <td>
-                  ${(item as any).tireName ? `<div style="font-weight: 600; margin-bottom: 2px;">${(item as any).tireName}</div>` : ''}
-                  <div style="${(item as any).tireName ? 'color: #666; font-size: 0.95em;' : ''}">${item.description}</div>
+                  ${
+                    (item as any).tireName
+                      ? `<div style="font-weight: 600; margin-bottom: 2px;">${
+                          (item as any).tireName
+                        }</div>`
+                      : ''
+                  }
+                  <div style="${
+                    (item as any).tireName
+                      ? 'color: #666; font-size: 0.95em;'
+                      : ''
+                  }">${item.description}</div>
                 </td>
                 <td>${item.itemType.replace('_', ' ')}</td>
                 <td>${item.quantity}</td>
                 <td>${formatCurrency(item.unitPrice)}</td>
-                <td>${formatCurrency(item.total || item.quantity * item.unitPrice)}</td>
+                <td>${formatCurrency(
+                  item.total || item.quantity * item.unitPrice
+                )}</td>
               </tr>
-            `).join('')}
+            `
+              )
+              .join('')}
           </tbody>
         </table>
 
@@ -328,18 +379,26 @@ class QuoteService {
               <td>Subtotal:</td>
               <td>${formatCurrency(quote.subtotal)}</td>
             </tr>
-            ${quote.gstAmount ? `
+            ${
+              quote.gstAmount
+                ? `
             <tr>
               <td>GST (${((quote.gstRate || 0) * 100).toFixed(0)}%):</td>
               <td>${formatCurrency(quote.gstAmount)}</td>
             </tr>
-            ` : ''}
-            ${quote.pstAmount ? `
+            `
+                : ''
+            }
+            ${
+              quote.pstAmount
+                ? `
             <tr>
               <td>PST (${((quote.pstRate || 0) * 100).toFixed(0)}%):</td>
               <td>${formatCurrency(quote.pstAmount)}</td>
             </tr>
-            ` : ''}
+            `
+                : ''
+            }
             <tr class="total-row">
               <td>Total:</td>
               <td>${formatCurrency(quote.total)}</td>
@@ -347,16 +406,26 @@ class QuoteService {
           </table>
         </div>
 
-        ${quote.notes ? `
+        ${
+          quote.notes
+            ? `
         <div style="margin-top: 15px;">
           <h4>Notes:</h4>
           <p>${quote.notes}</p>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="validity-notice">
           <strong>Terms & Conditions:</strong><br>
-          • This quote is valid until ${quote.validUntil ? formatDate(quote.validUntil) : formatDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString())}.<br>
+          • This quote is valid until ${
+            quote.validUntil
+              ? formatDate(quote.validUntil)
+              : formatDate(
+                  new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+                )
+          }.<br>
           • Prices are subject to change without notice after expiry date.<br>
           • This is a quote only and does not constitute a commitment to provide services or products.<br>
           • All work is subject to parts availability.
@@ -364,7 +433,9 @@ class QuoteService {
 
         <div class="footer">
           <p>Thank you for considering GT Automotivess for your automotive needs!</p>
-          <p style="font-size: 0.8em;">This quote was generated on ${formatDate(quote.createdAt)}</p>
+          <p style="font-size: 0.8em;">This quote was generated on ${formatDate(
+            quote.createdAt
+          )}</p>
         </div>
       </body>
       </html>
@@ -380,11 +451,11 @@ class QuoteService {
         this.printUsingBlob(quote);
         return;
       }
-      
+
       const htmlContent = this.generatePrintHTML(quote);
       printWindow.document.write(htmlContent);
       printWindow.document.close();
-      
+
       // Wait a bit for content to load, then print
       setTimeout(() => {
         try {
@@ -408,18 +479,20 @@ class QuoteService {
       const htmlContent = this.generatePrintHTML(quote);
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      
+
       const printWindow = window.open(url, '_blank');
       if (!printWindow) {
         // Still blocked - show error
-        throw new Error('Popup blocked by browser. Please allow popups for printing.');
+        throw new Error(
+          'Popup blocked by browser. Please allow popups for printing.'
+        );
       }
-      
+
       // Clean up URL after window loads
       setTimeout(() => {
         URL.revokeObjectURL(url);
       }, 1000);
-      
+
       printWindow.onload = () => {
         setTimeout(() => {
           try {

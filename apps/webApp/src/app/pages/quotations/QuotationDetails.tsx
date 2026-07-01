@@ -79,9 +79,11 @@ const QuotationDetails: React.FC = () => {
     }
   };
 
-  const handleStatusUpdate = async (newStatus: 'SENT' | 'ACCEPTED' | 'REJECTED') => {
+  const handleStatusUpdate = async (
+    newStatus: 'SENT' | 'ACCEPTED' | 'REJECTED'
+  ) => {
     if (!quotation) return;
-    
+
     try {
       await quotationService.updateQuote(quotation.id, { status: newStatus });
       loadQuotation();
@@ -203,10 +205,14 @@ const QuotationDetails: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>Quotation not found</Typography>
-        <Button startIcon={<BackIcon />} onClick={() => {
-          const basePath = role === 'admin' ? '/admin' : '/staff';
-          navigate(`${basePath}/quotations`);
-        }} sx={{ mt: 2 }}>
+        <Button
+          startIcon={<BackIcon />}
+          onClick={() => {
+            const basePath = role === 'admin' ? '/admin' : '/staff';
+            navigate(`${basePath}/quotations`);
+          }}
+          sx={{ mt: 2 }}
+        >
           Back to Quotations
         </Button>
       </Box>
@@ -214,13 +220,15 @@ const QuotationDetails: React.FC = () => {
   }
 
   return (
-    <Box sx={{
-      p: {
-        xs: theme.custom.spacing.pagePadding.mobile,
-        sm: theme.custom.spacing.pagePadding.tablet,
-        md: theme.custom.spacing.pagePadding.desktop
-      }
-    }}>
+    <Box
+      sx={{
+        p: {
+          xs: theme.custom.spacing.pagePadding.mobile,
+          sm: theme.custom.spacing.pagePadding.tablet,
+          md: theme.custom.spacing.pagePadding.desktop,
+        },
+      }}
+    >
       <style>
         {`
           @media print {
@@ -238,11 +246,20 @@ const QuotationDetails: React.FC = () => {
       <Box className="no-print" sx={{ mb: { xs: 1, sm: 2 } }}>
         {isMobile ? (
           // Mobile: Back button + Menu
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Button startIcon={<BackIcon />} onClick={() => {
-              const basePath = role === 'admin' ? '/admin' : '/staff';
-              navigate(`${basePath}/quotations`);
-            }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Button
+              startIcon={<BackIcon />}
+              onClick={() => {
+                const basePath = role === 'admin' ? '/admin' : '/staff';
+                navigate(`${basePath}/quotations`);
+              }}
+            >
               Back
             </Button>
             <IconButton onClick={handleMenuOpen} size="large" edge="end">
@@ -254,36 +271,48 @@ const QuotationDetails: React.FC = () => {
               onClose={handleMenuClose}
             >
               <MenuItem onClick={handlePrintFromMenu}>
-                <ListItemIcon><PrintIcon fontSize="small" /></ListItemIcon>
+                <ListItemIcon>
+                  <PrintIcon fontSize="small" />
+                </ListItemIcon>
                 <ListItemText>Print</ListItemText>
               </MenuItem>
               {quotation.status !== 'CONVERTED' && (
                 <>
                   <MenuItem onClick={handleEditFromMenu}>
-                    <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+                    <ListItemIcon>
+                      <EditIcon fontSize="small" />
+                    </ListItemIcon>
                     <ListItemText>Edit</ListItemText>
                   </MenuItem>
                   {quotation.status === 'DRAFT' && (
                     <MenuItem onClick={handleMarkSentFromMenu}>
-                      <ListItemIcon><SendIcon fontSize="small" color="primary" /></ListItemIcon>
+                      <ListItemIcon>
+                        <SendIcon fontSize="small" color="primary" />
+                      </ListItemIcon>
                       <ListItemText>Mark as Sent</ListItemText>
                     </MenuItem>
                   )}
                   {quotation.status === 'SENT' && (
                     <>
                       <MenuItem onClick={handleAcceptFromMenu}>
-                        <ListItemIcon><AcceptIcon fontSize="small" color="success" /></ListItemIcon>
+                        <ListItemIcon>
+                          <AcceptIcon fontSize="small" color="success" />
+                        </ListItemIcon>
                         <ListItemText>Accept</ListItemText>
                       </MenuItem>
                       <MenuItem onClick={handleRejectFromMenu}>
-                        <ListItemIcon><RejectIcon fontSize="small" color="error" /></ListItemIcon>
+                        <ListItemIcon>
+                          <RejectIcon fontSize="small" color="error" />
+                        </ListItemIcon>
                         <ListItemText>Reject</ListItemText>
                       </MenuItem>
                     </>
                   )}
                   {quotation.status === 'ACCEPTED' && (
                     <MenuItem onClick={handleConvertFromMenu}>
-                      <ListItemIcon><ConvertIcon fontSize="small" color="primary" /></ListItemIcon>
+                      <ListItemIcon>
+                        <ConvertIcon fontSize="small" color="primary" />
+                      </ListItemIcon>
                       <ListItemText>Convert to Invoice</ListItemText>
                     </MenuItem>
                   )}
@@ -294,14 +323,21 @@ const QuotationDetails: React.FC = () => {
         ) : (
           // Desktop: Original layout
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Button startIcon={<BackIcon />} onClick={() => {
-              const basePath = role === 'admin' ? '/admin' : '/staff';
-              navigate(`${basePath}/quotations`);
-            }}>
+            <Button
+              startIcon={<BackIcon />}
+              onClick={() => {
+                const basePath = role === 'admin' ? '/admin' : '/staff';
+                navigate(`${basePath}/quotations`);
+              }}
+            >
               Back to Quotations
             </Button>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button variant="outlined" startIcon={<PrintIcon />} onClick={handlePrint}>
+              <Button
+                variant="outlined"
+                startIcon={<PrintIcon />}
+                onClick={handlePrint}
+              >
                 Print
               </Button>
               {quotation.status !== 'CONVERTED' && (
@@ -361,7 +397,8 @@ const QuotationDetails: React.FC = () => {
 
       {isExpired(quotation.validUntil) && quotation.status !== 'CONVERTED' && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          This quotation has expired. The validity date was {formatDate(quotation.validUntil!)}.
+          This quotation has expired. The validity date was{' '}
+          {formatDate(quotation.validUntil!)}.
         </Alert>
       )}
 
@@ -371,16 +408,21 @@ const QuotationDetails: React.FC = () => {
         </Alert>
       )}
 
-      <Paper sx={{
-        p: {
-          xs: 2,
-          sm: 3
-        }
-      }}>
+      <Paper
+        sx={{
+          p: {
+            xs: 2,
+            sm: 3,
+          },
+        }}
+      >
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant={isMobile ? "h5" : "h4"} gutterBottom>
+            <Typography variant={isMobile ? 'h5' : 'h4'} gutterBottom>
               Quotation #{quotation.quotationNumber}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Date: {formatDate(quotation.quotationDate || quotation.createdAt)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Created: {formatDateTime(quotation.createdAt)}
@@ -391,7 +433,10 @@ const QuotationDetails: React.FC = () => {
               </Typography>
             )}
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+          <Grid
+            size={{ xs: 12, md: 6 }}
+            sx={{ textAlign: { xs: 'left', md: 'right' } }}
+          >
             <Chip
               label={getStatusLabel(quotation.status)}
               color={getStatusColor(quotation.status)}
@@ -406,27 +451,40 @@ const QuotationDetails: React.FC = () => {
           <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>Customer Information</Typography>
+                <Typography variant="h6" gutterBottom>
+                  Customer Information
+                </Typography>
                 {quotation.businessName && (
                   <Typography variant="body1" fontWeight="bold">
                     {quotation.businessName}
                   </Typography>
                 )}
                 <Typography>{quotation.customerName}</Typography>
-                {quotation.phone && <Typography>Phone: {formatPhoneForDisplay(quotation.phone)}</Typography>}
-                {quotation.email && <Typography>Email: {quotation.email}</Typography>}
-                {quotation.address && <Typography>{quotation.address}</Typography>}
+                {quotation.phone && (
+                  <Typography>
+                    Phone: {formatPhoneForDisplay(quotation.phone)}
+                  </Typography>
+                )}
+                {quotation.email && (
+                  <Typography>Email: {quotation.email}</Typography>
+                )}
+                {quotation.address && (
+                  <Typography>{quotation.address}</Typography>
+                )}
               </CardContent>
             </Card>
           </Grid>
-          
+
           {quotation.vehicleMake && (
             <Grid size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>Vehicle Information</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Vehicle Information
+                  </Typography>
                   <Typography>
-                    {quotation.vehicleYear} {quotation.vehicleMake} {quotation.vehicleModel}
+                    {quotation.vehicleYear} {quotation.vehicleMake}{' '}
+                    {quotation.vehicleModel}
                   </Typography>
                 </CardContent>
               </Card>
@@ -434,7 +492,9 @@ const QuotationDetails: React.FC = () => {
           )}
         </Grid>
 
-        <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>Items</Typography>
+        <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
+          Items
+        </Typography>
         {isMobile ? (
           // Mobile: Card-based layout
           <Stack spacing={2}>
@@ -443,19 +503,37 @@ const QuotationDetails: React.FC = () => {
               return (
                 <Card key={item.id} variant="outlined">
                   <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                      <Chip label={item.itemType.replace('_', ' ')} size="small" />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        mb: 1,
+                      }}
+                    >
+                      <Chip
+                        label={item.itemType.replace('_', ' ')}
+                        size="small"
+                      />
                       <Typography variant="h6" fontWeight="bold">
                         {formatCurrency(displayTotal)}
                       </Typography>
                     </Box>
 
                     {(item as any).tireName && (
-                      <Typography variant="body2" fontWeight="medium" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        fontWeight="medium"
+                        gutterBottom
+                      >
                         {(item as any).tireName}
                       </Typography>
                     )}
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
                       {item.description}
                     </Typography>
 
@@ -464,7 +542,8 @@ const QuotationDetails: React.FC = () => {
                         <strong>Qty:</strong> {item.quantity}
                       </Typography>
                       <Typography variant="body2">
-                        <strong>Unit Price:</strong> {formatCurrency(item.unitPrice)}
+                        <strong>Unit Price:</strong>{' '}
+                        {formatCurrency(item.unitPrice)}
                       </Typography>
                     </Box>
                   </CardContent>
@@ -494,15 +573,24 @@ const QuotationDetails: React.FC = () => {
                           {(item as any).tireName}
                         </Typography>
                       )}
-                      <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                      <Typography
+                        variant="body2"
+                        color={
+                          (item as any).tireName ? 'text.secondary' : 'inherit'
+                        }
+                      >
                         {item.description}
                       </Typography>
                     </TableCell>
                     <TableCell>{item.itemType.replace('_', ' ')}</TableCell>
                     <TableCell align="center">{item.quantity}</TableCell>
-                    <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
                     <TableCell align="right">
-                      {formatCurrency(item.total || item.quantity * item.unitPrice)}
+                      {formatCurrency(item.unitPrice)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(
+                        item.total || item.quantity * item.unitPrice
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -513,12 +601,16 @@ const QuotationDetails: React.FC = () => {
 
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ minWidth: { xs: '100%', sm: 300 } }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+            >
               <Typography>Subtotal:</Typography>
               <Typography>{formatCurrency(quotation.subtotal)}</Typography>
             </Box>
             {quotation.gstAmount !== undefined && quotation.gstAmount > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+              >
                 <Typography variant="body2">
                   GST ({((quotation.gstRate || 0) * 100).toFixed(0)}%):
                 </Typography>
@@ -528,7 +620,9 @@ const QuotationDetails: React.FC = () => {
               </Box>
             )}
             {quotation.pstAmount !== undefined && quotation.pstAmount > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+              >
                 <Typography variant="body2">
                   PST ({((quotation.pstRate || 0) * 100).toFixed(0)}%):
                 </Typography>
@@ -540,7 +634,9 @@ const QuotationDetails: React.FC = () => {
             <Divider sx={{ my: 1 }} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="h6">Total:</Typography>
-              <Typography variant="h6">{formatCurrency(quotation.total)}</Typography>
+              <Typography variant="h6">
+                {formatCurrency(quotation.total)}
+              </Typography>
             </Box>
           </Box>
         </Box>
@@ -548,7 +644,9 @@ const QuotationDetails: React.FC = () => {
         {quotation.notes && (
           <>
             <Divider sx={{ my: 3 }} />
-            <Typography variant="h6" gutterBottom>Notes</Typography>
+            <Typography variant="h6" gutterBottom>
+              Notes
+            </Typography>
             <Typography>{quotation.notes}</Typography>
           </>
         )}
