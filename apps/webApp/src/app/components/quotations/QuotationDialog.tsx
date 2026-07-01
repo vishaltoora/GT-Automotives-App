@@ -12,7 +12,11 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Print as PrintIcon, Close as CloseIcon, RequestQuote as QuoteIcon } from '@mui/icons-material';
+import {
+  Print as PrintIcon,
+  Close as CloseIcon,
+  RequestQuote as QuoteIcon,
+} from '@mui/icons-material';
 import { quotationService, QuoteItem } from '../../requests/quotation.requests';
 import { TireService } from '../../requests/tire.requests';
 import { serviceService } from '../../requests/service.requests';
@@ -32,7 +36,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   open,
   onClose,
   onSuccess,
-  quoteId
+  quoteId,
 }) => {
   const { showError } = useError();
   const theme = useTheme();
@@ -41,7 +45,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   const [saving, setSaving] = useState(false);
   const [tires, setTires] = useState<any[]>([]);
   const [services, setServices] = useState<ServiceDto[]>([]);
-  
+
   const [quoteForm, setQuoteForm] = useState({
     customerName: '',
     businessName: '',
@@ -56,6 +60,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
     notes: '',
     status: 'DRAFT',
     validUntil: '',
+    quotationDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD
   });
 
   const [items, setItems] = useState<QuoteItem[]>([]);
@@ -89,7 +94,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
       // Load existing quotation if editing
       if (quoteId) {
         const quotation = await quotationService.getQuote(quoteId);
-        
+
         setQuoteForm({
           customerName: quotation.customerName,
           businessName: quotation.businessName || '',
@@ -103,7 +108,12 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
           pstRate: Number(quotation.pstRate) || 0.07,
           notes: quotation.notes || '',
           status: quotation.status || 'DRAFT',
-          validUntil: quotation.validUntil ? new Date(quotation.validUntil).toISOString().split('T')[0] : '',
+          validUntil: quotation.validUntil
+            ? new Date(quotation.validUntil).toISOString().split('T')[0]
+            : '',
+          quotationDate: quotation.quotationDate
+            ? new Date(quotation.quotationDate).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0],
         });
 
         setItems(quotation.items);
@@ -129,6 +139,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
       notes: '',
       status: 'DRAFT',
       validUntil: '',
+      quotationDate: new Date().toISOString().split('T')[0],
     });
     setItems([]);
     setNewItem({
@@ -140,7 +151,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   };
 
   const handleTireSelect = (tireId: string) => {
-    const tire = tires.find(t => t.id === tireId);
+    const tire = tires.find((t) => t.id === tireId);
     if (tire) {
       setNewItem({
         ...newItem,
@@ -191,23 +202,31 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
 
     try {
       setSaving(true);
-      
+
       const quoteData = {
         ...quoteForm,
         ...formData,
-        validUntil: formData.validUntil ? new Date(formData.validUntil + 'T00:00:00.000Z').toISOString() : undefined,
+        validUntil: formData.validUntil
+          ? new Date(formData.validUntil + 'T00:00:00.000Z').toISOString()
+          : undefined,
         items: items.map(({ id, total, ...item }) => ({
           ...item,
           unitPrice: Number(item.unitPrice),
-          quantity: Number(item.quantity)
+          quantity: Number(item.quantity),
         })),
       };
 
       let savedQuotation;
       if (quoteId) {
-        savedQuotation = await quotationService.updateQuote(quoteId, { ...quoteData, status: quoteData.status as any });
+        savedQuotation = await quotationService.updateQuote(quoteId, {
+          ...quoteData,
+          status: quoteData.status as any,
+        });
       } else {
-        savedQuotation = await quotationService.createQuote({ ...quoteData, status: quoteData.status as any });
+        savedQuotation = await quotationService.createQuote({
+          ...quoteData,
+          status: quoteData.status as any,
+        });
       }
 
       // Print the quotation if requested, but don't let print failures affect the save operation
@@ -215,9 +234,14 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
         try {
           quotationService.printQuote(savedQuotation);
         } catch (printError) {
-          console.warn('Print failed, but quotation was saved successfully:', printError);
+          console.warn(
+            'Print failed, but quotation was saved successfully:',
+            printError
+          );
           // Show a warning but don't fail the entire operation
-          showError('Quotation saved successfully, but printing failed. You can print it later from the quotations list.');
+          showError(
+            'Quotation saved successfully, but printing failed. You can print it later from the quotations list.'
+          );
         }
       }
 
@@ -250,8 +274,8 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
             display: 'flex',
             flexDirection: 'column',
             height: '100vh',
-          })
-        }
+          }),
+        },
       }}
     >
       <DialogTitle
@@ -265,11 +289,18 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
           px: { xs: 2, sm: 3 },
           ...(isMobile && {
             flexShrink: 0,
-          })
+          }),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-          <QuoteIcon sx={{ fontSize: { xs: 24, sm: 28 }, display: { xs: 'none', sm: 'block' } }} />
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}
+        >
+          <QuoteIcon
+            sx={{
+              fontSize: { xs: 24, sm: 28 },
+              display: { xs: 'none', sm: 'block' },
+            }}
+          />
           <Box>
             <Typography
               variant={isMobile ? 'h6' : 'h5'}
@@ -279,7 +310,9 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
             </Typography>
             {!isMobile && (
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {quoteId ? 'Modify existing quotation details' : 'Generate professional quotations for your customers'}
+                {quoteId
+                  ? 'Modify existing quotation details'
+                  : 'Generate professional quotations for your customers'}
               </Typography>
             )}
           </Box>
@@ -289,13 +322,13 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
           size={isMobile ? 'small' : 'medium'}
           sx={{
             color: 'white',
-            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
           }}
         >
           <CloseIcon fontSize={isMobile ? 'small' : 'medium'} />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent
         sx={{
           ...(isMobile && {
@@ -303,7 +336,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
             overflowY: 'auto',
             minHeight: 0,
             p: 0,
-          })
+          }),
         }}
       >
         {loading ? (
@@ -311,24 +344,22 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
             <CircularProgress />
           </Box>
         ) : (
-          <>
-            <QuotationFormContent
-              tires={tires}
-              services={services}
-              quotationForm={quoteForm}
-              setQuotationForm={setQuoteForm}
-              formData={formData}
-              setFormData={setFormData}
-              items={items}
-              setItems={setItems}
-              newItem={newItem}
-              setNewItem={setNewItem}
-              onAddItem={handleAddItem}
-              onRemoveItem={handleRemoveItem}
-              onTireSelect={handleTireSelect}
-              onServicesChange={handleServicesChange}
-            />
-          </>
+          <QuotationFormContent
+            tires={tires}
+            services={services}
+            quotationForm={quoteForm}
+            setQuotationForm={setQuoteForm}
+            formData={formData}
+            setFormData={setFormData}
+            items={items}
+            setItems={setItems}
+            newItem={newItem}
+            setNewItem={setNewItem}
+            onAddItem={handleAddItem}
+            onRemoveItem={handleRemoveItem}
+            onTireSelect={handleTireSelect}
+            onServicesChange={handleServicesChange}
+          />
         )}
       </DialogContent>
 
@@ -341,7 +372,7 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
           ...(isMobile && {
             flexShrink: 0,
             backgroundColor: 'white',
-          })
+          }),
         }}
       >
         <Button
@@ -354,8 +385,8 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
             color: colors.text.secondary,
             '&:hover': {
               borderColor: colors.neutral[600],
-              background: colors.neutral[50]
-            }
+              background: colors.neutral[50],
+            },
           }}
         >
           Cancel
@@ -369,17 +400,21 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
           sx={{
             background: colors.primary.main,
             '&:hover': {
-              background: colors.primary.dark
-            }
+              background: colors.primary.dark,
+            },
           }}
         >
           {saving
-            ? (quoteId ? 'Updating...' : 'Creating...')
-            : (quoteId
-                ? (isMobile ? 'Update' : 'Update Quote')
-                : (isMobile ? 'Create' : 'Create Quote')
-              )
-          }
+            ? quoteId
+              ? 'Updating...'
+              : 'Creating...'
+            : quoteId
+            ? isMobile
+              ? 'Update'
+              : 'Update Quote'
+            : isMobile
+            ? 'Create'
+            : 'Create Quote'}
         </Button>
       </DialogActions>
     </Dialog>
