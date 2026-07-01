@@ -29,12 +29,17 @@ import {
 } from '@mui/icons-material';
 import { TireResponseDto as ITire } from '@gt-automotive/data';
 import { useStockAdjustment } from '../../hooks/useTires';
+import { NumberInput } from '../common';
 
 interface StockAdjustmentDialogProps {
   open: boolean;
   tire: ITire | null;
   onClose: () => void;
-  onConfirm?: (adjustment: { quantity: number; type: 'add' | 'remove' | 'set'; reason: string }) => void;
+  onConfirm?: (adjustment: {
+    quantity: number;
+    type: 'add' | 'remove' | 'set';
+    reason: string;
+  }) => void;
 }
 
 interface AdjustmentForm {
@@ -44,9 +49,24 @@ interface AdjustmentForm {
 }
 
 const ADJUSTMENT_TYPES = [
-  { value: 'add', label: 'Add Stock', icon: <AddIcon />, description: 'Increase inventory quantity' },
-  { value: 'remove', label: 'Remove Stock', icon: <RemoveIcon />, description: 'Decrease inventory quantity' },
-  { value: 'set', label: 'Set Stock', icon: <EditIcon />, description: 'Set exact inventory quantity' },
+  {
+    value: 'add',
+    label: 'Add Stock',
+    icon: <AddIcon />,
+    description: 'Increase inventory quantity',
+  },
+  {
+    value: 'remove',
+    label: 'Remove Stock',
+    icon: <RemoveIcon />,
+    description: 'Decrease inventory quantity',
+  },
+  {
+    value: 'set',
+    label: 'Set Stock',
+    icon: <EditIcon />,
+    description: 'Set exact inventory quantity',
+  },
 ] as const;
 
 const COMMON_REASONS = [
@@ -60,11 +80,11 @@ const COMMON_REASONS = [
   'Internal use',
 ];
 
-export function StockAdjustmentDialog({ 
-  open, 
-  tire, 
-  onClose, 
-  onConfirm 
+export function StockAdjustmentDialog({
+  open,
+  tire,
+  onClose,
+  onConfirm,
 }: StockAdjustmentDialogProps) {
   const [form, setForm] = useState<AdjustmentForm>({
     type: 'add',
@@ -146,7 +166,13 @@ export function StockAdjustmentDialog({
 
   return (
     <Dialog open={open} disableEscapeKeyDown maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <Box>
           <Typography variant="h6">Adjust Stock</Typography>
           <Typography variant="body2" color="text.secondary">
@@ -170,10 +196,10 @@ export function StockAdjustmentDialog({
               {tire.quantity} units
             </Typography>
             {tire.quantity <= (tire.minStock || 5) && (
-              <Chip 
-                label="Low Stock" 
-                color="warning" 
-                size="small" 
+              <Chip
+                label="Low Stock"
+                color="warning"
+                size="small"
                 sx={{ mt: 1 }}
               />
             )}
@@ -184,7 +210,12 @@ export function StockAdjustmentDialog({
             <FormLabel component="legend">Adjustment Type</FormLabel>
             <RadioGroup
               value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value as 'add' | 'remove' | 'set' })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  type: e.target.value as 'add' | 'remove' | 'set',
+                })
+              }
             >
               {ADJUSTMENT_TYPES.map((type) => (
                 <FormControlLabel
@@ -208,15 +239,18 @@ export function StockAdjustmentDialog({
           </FormControl>
 
           {/* Quantity Input */}
-          <TextField
-            label={form.type === 'set' ? 'New Stock Quantity' : 'Quantity to Adjust'}
-            type="number"
+          <NumberInput
+            label={
+              form.type === 'set' ? 'New Stock Quantity' : 'Quantity to Adjust'
+            }
             value={form.quantity}
-            onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 0 })}
+            onChange={(v) =>
+              setForm({ ...form, quantity: (v ?? '') as unknown as number })
+            }
             error={!!errors.quantity}
             helperText={errors.quantity}
             fullWidth
-            inputProps={{ min: 1 }}
+            min={1}
           />
 
           {/* Reason Input */}
@@ -231,13 +265,17 @@ export function StockAdjustmentDialog({
               rows={2}
               placeholder="Explain why you're adjusting the stock..."
             />
-            
+
             {/* Common Reasons */}
             <Box sx={{ mt: 1 }}>
               <Typography variant="caption" color="text.secondary">
                 Common reasons:
               </Typography>
-              <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}
+              >
                 {COMMON_REASONS.map((reason) => (
                   <Chip
                     key={reason}
@@ -260,39 +298,44 @@ export function StockAdjustmentDialog({
               Stock Adjustment Preview
             </Typography>
             <Paper sx={{ p: 2, bgcolor: 'primary.50' }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Box>
                   <Typography variant="body2" color="text.secondary">
                     Current Stock
                   </Typography>
-                  <Typography variant="h6">
-                    {tire.quantity}
-                  </Typography>
+                  <Typography variant="h6">{tire.quantity}</Typography>
                 </Box>
-                
+
                 <Typography variant="h6" color="text.secondary">
                   →
                 </Typography>
-                
+
                 <Box>
                   <Typography variant="body2" color="text.secondary">
                     New Stock
                   </Typography>
-                  <Typography 
-                    variant="h6" 
-                    color={newQuantity <= (tire.minStock || 5) ? 'warning.main' : 'primary.main'}
+                  <Typography
+                    variant="h6"
+                    color={
+                      newQuantity <= (tire.minStock || 5)
+                        ? 'warning.main'
+                        : 'primary.main'
+                    }
                   >
                     {newQuantity}
                   </Typography>
                 </Box>
               </Stack>
-              
+
               {newQuantity <= (tire.minStock || 5) && (
                 <Alert severity="warning" sx={{ mt: 1 }}>
-                  {newQuantity === 0 
+                  {newQuantity === 0
                     ? 'This will result in zero stock!'
-                    : 'This will result in low stock levels.'
-                  }
+                    : 'This will result in low stock levels.'}
                 </Alert>
               )}
             </Paper>

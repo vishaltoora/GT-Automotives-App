@@ -43,6 +43,7 @@ import { ServiceDto } from '@gt-automotive/data';
 import type { QuoteItem as QuotationItem } from '../../requests/quotation.requests';
 import ServiceSelect from '../services/ServiceSelect';
 import { PhoneInput } from '../common/PhoneInput';
+import { NumberInput } from '../common';
 
 interface QuotationFormContentProps {
   tires: any[];
@@ -92,7 +93,11 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleServiceChange = (serviceId: string, serviceName: string, unitPrice: number) => {
+  const handleServiceChange = (
+    serviceId: string,
+    serviceName: string,
+    unitPrice: number
+  ) => {
     setNewItem({
       ...newItem,
       itemType: 'SERVICE',
@@ -102,9 +107,11 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
     });
   };
 
-
   const calculateTotals = () => {
-    const subtotal = items.reduce((sum, item) => sum + (item.quantity * Number(item.unitPrice)), 0);
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.quantity * Number(item.unitPrice),
+      0
+    );
     const gstAmount = subtotal * (formData.gstRate || 0.05);
     const pstAmount = subtotal * (formData.pstRate || 0.07);
     const total = subtotal + gstAmount + pstAmount;
@@ -158,14 +165,19 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
               Customer Information
             </Typography>
           </Box>
-          
+
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Customer Name"
                 value={quotationForm.customerName}
-                onChange={(e) => setQuotationForm({ ...quotationForm, customerName: e.target.value })}
+                onChange={(e) =>
+                  setQuotationForm({
+                    ...quotationForm,
+                    customerName: e.target.value,
+                  })
+                }
                 required
               />
             </Grid>
@@ -174,14 +186,21 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 fullWidth
                 label="Business Name (Optional)"
                 value={quotationForm.businessName}
-                onChange={(e) => setQuotationForm({ ...quotationForm, businessName: e.target.value })}
+                onChange={(e) =>
+                  setQuotationForm({
+                    ...quotationForm,
+                    businessName: e.target.value,
+                  })
+                }
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <PhoneInput
                 fullWidth
                 value={quotationForm.phone}
-                onChange={(value) => setQuotationForm({ ...quotationForm, phone: value })}
+                onChange={(value) =>
+                  setQuotationForm({ ...quotationForm, phone: value })
+                }
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -190,7 +209,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 label="Email"
                 type="email"
                 value={quotationForm.email}
-                onChange={(e) => setQuotationForm({ ...quotationForm, email: e.target.value })}
+                onChange={(e) =>
+                  setQuotationForm({ ...quotationForm, email: e.target.value })
+                }
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -198,19 +219,25 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 fullWidth
                 label="Address"
                 value={quotationForm.address}
-                onChange={(e) => setQuotationForm({ ...quotationForm, address: e.target.value })}
+                onChange={(e) =>
+                  setQuotationForm({
+                    ...quotationForm,
+                    address: e.target.value,
+                  })
+                }
               />
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-
       {/* Add Items */}
       <Card sx={{ mb: { xs: 2, sm: 3 } }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            {!isMobile && <ShoppingCartIcon sx={{ mr: 1, color: colors.primary }} />}
+            {!isMobile && (
+              <ShoppingCartIcon sx={{ mr: 1, color: colors.primary }} />
+            )}
             <Typography
               variant={isMobile ? 'subtitle1' : 'h6'}
               sx={{ fontWeight: 600 }}
@@ -218,7 +245,7 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
               Items
             </Typography>
           </Box>
-          
+
           <Grid container spacing={2} alignItems="flex-end">
             <Grid size={{ xs: 12, md: 3 }}>
               <FormControl fullWidth>
@@ -289,7 +316,7 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
               <Grid size={{ xs: 12, md: 3 }}>
                 <Autocomplete
                   options={tires}
-                  value={tires.find(t => t.id === newItem.tireId) || null}
+                  value={tires.find((t) => t.id === newItem.tireId) || null}
                   onChange={(event, newValue) => {
                     if (newValue) {
                       onTireSelect(newValue.id);
@@ -302,7 +329,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   }}
                   renderOption={(props, tire) => (
                     <Box component="li" {...props}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
                         <span>{getTireEmoji(tire.type)}</span>
                         <Box>
                           {tire.name && (
@@ -310,7 +339,10 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                               {tire.name}
                             </Typography>
                           )}
-                          <Typography variant="body2" color={tire.name ? "text.secondary" : "inherit"}>
+                          <Typography
+                            variant="body2"
+                            color={tire.name ? 'text.secondary' : 'inherit'}
+                          >
                             {tire.brand} - {tire.size}
                           </Typography>
                         </Box>
@@ -342,37 +374,45 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   fullWidth
                   label="Description"
                   value={newItem.description}
-                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, description: e.target.value })
+                  }
                 />
               </Grid>
             )}
 
             <Grid size={{ xs: 12, md: 2 }}>
-              <TextField
+              <NumberInput
                 fullWidth
-                type="number"
                 label="Quantity"
                 value={newItem.quantity}
-                onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })}
-                inputProps={{ min: 1 }}
+                onChange={(v) =>
+                  setNewItem({
+                    ...newItem,
+                    quantity: (v ?? '') as unknown as number,
+                  })
+                }
+                min={1}
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 2 }}>
-              <TextField
+              <NumberInput
                 fullWidth
-                type="number"
+                allowDecimals
                 label="Unit Price"
                 value={newItem.unitPrice}
-                onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value === '' ? '' as unknown as number : parseFloat(e.target.value) || 0 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                    e.preventDefault();
-                  }
-                }}
-                inputProps={{ min: 0, step: 0.01 }}
+                onChange={(v) =>
+                  setNewItem({
+                    ...newItem,
+                    unitPrice: (v ?? '') as unknown as number,
+                  })
+                }
+                min={0}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  startAdornment: (
+                    <InputAdornment position="start">$</InputAdornment>
+                  ),
                 }}
                 autoComplete="off"
               />
@@ -384,8 +424,12 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 fullWidth
                 onClick={onAddItem}
                 startIcon={<AddIcon />}
-                disabled={!newItem.description || !newItem.quantity || !newItem.unitPrice}
-                sx={{ 
+                disabled={
+                  !newItem.description ||
+                  !newItem.quantity ||
+                  !newItem.unitPrice
+                }
+                sx={{
                   height: '56px', // Match TextField height
                   color: 'white',
                   '&:hover': {
@@ -393,7 +437,7 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   },
                   '&.Mui-disabled': {
                     color: 'rgba(255, 255, 255, 0.5)',
-                  }
+                  },
                 }}
               >
                 Add Item
@@ -418,8 +462,12 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   {items.map((item, index) => (
                     <TableRow key={index}>
                       <TableCell>
-                        {item.itemType === 'TIRE' && <InventoryIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                        {item.itemType === 'SERVICE' && <BuildIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                        {item.itemType === 'TIRE' && (
+                          <InventoryIcon fontSize="small" sx={{ mr: 0.5 }} />
+                        )}
+                        {item.itemType === 'SERVICE' && (
+                          <BuildIcon fontSize="small" sx={{ mr: 0.5 }} />
+                        )}
                         {item.itemType.replace('_', ' ')}
                       </TableCell>
                       <TableCell>
@@ -428,13 +476,24 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                             {(item as any).tireName}
                           </Typography>
                         )}
-                        <Typography variant="body2" color={(item as any).tireName ? "text.secondary" : "inherit"}>
+                        <Typography
+                          variant="body2"
+                          color={
+                            (item as any).tireName
+                              ? 'text.secondary'
+                              : 'inherit'
+                          }
+                        >
                           {item.description}
                         </Typography>
                       </TableCell>
                       <TableCell align="center">{item.quantity}</TableCell>
-                      <TableCell align="right">${Number(item.unitPrice).toFixed(2)}</TableCell>
-                      <TableCell align="right">${(item.quantity * Number(item.unitPrice)).toFixed(2)}</TableCell>
+                      <TableCell align="right">
+                        ${Number(item.unitPrice).toFixed(2)}
+                      </TableCell>
+                      <TableCell align="right">
+                        ${(item.quantity * Number(item.unitPrice)).toFixed(2)}
+                      </TableCell>
                       <TableCell align="center">
                         <Tooltip title="Remove Item">
                           <IconButton
@@ -459,7 +518,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
       <Card sx={{ mb: { xs: 2, sm: 3 } }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            {!isMobile && <DescriptionIcon sx={{ mr: 1, color: colors.primary }} />}
+            {!isMobile && (
+              <DescriptionIcon sx={{ mr: 1, color: colors.primary }} />
+            )}
             <Typography
               variant={isMobile ? 'subtitle1' : 'h6'}
               sx={{ fontWeight: 600 }}
@@ -467,26 +528,36 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
               Additional Information
             </Typography>
           </Box>
-          
+
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 3 }}>
-              <TextField
+              <NumberInput
                 fullWidth
-                type="number"
+                allowDecimals
                 label="GST Rate (%)"
                 value={Math.round((formData.gstRate || 0.05) * 100 * 100) / 100}
-                onChange={(e) => setFormData({ ...formData, gstRate: parseFloat(e.target.value) / 100 || 0.05 })}
-                inputProps={{ min: 0, step: 0.1 }}
+                onChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    gstRate: v === undefined ? 0.05 : v / 100,
+                  })
+                }
+                min={0}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
-              <TextField
+              <NumberInput
                 fullWidth
-                type="number"
+                allowDecimals
                 label="PST Rate (%)"
                 value={Math.round((formData.pstRate || 0.07) * 100 * 100) / 100}
-                onChange={(e) => setFormData({ ...formData, pstRate: parseFloat(e.target.value) / 100 || 0.07 })}
-                inputProps={{ min: 0, step: 0.1 }}
+                onChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    pstRate: v === undefined ? 0.07 : v / 100,
+                  })
+                }
+                min={0}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
@@ -494,7 +565,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={formData.status || 'DRAFT'}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   label="Status"
                 >
                   <MenuItem value="DRAFT">Draft</MenuItem>
@@ -511,7 +584,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 type="date"
                 label="Valid Until"
                 value={formData.validUntil}
-                onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, validUntil: e.target.value })
+                }
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -522,7 +597,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                 rows={3}
                 label="Notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
               />
             </Grid>
           </Grid>
@@ -533,7 +610,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
       <Card>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            {!isMobile && <AttachMoneyIcon sx={{ mr: 1, color: colors.primary }} />}
+            {!isMobile && (
+              <AttachMoneyIcon sx={{ mr: 1, color: colors.primary }} />
+            )}
             <Typography
               variant={isMobile ? 'subtitle1' : 'h6'}
               sx={{ fontWeight: 600 }}
@@ -541,16 +620,24 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
               Totals
             </Typography>
           </Box>
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+            }}
+          >
             <Typography variant="body1" sx={{ mb: 1 }}>
               Subtotal: <strong>${totals.subtotal.toFixed(2)}</strong>
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              GST ({((formData.gstRate || 0.05) * 100).toFixed(0)}%): ${totals.gstAmount.toFixed(2)}
+              GST ({((formData.gstRate || 0.05) * 100).toFixed(0)}%): $
+              {totals.gstAmount.toFixed(2)}
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              PST ({((formData.pstRate || 0.07) * 100).toFixed(0)}%): ${totals.pstAmount.toFixed(2)}
+              PST ({((formData.pstRate || 0.07) * 100).toFixed(0)}%): $
+              {totals.pstAmount.toFixed(2)}
             </Typography>
             <Divider sx={{ width: 150, my: 1 }} />
             <Typography variant="h6" color="primary">

@@ -35,6 +35,7 @@ import purchaseExpenseInvoiceService, {
 } from '../../requests/purchase-expense-invoice.requests';
 import vendorService, { Vendor } from '../../requests/vendor.requests';
 import VendorSelect from '../vendors/VendorSelect';
+import { NumberInput } from '../common';
 
 interface PurchaseExpenseInvoiceDialogProps {
   open: boolean;
@@ -160,9 +161,8 @@ const PurchaseExpenseInvoiceDialog: React.FC<
   };
 
   // Handle amount (subtotal) change - forward calculation
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const subtotal = parseFloat(value) || 0;
+  const handleAmountChange = (value: number | undefined) => {
+    const subtotal = value ?? 0;
     const { gstAmount, pstAmount, hstAmount, total } = calculateFromSubtotal(
       subtotal,
       Number(formData.gstRate),
@@ -172,7 +172,7 @@ const PurchaseExpenseInvoiceDialog: React.FC<
 
     setFormData((prev) => ({
       ...prev,
-      amount: value,
+      amount: value ?? '',
       gstAmount: gstAmount > 0 ? Math.round(gstAmount * 100) / 100 : '',
       pstAmount: pstAmount > 0 ? Math.round(pstAmount * 100) / 100 : '',
       hstAmount: hstAmount > 0 ? Math.round(hstAmount * 100) / 100 : '',
@@ -182,9 +182,8 @@ const PurchaseExpenseInvoiceDialog: React.FC<
   };
 
   // Handle total change - reverse calculation
-  const handleTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const total = parseFloat(value) || 0;
+  const handleTotalChange = (value: number | undefined) => {
+    const total = value ?? 0;
     const { subtotal, gstAmount, pstAmount, hstAmount } = calculateFromTotal(
       total,
       Number(formData.gstRate),
@@ -198,7 +197,7 @@ const PurchaseExpenseInvoiceDialog: React.FC<
       gstAmount: gstAmount > 0 ? Math.round(gstAmount * 100) / 100 : '',
       pstAmount: pstAmount > 0 ? Math.round(pstAmount * 100) / 100 : '',
       hstAmount: hstAmount > 0 ? Math.round(hstAmount * 100) / 100 : '',
-      totalAmount: value,
+      totalAmount: value ?? '',
     }));
     setLastEditedField('total');
   };
@@ -206,8 +205,8 @@ const PurchaseExpenseInvoiceDialog: React.FC<
   // Handle tax rate changes - recalculate based on last edited field
   const handleTaxRateChange =
     (field: 'gstRate' | 'pstRate' | 'hstRate') =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value) || 0;
+    (rate: number | undefined) => {
+      const value = rate ?? 0;
       const newRates = {
         gstRate: field === 'gstRate' ? value : Number(formData.gstRate),
         pstRate: field === 'pstRate' ? value : Number(formData.pstRate),
@@ -626,12 +625,12 @@ const PurchaseExpenseInvoiceDialog: React.FC<
                 }}
               >
                 <Typography variant="body1">Subtotal</Typography>
-                <TextField
-                  type="number"
+                <NumberInput
+                  allowDecimals
+                  min={0}
                   value={formData.amount}
                   onChange={handleAmountChange}
-                  inputProps={{ step: '0.01', min: '0' }}
-                  autoComplete="off"
+                  inputProps={{ autoComplete: 'off' }}
                   size="small"
                   sx={{ width: 150 }}
                   InputProps={{
@@ -661,12 +660,13 @@ const PurchaseExpenseInvoiceDialog: React.FC<
                   >
                     GST
                   </Typography>
-                  <TextField
-                    type="number"
+                  <NumberInput
+                    allowDecimals
+                    min={0}
+                    max={15}
                     value={formData.gstRate}
                     onChange={handleTaxRateChange('gstRate')}
-                    inputProps={{ step: '0.5', min: '0', max: '15' }}
-                    autoComplete="off"
+                    inputProps={{ autoComplete: 'off' }}
                     size="small"
                     sx={{ width: 60, '& .MuiInputBase-input': { py: 0.5 } }}
                   />
@@ -706,12 +706,13 @@ const PurchaseExpenseInvoiceDialog: React.FC<
                   >
                     PST
                   </Typography>
-                  <TextField
-                    type="number"
+                  <NumberInput
+                    allowDecimals
+                    min={0}
+                    max={15}
                     value={formData.pstRate}
                     onChange={handleTaxRateChange('pstRate')}
-                    inputProps={{ step: '0.5', min: '0', max: '15' }}
-                    autoComplete="off"
+                    inputProps={{ autoComplete: 'off' }}
                     size="small"
                     sx={{ width: 60, '& .MuiInputBase-input': { py: 0.5 } }}
                   />
@@ -751,12 +752,13 @@ const PurchaseExpenseInvoiceDialog: React.FC<
                   >
                     HST
                   </Typography>
-                  <TextField
-                    type="number"
+                  <NumberInput
+                    allowDecimals
+                    min={0}
+                    max={15}
                     value={formData.hstRate}
                     onChange={handleTaxRateChange('hstRate')}
-                    inputProps={{ step: '0.5', min: '0', max: '15' }}
-                    autoComplete="off"
+                    inputProps={{ autoComplete: 'off' }}
                     size="small"
                     sx={{ width: 60, '& .MuiInputBase-input': { py: 0.5 } }}
                   />
@@ -793,12 +795,12 @@ const PurchaseExpenseInvoiceDialog: React.FC<
                 <Typography variant="body1" fontWeight={600}>
                   Total
                 </Typography>
-                <TextField
-                  type="number"
+                <NumberInput
+                  allowDecimals
+                  min={0}
                   value={formData.totalAmount}
                   onChange={handleTotalChange}
-                  inputProps={{ step: '0.01', min: '0' }}
-                  autoComplete="off"
+                  inputProps={{ autoComplete: 'off' }}
                   size="small"
                   sx={{ width: 150 }}
                   InputProps={{

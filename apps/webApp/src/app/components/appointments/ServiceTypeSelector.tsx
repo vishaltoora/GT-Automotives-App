@@ -1,5 +1,6 @@
 import React from 'react';
-import { Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Grid, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { NumberInput } from '../common';
 
 export const SERVICE_TYPES = [
   { value: 'TIRE_CHANGE', label: 'Tire Mount Balance', duration: 60 },
@@ -17,7 +18,7 @@ interface ServiceTypeSelectorProps {
   serviceType: string;
   duration: number;
   onServiceTypeChange: (serviceType: string) => void;
-  onDurationChange: (duration: number) => void;
+  onDurationChange: (duration: number | undefined) => void;
 }
 
 export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
@@ -56,13 +57,13 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
 
       {/* Duration */}
       <Grid size={{ xs: 12, sm: 6 }}>
-        <TextField
+        <NumberInput
           fullWidth
           label="Duration (minutes)"
-          type="number"
+          min={15}
+          max={480}
           value={duration}
-          onChange={(e) => onDurationChange(parseInt(e.target.value))}
-          inputProps={{ min: 15, max: 480, step: 15 }}
+          onChange={(v) => onDurationChange(v)}
           required
         />
       </Grid>

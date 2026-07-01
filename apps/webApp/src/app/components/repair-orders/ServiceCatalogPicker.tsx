@@ -32,6 +32,7 @@ import {
   serviceCatalogRequests,
   ServiceCatalogItem,
 } from '../../requests/service-catalog.requests';
+import { NumberInput } from '../common';
 
 interface ServiceCatalogPickerProps {
   open: boolean;
@@ -72,7 +73,10 @@ export function ServiceCatalogPicker({
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuItem, setMenuItem] = useState<ServiceCatalogItem | null>(null);
 
-  const openMenu = (e: React.MouseEvent<HTMLElement>, item: ServiceCatalogItem) => {
+  const openMenu = (
+    e: React.MouseEvent<HTMLElement>,
+    item: ServiceCatalogItem
+  ) => {
     e.stopPropagation();
     setMenuAnchor(e.currentTarget);
     setMenuItem(item);
@@ -107,7 +111,9 @@ export function ServiceCatalogPicker({
   // Flat list, sorted by name; filtered by the search query.
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q ? items.filter((s) => s.name.toLowerCase().includes(q)) : items;
+    const list = q
+      ? items.filter((s) => s.name.toLowerCase().includes(q))
+      : items;
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
   }, [query, items]);
 
@@ -154,7 +160,9 @@ export function ServiceCatalogPicker({
       }
       resetAddForm();
     } catch {
-      setError(editingId ? 'Failed to update service.' : 'Failed to add service.');
+      setError(
+        editingId ? 'Failed to update service.' : 'Failed to add service.'
+      );
     } finally {
       setSaving(false);
     }
@@ -179,7 +187,12 @@ export function ServiceCatalogPicker({
         primary={s.name}
         primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
       />
-      <Chip label={hoursLabel(s.labourHours)} size="small" variant="outlined" sx={{ mr: 1 }} />
+      <Chip
+        label={hoursLabel(s.labourHours)}
+        size="small"
+        variant="outlined"
+        sx={{ mr: 1 }}
+      />
       {canManage || canDelete ? (
         deletingId === s.id ? (
           <Box sx={{ px: 0.75, display: 'flex', alignItems: 'center' }}>
@@ -197,10 +210,20 @@ export function ServiceCatalogPicker({
   );
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm" PaperProps={{ sx: { height: '80vh' } }}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{ sx: { height: '80vh' } }}
+    >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', pb: 1 }}>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>Choose a Service</Typography>
-        <IconButton onClick={handleClose} size="small"><Close /></IconButton>
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          Choose a Service
+        </Typography>
+        <IconButton onClick={handleClose} size="small">
+          <Close />
+        </IconButton>
       </DialogTitle>
 
       <Box sx={{ px: 3, pb: 1 }}>
@@ -223,8 +246,18 @@ export function ServiceCatalogPicker({
         {canManage && (
           <Box sx={{ mt: 1 }}>
             {showAddForm ? (
-              <Box sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>{editingId ? 'Edit Service' : 'New Service'}</Typography>
+              <Box
+                sx={{
+                  p: 1.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  bgcolor: 'action.hover',
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {editingId ? 'Edit Service' : 'New Service'}
+                </Typography>
                 <Stack spacing={1}>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <TextField
@@ -236,26 +269,45 @@ export function ServiceCatalogPicker({
                       onChange={(e) => setNewName(e.target.value)}
                       required
                     />
-                    <TextField
+                    <NumberInput
                       label="Default hours"
-                      type="number"
+                      allowDecimals
                       size="small"
                       sx={{ width: 120 }}
                       value={newHours}
-                      onChange={(e) => setNewHours(Number(e.target.value))}
-                      inputProps={{ min: 0, step: 0.25 }}
+                      onChange={(v) =>
+                        setNewHours((v ?? '') as unknown as number)
+                      }
+                      min={0}
                     />
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button variant="contained" size="small" onClick={handleSave} disabled={saving || !newName.trim()}>
-                      {saving ? <CircularProgress size={16} /> : editingId ? 'Save' : 'Add'}
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleSave}
+                      disabled={saving || !newName.trim()}
+                    >
+                      {saving ? (
+                        <CircularProgress size={16} />
+                      ) : editingId ? (
+                        'Save'
+                      ) : (
+                        'Add'
+                      )}
                     </Button>
-                    <Button size="small" onClick={resetAddForm}>Cancel</Button>
+                    <Button size="small" onClick={resetAddForm}>
+                      Cancel
+                    </Button>
                   </Box>
                 </Stack>
               </Box>
             ) : (
-              <Button size="small" startIcon={<Add />} onClick={() => setShowAddForm(true)}>
+              <Button
+                size="small"
+                startIcon={<Add />}
+                onClick={() => setShowAddForm(true)}
+              >
                 Add Service
               </Button>
             )}
@@ -263,7 +315,11 @@ export function ServiceCatalogPicker({
         )}
 
         {error && (
-          <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+          <Typography
+            variant="caption"
+            color="error"
+            sx={{ display: 'block', mt: 0.5 }}
+          >
             {error}
           </Typography>
         )}
@@ -278,13 +334,21 @@ export function ServiceCatalogPicker({
           <Box sx={{ textAlign: 'center', py: 6, color: 'text.disabled' }}>
             {query ? (
               <>
-                <Typography variant="body2">No services match "{query}".</Typography>
-                <Typography variant="caption">You can still add it as a custom item.</Typography>
+                <Typography variant="body2">
+                  No services match "{query}".
+                </Typography>
+                <Typography variant="caption">
+                  You can still add it as a custom item.
+                </Typography>
               </>
             ) : (
               <>
                 <Typography variant="body2">No services yet.</Typography>
-                {canManage && <Typography variant="caption">Use "Add Service" to create one.</Typography>}
+                {canManage && (
+                  <Typography variant="caption">
+                    Use "Add Service" to create one.
+                  </Typography>
+                )}
               </>
             )}
           </Box>
@@ -294,7 +358,11 @@ export function ServiceCatalogPicker({
       </DialogContent>
 
       {/* Row overflow menu */}
-      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={closeMenu}
+      >
         {canManage && (
           <MenuItem
             onClick={() => {

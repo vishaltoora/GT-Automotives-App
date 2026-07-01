@@ -23,9 +23,9 @@ import {
   Typography,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { 
-  TireDto, 
-  CreateTireDto, 
+import {
+  TireDto,
+  CreateTireDto,
   UpdateTireDto,
   TireCondition,
   TireType,
@@ -40,7 +40,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { BrandSelect } from './BrandSelect';
 import { SizeSelect } from './SizeSelect';
 import { LocationSelect } from './LocationSelect';
-
+import { NumberInput } from '../common';
 
 interface TireDialogProps {
   open: boolean;
@@ -49,7 +49,12 @@ interface TireDialogProps {
   onSuccess?: () => void;
 }
 
-export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) {
+export function TireDialog({
+  open,
+  onClose,
+  tire,
+  onSuccess,
+}: TireDialogProps) {
   const queryClient = useQueryClient();
   useAuth();
   const theme = useTheme();
@@ -72,7 +77,9 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     imageUrl: '',
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof CreateTireDto, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CreateTireDto, string>>
+  >({});
 
   useEffect(() => {
     if (open) {
@@ -124,7 +131,10 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     },
     onError: (error: any) => {
       if (process.env.NODE_ENV !== 'production') {
-        console.error('Create tire failed:', error?.response?.data?.message || error.message);
+        console.error(
+          'Create tire failed:',
+          error?.response?.data?.message || error.message
+        );
       }
     },
   });
@@ -141,7 +151,10 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     },
     onError: (error: any) => {
       if (process.env.NODE_ENV !== 'production') {
-        console.error('Update tire failed:', error?.response?.data?.message || error.message);
+        console.error(
+          'Update tire failed:',
+          error?.response?.data?.message || error.message
+        );
       }
     },
   });
@@ -152,9 +165,12 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     if (!formData.brand.trim()) newErrors.brand = 'Brand is required';
     if (!formData.size.trim()) newErrors.size = 'Size is required';
     if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
-    if (formData.quantity < 0) newErrors.quantity = 'Quantity cannot be negative';
-    if (formData.cost && formData.cost < 0) newErrors.cost = 'Cost cannot be negative';
-    if (formData.minStock != null && formData.minStock < 0) newErrors.minStock = 'Minimum stock cannot be negative';
+    if (formData.quantity < 0)
+      newErrors.quantity = 'Quantity cannot be negative';
+    if (formData.cost && formData.cost < 0)
+      newErrors.cost = 'Cost cannot be negative';
+    if (formData.minStock != null && formData.minStock < 0)
+      newErrors.minStock = 'Minimum stock cannot be negative';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -202,9 +218,9 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
   };
 
   const handleChange = (field: keyof CreateTireDto, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -214,7 +230,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
     // Find the brand object to get its image URL
     const brands = queryClient.getQueryData(['tire-brands']) as any[];
     if (brands) {
-      const selectedBrand = brands.find(b => b.id === brandId);
+      const selectedBrand = brands.find((b) => b.id === brandId);
       if (selectedBrand?.imageUrl) {
         // Auto-populate image URL from selected brand
         handleChange('imageUrl', selectedBrand.imageUrl);
@@ -272,10 +288,12 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
           </Toolbar>
         </AppBar>
       ) : (
-        <DialogTitle sx={{
-          bgcolor: 'primary.main',
-          color: 'white',
-        }}>
+        <DialogTitle
+          sx={{
+            bgcolor: 'primary.main',
+            color: 'white',
+          }}
+        >
           {isEditMode ? 'Edit Tire' : 'Add New Tire'}
         </DialogTitle>
       )}
@@ -350,7 +368,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                   label="Type"
                   onChange={(e) => handleChange('type', e.target.value)}
                 >
-                  {TIRE_TYPE_OPTIONS.map(type => (
+                  {TIRE_TYPE_OPTIONS.map((type) => (
                     <MenuItem key={type.value} value={type.value}>
                       {type.label}
                     </MenuItem>
@@ -367,7 +385,7 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
                   label="Condition"
                   onChange={(e) => handleChange('condition', e.target.value)}
                 >
-                  {TIRE_CONDITION_OPTIONS.map(condition => (
+                  {TIRE_CONDITION_OPTIONS.map((condition) => (
                     <MenuItem key={condition.value} value={condition.value}>
                       {condition.label}
                     </MenuItem>
@@ -377,85 +395,75 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
+              <NumberInput
                 label="Quantity"
-                type="number"
                 fullWidth
                 value={formData.quantity}
-                onChange={(e) => handleChange('quantity', e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                onKeyDown={(e) => {
-                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                    e.preventDefault();
-                  }
-                }}
+                onChange={(v) =>
+                  handleChange('quantity', (v ?? '') as unknown as number)
+                }
                 error={!!errors.quantity}
                 helperText={errors.quantity}
-                inputProps={{ min: 0 }}
+                min={0}
                 autoComplete="off"
                 required
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
+              <NumberInput
                 label="Price"
-                type="number"
+                allowDecimals
                 fullWidth
                 value={formData.price}
-                onChange={(e) => handleChange('price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                onKeyDown={(e) => {
-                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                    e.preventDefault();
-                  }
-                }}
+                onChange={(v) =>
+                  handleChange('price', (v ?? '') as unknown as number)
+                }
                 error={!!errors.price}
                 helperText={errors.price}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  startAdornment: (
+                    <InputAdornment position="start">$</InputAdornment>
+                  ),
                 }}
-                inputProps={{ min: 0, step: 0.01 }}
+                min={0}
                 autoComplete="off"
                 required
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
+              <NumberInput
                 label="Cost"
-                type="number"
+                allowDecimals
                 fullWidth
                 value={formData.cost}
-                onChange={(e) => handleChange('cost', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                onKeyDown={(e) => {
-                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                    e.preventDefault();
-                  }
-                }}
+                onChange={(v) =>
+                  handleChange('cost', (v ?? '') as unknown as number)
+                }
                 error={!!errors.cost}
                 helperText={errors.cost}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  startAdornment: (
+                    <InputAdornment position="start">$</InputAdornment>
+                  ),
                 }}
-                inputProps={{ min: 0, step: 0.01 }}
+                min={0}
                 autoComplete="off"
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
+              <NumberInput
                 label="Minimum Stock"
-                type="number"
                 fullWidth
                 value={formData.minStock}
-                onChange={(e) => handleChange('minStock', e.target.value === '' ? '' as unknown as number : parseInt(e.target.value) || 0)}
-                onKeyDown={(e) => {
-                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                    e.preventDefault();
-                  }
-                }}
+                onChange={(v) =>
+                  handleChange('minStock', (v ?? '') as unknown as number)
+                }
                 error={!!errors.minStock}
                 helperText={errors.minStock}
-                inputProps={{ min: 0 }}
+                min={0}
                 autoComplete="off"
               />
             </Grid>
@@ -484,11 +492,13 @@ export function TireDialog({ open, onClose, tire, onSuccess }: TireDialogProps) 
           </Grid>
         </Box>
       </DialogContent>
-      <DialogActions sx={{
-        p: isMobile ? 2 : 3,
-        gap: isMobile ? 1 : 0,
-        flexDirection: isMobile ? 'column-reverse' : 'row',
-      }}>
+      <DialogActions
+        sx={{
+          p: isMobile ? 2 : 3,
+          gap: isMobile ? 1 : 0,
+          flexDirection: isMobile ? 'column-reverse' : 'row',
+        }}
+      >
         <Button
           onClick={onClose}
           disabled={isLoading}

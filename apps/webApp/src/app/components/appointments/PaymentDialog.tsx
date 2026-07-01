@@ -42,6 +42,7 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { ServiceAmountInput } from './ServiceAmountInput';
+import { NumberInput } from '../common';
 import { AppointmentSquarePaymentForm } from './AppointmentSquarePaymentForm';
 import { appointmentService } from '../../requests/appointment.requests';
 import { userService, User } from '../../requests/user.requests';
@@ -90,13 +91,29 @@ interface PaymentDialogProps {
 }
 
 // Payment method options
-type PaymentMethodType = 'CASH' | 'E_TRANSFER' | 'SQUARE_ONLINE' | 'SQUARE_DEVICE';
+type PaymentMethodType =
+  | 'CASH'
+  | 'E_TRANSFER'
+  | 'SQUARE_ONLINE'
+  | 'SQUARE_DEVICE';
 
-const PAYMENT_METHODS: { value: PaymentMethodType; label: string; icon: React.ReactNode }[] = [
+const PAYMENT_METHODS: {
+  value: PaymentMethodType;
+  label: string;
+  icon: React.ReactNode;
+}[] = [
   { value: 'CASH', label: 'Cash Payment', icon: <MoneyIcon /> },
   { value: 'E_TRANSFER', label: 'E-Transfer', icon: <ReceiptIcon /> },
-  { value: 'SQUARE_ONLINE', label: 'Pay with Square (Online)', icon: <CreditCardIcon /> },
-  { value: 'SQUARE_DEVICE', label: 'Square Device (Terminal)', icon: <PointOfSaleIcon /> },
+  {
+    value: 'SQUARE_ONLINE',
+    label: 'Pay with Square (Online)',
+    icon: <CreditCardIcon />,
+  },
+  {
+    value: 'SQUARE_DEVICE',
+    label: 'Square Device (Terminal)',
+    icon: <PointOfSaleIcon />,
+  },
 ];
 
 export const PaymentDialog: React.FC<PaymentDialogProps> = ({
@@ -127,8 +144,12 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const [squareDeviceAmount, setSquareDeviceAmount] = useState(0);
   const [squareDeviceTip, setSquareDeviceTip] = useState(0);
   const [squareDeviceProcessing, setSquareDeviceProcessing] = useState(false);
-  const [squareDeviceError, setSquareDeviceError] = useState<string | null>(null);
-  const [squareDeviceCardType, setSquareDeviceCardType] = useState<'CREDIT_CARD' | 'DEBIT_CARD'>('CREDIT_CARD');
+  const [squareDeviceError, setSquareDeviceError] = useState<string | null>(
+    null
+  );
+  const [squareDeviceCardType, setSquareDeviceCardType] = useState<
+    'CREDIT_CARD' | 'DEBIT_CARD'
+  >('CREDIT_CARD');
 
   // Manual payment state
   const [payments, setPayments] = useState<PaymentEntry[]>(
@@ -142,7 +163,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
   // "Completed by" multi-select state for auto-creating payroll jobs
   const [employees, setEmployees] = useState<User[]>([]);
-  const [selectedCompletionEmployees, setSelectedCompletionEmployees] = useState<User[]>([]);
+  const [selectedCompletionEmployees, setSelectedCompletionEmployees] =
+    useState<User[]>([]);
   const [payoutRules, setPayoutRules] = useState<PayoutRule[]>([]);
   const [hasProductSale, setHasProductSale] = useState(false);
   const [productSaleAmount, setProductSaleAmount] = useState<number>(0);
@@ -168,16 +190,16 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             u.isActive &&
             (u.role?.name === 'STAFF' ||
               u.role?.name === 'ADMIN' ||
-              u.role?.name === 'SUPERVISOR'),
+              u.role?.name === 'SUPERVISOR')
         );
         const unique = staff.filter(
-          (u, i, arr) => i === arr.findIndex((x) => x.id === u.id),
+          (u, i, arr) => i === arr.findIndex((x) => x.id === u.id)
         );
         setEmployees(unique);
         setPayoutRules(rules);
         if (assignedEmployeeIds && assignedEmployeeIds.length > 0) {
           setSelectedCompletionEmployees(
-            unique.filter((u) => assignedEmployeeIds.includes(u.id)),
+            unique.filter((u) => assignedEmployeeIds.includes(u.id))
           );
         }
       } catch (e) {
@@ -196,8 +218,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const [squareFormOpen, setSquareFormOpen] = useState(false);
 
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const remainingBalance = expectedAmount - totalAmount;
-  const isPartialPayment = expectedAmount > 0 && totalAmount < expectedAmount;
+  const expectedAmountNum = Number(expectedAmount) || 0;
+  const remainingBalance = expectedAmountNum - totalAmount;
+  const isPartialPayment =
+    expectedAmountNum > 0 && totalAmount < expectedAmountNum;
   const nonCashAmount =
     paymentMethod === 'E_TRANSFER'
       ? eTransferAmount + eTransferTip
@@ -208,8 +232,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
       : 0;
   const paymentClearsBalance =
     paymentMethod === 'CASH'
-      ? expectedAmount > 0
-        ? totalAmount + 0.005 >= expectedAmount
+      ? expectedAmountNum > 0
+        ? totalAmount + 0.005 >= expectedAmountNum
         : totalAmount > 0
       : nonCashAmount > 0;
 
@@ -246,7 +270,9 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   })();
 
   // Handle payment method change - reset amounts when switching
-  const handlePaymentMethodChange = (event: SelectChangeEvent<PaymentMethodType>) => {
+  const handlePaymentMethodChange = (
+    event: SelectChangeEvent<PaymentMethodType>
+  ) => {
     const newMethod = event.target.value as PaymentMethodType;
     setPaymentMethod(newMethod);
 
@@ -300,7 +326,9 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
           : undefined,
       productSaleAmount: productAmount > 0 ? productAmount : undefined,
       productSaleItems:
-        hasProductSale && productSaleItems.length > 0 ? productSaleItems : undefined,
+        hasProductSale && productSaleItems.length > 0
+          ? productSaleItems
+          : undefined,
     };
   };
 
@@ -319,7 +347,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         appointmentId,
         eTransferAmount,
         eTransferTip > 0 ? eTransferTip : undefined,
-        buildCompletionExtras(),
+        buildCompletionExtras()
       );
       // Backend already created invoice + updated appointment to COMPLETED
       // Just close dialog and refresh data (don't trigger another status update)
@@ -329,8 +357,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
       console.error('E-Transfer invoice creation failed:', err);
       setETransferError(
         err.response?.data?.message ||
-        err.message ||
-        'Failed to create invoice. Please try again.'
+          err.message ||
+          'Failed to create invoice. Please try again.'
       );
     } finally {
       setETransferProcessing(false);
@@ -353,7 +381,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         squareDeviceAmount,
         squareDeviceTip > 0 ? squareDeviceTip : undefined,
         squareDeviceCardType,
-        buildCompletionExtras(),
+        buildCompletionExtras()
       );
       // Backend already created invoice + updated appointment to COMPLETED
       // Just close dialog and refresh data (don't trigger another status update)
@@ -363,8 +391,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
       console.error('Square Device invoice creation failed:', err);
       setSquareDeviceError(
         err.response?.data?.message ||
-        err.message ||
-        'Failed to create invoice. Please try again.'
+          err.message ||
+          'Failed to create invoice. Please try again.'
       );
     } finally {
       setSquareDeviceProcessing(false);
@@ -406,14 +434,13 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const handlePaymentChange = (
     id: string,
     field: 'method' | 'amount',
-    value: string | number
+    value: string | number | undefined
   ) => {
     setPayments(
       payments.map((p) => {
         if (p.id === id) {
           if (field === 'amount') {
-            const numValue = typeof value === 'string' ? parseFloat(value) : value;
-            return { ...p, amount: isNaN(numValue) ? 0 : numValue };
+            return { ...p, amount: (value ?? '') as unknown as number };
           }
           return { ...p, method: String(value) };
         }
@@ -430,7 +457,11 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
     let hasError = false;
 
     payments.forEach((payment) => {
-      if (payment.amount === null || payment.amount === undefined || payment.amount < 0) {
+      if (
+        payment.amount === null ||
+        payment.amount === undefined ||
+        payment.amount < 0
+      ) {
         newErrors[payment.id] = 'Amount cannot be negative';
         hasError = true;
       }
@@ -449,12 +480,15 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
     // Submit
     const shouldSendCompletion = completionEnabled && paymentClearsBalance;
-    const productAmount = shouldSendCompletion && hasProductSale ? Math.max(0, productSaleAmount) : 0;
+    const productAmount =
+      shouldSendCompletion && hasProductSale
+        ? Math.max(0, Number(productSaleAmount) || 0)
+        : 0;
     const paymentData: PaymentData = {
       totalAmount,
       payments,
       paymentNotes,
-      expectedAmount: expectedAmount > 0 ? expectedAmount : undefined,
+      expectedAmount: expectedAmountNum > 0 ? expectedAmountNum : undefined,
       completionEmployeeIds:
         shouldSendCompletion && selectedCompletionEmployees.length > 0
           ? selectedCompletionEmployees.map((e) => e.id)
@@ -496,10 +530,18 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <MoneyIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} component="div" sx={{ fontWeight: 600 }}>
+          <Typography
+            variant={isMobile ? 'subtitle1' : 'h6'}
+            component="div"
+            sx={{ fontWeight: 600 }}
+          >
             {isEditMode
-              ? isMobile ? 'Edit Payment' : 'Edit Payment Details'
-              : isMobile ? 'Payment Details' : 'Complete Appointment - Payment Details'}
+              ? isMobile
+                ? 'Edit Payment'
+                : 'Edit Payment Details'
+              : isMobile
+              ? 'Payment Details'
+              : 'Complete Appointment - Payment Details'}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} size="small" sx={{ color: 'white' }}>
@@ -532,7 +574,16 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         {/* Completed By — Auto-creates payroll jobs when this payment clears the balance */}
         {completionEnabled && paymentClearsBalance && (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                mb: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
               <PersonIcon fontSize="small" /> Completed By
             </Typography>
             <Autocomplete
@@ -540,27 +591,44 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
               options={employees}
               value={selectedCompletionEmployees}
               onChange={(_e, value) => setSelectedCompletionEmployees(value)}
-              getOptionLabel={(option) => `${option.firstName || ''} ${option.lastName || ''}`.trim() || option.email}
+              getOptionLabel={(option) =>
+                `${option.firstName || ''} ${option.lastName || ''}`.trim() ||
+                option.email
+              }
               isOptionEqualToValue={(opt, val) => opt.id === val.id}
               renderOption={(props, option) => {
                 const { key: _key, ...rest } = props as any;
                 return (
                   <li key={option.id} {...rest}>
-                    {`${option.firstName || ''} ${option.lastName || ''}`.trim() || option.email}
+                    {`${option.firstName || ''} ${
+                      option.lastName || ''
+                    }`.trim() || option.email}
                   </li>
                 );
               }}
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  placeholder={selectedCompletionEmployees.length === 0 ? 'Select employee(s) who completed the job' : ''}
+                  placeholder={
+                    selectedCompletionEmployees.length === 0
+                      ? 'Select employee(s) who completed the job'
+                      : ''
+                  }
                   size="small"
                 />
               )}
             />
 
             {/* Product Sale */}
-            <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'flex-start', gap: 1.5, flexWrap: 'wrap' }}>
+            <Box
+              sx={{
+                mt: 1.5,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1.5,
+                flexWrap: 'wrap',
+              }}
+            >
               <FormControlLabel
                 control={
                   <Checkbox
@@ -574,13 +642,19 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     }}
                   />
                 }
-                label={<Typography variant="body2">Includes a product sale</Typography>}
+                label={
+                  <Typography variant="body2">
+                    Includes a product sale
+                  </Typography>
+                }
                 sx={{ mr: 0 }}
               />
               {hasProductSale && (
                 <>
                   <FormControl size="small" sx={{ minWidth: 220, flex: 1 }}>
-                    <InputLabel id="product-sale-items-label">Products Sold</InputLabel>
+                    <InputLabel id="product-sale-items-label">
+                      Products Sold
+                    </InputLabel>
                     <Select
                       labelId="product-sale-items-label"
                       multiple
@@ -589,17 +663,20 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         setProductSaleItems(
                           typeof e.target.value === 'string'
                             ? e.target.value.split(',')
-                            : (e.target.value as string[]),
+                            : (e.target.value as string[])
                         )
                       }
                       input={<OutlinedInput label="Products Sold" />}
                       renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Box
+                          sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                        >
                           {(selected as string[]).map((value) => (
                             <Chip
                               key={value}
                               label={
-                                PRODUCT_OPTIONS.find((p) => p.value === value)?.label ?? value
+                                PRODUCT_OPTIONS.find((p) => p.value === value)
+                                  ?.label ?? value
                               }
                               size="small"
                             />
@@ -609,58 +686,111 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     >
                       {PRODUCT_OPTIONS.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
-                          <Checkbox checked={productSaleItems.includes(option.value)} />
-                          <Typography variant="body2">{option.label}</Typography>
+                          <Checkbox
+                            checked={productSaleItems.includes(option.value)}
+                          />
+                          <Typography variant="body2">
+                            {option.label}
+                          </Typography>
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
-                  <TextField
-                    type="number"
+                  <NumberInput
+                    allowDecimals
+                    min={0}
                     size="small"
                     label="Product Sale Amount"
                     value={productSaleAmount || ''}
-                    onChange={(e) => setProductSaleAmount(parseFloat(e.target.value) || 0)}
-                    InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    onChange={(v) =>
+                      setProductSaleAmount((v ?? '') as unknown as number)
+                    }
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">$</InputAdornment>
+                      ),
+                    }}
                     sx={{ width: 200 }}
-                    helperText={`Service portion: $${Math.max(0, payoutBaseAmount - productSaleAmount).toFixed(2)}`}
+                    helperText={`Service portion: $${Math.max(
+                      0,
+                      payoutBaseAmount - (Number(productSaleAmount) || 0)
+                    ).toFixed(2)}`}
                   />
                 </>
               )}
             </Box>
 
-            {selectedCompletionEmployees.length > 0 && (payoutBaseAmount > 0 || payoutTipAmount > 0) && (() => {
-              const productAmount = hasProductSale ? Math.max(0, productSaleAmount) : 0;
-              const svcAmount = Math.max(0, payoutBaseAmount - productAmount);
-              const rulePayout = svcAmount > 0 ? calculatePayoutPreview(svcAmount, payoutRules) : 0;
-              const totalPayout = rulePayout + payoutTipAmount;
-              if (totalPayout <= 0) {
+            {selectedCompletionEmployees.length > 0 &&
+              (payoutBaseAmount > 0 || payoutTipAmount > 0) &&
+              (() => {
+                const productAmount = hasProductSale
+                  ? Math.max(0, productSaleAmount)
+                  : 0;
+                const svcAmount = Math.max(0, payoutBaseAmount - productAmount);
+                const rulePayout =
+                  svcAmount > 0
+                    ? calculatePayoutPreview(svcAmount, payoutRules)
+                    : 0;
+                const totalPayout = rulePayout + payoutTipAmount;
+                if (totalPayout <= 0) {
+                  return (
+                    <Box
+                      sx={{
+                        mt: 1,
+                        p: 1.5,
+                        bgcolor: 'warning.50',
+                        borderRadius: 1,
+                        border: 1,
+                        borderColor: 'warning.light',
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        No payout amount — no payroll job will be created.
+                      </Typography>
+                    </Box>
+                  );
+                }
+                const perEmployee =
+                  Math.round(
+                    (totalPayout / selectedCompletionEmployees.length) * 100
+                  ) / 100;
+                const exact = payoutRules.find(
+                  (r) =>
+                    r.isActive && Number(r.triggerAmount) === Number(svcAmount)
+                );
                 return (
-                  <Box sx={{ mt: 1, p: 1.5, bgcolor: 'warning.50', borderRadius: 1, border: 1, borderColor: 'warning.light' }}>
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 1.5,
+                      bgcolor: 'success.50',
+                      borderRadius: 1,
+                      border: 1,
+                      borderColor: 'success.light',
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
+                      Payroll preview: ${rulePayout.toFixed(2)} (
+                      {exact ? 'lookup rule' : '30% default'} on $
+                      {svcAmount.toFixed(2)} service)
+                      {payoutTipAmount > 0
+                        ? ` + $${payoutTipAmount.toFixed(2)} tip (100%)`
+                        : ''}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      ${totalPayout.toFixed(2)} total · $
+                      {perEmployee.toFixed(2)} per employee
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      No payout amount — no payroll job will be created.
+                      A pending job will be created for each selected employee.
                     </Typography>
                   </Box>
                 );
-              }
-              const perEmployee = Math.round((totalPayout / selectedCompletionEmployees.length) * 100) / 100;
-              const exact = payoutRules.find((r) => r.isActive && Number(r.triggerAmount) === Number(svcAmount));
-              return (
-                <Box sx={{ mt: 1, p: 1.5, bgcolor: 'success.50', borderRadius: 1, border: 1, borderColor: 'success.light' }}>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Payroll preview: ${rulePayout.toFixed(2)} ({exact ? 'lookup rule' : '30% default'} on $
-                    {svcAmount.toFixed(2)} service)
-                    {payoutTipAmount > 0 ? ` + $${payoutTipAmount.toFixed(2)} tip (100%)` : ''}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    ${totalPayout.toFixed(2)} total · ${perEmployee.toFixed(2)} per employee
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    A pending job will be created for each selected employee.
-                  </Typography>
-                </Box>
-              );
-            })()}
+              })()}
           </Box>
         )}
 
@@ -668,23 +798,19 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         {paymentMethod === 'CASH' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Expected Amount Field */}
-            <TextField
+            <NumberInput
               label="Expected Amount (Optional)"
-              type="number"
+              allowDecimals
+              min={0}
               value={expectedAmount || ''}
-              onChange={(e) => setExpectedAmount(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
-              onKeyDown={(e) => {
-                if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                  e.preventDefault();
-                }
-              }}
+              onChange={(v) =>
+                setExpectedAmount((v ?? '') as unknown as number)
+              }
               fullWidth
               InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
-              inputProps={{
-                min: 0,
-                step: 0.01,
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
               }}
               helperText="Enter the expected total amount to track partial payments"
               autoComplete="off"
@@ -729,10 +855,18 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                       borderColor: 'divider',
                     }}
                   >
-                    <Typography variant="body2" color="warning.dark" fontWeight="medium">
+                    <Typography
+                      variant="body2"
+                      color="warning.dark"
+                      fontWeight="medium"
+                    >
                       Remaining Balance Owed
                     </Typography>
-                    <Typography variant="h5" fontWeight="bold" color="warning.dark">
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      color="warning.dark"
+                    >
                       ${remainingBalance.toFixed(2)}
                     </Typography>
                   </Box>
@@ -757,7 +891,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                   gap: isMobile ? 1 : 0,
                 }}
               >
-                <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant={isMobile ? 'subtitle1' : 'h6'}
+                  sx={{ fontWeight: 600 }}
+                >
                   Cash Payment Entries
                 </Typography>
                 <Button
@@ -779,10 +916,17 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     variant="outlined"
                     sx={{
                       borderRadius: 2,
-                      borderColor: errors[payment.id] ? 'error.main' : 'divider',
+                      borderColor: errors[payment.id]
+                        ? 'error.main'
+                        : 'divider',
                     }}
                   >
-                    <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+                    <CardContent
+                      sx={{
+                        p: isMobile ? 1.5 : 2,
+                        '&:last-child': { pb: isMobile ? 1.5 : 2 },
+                      }}
+                    >
                       <Box
                         sx={{
                           display: 'flex',
@@ -791,7 +935,14 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                           gap: isMobile ? 1.5 : 2,
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            flex: 1,
+                          }}
+                        >
                           <Chip
                             label={`#${index + 1}`}
                             size="small"
@@ -818,18 +969,14 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         </Box>
 
                         {/* Amount */}
-                        <TextField
+                        <NumberInput
                           label="Cash Amount"
-                          type="number"
+                          allowDecimals
+                          min={0}
                           value={payment.amount || ''}
-                          onChange={(e) =>
-                            handlePaymentChange(payment.id, 'amount', e.target.value)
+                          onChange={(v) =>
+                            handlePaymentChange(payment.id, 'amount', v)
                           }
-                          onKeyDown={(e) => {
-                            if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                              e.preventDefault();
-                            }
-                          }}
                           error={!!errors[payment.id]}
                           helperText={errors[payment.id]}
                           size="small"
@@ -837,12 +984,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                           fullWidth={isMobile}
                           InputProps={{
                             startAdornment: (
-                              <InputAdornment position="start">$</InputAdornment>
+                              <InputAdornment position="start">
+                                $
+                              </InputAdornment>
                             ),
-                          }}
-                          inputProps={{
-                            min: 0,
-                            step: 0.01,
                           }}
                           autoComplete="off"
                         />
@@ -888,7 +1033,9 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 E-Transfer with Invoice
               </Typography>
               <Typography variant="caption">
-                Enter the service amount to calculate taxes (GST + PST). An invoice will be automatically created and marked as PAID, and the appointment will be marked as completed.
+                Enter the service amount to calculate taxes (GST + PST). An
+                invoice will be automatically created and marked as PAID, and
+                the appointment will be marked as completed.
               </Typography>
             </Alert>
 
@@ -903,11 +1050,25 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 }}
               >
                 <CardContent sx={{ py: 1.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" color="info.dark" fontWeight="medium">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="info.dark"
+                      fontWeight="medium"
+                    >
                       Expected Amount (Reference)
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold" color="info.dark">
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color="info.dark"
+                    >
                       ${defaultExpectedAmount.toFixed(2)}
                     </Typography>
                   </Box>
@@ -925,9 +1086,13 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             {/* Service Amount Input with Tax Calculation */}
             <ServiceAmountInput
               value={eTransferAmount}
-              onChange={setETransferAmount}
+              onChange={(v) =>
+                setETransferAmount((v ?? '') as unknown as number)
+              }
               tipAmount={eTransferTip}
-              onTipChange={setETransferTip}
+              onTipChange={(v) =>
+                setETransferTip((v ?? '') as unknown as number)
+              }
               showTip={true}
               disabled={eTransferProcessing}
             />
@@ -965,7 +1130,11 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 Pay with Card (Square)
               </Typography>
               <Typography variant="caption">
-                Enter the service amount and click "Pay with Card" to open a secure payment form. The customer can pay with credit card, debit card, Apple Pay, or Google Pay. Once payment is successful, the appointment will be automatically marked as completed and an invoice will be created.
+                Enter the service amount and click "Pay with Card" to open a
+                secure payment form. The customer can pay with credit card,
+                debit card, Apple Pay, or Google Pay. Once payment is
+                successful, the appointment will be automatically marked as
+                completed and an invoice will be created.
               </Typography>
             </Alert>
 
@@ -980,11 +1149,25 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 }}
               >
                 <CardContent sx={{ py: 1.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" color="info.dark" fontWeight="medium">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="info.dark"
+                      fontWeight="medium"
+                    >
                       Expected Amount (Reference)
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold" color="info.dark">
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color="info.dark"
+                    >
                       ${defaultExpectedAmount.toFixed(2)}
                     </Typography>
                   </Box>
@@ -995,9 +1178,11 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             {/* Service Amount Input with Tax Calculation */}
             <ServiceAmountInput
               value={serviceAmount}
-              onChange={setServiceAmount}
+              onChange={(v) => setServiceAmount((v ?? '') as unknown as number)}
               tipAmount={squareOnlineTip}
-              onTipChange={setSquareOnlineTip}
+              onTipChange={(v) =>
+                setSquareOnlineTip((v ?? '') as unknown as number)
+              }
               showTip={true}
               disabled={false}
             />
@@ -1016,7 +1201,8 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     Customer enters card details (never stored on our servers)
                   </Typography>
                   <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                    Invoice is automatically created with tip (if any) - no tax on tips
+                    Invoice is automatically created with tip (if any) - no tax
+                    on tips
                   </Typography>
                   <Typography component="li" variant="body2">
                     Appointment is marked as COMPLETED
@@ -1035,7 +1221,10 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 Square Device Payment
               </Typography>
               <Typography variant="caption">
-                Use this option when the customer has already paid via the physical Square terminal device. Enter the service amount to calculate taxes (GST + PST). An invoice will be automatically created and marked as PAID with Credit Card payment method.
+                Use this option when the customer has already paid via the
+                physical Square terminal device. Enter the service amount to
+                calculate taxes (GST + PST). An invoice will be automatically
+                created and marked as PAID with Credit Card payment method.
               </Typography>
             </Alert>
 
@@ -1050,11 +1239,25 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 }}
               >
                 <CardContent sx={{ py: 1.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" color="info.dark" fontWeight="medium">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="info.dark"
+                      fontWeight="medium"
+                    >
                       Expected Amount (Reference)
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold" color="info.dark">
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color="info.dark"
+                    >
                       ${defaultExpectedAmount.toFixed(2)}
                     </Typography>
                   </Box>
@@ -1064,20 +1267,30 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
             {/* Error Message */}
             {squareDeviceError && (
-              <Alert severity="error" onClose={() => setSquareDeviceError(null)}>
+              <Alert
+                severity="error"
+                onClose={() => setSquareDeviceError(null)}
+              >
                 {squareDeviceError}
               </Alert>
             )}
 
             {/* Card Type Selection */}
             <FormControl component="fieldset" sx={{ mb: 1 }}>
-              <FormLabel component="legend" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+              <FormLabel
+                component="legend"
+                sx={{ fontSize: '0.875rem', fontWeight: 500 }}
+              >
                 Card Type
               </FormLabel>
               <RadioGroup
                 row
                 value={squareDeviceCardType}
-                onChange={(e) => setSquareDeviceCardType(e.target.value as 'CREDIT_CARD' | 'DEBIT_CARD')}
+                onChange={(e) =>
+                  setSquareDeviceCardType(
+                    e.target.value as 'CREDIT_CARD' | 'DEBIT_CARD'
+                  )
+                }
               >
                 <FormControlLabel
                   value="CREDIT_CARD"
@@ -1097,9 +1310,13 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             {/* Service Amount Input with Tax Calculation */}
             <ServiceAmountInput
               value={squareDeviceAmount}
-              onChange={setSquareDeviceAmount}
+              onChange={(v) =>
+                setSquareDeviceAmount((v ?? '') as unknown as number)
+              }
               tipAmount={squareDeviceTip}
-              onTipChange={setSquareDeviceTip}
+              onTipChange={(v) =>
+                setSquareDeviceTip((v ?? '') as unknown as number)
+              }
               showTip={true}
               disabled={squareDeviceProcessing}
             />
@@ -1118,7 +1335,11 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     Tip (if any) is added as a separate line item (no tax)
                   </Typography>
                   <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                    Invoice is marked as PAID with {squareDeviceCardType === 'CREDIT_CARD' ? 'Credit Card' : 'Debit Card'} payment method
+                    Invoice is marked as PAID with{' '}
+                    {squareDeviceCardType === 'CREDIT_CARD'
+                      ? 'Credit Card'
+                      : 'Debit Card'}{' '}
+                    payment method
                   </Typography>
                   <Typography component="li" variant="body2">
                     Appointment is marked as COMPLETED
@@ -1168,20 +1389,32 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             onClick={handleETransferSubmit}
             variant={eTransferAmount <= 0 ? 'outlined' : 'contained'}
             color="warning"
-            startIcon={eTransferProcessing ? <CircularProgress size={20} color="inherit" /> : <ReceiptIcon />}
+            startIcon={
+              eTransferProcessing ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <ReceiptIcon />
+              )
+            }
             disabled={eTransferAmount <= 0 || eTransferProcessing}
             fullWidth={isMobile}
             size={isMobile ? 'large' : 'medium'}
-            sx={eTransferAmount <= 0 ? {
-              borderColor: 'grey.400',
-              color: 'grey.500',
-              '&.Mui-disabled': {
-                borderColor: 'grey.400',
-                color: 'grey.500',
-              },
-            } : {}}
+            sx={
+              eTransferAmount <= 0
+                ? {
+                    borderColor: 'grey.400',
+                    color: 'grey.500',
+                    '&.Mui-disabled': {
+                      borderColor: 'grey.400',
+                      color: 'grey.500',
+                    },
+                  }
+                : {}
+            }
           >
-            {eTransferProcessing ? 'Creating Invoice...' : 'Create Invoice & Complete'}
+            {eTransferProcessing
+              ? 'Creating Invoice...'
+              : 'Create Invoice & Complete'}
           </Button>
         )}
 
@@ -1195,14 +1428,18 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             disabled={serviceAmount <= 0}
             fullWidth={isMobile}
             size={isMobile ? 'large' : 'medium'}
-            sx={serviceAmount <= 0 ? {
-              borderColor: 'grey.400',
-              color: 'grey.500',
-              '&.Mui-disabled': {
-                borderColor: 'grey.400',
-                color: 'grey.500',
-              },
-            } : {}}
+            sx={
+              serviceAmount <= 0
+                ? {
+                    borderColor: 'grey.400',
+                    color: 'grey.500',
+                    '&.Mui-disabled': {
+                      borderColor: 'grey.400',
+                      color: 'grey.500',
+                    },
+                  }
+                : {}
+            }
           >
             Pay with Card
           </Button>
@@ -1214,20 +1451,32 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
             onClick={handleSquareDeviceSubmit}
             variant={squareDeviceAmount <= 0 ? 'outlined' : 'contained'}
             color="secondary"
-            startIcon={squareDeviceProcessing ? <CircularProgress size={20} color="inherit" /> : <PointOfSaleIcon />}
+            startIcon={
+              squareDeviceProcessing ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <PointOfSaleIcon />
+              )
+            }
             disabled={squareDeviceAmount <= 0 || squareDeviceProcessing}
             fullWidth={isMobile}
             size={isMobile ? 'large' : 'medium'}
-            sx={squareDeviceAmount <= 0 ? {
-              borderColor: 'grey.400',
-              color: 'grey.500',
-              '&.Mui-disabled': {
-                borderColor: 'grey.400',
-                color: 'grey.500',
-              },
-            } : {}}
+            sx={
+              squareDeviceAmount <= 0
+                ? {
+                    borderColor: 'grey.400',
+                    color: 'grey.500',
+                    '&.Mui-disabled': {
+                      borderColor: 'grey.400',
+                      color: 'grey.500',
+                    },
+                  }
+                : {}
+            }
           >
-            {squareDeviceProcessing ? 'Creating Invoice...' : 'Create Invoice & Complete'}
+            {squareDeviceProcessing
+              ? 'Creating Invoice...'
+              : 'Create Invoice & Complete'}
           </Button>
         )}
       </DialogActions>

@@ -15,6 +15,7 @@ import {
   Switch,
   TextField,
 } from '@mui/material';
+import { NumberInput } from '../common';
 import {
   CreateInspectionFeeItemDto,
   InspectionFeeItem,
@@ -140,14 +141,14 @@ export function InspectionFeeItemDialog({
               ))}
             </Select>
           </FormControl>
-          <TextField
+          <NumberInput
             label="Price"
             value={price}
-            onChange={(event) => setPrice(event.target.value)}
+            onChange={(v) => setPrice(v === undefined ? '' : String(v))}
             fullWidth
             required
-            type="number"
-            inputProps={{ min: 0, step: 0.01 }}
+            allowDecimals
+            min={0}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">$</InputAdornment>

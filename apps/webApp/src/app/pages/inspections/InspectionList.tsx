@@ -51,6 +51,7 @@ import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useAuth } from '../../hooks/useAuth';
 import { GenerateInvoiceDialog } from '../../components/inspections/GenerateInvoiceDialog';
+import { NumberInput } from '../../components/common';
 
 const statusColor = (status: string) => {
   if (status === 'COMPLETED' || status === 'FINALIZED') return 'success';
@@ -421,12 +422,12 @@ export function InspectionList() {
               />
             </Grid>
             <Grid size={{ xs: 6, md: 1.5 }}>
-              <TextField
+              <NumberInput
                 fullWidth
                 label="Mileage"
-                type="number"
+                min={0}
                 value={mileage}
-                onChange={(event) => setMileage(event.target.value)}
+                onChange={(v) => setMileage(v === undefined ? '' : String(v))}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>

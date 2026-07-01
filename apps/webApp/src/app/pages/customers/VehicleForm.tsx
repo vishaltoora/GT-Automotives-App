@@ -22,7 +22,12 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { vehicleService, CreateVehicleDto, UpdateVehicleDto } from '../../requests/vehicle.requests';
+import { NumberInput } from '../../components/common';
+import {
+  vehicleService,
+  CreateVehicleDto,
+  UpdateVehicleDto,
+} from '../../requests/vehicle.requests';
 import { customerService, Customer } from '../../requests/customer.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useError } from '../../contexts/ErrorContext';
@@ -32,16 +37,42 @@ const years = Array.from({ length: 50 }, (_, i) => currentYear - i);
 
 // Common vehicle makes
 const vehicleMakes = [
-  'Acura', 'Audi', 'BMW', 'Buick', 'Cadillac', 'Chevrolet', 'Chrysler',
-  'Dodge', 'Ford', 'GMC', 'Honda', 'Hyundai', 'Infiniti', 'Jeep', 'Kia',
-  'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Mitsubishi', 'Nissan',
-  'Ram', 'Subaru', 'Tesla', 'Toyota', 'Volkswagen', 'Volvo'
+  'Acura',
+  'Audi',
+  'BMW',
+  'Buick',
+  'Cadillac',
+  'Chevrolet',
+  'Chrysler',
+  'Dodge',
+  'Ford',
+  'GMC',
+  'Honda',
+  'Hyundai',
+  'Infiniti',
+  'Jeep',
+  'Kia',
+  'Lexus',
+  'Lincoln',
+  'Mazda',
+  'Mercedes-Benz',
+  'Mitsubishi',
+  'Nissan',
+  'Ram',
+  'Subaru',
+  'Tesla',
+  'Toyota',
+  'Volkswagen',
+  'Volvo',
 ];
 
 const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/;
 
 const normalizeVin = (value: string) =>
-  value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '').slice(0, 17);
+  value
+    .toUpperCase()
+    .replace(/[^A-HJ-NPR-Z0-9]/g, '')
+    .slice(0, 17);
 
 const getCustomerName = (customer: Customer) =>
   [customer.firstName, customer.lastName].filter(Boolean).join(' ');
@@ -54,7 +85,9 @@ const getCustomerLabel = (customer: Customer) => {
     return `${business} - ${name}`;
   }
 
-  return business || name || customer.email || customer.phone || 'Unnamed customer';
+  return (
+    business || name || customer.email || customer.phone || 'Unnamed customer'
+  );
 };
 
 const getCustomerSearchText = (customer: Customer) =>
@@ -96,9 +129,13 @@ export function VehicleForm() {
     mileage: 0,
   });
 
-  const routePrefix = location.pathname.match(/^\/(admin|staff|supervisor|customer)(?=\/)/)?.[0] || '';
+  const routePrefix =
+    location.pathname.match(
+      /^\/(admin|staff|supervisor|customer)(?=\/)/
+    )?.[0] || '';
   const vehiclesPath = `${routePrefix}/vehicles`;
-  const selectedCustomer = customers.find((customer) => customer.id === formData.customerId) || null;
+  const selectedCustomer =
+    customers.find((customer) => customer.id === formData.customerId) || null;
 
   useEffect(() => {
     loadCustomers();
@@ -115,13 +152,13 @@ export function VehicleForm() {
     try {
       const data = await customerService.getAllCustomers();
       setCustomers(data);
-      
+
       // If customer role, they should only see their own data
       // Note: Customer-specific filtering should be handled on the backend
       if (role === 'customer' && data.length > 0) {
         // For now, if there's only one customer, use that
         if (data.length === 1) {
-          setFormData(prev => ({ ...prev, customerId: data[0].id }));
+          setFormData((prev) => ({ ...prev, customerId: data[0].id }));
         }
       }
     } catch (err: any) {
@@ -170,7 +207,7 @@ export function VehicleForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
@@ -227,7 +264,7 @@ export function VehicleForm() {
         year: decoded.year || formData.year,
       };
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         ...decodedUpdates,
       }));
@@ -242,12 +279,13 @@ export function VehicleForm() {
       setDecodeMessage(
         vehicleName
           ? `Decoded ${vehicleName}.${warningText}`
-          : `VIN decoded, but no make/model/year was returned.${warningText}`,
+          : `VIN decoded, but no make/model/year was returned.${warningText}`
       );
     } catch (err: any) {
       showError({
         title: 'VIN Decode Failed',
-        message: err.response?.data?.message || 'Unable to decode this VIN right now.',
+        message:
+          err.response?.data?.message || 'Unable to decode this VIN right now.',
         details: err.message,
       });
     } finally {
@@ -255,24 +293,32 @@ export function VehicleForm() {
     }
   };
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = field === 'vin' ? normalizeVin(e.target.value) : e.target.value;
+  const handleChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value =
+        field === 'vin' ? normalizeVin(e.target.value) : e.target.value;
 
-    setFormData(prev => ({
-      ...prev,
-      [field]: field === 'year' || field === 'mileage' ? 
-        parseInt(value) || 0 :
-        value,
-    }));
+      setFormData((prev) => ({
+        ...prev,
+        [field]:
+          field === 'year' || field === 'mileage'
+            ? parseInt(value) || 0
+            : value,
+      }));
 
-    if (field === 'vin') {
-      setDecodeMessage(null);
-    }
-  };
+      if (field === 'vin') {
+        setDecodeMessage(null);
+      }
+    };
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -291,7 +337,11 @@ export function VehicleForm() {
       )}
 
       {decodeMessage && (
-        <Alert severity="info" sx={{ mb: 3 }} onClose={() => setDecodeMessage(null)}>
+        <Alert
+          severity="info"
+          sx={{ mb: 3 }}
+          onClose={() => setDecodeMessage(null)}
+        >
           {decodeMessage}
         </Alert>
       )}
@@ -307,7 +357,9 @@ export function VehicleForm() {
                     options={customers}
                     value={selectedCustomer}
                     getOptionLabel={getCustomerLabel}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value.id
+                    }
                     filterOptions={(options, state) => {
                       const search = state.inputValue.trim().toLowerCase();
 
@@ -316,11 +368,14 @@ export function VehicleForm() {
                       }
 
                       return options.filter((customer) =>
-                        getCustomerSearchText(customer).includes(search),
+                        getCustomerSearchText(customer).includes(search)
                       );
                     }}
                     onChange={(_, customer) =>
-                      setFormData(prev => ({ ...prev, customerId: customer?.id || '' }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        customerId: customer?.id || '',
+                      }))
                     }
                     disabled={saving || role === 'customer'}
                     renderOption={(props, customer) => (
@@ -330,7 +385,9 @@ export function VehicleForm() {
                             {getCustomerLabel(customer)}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {[customer.phone, customer.email].filter(Boolean).join(' - ') || 'No contact info'}
+                            {[customer.phone, customer.email]
+                              .filter(Boolean)
+                              .join(' - ') || 'No contact info'}
                           </Typography>
                         </Box>
                       </Box>
@@ -352,8 +409,20 @@ export function VehicleForm() {
                   freeSolo
                   options={vehicleMakes}
                   value={formData.make}
-                  onChange={(_, value) => setFormData(prev => ({ ...prev, make: value || '', model: '' }))}
-                  onInputChange={(_, value) => setFormData(prev => ({ ...prev, make: value, model: value === prev.make ? prev.model : '' }))}
+                  onChange={(_, value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      make: value || '',
+                      model: '',
+                    }))
+                  }
+                  onInputChange={(_, value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      make: value,
+                      model: value === prev.make ? prev.model : '',
+                    }))
+                  }
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -371,8 +440,12 @@ export function VehicleForm() {
                   options={modelOptions}
                   value={formData.model}
                   loading={loadingModels}
-                  onChange={(_, value) => setFormData(prev => ({ ...prev, model: value || '' }))}
-                  onInputChange={(_, value) => setFormData(prev => ({ ...prev, model: value }))}
+                  onChange={(_, value) =>
+                    setFormData((prev) => ({ ...prev, model: value || '' }))
+                  }
+                  onInputChange={(_, value) =>
+                    setFormData((prev) => ({ ...prev, model: value }))
+                  }
                   disabled={saving || !formData.make}
                   renderInput={(params) => (
                     <TextField
@@ -384,7 +457,9 @@ export function VehicleForm() {
                         ...params.InputProps,
                         endAdornment: (
                           <>
-                            {loadingModels ? <CircularProgress color="inherit" size={20} /> : null}
+                            {loadingModels ? (
+                              <CircularProgress color="inherit" size={20} />
+                            ) : null}
                             {params.InputProps.endAdornment}
                           </>
                         ),
@@ -399,7 +474,12 @@ export function VehicleForm() {
                   <InputLabel>Year</InputLabel>
                   <Select
                     value={formData.year}
-                    onChange={(e) => setFormData(prev => ({ ...prev, year: Number(e.target.value) }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        year: Number(e.target.value),
+                      }))
+                    }
                     label="Year"
                     disabled={saving}
                   >
@@ -420,7 +500,10 @@ export function VehicleForm() {
                   onChange={handleChange('vin')}
                   disabled={saving || decodingVin}
                   placeholder="Vehicle Identification Number"
-                  inputProps={{ maxLength: 17, style: { textTransform: 'uppercase' } }}
+                  inputProps={{
+                    maxLength: 17,
+                    style: { textTransform: 'uppercase' },
+                  }}
                   helperText={
                     formData.vin && formData.vin.length < 17
                       ? `${17 - formData.vin.length} characters remaining`
@@ -432,9 +515,19 @@ export function VehicleForm() {
                         <Button
                           size="small"
                           variant="outlined"
-                          startIcon={decodingVin ? <CircularProgress size={16} /> : <SearchIcon />}
+                          startIcon={
+                            decodingVin ? (
+                              <CircularProgress size={16} />
+                            ) : (
+                              <SearchIcon />
+                            )
+                          }
                           onClick={handleDecodeVin}
-                          disabled={saving || decodingVin || !VIN_PATTERN.test(formData.vin)}
+                          disabled={
+                            saving ||
+                            decodingVin ||
+                            !VIN_PATTERN.test(formData.vin)
+                          }
                         >
                           Decode
                         </Button>
@@ -456,16 +549,18 @@ export function VehicleForm() {
               </Grid>
 
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                <NumberInput
                   fullWidth
-                  type="number"
+                  min={0}
                   label="Current Mileage"
                   value={formData.mileage}
-                  onChange={handleChange('mileage')}
+                  onChange={(v) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      mileage: (v ?? '') as unknown as number,
+                    }))
+                  }
                   disabled={saving}
-                  InputProps={{
-                    inputProps: { min: 0 }
-                  }}
                 />
               </Grid>
 
@@ -485,7 +580,7 @@ export function VehicleForm() {
                     startIcon={<SaveIcon />}
                     disabled={saving || !formData.customerId}
                   >
-                    {saving ? 'Saving...' : (isEdit ? 'Update' : 'Create')}
+                    {saving ? 'Saving...' : isEdit ? 'Update' : 'Create'}
                   </Button>
                 </Box>
               </Grid>

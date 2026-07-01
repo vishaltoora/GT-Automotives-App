@@ -45,23 +45,36 @@ import {
   TIRE_TYPE_OPTIONS,
 } from '../../constants/enum-mappings';
 import { useAuth } from '../../hooks/useAuth';
-import { 
-  useTire, 
-  useCreateTire, 
+import {
+  useTire,
+  useCreateTire,
   useUpdateTire,
   useTireBrands,
-  useTireSizeSuggestions 
+  useTireSizeSuggestions,
 } from '../../hooks/useTires';
 import TireImageUpload from '../../components/inventory/TireImageUpload';
+import { NumberInput } from '../../components/common';
 
 // Validation schema
 const validationSchema = Yup.object({
-  brand: Yup.string().required('Brand is required').min(2, 'Brand must be at least 2 characters'),
+  brand: Yup.string()
+    .required('Brand is required')
+    .min(2, 'Brand must be at least 2 characters'),
   size: Yup.string()
     .required('Size is required')
     .matches(/^\d{3}\/\d{2}R\d{2}$/, 'Size must be in format like 225/45R17'),
-  type: Yup.string().oneOf(TIRE_TYPE_OPTIONS.map(({ value }) => value), 'Invalid tire type').required('Type is required'),
-  condition: Yup.string().oneOf(TIRE_CONDITION_OPTIONS.map(({ value }) => value), 'Invalid condition').required('Condition is required'),
+  type: Yup.string()
+    .oneOf(
+      TIRE_TYPE_OPTIONS.map(({ value }) => value),
+      'Invalid tire type'
+    )
+    .required('Type is required'),
+  condition: Yup.string()
+    .oneOf(
+      TIRE_CONDITION_OPTIONS.map(({ value }) => value),
+      'Invalid condition'
+    )
+    .required('Condition is required'),
   quantity: Yup.number()
     .required('Quantity is required')
     .min(0, 'Quantity cannot be negative')
@@ -71,10 +84,14 @@ const validationSchema = Yup.object({
     .min(0.01, 'Price must be greater than 0'),
   cost: Yup.number()
     .min(0, 'Cost cannot be negative')
-    .test('cost-less-than-price', 'Cost should be less than price', function(cost) {
-      if (!cost || !this.parent.price) return true;
-      return cost <= this.parent.price;
-    }),
+    .test(
+      'cost-less-than-price',
+      'Cost should be less than price',
+      function (cost) {
+        if (!cost || !this.parent.price) return true;
+        return cost <= this.parent.price;
+      }
+    ),
   minStock: Yup.number()
     .min(0, 'Minimum stock cannot be negative')
     .integer('Minimum stock must be a whole number'),
@@ -86,7 +103,7 @@ export function TireForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  
+
   const isEditing = Boolean(id && id !== 'new');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [sizeQuery, setSizeQuery] = useState('');
@@ -204,10 +221,9 @@ export function TireForm() {
             {isEditing ? 'Edit Tire' : 'Add New Tire'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {isEditing 
+            {isEditing
               ? `Update details for ${tire?.brand} - ${tire?.size}`
-              : 'Enter tire information to add to inventory'
-            }
+              : 'Enter tire information to add to inventory'}
           </Typography>
         </Box>
       </Box>
@@ -221,26 +237,31 @@ export function TireForm() {
                 <Typography variant="h6" gutterBottom>
                   Basic Information
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   {/* Brand */}
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Autocomplete
                       options={brands}
                       value={formik.values.brand}
-                      onChange={(_, value) => formik.setFieldValue('brand', value || '')}
+                      onChange={(_, value) =>
+                        formik.setFieldValue('brand', value || '')
+                      }
                       renderInput={(params) => (
                         <TextField
                           {...params}
                           label="Brand *"
-                          error={formik.touched.brand && Boolean(formik.errors.brand)}
-                          helperText={formik.touched.brand && formik.errors.brand}
+                          error={
+                            formik.touched.brand && Boolean(formik.errors.brand)
+                          }
+                          helperText={
+                            formik.touched.brand && formik.errors.brand
+                          }
                         />
                       )}
                       freeSolo
                     />
                   </Grid>
-
 
                   {/* Size */}
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -254,7 +275,9 @@ export function TireForm() {
                           {...params}
                           label="Size *"
                           placeholder="e.g., 225/45R17"
-                          error={formik.touched.size && Boolean(formik.errors.size)}
+                          error={
+                            formik.touched.size && Boolean(formik.errors.size)
+                          }
                           helperText={formik.touched.size && formik.errors.size}
                         />
                       )}
@@ -271,7 +294,9 @@ export function TireForm() {
                         value={formik.values.type}
                         label="Type *"
                         onChange={formik.handleChange}
-                        error={formik.touched.type && Boolean(formik.errors.type)}
+                        error={
+                          formik.touched.type && Boolean(formik.errors.type)
+                        }
                       >
                         {TIRE_TYPE_OPTIONS.map(({ value, label }) => (
                           <MenuItem key={value} value={value}>
@@ -291,7 +316,10 @@ export function TireForm() {
                         value={formik.values.condition}
                         label="Condition *"
                         onChange={formik.handleChange}
-                        error={formik.touched.condition && Boolean(formik.errors.condition)}
+                        error={
+                          formik.touched.condition &&
+                          Boolean(formik.errors.condition)
+                        }
                       >
                         {TIRE_CONDITION_OPTIONS.map(({ value, label }) => (
                           <MenuItem key={value} value={value}>
@@ -310,8 +338,13 @@ export function TireForm() {
                       name="location"
                       value={formik.values.location}
                       onChange={formik.handleChange}
-                      error={formik.touched.location && Boolean(formik.errors.location)}
-                      helperText={formik.touched.location && formik.errors.location}
+                      error={
+                        formik.touched.location &&
+                        Boolean(formik.errors.location)
+                      }
+                      helperText={
+                        formik.touched.location && formik.errors.location
+                      }
                       placeholder="e.g., Aisle A, Shelf 3"
                     />
                   </Grid>
@@ -326,51 +359,78 @@ export function TireForm() {
                 <Grid container spacing={2}>
                   {/* Quantity */}
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
+                    <NumberInput
                       fullWidth
                       label="Quantity *"
                       name="quantity"
-                      type="number"
                       value={formik.values.quantity}
-                      onChange={formik.handleChange}
-                      error={formik.touched.quantity && Boolean(formik.errors.quantity)}
-                      helperText={formik.touched.quantity && formik.errors.quantity}
-                      inputProps={{ min: 0 }}
+                      onChange={(v) =>
+                        formik.setFieldValue(
+                          'quantity',
+                          (v ?? '') as unknown as number
+                        )
+                      }
+                      error={
+                        formik.touched.quantity &&
+                        Boolean(formik.errors.quantity)
+                      }
+                      helperText={
+                        formik.touched.quantity && formik.errors.quantity
+                      }
+                      min={0}
                       autoComplete="off"
                     />
                   </Grid>
 
                   {/* Min Stock */}
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
+                    <NumberInput
                       fullWidth
                       label="Minimum Stock Level"
                       name="minStock"
-                      type="number"
                       value={formik.values.minStock}
-                      onChange={formik.handleChange}
-                      error={formik.touched.minStock && Boolean(formik.errors.minStock)}
-                      helperText={formik.touched.minStock && formik.errors.minStock}
-                      inputProps={{ min: 0 }}
+                      onChange={(v) =>
+                        formik.setFieldValue(
+                          'minStock',
+                          (v ?? '') as unknown as number
+                        )
+                      }
+                      error={
+                        formik.touched.minStock &&
+                        Boolean(formik.errors.minStock)
+                      }
+                      helperText={
+                        formik.touched.minStock && formik.errors.minStock
+                      }
+                      min={0}
                       autoComplete="off"
                     />
                   </Grid>
 
                   {/* Price */}
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
+                    <NumberInput
                       fullWidth
                       label="Selling Price *"
                       name="price"
-                      type="number"
+                      allowDecimals
                       value={formik.values.price}
-                      onChange={formik.handleChange}
-                      error={formik.touched.price && Boolean(formik.errors.price)}
+                      onChange={(v) =>
+                        formik.setFieldValue(
+                          'price',
+                          (v ?? '') as unknown as number
+                        )
+                      }
+                      error={
+                        formik.touched.price && Boolean(formik.errors.price)
+                      }
                       helperText={formik.touched.price && formik.errors.price}
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                        startAdornment: (
+                          <InputAdornment position="start">$</InputAdornment>
+                        ),
                       }}
-                      inputProps={{ min: 0, step: 0.01 }}
+                      min={0}
                       autoComplete="off"
                     />
                   </Grid>
@@ -378,19 +438,28 @@ export function TireForm() {
                   {/* Cost (Admin only) */}
                   {isAdmin && (
                     <Grid size={{ xs: 12, sm: 4 }}>
-                      <TextField
+                      <NumberInput
                         fullWidth
                         label="Cost"
                         name="cost"
-                        type="number"
+                        allowDecimals
                         value={formik.values.cost}
-                        onChange={formik.handleChange}
-                        error={formik.touched.cost && Boolean(formik.errors.cost)}
+                        onChange={(v) =>
+                          formik.setFieldValue(
+                            'cost',
+                            (v ?? '') as unknown as number
+                          )
+                        }
+                        error={
+                          formik.touched.cost && Boolean(formik.errors.cost)
+                        }
                         helperText={formik.touched.cost && formik.errors.cost}
                         InputProps={{
-                          startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                          startAdornment: (
+                            <InputAdornment position="start">$</InputAdornment>
+                          ),
                         }}
-                        inputProps={{ min: 0, step: 0.01 }}
+                        min={0}
                         autoComplete="off"
                       />
                     </Grid>
@@ -452,8 +521,20 @@ export function TireForm() {
                       {formik.values.size}
                     </Typography>
                     <Stack direction="row" spacing={0.5}>
-                      <Chip label={getEnumLabel(TIRE_TYPE_DISPLAY, formik.values.type)} size="small" />
-                      <Chip label={getEnumLabel(TIRE_CONDITION_DISPLAY, formik.values.condition)} size="small" />
+                      <Chip
+                        label={getEnumLabel(
+                          TIRE_TYPE_DISPLAY,
+                          formik.values.type
+                        )}
+                        size="small"
+                      />
+                      <Chip
+                        label={getEnumLabel(
+                          TIRE_CONDITION_DISPLAY,
+                          formik.values.condition
+                        )}
+                        size="small"
+                      />
                     </Stack>
                     <Typography variant="h6" color="primary">
                       ${formik.values.price.toFixed(2)}
@@ -478,7 +559,7 @@ export function TireForm() {
             >
               Cancel
             </Button>
-            
+
             <Button
               variant="outlined"
               onClick={handleSaveDraft}
@@ -487,7 +568,7 @@ export function TireForm() {
             >
               Save as Draft
             </Button>
-            
+
             <LoadingButton
               type="submit"
               variant="contained"
@@ -503,11 +584,15 @@ export function TireForm() {
       </form>
 
       {/* Cancel Confirmation Dialog */}
-      <Dialog open={showCancelDialog} onClose={() => setShowCancelDialog(false)}>
+      <Dialog
+        open={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+      >
         <DialogTitle>Discard Changes?</DialogTitle>
         <DialogContent>
           <Typography>
-            You have unsaved changes. Are you sure you want to leave without saving?
+            You have unsaved changes. Are you sure you want to leave without
+            saving?
           </Typography>
         </DialogContent>
         <DialogActions>

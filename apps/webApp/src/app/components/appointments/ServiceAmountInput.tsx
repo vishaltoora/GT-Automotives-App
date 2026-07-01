@@ -1,19 +1,13 @@
 import React, { useMemo } from 'react';
-import {
-  Box,
-  TextField,
-  Typography,
-  Divider,
-  Paper,
-  InputAdornment,
-} from '@mui/material';
+import { Box, Typography, Divider, Paper, InputAdornment } from '@mui/material';
 import { AttachMoney as MoneyIcon } from '@mui/icons-material';
+import { NumberInput } from '../common';
 
 interface ServiceAmountInputProps {
   value: number;
-  onChange: (value: number) => void;
+  onChange: (value: number | undefined) => void;
   tipAmount?: number;
-  onTipChange?: (value: number) => void;
+  onTipChange?: (value: number | undefined) => void;
   showTip?: boolean;
   error?: string;
   disabled?: boolean;
@@ -56,56 +50,30 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
     };
   }, [value, tipAmount]);
 
-  const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = event.target.value;
-
-    // Allow empty string
-    if (inputValue === '') {
-      onChange(0);
-      return;
-    }
-
-    // Parse as float and validate
-    const numValue = parseFloat(inputValue);
-    if (!isNaN(numValue) && numValue >= 0) {
-      onChange(numValue);
-    }
+  const handleAmountChange = (v: number | undefined) => {
+    onChange(v);
   };
 
-  const handleTipChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTipChange = (v: number | undefined) => {
     if (!onTipChange) return;
-
-    const inputValue = event.target.value;
-
-    // Allow empty string
-    if (inputValue === '') {
-      onTipChange(0);
-      return;
-    }
-
-    // Parse as float and validate
-    const numValue = parseFloat(inputValue);
-    if (!isNaN(numValue) && numValue >= 0) {
-      onTipChange(numValue);
-    }
+    onTipChange(v);
   };
 
   return (
     <Box>
       {/* Service Amount Input */}
-      <TextField
+      <NumberInput
         fullWidth
         label="Service Amount (before taxes)"
-        type="number"
+        allowDecimals
+        min={0}
         value={value || ''}
         onChange={handleAmountChange}
-        onKeyDown={(e) => {
-          if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-            e.preventDefault();
-          }
-        }}
         error={!!error}
-        helperText={error || 'Enter the base service amount (GST and PST will be calculated automatically)'}
+        helperText={
+          error ||
+          'Enter the base service amount (GST and PST will be calculated automatically)'
+        }
         disabled={disabled}
         InputProps={{
           startAdornment: (
@@ -114,27 +82,19 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
             </InputAdornment>
           ),
         }}
-        inputProps={{
-          min: 0,
-          step: 0.01,
-        }}
         autoComplete="off"
         sx={{ mb: 2 }}
       />
 
       {/* Tip Amount Input - Optional */}
       {showTip && onTipChange && (
-        <TextField
+        <NumberInput
           fullWidth
           label="Tips (Optional)"
-          type="number"
+          allowDecimals
+          min={0}
           value={tipAmount || ''}
           onChange={handleTipChange}
-          onKeyDown={(e) => {
-            if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-              e.preventDefault();
-            }
-          }}
           disabled={disabled}
           InputProps={{
             startAdornment: (
@@ -142,10 +102,6 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
                 <MoneyIcon color="action" />
               </InputAdornment>
             ),
-          }}
-          inputProps={{
-            min: 0,
-            step: 0.01,
           }}
           autoComplete="off"
           helperText="Tips are not subject to GST or PST"
@@ -203,7 +159,11 @@ export const ServiceAmountInput: React.FC<ServiceAmountInputProps> = ({
                 <Typography variant="body2" color="success.main">
                   Tips:
                 </Typography>
-                <Typography variant="body2" color="success.main" fontWeight={500}>
+                <Typography
+                  variant="body2"
+                  color="success.main"
+                  fontWeight={500}
+                >
                   ${taxCalculation.tip.toFixed(2)}
                 </Typography>
               </Box>

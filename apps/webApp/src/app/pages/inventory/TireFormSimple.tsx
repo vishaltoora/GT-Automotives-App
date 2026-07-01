@@ -22,10 +22,7 @@ import {
   InputAdornment,
   Chip,
 } from '@mui/material';
-import {
-  Save as SaveIcon,
-  ArrowBack as BackIcon,
-} from '@mui/icons-material';
+import { Save as SaveIcon, ArrowBack as BackIcon } from '@mui/icons-material';
 import {
   ITireCreateInput,
   ITireUpdateInput,
@@ -40,17 +37,14 @@ import {
   TIRE_TYPE_OPTIONS,
 } from '../../constants/enum-mappings';
 import { useAuth } from '../../hooks/useAuth';
-import { 
-  useTire, 
-  useCreateTire, 
-  useUpdateTire,
-} from '../../hooks/useTires';
+import { useTire, useCreateTire, useUpdateTire } from '../../hooks/useTires';
+import { NumberInput } from '../../components/common';
 
 export function TireFormSimple() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  
+
   const isEditing = Boolean(id && id !== 'new');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [formData, setFormData] = useState({
@@ -104,7 +98,8 @@ export function TireFormSimple() {
 
     if (!formData.brand.trim()) newErrors.brand = 'Brand is required';
     if (!formData.size.trim()) newErrors.size = 'Size is required';
-    if (formData.quantity < 0) newErrors.quantity = 'Quantity cannot be negative';
+    if (formData.quantity < 0)
+      newErrors.quantity = 'Quantity cannot be negative';
     if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
     if (isAdmin && formData.cost !== undefined && formData.cost < 0) {
       newErrors.cost = 'Cost cannot be negative';
@@ -116,7 +111,7 @@ export function TireFormSimple() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -144,21 +139,32 @@ export function TireFormSimple() {
   };
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
   const handleCancel = () => {
-    const hasChanges = Object.keys(formData).some(key => {
+    const hasChanges = Object.keys(formData).some((key) => {
       if (tire && isEditing) {
-        return formData[key as keyof typeof formData] !== tire[key as keyof typeof tire];
+        return (
+          formData[key as keyof typeof formData] !==
+          tire[key as keyof typeof tire]
+        );
       }
-      return formData[key as keyof typeof formData] !== (key === 'type' ? TireType.ALL_SEASON : 
-        key === 'condition' ? TireCondition.NEW : 
-        key === 'minStock' ? 5 : 
-        typeof formData[key as keyof typeof formData] === 'number' ? 0 : '');
+      return (
+        formData[key as keyof typeof formData] !==
+        (key === 'type'
+          ? TireType.ALL_SEASON
+          : key === 'condition'
+          ? TireCondition.NEW
+          : key === 'minStock'
+          ? 5
+          : typeof formData[key as keyof typeof formData] === 'number'
+          ? 0
+          : '')
+      );
     });
 
     if (hasChanges) {
@@ -188,10 +194,9 @@ export function TireFormSimple() {
             {isEditing ? 'Edit Tire' : 'Add New Tire'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {isEditing 
+            {isEditing
               ? `Update details for ${tire?.brand} - ${tire?.size}`
-              : 'Enter tire information to add to inventory'
-            }
+              : 'Enter tire information to add to inventory'}
           </Typography>
         </Box>
       </Box>
@@ -205,7 +210,7 @@ export function TireFormSimple() {
                 <Typography variant="h6" gutterBottom>
                   Basic Information
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   {/* Name (Optional) */}
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -281,7 +286,9 @@ export function TireFormSimple() {
                       <Select
                         value={formData.condition}
                         label="Condition *"
-                        onChange={(e) => handleChange('condition', e.target.value)}
+                        onChange={(e) =>
+                          handleChange('condition', e.target.value)
+                        }
                       >
                         {TIRE_CONDITION_OPTIONS.map(({ value, label }) => (
                           <MenuItem key={value} value={value}>
@@ -313,46 +320,52 @@ export function TireFormSimple() {
                 <Grid container spacing={2}>
                   {/* Quantity */}
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
+                    <NumberInput
                       fullWidth
                       label="Quantity *"
-                      type="number"
                       value={formData.quantity}
-                      onChange={(e) => handleChange('quantity', e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                      onChange={(v) =>
+                        handleChange('quantity', (v ?? '') as unknown as number)
+                      }
                       error={!!errors.quantity}
                       helperText={errors.quantity}
-                      inputProps={{ min: 0 }}
+                      min={0}
                       autoComplete="off"
                     />
                   </Grid>
 
                   {/* Min Stock */}
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
+                    <NumberInput
                       fullWidth
                       label="Minimum Stock Level"
-                      type="number"
                       value={formData.minStock}
-                      onChange={(e) => handleChange('minStock', parseInt(e.target.value) || 0)}
-                      inputProps={{ min: 0 }}
+                      onChange={(v) =>
+                        handleChange('minStock', (v ?? '') as unknown as number)
+                      }
+                      min={0}
                       autoComplete="off"
                     />
                   </Grid>
 
                   {/* Price */}
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
+                    <NumberInput
                       fullWidth
                       label="Selling Price *"
-                      type="number"
+                      allowDecimals
                       value={formData.price}
-                      onChange={(e) => handleChange('price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                      onChange={(v) =>
+                        handleChange('price', (v ?? '') as unknown as number)
+                      }
                       error={!!errors.price}
                       helperText={errors.price}
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                        startAdornment: (
+                          <InputAdornment position="start">$</InputAdornment>
+                        ),
                       }}
-                      inputProps={{ min: 0, step: 0.01 }}
+                      min={0}
                       autoComplete="off"
                     />
                   </Grid>
@@ -360,18 +373,22 @@ export function TireFormSimple() {
                   {/* Cost (Admin only) */}
                   {isAdmin && (
                     <Grid size={{ xs: 12, sm: 4 }}>
-                      <TextField
+                      <NumberInput
                         fullWidth
                         label="Cost"
-                        type="number"
+                        allowDecimals
                         value={formData.cost}
-                        onChange={(e) => handleChange('cost', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                        onChange={(v) =>
+                          handleChange('cost', (v ?? '') as unknown as number)
+                        }
                         error={!!errors.cost}
                         helperText={errors.cost}
                         InputProps={{
-                          startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                          startAdornment: (
+                            <InputAdornment position="start">$</InputAdornment>
+                          ),
                         }}
-                        inputProps={{ min: 0, step: 0.01 }}
+                        min={0}
                         autoComplete="off"
                       />
                     </Grid>
@@ -409,8 +426,17 @@ export function TireFormSimple() {
                     {formData.size}
                   </Typography>
                   <Stack direction="row" spacing={0.5}>
-                    <Chip label={getEnumLabel(TIRE_TYPE_DISPLAY, formData.type)} size="small" />
-                    <Chip label={getEnumLabel(TIRE_CONDITION_DISPLAY, formData.condition)} size="small" />
+                    <Chip
+                      label={getEnumLabel(TIRE_TYPE_DISPLAY, formData.type)}
+                      size="small"
+                    />
+                    <Chip
+                      label={getEnumLabel(
+                        TIRE_CONDITION_DISPLAY,
+                        formData.condition
+                      )}
+                      size="small"
+                    />
                   </Stack>
                   <Typography variant="h6" color="primary">
                     ${formData.price.toFixed(2)}
@@ -434,25 +460,33 @@ export function TireFormSimple() {
             >
               Cancel
             </Button>
-            
+
             <Button
               type="submit"
               variant="contained"
               disabled={isSubmitting}
               startIcon={<SaveIcon />}
             >
-              {isSubmitting ? 'Saving...' : (isEditing ? 'Update Tire' : 'Add Tire')}
+              {isSubmitting
+                ? 'Saving...'
+                : isEditing
+                ? 'Update Tire'
+                : 'Add Tire'}
             </Button>
           </Stack>
         </Card>
       </form>
 
       {/* Cancel Confirmation Dialog */}
-      <Dialog open={showCancelDialog} onClose={() => setShowCancelDialog(false)}>
+      <Dialog
+        open={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+      >
         <DialogTitle>Discard Changes?</DialogTitle>
         <DialogContent>
           <Typography>
-            You have unsaved changes. Are you sure you want to leave without saving?
+            You have unsaved changes. Are you sure you want to leave without
+            saving?
           </Typography>
         </DialogContent>
         <DialogActions>

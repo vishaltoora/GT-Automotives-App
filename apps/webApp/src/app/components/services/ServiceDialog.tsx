@@ -11,11 +11,16 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { ServiceDto } from '@gt-automotive/data';
+import { NumberInput } from '../common';
 
 interface ServiceDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (service: { name: string; description?: string; unitPrice: number }) => void;
+  onSave: (service: {
+    name: string;
+    description?: string;
+    unitPrice: number;
+  }) => void;
   service?: ServiceDto | null;
 }
 
@@ -27,7 +32,9 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
 }) => {
   const [name, setName] = useState(service?.name || '');
   const [description, setDescription] = useState(service?.description || '');
-  const [unitPrice, setUnitPrice] = useState<number | string>(service?.unitPrice || '');
+  const [unitPrice, setUnitPrice] = useState<number | string>(
+    service?.unitPrice || ''
+  );
 
   React.useEffect(() => {
     if (service) {
@@ -57,7 +64,13 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         {service ? 'Edit Service' : 'Add New Service'}
         <IconButton onClick={handleClose} size="small">
           <CloseIcon />
@@ -82,14 +95,14 @@ export const ServiceDialog: React.FC<ServiceDialogProps> = ({
             rows={2}
             placeholder="Brief description of the service"
           />
-          <TextField
+          <NumberInput
             label="Unit Price"
-            type="number"
+            allowDecimals
+            min={0}
             value={unitPrice}
-            onChange={(e) => setUnitPrice(e.target.value)}
+            onChange={(v) => setUnitPrice(v ?? '')}
             fullWidth
             required
-            inputProps={{ min: 0, step: 0.01 }}
             autoComplete="off"
           />
         </Box>

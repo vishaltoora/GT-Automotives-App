@@ -26,7 +26,13 @@ import { TransitionProps } from '@mui/material/transitions';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { UpdateJobDto, JobType, JobStatus, JobResponseDto } from '@gt-automotive/data';
+import {
+  UpdateJobDto,
+  JobType,
+  JobStatus,
+  JobResponseDto,
+} from '@gt-automotive/data';
+import { NumberInput } from '../../components/common';
 import { jobService } from '../../requests/job.requests';
 // import { userService } from '../../requests/user.requests'; // TODO: Use for employee reassignment
 import { colors } from '../../theme/colors';
@@ -35,7 +41,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
     children: React.ReactElement;
   },
-  ref: React.Ref<unknown>,
+  ref: React.Ref<unknown>
 ) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -69,7 +75,7 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
   const [formData, setFormData] = useState<UpdateJobDto>({
     title: '',
     description: '',
-    payAmount: 0,
+    payAmount: '' as unknown as number,
     status: JobStatus.PENDING,
     jobType: JobType.REGULAR,
     dueDate: '',
@@ -82,11 +88,13 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
       const formDataToSet = {
         title: job.title || '',
         description: job.description || '',
-        payAmount: job.payAmount || 0,
+        payAmount: (job.payAmount ?? '') as unknown as number,
         status: job.status || JobStatus.PENDING,
         jobType: job.jobType || JobType.REGULAR,
         dueDate: job.dueDate ? new Date(job.dueDate).toISOString() : '',
-        completedAt: job.completedAt ? new Date(job.completedAt).toISOString() : '',
+        completedAt: job.completedAt
+          ? new Date(job.completedAt).toISOString()
+          : '',
       };
       setFormData(formDataToSet);
       setError(null);
@@ -95,7 +103,7 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
       setFormData({
         title: '',
         description: '',
-        payAmount: 0,
+        payAmount: '' as unknown as number,
         status: JobStatus.PENDING,
         jobType: JobType.REGULAR,
         dueDate: '',
@@ -118,14 +126,19 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
   };
 
   const handleInputChange = (field: keyof UpdateJobDto, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSubmit = async () => {
-    if (!job || !formData.title || !formData.payAmount || formData.payAmount <= 0) {
+    if (
+      !job ||
+      !formData.title ||
+      !formData.payAmount ||
+      formData.payAmount <= 0
+    ) {
       setError('Please fill in all required fields');
       return;
     }
@@ -139,7 +152,8 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
         payAmount: formData.payAmount,
         status: formData.status,
         jobType: formData.jobType,
-        ...(formData.description && formData.description.trim() && { description: formData.description }),
+        ...(formData.description &&
+          formData.description.trim() && { description: formData.description }),
         ...(formData.dueDate && { dueDate: formData.dueDate }),
         ...(formData.completedAt && { completedAt: formData.completedAt }),
       };
@@ -155,7 +169,9 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
   };
 
   const getEmployeeName = (employee: Employee) => {
-    const name = [employee.firstName, employee.lastName].filter(Boolean).join(' ');
+    const name = [employee.firstName, employee.lastName]
+      .filter(Boolean)
+      .join(' ');
     return name || employee.email;
   };
 
@@ -203,7 +219,8 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
 
             {job && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                Employee: {job.employee ? getEmployeeName(job.employee) : 'Unknown'}
+                Employee:{' '}
+                {job.employee ? getEmployeeName(job.employee) : 'Unknown'}
               </Alert>
             )}
 
@@ -227,13 +244,16 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
             />
 
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
+              <NumberInput
                 fullWidth
                 required
-                type="number"
+                allowDecimals
+                min={0}
                 label="Payment Amount"
                 value={formData.payAmount}
-                onChange={(e) => handleInputChange('payAmount', parseFloat(e.target.value) || 0)}
+                onChange={(v) =>
+                  handleInputChange('payAmount', (v ?? '') as unknown as number)
+                }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -241,7 +261,6 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
                     </InputAdornment>
                   ),
                 }}
-                inputProps={{ min: 0, step: 0.01 }}
               />
 
               <FormControl fullWidth required>
@@ -266,16 +285,22 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
                   <InputLabel>Status</InputLabel>
                   <Select
                     value={formData.status}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange('status', e.target.value)
+                    }
                     label="Status"
                   >
                     {Object.values(JobStatus)
-                      .filter(status => status !== JobStatus.PAID && status !== JobStatus.PARTIALLY_PAID)
+                      .filter(
+                        (status) =>
+                          status !== JobStatus.PAID &&
+                          status !== JobStatus.PARTIALLY_PAID
+                      )
                       .map((status) => (
-                      <MenuItem key={status} value={status}>
-                        {status.replace('_', ' ')}
-                      </MenuItem>
-                    ))}
+                        <MenuItem key={status} value={status}>
+                          {status.replace('_', ' ')}
+                        </MenuItem>
+                      ))}
                   </Select>
                 </FormControl>
               )}
@@ -292,7 +317,9 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
               <DateTimePicker
                 label="Due Date (Optional)"
                 value={formData.dueDate ? new Date(formData.dueDate) : null}
-                onChange={(date) => handleInputChange('dueDate', date?.toISOString() || '')}
+                onChange={(date) =>
+                  handleInputChange('dueDate', date?.toISOString() || '')
+                }
                 slotProps={{
                   textField: {
                     fullWidth: true,
@@ -305,8 +332,12 @@ export const EditJobDialog: React.FC<EditJobDialogProps> = ({
             {formData.status === JobStatus.READY && (
               <DateTimePicker
                 label="Completed At"
-                value={formData.completedAt ? new Date(formData.completedAt) : null}
-                onChange={(date) => handleInputChange('completedAt', date?.toISOString() || '')}
+                value={
+                  formData.completedAt ? new Date(formData.completedAt) : null
+                }
+                onChange={(date) =>
+                  handleInputChange('completedAt', date?.toISOString() || '')
+                }
                 slotProps={{
                   textField: {
                     fullWidth: true,

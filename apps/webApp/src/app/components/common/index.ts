@@ -4,3 +4,6 @@ export { default as ErrorDialog } from './ErrorDialog';
 export type { ErrorDialogProps } from './ErrorDialog';
 export { default as AnalyticsCards, AnalyticsIcons } from './AnalyticsCards';
 export type { AnalyticsCardData } from './AnalyticsCards';
+export { default as NumberInput } from './NumberInput';
+export type { NumberInputProps } from './NumberInput';
+export { PhoneInput } from './PhoneInput';

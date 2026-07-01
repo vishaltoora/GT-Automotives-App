@@ -8,7 +8,6 @@ import {
   Button,
   Typography,
   CircularProgress,
-  TextField,
   InputAdornment,
   List,
   ListItemButton,
@@ -24,6 +23,7 @@ import {
 } from '../../requests/inspection.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { InspectionForm } from '../inspections/InspectionForm';
+import { NumberInput } from '../common';
 
 interface InspectVehicleDialogProps {
   open: boolean;
@@ -86,7 +86,9 @@ export function InspectVehicleDialog({
         setTemplates(list);
         if (list.length > 0) setTemplateId((prev) => prev || list[0].id);
       })
-      .catch((error) => showApiError(error, 'Failed to load inspection templates.'))
+      .catch((error) =>
+        showApiError(error, 'Failed to load inspection templates.')
+      )
       .finally(() => setLoading(false));
   }, [open, existingInspectionId, defaultMileage]);
 
@@ -129,7 +131,8 @@ export function InspectVehicleDialog({
       PaperProps={fullView ? { sx: { height: '90vh' } } : undefined}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Assignment color="action" /> {fullView ? 'Vehicle Inspection' : 'Inspect Vehicle'}
+        <Assignment color="action" />{' '}
+        {fullView ? 'Vehicle Inspection' : 'Inspect Vehicle'}
       </DialogTitle>
 
       <DialogContent dividers={fullView}>
@@ -141,7 +144,9 @@ export function InspectVehicleDialog({
             onDone={handleClose}
           />
         ) : existingInspectionId ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress />
+          </Box>
         ) : (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -151,38 +156,69 @@ export function InspectVehicleDialog({
 
             {!vehicleId && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                No vehicle is linked to this repair order. You can still inspect, but adding a vehicle first is recommended.
+                No vehicle is linked to this repair order. You can still
+                inspect, but adding a vehicle first is recommended.
               </Alert>
             )}
 
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>Inspection Type</Typography>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Inspection Type
+            </Typography>
             {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress size={24} />
+              </Box>
             ) : templates.length === 0 ? (
-              <Alert severity="warning">No inspection templates are configured.</Alert>
+              <Alert severity="warning">
+                No inspection templates are configured.
+              </Alert>
             ) : (
-              <List dense sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+              <List
+                dense
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  mb: 2,
+                }}
+              >
                 {templates.map((t) => (
-                  <ListItemButton key={t.id} selected={templateId === t.id} onClick={() => setTemplateId(t.id)}>
-                    <Radio edge="start" checked={templateId === t.id} tabIndex={-1} size="small" />
+                  <ListItemButton
+                    key={t.id}
+                    selected={templateId === t.id}
+                    onClick={() => setTemplateId(t.id)}
+                  >
+                    <Radio
+                      edge="start"
+                      checked={templateId === t.id}
+                      tabIndex={-1}
+                      size="small"
+                    />
                     <ListItemText
                       primary={t.name}
                       secondary={t.description}
-                      primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                      primaryTypographyProps={{
+                        variant: 'body2',
+                        fontWeight: 500,
+                      }}
                     />
                   </ListItemButton>
                 ))}
               </List>
             )}
 
-            <TextField
+            <NumberInput
               label="Mileage (optional)"
-              type="number"
               size="small"
               fullWidth
               value={mileage}
-              onChange={(e) => setMileage(e.target.value)}
-              InputProps={{ endAdornment: <InputAdornment position="end">km</InputAdornment> }}
+              onChange={(v) => setMileage(v === undefined ? '' : String(v))}
+              min={0}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">km</InputAdornment>
+                ),
+              }}
             />
           </>
         )}
@@ -193,12 +229,20 @@ export function InspectVehicleDialog({
           <Button onClick={handleClose}>Close</Button>
         ) : (
           <>
-            <Button onClick={onClose} disabled={creating}>Cancel</Button>
+            <Button onClick={onClose} disabled={creating}>
+              Cancel
+            </Button>
             <Button
               variant="contained"
               onClick={handleStart}
               disabled={creating || !templateId}
-              startIcon={creating ? <CircularProgress size={16} color="inherit" /> : <Assignment />}
+              startIcon={
+                creating ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <Assignment />
+                )
+              }
             >
               Start Inspection
             </Button>
