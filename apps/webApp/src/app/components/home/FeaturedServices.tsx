@@ -27,10 +27,12 @@ export function FeaturedServices() {
   const services: Service[] = [
     {
       title: 'Mobile Tire Service',
-      description: 'Professional tire installation at your location, available 24/7',
+      description:
+        'Professional tire installation at your location, available 24/7',
       color: colors.secondary.main,
       features: ['On-site installation', '24/7 service', 'All tire brands'],
-      image: 'url(https://www.hunter.com/globalassets/hunter/sema2022/theme-pages/equipmentgroup-mobile.png)',
+      image:
+        'url(https://www.hunter.com/globalassets/hunter/sema2022/theme-pages/equipmentgroup-mobile.png)',
       hideIcon: true,
     },
     {
@@ -38,7 +40,8 @@ export function FeaturedServices() {
       description: 'Expert mounting and balancing for all tire types and sizes',
       color: colors.primary.main,
       features: ['Mount & Balance', 'TPMS Service', 'Valve Replacement'],
-      image: 'url(https://totalkare.co.uk/wp-content/uploads/2023/03/HP641SQ.22.png)',
+      image:
+        'url(https://totalkare.co.uk/wp-content/uploads/2023/03/HP641SQ.22.png)',
       hideIcon: true,
     },
     {
@@ -46,7 +49,8 @@ export function FeaturedServices() {
       description: 'From engine diagnostics to brake service, we fix it all',
       color: colors.primary.dark,
       features: ['Engine repair', 'Brake service', 'Electrical work'],
-      image: 'url(https://static.vecteezy.com/system/resources/thumbnails/038/777/271/small_2x/ai-generated-of-car-engine-against-transparent-background-free-png.png)',
+      image:
+        'url(https://static.vecteezy.com/system/resources/thumbnails/038/777/271/small_2x/ai-generated-of-car-engine-against-transparent-background-free-png.png)',
       hideIcon: true,
     },
     {
@@ -54,7 +58,8 @@ export function FeaturedServices() {
       description: 'Keep your vehicle running smoothly with regular service',
       color: colors.semantic.success,
       features: ['Oil changes', 'Tire rotation', 'Multi-point inspection'],
-      image: 'url(https://www.pngmart.com/files/23/Mechanic-Logo-PNG-Photo.png)',
+      image:
+        'url(https://www.pngmart.com/files/23/Mechanic-Logo-PNG-Photo.png)',
       hideIcon: true,
     },
     {
@@ -62,7 +67,8 @@ export function FeaturedServices() {
       description: 'Get ready for winter with professional tire changeover',
       color: '#1565c0',
       features: ['Seasonal swap', 'Tire storage', 'Studded options'],
-      image: 'url(https://png.pngtree.com/png-clipart/20240404/original/pngtree-close-up-of-car-tires-in-winter-on-the-road-covered-png-image_14747453.png)',
+      image:
+        'url(https://png.pngtree.com/png-clipart/20240404/original/pngtree-close-up-of-car-tires-in-winter-on-the-road-covered-png-image_14747453.png)',
       hideIcon: true,
     },
     {
@@ -70,15 +76,18 @@ export function FeaturedServices() {
       description: 'Switch to summer tires for better warm weather performance',
       color: '#ff9800',
       features: ['Performance tires', 'All-season options', 'Free inspection'],
-      image: 'url(https://thumbs.dreamstime.com/b/summer-tires-isolated-white-background-black-45349515.jpg)',
+      image:
+        'url(https://thumbs.dreamstime.com/b/summer-tires-isolated-white-background-black-45349515.jpg)',
       hideIcon: true,
     },
     {
       title: 'Car Detailing',
-      description: 'Professional detailing to keep your car looking showroom new',
+      description:
+        'Professional detailing to keep your car looking showroom new',
       color: colors.secondary.dark,
       features: ['Interior cleaning', 'Paint protection', 'Ceramic coating'],
-      image: 'url(https://www.pngkey.com/png/full/47-470032_car-detailing-new-jersey-auto-detailing-png.png)',
+      image:
+        'url(https://www.pngkey.com/png/full/47-470032_car-detailing-new-jersey-auto-detailing-png.png)',
       hideIcon: true,
     },
     {
@@ -86,15 +95,21 @@ export function FeaturedServices() {
       description: 'Precise balancing for smooth rides and even tire wear',
       color: '#9c27b0',
       features: ['Computer balancing', 'Vibration fix', 'Weight adjustment'],
-      image: 'url(https://img.freepik.com/premium-psd/wheel-balancing-machine-with-car-wheels-3d-rendering-isolated-transparent-background_808337-26147.jpg)',
+      image:
+        'url(https://img.freepik.com/premium-psd/wheel-balancing-machine-with-car-wheels-3d-rendering-isolated-transparent-background_808337-26147.jpg)',
       hideIcon: true,
     },
     {
       title: 'Mechanical Service',
       description: 'Full mechanical repairs - mobile or at our shop location',
       color: '#455a64',
-      features: ['Mobile service available', 'In-shop repairs', 'All makes & models'],
-      image: 'url(https://i.pinimg.com/736x/6e/f8/6d/6ef86db4bd277edc3cd0dc38aa98d8d5.jpg)',
+      features: [
+        'Mobile service available',
+        'In-shop repairs',
+        'All makes & models',
+      ],
+      image:
+        'url(https://i.pinimg.com/736x/6e/f8/6d/6ef86db4bd277edc3cd0dc38aa98d8d5.jpg)',
       hideIcon: true,
     },
   ];
@@ -143,7 +158,8 @@ function SectionHeader() {
             fontWeight: 400,
           }}
         >
-          From quick maintenance to complex repairs, our certified technicians handle it all
+          From quick maintenance to complex repairs, our certified technicians
+          handle it all
         </Typography>
       </Box>
     </Fade>
@@ -272,7 +288,7 @@ function ServiceCardHeader({ service }: { service: Service }) {
         <Button
           variant="contained"
           component={Link}
-          to="/services"
+          to="/book-appointment"
           sx={{
             backgroundColor: 'white',
             color: service.color,
@@ -282,7 +298,7 @@ function ServiceCardHeader({ service }: { service: Service }) {
             },
           }}
         >
-          Learn More
+          Book Service
         </Button>
       </Box>
     </Box>
@@ -334,7 +350,11 @@ function ServiceCardContent({ service }: { service: Service }) {
                 },
               }}
             />
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontSize: '0.8rem' }}
+            >
               {feature}
             </Typography>
           </Box>

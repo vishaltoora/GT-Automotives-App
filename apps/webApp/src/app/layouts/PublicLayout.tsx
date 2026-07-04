@@ -28,8 +28,17 @@ import {
   Facebook as FacebookIcon,
   Instagram as InstagramIcon,
   Login as LoginIcon,
+  Storefront as StorefrontIcon,
 } from '@mui/icons-material';
 import { colors } from '../theme/colors';
+import {
+  SHOP_ADDRESS_LINE1,
+  SHOP_ADDRESS_LINE2,
+  SHOP_MAP_DIRECTIONS_URL,
+  SHOP_PHONE_PRIMARY,
+  SHOP_PHONE_SECONDARY,
+  SHOP_EMAIL,
+} from '../config/shop';
 import gtLogo from '../images-and-logos/gt-automotive-logo.svg';
 
 export function PublicLayout() {
@@ -44,8 +53,6 @@ export function PublicLayout() {
 
   const navItems = [
     { label: 'Home', path: '/' },
-    { label: 'Services', path: '/services' },
-    { label: 'Products', path: '/products' },
     { label: 'Pricing', path: '/pricing' },
     { label: 'Contact', path: '/contact' },
   ];
@@ -56,7 +63,15 @@ export function PublicLayout() {
 
   const drawer = (
     <Box sx={{ width: 280, pt: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, mb: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          px: 2,
+          mb: 2,
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box
             sx={{
@@ -111,11 +126,13 @@ export function PublicLayout() {
                 },
               }}
             >
-              <ListItemText 
-                primary={item.label} 
+              <ListItemText
+                primary={item.label}
                 primaryTypographyProps={{
                   fontWeight: isActive(item.path) ? 600 : 400,
-                  color: isActive(item.path) ? colors.primary.main : 'text.primary',
+                  color: isActive(item.path)
+                    ? colors.primary.main
+                    : 'text.primary',
                 }}
               />
             </ListItemButton>
@@ -124,6 +141,28 @@ export function PublicLayout() {
       </List>
       <Divider sx={{ my: 2 }} />
       <List>
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
+            to="/products"
+            onClick={handleDrawerToggle}
+            sx={{
+              m: 1,
+              backgroundColor: colors.secondary.main,
+              color: 'white',
+              '&:hover': {
+                backgroundColor: colors.secondary.dark,
+              },
+              borderRadius: 1,
+            }}
+          >
+            <StorefrontIcon sx={{ mr: 1 }} />
+            <ListItemText
+              primary="Shop Now"
+              primaryTypographyProps={{ align: 'center', fontWeight: 600 }}
+            />
+          </ListItemButton>
+        </ListItem>
         <ListItem disablePadding>
           <ListItemButton
             component={Link}
@@ -140,7 +179,10 @@ export function PublicLayout() {
             }}
           >
             <LoginIcon sx={{ mr: 1 }} />
-            <ListItemText primary="Login" primaryTypographyProps={{ align: 'center', fontWeight: 600 }} />
+            <ListItemText
+              primary="Login"
+              primaryTypographyProps={{ align: 'center', fontWeight: 600 }}
+            />
           </ListItemButton>
         </ListItem>
       </List>
@@ -150,20 +192,20 @@ export function PublicLayout() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Header */}
-      <AppBar 
-        position="sticky" 
+      <AppBar
+        position="sticky"
         elevation={1}
-        sx={{ 
+        sx={{
           backgroundColor: 'white',
           color: 'text.primary',
         }}
       >
         <Toolbar sx={{ py: 1 }}>
           {/* Logo and Brand */}
-          <Box 
-            component={Link} 
-            to="/" 
-            sx={{ 
+          <Box
+            component={Link}
+            to="/"
+            sx={{
               textDecoration: 'none',
               flexGrow: { xs: 1, md: 0 },
               mr: { md: 4 },
@@ -217,9 +259,13 @@ export function PublicLayout() {
                     component={Link}
                     to={item.path}
                     sx={{
-                      color: isActive(item.path) ? colors.primary.main : colors.text.primary,
+                      color: isActive(item.path)
+                        ? colors.primary.main
+                        : colors.text.primary,
                       fontWeight: isActive(item.path) ? 600 : 500,
-                      borderBottom: isActive(item.path) ? `2px solid ${colors.primary.main}` : 'none',
+                      borderBottom: isActive(item.path)
+                        ? `2px solid ${colors.primary.main}`
+                        : 'none',
                       borderRadius: 0,
                       px: 2,
                       '&:hover': {
@@ -232,7 +278,30 @@ export function PublicLayout() {
                   </Button>
                 ))}
               </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Button
+                  component={Link}
+                  to="/products"
+                  variant="contained"
+                  startIcon={<StorefrontIcon />}
+                  sx={{
+                    backgroundColor: colors.secondary.main,
+                    color: 'white',
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    borderRadius: 2,
+                    boxShadow: `0 2px 8px ${colors.secondary.main}30`,
+                    '&:hover': {
+                      backgroundColor: colors.secondary.dark,
+                      transform: 'translateY(-1px)',
+                      boxShadow: `0 4px 12px ${colors.secondary.main}40`,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  Shop Now
+                </Button>
                 <Button
                   component={Link}
                   to="/login"
@@ -288,9 +357,9 @@ export function PublicLayout() {
       </Drawer>
 
       {/* Main Content */}
-      <Box 
-        component="main" 
-        sx={{ 
+      <Box
+        component="main"
+        sx={{
           flex: 1,
         }}
       >
@@ -299,9 +368,9 @@ export function PublicLayout() {
       </Box>
 
       {/* Footer */}
-      <Box 
-        component="footer" 
-        sx={{ 
+      <Box
+        component="footer"
+        sx={{
           py: 4,
           px: 2,
           mt: 'auto',
@@ -310,8 +379,8 @@ export function PublicLayout() {
         }}
       >
         <Container maxWidth="lg">
-          <Stack 
-            direction={{ xs: 'column', md: 'row' }} 
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
             spacing={{ xs: 3, md: 6 }}
             sx={{ mb: 3 }}
           >
@@ -321,7 +390,8 @@ export function PublicLayout() {
                 GT Automotivess
               </Typography>
               <Typography variant="body2" sx={{ mb: 1, opacity: 0.9 }}>
-                Your trusted partner for quality tires and professional automotive services.
+                Your trusted partner for quality tires and professional
+                automotive services.
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>
                 Serving the community since 2010
@@ -334,25 +404,27 @@ export function PublicLayout() {
                 Quick Links
               </Typography>
               <Stack spacing={1}>
-                {navItems.map((item) => (
-                  <Typography
-                    key={item.label}
-                    component={Link}
-                    to={item.path}
-                    variant="body2"
-                    sx={{
-                      color: 'white',
-                      opacity: 0.9,
-                      textDecoration: 'none',
-                      '&:hover': {
-                        opacity: 1,
-                        textDecoration: 'underline',
-                      },
-                    }}
-                  >
-                    {item.label}
-                  </Typography>
-                ))}
+                {[...navItems, { label: 'Shop Now', path: '/products' }].map(
+                  (item) => (
+                    <Typography
+                      key={item.label}
+                      component={Link}
+                      to={item.path}
+                      variant="body2"
+                      sx={{
+                        color: 'white',
+                        opacity: 0.9,
+                        textDecoration: 'none',
+                        '&:hover': {
+                          opacity: 1,
+                          textDecoration: 'underline',
+                        },
+                      }}
+                    >
+                      {item.label}
+                    </Typography>
+                  )
+                )}
               </Stack>
             </Box>
 
@@ -365,20 +437,34 @@ export function PublicLayout() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <PhoneIcon fontSize="small" />
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    250-570-2333, 250-986-9191
+                    {SHOP_PHONE_PRIMARY}, {SHOP_PHONE_SECONDARY}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <EmailIcon fontSize="small" />
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    gt-automotives@outlook.com
+                    {SHOP_EMAIL}
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Box
+                  component="a"
+                  href={SHOP_MAP_DIRECTIONS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1,
+                    color: 'white',
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
                   <LocationIcon fontSize="small" />
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    British Columbia<br />
-                    Canada
+                    {SHOP_ADDRESS_LINE1}
+                    <br />
+                    {SHOP_ADDRESS_LINE2}
                   </Typography>
                 </Box>
               </Stack>
@@ -396,14 +482,17 @@ export function PublicLayout() {
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
                   Saturday - Sunday: 9:00 AM - 5:00 PM
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 600, mt: 1 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ opacity: 0.9, fontWeight: 600, mt: 1 }}
+                >
                   24/7 Emergency Service Available
                 </Typography>
               </Stack>
               <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                <IconButton 
-                  size="small" 
-                  sx={{ 
+                <IconButton
+                  size="small"
+                  sx={{
                     color: 'white',
                     border: '1px solid rgba(255,255,255,0.3)',
                     '&:hover': {
@@ -413,9 +502,9 @@ export function PublicLayout() {
                 >
                   <FacebookIcon />
                 </IconButton>
-                <IconButton 
-                  size="small" 
-                  sx={{ 
+                <IconButton
+                  size="small"
+                  sx={{
                     color: 'white',
                     border: '1px solid rgba(255,255,255,0.3)',
                     '&:hover': {
@@ -430,11 +519,15 @@ export function PublicLayout() {
           </Stack>
 
           <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', my: 2 }} />
-          
+
           <Typography variant="body2" align="center" sx={{ opacity: 0.8 }}>
             © {new Date().getFullYear()} GT Automotives. All rights reserved.
           </Typography>
-          <Typography variant="caption" align="center" sx={{ opacity: 0.6, display: 'block', mt: 1 }}>
+          <Typography
+            variant="caption"
+            align="center"
+            sx={{ opacity: 0.6, display: 'block', mt: 1 }}
+          >
             Created by Vishal Toora
           </Typography>
         </Container>

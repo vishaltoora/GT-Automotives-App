@@ -62,6 +62,7 @@ interface QuotationFormContentProps {
     notes: string;
     status: string;
     validUntil: string;
+    quotationDate: string;
   };
   setFormData: (data: any) => void;
   items: QuotationItem[];
@@ -577,6 +578,18 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   <MenuItem value="EXPIRED">Expired</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <TextField
+                fullWidth
+                type="date"
+                label="Quotation Date"
+                value={formData.quotationDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, quotationDate: e.target.value })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
               <TextField
