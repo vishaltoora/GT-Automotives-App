@@ -162,6 +162,30 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
     });
   };
 
+  // Signed line total for an item. Discounts always reduce the invoice:
+  //  - DISCOUNT: -abs(qty * unitPrice) (unitPrice may be stored negative for
+  //    manual entries or positive for auto-applied ones).
+  //  - DISCOUNT_PERCENTAGE: percentage applied to the non-discount, non-tip
+  //    items (unitPrice holds the raw percentage, e.g. 10 for 10%).
+  const getLineTotal = (item: InvoiceItem): number => {
+    if (item.itemType === 'DISCOUNT') {
+      return -Math.abs(item.quantity * item.unitPrice);
+    }
+    if (item.itemType === 'DISCOUNT_PERCENTAGE') {
+      if (!item.unitPrice) return 0;
+      const otherItemsSubtotal = items
+        .filter(
+          (i) =>
+            i.itemType !== 'DISCOUNT' &&
+            i.itemType !== 'DISCOUNT_PERCENTAGE' &&
+            i.itemType !== 'TIPS'
+        )
+        .reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+      return -(otherItemsSubtotal * item.unitPrice) / 100;
+    }
+    return item.quantity * item.unitPrice;
+  };
+
   const calculateTotals = () => {
     // Calculate subtotal including discount items (which have negative values)
     // TIPS are included in subtotal but NOT taxed
@@ -169,20 +193,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
     let tipsTotal = 0;
 
     const subtotal = items.reduce((sum, item) => {
-      let itemTotal = item.quantity * item.unitPrice;
-
-      // For DISCOUNT_PERCENTAGE items, calculate based on other items (excluding TIPS and discounts)
-      if (item.itemType === 'DISCOUNT_PERCENTAGE' && item.unitPrice) {
-        const otherItemsSubtotal = items
-          .filter(
-            (i) =>
-              i.itemType !== 'DISCOUNT' &&
-              i.itemType !== 'DISCOUNT_PERCENTAGE' &&
-              i.itemType !== 'TIPS'
-          )
-          .reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-        itemTotal = -(otherItemsSubtotal * item.unitPrice) / 100;
-      }
+      const itemTotal = getLineTotal(item);
 
       // Track tips separately (not taxed)
       if (item.itemType === 'TIPS') {
@@ -684,17 +695,18 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       value={formData.paymentMethod}
                       onChange={(e) => {
                         const paymentMethod = e.target.value;
-                        // Automatically set GST and PST to 0% when Cash is selected
-                        // Restore default rates (5% GST, 7% PST) when switching from Cash to other methods
-                        if (paymentMethod === 'CASH') {
+                        // "Cash (no Tax)" is an untaxed cash sale: zero GST/PST.
+                        // "Cash (with Tax)" and every other method keep tax —
+                        // restore default rates (5% GST, 7% PST) when switching
+                        // away from the untaxed cash option.
+                        if (paymentMethod === 'CASH_NO_TAX') {
                           setFormData({
                             ...formData,
                             paymentMethod,
                             gstRate: 0,
                             pstRate: 0,
                           });
-                        } else if (formData.paymentMethod === 'CASH') {
-                          // Switching from Cash to another method - restore default rates
+                        } else if (formData.paymentMethod === 'CASH_NO_TAX') {
                           setFormData({
                             ...formData,
                             paymentMethod,
@@ -708,7 +720,8 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       label="Payment Method"
                     >
                       <MenuItem value="">Pending Payment</MenuItem>
-                      <MenuItem value="CASH">💵 Cash</MenuItem>
+                      <MenuItem value="CASH">💵 Cash (with Tax)</MenuItem>
+                      <MenuItem value="CASH_NO_TAX">💵 Cash (no Tax)</MenuItem>
                       <MenuItem value="CREDIT_CARD">💳 Credit Card</MenuItem>
                       <MenuItem value="DEBIT_CARD">💳 Debit Card</MenuItem>
                       <MenuItem value="CHECK">📝 Check</MenuItem>
@@ -1292,9 +1305,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                                     : colors.primary.main,
                               }}
                             >
-                              {formatCurrency(
-                                item.total || item.quantity * item.unitPrice
-                              )}
+                              {formatCurrency(getLineTotal(item))}
                             </Typography>
                           </Box>
                         </Box>
@@ -1392,9 +1403,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                                   : 'inherit',
                             }}
                           >
-                            {formatCurrency(
-                              item.total || item.quantity * item.unitPrice
-                            )}
+                            {formatCurrency(getLineTotal(item))}
                           </TableCell>
                           <TableCell align="center">
                             <Tooltip title="Remove item">
