@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { QuotationStatus } from './prisma-enums';
 
 export { QuotationStatus };
@@ -11,7 +18,7 @@ export enum QuotationItemType {
   OTHER = 'OTHER',
   LEVY = 'LEVY',
   DISCOUNT = 'DISCOUNT',
-  DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE'
+  DISCOUNT_PERCENTAGE = 'DISCOUNT_PERCENTAGE',
 }
 
 export class QuotationItemDto {
@@ -127,6 +134,10 @@ export class CreateQuoteDto {
   @IsOptional()
   @IsString()
   validUntil?: string;
+
+  @IsOptional()
+  @IsString()
+  quotationDate?: string;
 }
 
 export class UpdateQuoteDto {
@@ -223,6 +234,10 @@ export class UpdateQuoteDto {
 
   @IsOptional()
   @IsString()
+  quotationDate?: string;
+
+  @IsOptional()
+  @IsString()
   convertedToInvoiceId?: string;
 }
 
@@ -316,6 +331,10 @@ export class QuotationResponseDto {
   @IsOptional()
   @IsString()
   validUntil?: string;
+
+  @IsOptional()
+  @IsString()
+  quotationDate?: string;
 
   @IsOptional()
   @IsString()

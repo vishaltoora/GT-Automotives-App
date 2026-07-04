@@ -108,12 +108,14 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const calculateItemTotal = (item: InvoiceItem) => {
     const baseTotal = item.quantity * item.unitPrice;
 
-    // For DISCOUNT items (fixed amount), use the negative unitPrice directly
+    // For DISCOUNT items (fixed amount), the total must always reduce the
+    // invoice. unitPrice may be stored negative (manual) or positive
+    // (auto-applied), so normalize with -Math.abs() to always subtract.
     if (item.itemType === InvoiceItemType.DISCOUNT) {
       return {
         subtotal: baseTotal,
         discountAmount: 0,
-        total: baseTotal, // baseTotal is already negative for DISCOUNT items
+        total: -Math.abs(baseTotal),
       };
     }
 
@@ -253,6 +255,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         discountType: item.discountType || 'amount',
         discountValue: item.discountValue || 0,
         discountAmount: item.discountAmount || 0,
+        total: item.total, // Preserve stored line total (already negative for discounts)
       }));
       setItems(populatedItems);
     }

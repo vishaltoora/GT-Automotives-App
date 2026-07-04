@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { QuotationRepository } from './repositories/quotation.repository';
 import { CreateQuoteDto, UpdateQuoteDto } from '@gt-automotive/data';
 import { Quotation, QuotationItem, Tire } from '@prisma/client';
@@ -18,12 +22,18 @@ export class QuotationsService {
     private quotationRepository: QuotationRepository,
     private prisma: PrismaService,
     private pdfService: PdfService,
-    private emailService: EmailService,
+    private emailService: EmailService
   ) {}
 
-  async create(createQuoteDto: CreateQuoteDto, userId: string): Promise<Quotation> {
+  async create(
+    createQuoteDto: CreateQuoteDto,
+    userId: string
+  ): Promise<Quotation> {
     console.log('Service: Starting quotation creation...');
-    console.log('Service: Received data:', JSON.stringify(createQuoteDto, null, 2));
+    console.log(
+      'Service: Received data:',
+      JSON.stringify(createQuoteDto, null, 2)
+    );
 
     try {
       const { items, ...quoteData } = createQuoteDto;
@@ -32,12 +42,14 @@ export class QuotationsService {
       const customerName = createQuoteDto.customerName;
 
       // Generate quotation number
-      const quotationNumber = `Q${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      const quotationNumber = `Q${Date.now()
+        .toString()
+        .slice(-8)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       console.log('Service: Generated quotation number:', quotationNumber);
 
       // Calculate totals
       let subtotal = 0;
-      const processedItems = items.map(item => {
+      const processedItems = items.map((item) => {
         const total = item.quantity * item.unitPrice;
         subtotal += total;
         return {
@@ -56,15 +68,25 @@ export class QuotationsService {
       const taxAmount = gstAmount + pstAmount;
       const total = subtotal + taxAmount;
 
-      console.log('Service: Calculated totals - subtotal:', subtotal, 'total:', total);
+      console.log(
+        'Service: Calculated totals - subtotal:',
+        subtotal,
+        'total:',
+        total
+      );
 
       // Set valid until date if not provided (15 days from now)
       const validUntil = quoteData.validUntil
         ? new Date(quoteData.validUntil)
         : new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
 
+      // Use the provided quotation date, or default to today
+      const quotationDate = quoteData.quotationDate
+        ? new Date(quoteData.quotationDate)
+        : new Date();
+
       console.log('Service: About to call repository create...');
-      
+
       const result = await this.quotationRepository.create({
         ...quoteData,
         quotationNumber,
@@ -82,13 +104,14 @@ export class QuotationsService {
         taxAmount,
         total,
         validUntil,
+        quotationDate,
         status: quoteData.status || 'DRAFT',
         createdBy: userId,
         items: {
           create: processedItems,
         },
       });
-      
+
       console.log('Service: Successfully created quotation:', result.id);
       return result;
     } catch (error) {
@@ -109,13 +132,18 @@ export class QuotationsService {
     return quotation;
   }
 
-  async update(
-    id: string,
-    updateQuoteDto: UpdateQuoteDto
-  ): Promise<Quotation> {
+  async update(id: string, updateQuoteDto: UpdateQuoteDto): Promise<Quotation> {
     const existingQuotation = await this.findOne(id);
 
     const { items, ...quoteData } = updateQuoteDto;
+
+    // Normalize date strings to Date objects for Prisma
+    if (quoteData.quotationDate) {
+      (quoteData as any).quotationDate = new Date(quoteData.quotationDate);
+    }
+    if (quoteData.validUntil) {
+      (quoteData as any).validUntil = new Date(quoteData.validUntil);
+    }
 
     // If items are being updated, recalculate totals
     if (items) {
@@ -124,7 +152,7 @@ export class QuotationsService {
 
       // Calculate new totals
       let subtotal = 0;
-      const processedItems = items.map(item => {
+      const processedItems = items.map((item) => {
         const total = item.quantity * item.unitPrice;
         subtotal += total;
         return {
@@ -179,9 +207,15 @@ export class QuotationsService {
     return this.quotationRepository.search(params);
   }
 
-  async convertToInvoice(quotationId: string, customerId: string, vehicleId?: string): Promise<any> {
-    const quotation = await this.quotationRepository.findOne(quotationId) as QuotationWithItems;
-    
+  async convertToInvoice(
+    quotationId: string,
+    customerId: string,
+    vehicleId?: string
+  ): Promise<any> {
+    const quotation = (await this.quotationRepository.findOne(
+      quotationId
+    )) as QuotationWithItems;
+
     if (quotation.status === 'CONVERTED') {
       throw new Error('Quotation has already been converted to an invoice');
     }
@@ -192,7 +226,9 @@ export class QuotationsService {
     });
 
     if (!defaultCompany) {
-      throw new Error('No default company found. Please configure a default company.');
+      throw new Error(
+        'No default company found. Please configure a default company.'
+      );
     }
 
     // Create invoice from quotation
@@ -213,7 +249,7 @@ export class QuotationsService {
         notes: quotation.notes,
         createdBy: quotation.createdBy,
         items: {
-          create: quotation.items.map(item => ({
+          create: quotation.items.map((item) => ({
             tireId: item.tireId,
             itemType: item.itemType,
             description: item.description,
@@ -240,11 +276,18 @@ export class QuotationsService {
     return invoice;
   }
 
-  async sendQuotationEmail(quotationId: string, userId: string, overrideEmail?: string, saveToQuote?: boolean) {
+  async sendQuotationEmail(
+    quotationId: string,
+    userId: string,
+    overrideEmail?: string,
+    saveToQuote?: boolean
+  ) {
     // Get quotation with all items
     const quotation = await this.quotationRepository.findOne(quotationId);
     if (!quotation) {
-      throw new NotFoundException(`Quotation with ID "${quotationId}" not found`);
+      throw new NotFoundException(
+        `Quotation with ID "${quotationId}" not found`
+      );
     }
 
     // Use override email or quotation email
@@ -252,12 +295,16 @@ export class QuotationsService {
 
     // Check if we have an email to send to
     if (!emailToUse) {
-      throw new BadRequestException('No email address provided and quotation does not have an email address');
+      throw new BadRequestException(
+        'No email address provided and quotation does not have an email address'
+      );
     }
 
     // If saveToQuote is true and we have an override email, update the quotation
     if (saveToQuote && overrideEmail && !quotation.email) {
-      await this.quotationRepository.update(quotationId, { email: overrideEmail });
+      await this.quotationRepository.update(quotationId, {
+        email: overrideEmail,
+      });
     }
 
     try {
@@ -268,7 +315,7 @@ export class QuotationsService {
       const emailResult = await this.emailService.sendQuotationEmail(
         emailToUse,
         quotation.quotationNumber,
-        pdfBase64,
+        pdfBase64
       );
 
       // Check if email was sent successfully
@@ -276,10 +323,16 @@ export class QuotationsService {
         throw new Error('Email service returned failure status');
       }
 
-      return { success: true, message: 'Quotation email sent successfully', emailUsed: emailToUse };
+      return {
+        success: true,
+        message: 'Quotation email sent successfully',
+        emailUsed: emailToUse,
+      };
     } catch (error) {
       throw new BadRequestException(
-        `Failed to send quotation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to send quotation email: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }
