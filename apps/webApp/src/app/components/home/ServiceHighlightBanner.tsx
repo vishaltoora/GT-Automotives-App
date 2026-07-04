@@ -1,8 +1,7 @@
-import {
-  CheckCircle as CheckIcon,
-  Phone as PhoneIcon,
-  LocalShipping as TruckIcon,
-} from '@mui/icons-material';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import CheckIcon from '@mui/icons-material/CheckCircle';
+import PhoneIcon from '@mui/icons-material/Phone';
 import {
   Box,
   Button,
@@ -13,33 +12,57 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { colors } from '../../theme/colors';
 
-interface EmergencyServiceBannerProps {
-  onBookNow?: () => void;
+interface BannerCta {
+  label: string;
+  path: string;
+  external?: boolean;
 }
 
-export function EmergencyServiceBanner({
-  onBookNow,
-}: EmergencyServiceBannerProps) {
-  const navigate = useNavigate();
+interface ServiceHighlightBannerProps {
+  /** Section header above the card */
+  headerTitle: string;
+  headerSubtitle: string;
+  /** Card content */
+  badge: string;
+  title: string;
+  titleIcon: React.ComponentType<{ sx?: object }>;
+  description: string;
+  features: string[];
+  image: string;
+  imageAlt: string;
+  primaryCta: BannerCta;
+  secondaryCta?: BannerCta;
+  /** Image on the right instead of the left */
+  reverse?: boolean;
+}
 
-  const handleBookMobileService = () => {
-    navigate('/book-appointment?type=mobile');
-  };
+function ctaProps(cta: BannerCta) {
+  if (
+    cta.external ||
+    cta.path.startsWith('tel:') ||
+    cta.path.startsWith('http')
+  ) {
+    return { component: 'a' as const, href: cta.path };
+  }
+  return { component: Link, to: cta.path };
+}
 
-  const features = [
-    'Tire installation & mounting',
-    'Tire rotation & balancing',
-    'Flat tire repair',
-    'Seasonal tire changeover',
-    'Jump start & battery boost',
-    'Lockout assistance',
-    'Fuel delivery',
-    '24/7 roadside assistance',
-  ];
-
+export const ServiceHighlightBanner: React.FC<ServiceHighlightBannerProps> = ({
+  headerTitle,
+  headerSubtitle,
+  badge,
+  title,
+  titleIcon: TitleIcon,
+  description,
+  features,
+  image,
+  imageAlt,
+  primaryCta,
+  secondaryCta,
+  reverse = false,
+}) => {
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
       {/* Section Header */}
@@ -53,7 +76,7 @@ export function EmergencyServiceBanner({
             fontSize: { xs: '2rem', md: '3rem' },
           }}
         >
-          Convenience At Your Doorstep
+          {headerTitle}
         </Typography>
         <Typography
           variant="h5"
@@ -64,8 +87,7 @@ export function EmergencyServiceBanner({
             fontWeight: 400,
           }}
         >
-          Professional tire services delivered to your location - home, office,
-          or roadside
+          {headerSubtitle}
         </Typography>
       </Box>
 
@@ -82,10 +104,7 @@ export function EmergencyServiceBanner({
         <Box
           sx={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            inset: 0,
             opacity: 0.05,
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='20' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='30' cy='30' r='10' stroke='white' stroke-width='1' fill='none'/%3E%3C/svg%3E")`,
             backgroundSize: '60px 60px',
@@ -96,38 +115,42 @@ export function EmergencyServiceBanner({
           <Box
             sx={{
               display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
+              flexDirection: {
+                xs: 'column',
+                md: reverse ? 'row-reverse' : 'row',
+              },
               alignItems: 'center',
               gap: { xs: 3, md: 5 },
             }}
           >
-            {/* Left Side - Mechanic Image */}
+            {/* Image */}
             <Box
               sx={{
                 flexShrink: 0,
-                width: { xs: '100%', md: '35%' },
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
+                width: { xs: '100%', md: '38%' },
+                borderRadius: 3,
+                overflow: 'hidden',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
               }}
             >
               <Box
                 component="img"
-                src="https://www.hunter.com/globalassets/hunter/sema2022/theme-pages/equipmentgroup-mobile.png"
-                alt="Mobile tire service mechanic"
+                src={image}
+                alt={imageAlt}
+                loading="lazy"
                 sx={{
-                  maxWidth: { xs: 280, sm: 350, md: 400 },
-                  height: 'auto',
-                  filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.3))',
+                  width: '100%',
+                  height: { xs: 220, md: 300 },
+                  objectFit: 'cover',
+                  display: 'block',
                 }}
               />
             </Box>
 
-            {/* Right Side - Content */}
+            {/* Content */}
             <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' } }}>
-              {/* Badge */}
               <Chip
-                label="WE COME TO YOU"
+                label={badge}
                 sx={{
                   backgroundColor: colors.secondary.main,
                   color: 'white',
@@ -139,7 +162,6 @@ export function EmergencyServiceBanner({
                 }}
               />
 
-              {/* Title with animated truck */}
               <Box
                 sx={{
                   display: 'flex',
@@ -159,23 +181,13 @@ export function EmergencyServiceBanner({
                     textShadow: '0 2px 4px rgba(0,0,0,0.2)',
                   }}
                 >
-                  Mobile Tire Service
+                  {title}
                 </Typography>
-                <TruckIcon
-                  sx={{
-                    color: 'white',
-                    fontSize: { xs: 32, sm: 40, md: 48 },
-                    animation: 'driveRight 3s ease-in-out infinite',
-                    '@keyframes driveRight': {
-                      '0%': { transform: 'translateX(-15px)' },
-                      '50%': { transform: 'translateX(15px)' },
-                      '100%': { transform: 'translateX(-15px)' },
-                    },
-                  }}
+                <TitleIcon
+                  sx={{ color: 'white', fontSize: { xs: 32, sm: 40, md: 48 } }}
                 />
               </Box>
 
-              {/* Description */}
               <Typography
                 variant="body1"
                 sx={{
@@ -186,9 +198,7 @@ export function EmergencyServiceBanner({
                   lineHeight: 1.6,
                 }}
               >
-                Schedule a convenient time and we'll come to your home, office,
-                or anywhere you need us. Professional tire service at your
-                location.
+                {description}
               </Typography>
 
               {/* Features */}
@@ -221,27 +231,16 @@ export function EmergencyServiceBanner({
                 ))}
               </Box>
 
-              {/* CTA Buttons */}
+              {/* CTAs */}
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={2}
                 justifyContent={{ xs: 'center', md: 'flex-start' }}
               >
                 <Button
-                  onClick={handleBookMobileService}
+                  {...ctaProps(primaryCta)}
                   variant="contained"
                   size="large"
-                  startIcon={
-                    <TruckIcon
-                      sx={{
-                        animation: 'driveRight 2s ease-in-out infinite',
-                        '@keyframes driveRight': {
-                          '0%, 100%': { transform: 'translateX(0)' },
-                          '50%': { transform: 'translateX(5px)' },
-                        },
-                      }}
-                    />
-                  }
                   sx={{
                     backgroundColor: colors.secondary.main,
                     color: 'white',
@@ -257,46 +256,37 @@ export function EmergencyServiceBanner({
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  Book Mobile Service
+                  {primaryCta.label}
                 </Button>
-                <Button
-                  component="a"
-                  href="tel:2509869191"
-                  variant="outlined"
-                  size="large"
-                  startIcon={
-                    <PhoneIcon
-                      sx={{
-                        animation: 'ring 1.5s ease-in-out infinite',
-                        '@keyframes ring': {
-                          '0%, 100%': { transform: 'rotate(0deg)' },
-                          '10%': { transform: 'rotate(15deg)' },
-                          '20%': { transform: 'rotate(-10deg)' },
-                          '30%': { transform: 'rotate(15deg)' },
-                          '40%': { transform: 'rotate(-10deg)' },
-                          '50%': { transform: 'rotate(0deg)' },
-                        },
-                      }}
-                    />
-                  }
-                  sx={{
-                    borderColor: 'white',
-                    color: 'white',
-                    px: 3,
-                    py: 1.5,
-                    fontWeight: 600,
-                    borderWidth: 2,
-                    borderRadius: 50,
-                    '&:hover': {
+                {secondaryCta && (
+                  <Button
+                    {...ctaProps(secondaryCta)}
+                    variant="outlined"
+                    size="large"
+                    startIcon={
+                      secondaryCta.path.startsWith('tel:') ? (
+                        <PhoneIcon />
+                      ) : undefined
+                    }
+                    sx={{
                       borderColor: 'white',
-                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
                       borderWidth: 2,
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  Call Us
-                </Button>
+                      borderRadius: 50,
+                      '&:hover': {
+                        borderColor: 'white',
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 2,
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {secondaryCta.label}
+                  </Button>
+                )}
               </Stack>
             </Box>
           </Box>
@@ -304,4 +294,6 @@ export function EmergencyServiceBanner({
       </Card>
     </Container>
   );
-}
+};
+
+export default ServiceHighlightBanner;

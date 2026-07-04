@@ -22,9 +22,7 @@ import { Unauthorized } from './pages/auth/Unauthorized';
 
 // Public Pages
 import { Home } from './pages/public/Home';
-import { Services } from './pages/public/Services';
 import { Contact } from './pages/public/Contact';
-import { About } from './pages/public/About';
 import { Products } from './pages/public/Products';
 import { Pricing } from './pages/public/Pricing';
 import { BookAppointment } from './pages/public/BookAppointment';
@@ -117,10 +115,12 @@ export function App() {
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
               <Route path="unauthorized" element={<Unauthorized />} />
-              <Route path="services" element={<Services />} />
+              {/* Services & About folded into Home during the 3-tab redesign (GA-36).
+                  Routes kept as redirects so existing links/SEO don't 404. */}
+              <Route path="services" element={<Navigate to="/" replace />} />
+              <Route path="about" element={<Navigate to="/" replace />} />
               <Route path="products" element={<Products />} />
               <Route path="pricing" element={<Pricing />} />
-              <Route path="about" element={<About />} />
               <Route path="contact" element={<Contact />} />
               <Route path="book-appointment" element={<BookAppointment />} />
             </Route>
