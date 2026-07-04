@@ -6,6 +6,12 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import { ProductsGrid, ProductData } from '../../components/products';
 import { CTASection } from '../../components/public';
 import { PageHero } from '../../components/shared';
+import {
+  SHOP_ADDRESS,
+  SHOP_MAP_DIRECTIONS_URL,
+  SHOP_PHONE_SECONDARY,
+  SHOP_PHONE_SECONDARY_TEL,
+} from '../../config/shop';
 
 // Products page slides
 const productsSlides = [
@@ -13,24 +19,30 @@ const productsSlides = [
     id: 'quality-tires',
     title: 'Quality Tires for Every Vehicle',
     subtitle: 'Premium Selection',
-    description: 'Browse our extensive inventory of new and quality used tires from trusted brands like Michelin, Bridgestone, Goodyear, and more.',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    description:
+      'Browse our extensive inventory of new and quality used tires from trusted brands like Michelin, Bridgestone, Goodyear, and more.',
+    image:
+      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
     icon: TireRepairIcon,
   },
   {
     id: 'new-used',
     title: 'New & Quality Used Tires',
     subtitle: 'Options for Every Budget',
-    description: 'Whether you need premium new tires or budget-friendly quality used options, we have the right tires at the right price.',
-    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
+    description:
+      'Whether you need premium new tires or budget-friendly quality used options, we have the right tires at the right price.',
+    image:
+      'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80',
     icon: ShoppingCartIcon,
   },
   {
     id: 'all-brands',
     title: 'All Major Brands Available',
     subtitle: 'Trusted Names',
-    description: 'Michelin, Bridgestone, Goodyear, Continental, BF Goodrich, Pirelli, and many more top tire brands in stock.',
-    image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80',
+    description:
+      'Michelin, Bridgestone, Goodyear, Continental, BF Goodrich, Pirelli, and many more top tire brands in stock.',
+    image:
+      'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80',
     icon: VerifiedIcon,
   },
 ];
@@ -45,7 +57,11 @@ export const Products: React.FC = () => {
       category: 'all-season',
       brand: 'Michelin',
       size: '225/65R17',
-      features: ['80,000 mile warranty', 'All-season performance', 'Fuel efficient'],
+      features: [
+        '80,000 mile warranty',
+        'All-season performance',
+        'Fuel efficient',
+      ],
       image: '🛞',
       popular: true,
       inStock: true,
@@ -87,7 +103,11 @@ export const Products: React.FC = () => {
       category: 'all-terrain',
       brand: 'BF Goodrich',
       size: '285/75R16',
-      features: ['Extreme durability', 'Off-road traction', 'Sidewall protection'],
+      features: [
+        'Extreme durability',
+        'Off-road traction',
+        'Sidewall protection',
+      ],
       image: '🛞',
       popular: true,
       inStock: true,
@@ -143,7 +163,7 @@ export const Products: React.FC = () => {
     { value: 'all-terrain', label: 'All-Terrain' },
   ];
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products.filter((product) => {
     return selectedCategory === 'all' || product.category === selectedCategory;
   });
 
@@ -152,12 +172,12 @@ export const Products: React.FC = () => {
       <PageHero
         slides={productsSlides}
         primaryAction={{
-          label: 'Shop Tires',
-          path: '/inventory',
+          label: 'Visit Our Shop',
+          path: SHOP_MAP_DIRECTIONS_URL,
         }}
         secondaryAction={{
-          label: 'Get Quote',
-          path: '/contact',
+          label: `Call ${SHOP_PHONE_SECONDARY}`,
+          path: SHOP_PHONE_SECONDARY_TEL,
         }}
       />
       <Container maxWidth="xl" sx={{ py: { xs: 6, md: 10 } }}>
@@ -168,16 +188,16 @@ export const Products: React.FC = () => {
           onCategoryChange={setSelectedCategory}
         />
       </Container>
-      <CTASection 
+      <CTASection
         title="Can't Find What You're Looking For?"
-        description="We have access to thousands of tire models. Contact us for special orders and custom sizes."
+        description={`We have access to thousands of tire models and a full-service mechanical shop. Visit us at ${SHOP_ADDRESS} or contact us for special orders and custom sizes.`}
         primaryAction={{
           label: 'Contact Us',
-          path: '/contact'
+          path: '/contact',
         }}
         secondaryAction={{
-          label: 'Call: (250) 986-9191',
-          path: 'tel:2509869191'
+          label: `Call: ${SHOP_PHONE_SECONDARY}`,
+          path: SHOP_PHONE_SECONDARY_TEL,
         }}
         variant="outlined"
       />
