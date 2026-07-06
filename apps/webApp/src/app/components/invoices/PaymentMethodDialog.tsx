@@ -24,10 +24,14 @@ import {
 } from '@mui/icons-material';
 import { PaymentMethod } from '../../../enums';
 import { NumberInput } from '../common';
+import { TerminalPaymentDialog } from '../payments/TerminalPaymentDialog';
 
 export interface PaymentEntryInput {
   paymentMethod: PaymentMethod;
   amount?: number;
+  // Idempotency key (e.g. a Square Terminal checkout id) so a webhook can't
+  // double-record a payment the browser already recorded.
+  reference?: string;
 }
 
 interface PaymentMethodDialogProps {
@@ -37,13 +41,28 @@ interface PaymentMethodDialogProps {
   // means "pay the full remaining balance".
   onConfirm: (entries: PaymentEntryInput[]) => void;
   invoiceNumber: string;
+  // Required to push a Square Terminal checkout to the card reader.
+  invoiceId?: string;
   total?: number;
   amountPaid?: number;
   hasTax?: boolean;
 }
 
+// Square Terminal options aren't real PaymentMethod values — they trigger an
+// in-person card-reader checkout, then record as CREDIT_CARD / DEBIT_CARD.
+type TerminalMethod = 'TERMINAL_CREDIT' | 'TERMINAL_DEBIT';
+type MethodValue = PaymentMethod | TerminalMethod;
+
+const isTerminal = (m: MethodValue): m is TerminalMethod =>
+  m === 'TERMINAL_CREDIT' || m === 'TERMINAL_DEBIT';
+
+const terminalToPaymentMethod = (m: TerminalMethod): PaymentMethod =>
+  m === 'TERMINAL_CREDIT'
+    ? PaymentMethod.CREDIT_CARD
+    : PaymentMethod.DEBIT_CARD;
+
 const METHOD_OPTIONS: {
-  value: PaymentMethod;
+  value: MethodValue;
   label: string;
   splitOk: boolean;
 }[] = [
@@ -55,6 +74,16 @@ const METHOD_OPTIONS: {
   },
   { value: PaymentMethod.CREDIT_CARD, label: 'Credit Card', splitOk: true },
   { value: PaymentMethod.DEBIT_CARD, label: 'Debit Card', splitOk: true },
+  {
+    value: 'TERMINAL_CREDIT',
+    label: 'Square Terminal – Credit Card',
+    splitOk: false,
+  },
+  {
+    value: 'TERMINAL_DEBIT',
+    label: 'Square Terminal – Debit Card',
+    splitOk: false,
+  },
   { value: PaymentMethod.CHECK, label: 'Check', splitOk: true },
   { value: PaymentMethod.E_TRANSFER, label: 'E-Transfer', splitOk: true },
   { value: PaymentMethod.FINANCING, label: 'Financing', splitOk: true },
@@ -62,7 +91,7 @@ const METHOD_OPTIONS: {
 ];
 
 interface Line {
-  method: PaymentMethod;
+  method: MethodValue;
   amount: string;
 }
 
@@ -71,6 +100,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
   onClose,
   onConfirm,
   invoiceNumber,
+  invoiceId,
   total,
   amountPaid = 0,
   hasTax = false,
@@ -79,11 +109,17 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
     { method: PaymentMethod.CASH, amount: '' },
   ]);
   const [payInFull, setPayInFull] = useState(true);
+  // Set when a Square Terminal method is confirmed — opens the reader dialog.
+  const [terminalMethod, setTerminalMethod] = useState<PaymentMethod | null>(
+    null
+  );
 
   const remaining =
     total != null ? Math.max(0, Number(total) - Number(amountPaid)) : undefined;
 
   const isSplit = lines.length > 1;
+  // Terminal is single-line, full-balance only (the reader charges the total).
+  const terminalSelected = !isSplit && isTerminal(lines[0].method);
 
   useEffect(() => {
     if (open) {
@@ -94,6 +130,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
         },
       ]);
       setPayInFull(true);
+      setTerminalMethod(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -122,12 +159,20 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
   };
 
   const handleConfirm = () => {
+    // Square Terminal: hand off to the card-reader dialog. The payment is
+    // recorded on the invoice only once the terminal reports COMPLETED.
+    if (terminalSelected) {
+      setTerminalMethod(
+        terminalToPaymentMethod(lines[0].method as TerminalMethod)
+      );
+      return;
+    }
     if (!isSplit && payInFull) {
-      onConfirm([{ paymentMethod: lines[0].method }]);
+      onConfirm([{ paymentMethod: lines[0].method as PaymentMethod }]);
     } else {
       onConfirm(
         lines.map((l) => ({
-          paymentMethod: l.method,
+          paymentMethod: l.method as PaymentMethod,
           amount: parseFloat(l.amount),
         }))
       );
@@ -135,14 +180,28 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
     onClose();
   };
 
+  const handleTerminalSuccess = (checkoutId: string) => {
+    onConfirm([
+      {
+        paymentMethod: terminalMethod as PaymentMethod,
+        ...(remaining != null ? { amount: remaining } : {}),
+        // Keyed to the checkout so the reconciliation webhook won't re-record it.
+        reference: checkoutId,
+      },
+    ]);
+    setTerminalMethod(null);
+    onClose();
+  };
+
   // Whenever an explicit amount is in play (a split, or a single line that
   // isn't "pay in full"), every line needs a positive amount and the total
   // can't exceed the remaining balance.
   const needsAmounts = isSplit || !payInFull;
-  const confirmDisabled =
-    needsAmounts &&
-    (lines.some((l) => !(parseFloat(l.amount) > 0)) ||
-      (remaining != null && allocated > remaining + 0.005));
+  const confirmDisabled = terminalSelected
+    ? !invoiceId || remaining == null || remaining <= 0
+    : needsAmounts &&
+      (lines.some((l) => !(parseFloat(l.amount) > 0)) ||
+        (remaining != null && allocated > remaining + 0.005));
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -188,11 +247,13 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
                 <Select
                   value={line.method}
                   label={isSplit ? `Method ${index + 1}` : 'Payment Method'}
-                  onChange={(e) =>
-                    updateLine(index, {
-                      method: e.target.value as PaymentMethod,
-                    })
-                  }
+                  onChange={(e) => {
+                    const method = e.target.value as MethodValue;
+                    // Terminal charges the full remaining balance — force
+                    // pay-in-full so no manual amount is entered.
+                    if (isTerminal(method)) setPayInFull(true);
+                    updateLine(index, { method });
+                  }}
                 >
                   {METHOD_OPTIONS.map((opt) => (
                     <MenuItem
@@ -241,7 +302,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
             </Alert>
           )}
 
-          {!isSplit && (
+          {!isSplit && !terminalSelected && (
             <FormControlLabel
               control={
                 <Checkbox
@@ -253,7 +314,16 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
             />
           )}
 
-          {!noTaxSelected && (
+          {terminalSelected && (
+            <Alert severity="info" sx={{ mt: 1 }}>
+              The full remaining balance
+              {remaining != null ? ` ($${remaining.toFixed(2)})` : ''} will be
+              sent to the Square Terminal for the customer to tap, insert, or
+              swipe their card.
+            </Alert>
+          )}
+
+          {!noTaxSelected && !terminalSelected && (
             <Box sx={{ mt: 1 }}>
               <Button size="small" startIcon={<AddIcon />} onClick={addLine}>
                 Add another method (split)
@@ -285,9 +355,20 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
           color="success"
           disabled={confirmDisabled}
         >
-          Record Payment
+          {terminalSelected ? 'Send to Terminal' : 'Record Payment'}
         </Button>
       </DialogActions>
+
+      {invoiceId && (
+        <TerminalPaymentDialog
+          open={terminalMethod != null}
+          onClose={() => setTerminalMethod(null)}
+          invoiceId={invoiceId}
+          invoiceNumber={invoiceNumber}
+          amount={remaining ?? 0}
+          onPaymentSuccess={handleTerminalSuccess}
+        />
+      )}
     </Dialog>
   );
 };

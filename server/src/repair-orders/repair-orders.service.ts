@@ -284,6 +284,14 @@ export class RepairOrdersService {
     await this.assertExists(id);
 
     const data: any = { ...dto };
+
+    // A vehicle and the "no vehicle" (loose tires) flag are mutually exclusive.
+    if (dto.vehicleId) {
+      data.noVehicle = false;
+    } else if (dto.noVehicle === true) {
+      data.vehicleId = null;
+    }
+
     if (dto.status === ROStatus.CLOSED || dto.status === ROStatus.INVOICED) {
       if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
         throw new ForbiddenException(

@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import { AppointmentStatus } from '@prisma/client';
 import {
@@ -13,7 +18,12 @@ import { EmailService } from '../email/email.service';
 import { JobsService } from '../jobs/jobs.service';
 import { PayoutRulesService } from '../payout-rules/payout-rules.service';
 import { JobType, JobStatus } from '@prisma/client';
-import { getCurrentBusinessDateTime, getCurrentBusinessDate, extractBusinessDate, POSTGRES_TIMEZONE } from '../config/timezone.config';
+import {
+  getCurrentBusinessDateTime,
+  getCurrentBusinessDate,
+  extractBusinessDate,
+  POSTGRES_TIMEZONE,
+} from '../config/timezone.config';
 
 @Injectable()
 export class AppointmentsService {
@@ -81,7 +91,8 @@ export class AppointmentsService {
    */
   async create(dto: CreateAppointmentDto, bookedBy: string) {
     // Support both old employeeId and new employeeIds
-    const employeeIds = dto.employeeIds || (dto.employeeId ? [dto.employeeId] : []);
+    const employeeIds =
+      dto.employeeIds || (dto.employeeId ? [dto.employeeId] : []);
 
     console.log('[CREATE APPOINTMENT] Request received:', {
       customerId: dto.customerId,
@@ -93,7 +104,9 @@ export class AppointmentsService {
 
     // Validate serviceAddress is required for MOBILE_SERVICE appointments
     if (dto.appointmentType === 'MOBILE_SERVICE' && !dto.serviceAddress) {
-      throw new BadRequestException('Service address is required for mobile service appointments');
+      throw new BadRequestException(
+        'Service address is required for mobile service appointments'
+      );
     }
 
     // Validate customer exists
@@ -101,7 +114,9 @@ export class AppointmentsService {
       where: { id: dto.customerId },
     });
     if (!customer) {
-      throw new NotFoundException(`Customer with ID ${dto.customerId} not found`);
+      throw new NotFoundException(
+        `Customer with ID ${dto.customerId} not found`
+      );
     }
 
     // Validate vehicle if provided
@@ -110,11 +125,15 @@ export class AppointmentsService {
         where: { id: dto.vehicleId },
       });
       if (!vehicle) {
-        throw new NotFoundException(`Vehicle with ID ${dto.vehicleId} not found`);
+        throw new NotFoundException(
+          `Vehicle with ID ${dto.vehicleId} not found`
+        );
       }
       // Ensure vehicle belongs to customer
       if (vehicle.customerId !== dto.customerId) {
-        throw new BadRequestException('Vehicle does not belong to the specified customer');
+        throw new BadRequestException(
+          'Vehicle does not belong to the specified customer'
+        );
       }
     }
 
@@ -129,9 +148,15 @@ export class AppointmentsService {
     // Auto-assign employee if none provided
     let finalEmployeeIds = employeeIds;
     if (finalEmployeeIds.length === 0) {
-      const foundEmployeeId = await this.findAvailableEmployee(normalizedDate, dto.scheduledTime, dto.duration);
+      const foundEmployeeId = await this.findAvailableEmployee(
+        normalizedDate,
+        dto.scheduledTime,
+        dto.duration
+      );
       if (!foundEmployeeId) {
-        throw new ConflictException('No available employees for the requested time slot');
+        throw new ConflictException(
+          'No available employees for the requested time slot'
+        );
       }
       finalEmployeeIds = [foundEmployeeId];
     } else {
@@ -144,20 +169,33 @@ export class AppointmentsService {
         if (!employee) {
           throw new NotFoundException(`Employee with ID ${empId} not found`);
         }
-        if (employee.role.name !== 'STAFF' && employee.role.name !== 'ADMIN' && employee.role.name !== 'SUPERVISOR') {
-          throw new BadRequestException(`User ${employee.firstName} ${employee.lastName} is not a staff, admin, or supervisor member`);
+        if (
+          employee.role.name !== 'STAFF' &&
+          employee.role.name !== 'ADMIN' &&
+          employee.role.name !== 'SUPERVISOR'
+        ) {
+          throw new BadRequestException(
+            `User ${employee.firstName} ${employee.lastName} is not a staff, admin, or supervisor member`
+          );
         }
 
         // Check availability - use normalizedDate (Date object) not dto.scheduledDate (string)
-        const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
-          empId,
-          normalizedDate,
-          dto.scheduledTime,
-          dto.duration
-        );
+        const availabilityCheck =
+          await this.availabilityService.isEmployeeAvailable(
+            empId,
+            normalizedDate,
+            dto.scheduledTime,
+            dto.duration
+          );
         if (availabilityCheck !== true) {
-          const error = availabilityCheck as { available: false; reason: string; suggestion: string };
-          throw new ConflictException(`${employee.firstName} ${employee.lastName}: ${error.reason}. ${error.suggestion}`);
+          const error = availabilityCheck as {
+            available: false;
+            reason: string;
+            suggestion: string;
+          };
+          throw new ConflictException(
+            `${employee.firstName} ${employee.lastName}: ${error.reason}. ${error.suggestion}`
+          );
         }
       }
     }
@@ -183,7 +221,7 @@ export class AppointmentsService {
         bookedBy,
         reminderSent: false,
         employees: {
-          create: finalEmployeeIds.map(empId => ({
+          create: finalEmployeeIds.map((empId) => ({
             employeeId: empId,
           })),
         },
@@ -195,10 +233,12 @@ export class AppointmentsService {
     // staff explicitly create an RO via the "Create RO" button on the appointment card.
 
     // Send SMS confirmation to customer
-    await this.smsService.sendAppointmentConfirmation(appointment.id).catch(err => {
-      console.error('Failed to send customer confirmation SMS:', err);
-      // Don't throw error - appointment was created successfully
-    });
+    await this.smsService
+      .sendAppointmentConfirmation(appointment.id)
+      .catch((err) => {
+        console.error('Failed to send customer confirmation SMS:', err);
+        // Don't throw error - appointment was created successfully
+      });
 
     // Send EMAIL alert to assigned employees (replacing SMS)
     for (const assignedEmployee of appointment.employees) {
@@ -206,7 +246,9 @@ export class AppointmentsService {
 
       // Only send email if employee has an email address
       if (!employee.email) {
-        console.warn(`Employee ${employee.firstName} ${employee.lastName} has no email address. Skipping notification.`);
+        console.warn(
+          `Employee ${employee.firstName} ${employee.lastName} has no email address. Skipping notification.`
+        );
         continue;
       }
 
@@ -220,24 +262,34 @@ export class AppointmentsService {
       // Format date as YYYY-MM-DD to avoid timezone issues in email
       const scheduledDateStr = extractBusinessDate(appointment.scheduledDate);
 
-      await this.emailService.sendAppointmentAssignment({
-        employeeEmail: employee.email,
-        employeeName: `${employee.firstName} ${employee.lastName}`,
-        appointmentId: appointment.id,
-        customerName: customerName,
-        customerPhone: appointment.customer.phone || undefined,
-        vehicleInfo: vehicleInfo,
-        serviceType: appointment.serviceType,
-        scheduledDate: scheduledDateStr,
-        scheduledTime: appointment.scheduledTime,
-        duration: appointment.duration,
-        appointmentType: appointment.appointmentType as 'AT_GARAGE' | 'MOBILE_SERVICE',
-        address: appointment.appointmentType === 'MOBILE_SERVICE' ? (appointment.serviceAddress || undefined) : undefined,
-        notes: appointment.notes || undefined,
-      }).catch(err => {
-        console.error(`Failed to send appointment assignment email to ${employee.email}:`, err);
-        // Don't throw error - appointment was created successfully
-      });
+      await this.emailService
+        .sendAppointmentAssignment({
+          employeeEmail: employee.email,
+          employeeName: `${employee.firstName} ${employee.lastName}`,
+          appointmentId: appointment.id,
+          customerName: customerName,
+          customerPhone: appointment.customer.phone || undefined,
+          vehicleInfo: vehicleInfo,
+          serviceType: appointment.serviceType,
+          scheduledDate: scheduledDateStr,
+          scheduledTime: appointment.scheduledTime,
+          duration: appointment.duration,
+          appointmentType: appointment.appointmentType as
+            | 'AT_GARAGE'
+            | 'MOBILE_SERVICE',
+          address:
+            appointment.appointmentType === 'MOBILE_SERVICE'
+              ? appointment.serviceAddress || undefined
+              : undefined,
+          notes: appointment.notes || undefined,
+        })
+        .catch((err) => {
+          console.error(
+            `Failed to send appointment assignment email to ${employee.email}:`,
+            err
+          );
+          // Don't throw error - appointment was created successfully
+        });
     }
 
     return appointment;
@@ -259,7 +311,9 @@ export class AppointmentsService {
         const dateOnly = extractBusinessDate(query.startDate);
         // scheduledDate is stored as midnight UTC (via Date.UTC in create/update)
         // So we can directly compare the DATE portion without timezone conversion
-        dateConditions.push(`DATE(a."scheduledDate") >= DATE($${params.length + 1})`);
+        dateConditions.push(
+          `DATE(a."scheduledDate") >= DATE($${params.length + 1})`
+        );
         params.push(dateOnly);
       }
 
@@ -267,7 +321,9 @@ export class AppointmentsService {
         const dateOnly = extractBusinessDate(query.endDate);
         // scheduledDate is stored as midnight UTC (via Date.UTC in create/update)
         // So we can directly compare the DATE portion without timezone conversion
-        dateConditions.push(`DATE(a."scheduledDate") <= DATE($${params.length + 1})`);
+        dateConditions.push(
+          `DATE(a."scheduledDate") <= DATE($${params.length + 1})`
+        );
         params.push(dateOnly);
       }
 
@@ -278,7 +334,8 @@ export class AppointmentsService {
       if (query.employeeId) {
         // CRITICAL: Join with AppointmentEmployee table for employee filtering
         // The deprecated employeeId field is not used anymore
-        fromClause = '"Appointment" a INNER JOIN "AppointmentEmployee" ae ON a."id" = ae."appointmentId"';
+        fromClause =
+          '"Appointment" a INNER JOIN "AppointmentEmployee" ae ON a."id" = ae."appointmentId"';
         additionalConditions.push(`ae."employeeId" = $${params.length + 1}`);
         params.push(query.employeeId);
       }
@@ -294,7 +351,8 @@ export class AppointmentsService {
 
       // Combine all conditions
       const allConditions = [...dateConditions, ...additionalConditions];
-      const whereClause = allConditions.length > 0 ? `WHERE ${allConditions.join(' AND ')}` : '';
+      const whereClause =
+        allConditions.length > 0 ? `WHERE ${allConditions.join(' AND ')}` : '';
 
       console.log('[FIND ALL] Using DATE() comparison:', {
         startDate: query.startDate,
@@ -313,7 +371,7 @@ export class AppointmentsService {
         ...params
       );
 
-      const appointmentIds = appointments.map(a => a.id);
+      const appointmentIds = appointments.map((a) => a.id);
       if (appointmentIds.length === 0) {
         return [];
       }
@@ -387,7 +445,7 @@ export class AppointmentsService {
       ...params
     );
 
-    const appointmentIds = appointmentRecords.map(a => a.id);
+    const appointmentIds = appointmentRecords.map((a) => a.id);
     if (appointmentIds.length === 0) {
       return {};
     }
@@ -436,12 +494,40 @@ export class AppointmentsService {
   async update(id: string, dto: UpdateAppointmentDto, userId?: string) {
     const appointment = await this.findOne(id);
 
+    // Normalize/validate vehicle link if the caller included one.
+    // '' or null clears the vehicle; a real id must belong to the customer.
+    if (dto.vehicleId !== undefined) {
+      const vehicleId =
+        dto.vehicleId && dto.vehicleId.trim() ? dto.vehicleId.trim() : null;
+      if (vehicleId) {
+        const vehicle = await this.prisma.vehicle.findUnique({
+          where: { id: vehicleId },
+        });
+        if (!vehicle) {
+          throw new NotFoundException(`Vehicle with ID ${vehicleId} not found`);
+        }
+        if (vehicle.customerId !== appointment.customerId) {
+          throw new BadRequestException(
+            'Vehicle does not belong to the appointment customer'
+          );
+        }
+      }
+      dto.vehicleId = vehicleId;
+    }
+
     console.log('[UPDATE APPOINTMENT] Updating appointment:', id);
-    console.log('[UPDATE APPOINTMENT] DTO received:', JSON.stringify(dto, null, 2));
-    console.log('[UPDATE APPOINTMENT] Current appointment employees:', appointment.employees);
+    console.log(
+      '[UPDATE APPOINTMENT] DTO received:',
+      JSON.stringify(dto, null, 2)
+    );
+    console.log(
+      '[UPDATE APPOINTMENT] Current appointment employees:',
+      appointment.employees
+    );
 
     // Support both old employeeId and new employeeIds
-    const employeeIds = dto.employeeIds || (dto.employeeId ? [dto.employeeId] : undefined);
+    const employeeIds =
+      dto.employeeIds || (dto.employeeId ? [dto.employeeId] : undefined);
 
     // Normalize scheduledDate if provided - convert YYYY-MM-DD string to Date for database storage
     // dto.scheduledDate is now always a string (YYYY-MM-DD format) to avoid timezone conversion in DTOs
@@ -460,29 +546,44 @@ export class AppointmentsService {
       const duration = dto.duration || appointment.duration;
 
       // Check if time/date is changing (convert to boolean)
-      const isTimeChanging = !!(dto.scheduledDate || dto.scheduledTime || dto.duration);
+      const isTimeChanging = !!(
+        dto.scheduledDate ||
+        dto.scheduledTime ||
+        dto.duration
+      );
 
       // Check availability for employees
       if (employeeIds && employeeIds.length > 0) {
         // Get currently assigned employee IDs
-        console.log('[UPDATE APPOINTMENT] Raw appointment.employees:', JSON.stringify(appointment.employees, null, 2));
-        console.log('[UPDATE APPOINTMENT] appointment.employeeId:', appointment.employeeId);
+        console.log(
+          '[UPDATE APPOINTMENT] Raw appointment.employees:',
+          JSON.stringify(appointment.employees, null, 2)
+        );
+        console.log(
+          '[UPDATE APPOINTMENT] appointment.employeeId:',
+          appointment.employeeId
+        );
 
         // Get current employees - check both new employees relation and old employeeId field
         let currentEmployeeIds: string[] = [];
         if (appointment.employees && appointment.employees.length > 0) {
-          currentEmployeeIds = appointment.employees.map(e => e.employeeId);
+          currentEmployeeIds = appointment.employees.map((e) => e.employeeId);
         } else if (appointment.employeeId) {
           currentEmployeeIds = [appointment.employeeId];
         }
 
-        console.log('[UPDATE APPOINTMENT] Current employees:', currentEmployeeIds);
+        console.log(
+          '[UPDATE APPOINTMENT] Current employees:',
+          currentEmployeeIds
+        );
         console.log('[UPDATE APPOINTMENT] New employees:', employeeIds);
         console.log('[UPDATE APPOINTMENT] Time changing:', isTimeChanging);
 
         // CRITICAL DEBUG - Make this visible
         if (currentEmployeeIds.length === 0) {
-          console.error('⚠️⚠️⚠️ WARNING: currentEmployeeIds is EMPTY! This will cause all employees to be validated!');
+          console.error(
+            '⚠️⚠️⚠️ WARNING: currentEmployeeIds is EMPTY! This will cause all employees to be validated!'
+          );
           console.error('⚠️ appointment.employees:', appointment.employees);
           console.error('⚠️ appointment.employeeId:', appointment.employeeId);
         }
@@ -493,20 +594,33 @@ export class AppointmentsService {
           // 2. This is a new employee being added
           const isNewEmployee = !currentEmployeeIds.includes(empId);
 
-          console.log(`[UPDATE APPOINTMENT] Employee ${empId}: isNew=${isNewEmployee}, shouldValidate=${isTimeChanging || isNewEmployee}`);
+          console.log(
+            `[UPDATE APPOINTMENT] Employee ${empId}: isNew=${isNewEmployee}, shouldValidate=${
+              isTimeChanging || isNewEmployee
+            }`
+          );
 
           if (isTimeChanging || isNewEmployee) {
-            const availabilityCheck = await this.availabilityService.isEmployeeAvailable(
-              empId,
-              scheduledDate,
-              scheduledTime,
-              duration,
-              id // Exclude current appointment from conflict check
-            );
+            const availabilityCheck =
+              await this.availabilityService.isEmployeeAvailable(
+                empId,
+                scheduledDate,
+                scheduledTime,
+                duration,
+                id // Exclude current appointment from conflict check
+              );
             if (availabilityCheck !== true) {
-              const error = availabilityCheck as { available: false; reason: string; suggestion: string };
-              const employee = await this.prisma.user.findUnique({ where: { id: empId } });
-              throw new ConflictException(`${employee?.firstName} ${employee?.lastName}: ${error.reason}. ${error.suggestion}`);
+              const error = availabilityCheck as {
+                available: false;
+                reason: string;
+                suggestion: string;
+              };
+              const employee = await this.prisma.user.findUnique({
+                where: { id: empId },
+              });
+              throw new ConflictException(
+                `${employee?.firstName} ${employee?.lastName}: ${error.reason}. ${error.suggestion}`
+              );
             }
           }
         }
@@ -549,23 +663,26 @@ export class AppointmentsService {
       const businessDateTime = getCurrentBusinessDateTime();
       updateData.paymentDate = businessDateTime;
 
-      console.log('[UPDATE APPOINTMENT] Setting paymentDate to current business time:', {
-        appointmentId: id,
-        oldPayment: appointment.paymentAmount || 0,
-        newPayment: dto.paymentAmount,
-        paymentDate: updateData.paymentDate.toISOString(),
-        businessTimezone: POSTGRES_TIMEZONE,
-        businessDateString: extractBusinessDate(businessDateTime),
-        businessTimeString: businessDateTime.toLocaleString('en-US', {
-          timeZone: POSTGRES_TIMEZONE,
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }),
-        scheduledDate: appointment.scheduledDate,
-        isReprocess: (appointment.paymentAmount || 0) > 0,
-        isZeroPayment: dto.paymentAmount === 0,
-      });
+      console.log(
+        '[UPDATE APPOINTMENT] Setting paymentDate to current business time:',
+        {
+          appointmentId: id,
+          oldPayment: appointment.paymentAmount || 0,
+          newPayment: dto.paymentAmount,
+          paymentDate: updateData.paymentDate.toISOString(),
+          businessTimezone: POSTGRES_TIMEZONE,
+          businessDateString: extractBusinessDate(businessDateTime),
+          businessTimeString: businessDateTime.toLocaleString('en-US', {
+            timeZone: POSTGRES_TIMEZONE,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          }),
+          scheduledDate: appointment.scheduledDate,
+          isReprocess: (appointment.paymentAmount || 0) > 0,
+          isZeroPayment: dto.paymentAmount === 0,
+        }
+      );
     }
 
     // Remove employeeIds from direct update (will be handled separately)
@@ -581,7 +698,7 @@ export class AppointmentsService {
       });
 
       updateData.employees = {
-        create: employeeIds.map(empId => ({
+        create: employeeIds.map((empId) => ({
           employeeId: empId,
         })),
       };
@@ -600,12 +717,17 @@ export class AppointmentsService {
     const originalDateStr = extractBusinessDate(appointment.scheduledDate);
     const newDateStr = dto.scheduledDate || originalDateStr;
     const dateChanged = newDateStr !== originalDateStr;
-    const timeChanged = dto.scheduledTime && dto.scheduledTime !== appointment.scheduledTime;
+    const timeChanged =
+      dto.scheduledTime && dto.scheduledTime !== appointment.scheduledTime;
 
     if (dateChanged || timeChanged) {
-      console.log(`[SMS] Date/time changed - sending update SMS. Date: ${originalDateStr} -> ${newDateStr}, Time: ${appointment.scheduledTime} -> ${dto.scheduledTime}`);
-      await this.smsService.sendAppointmentUpdate(id).catch(err => {
-        console.error(`[SMS] Failed to send appointment update SMS: ${err.message}`);
+      console.log(
+        `[SMS] Date/time changed - sending update SMS. Date: ${originalDateStr} -> ${newDateStr}, Time: ${appointment.scheduledTime} -> ${dto.scheduledTime}`
+      );
+      await this.smsService.sendAppointmentUpdate(id).catch((err) => {
+        console.error(
+          `[SMS] Failed to send appointment update SMS: ${err.message}`
+        );
       });
     } else {
       console.log(`[SMS] No date/time change detected - skipping SMS`);
@@ -622,10 +744,14 @@ export class AppointmentsService {
     if (userId && isPaidInFull && (justCompleted || becamePaidInFull)) {
       const completionEmployeeIds = this.resolveCompletionEmployeeIds(
         updatedAppointment,
-        dto.completionEmployeeIds,
+        dto.completionEmployeeIds
       );
 
-      await this.createCompletionJobs(updatedAppointment, completionEmployeeIds, userId).catch(err => {
+      await this.createCompletionJobs(
+        updatedAppointment,
+        completionEmployeeIds,
+        userId
+      ).catch((err) => {
         console.error('[JOBS] Failed to auto-create completion jobs:', err);
       });
     }
@@ -649,13 +775,18 @@ export class AppointmentsService {
       userId: string;
       wasAlreadyCompleted: boolean;
       wasPaidInFull?: boolean;
-    },
+    }
   ) {
     const updates: any = {};
-    if (opts.productSaleAmount !== undefined) updates.productSaleAmount = opts.productSaleAmount;
-    if (opts.productSaleItems !== undefined) updates.productSaleItems = opts.productSaleItems;
+    if (opts.productSaleAmount !== undefined)
+      updates.productSaleAmount = opts.productSaleAmount;
+    if (opts.productSaleItems !== undefined)
+      updates.productSaleItems = opts.productSaleItems;
     if (Object.keys(updates).length > 0) {
-      await this.prisma.appointment.update({ where: { id: appointmentId }, data: updates });
+      await this.prisma.appointment.update({
+        where: { id: appointmentId },
+        data: updates,
+      });
     }
 
     const appointment = await this.prisma.appointment.findUnique({
@@ -663,13 +794,18 @@ export class AppointmentsService {
       include: this.appointmentInclude,
     });
 
-    if (appointment && this.isAppointmentPaidInFull(appointment) && !opts.wasPaidInFull) {
-      const shouldCreateForCompletion = !opts.wasAlreadyCompleted || opts.wasPaidInFull === false;
+    if (
+      appointment &&
+      this.isAppointmentPaidInFull(appointment) &&
+      !opts.wasPaidInFull
+    ) {
+      const shouldCreateForCompletion =
+        !opts.wasAlreadyCompleted || opts.wasPaidInFull === false;
       if (!shouldCreateForCompletion) return;
 
       const completionEmployeeIds = this.resolveCompletionEmployeeIds(
         appointment,
-        opts.completionEmployeeIds,
+        opts.completionEmployeeIds
       );
 
       await this.createCompletionJobs(
@@ -677,9 +813,9 @@ export class AppointmentsService {
         completionEmployeeIds,
         opts.userId,
         opts.serviceAmount,
-        opts.tipAmount,
+        opts.tipAmount
       ).catch((err) =>
-        console.error('[JOBS] Failed to auto-create completion jobs:', err),
+        console.error('[JOBS] Failed to auto-create completion jobs:', err)
       );
     }
   }
@@ -714,15 +850,19 @@ export class AppointmentsService {
     employeeIds: string[],
     userId: string,
     serviceAmountOverride?: number,
-    tipAmount: number = 0,
+    tipAmount = 0
   ) {
     if (await this.hasCompletionJobs(appointment.id)) {
-      console.log('[JOBS] Skipping job creation — completion jobs already exist');
+      console.log(
+        '[JOBS] Skipping job creation — completion jobs already exist'
+      );
       return;
     }
 
     if (!this.isAppointmentPaidInFull(appointment)) {
-      console.log('[JOBS] Skipping job creation — appointment is not paid in full');
+      console.log(
+        '[JOBS] Skipping job creation — appointment is not paid in full'
+      );
       return;
     }
 
@@ -741,21 +881,26 @@ export class AppointmentsService {
         ? Number(serviceAmountOverride)
         : paymentAmount;
     const serviceAmount = Math.max(0, baseAmount - productSaleAmount);
-    const rulePayout = serviceAmount > 0
-      ? await this.payoutRulesService.calculatePayout(serviceAmount)
-      : 0;
+    const rulePayout =
+      serviceAmount > 0
+        ? await this.payoutRulesService.calculatePayout(serviceAmount)
+        : 0;
     const totalPayout = Math.round((rulePayout + tip) * 100) / 100;
     if (totalPayout <= 0) {
       console.log('[JOBS] Skipping job creation — no payout amount');
       return;
     }
 
-    const perEmployee = Math.round((totalPayout / employeeIds.length) * 100) / 100;
+    const perEmployee =
+      Math.round((totalPayout / employeeIds.length) * 100) / 100;
     const customerName = appointment.customer
       ? appointment.customer.businessName ||
         `${appointment.customer.firstName} ${appointment.customer.lastName}`
       : 'Customer';
-    const serviceLabel = String(appointment.serviceType || '').replace(/_/g, ' ');
+    const serviceLabel = String(appointment.serviceType || '').replace(
+      /_/g,
+      ' '
+    );
     const dateLabel = extractBusinessDate(appointment.scheduledDate);
     const title = `${serviceLabel} — ${customerName}`;
     const description = [
@@ -767,7 +912,8 @@ export class AppointmentsService {
       `Appointment total: $${paymentAmount.toFixed(2)}`,
       productSaleAmount > 0
         ? `Product sale: $${productSaleAmount.toFixed(2)}${
-            Array.isArray(appointment.productSaleItems) && appointment.productSaleItems.length > 0
+            Array.isArray(appointment.productSaleItems) &&
+            appointment.productSaleItems.length > 0
               ? ` (${appointment.productSaleItems.join(', ')})`
               : ''
           } — excluded from payout`
@@ -775,7 +921,9 @@ export class AppointmentsService {
       `Service amount used for payout: $${serviceAmount.toFixed(2)}`,
       `Rule-based payout: $${rulePayout.toFixed(2)}`,
       tip > 0 ? `Tip (added 100%): $${tip.toFixed(2)}` : null,
-      `Total payout pool: $${totalPayout.toFixed(2)} split across ${employeeIds.length} employee(s)`,
+      `Total payout pool: $${totalPayout.toFixed(2)} split across ${
+        employeeIds.length
+      } employee(s)`,
       appointment.notes ? `Notes: ${appointment.notes}` : null,
     ]
       .filter(Boolean)
@@ -784,7 +932,9 @@ export class AppointmentsService {
     // Use the appointment's payment date if set (when work was actually completed),
     // otherwise fall back to now. Job is created READY since the work is done —
     // admin still moves it to PAID via the regular payroll flow.
-    const completedAtIso = (appointment.paymentDate || new Date()).toISOString();
+    const completedAtIso = (
+      appointment.paymentDate || new Date()
+    ).toISOString();
 
     for (const employeeId of employeeIds) {
       await this.jobsService.create(
@@ -798,21 +948,24 @@ export class AppointmentsService {
           status: JobStatus.READY,
           completedAt: completedAtIso,
         },
-        userId,
+        userId
       );
     }
   }
 
   private resolveCompletionEmployeeIds(
     appointment: any,
-    requestedEmployeeIds?: string[],
+    requestedEmployeeIds?: string[]
   ): string[] {
     const employeeIds =
       requestedEmployeeIds && requestedEmployeeIds.length > 0
         ? requestedEmployeeIds
         : [
             ...(appointment.employees || [])
-              .map((assignment: any) => assignment.employee?.id || assignment.employeeId)
+              .map(
+                (assignment: any) =>
+                  assignment.employee?.id || assignment.employeeId
+              )
               .filter(Boolean),
             appointment.employee?.id,
             appointment.employeeId,
@@ -827,8 +980,13 @@ export class AppointmentsService {
   async cancel(id: string) {
     const appointment = await this.findOne(id);
 
-    if (appointment.status === AppointmentStatus.COMPLETED || appointment.status === AppointmentStatus.CANCELLED) {
-      throw new BadRequestException(`Cannot cancel appointment with status: ${appointment.status}`);
+    if (
+      appointment.status === AppointmentStatus.COMPLETED ||
+      appointment.status === AppointmentStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Cannot cancel appointment with status: ${appointment.status}`
+      );
     }
 
     const updatedAppointment = await this.prisma.appointment.update({
@@ -841,12 +999,19 @@ export class AppointmentsService {
     });
 
     // Send cancellation SMS to customer (non-blocking)
-    console.log(`📱 [APPOINTMENTS SERVICE] Calling SMS cancellation for appointment: ${id}`);
-    await this.smsService.sendAppointmentCancellation(id).catch(err => {
-      console.error('❌ [APPOINTMENTS SERVICE] Failed to send cancellation SMS:', err);
+    console.log(
+      `📱 [APPOINTMENTS SERVICE] Calling SMS cancellation for appointment: ${id}`
+    );
+    await this.smsService.sendAppointmentCancellation(id).catch((err) => {
+      console.error(
+        '❌ [APPOINTMENTS SERVICE] Failed to send cancellation SMS:',
+        err
+      );
       // Don't throw error - appointment was cancelled successfully
     });
-    console.log(`✅ [APPOINTMENTS SERVICE] SMS cancellation call completed for appointment: ${id}`);
+    console.log(
+      `✅ [APPOINTMENTS SERVICE] SMS cancellation call completed for appointment: ${id}`
+    );
 
     return updatedAppointment;
   }
@@ -927,7 +1092,7 @@ export class AppointmentsService {
     `;
 
     // Manually fetch relations since we used raw SQL
-    const appointmentIds = appointments.map(a => a.id);
+    const appointmentIds = appointments.map((a) => a.id);
 
     if (appointmentIds.length === 0) {
       return [];
@@ -984,7 +1149,7 @@ export class AppointmentsService {
       ORDER BY a."paymentDate" ASC, a."scheduledTime" ASC
     `;
 
-    const appointmentIds = appointments.map(a => a.id);
+    const appointmentIds = appointments.map((a) => a.id);
 
     if (appointmentIds.length === 0) {
       return [];
@@ -1018,11 +1183,14 @@ export class AppointmentsService {
     // Get today's date in Pacific Time
     const todayDateOnly = getCurrentBusinessDate();
 
-    console.log('[GET TODAY APPOINTMENTS] Using Pacific Time DATE() comparison:', {
-      todayDateOnly,
-      businessTimezone: POSTGRES_TIMEZONE,
-      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    });
+    console.log(
+      '[GET TODAY APPOINTMENTS] Using Pacific Time DATE() comparison:',
+      {
+        todayDateOnly,
+        businessTimezone: POSTGRES_TIMEZONE,
+        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }
+    );
 
     // Query appointments for today
     // scheduledDate is stored as midnight UTC (via Date.UTC in create/update)
@@ -1035,7 +1203,7 @@ export class AppointmentsService {
       todayDateOnly
     );
 
-    const appointmentIds = appointmentRecords.map(a => a.id);
+    const appointmentIds = appointmentRecords.map((a) => a.id);
     if (appointmentIds.length === 0) {
       console.log('[GET TODAY APPOINTMENTS] Found appointments: 0');
       return [];
@@ -1054,7 +1222,8 @@ export class AppointmentsService {
         id: result[0].id,
         scheduledDate: result[0].scheduledDate,
         scheduledTime: result[0].scheduledTime,
-        employee: result[0].employee?.firstName + ' ' + result[0].employee?.lastName,
+        employee:
+          result[0].employee?.firstName + ' ' + result[0].employee?.lastName,
       });
     }
 
@@ -1069,12 +1238,15 @@ export class AppointmentsService {
     // Get today's date in Pacific Time
     const todayDateOnly = getCurrentBusinessDate();
 
-    console.log('[GET CUSTOMER UPCOMING] Using Pacific Time DATE() comparison:', {
-      customerId,
-      todayDateOnly,
-      businessTimezone: POSTGRES_TIMEZONE,
-      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    });
+    console.log(
+      '[GET CUSTOMER UPCOMING] Using Pacific Time DATE() comparison:',
+      {
+        customerId,
+        todayDateOnly,
+        businessTimezone: POSTGRES_TIMEZONE,
+        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }
+    );
 
     // Use raw SQL with Pacific Time comparison to ensure correct business day
     const appointmentRecords = await this.prisma.$queryRawUnsafe<any[]>(
@@ -1089,7 +1261,7 @@ export class AppointmentsService {
       todayDateOnly
     );
 
-    const appointmentIds = appointmentRecords.map(a => a.id);
+    const appointmentIds = appointmentRecords.map((a) => a.id);
     if (appointmentIds.length === 0) {
       return [];
     }
@@ -1105,7 +1277,11 @@ export class AppointmentsService {
   /**
    * Helper: Find an available employee for a time slot
    */
-  private async findAvailableEmployee(date: Date, startTime: string, duration: number): Promise<string | null> {
+  private async findAvailableEmployee(
+    date: Date,
+    startTime: string,
+    duration: number
+  ): Promise<string | null> {
     // Get all staff, admin, and supervisor users
     const staffUsers = await this.prisma.user.findMany({
       where: {
@@ -1138,6 +1314,9 @@ export class AppointmentsService {
     const totalMinutes = hours * 60 + mins + duration;
     const newHours = Math.floor(totalMinutes / 60) % 24;
     const newMins = totalMinutes % 60;
-    return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+    return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(
+      2,
+      '0'
+    )}`;
   }
 }

@@ -36,7 +36,11 @@ import { invoiceService, Invoice } from '../../requests/invoice.requests';
 import { quotationService } from '../../requests/quotation.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
+import { useErrorHelpers } from '../../contexts/ErrorContext';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
+import PaymentMethodDialog, {
+  PaymentEntryInput,
+} from '../../components/invoices/PaymentMethodDialog';
 import { SquarePaymentForm } from '../../components/payments/SquarePaymentForm';
 
 const getCustomerName = (invoice: Invoice) => {
@@ -62,10 +66,13 @@ const InvoiceDetails: React.FC = () => {
   const navigate = useNavigate();
   const { role, isStaff, isAdmin } = useAuth();
   const { confirmCancel } = useConfirmationHelpers();
+  const { showApiError } = useErrorHelpers();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  // Payment-method dialog for recording a manual payment (cash, card, etc.).
+  const [payMethodOpen, setPayMethodOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -161,22 +168,20 @@ const InvoiceDetails: React.FC = () => {
     }
   };
 
-  const handleMarkAsPaid = async () => {
+  const handleProcessPayment = () => {
     if (!invoice) return;
+    setMenuAnchorEl(null);
+    setPayMethodOpen(true);
+  };
 
-    const paymentMethod = prompt(
-      'Enter payment method (CASH, CREDIT_CARD, DEBIT_CARD, CHECK, E_TRANSFER, FINANCING):'
-    );
-    if (paymentMethod) {
-      try {
-        await invoiceService.markInvoiceAsPaid(
-          invoice.id,
-          paymentMethod as any
-        );
-        loadInvoice();
-      } catch (error) {
-        console.error('Error marking invoice as paid:', error);
-      }
+  const handlePaymentConfirm = async (entries: PaymentEntryInput[]) => {
+    if (!invoice) return;
+    try {
+      await invoiceService.recordInvoicePayments(invoice.id, entries);
+      setPayMethodOpen(false);
+      loadInvoice();
+    } catch (error) {
+      showApiError(error, 'Failed to record payment');
     }
   };
 
@@ -209,9 +214,9 @@ const InvoiceDetails: React.FC = () => {
     handlePrint();
   };
 
-  const handleMarkAsPaidFromMenu = () => {
+  const handleProcessPaymentFromMenu = () => {
     setMenuAnchorEl(null);
-    handleMarkAsPaid();
+    handleProcessPayment();
   };
 
   const handlePayWithSquare = () => {
@@ -255,6 +260,11 @@ const InvoiceDetails: React.FC = () => {
   };
 
   const canManageInvoice = isStaff || isAdmin;
+  // An invoice can take a payment until it's fully paid, cancelled, or refunded.
+  const isPayable =
+    canManageInvoice &&
+    !!invoice &&
+    ['DRAFT', 'PENDING', 'PARTIALLY_PAID'].includes(invoice.status);
 
   if (loading) {
     return (
@@ -388,13 +398,13 @@ const InvoiceDetails: React.FC = () => {
                   <ListItemText>Pay with Card</ListItemText>
                 </MenuItem>
               )}
-              {canManageInvoice && invoice.status === 'PENDING' && (
+              {isPayable && (
                 <>
-                  <MenuItem onClick={handleMarkAsPaidFromMenu}>
+                  <MenuItem onClick={handleProcessPaymentFromMenu}>
                     <ListItemIcon>
                       <PaymentIcon fontSize="small" color="success" />
                     </ListItemIcon>
-                    <ListItemText>Mark as Paid</ListItemText>
+                    <ListItemText>Process Payment</ListItemText>
                   </MenuItem>
                   <MenuItem onClick={handleCancel}>
                     <ListItemIcon>
@@ -450,15 +460,15 @@ const InvoiceDetails: React.FC = () => {
                   Pay with Card
                 </Button>
               )}
-              {canManageInvoice && invoice.status === 'PENDING' && (
+              {isPayable && (
                 <>
                   <Button
                     variant="contained"
                     color="success"
                     startIcon={<PaymentIcon />}
-                    onClick={handleMarkAsPaid}
+                    onClick={handleProcessPayment}
                   >
-                    Mark as Paid
+                    Process Payment
                   </Button>
                   <Button
                     variant="outlined"
@@ -868,6 +878,20 @@ const InvoiceDetails: React.FC = () => {
           invoiceNumber={invoice.invoiceNumber}
           amount={invoice.total}
           onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {/* Manual payment (cash, card, cheque, e-transfer, …) */}
+      {invoice && (
+        <PaymentMethodDialog
+          open={payMethodOpen}
+          onClose={() => setPayMethodOpen(false)}
+          onConfirm={handlePaymentConfirm}
+          invoiceNumber={invoice.invoiceNumber}
+          invoiceId={invoice.id}
+          total={Number(invoice.total)}
+          amountPaid={Number((invoice as any).amountPaid ?? 0)}
+          hasTax={Number(invoice.taxAmount) > 0}
         />
       )}
     </Box>

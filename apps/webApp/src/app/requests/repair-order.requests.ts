@@ -94,6 +94,7 @@ export interface RepairOrder {
   appointmentId: string;
   customerId: string;
   vehicleId?: string;
+  noVehicle?: boolean;
   status: ROStatus;
   customerConcern?: string;
   technicianNotes?: string;
@@ -111,6 +112,8 @@ export interface RepairOrder {
     email?: string;
     phone?: string;
     businessName?: string;
+    pstExempt?: boolean;
+    fleetDiscount?: boolean;
   };
   vehicle?: {
     id: string;
@@ -179,6 +182,7 @@ export const repairOrderRequests = {
     data: Partial<{
       status: ROStatus;
       vehicleId: string;
+      noVehicle: boolean;
       customerConcern: string;
       technicianNotes: string;
       mileageIn: number;

@@ -158,7 +158,9 @@ function CurrentTab({
   const [changingVehicle, setChangingVehicle] = useState(false);
   const [customerVehicles, setCustomerVehicles] = useState<Vehicle[]>([]);
 
-  const showVehiclePicker = !ro.vehicle || changingVehicle;
+  // Hide the picker once a vehicle is linked OR the RO is marked no-vehicle
+  // (loose tires), unless the user explicitly chose to change the vehicle.
+  const showVehiclePicker = (!ro.vehicle && !ro.noVehicle) || changingVehicle;
 
   useEffect(() => {
     if (!showVehiclePicker || !ro.customerId) return;
@@ -182,14 +184,18 @@ function CurrentTab({
   const hasInvoiceableWork =
     completedServices.length > 0 || Boolean(invoiceableInspection);
 
-  // Validation gating: a vehicle must be linked before any photo/inspection/service
-  // work can begin, and at least one photo is required before inspecting or adding services.
+  // Validation gating: work can begin once the vehicle question is resolved —
+  // either a vehicle is linked, or the RO is explicitly marked no-vehicle
+  // (loose tires / counter sale). Vehicle-based ROs still require at least one
+  // photo before inspecting or adding services; no-vehicle ROs waive photos.
   const hasVehicle = !!ro.vehicle;
+  const isNoVehicle = !!ro.noVehicle;
+  const vehicleResolved = hasVehicle || isNoVehicle;
   const hasPhotos = (ro.media?.length ?? 0) > 0;
-  const actionsEnabled = hasVehicle && hasPhotos;
-  const actionDisabledReason = !hasVehicle
-    ? 'Add a vehicle to this repair order first'
-    : !hasPhotos
+  const actionsEnabled = vehicleResolved && (isNoVehicle || hasPhotos);
+  const actionDisabledReason = !vehicleResolved
+    ? 'Add a vehicle to this repair order, or mark it as no-vehicle'
+    : !isNoVehicle && !hasPhotos
     ? 'Add at least one photo first'
     : '';
   const estimatedTotal =
@@ -198,6 +204,33 @@ function CurrentTab({
     (sum, s) => sum + Number(s.total ?? 0),
     0
   );
+
+  // Estimate mirrors what the invoice will bill. Shop supplies (4%) and the
+  // fleet discount (10%) are computed off the SERVICE-item base (parts excluded)
+  // and applied before tax — matching buildAdjustmentItems() on the server. GST
+  // is always 5%; PST is 7% unless the customer is PST-exempt (a customer-profile
+  // setting the server gate enforces).
+  const GST_RATE = 0.05;
+  const SHOP_SUPPLIES_RATE = 0.04;
+  const FLEET_DISCOUNT_RATE = 0.1;
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const pstExempt = !!ro.customer?.pstExempt;
+  const pstRate = pstExempt ? 0 : 0.07;
+
+  const serviceBase = (ro.services ?? [])
+    .filter((s) => s.type !== 'PART')
+    .reduce((sum, s) => sum + Number(s.total ?? 0), 0);
+  const shopSupplies =
+    serviceBase > 0 ? round2(serviceBase * SHOP_SUPPLIES_RATE) : 0;
+  const fleetDiscount =
+    ro.customer?.fleetDiscount && serviceBase > 0
+      ? round2(serviceBase * FLEET_DISCOUNT_RATE)
+      : 0;
+
+  const estimatedSubtotal = estimatedTotal + shopSupplies - fleetDiscount;
+  const estimatedGst = estimatedSubtotal * GST_RATE;
+  const estimatedPst = estimatedSubtotal * pstRate;
+  const estimatedGrandTotal = estimatedSubtotal + estimatedGst + estimatedPst;
 
   const handleStatusChange = async (status: ROStatus) => {
     setSavingStatus(true);
@@ -348,6 +381,22 @@ function CurrentTab({
     }
   };
 
+  // Toggle the "no vehicle" flag (loose tires, battery, or other counter
+  // service). Marking it on clears any linked vehicle; turning it off reopens
+  // the vehicle picker.
+  const handleSetNoVehicle = async (noVehicle: boolean) => {
+    setLinkingVehicle(true);
+    try {
+      const updated = await repairOrderRequests.update(ro.id, { noVehicle });
+      onROChange(updated);
+      setChangingVehicle(false);
+    } catch (error) {
+      showApiError(error, 'Failed to update the repair order.');
+    } finally {
+      setLinkingVehicle(false);
+    }
+  };
+
   const transitions = STATUS_TRANSITIONS[ro.status];
 
   return (
@@ -465,6 +514,32 @@ function CurrentTab({
           </>
         )}
 
+        {ro.noVehicle && !changingVehicle && (
+          <>
+            <Divider sx={{ my: 1.5 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <DirectionsCar fontSize="small" color="action" />
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="body1" fontWeight={500}>
+                  No vehicle
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Loose tires, battery, or other counter service
+                </Typography>
+              </Box>
+              {canEdit && (
+                <Button
+                  size="small"
+                  startIcon={<Edit fontSize="small" />}
+                  onClick={() => setChangingVehicle(true)}
+                >
+                  Add vehicle
+                </Button>
+              )}
+            </Box>
+          </>
+        )}
+
         {showVehiclePicker && (
           <>
             <Divider sx={{ my: 1.5 }} />
@@ -532,6 +607,13 @@ function CurrentTab({
                   disabled={linkingVehicle}
                 >
                   Add New
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => handleSetNoVehicle(true)}
+                  disabled={linkingVehicle}
+                >
+                  No vehicle needed
                 </Button>
                 {changingVehicle && (
                   <Button
@@ -653,7 +735,7 @@ function CurrentTab({
           photos={ro.media ?? []}
           onPhotosChange={(media) => onROChange({ ...ro, media })}
           canDelete={canEdit}
-          canUpload={canEdit && hasVehicle}
+          canUpload={canEdit && (hasVehicle || isNoVehicle)}
           uploadDisabledHint="Add a vehicle to this repair order first"
         />
       </Paper>
@@ -791,40 +873,92 @@ function CurrentTab({
         )}
       </Paper>
 
-      {/* Footer: total + close */}
+      {/* Footer: totals + tax + close */}
       {ro.status !== 'INVOICED' && ro.status !== 'CLOSED' && (
-        <Paper
-          variant="outlined"
-          sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}
-        >
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Estimated Total
-            </Typography>
-            <Typography variant="h6" fontWeight={700}>
-              ${estimatedTotal.toFixed(2)}
-            </Typography>
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Box sx={{ maxWidth: 320, ml: 'auto' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Subtotal
+              </Typography>
+              <Typography variant="body2">
+                ${estimatedTotal.toFixed(2)}
+              </Typography>
+            </Box>
+            {shopSupplies > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Shop Supplies (4%)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ${shopSupplies.toFixed(2)}
+                </Typography>
+              </Box>
+            )}
+            {fleetDiscount > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Fleet Discount (10% on services)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  -${fleetDiscount.toFixed(2)}
+                </Typography>
+              </Box>
+            )}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" color="text.secondary">
+                GST (5%)
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                ${estimatedGst.toFixed(2)}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" color="text.secondary">
+                {pstExempt ? 'PST (exempt)' : 'PST (7%)'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                ${estimatedPst.toFixed(2)}
+              </Typography>
+            </Box>
+            <Divider sx={{ my: 0.75 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body1" fontWeight={700}>
+                Estimated Total
+              </Typography>
+              <Typography variant="body1" fontWeight={700}>
+                ${estimatedGrandTotal.toFixed(2)}
+              </Typography>
+            </Box>
           </Box>
           {canClose && (
-            <Tooltip
-              title={
-                hasInvoiceableWork
-                  ? ''
-                  : 'Mark a service item complete or complete an inspection first'
-              }
+            <Box
+              sx={{
+                mt: 1.5,
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
             >
-              <span>
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<ReceiptLong />}
-                  onClick={handleOpenCloseDialog}
-                  disabled={closing || !hasInvoiceableWork}
-                >
-                  Close & Invoice
-                </Button>
-              </span>
-            </Tooltip>
+              <Tooltip
+                title={
+                  hasInvoiceableWork
+                    ? ''
+                    : 'Mark a service item complete or complete an inspection first'
+                }
+              >
+                <span>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<ReceiptLong />}
+                    onClick={handleOpenCloseDialog}
+                    disabled={closing || !hasInvoiceableWork}
+                  >
+                    Close & Invoice
+                  </Button>
+                </span>
+              </Tooltip>
+            </Box>
           )}
         </Paper>
       )}
@@ -976,7 +1110,25 @@ function CurrentTab({
                 const feePrice = selectedFeeItem
                   ? Number(selectedFeeItem.price)
                   : 0;
-                const previewSubtotal = completedSubtotal + feePrice;
+                const rawBase = completedSubtotal + feePrice;
+                // The inspection fee bills as a SERVICE, so it's part of the base
+                // shop supplies / fleet discount are computed from.
+                const completedServiceBase =
+                  completedServices
+                    .filter((s) => s.type !== 'PART')
+                    .reduce((sum, s) => sum + Number(s.total ?? 0), 0) +
+                  feePrice;
+                const previewShop =
+                  completedServiceBase > 0
+                    ? round2(completedServiceBase * SHOP_SUPPLIES_RATE)
+                    : 0;
+                const previewFleet =
+                  ro.customer?.fleetDiscount && completedServiceBase > 0
+                    ? round2(completedServiceBase * FLEET_DISCOUNT_RATE)
+                    : 0;
+                const previewSubtotal = rawBase + previewShop - previewFleet;
+                const previewGst = previewSubtotal * GST_RATE;
+                const previewPst = previewSubtotal * pstRate;
                 return (
                   <Box
                     sx={{
@@ -993,17 +1145,57 @@ function CurrentTab({
                         Subtotal
                       </Typography>
                       <Typography variant="body2">
-                        ${previewSubtotal.toFixed(2)}
+                        ${rawBase.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    {previewShop > 0 && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          Shop Supplies (4%)
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ${previewShop.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    )}
+                    {previewFleet > 0 && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          Fleet Discount (10% on services)
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          -${previewFleet.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    )}
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        GST (5%)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ${previewGst.toFixed(2)}
                       </Typography>
                     </Box>
                     <Box
                       sx={{ display: 'flex', justifyContent: 'space-between' }}
                     >
                       <Typography variant="caption" color="text.secondary">
-                        GST (5%) + PST (7%)
+                        {pstExempt ? 'PST (exempt)' : 'PST (7%)'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        ${(previewSubtotal * 0.12).toFixed(2)}
+                        ${previewPst.toFixed(2)}
                       </Typography>
                     </Box>
                     <Divider sx={{ my: 0.75 }} />
@@ -1014,7 +1206,8 @@ function CurrentTab({
                         Invoice Total
                       </Typography>
                       <Typography variant="body2" fontWeight={700}>
-                        ${(previewSubtotal * 1.12).toFixed(2)}
+                        $
+                        {(previewSubtotal + previewGst + previewPst).toFixed(2)}
                       </Typography>
                     </Box>
                   </Box>
