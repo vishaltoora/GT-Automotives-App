@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@gt-automotive/database';
 import { SquarePaymentRepository } from './repositories/square-payment.repository';
+import { SquarePaymentService } from './square-payment.service';
 import { AppointmentInvoiceService } from '../appointments/appointment-invoice.service';
 import { SquarePaymentStatus, AppointmentStatus } from '@prisma/client';
 import { createHmac } from 'crypto';
@@ -17,6 +18,7 @@ interface SquareWebhookEvent {
     object: {
       payment?: any;
       order?: any;
+      checkout?: any;
     };
   };
 }
@@ -31,14 +33,15 @@ export class SquareWebhookService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly squarePaymentRepository: SquarePaymentRepository,
-    private readonly appointmentInvoiceService: AppointmentInvoiceService,
+    private readonly squarePaymentService: SquarePaymentService,
+    private readonly appointmentInvoiceService: AppointmentInvoiceService
   ) {
     this.webhookSignatureKey =
       this.configService.get<string>('SQUARE_WEBHOOK_SIGNATURE_KEY') || '';
 
     if (!this.webhookSignatureKey) {
       this.logger.warn(
-        'SQUARE_WEBHOOK_SIGNATURE_KEY not configured - webhook signature validation disabled',
+        'SQUARE_WEBHOOK_SIGNATURE_KEY not configured - webhook signature validation disabled'
       );
     }
   }
@@ -51,7 +54,7 @@ export class SquareWebhookService {
     if (this.webhookSignatureKey) {
       const isValid = this.verifyWebhookSignature(
         JSON.stringify(body),
-        signature,
+        signature
       );
       if (!isValid) {
         throw new BadRequestException('Invalid webhook signature');
@@ -73,6 +76,11 @@ export class SquareWebhookService {
         await this.handlePaymentEvent(event);
         break;
 
+      case 'terminal.checkout.updated':
+      case 'terminal.checkout.created':
+        await this.handleTerminalCheckoutEvent(event);
+        break;
+
       default:
         this.logger.log(`Unhandled webhook event type: ${event.type}`);
     }
@@ -84,6 +92,46 @@ export class SquareWebhookService {
     if (this.processedEvents.size > 1000) {
       const toDelete = Array.from(this.processedEvents).slice(0, 100);
       toDelete.forEach((id) => this.processedEvents.delete(id));
+    }
+  }
+
+  /**
+   * Handle terminal.checkout.updated/created events. When an in-person card
+   * reader checkout completes, reconcile it to its invoice so the invoice is
+   * marked paid even if the client that started it is no longer open.
+   */
+  private async handleTerminalCheckoutEvent(
+    event: SquareWebhookEvent
+  ): Promise<void> {
+    const checkout = event.data.object.checkout;
+    if (!checkout) {
+      this.logger.warn(
+        'Terminal checkout event received without checkout object'
+      );
+      return;
+    }
+
+    if (checkout.status !== 'COMPLETED') {
+      this.logger.log(
+        `Terminal checkout ${checkout.id} status ${checkout.status} - nothing to reconcile`
+      );
+      return;
+    }
+
+    try {
+      const result = await this.squarePaymentService.reconcileTerminalCheckout(
+        checkout.id
+      );
+      this.logger.log(
+        `Terminal checkout ${checkout.id} reconcile: ${
+          result.applied ? 'recorded' : result.reason
+        }`
+      );
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to reconcile Terminal checkout ${checkout.id}: ${err.message}`,
+        err.stack
+      );
     }
   }
 
@@ -102,13 +150,13 @@ export class SquareWebhookService {
     const status = payment.status; // COMPLETED, PENDING, FAILED, etc.
 
     this.logger.log(
-      `Processing payment ${squarePaymentId} with status ${status}`,
+      `Processing payment ${squarePaymentId} with status ${status}`
     );
 
     // Only process COMPLETED payments
     if (status !== 'COMPLETED') {
       this.logger.log(
-        `Payment ${squarePaymentId} not completed - status: ${status}`,
+        `Payment ${squarePaymentId} not completed - status: ${status}`
       );
       return;
     }
@@ -138,10 +186,7 @@ export class SquareWebhookService {
       const matchingPayment = pendingPayments.find((p) => {
         const metadata = p.metadata as any;
         // Match by order reference (APT-{appointmentId})
-        if (
-          orderReferenceId &&
-          orderReferenceId === `APT-${p.appointmentId}`
-        ) {
+        if (orderReferenceId && orderReferenceId === `APT-${p.appointmentId}`) {
           return true;
         }
         // Match by checkout ID in metadata
@@ -153,7 +198,7 @@ export class SquareWebhookService {
 
       if (!matchingPayment) {
         this.logger.warn(
-          `No matching pending payment found for Square payment ${squarePaymentId}`,
+          `No matching pending payment found for Square payment ${squarePaymentId}`
         );
         return;
       }
@@ -161,12 +206,12 @@ export class SquareWebhookService {
       const appointment = matchingPayment.appointment;
       if (!appointment) {
         throw new Error(
-          `Appointment not found for payment ${matchingPayment.id}`,
+          `Appointment not found for payment ${matchingPayment.id}`
         );
       }
 
       this.logger.log(
-        `Found matching appointment ${appointment.id} for payment ${squarePaymentId}`,
+        `Found matching appointment ${appointment.id} for payment ${squarePaymentId}`
       );
 
       // 2. Extract service amount from metadata
@@ -178,15 +223,16 @@ export class SquareWebhookService {
       }
 
       // 3. Create invoice from appointment
-      const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
-        appointmentId: appointment.id,
-        serviceAmount,
-        squarePaymentId, // Will be linked after updating
-        userId: appointment.bookedBy || 'SYSTEM', // User who created the appointment
-      });
+      const invoice =
+        await this.appointmentInvoiceService.createInvoiceFromAppointment({
+          appointmentId: appointment.id,
+          serviceAmount,
+          squarePaymentId, // Will be linked after updating
+          userId: appointment.bookedBy || 'SYSTEM', // User who created the appointment
+        });
 
       this.logger.log(
-        `Invoice ${invoice.invoiceNumber} created for appointment ${appointment.id}`,
+        `Invoice ${invoice.invoiceNumber} created for appointment ${appointment.id}`
       );
 
       // 4. Update the Square payment record with real payment ID and invoice link
@@ -221,7 +267,7 @@ export class SquareWebhookService {
       });
 
       this.logger.log(
-        `✅ Appointment ${appointment.id} marked as COMPLETED with invoice ${invoice.invoiceNumber}`,
+        `✅ Appointment ${appointment.id} marked as COMPLETED with invoice ${invoice.invoiceNumber}`
       );
 
       // 6. Send confirmation email (optional - if email service available)
@@ -229,7 +275,7 @@ export class SquareWebhookService {
     } catch (error: any) {
       this.logger.error(
         `Failed to process payment ${squarePaymentId}: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw error;
     }
@@ -262,9 +308,7 @@ export class SquareWebhookService {
 
       return signature === expectedSignature;
     } catch (error: any) {
-      this.logger.error(
-        `Failed to verify webhook signature: ${error.message}`,
-      );
+      this.logger.error(`Failed to verify webhook signature: ${error.message}`);
       return false;
     }
   }

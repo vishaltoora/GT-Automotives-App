@@ -84,8 +84,10 @@ export function CreateRepairOrderDialog({
   };
 
   const handleCreate = async () => {
-    if (!vehicle) return;
-    if (!VIN_PATTERN.test(vin)) {
+    // A VIN is only required when the appointment already has a vehicle linked.
+    // With no vehicle (e.g. loose tires) the RO is created vehicle-less and a
+    // vehicle can be added — or the RO marked as no-vehicle — on the RO detail.
+    if (vehicle && !VIN_PATTERN.test(vin)) {
       showValidationError(
         'A valid 17-character VIN is required to create a repair order.'
       );
@@ -95,8 +97,9 @@ export function CreateRepairOrderDialog({
     try {
       // Persist VIN (and any decoded engine type) to the vehicle if it changed.
       if (
-        vin !== (vehicle.vin || '') ||
-        (engineType && engineType !== (vehicle.engineType || ''))
+        vehicle &&
+        (vin !== (vehicle.vin || '') ||
+          (engineType && engineType !== (vehicle.engineType || '')))
       ) {
         await vehicleService.updateVehicle(vehicle.id, {
           vin,
@@ -114,7 +117,7 @@ export function CreateRepairOrderDialog({
       const ro = await repairOrderRequests.create({
         appointmentId: appointment.id,
         customerId: appointment.customer.id,
-        vehicleId: vehicle.id,
+        vehicleId: vehicle ? vehicle.id : undefined,
         customerConcern: appointment.notes || undefined,
         employeeIds: employeeIds.length > 0 ? employeeIds : undefined,
       });
@@ -126,7 +129,7 @@ export function CreateRepairOrderDialog({
     }
   };
 
-  const createDisabled = saving || !vehicle || !VIN_PATTERN.test(vin);
+  const createDisabled = saving || (!!vehicle && !VIN_PATTERN.test(vin));
 
   return (
     <Dialog
@@ -146,9 +149,11 @@ export function CreateRepairOrderDialog({
         )}
 
         {!vehicle ? (
-          <Alert severity="warning">
-            This appointment has no vehicle linked. Add or select a vehicle on
-            the appointment before creating a repair order.
+          <Alert severity="info">
+            This appointment has no vehicle linked. You can still create the
+            repair order — add a vehicle (VIN required) or mark it as no-vehicle
+            on the repair order afterward (e.g. loose tires, battery recharge,
+            or other counter service).
           </Alert>
         ) : (
           <Stack spacing={2}>

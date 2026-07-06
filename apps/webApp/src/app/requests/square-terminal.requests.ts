@@ -64,6 +64,24 @@ export const squareTerminalService = {
   },
 
   /**
+   * Create a Terminal checkout for several invoices at once (bulk payment).
+   * Charges the combined remaining balance in one tap.
+   */
+  async createBulkCheckout(
+    invoiceIds: string[],
+    deviceId: string,
+    currency = 'CAD'
+  ): Promise<{ checkoutId: string; status: string; amount: number }> {
+    const token = await getAuthToken();
+    const response = await axios.post(
+      `${API_URL}/api/square/payments/terminal/checkout/bulk`,
+      { invoiceIds, deviceId, currency },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
+  /**
    * Get Terminal checkout status
    */
   async getCheckoutStatus(checkoutId: string): Promise<any> {

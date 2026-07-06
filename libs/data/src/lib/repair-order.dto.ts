@@ -1,12 +1,18 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ROMediaType, ROServiceStatus, ROServiceType, ROStatus } from './prisma-enums';
+import {
+  ROMediaType,
+  ROServiceStatus,
+  ROServiceType,
+  ROStatus,
+} from './prisma-enums';
 
 export { ROMediaType, ROServiceStatus, ROServiceType, ROStatus };
 
@@ -91,6 +97,10 @@ export class UpdateRepairOrderDto {
   @IsOptional()
   @IsString()
   vehicleId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  noVehicle?: boolean;
 
   @IsOptional()
   @IsString()

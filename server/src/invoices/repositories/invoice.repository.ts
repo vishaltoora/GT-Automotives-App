@@ -484,6 +484,7 @@ export class InvoiceRepository extends BaseRepository<
     let todayTotal = 0;
     let todayCount = 0;
     const byCustomerMap = new Map<string, any>();
+    const todayByCustomerMap = new Map<string, any>();
 
     for (const inv of invoices) {
       const remaining = Number(inv.total) - Number(inv.amountPaid ?? 0);
@@ -492,16 +493,26 @@ export class InvoiceRepository extends BaseRepository<
       cumulativeTotal += remaining;
       cumulativeCount += 1;
 
-      if (extractBusinessDate(inv.invoiceDate) === dateOnly) {
-        todayTotal += remaining;
-        todayCount += 1;
-      }
-
       const c: any = inv.customer;
       const name =
         c?.businessName ||
         `${c?.firstName ?? ''} ${c?.lastName ?? ''}`.trim() ||
         'Unknown';
+
+      if (extractBusinessDate(inv.invoiceDate) === dateOnly) {
+        todayTotal += remaining;
+        todayCount += 1;
+        const t = todayByCustomerMap.get(inv.customerId) || {
+          customerId: inv.customerId,
+          customerName: name,
+          count: 0,
+          outstanding: 0,
+        };
+        t.count += 1;
+        t.outstanding += remaining;
+        todayByCustomerMap.set(inv.customerId, t);
+      }
+
       const existing = byCustomerMap.get(inv.customerId) || {
         customerId: inv.customerId,
         customerName: name,
@@ -525,10 +536,17 @@ export class InvoiceRepository extends BaseRepository<
     const byCustomer = Array.from(byCustomerMap.values()).sort(
       (a, b) => b.outstanding - a.outstanding
     );
+    const todayByCustomer = Array.from(todayByCustomerMap.values()).sort(
+      (a, b) => b.outstanding - a.outstanding
+    );
 
     return {
       date: dateOnly,
-      today: { total: todayTotal, count: todayCount },
+      today: {
+        total: todayTotal,
+        count: todayCount,
+        byCustomer: todayByCustomer,
+      },
       cumulative: {
         total: cumulativeTotal,
         count: cumulativeCount,

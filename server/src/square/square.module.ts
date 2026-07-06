@@ -7,11 +7,17 @@ import { SquareWebhookService } from './square-webhook.service';
 import { SquarePaymentRepository } from './repositories/square-payment.repository';
 import { PrismaService } from '@gt-automotive/database';
 import { AppointmentsModule } from '../appointments/appointments.module';
+import { InvoicesModule } from '../invoices/invoices.module';
 
 @Module({
-  imports: [ConfigModule, AppointmentsModule],
+  imports: [ConfigModule, AppointmentsModule, InvoicesModule],
   controllers: [SquarePaymentController, SquareWebhookController],
-  providers: [SquarePaymentService, SquareWebhookService, SquarePaymentRepository, PrismaService],
+  providers: [
+    SquarePaymentService,
+    SquareWebhookService,
+    SquarePaymentRepository,
+    PrismaService,
+  ],
   exports: [SquarePaymentService, SquareWebhookService],
 })
 export class SquareModule {}

@@ -880,6 +880,7 @@ const InvoiceList: React.FC = () => {
         }}
         onConfirm={handlePaymentConfirm}
         invoiceNumber={invoiceToMarkPaid?.invoiceNumber || ''}
+        invoiceId={invoiceToMarkPaid?.id}
         total={invoiceToMarkPaid ? Number(invoiceToMarkPaid.total) : undefined}
         amountPaid={
           invoiceToMarkPaid

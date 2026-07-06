@@ -341,6 +341,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
       if (appointment) {
         await appointmentService.updateAppointment(appointment.id, {
+          // Send '' to clear the vehicle, or the selected id to link/change it.
+          vehicleId: formData.vehicleId || '',
           employeeIds:
             formData.employeeIds.length > 0 ? formData.employeeIds : undefined,
           scheduledDate: formData.scheduledDate,

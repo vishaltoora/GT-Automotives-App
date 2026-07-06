@@ -177,6 +177,10 @@ export class CreateAppointmentDto {
 export class UpdateAppointmentDto {
   @IsOptional()
   @IsString()
+  vehicleId?: string | null; // null or '' clears the linked vehicle
+
+  @IsOptional()
+  @IsString()
   employeeId?: string;
 
   @IsOptional()

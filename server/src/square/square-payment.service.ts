@@ -16,10 +16,11 @@ import {
   CreateAppointmentCheckoutDto,
   AppointmentCheckoutResponseDto,
 } from '@gt-automotive/data';
-import { SquarePaymentStatus } from '@prisma/client';
+import { PaymentMethod, SquarePaymentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { calculateTaxes } from '../config/tax.config';
 import { AppointmentInvoiceService } from '../appointments/appointment-invoice.service';
+import { InvoicesService } from '../invoices/invoices.service';
 
 @Injectable()
 export class SquarePaymentService {
@@ -32,6 +33,7 @@ export class SquarePaymentService {
     private readonly squarePaymentRepository: SquarePaymentRepository,
     private readonly prisma: PrismaService,
     private readonly appointmentInvoiceService: AppointmentInvoiceService,
+    private readonly invoicesService: InvoicesService
   ) {
     const environment =
       this.configService.get<string>('SQUARE_ENVIRONMENT') === 'production'
@@ -42,7 +44,7 @@ export class SquarePaymentService {
 
     if (!accessToken) {
       throw new Error(
-        'SQUARE_ACCESS_TOKEN is not configured. Please set it in your environment variables.',
+        'SQUARE_ACCESS_TOKEN is not configured. Please set it in your environment variables.'
       );
     }
 
@@ -56,12 +58,14 @@ export class SquarePaymentService {
 
     if (!this.locationId) {
       throw new Error(
-        'SQUARE_LOCATION_ID is not configured. Please set it in your environment variables.',
+        'SQUARE_LOCATION_ID is not configured. Please set it in your environment variables.'
       );
     }
 
     this.logger.log(
-      `Square Payment Service initialized (${environment === Environment.Production ? 'Production' : 'Sandbox'})`,
+      `Square Payment Service initialized (${
+        environment === Environment.Production ? 'Production' : 'Sandbox'
+      })`
     );
   }
 
@@ -69,9 +73,15 @@ export class SquarePaymentService {
    * Create a payment for an invoice using Square
    */
   async createPayment(
-    createPaymentDto: CreateSquarePaymentDto,
+    createPaymentDto: CreateSquarePaymentDto
   ): Promise<SquarePaymentResponseDto> {
-    const { invoiceId, sourceId, amount, currency = 'CAD', note } = createPaymentDto;
+    const {
+      invoiceId,
+      sourceId,
+      amount,
+      currency = 'CAD',
+      note,
+    } = createPaymentDto;
 
     try {
       // Verify invoice exists and get details
@@ -97,7 +107,7 @@ export class SquarePaymentService {
       };
 
       this.logger.log(
-        `Creating Square payment for invoice ${invoiceId}: ${amount} ${currency}`,
+        `Creating Square payment for invoice ${invoiceId}: ${amount} ${currency}`
       );
 
       // Create payment with Square
@@ -112,7 +122,7 @@ export class SquarePaymentService {
 
       if (!response || !response.result || !response.result.payment) {
         throw new InternalServerErrorException(
-          'Square payment creation failed - no payment object returned',
+          'Square payment creation failed - no payment object returned'
         );
       }
 
@@ -159,7 +169,9 @@ export class SquarePaymentService {
         receiptNumber: payment.receiptNumber,
         processingFee,
         netAmount,
-        processedAt: payment.createdAt ? new Date(payment.createdAt) : new Date(),
+        processedAt: payment.createdAt
+          ? new Date(payment.createdAt)
+          : new Date(),
         metadata: payment as any,
       });
 
@@ -174,7 +186,7 @@ export class SquarePaymentService {
         });
 
         this.logger.log(
-          `Invoice ${invoice.invoiceNumber} marked as PAID (Square Payment ID: ${payment.id})`,
+          `Invoice ${invoice.invoiceNumber} marked as PAID (Square Payment ID: ${payment.id})`
         );
       }
 
@@ -194,7 +206,10 @@ export class SquarePaymentService {
         processedAt: squarePayment.processedAt || undefined,
       });
     } catch (error: any) {
-      this.logger.error(`Failed to create Square payment: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create Square payment: ${error.message}`,
+        error.stack
+      );
 
       // Handle Square API errors
       if (error instanceof ApiError) {
@@ -218,7 +233,7 @@ export class SquarePaymentService {
         });
 
         throw new BadRequestException(
-          `Payment failed: ${errorMessage} (${errorCode})`,
+          `Payment failed: ${errorMessage} (${errorCode})`
         );
       }
 
@@ -234,7 +249,7 @@ export class SquarePaymentService {
     appointmentId: string,
     sourceId: string,
     serviceAmount: number,
-    tipAmount?: number,
+    tipAmount?: number
   ): Promise<SquarePaymentResponseDto> {
     try {
       // 1. Verify appointment exists and is IN_PROGRESS
@@ -257,7 +272,7 @@ export class SquarePaymentService {
 
       if (appointment.status !== 'IN_PROGRESS') {
         throw new BadRequestException(
-          `Appointment must be IN_PROGRESS to process payment. Current status: ${appointment.status}`,
+          `Appointment must be IN_PROGRESS to process payment. Current status: ${appointment.status}`
         );
       }
 
@@ -298,7 +313,9 @@ export class SquarePaymentService {
       };
 
       this.logger.log(
-        `Creating Square payment for appointment ${appointmentId}: ${description} - $${totalWithTip}${tip > 0 ? ` (includes $${tip} tip)` : ''}`,
+        `Creating Square payment for appointment ${appointmentId}: ${description} - $${totalWithTip}${
+          tip > 0 ? ` (includes $${tip} tip)` : ''
+        }`
       );
 
       // 6. Create payment with Square
@@ -313,7 +330,7 @@ export class SquarePaymentService {
 
       if (!response || !response.result || !response.result.payment) {
         throw new InternalServerErrorException(
-          'Square payment creation failed - no payment object returned',
+          'Square payment creation failed - no payment object returned'
         );
       }
 
@@ -334,34 +351,40 @@ export class SquarePaymentService {
       const processingFee = payment.processingFee?.[0]?.amountMoney?.amount
         ? Number(payment.processingFee[0].amountMoney.amount) / 100
         : undefined;
-      const netAmount = processingFee ? totalWithTip - processingFee : totalWithTip;
+      const netAmount = processingFee
+        ? totalWithTip - processingFee
+        : totalWithTip;
 
       // 9. Map Square status
       const status = this.mapSquareStatus(payment.status || 'PENDING');
 
       this.logger.log(
-        `Square payment status: ${payment.status} -> Mapped to: ${status}`,
+        `Square payment status: ${payment.status} -> Mapped to: ${status}`
       );
 
       // 10. CRITICAL: Only proceed with invoice creation if payment succeeded
       // For card payments via Web Payments SDK, APPROVED means the payment succeeded
-      if (status !== SquarePaymentStatus.COMPLETED && status !== SquarePaymentStatus.APPROVED) {
+      if (
+        status !== SquarePaymentStatus.COMPLETED &&
+        status !== SquarePaymentStatus.APPROVED
+      ) {
         this.logger.error(
-          `Square payment failed with status: ${status}. Will NOT create invoice or complete appointment.`,
+          `Square payment failed with status: ${status}. Will NOT create invoice or complete appointment.`
         );
         throw new BadRequestException(
-          `Payment failed with status: ${status}. Please try again or use a different payment method.`,
+          `Payment failed with status: ${status}. Please try again or use a different payment method.`
         );
       }
 
       // 11. Create invoice for this appointment (only after payment succeeded)
-      const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
-        appointmentId,
-        serviceAmount: taxes.subtotal, // Pass subtotal, service will calculate taxes
-        tipAmount: tip > 0 ? tip : undefined, // Pass tip amount if present
-        squarePaymentId: payment.id!,
-        userId: appointment.bookedBy || 'SYSTEM', // Use bookedBy as creator, fallback to SYSTEM
-      });
+      const invoice =
+        await this.appointmentInvoiceService.createInvoiceFromAppointment({
+          appointmentId,
+          serviceAmount: taxes.subtotal, // Pass subtotal, service will calculate taxes
+          tipAmount: tip > 0 ? tip : undefined, // Pass tip amount if present
+          squarePaymentId: payment.id!,
+          userId: appointment.bookedBy || 'SYSTEM', // Use bookedBy as creator, fallback to SYSTEM
+        });
 
       // 12. Save payment record linked to invoice
       // Note: Invoice already has appointmentId, so we don't need to link SquarePayment to appointment directly
@@ -385,7 +408,9 @@ export class SquarePaymentService {
         netAmount,
         errorMessage: undefined, // Success case - no error
         errorCode: undefined, // Success case - no error
-        processedAt: payment.createdAt ? new Date(payment.createdAt) : new Date(),
+        processedAt: payment.createdAt
+          ? new Date(payment.createdAt)
+          : new Date(),
         metadata: {
           ...payment,
           serviceAmount: taxes.subtotal,
@@ -415,7 +440,11 @@ export class SquarePaymentService {
       });
 
       this.logger.log(
-        `Appointment ${appointmentId} marked as COMPLETED with payment $${totalWithTip}${tip > 0 ? ` (includes $${tip} tip)` : ''} and invoice ${invoice.invoiceNumber} marked as PAID (payment status: ${status})`,
+        `Appointment ${appointmentId} marked as COMPLETED with payment $${totalWithTip}${
+          tip > 0 ? ` (includes $${tip} tip)` : ''
+        } and invoice ${
+          invoice.invoiceNumber
+        } marked as PAID (payment status: ${status})`
       );
 
       return new SquarePaymentResponseDto({
@@ -435,10 +464,10 @@ export class SquarePaymentService {
       });
     } catch (error: any) {
       this.logger.error(
-        `Failed to create appointment payment: ${error.message}`,
+        `Failed to create appointment payment: ${error.message}`
       );
       this.logger.error(
-        `Full error details: ${JSON.stringify(error, null, 2)}`,
+        `Full error details: ${JSON.stringify(error, null, 2)}`
       );
 
       if (error instanceof ApiError) {
@@ -448,7 +477,7 @@ export class SquarePaymentService {
           errorDetails?.detail || 'Square payment processing failed';
 
         throw new BadRequestException(
-          `Payment failed: ${errorMessage} (${errorCode})`,
+          `Payment failed: ${errorMessage} (${errorCode})`
         );
       }
 
@@ -460,20 +489,19 @@ export class SquarePaymentService {
    * Refund a Square payment (full or partial)
    */
   async refundPayment(
-    refundDto: RefundSquarePaymentDto,
+    refundDto: RefundSquarePaymentDto
   ): Promise<SquarePaymentResponseDto> {
     const { squarePaymentId, amount, reason } = refundDto;
 
     try {
       // Find the payment record
-      const payment =
-        await this.squarePaymentRepository.findBySquarePaymentId(
-          squarePaymentId,
-        );
+      const payment = await this.squarePaymentRepository.findBySquarePaymentId(
+        squarePaymentId
+      );
 
       if (!payment) {
         throw new BadRequestException(
-          `Square payment ${squarePaymentId} not found`,
+          `Square payment ${squarePaymentId} not found`
         );
       }
 
@@ -483,7 +511,7 @@ export class SquarePaymentService {
         payment.status !== SquarePaymentStatus.APPROVED
       ) {
         throw new BadRequestException(
-          `Payment cannot be refunded (status: ${payment.status})`,
+          `Payment cannot be refunded (status: ${payment.status})`
         );
       }
 
@@ -497,7 +525,7 @@ export class SquarePaymentService {
       };
 
       this.logger.log(
-        `Creating Square refund for payment ${squarePaymentId}: ${amount} ${payment.currency}`,
+        `Creating Square refund for payment ${squarePaymentId}: ${amount} ${payment.currency}`
       );
 
       // Create refund with Square
@@ -510,7 +538,7 @@ export class SquarePaymentService {
 
       if (!response.result || !response.result.refund) {
         throw new InternalServerErrorException(
-          'Square refund creation failed - no refund object returned',
+          'Square refund creation failed - no refund object returned'
         );
       }
 
@@ -528,7 +556,7 @@ export class SquarePaymentService {
           status: isFullRefund
             ? SquarePaymentStatus.REFUNDED
             : SquarePaymentStatus.PARTIAL_REFUND,
-        },
+        }
       );
 
       // Update invoice status if fully refunded
@@ -545,7 +573,7 @@ export class SquarePaymentService {
         });
 
         this.logger.log(
-          `Invoice ${invoiceToRefund?.invoiceNumber} marked as CANCELLED (Full refund)`,
+          `Invoice ${invoiceToRefund?.invoiceNumber} marked as CANCELLED (Full refund)`
         );
       }
 
@@ -565,7 +593,10 @@ export class SquarePaymentService {
         processedAt: updatedPayment.processedAt || undefined,
       });
     } catch (error: any) {
-      this.logger.error(`Failed to refund Square payment: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to refund Square payment: ${error.message}`,
+        error.stack
+      );
 
       // Handle Square API errors
       if (error instanceof ApiError) {
@@ -584,14 +615,13 @@ export class SquarePaymentService {
    * Get payment details by Square payment ID
    */
   async getPayment(squarePaymentId: string): Promise<SquarePaymentResponseDto> {
-    const payment =
-      await this.squarePaymentRepository.findBySquarePaymentId(
-        squarePaymentId,
-      );
+    const payment = await this.squarePaymentRepository.findBySquarePaymentId(
+      squarePaymentId
+    );
 
     if (!payment) {
       throw new BadRequestException(
-        `Square payment ${squarePaymentId} not found`,
+        `Square payment ${squarePaymentId} not found`
       );
     }
 
@@ -618,10 +648,10 @@ export class SquarePaymentService {
    * Get all payments for an invoice
    */
   async getInvoicePayments(
-    invoiceId: string,
+    invoiceId: string
   ): Promise<SquarePaymentResponseDto[]> {
     const payments = await this.squarePaymentRepository.findByInvoiceId(
-      invoiceId,
+      invoiceId
     );
 
     return payments.map(
@@ -642,7 +672,7 @@ export class SquarePaymentService {
           errorMessage: payment.errorMessage || undefined,
           createdAt: payment.createdAt,
           processedAt: payment.processedAt || undefined,
-        }),
+        })
     );
   }
 
@@ -654,7 +684,7 @@ export class SquarePaymentService {
     invoiceId: string,
     amount: number,
     deviceId: string,
-    currency = 'CAD',
+    currency = 'CAD'
   ): Promise<{ checkoutId: string; status: string }> {
     try {
       // Verify invoice exists
@@ -676,21 +706,22 @@ export class SquarePaymentService {
       };
 
       this.logger.log(
-        `Creating Terminal checkout for invoice ${invoiceId}: ${amount} ${currency} on device ${deviceId}`,
+        `Creating Terminal checkout for invoice ${invoiceId}: ${amount} ${currency} on device ${deviceId}`
       );
 
       // Create Terminal checkout
-      const response: any = await this.squareClient.terminalApi.createTerminalCheckout({
-        idempotencyKey: randomUUID(),
-        checkout: {
-          amountMoney,
-          deviceOptions: {
-            deviceId,
+      const response: any =
+        await this.squareClient.terminalApi.createTerminalCheckout({
+          idempotencyKey: randomUUID(),
+          checkout: {
+            amountMoney,
+            deviceOptions: {
+              deviceId,
+            },
+            referenceId: invoiceId,
+            note: `Payment for Invoice ${invoice.invoiceNumber}`,
           },
-          referenceId: invoiceId,
-          note: `Payment for Invoice ${invoice.invoiceNumber}`,
-        },
-      });
+        });
 
       const checkout = response.result.checkout;
 
@@ -701,14 +732,16 @@ export class SquarePaymentService {
     } catch (error: any) {
       this.logger.error(
         `Failed to create Terminal checkout: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       if (error instanceof ApiError) {
         const errorDetails = error.errors?.[0];
         const errorMessage =
           errorDetails?.detail || 'Terminal checkout creation failed';
-        throw new BadRequestException(`Terminal checkout failed: ${errorMessage}`);
+        throw new BadRequestException(
+          `Terminal checkout failed: ${errorMessage}`
+        );
       }
 
       throw error;
@@ -720,17 +753,169 @@ export class SquarePaymentService {
    */
   async getTerminalCheckout(checkoutId: string): Promise<any> {
     try {
-      const response: any = await this.squareClient.terminalApi.getTerminalCheckout(
-        checkoutId,
-      );
+      const response: any =
+        await this.squareClient.terminalApi.getTerminalCheckout(checkoutId);
       return response.result.checkout;
     } catch (error: any) {
       this.logger.error(
         `Failed to get Terminal checkout: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw new BadRequestException('Failed to get Terminal checkout status');
     }
+  }
+
+  /**
+   * Create a Terminal checkout for several invoices at once. The reader charges
+   * the combined remaining balance in one tap; each invoice is settled when the
+   * checkout completes. The reference is a non-invoice marker so the
+   * single-invoice reconciliation webhook won't misapply the combined amount —
+   * the client records the individual invoices on completion.
+   */
+  async createBulkTerminalCheckout(
+    invoiceIds: string[],
+    deviceId: string,
+    currency = 'CAD'
+  ): Promise<{ checkoutId: string; status: string; amount: number }> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { id: { in: invoiceIds } },
+    });
+    if (invoices.length === 0) {
+      throw new BadRequestException('No invoices found for the selection');
+    }
+
+    const combined = invoices.reduce((sum, inv) => {
+      if (inv.status === 'CANCELLED' || inv.status === 'REFUNDED') return sum;
+      const remaining = Number(inv.total) - Number(inv.amountPaid ?? 0);
+      return sum + Math.max(0, remaining);
+    }, 0);
+
+    if (combined <= 0) {
+      throw new BadRequestException('Selected invoices have no balance due');
+    }
+
+    const amountMoney = {
+      amount: BigInt(Math.round(combined * 100)),
+      currency: currency as any,
+    };
+
+    try {
+      const response: any =
+        await this.squareClient.terminalApi.createTerminalCheckout({
+          idempotencyKey: randomUUID(),
+          checkout: {
+            amountMoney,
+            deviceOptions: { deviceId },
+            // Deliberately NOT a single invoice id — see method doc.
+            referenceId: `MULTI-${invoices.length}`,
+            note: `Payment for ${invoices.length} invoices`,
+          },
+        });
+      const checkout = response.result.checkout;
+      this.logger.log(
+        `Created bulk Terminal checkout ${checkout.id} for ${invoices.length} invoices: ${combined} ${currency}`
+      );
+      return {
+        checkoutId: checkout.id,
+        status: checkout.status,
+        amount: combined,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create bulk Terminal checkout: ${error.message}`,
+        error.stack
+      );
+      if (error instanceof ApiError) {
+        const detail =
+          error.errors?.[0]?.detail || 'Terminal checkout creation failed';
+        throw new BadRequestException(`Terminal checkout failed: ${detail}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Reconcile a COMPLETED Terminal checkout to its invoice, marking it paid.
+   *
+   * Idempotent and safe to call from both the webhook and the client poll:
+   * the invoice payment is keyed on the checkout id (stored as `reference`), so
+   * whichever path fires first records it and the other is a no-op. This is what
+   * guarantees the invoice is marked paid even if the browser drops mid-payment.
+   */
+  async reconcileTerminalCheckout(
+    checkoutId: string
+  ): Promise<{ applied: boolean; reason?: string }> {
+    const checkout = await this.getTerminalCheckout(checkoutId);
+    if (!checkout) return { applied: false, reason: 'checkout not found' };
+    if (checkout.status !== 'COMPLETED') {
+      return { applied: false, reason: `status ${checkout.status}` };
+    }
+
+    const invoiceId: string | undefined = checkout.referenceId;
+    if (!invoiceId) {
+      this.logger.warn(
+        `Terminal checkout ${checkoutId} completed without a reference invoice id`
+      );
+      return { applied: false, reason: 'no invoice reference' };
+    }
+
+    // Bulk checkouts use a non-invoice marker reference (MULTI-*) and are
+    // settled per-invoice by the client — nothing to reconcile here.
+    const referencedInvoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+    });
+    if (!referencedInvoice) {
+      return { applied: false, reason: 'reference is not a single invoice' };
+    }
+
+    // Idempotency: skip if a payment for this checkout is already on the invoice
+    // (the browser already recorded it, or a duplicate webhook fired).
+    const existing = await this.prisma.invoicePayment.findFirst({
+      where: { invoiceId, reference: checkoutId },
+    });
+    if (existing) return { applied: false, reason: 'already recorded' };
+
+    // Prefer the card type Square actually reports; fall back to a generic card.
+    let paymentMethod: PaymentMethod = PaymentMethod.CREDIT_CARD;
+    const squarePaymentId: string | undefined = checkout.paymentIds?.[0];
+    if (squarePaymentId) {
+      try {
+        const resp: any = await this.squareClient.paymentsApi.getPayment(
+          squarePaymentId
+        );
+        const cardType = resp?.result?.payment?.cardDetails?.card?.cardType;
+        if (cardType === 'DEBIT') paymentMethod = PaymentMethod.DEBIT_CARD;
+        else if (cardType === 'CREDIT')
+          paymentMethod = PaymentMethod.CREDIT_CARD;
+      } catch (err: any) {
+        this.logger.warn(
+          `Could not read card type for Square payment ${squarePaymentId}: ${err.message}`
+        );
+      }
+    }
+
+    const amount =
+      checkout.amountMoney?.amount != null
+        ? Number(checkout.amountMoney.amount) / 100
+        : undefined;
+
+    await this.invoicesService.recordPayments(
+      invoiceId,
+      [
+        {
+          paymentMethod,
+          amount,
+          reference: checkoutId,
+          notes: 'Square Terminal',
+        },
+      ],
+      'square-terminal'
+    );
+
+    this.logger.log(
+      `Reconciled Terminal checkout ${checkoutId} → invoice ${invoiceId} (${paymentMethod})`
+    );
+    return { applied: true };
   }
 
   /**
@@ -743,7 +928,7 @@ export class SquarePaymentService {
     } catch (error: any) {
       this.logger.error(
         `Failed to cancel Terminal checkout: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw new BadRequestException('Failed to cancel Terminal checkout');
     }
@@ -755,14 +940,14 @@ export class SquarePaymentService {
   async listTerminalDevices(): Promise<any[]> {
     try {
       const response: any = await this.squareClient.devicesApi.listDeviceCodes(
-        this.locationId,
+        this.locationId
       );
 
       return response.result.deviceCodes || [];
     } catch (error: any) {
       this.logger.error(
         `Failed to list Terminal devices: ${error.message}`,
-        error.stack,
+        error.stack
       );
       return [];
     }
@@ -773,7 +958,7 @@ export class SquarePaymentService {
    * This generates a hosted payment page where customers can pay online
    */
   async createAppointmentCheckout(
-    dto: CreateAppointmentCheckoutDto,
+    dto: CreateAppointmentCheckoutDto
   ): Promise<AppointmentCheckoutResponseDto> {
     const { appointmentId, serviceAmount } = dto;
 
@@ -793,7 +978,7 @@ export class SquarePaymentService {
 
       if (appointment.status !== 'IN_PROGRESS') {
         throw new BadRequestException(
-          `Appointment must be IN_PROGRESS to create payment. Current status: ${appointment.status}`,
+          `Appointment must be IN_PROGRESS to create payment. Current status: ${appointment.status}`
         );
       }
 
@@ -822,59 +1007,66 @@ export class SquarePaymentService {
           : serviceLabel;
 
       this.logger.log(
-        `Creating Square checkout for appointment ${appointmentId}: ${description} - $${taxes.totalAmount}`,
+        `Creating Square checkout for appointment ${appointmentId}: ${description} - $${taxes.totalAmount}`
       );
 
       // 4. Create Square Checkout (Payment Link)
       const idempotencyKey = randomUUID();
       const referenceId = `APT-${appointmentId}`; // Reference to track this payment
 
-      const response: any = await this.squareClient.checkoutApi.createPaymentLink({
-        idempotencyKey,
-        order: {
-          locationId: this.locationId,
-          referenceId,
-          lineItems: [
-            {
-              name: description,
-              quantity: '1',
-              basePriceMoney: {
-                // Total amount including taxes (Square wants total, not subtotal)
-                amount: BigInt(Math.round(taxes.totalAmount * 100)), // Convert to cents
-                currency: 'CAD',
+      const response: any =
+        await this.squareClient.checkoutApi.createPaymentLink({
+          idempotencyKey,
+          order: {
+            locationId: this.locationId,
+            referenceId,
+            lineItems: [
+              {
+                name: description,
+                quantity: '1',
+                basePriceMoney: {
+                  // Total amount including taxes (Square wants total, not subtotal)
+                  amount: BigInt(Math.round(taxes.totalAmount * 100)), // Convert to cents
+                  currency: 'CAD',
+                },
+                note: `Subtotal: $${taxes.subtotal.toFixed(
+                  2
+                )} | GST (5%): $${taxes.gstAmount.toFixed(
+                  2
+                )} | PST (7%): $${taxes.pstAmount.toFixed(2)}`,
               },
-              note: `Subtotal: $${taxes.subtotal.toFixed(2)} | GST (5%): $${taxes.gstAmount.toFixed(2)} | PST (7%): $${taxes.pstAmount.toFixed(2)}`,
-            },
-          ],
-        },
-        checkoutOptions: {
-          // Redirect URL after successful payment (optional)
-          redirectUrl: this.configService.get<string>('FRONTEND_URL')
-            ? `${this.configService.get<string>('FRONTEND_URL')}/appointments/payment-success?appointmentId=${appointmentId}`
-            : undefined,
-          askForShippingAddress: false,
-          acceptedPaymentMethods: {
-            applePay: true,
-            googlePay: true,
-            cashAppPay: false,
-            afterpayClearpay: false,
+            ],
           },
-        },
-        prePopulatedData: {
-          buyerEmail: appointment.customer.email || undefined,
-          // Square requires E.164 format (+1XXXXXXXXXX for North America)
-          // Only include phone if it exists and can be formatted properly
-          buyerPhoneNumber: appointment.customer.phone
-            ? this.formatPhoneForSquare(appointment.customer.phone)
-            : undefined,
-        },
-      });
+          checkoutOptions: {
+            // Redirect URL after successful payment (optional)
+            redirectUrl: this.configService.get<string>('FRONTEND_URL')
+              ? `${this.configService.get<string>(
+                  'FRONTEND_URL'
+                )}/appointments/payment-success?appointmentId=${appointmentId}`
+              : undefined,
+            askForShippingAddress: false,
+            acceptedPaymentMethods: {
+              applePay: true,
+              googlePay: true,
+              cashAppPay: false,
+              afterpayClearpay: false,
+            },
+          },
+          prePopulatedData: {
+            buyerEmail: appointment.customer.email || undefined,
+            // Square requires E.164 format (+1XXXXXXXXXX for North America)
+            // Only include phone if it exists and can be formatted properly
+            buyerPhoneNumber: appointment.customer.phone
+              ? this.formatPhoneForSquare(appointment.customer.phone)
+              : undefined,
+          },
+        });
 
       const paymentLink = response.result.paymentLink;
 
       if (!paymentLink || !paymentLink.url) {
         throw new InternalServerErrorException(
-          'Failed to create Square checkout - no URL returned',
+          'Failed to create Square checkout - no URL returned'
         );
       }
 
@@ -905,7 +1097,7 @@ export class SquarePaymentService {
       });
 
       this.logger.log(
-        `Square checkout created: ${paymentLink.id} for appointment ${appointmentId}`,
+        `Square checkout created: ${paymentLink.id} for appointment ${appointmentId}`
       );
 
       // 6. Calculate expiration (Square checkout links expire after 24 hours by default)
@@ -925,7 +1117,7 @@ export class SquarePaymentService {
     } catch (error: any) {
       this.logger.error(
         `Failed to create appointment checkout: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       if (error instanceof ApiError) {
@@ -962,7 +1154,7 @@ export class SquarePaymentService {
     // If it doesn't match expected formats, don't include it
     // (Square will reject invalid phone numbers)
     this.logger.warn(
-      `Phone number ${phone} does not match expected format (10-11 digits). Omitting from Square checkout.`,
+      `Phone number ${phone} does not match expected format (10-11 digits). Omitting from Square checkout.`
     );
     return undefined;
   }

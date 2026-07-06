@@ -58,6 +58,24 @@ import { PaymentDialog } from '../../components/appointments/PaymentDialog';
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+// All cash variants (CASH, CASH_NO_TAX, cash-with-tax, etc.) are physical cash —
+// treat them as one for the day summary breakdown.
+const isCashMethod = (method: string) => method.toUpperCase().includes('CASH');
+
+/** Collapse every cash-like method into a single 'CASH' bucket. */
+const combineCashMethods = (
+  map: Record<string, number>
+): Record<string, number> => {
+  const result: Record<string, number> = {};
+  let cash = 0;
+  for (const [method, amount] of Object.entries(map)) {
+    if (isCashMethod(method)) cash += amount;
+    else result[method] = amount;
+  }
+  if (cash > 0) result['CASH'] = cash;
+  return result;
+};
+
 export function DaySummary() {
   const { getToken } = useAuth(); // Still needed for EOD email endpoint
   const theme = useTheme();
@@ -362,9 +380,11 @@ export function DaySummary() {
     const combinedTotalPayments = totalPayments + invoiceTotal;
     const combinedPaymentsCount = sortedPayments.length + invoiceCount;
 
-    // Cash on hand = physical cash (taxed + no-tax) minus cash paid to employees.
-    const totalCashCollected =
-      (paymentsByMethod['CASH'] || 0) + (paymentsByMethod['CASH_NO_TAX'] || 0);
+    // Cash on hand = all physical cash variants minus cash paid to employees.
+    const totalCashCollected = Object.entries(paymentsByMethod).reduce(
+      (sum, [method, amount]) => (isCashMethod(method) ? sum + amount : sum),
+      0
+    );
     adjustedCash = totalCashCollected - totalEmployeePayments;
 
     return {
@@ -381,18 +401,20 @@ export function DaySummary() {
       invoicePayments: invoiceTotal,
       totalExpected,
       totalOwed,
-      paymentsByMethod,
+      paymentsByMethod: combineCashMethods(paymentsByMethod),
       atGaragePayments: atGarageTotalPayments + atGarageInvoiceTotal,
       completedAtGarage: atGaragePayments.length,
-      atGaragePaymentsByMethod,
+      atGaragePaymentsByMethod: combineCashMethods(atGaragePaymentsByMethod),
       mobileServicePayments: mobileServiceTotalPayments + mobileInvoiceTotal,
       completedMobileService: mobileServicePayments.length,
-      mobileServicePaymentsByMethod,
+      mobileServicePaymentsByMethod: combineCashMethods(
+        mobileServicePaymentsByMethod
+      ),
 
       // Employee payments info
       totalEmployeePayments,
       employeePaymentsCount: employeePayments.length,
-      employeePaymentsByMethod,
+      employeePaymentsByMethod: combineCashMethods(employeePaymentsByMethod),
       employeePaymentsByPerson,
 
       // Net cash position
@@ -1387,7 +1409,7 @@ export function DaySummary() {
               </Paper>
             </Grid>
 
-            {/* Pending Invoices - Outstanding balance (today + cumulative) */}
+            {/* Pending Invoices — today only (this is a day summary) */}
             <Grid size={12}>
               <Paper
                 elevation={2}
@@ -1399,40 +1421,26 @@ export function DaySummary() {
                 }}
               >
                 <Typography variant="h6" sx={{ mb: 2 }}>
-                  Pending Invoices (Outstanding)
+                  Pending Invoices ({isViewingToday ? 'Today' : 'This Date'})
                 </Typography>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Pending invoices (today)
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                      ${Number(outstanding?.today?.total || 0).toFixed(2)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {outstanding?.today?.count || 0} invoice
-                      {(outstanding?.today?.count || 0) === 1 ? '' : 's'}
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Pending invoices (total owed)
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                      ${Number(outstanding?.cumulative?.total || 0).toFixed(2)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {outstanding?.cumulative?.count || 0} invoice
-                      {(outstanding?.cumulative?.count || 0) === 1 ? '' : 's'}
-                    </Typography>
-                  </Grid>
-                </Grid>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Pending invoices {isViewingToday ? 'today' : 'on this date'}
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    ${Number(outstanding?.today?.total || 0).toFixed(2)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {outstanding?.today?.count || 0} invoice
+                    {(outstanding?.today?.count || 0) === 1 ? '' : 's'}
+                  </Typography>
+                </Box>
 
-                {(outstanding?.cumulative?.byCustomer || []).length > 0 && (
+                {(outstanding?.today?.byCustomer || []).length > 0 && (
                   <>
                     <Divider sx={{ my: 1.5 }} />
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {(outstanding.cumulative.byCustomer as any[]).map((c) => (
+                      {(outstanding.today.byCustomer as any[]).map((c) => (
                         <Chip
                           key={c.customerId}
                           size="small"

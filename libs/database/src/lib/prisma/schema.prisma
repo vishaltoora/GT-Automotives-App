@@ -1521,6 +1521,7 @@ model RepairOrder {
   appointmentId   String      @unique // 1:1 with Appointment
   customerId      String
   vehicleId       String?
+  noVehicle       Boolean     @default(false) // Intentionally no vehicle (loose tires, battery, or other counter service)
   status          ROStatus    @default(OPEN)
   customerConcern String?     // What the customer reported
   technicianNotes String?     // Overall technician notes
