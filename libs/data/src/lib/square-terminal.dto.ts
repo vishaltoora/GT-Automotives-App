@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateTerminalCheckoutDto {
   @IsString()
@@ -9,6 +16,22 @@ export class CreateTerminalCheckoutDto {
   @Min(0.01)
   @Type(() => Number)
   amount!: number;
+
+  @IsString()
+  deviceId!: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+}
+
+// Pay several invoices with one in-person card-reader tap. The combined
+// remaining balance is charged once; each invoice is settled on completion.
+export class CreateBulkTerminalCheckoutDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  invoiceIds!: string[];
 
   @IsString()
   deviceId!: string;

@@ -20,6 +20,7 @@ import {
 } from '@gt-automotive/data';
 import {
   CreateTerminalCheckoutDto,
+  CreateBulkTerminalCheckoutDto,
   TerminalCheckoutResponseDto,
   TerminalDeviceDto,
 } from '@gt-automotive/data';
@@ -42,10 +43,10 @@ export class SquarePaymentController {
   @HttpCode(HttpStatus.CREATED)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async createPayment(
-    @Body() createPaymentDto: CreateSquarePaymentDto,
+    @Body() createPaymentDto: CreateSquarePaymentDto
   ): Promise<SquarePaymentResponseDto> {
     this.logger.log(
-      `Creating Square payment for invoice ${createPaymentDto.invoiceId}`,
+      `Creating Square payment for invoice ${createPaymentDto.invoiceId}`
     );
     return this.squarePaymentService.createPayment(createPaymentDto);
   }
@@ -58,7 +59,7 @@ export class SquarePaymentController {
   @HttpCode(HttpStatus.OK)
   @Roles('ADMIN', 'SUPERVISOR')
   async refundPayment(
-    @Body() refundDto: RefundSquarePaymentDto,
+    @Body() refundDto: RefundSquarePaymentDto
   ): Promise<SquarePaymentResponseDto> {
     this.logger.log(`Refunding Square payment ${refundDto.squarePaymentId}`);
     return this.squarePaymentService.refundPayment(refundDto);
@@ -73,16 +74,18 @@ export class SquarePaymentController {
   @HttpCode(HttpStatus.CREATED)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async createAppointmentPayment(
-    @Body() paymentDto: CreateAppointmentPaymentDto,
+    @Body() paymentDto: CreateAppointmentPaymentDto
   ): Promise<SquarePaymentResponseDto> {
     this.logger.log(
-      `Creating Square payment for appointment ${paymentDto.appointmentId}: $${paymentDto.serviceAmount}${paymentDto.tipAmount ? ` (tip: $${paymentDto.tipAmount})` : ''}`,
+      `Creating Square payment for appointment ${paymentDto.appointmentId}: $${
+        paymentDto.serviceAmount
+      }${paymentDto.tipAmount ? ` (tip: $${paymentDto.tipAmount})` : ''}`
     );
     return this.squarePaymentService.createAppointmentPayment(
       paymentDto.appointmentId,
       paymentDto.sourceId,
       paymentDto.serviceAmount,
-      paymentDto.tipAmount,
+      paymentDto.tipAmount
     );
   }
 
@@ -95,10 +98,10 @@ export class SquarePaymentController {
   @HttpCode(HttpStatus.CREATED)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async createAppointmentCheckout(
-    @Body() checkoutDto: CreateAppointmentCheckoutDto,
+    @Body() checkoutDto: CreateAppointmentCheckoutDto
   ): Promise<AppointmentCheckoutResponseDto> {
     this.logger.log(
-      `Creating Square checkout for appointment ${checkoutDto.appointmentId}: $${checkoutDto.serviceAmount}`,
+      `Creating Square checkout for appointment ${checkoutDto.appointmentId}: $${checkoutDto.serviceAmount}`
     );
     return this.squarePaymentService.createAppointmentCheckout(checkoutDto);
   }
@@ -110,7 +113,7 @@ export class SquarePaymentController {
   @Get(':squarePaymentId')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getPayment(
-    @Param('squarePaymentId') squarePaymentId: string,
+    @Param('squarePaymentId') squarePaymentId: string
   ): Promise<SquarePaymentResponseDto> {
     return this.squarePaymentService.getPayment(squarePaymentId);
   }
@@ -122,7 +125,7 @@ export class SquarePaymentController {
   @Get('invoice/:invoiceId')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async getInvoicePayments(
-    @Param('invoiceId') invoiceId: string,
+    @Param('invoiceId') invoiceId: string
   ): Promise<SquarePaymentResponseDto[]> {
     return this.squarePaymentService.getInvoicePayments(invoiceId);
   }
@@ -136,16 +139,16 @@ export class SquarePaymentController {
   @HttpCode(HttpStatus.CREATED)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async createTerminalCheckout(
-    @Body() checkoutDto: CreateTerminalCheckoutDto,
+    @Body() checkoutDto: CreateTerminalCheckoutDto
   ): Promise<TerminalCheckoutResponseDto> {
     this.logger.log(
-      `Creating Terminal checkout for invoice ${checkoutDto.invoiceId} on device ${checkoutDto.deviceId}`,
+      `Creating Terminal checkout for invoice ${checkoutDto.invoiceId} on device ${checkoutDto.deviceId}`
     );
     const result = await this.squarePaymentService.createTerminalCheckout(
       checkoutDto.invoiceId,
       checkoutDto.amount,
       checkoutDto.deviceId,
-      checkoutDto.currency,
+      checkoutDto.currency
     );
 
     return new TerminalCheckoutResponseDto({
@@ -159,13 +162,33 @@ export class SquarePaymentController {
   }
 
   /**
+   * Create a Terminal checkout for several invoices at once (bulk payment).
+   * POST /api/square/payments/terminal/checkout/bulk
+   */
+  @Post('terminal/checkout/bulk')
+  @HttpCode(HttpStatus.CREATED)
+  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  async createBulkTerminalCheckout(
+    @Body() dto: CreateBulkTerminalCheckoutDto
+  ): Promise<{ checkoutId: string; status: string; amount: number }> {
+    this.logger.log(
+      `Creating bulk Terminal checkout for ${dto.invoiceIds.length} invoices on device ${dto.deviceId}`
+    );
+    return this.squarePaymentService.createBulkTerminalCheckout(
+      dto.invoiceIds,
+      dto.deviceId,
+      dto.currency
+    );
+  }
+
+  /**
    * Get Terminal checkout status
    * GET /api/square/payments/terminal/checkout/:checkoutId
    */
   @Get('terminal/checkout/:checkoutId')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async getTerminalCheckout(
-    @Param('checkoutId') checkoutId: string,
+    @Param('checkoutId') checkoutId: string
   ): Promise<any> {
     return this.squarePaymentService.getTerminalCheckout(checkoutId);
   }
@@ -178,7 +201,7 @@ export class SquarePaymentController {
   @HttpCode(HttpStatus.OK)
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async cancelTerminalCheckout(
-    @Param('checkoutId') checkoutId: string,
+    @Param('checkoutId') checkoutId: string
   ): Promise<void> {
     this.logger.log(`Cancelling Terminal checkout ${checkoutId}`);
     return this.squarePaymentService.cancelTerminalCheckout(checkoutId);
@@ -201,7 +224,7 @@ export class SquarePaymentController {
           code: device.deviceCode?.code || '',
           status: device.deviceCode?.status || 'UNKNOWN',
           deviceType: device.deviceCode?.productType || 'TERMINAL_API',
-        }),
+        })
     );
   }
 }

@@ -766,6 +766,75 @@ export class SquarePaymentService {
   }
 
   /**
+   * Create a Terminal checkout for several invoices at once. The reader charges
+   * the combined remaining balance in one tap; each invoice is settled when the
+   * checkout completes. The reference is a non-invoice marker so the
+   * single-invoice reconciliation webhook won't misapply the combined amount —
+   * the client records the individual invoices on completion.
+   */
+  async createBulkTerminalCheckout(
+    invoiceIds: string[],
+    deviceId: string,
+    currency = 'CAD'
+  ): Promise<{ checkoutId: string; status: string; amount: number }> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { id: { in: invoiceIds } },
+    });
+    if (invoices.length === 0) {
+      throw new BadRequestException('No invoices found for the selection');
+    }
+
+    const combined = invoices.reduce((sum, inv) => {
+      if (inv.status === 'CANCELLED' || inv.status === 'REFUNDED') return sum;
+      const remaining = Number(inv.total) - Number(inv.amountPaid ?? 0);
+      return sum + Math.max(0, remaining);
+    }, 0);
+
+    if (combined <= 0) {
+      throw new BadRequestException('Selected invoices have no balance due');
+    }
+
+    const amountMoney = {
+      amount: BigInt(Math.round(combined * 100)),
+      currency: currency as any,
+    };
+
+    try {
+      const response: any =
+        await this.squareClient.terminalApi.createTerminalCheckout({
+          idempotencyKey: randomUUID(),
+          checkout: {
+            amountMoney,
+            deviceOptions: { deviceId },
+            // Deliberately NOT a single invoice id — see method doc.
+            referenceId: `MULTI-${invoices.length}`,
+            note: `Payment for ${invoices.length} invoices`,
+          },
+        });
+      const checkout = response.result.checkout;
+      this.logger.log(
+        `Created bulk Terminal checkout ${checkout.id} for ${invoices.length} invoices: ${combined} ${currency}`
+      );
+      return {
+        checkoutId: checkout.id,
+        status: checkout.status,
+        amount: combined,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create bulk Terminal checkout: ${error.message}`,
+        error.stack
+      );
+      if (error instanceof ApiError) {
+        const detail =
+          error.errors?.[0]?.detail || 'Terminal checkout creation failed';
+        throw new BadRequestException(`Terminal checkout failed: ${detail}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Reconcile a COMPLETED Terminal checkout to its invoice, marking it paid.
    *
    * Idempotent and safe to call from both the webhook and the client poll:
@@ -788,6 +857,15 @@ export class SquarePaymentService {
         `Terminal checkout ${checkoutId} completed without a reference invoice id`
       );
       return { applied: false, reason: 'no invoice reference' };
+    }
+
+    // Bulk checkouts use a non-invoice marker reference (MULTI-*) and are
+    // settled per-invoice by the client — nothing to reconcile here.
+    const referencedInvoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+    });
+    if (!referencedInvoice) {
+      return { applied: false, reason: 'reference is not a single invoice' };
     }
 
     // Idempotency: skip if a payment for this checkout is already on the invoice
