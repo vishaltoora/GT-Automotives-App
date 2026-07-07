@@ -119,9 +119,10 @@ export const TerminalPaymentDialog: React.FC<TerminalPaymentDialogProps> = ({
     setLoadingDevices(true);
     try {
       const deviceList = await squareTerminalService.listDevices();
-      setDevices(deviceList.filter((d) => d.status === 'PAIRED'));
-      if (deviceList.length === 1) {
-        setSelectedDeviceId(deviceList[0].id);
+      const pairedDevices = deviceList.filter((d) => d.status === 'PAIRED');
+      setDevices(pairedDevices);
+      if (pairedDevices.length === 1) {
+        setSelectedDeviceId(pairedDevices[0].id);
       }
     } catch (err: any) {
       setError(
