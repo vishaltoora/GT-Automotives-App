@@ -939,8 +939,13 @@ export class SquarePaymentService {
    */
   async listTerminalDevices(): Promise<any[]> {
     try {
+      // Signature is listDeviceCodes(cursor?, locationId?, productType?, status?).
+      // The location id must go in the 2nd arg — passing it first sends it as a
+      // pagination cursor, which Square rejects. Filter to TERMINAL_API codes.
       const response: any = await this.squareClient.devicesApi.listDeviceCodes(
-        this.locationId
+        undefined,
+        this.locationId,
+        'TERMINAL_API'
       );
 
       return response.result.deviceCodes || [];
@@ -950,6 +955,55 @@ export class SquarePaymentService {
         error.stack
       );
       return [];
+    }
+  }
+
+  /**
+   * Create a Terminal API device code for pairing a Square reader.
+   *
+   * Square gates TERMINAL_API device codes to the API (the Dashboard only
+   * offers Point of Sale / KDS), so this is the only way to pair a reader for
+   * Terminal checkouts. The returned `code` is entered on the physical Terminal
+   * (Settings → Sign in with a device code); once paired it appears in
+   * listTerminalDevices() with status PAIRED and a usable deviceId.
+   */
+  async createTerminalDeviceCode(
+    name = 'GT Terminal'
+  ): Promise<{ id: string; code: string; status: string; name?: string }> {
+    try {
+      const response: any = await this.squareClient.devicesApi.createDeviceCode(
+        {
+          idempotencyKey: randomUUID(),
+          deviceCode: {
+            name,
+            productType: 'TERMINAL_API',
+            locationId: this.locationId,
+          },
+        }
+      );
+
+      const deviceCode = response.result.deviceCode;
+      this.logger.log(
+        `Created Terminal API device code ${deviceCode.code} (${deviceCode.status}) for location ${this.locationId}`
+      );
+
+      return {
+        id: deviceCode.id,
+        code: deviceCode.code,
+        status: deviceCode.status,
+        name: deviceCode.name,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create Terminal device code: ${error.message}`,
+        error.stack
+      );
+      if (error instanceof ApiError) {
+        const detail =
+          error.errors?.[0]?.detail || 'Device code creation failed';
+        throw new BadRequestException(`Device code creation failed: ${detail}`);
+      }
+      throw error;
     }
   }
 
