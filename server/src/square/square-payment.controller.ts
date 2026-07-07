@@ -214,16 +214,19 @@ export class SquarePaymentController {
   @Get('terminal/devices')
   @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
   async listTerminalDevices(): Promise<TerminalDeviceDto[]> {
-    const devices = await this.squarePaymentService.listTerminalDevices();
+    const deviceCodes = await this.squarePaymentService.listTerminalDevices();
 
-    return devices.map(
-      (device) =>
+    // listDeviceCodes returns DeviceCode objects directly (no `.deviceCode`
+    // wrapper). For a paired reader, `deviceId` holds the id Terminal checkout
+    // needs and `status` is 'PAIRED'; both are undefined until pairing completes.
+    return deviceCodes.map(
+      (deviceCode) =>
         new TerminalDeviceDto({
-          id: device.deviceCode?.deviceId || '',
-          name: device.deviceCode?.name || 'Unknown Device',
-          code: device.deviceCode?.code || '',
-          status: device.deviceCode?.status || 'UNKNOWN',
-          deviceType: device.deviceCode?.productType || 'TERMINAL_API',
+          id: deviceCode.deviceId || '',
+          name: deviceCode.name || 'Unknown Device',
+          code: deviceCode.code || '',
+          status: deviceCode.status || 'UNKNOWN',
+          deviceType: deviceCode.productType || 'TERMINAL_API',
         })
     );
   }
