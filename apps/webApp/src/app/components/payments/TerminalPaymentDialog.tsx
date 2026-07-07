@@ -58,6 +58,8 @@ export const TerminalPaymentDialog: React.FC<TerminalPaymentDialogProps> = ({
     useState<TerminalCheckoutResponse | null>(null);
   const [checkoutStatus, setCheckoutStatus] = useState<string>('');
   const [polling, setPolling] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [pairing, setPairing] = useState(false);
 
   const numericAmount =
     typeof amount === 'number' ? amount : parseFloat(String(amount));
@@ -113,6 +115,8 @@ export const TerminalPaymentDialog: React.FC<TerminalPaymentDialogProps> = ({
     setCheckoutStatus('');
     setPolling(false);
     setLoading(false);
+    setPairingCode(null);
+    setPairing(false);
   };
 
   const loadDevices = async () => {
@@ -131,6 +135,23 @@ export const TerminalPaymentDialog: React.FC<TerminalPaymentDialogProps> = ({
       );
     } finally {
       setLoadingDevices(false);
+    }
+  };
+
+  const handlePairDevice = async () => {
+    setPairing(true);
+    setError(null);
+    try {
+      const result = await squareTerminalService.createDeviceCode();
+      setPairingCode(result.code);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to generate a pairing code. Please try again.'
+      );
+    } finally {
+      setPairing(false);
     }
   };
 
@@ -295,10 +316,43 @@ export const TerminalPaymentDialog: React.FC<TerminalPaymentDialogProps> = ({
                 </Typography>
               </Box>
             ) : devices.length === 0 ? (
-              <Alert severity="warning">
-                No paired Square Terminal devices found. Please pair a device in
-                your Square dashboard.
-              </Alert>
+              <Box>
+                {pairingCode ? (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="body2" gutterBottom>
+                      On your Square Terminal, go to{' '}
+                      <strong>Settings → Sign in with a device code</strong> and
+                      enter:
+                    </Typography>
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      letterSpacing={4}
+                      sx={{ my: 1 }}
+                    >
+                      {pairingCode}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      After pairing, reopen this dialog and the device will
+                      appear. The code expires in 5 minutes.
+                    </Typography>
+                  </Alert>
+                ) : (
+                  <>
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      No paired Square Terminal devices found. Generate a
+                      pairing code and enter it on your Terminal to connect it.
+                    </Alert>
+                    <Button
+                      variant="outlined"
+                      onClick={handlePairDevice}
+                      disabled={pairing}
+                    >
+                      {pairing ? 'Generating…' : 'Pair a device'}
+                    </Button>
+                  </>
+                )}
+              </Box>
             ) : (
               <>
                 <FormControl fullWidth sx={{ mb: 2 }}>
