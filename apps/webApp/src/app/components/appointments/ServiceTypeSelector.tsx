@@ -15,14 +15,23 @@ import {
   Button,
   Stack,
   TextField,
+  Box,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { AddCircleOutline as AddIcon } from '@mui/icons-material';
+import {
+  AddCircleOutline as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
 import { NumberInput } from '../common';
 import { serviceTypeService } from '../../requests/service-type.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useError } from '../../contexts/ErrorContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 
 interface ServiceTypeOption {
+  id?: string; // present only for API-loaded (manageable) types
   value: string;
   label: string;
   duration: number;
@@ -60,52 +69,42 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
 }) => {
   const { isAdmin, isSupervisor } = useAuth();
   const { showError } = useError();
+  const { confirm } = useConfirmation();
   const canManage = isAdmin || isSupervisor;
 
   const [options, setOptions] = useState<ServiceTypeOption[]>(SERVICE_TYPES);
-  const [addOpen, setAddOpen] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newDuration, setNewDuration] = useState(60);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Create/edit dialog state. `editingId` null => creating.
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formDuration, setFormDuration] = useState(60);
   const [saving, setSaving] = useState(false);
 
   const loadOptions = useCallback(async () => {
-    try {
-      const types = await serviceTypeService.list(true);
-      if (types.length === 0) return [] as ServiceTypeOption[];
-      const mapped = types.map((t) => ({
-        value: t.code,
-        label: t.name,
-        duration: t.duration,
-      }));
-      setOptions(mapped);
-      return mapped;
-    } catch {
-      // Keep the hardcoded fallback on failure.
-      return null;
-    }
+    const types = await serviceTypeService.list(true);
+    if (types.length === 0) return [] as ServiceTypeOption[];
+    const mapped = types.map((t) => ({
+      id: t.id,
+      value: t.code,
+      label: t.name,
+      duration: t.duration,
+    }));
+    setOptions(mapped);
+    return mapped;
   }, []);
 
   useEffect(() => {
     let active = true;
-    serviceTypeService
-      .list(true)
-      .then((types) => {
-        if (!active || types.length === 0) return;
-        setOptions(
-          types.map((t) => ({
-            value: t.code,
-            label: t.name,
-            duration: t.duration,
-          }))
-        );
-      })
-      .catch(() => {
-        // Keep the hardcoded fallback on failure.
-      });
+    loadOptions().catch(() => {
+      // Keep the hardcoded fallback on failure.
+      if (!active) return;
+    });
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadOptions]);
 
   // The saved appointment may reference a service type that's no longer active;
   // keep it selectable so editing doesn't silently drop the value.
@@ -121,11 +120,9 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
         ]
       : options;
 
-  const handleServiceTypeChange = (newServiceType: string) => {
+  const handleSelectChange = (newServiceType: string) => {
     if (newServiceType === ADD_NEW) {
-      setNewName('');
-      setNewDuration(60);
-      setAddOpen(true);
+      openCreate();
       return;
     }
     const service = displayOptions.find((s) => s.value === newServiceType);
@@ -135,28 +132,82 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
     }
   };
 
-  const handleCreate = async () => {
-    if (!newName.trim()) {
+  const openCreate = () => {
+    setMenuOpen(false);
+    setEditingId(null);
+    setFormName('');
+    setFormDuration(60);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (option: ServiceTypeOption) => {
+    if (!option.id) return;
+    setMenuOpen(false);
+    setEditingId(option.id);
+    setFormName(option.label);
+    setFormDuration(option.duration);
+    setDialogOpen(true);
+  };
+
+  const handleSaveDialog = async () => {
+    if (!formName.trim()) {
       showError('Please enter a service name.');
       return;
     }
     setSaving(true);
     try {
-      const created = await serviceTypeService.create({
-        name: newName.trim(),
-        duration: newDuration,
-      });
-      await loadOptions();
-      // Auto-select the newly created type.
-      onServiceTypeChange(created.code);
-      onDurationChange(created.duration);
-      setAddOpen(false);
+      if (editingId) {
+        const updated = await serviceTypeService.update(editingId, {
+          name: formName.trim(),
+          duration: formDuration,
+        });
+        await loadOptions();
+        // If the edited type is the selected one, sync its duration.
+        if (updated.code === serviceType) {
+          onDurationChange(updated.duration);
+        }
+      } else {
+        const created = await serviceTypeService.create({
+          name: formName.trim(),
+          duration: formDuration,
+        });
+        await loadOptions();
+        onServiceTypeChange(created.code);
+        onDurationChange(created.duration);
+      }
+      setDialogOpen(false);
     } catch (err: any) {
       showError(
-        err?.response?.data?.message || 'Failed to create the service type.'
+        err?.response?.data?.message || 'Failed to save the service type.'
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (option: ServiceTypeOption) => {
+    if (!option.id) return;
+    setMenuOpen(false);
+    const confirmed = await confirm({
+      title: 'Delete Service Type',
+      message: `Delete "${option.label}"? Existing appointments keep their record, but this type will no longer be selectable.`,
+      confirmText: 'Delete',
+      severity: 'error',
+      confirmButtonColor: 'error',
+    });
+    if (!confirmed) return;
+
+    try {
+      await serviceTypeService.remove(option.id);
+      await loadOptions();
+      // Clear the selection if the deleted type was chosen.
+      if (option.value === serviceType) {
+        onServiceTypeChange('');
+      }
+    } catch (err: any) {
+      showError(
+        err?.response?.data?.message || 'Failed to delete the service type.'
+      );
     }
   };
 
@@ -168,12 +219,53 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
           <InputLabel>Service Type</InputLabel>
           <Select
             value={serviceType}
-            onChange={(e) => handleServiceTypeChange(e.target.value)}
+            open={menuOpen}
+            onOpen={() => setMenuOpen(true)}
+            onClose={() => setMenuOpen(false)}
+            onChange={(e) => handleSelectChange(e.target.value)}
             label="Service Type"
+            renderValue={(value) => {
+              const opt = displayOptions.find((o) => o.value === value);
+              return opt ? `${opt.label} (${opt.duration} min)` : '';
+            }}
           >
             {displayOptions.map((service) => (
               <MenuItem key={service.value} value={service.value}>
-                {service.label} ({service.duration} min)
+                <ListItemText
+                  primary={`${service.label} (${service.duration} min)`}
+                />
+                {canManage && service.id && (
+                  <Box
+                    sx={{ display: 'flex', gap: 0.5, ml: 1 }}
+                    // Prevent selecting the row when tapping the icons.
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <Tooltip title="Edit">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(service);
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(service);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                )}
               </MenuItem>
             ))}
             {canManage && <Divider />}
@@ -202,20 +294,22 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
         />
       </Grid>
 
-      {/* Inline create dialog (admin/supervisor only) */}
+      {/* Create / edit dialog (admin/supervisor only) */}
       <Dialog
-        open={addOpen}
-        onClose={() => !saving && setAddOpen(false)}
+        open={dialogOpen}
+        onClose={() => !saving && setDialogOpen(false)}
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Add Service Type</DialogTitle>
+        <DialogTitle>
+          {editingId ? 'Edit Service Type' : 'Add Service Type'}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
             <TextField
               label="Service Name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
               fullWidth
               required
               autoFocus
@@ -224,19 +318,27 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
               label="Default Duration (minutes)"
               min={15}
               max={480}
-              value={newDuration}
-              onChange={(v) => setNewDuration(v ?? 60)}
+              value={formDuration}
+              onChange={(v) => setFormDuration(v ?? 60)}
               fullWidth
               required
             />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setAddOpen(false)} disabled={saving}>
+          <Button onClick={() => setDialogOpen(false)} disabled={saving}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleCreate} disabled={saving}>
-            {saving ? 'Saving…' : 'Create & Select'}
+          <Button
+            variant="contained"
+            onClick={handleSaveDialog}
+            disabled={saving}
+          >
+            {saving
+              ? 'Saving…'
+              : editingId
+              ? 'Save Changes'
+              : 'Create & Select'}
           </Button>
         </DialogActions>
       </Dialog>
