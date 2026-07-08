@@ -366,7 +366,7 @@ export class SmsService {
     }
     message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
     message += `Have a great day!\n\n`;
-    message += `GT Automotives\nPrince George, BC`;
+    message += `GT Automotives\n473 3rd Ave, Prince George, BC V2L 3C1`;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -440,7 +440,7 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nQuestions? Call/text at ${contactPhone}\n\n`;
-    message += `GT Automotives\nPrince George, BC`;
+    message += `GT Automotives\n473 3rd Ave, Prince George, BC V2L 3C1`;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -512,7 +512,7 @@ export class SmsService {
     }
     message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
     message += `Have a great day!\n\n`;
-    message += `GT Automotives\nPrince George, BC`;
+    message += `GT Automotives\n473 3rd Ave, Prince George, BC V2L 3C1`;
 
     await this.sendSms({
       to: appointment.customer.phone,

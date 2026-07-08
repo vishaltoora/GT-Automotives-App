@@ -398,7 +398,8 @@ class InspectionService {
                     <p style="font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
                   </div>
                 </div>
-                <p class="company-contact">Prince George, BC<br>
+                <p class="company-contact">473 3rd Ave<br>
+                Prince George, BC V2L 3C1<br>
                 Phone: 250-570-2333<br>
                 Email: gt-automotives@outlook.com</p>
               </div>

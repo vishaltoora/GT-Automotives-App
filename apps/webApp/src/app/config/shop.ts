@@ -7,7 +7,8 @@ export const SHOP_NAME = 'GT Automotives';
 
 // Physical storefront — full-service mechanical shop + tire sales
 export const SHOP_ADDRESS_LINE1 = '473 3rd Ave';
-export const SHOP_ADDRESS_LINE2 = 'Prince George, BC';
+export const SHOP_POSTAL_CODE = 'V2L 3C1';
+export const SHOP_ADDRESS_LINE2 = `Prince George, BC ${SHOP_POSTAL_CODE}`;
 export const SHOP_ADDRESS = `${SHOP_ADDRESS_LINE1}, ${SHOP_ADDRESS_LINE2}`;
 
 // Google Maps helpers

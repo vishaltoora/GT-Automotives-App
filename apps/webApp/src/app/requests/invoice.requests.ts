@@ -425,7 +425,7 @@ class InvoiceService {
               </div>
             </div>
             <p style="margin-top: 8px; font-size: 13px;">${
-              invoice.company?.address || 'Prince George, BC'
+              invoice.company?.address || '473 3rd Ave, Prince George, BC V2L 3C1'
             }<br>
             ${
               invoice.company?.phone
@@ -630,7 +630,7 @@ ${
               </div>
             </div>
             <p style="margin-top: 8px; font-size: 13px;">${
-              invoice.company?.address || 'Prince George, BC'
+              invoice.company?.address || '473 3rd Ave, Prince George, BC V2L 3C1'
             }<br>
             ${
               invoice.company?.phone

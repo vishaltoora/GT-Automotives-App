@@ -284,7 +284,8 @@ class QuoteService {
                 <p style="margin: 0; font-size: 12px; color: #888; font-style: italic;">16472991 Canada INC.</p>
               </div>
             </div>
-            <p style="margin-top: 8px; font-size: 13px;">Prince George, BC<br>
+            <p style="margin-top: 8px; font-size: 13px;">473 3rd Ave<br>
+            Prince George, BC V2L 3C1<br>
             Phone: 250-570-2333<br>
             Email: gt-automotives@outlook.com</p>
           </div>
