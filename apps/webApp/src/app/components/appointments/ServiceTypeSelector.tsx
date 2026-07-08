@@ -1,7 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { Grid, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Stack,
+  TextField,
+} from '@mui/material';
+import { AddCircleOutline as AddIcon } from '@mui/icons-material';
 import { NumberInput } from '../common';
 import { serviceTypeService } from '../../requests/service-type.requests';
+import { useAuth } from '../../hooks/useAuth';
+import { useError } from '../../contexts/ErrorContext';
 
 interface ServiceTypeOption {
   value: string;
@@ -23,6 +42,9 @@ export const SERVICE_TYPES: ServiceTypeOption[] = [
   { value: 'OTHER', label: 'Other Service', duration: 60 },
 ];
 
+// Sentinel value used by the inline "Add new service type" menu entry.
+const ADD_NEW = '__ADD_NEW_SERVICE_TYPE__';
+
 interface ServiceTypeSelectorProps {
   serviceType: string;
   duration: number;
@@ -36,7 +58,32 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
   onServiceTypeChange,
   onDurationChange,
 }) => {
+  const { isAdmin, isSupervisor } = useAuth();
+  const { showError } = useError();
+  const canManage = isAdmin || isSupervisor;
+
   const [options, setOptions] = useState<ServiceTypeOption[]>(SERVICE_TYPES);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newDuration, setNewDuration] = useState(60);
+  const [saving, setSaving] = useState(false);
+
+  const loadOptions = useCallback(async () => {
+    try {
+      const types = await serviceTypeService.list(true);
+      if (types.length === 0) return [] as ServiceTypeOption[];
+      const mapped = types.map((t) => ({
+        value: t.code,
+        label: t.name,
+        duration: t.duration,
+      }));
+      setOptions(mapped);
+      return mapped;
+    } catch {
+      // Keep the hardcoded fallback on failure.
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -75,10 +122,41 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
       : options;
 
   const handleServiceTypeChange = (newServiceType: string) => {
+    if (newServiceType === ADD_NEW) {
+      setNewName('');
+      setNewDuration(60);
+      setAddOpen(true);
+      return;
+    }
     const service = displayOptions.find((s) => s.value === newServiceType);
     onServiceTypeChange(newServiceType);
     if (service) {
       onDurationChange(service.duration);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim()) {
+      showError('Please enter a service name.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const created = await serviceTypeService.create({
+        name: newName.trim(),
+        duration: newDuration,
+      });
+      await loadOptions();
+      // Auto-select the newly created type.
+      onServiceTypeChange(created.code);
+      onDurationChange(created.duration);
+      setAddOpen(false);
+    } catch (err: any) {
+      showError(
+        err?.response?.data?.message || 'Failed to create the service type.'
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -98,6 +176,15 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
                 {service.label} ({service.duration} min)
               </MenuItem>
             ))}
+            {canManage && <Divider />}
+            {canManage && (
+              <MenuItem value={ADD_NEW}>
+                <ListItemIcon>
+                  <AddIcon fontSize="small" color="primary" />
+                </ListItemIcon>
+                <ListItemText primary="Add new service type…" />
+              </MenuItem>
+            )}
           </Select>
         </FormControl>
       </Grid>
@@ -114,6 +201,45 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
           required
         />
       </Grid>
+
+      {/* Inline create dialog (admin/supervisor only) */}
+      <Dialog
+        open={addOpen}
+        onClose={() => !saving && setAddOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Add Service Type</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              label="Service Name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              fullWidth
+              required
+              autoFocus
+            />
+            <NumberInput
+              label="Default Duration (minutes)"
+              min={15}
+              max={480}
+              value={newDuration}
+              onChange={(v) => setNewDuration(v ?? 60)}
+              fullWidth
+              required
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setAddOpen(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleCreate} disabled={saving}>
+            {saving ? 'Saving…' : 'Create & Select'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
