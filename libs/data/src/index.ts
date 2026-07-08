@@ -17,6 +17,7 @@ export * from './lib/vendor.dto';
 export * from './lib/purchase-invoice.dto';
 export * from './lib/expense-invoice.dto';
 export * from './lib/appointment.dto';
+export * from './lib/service-type.dto';
 export * from './lib/inspection.dto';
 export * from './lib/employee-availability.dto';
 export * from './lib/expense-report.dto';

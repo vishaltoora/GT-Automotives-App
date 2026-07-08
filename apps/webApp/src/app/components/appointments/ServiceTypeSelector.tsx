@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Grid, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { NumberInput } from '../common';
+import { serviceTypeService } from '../../requests/service-type.requests';
 
-export const SERVICE_TYPES = [
+interface ServiceTypeOption {
+  value: string;
+  label: string;
+  duration: number;
+}
+
+// Fallback list used if the API is unavailable. The admin-managed catalog in
+// the database is the source of truth (seeded with these same values).
+export const SERVICE_TYPES: ServiceTypeOption[] = [
   { value: 'TIRE_CHANGE', label: 'Tire Mount Balance', duration: 60 },
   { value: 'TIRE_ROTATION', label: 'Tire Rotation', duration: 30 },
   { value: 'TIRE_REPAIR', label: 'Tire Repair', duration: 30 },
@@ -27,8 +36,46 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
   onServiceTypeChange,
   onDurationChange,
 }) => {
+  const [options, setOptions] = useState<ServiceTypeOption[]>(SERVICE_TYPES);
+
+  useEffect(() => {
+    let active = true;
+    serviceTypeService
+      .list(true)
+      .then((types) => {
+        if (!active || types.length === 0) return;
+        setOptions(
+          types.map((t) => ({
+            value: t.code,
+            label: t.name,
+            duration: t.duration,
+          }))
+        );
+      })
+      .catch(() => {
+        // Keep the hardcoded fallback on failure.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // The saved appointment may reference a service type that's no longer active;
+  // keep it selectable so editing doesn't silently drop the value.
+  const displayOptions =
+    serviceType && !options.some((o) => o.value === serviceType)
+      ? [
+          ...options,
+          {
+            value: serviceType,
+            label: serviceType.replace(/_/g, ' '),
+            duration,
+          },
+        ]
+      : options;
+
   const handleServiceTypeChange = (newServiceType: string) => {
-    const service = SERVICE_TYPES.find((s) => s.value === newServiceType);
+    const service = displayOptions.find((s) => s.value === newServiceType);
     onServiceTypeChange(newServiceType);
     if (service) {
       onDurationChange(service.duration);
@@ -46,7 +93,7 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
             onChange={(e) => handleServiceTypeChange(e.target.value)}
             label="Service Type"
           >
-            {SERVICE_TYPES.map((service) => (
+            {displayOptions.map((service) => (
               <MenuItem key={service.value} value={service.value}>
                 {service.label} ({service.duration} min)
               </MenuItem>

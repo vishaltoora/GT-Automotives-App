@@ -18,9 +18,14 @@ import {
   FormLabel,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { Close as CloseIcon, LocationOn as LocationIcon, Store as StoreIcon } from '@mui/icons-material';
+import {
+  Close as CloseIcon,
+  LocationOn as LocationIcon,
+  Store as StoreIcon,
+} from '@mui/icons-material';
 import { colors } from '../../theme/colors';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
+import { serviceTypeService } from '../../requests/service-type.requests';
 
 interface BookingRequestDialogProps {
   open: boolean;
@@ -40,9 +45,10 @@ interface BookingFormData {
   notes: string;
 }
 
-const libraries: ("places")[] = ["places"];
+const libraries: 'places'[] = ['places'];
 
-const SERVICE_TYPES = [
+// Fallback used only if the public service-types API is unreachable.
+const FALLBACK_SERVICE_TYPES = [
   { value: 'TIRE_CHANGE', label: 'Tire Mount Balance' },
   { value: 'TIRE_ROTATION', label: 'Tire Rotation' },
   { value: 'TIRE_REPAIR', label: 'Tire Repair' },
@@ -55,7 +61,10 @@ const SERVICE_TYPES = [
   { value: 'OTHER', label: 'Other Service' },
 ];
 
-export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProps) {
+export function BookingRequestDialog({
+  open,
+  onClose,
+}: BookingRequestDialogProps) {
   const [formData, setFormData] = useState<BookingFormData>({
     appointmentType: 'AT_GARAGE',
     firstName: '',
@@ -68,10 +77,28 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
     requestedTime: '',
     notes: '',
   });
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [autocomplete, setAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [serviceTypes, setServiceTypes] = useState(FALLBACK_SERVICE_TYPES);
+
+  useEffect(() => {
+    let active = true;
+    serviceTypeService
+      .listPublic()
+      .then((types) => {
+        if (!active || types.length === 0) return;
+        setServiceTypes(types.map((t) => ({ value: t.code, label: t.name })));
+      })
+      .catch(() => {
+        // Keep the hardcoded fallback on failure.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
@@ -108,12 +135,12 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
     onClose();
   };
 
-  const handleChange = (field: keyof BookingFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData({ ...formData, [field]: event.target.value });
-    setError(null);
-  };
+  const handleChange =
+    (field: keyof BookingFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData({ ...formData, [field]: event.target.value });
+      setError(null);
+    };
 
   const onPlaceChanged = () => {
     if (autocomplete) {
@@ -146,7 +173,10 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
       return false;
     }
     // Address is only required for mobile service
-    if (formData.appointmentType === 'MOBILE_SERVICE' && !formData.address.trim()) {
+    if (
+      formData.appointmentType === 'MOBILE_SERVICE' &&
+      !formData.address.trim()
+    ) {
       setError('Address is required for mobile service');
       return false;
     }
@@ -185,12 +215,16 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit booking request');
+        throw new Error(
+          errorData.message || 'Failed to submit booking request'
+        );
       }
 
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit booking request');
+      setError(
+        err instanceof Error ? err.message : 'Failed to submit booking request'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -242,7 +276,8 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
       <DialogContent sx={{ mt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
         {success ? (
           <Alert severity="success" sx={{ mb: 2 }}>
-            Booking request submitted successfully! We'll contact you shortly to confirm your appointment.
+            Booking request submitted successfully! We'll contact you shortly to
+            confirm your appointment.
           </Alert>
         ) : (
           <>
@@ -282,50 +317,94 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
                       value="AT_GARAGE"
                       control={<Radio />}
                       label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <StoreIcon sx={{ color: colors.primary.main, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <StoreIcon
+                            sx={{
+                              color: colors.primary.main,
+                              fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                            }}
+                          />
                           <Box>
-                            <Typography variant="body1" fontWeight={600} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
+                            <Typography
+                              variant="body1"
+                              fontWeight={600}
+                              sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}
+                            >
                               At Shop
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                            >
                               Bring your vehicle to our shop
                             </Typography>
                           </Box>
                         </Box>
                       }
                       sx={{
-                        border: `2px solid ${formData.appointmentType === 'AT_GARAGE' ? colors.primary.main : '#e0e0e0'}`,
+                        border: `2px solid ${
+                          formData.appointmentType === 'AT_GARAGE'
+                            ? colors.primary.main
+                            : '#e0e0e0'
+                        }`,
                         borderRadius: 2,
                         p: { xs: 1.5, sm: 2 },
                         flex: 1,
                         m: 0,
-                        backgroundColor: formData.appointmentType === 'AT_GARAGE' ? `${colors.primary.main}10` : 'transparent',
+                        backgroundColor:
+                          formData.appointmentType === 'AT_GARAGE'
+                            ? `${colors.primary.main}10`
+                            : 'transparent',
                       }}
                     />
                     <FormControlLabel
                       value="MOBILE_SERVICE"
                       control={<Radio />}
                       label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <LocationIcon sx={{ color: colors.secondary.main, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <LocationIcon
+                            sx={{
+                              color: colors.secondary.main,
+                              fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                            }}
+                          />
                           <Box>
-                            <Typography variant="body1" fontWeight={600} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
+                            <Typography
+                              variant="body1"
+                              fontWeight={600}
+                              sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}
+                            >
                               Mobile Service
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                            >
                               We come to your location
                             </Typography>
                           </Box>
                         </Box>
                       }
                       sx={{
-                        border: `2px solid ${formData.appointmentType === 'MOBILE_SERVICE' ? colors.secondary.main : '#e0e0e0'}`,
+                        border: `2px solid ${
+                          formData.appointmentType === 'MOBILE_SERVICE'
+                            ? colors.secondary.main
+                            : '#e0e0e0'
+                        }`,
                         borderRadius: 2,
                         p: { xs: 1.5, sm: 2 },
                         flex: 1,
                         m: 0,
-                        backgroundColor: formData.appointmentType === 'MOBILE_SERVICE' ? `${colors.secondary.main}10` : 'transparent',
+                        backgroundColor:
+                          formData.appointmentType === 'MOBILE_SERVICE'
+                            ? `${colors.secondary.main}10`
+                            : 'transparent',
                       }}
                     />
                   </RadioGroup>
@@ -422,7 +501,11 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
                           sx: { fontSize: { xs: '0.7rem', sm: '0.75rem' } },
                         },
                       }}
-                      helperText={!isLoaded ? "Loading address autocomplete..." : "Enter your full address"}
+                      helperText={
+                        !isLoaded
+                          ? 'Loading address autocomplete...'
+                          : 'Enter your full address'
+                      }
                     />
                   )}
                 </Grid>
@@ -439,7 +522,7 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
                   onChange={handleChange('serviceType')}
                   disabled={submitting}
                 >
-                  {SERVICE_TYPES.map((service) => (
+                  {serviceTypes.map((service) => (
                     <MenuItem key={service.value} value={service.value}>
                       {service.label}
                     </MenuItem>
@@ -495,8 +578,13 @@ export function BookingRequestDialog({ open, onClose }: BookingRequestDialogProp
             </Grid>
 
             <Box sx={{ mt: { xs: 2, sm: 2 } }}>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                * We'll contact you shortly to confirm your appointment and provide a quote if needed.
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+              >
+                * We'll contact you shortly to confirm your appointment and
+                provide a quote if needed.
               </Typography>
             </Box>
           </>

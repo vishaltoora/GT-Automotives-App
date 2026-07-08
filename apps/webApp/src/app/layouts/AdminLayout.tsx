@@ -26,6 +26,7 @@ import {
   Inventory,
   Receipt,
   CalendarMonth,
+  BuildCircle,
   Assessment,
   Analytics,
   RequestPage,
@@ -112,6 +113,11 @@ export function AdminLayout() {
       items: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
         {
+          text: 'Appointments',
+          icon: <CalendarMonth />,
+          path: '/admin/appointments',
+        },
+        {
           text: 'Day Summary',
           icon: <Assessment />,
           path: '/admin/day-summary',
@@ -166,14 +172,14 @@ export function AdminLayout() {
       icon: <Event />,
       items: [
         {
-          text: 'Appointments',
-          icon: <CalendarMonth />,
-          path: '/admin/appointments',
-        },
-        {
           text: 'Availability',
           icon: <Schedule />,
           path: '/admin/availability',
+        },
+        {
+          text: 'Service Types',
+          icon: <BuildCircle />,
+          path: '/admin/service-types',
         },
         {
           text: 'Employee Schedule',

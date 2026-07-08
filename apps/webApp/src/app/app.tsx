@@ -79,6 +79,7 @@ import PurchaseExpenseInvoiceManagement from './pages/purchase-expense-invoices/
 // Appointment Pages
 import { AppointmentsManagement } from './pages/admin/appointments/AppointmentsManagement';
 import { EmployeeAvailabilityManagement } from './pages/admin/appointments/EmployeeAvailabilityManagement';
+import ServiceTypes from './pages/admin/ServiceTypes';
 import { BookingRequests } from './pages/admin/BookingRequests';
 
 // SMS Pages
@@ -223,6 +224,7 @@ export function App() {
                 path="availability"
                 element={<EmployeeAvailabilityManagement />}
               />
+              <Route path="service-types" element={<ServiceTypes />} />
               <Route path="employee-schedule" element={<EmployeeSchedule />} />
               <Route path="jobs" element={<JobsManagement />} />
               <Route path="jobs/:employeeId" element={<JobsManagement />} />
@@ -310,6 +312,7 @@ export function App() {
                 path="availability"
                 element={<EmployeeAvailabilityManagement />}
               />
+              <Route path="service-types" element={<ServiceTypes />} />
               <Route path="sms-history" element={<SmsHistory />} />
               <Route path="employee-schedule" element={<EmployeeSchedule />} />
               <Route path="payroll" element={<PayrollDashboard />} />
