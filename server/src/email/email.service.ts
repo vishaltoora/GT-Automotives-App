@@ -236,7 +236,7 @@ export class EmailService {
 
         <!-- Footer -->
         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-          <p>GT Automotives - Prince George, BC</p>
+          <p>GT Automotives - 473 3rd Ave, Prince George, BC V2L 3C1</p>
           <p>Phone: (250) 986-9191</p>
           <p>Email: gt-automotives@outlook.com</p>
         </div>
@@ -380,7 +380,7 @@ export class EmailService {
 
         <!-- Footer -->
         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-          <p>GT Automotives - Prince George, BC</p>
+          <p>GT Automotives - 473 3rd Ave, Prince George, BC V2L 3C1</p>
           <p>Phone: (250) 986-9191</p>
           <p>Email: gt-automotives@outlook.com</p>
         </div>
@@ -709,7 +709,7 @@ export class EmailService {
 
         <!-- Footer -->
         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-          <p>GT Automotives - Prince George, BC</p>
+          <p>GT Automotives - 473 3rd Ave, Prince George, BC V2L 3C1</p>
           <p>Phone: (250) 986-9191</p>
           <p>Email: gt-automotives@outlook.com</p>
         </div>
@@ -984,7 +984,7 @@ export class EmailService {
                         <strong>GT Automotives</strong>
                       </p>
                       <p style="margin: 0; color: #999; font-size: 12px;">
-                        Prince George, BC | Phone: (250) 986-9191
+                        473 3rd Ave, Prince George, BC V2L 3C1 | Phone: (250) 986-9191
                       </p>
                       <p style="margin: 10px 0 0 0; color: #999; font-size: 12px;">
                         Questions? Contact the shop or check your schedule in the staff dashboard
@@ -1272,7 +1272,7 @@ export class EmailService {
                         <tr>
                           <td style="padding: 15px 20px; font-weight: 600; color: #666;">Location</td>
                           <td style="padding: 15px 20px; color: #333;">
-                            🏢 GT Automotives Shop - Prince George, BC
+                            🏢 GT Automotives Shop - 473 3rd Ave, Prince George, BC V2L 3C1
                           </td>
                         </tr>
                         `
@@ -1347,7 +1347,7 @@ export class EmailService {
                         <strong>GT Automotives</strong>
                       </p>
                       <p style="margin: 0; color: #999; font-size: 12px;">
-                        Prince George, BC | Phone: (250) 986-9191
+                        473 3rd Ave, Prince George, BC V2L 3C1 | Phone: (250) 986-9191
                       </p>
                       <p style="margin: 10px 0 0 0; color: #999; font-size: 12px;">
                         This is an automated notification. Please do not reply to this email.
@@ -1493,7 +1493,8 @@ export class EmailService {
                     <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
                       <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
                         <strong style="color: #1976d2;">GT Automotives</strong><br>
-                        Prince George, BC<br>
+                        473 3rd Ave<br>
+                        Prince George, BC V2L 3C1<br>
                         Phone: 250-570-2333 / 250-986-9191<br>
                         Email: gt-automotives@outlook.com
                       </p>
@@ -1627,7 +1628,8 @@ export class EmailService {
                     <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
                       <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
                         <strong style="color: #1976d2;">GT Automotives</strong><br>
-                        Prince George, BC<br>
+                        473 3rd Ave<br>
+                        Prince George, BC V2L 3C1<br>
                         Phone: 250-570-2333 / 250-986-9191<br>
                         Email: gt-automotives@outlook.com
                       </p>
@@ -1803,7 +1805,8 @@ export class EmailService {
                   <td style="padding: 30px; background-color: #f8f9fa; text-align: center;">
                     <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
                       <strong>GT Automotives</strong><br>
-                      Prince George, BC<br>
+                      473 3rd Ave<br>
+                      Prince George, BC V2L 3C1<br>
                       Phone: 250-570-2333 / 250-986-9191<br>
                       Email: gt-automotives@outlook.com
                     </p>
