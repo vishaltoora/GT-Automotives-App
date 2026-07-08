@@ -26,7 +26,6 @@ import {
   Inventory,
   Receipt,
   CalendarMonth,
-  BuildCircle,
   Assessment,
   Analytics,
   RequestPage,
@@ -175,11 +174,6 @@ export function AdminLayout() {
           text: 'Availability',
           icon: <Schedule />,
           path: '/admin/availability',
-        },
-        {
-          text: 'Service Types',
-          icon: <BuildCircle />,
-          path: '/admin/service-types',
         },
         {
           text: 'Employee Schedule',

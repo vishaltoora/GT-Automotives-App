@@ -25,7 +25,6 @@ import {
   Inventory,
   Receipt,
   CalendarMonth,
-  BuildCircle,
   Assessment,
   Logout,
   Menu as MenuIcon,
@@ -194,11 +193,6 @@ export function SupervisorLayout() {
           text: 'Availability',
           icon: <Schedule />,
           path: '/supervisor/availability',
-        },
-        {
-          text: 'Service Types',
-          icon: <BuildCircle />,
-          path: '/supervisor/service-types',
         },
         {
           text: 'Employee Schedule',
