@@ -27,6 +27,13 @@ export interface TerminalDevice {
   deviceType: string;
 }
 
+export interface TerminalDeviceCode {
+  id: string;
+  code: string;
+  status: string;
+  name?: string;
+}
+
 export const squareTerminalService = {
   /**
    * List available Square Terminal devices at the location
@@ -35,6 +42,24 @@ export const squareTerminalService = {
     const token = await getAuthToken();
     const response = await axios.get<TerminalDevice[]>(
       `${API_URL}/api/square/payments/terminal/devices`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Create a Terminal API device code to pair a Square reader.
+   * The returned code is entered on the physical Terminal to complete pairing.
+   */
+  async createDeviceCode(name?: string): Promise<TerminalDeviceCode> {
+    const token = await getAuthToken();
+    const response = await axios.post<TerminalDeviceCode>(
+      `${API_URL}/api/square/payments/terminal/device-code`,
+      { name },
       {
         headers: {
           Authorization: `Bearer ${token}`,

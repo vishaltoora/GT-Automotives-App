@@ -23,6 +23,8 @@ import {
   CreateBulkTerminalCheckoutDto,
   TerminalCheckoutResponseDto,
   TerminalDeviceDto,
+  CreateTerminalDeviceCodeDto,
+  TerminalDeviceCodeResponseDto,
 } from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -229,5 +231,23 @@ export class SquarePaymentController {
           deviceType: deviceCode.productType || 'TERMINAL_API',
         })
     );
+  }
+
+  /**
+   * Create a Terminal API device code for pairing a Square reader.
+   * POST /api/square/payments/terminal/device-code
+   * Returns a code to enter on the physical Terminal to complete pairing.
+   */
+  @Post('terminal/device-code')
+  @HttpCode(HttpStatus.CREATED)
+  @Roles('ADMIN', 'SUPERVISOR')
+  async createTerminalDeviceCode(
+    @Body() dto: CreateTerminalDeviceCodeDto
+  ): Promise<TerminalDeviceCodeResponseDto> {
+    this.logger.log('Creating Terminal API device code for pairing');
+    const result = await this.squarePaymentService.createTerminalDeviceCode(
+      dto.name
+    );
+    return new TerminalDeviceCodeResponseDto(result);
   }
 }

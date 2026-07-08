@@ -65,3 +65,22 @@ export class TerminalDeviceDto {
     Object.assign(this, partial);
   }
 }
+
+// Generate a Terminal API device code to pair a Square reader. The returned
+// `code` is entered on the physical Terminal to complete pairing.
+export class CreateTerminalDeviceCodeDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+}
+
+export class TerminalDeviceCodeResponseDto {
+  id!: string;
+  code!: string;
+  status!: string;
+  name?: string;
+
+  constructor(partial: Partial<TerminalDeviceCodeResponseDto>) {
+    Object.assign(this, partial);
+  }
+}
