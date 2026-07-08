@@ -402,6 +402,22 @@ model QuotationItem {
   tire        Tire?           @relation(fields: [tireId], references: [id])
 }
 
+// Admin-managed catalog of appointment service types. Appointment.serviceType
+// and BookingRequest.serviceType store the `code` string (kept as a plain
+// String for backward compatibility with historical records).
+model ServiceType {
+  id        String   @id @default(cuid())
+  code      String   @unique // Stable identifier stored on appointments, e.g. "TIRE_CHANGE"
+  name      String // Display label, e.g. "Tire Mount Balance"
+  duration  Int      @default(60) // Default duration in minutes
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
 model Appointment {
   id                String                @id @default(cuid())
   customerId        String

@@ -112,6 +112,11 @@ export function AdminLayout() {
       items: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
         {
+          text: 'Appointments',
+          icon: <CalendarMonth />,
+          path: '/admin/appointments',
+        },
+        {
           text: 'Day Summary',
           icon: <Assessment />,
           path: '/admin/day-summary',
@@ -165,11 +170,6 @@ export function AdminLayout() {
       title: 'Scheduling',
       icon: <Event />,
       items: [
-        {
-          text: 'Appointments',
-          icon: <CalendarMonth />,
-          path: '/admin/appointments',
-        },
         {
           text: 'Availability',
           icon: <Schedule />,

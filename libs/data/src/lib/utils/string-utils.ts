@@ -16,7 +16,7 @@ export class StringUtils {
   /**
    * Get phone mask format for different countries (automotive context)
    */
-  static phoneMask(country: string = 'Canada'): string {
+  static phoneMask(country = 'Canada'): string {
     switch (country) {
       case 'United States':
       case 'Canada':
@@ -34,20 +34,40 @@ export class StringUtils {
   static formatPhoneNumber(phone: string): string {
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 10) {
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(
+        6
+      )}`;
     }
     if (cleaned.length === 11 && cleaned.startsWith('1')) {
-      return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+      return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(
+        4,
+        7
+      )}-${cleaned.slice(7)}`;
     }
     return phone; // Return original if can't format
   }
 
   /**
-   * Capitalize first letter of each word
+   * Capitalize first letter of each word (lowercases the rest)
    */
   static titleCase(str: string): string {
-    return str.replace(/\w\S*/g, (txt) =>
-      txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+    return str.replace(
+      /\w\S*/g,
+      (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+    );
+  }
+
+  /**
+   * Capitalize the first letter of each word while preserving the rest of the
+   * word as typed. Fixes lowercase entries ("john doe" -> "John Doe") without
+   * mangling intentional capitals or acronyms ("GT Motors", "McDonald").
+   * Returns the input unchanged when it is null/undefined/blank.
+   */
+  static capitalizeWords(str?: string | null): string {
+    if (!str) return str ?? '';
+    return str.replace(
+      /\S+/g,
+      (word) => word.charAt(0).toUpperCase() + word.slice(1)
     );
   }
 
@@ -57,14 +77,18 @@ export class StringUtils {
   static getInitials(fullName: string): string {
     return fullName
       .split(' ')
-      .map(name => name.charAt(0).toUpperCase())
+      .map((name) => name.charAt(0).toUpperCase())
       .join('');
   }
 
   /**
    * Generate vehicle identifier (make + model + year)
    */
-  static formatVehicleIdentifier(make?: string, model?: string, year?: number): string {
+  static formatVehicleIdentifier(
+    make?: string,
+    model?: string,
+    year?: number
+  ): string {
     const parts = [year?.toString(), make, model].filter(Boolean);
     return parts.join(' ');
   }
@@ -93,7 +117,7 @@ export class StringUtils {
   static formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-CA', {
       style: 'currency',
-      currency: 'CAD'
+      currency: 'CAD',
     }).format(amount);
   }
 

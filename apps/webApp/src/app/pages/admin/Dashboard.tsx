@@ -4,16 +4,12 @@ import {
   Typography,
   Grid,
   Button,
-  Chip,
   Paper,
   List,
   ListItem,
   ListItemText,
   ListItemAvatar,
   Divider,
-  useTheme,
-  useMediaQuery,
-  Badge,
 } from '@mui/material';
 import {
   AttachMoney,
@@ -35,9 +31,16 @@ import {
   RequestPage,
   AccessTime,
   AssignmentTurnedIn,
+  CarRepair,
+  People,
+  Schedule,
 } from '@mui/icons-material';
 import { colors } from '../../theme/colors';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import {
+  DashboardActionGroups,
+  DashboardActionGroup,
+} from '../../components/dashboard/DashboardActionGroups';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import QuotationDialog from '../../components/quotations/QuotationDialog';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
@@ -51,11 +54,14 @@ import { TimeEntryDto } from '@gt-automotive/data';
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Determine base path based on user role
-  const basePath = role === 'supervisor' ? '/supervisor' : role === 'accountant' ? '/accountant' : '/admin';
+  const basePath =
+    role === 'supervisor'
+      ? '/supervisor'
+      : role === 'accountant'
+      ? '/accountant'
+      : '/admin';
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
@@ -64,27 +70,10 @@ export function AdminDashboard() {
   const [tireSaleDialogOpen, setTireSaleDialogOpen] = useState(false);
 
   const [bookingRequestsCount, setBookingRequestsCount] = useState(0);
-  const [currentTimeEntry, setCurrentTimeEntry] = useState<TimeEntryDto | null>(null);
+  const [currentTimeEntry, setCurrentTimeEntry] = useState<TimeEntryDto | null>(
+    null
+  );
   const [clockActionLoading, setClockActionLoading] = useState(false);
-
-  // Common mobile-optimized styles for action items
-  const actionItemStyles = {
-    p: { xs: 1.5, sm: 2 },
-    textAlign: 'center' as const,
-    cursor: 'pointer',
-    border: `1px solid ${colors.neutral[200]}`,
-    transition: 'all 0.2s',
-  };
-
-  const actionIconStyles = {
-    fontSize: { xs: 28, sm: 32 },
-    mb: { xs: 0.5, sm: 1 },
-  };
-
-  const actionTextStyles = {
-    fontWeight: 600,
-    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-  };
 
   // Common styles for insight cards
   const insightCardStyles = {
@@ -171,10 +160,34 @@ export function AdminDashboard() {
   };
 
   const recentActivities = [
-    { id: 1, type: 'invoice', text: 'New invoice #INV-2024-043 created', time: '5 minutes ago', status: 'success' },
-    { id: 2, type: 'customer', text: 'New customer John Smith registered', time: '1 hour ago', status: 'info' },
-    { id: 3, type: 'inventory', text: 'Low stock alert: Michelin Pilot Sport 4S', time: '2 hours ago', status: 'warning' },
-    { id: 4, type: 'appointment', text: 'Appointment scheduled for tomorrow 9 AM', time: '3 hours ago', status: 'info' },
+    {
+      id: 1,
+      type: 'invoice',
+      text: 'New invoice #INV-2024-043 created',
+      time: '5 minutes ago',
+      status: 'success',
+    },
+    {
+      id: 2,
+      type: 'customer',
+      text: 'New customer John Smith registered',
+      time: '1 hour ago',
+      status: 'info',
+    },
+    {
+      id: 3,
+      type: 'inventory',
+      text: 'Low stock alert: Michelin Pilot Sport 4S',
+      time: '2 hours ago',
+      status: 'warning',
+    },
+    {
+      id: 4,
+      type: 'appointment',
+      text: 'Appointment scheduled for tomorrow 9 AM',
+      time: '3 hours ago',
+      status: 'info',
+    },
   ];
 
   const handleInvoiceSuccess = (invoice: any) => {
@@ -195,18 +208,183 @@ export function AdminDashboard() {
     }
   };
 
+  const isSupervisor = role === 'supervisor';
+  const clockLabel = clockActionLoading
+    ? 'Clocking In...'
+    : currentTimeEntry
+    ? 'Clocked In'
+    : 'Clock In';
+
+  const actionGroups: DashboardActionGroup[] = [
+    {
+      title: 'My Work',
+      items: [
+        {
+          key: 'clock',
+          label: clockLabel,
+          icon: <AccessTime />,
+          color: colors.semantic.success,
+          onClick: handleQuickClockIn,
+        },
+        {
+          key: 'time-clock',
+          label: 'Time Clock',
+          icon: <Schedule />,
+          color: colors.semantic.info,
+          to: `${basePath}/time-clock`,
+        },
+        {
+          key: 'jobs',
+          label: 'Jobs',
+          icon: <Work />,
+          color: '#9c27b0',
+          to: `${basePath}/jobs`,
+        },
+        ...(isSupervisor
+          ? [
+              {
+                key: 'my-jobs',
+                label: 'My Jobs',
+                icon: <Work />,
+                color: '#9c27b0',
+                to: `${basePath}/my-jobs`,
+              },
+              {
+                key: 'my-earnings',
+                label: 'My Earnings',
+                icon: <AttachMoney />,
+                color: colors.semantic.success,
+                to: `${basePath}/my-earnings`,
+              },
+              {
+                key: 'my-commission',
+                label: 'My Commission',
+                icon: <TireRepair />,
+                color: colors.tire?.new || '#1976d2',
+                to: `${basePath}/my-commission`,
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      title: 'Operations',
+      items: [
+        {
+          key: 'appointments',
+          label: 'Appointments',
+          icon: <CalendarMonth />,
+          color: colors.primary.lighter,
+          to: `${basePath}/appointments`,
+        },
+        {
+          key: 'booking-requests',
+          label: 'Booking Requests',
+          icon: <RequestPage />,
+          color: colors.semantic.warning,
+          to: `${basePath}/booking-requests`,
+          badge: bookingRequestsCount,
+        },
+        {
+          key: 'repair-orders',
+          label: 'Repair Orders',
+          icon: <CarRepair />,
+          color: colors.secondary.main,
+          to: `${basePath}/repair-orders`,
+        },
+        {
+          key: 'inspections',
+          label: 'Inspections',
+          icon: <AssignmentTurnedIn />,
+          color: colors.semantic.info,
+          to: `${basePath}/inspections`,
+        },
+        {
+          key: 'day-summary',
+          label: 'Day Summary',
+          icon: <Assignment />,
+          color: colors.semantic.success,
+          to: `${basePath}/day-summary`,
+        },
+      ],
+    },
+    {
+      title: 'Sales & Billing',
+      items: [
+        {
+          key: 'tire-sale',
+          label: 'Quick Tire Sale',
+          icon: <TireRepair />,
+          color: colors.tire?.new || '#1976d2',
+          onClick: () => setTireSaleDialogOpen(true),
+        },
+        {
+          key: 'invoices',
+          label: 'Invoices',
+          icon: <Receipt />,
+          color: colors.secondary.main,
+          to: `${basePath}/invoices`,
+        },
+        {
+          key: 'quotations',
+          label: 'Quotations',
+          icon: <Description />,
+          color: colors.semantic.info,
+          to: `${basePath}/quotations`,
+        },
+        ...(role === 'admin'
+          ? [
+              {
+                key: 'payments',
+                label: 'Payments',
+                icon: <Payment />,
+                color: colors.semantic.success,
+                to: `${basePath}/payments`,
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      title: 'Inventory & Setup',
+      items: [
+        {
+          key: 'inventory',
+          label: 'Inventory',
+          icon: <Inventory />,
+          color: colors.primary.main,
+          to: `${basePath}/inventory`,
+        },
+        {
+          key: 'customers',
+          label: 'Customers',
+          icon: <People />,
+          color: colors.primary.lighter,
+          to: `${basePath}/customers`,
+        },
+      ],
+    },
+  ];
+
   return (
     <Box sx={{ px: { xs: 0.5, sm: 2, md: 3 } }}>
       {/* Header */}
       <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1, sm: 2 } }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: { xs: 1, sm: 2 },
+          }}
+        >
           <Box>
             <Typography
               variant="h4"
               sx={{
                 fontWeight: 700,
                 color: colors.primary.main,
-                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
               }}
             >
               Welcome back, {user?.firstName || 'Admin'}{' '}
@@ -225,7 +403,7 @@ export function AdminDashboard() {
               color="text.secondary"
               sx={{
                 display: { xs: 'none', sm: 'block' },
-                fontSize: { sm: '0.875rem', md: '1rem' }
+                fontSize: { sm: '0.875rem', md: '1rem' },
               }}
             >
               Here's what's happening with your business today
@@ -247,969 +425,14 @@ export function AdminDashboard() {
       </Box>
 
       {/* Charts and Activity Section */}
-      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mt: { xs: 1, sm: 2, md: 3 } }}>
+      <Grid
+        container
+        spacing={{ xs: 1, sm: 2, md: 3 }}
+        sx={{ mt: { xs: 1, sm: 2, md: 3 } }}
+      >
         {/* Quick Actions */}
         <Grid size={{ xs: 12, lg: 9 }}>
-          {isMobile ? (
-            // Mobile: Show heading and cards without Paper wrapper
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: colors.primary.main,
-                  fontSize: '1rem',
-                  mb: 1.5,
-                  px: theme.custom.spacing.pagePadding.mobile
-                }}
-              >
-                Quick Actions
-              </Typography>
-
-              <Box sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 1,
-                mb: 1.5,
-              }}>
-              {role !== 'accountant' && (
-                <Paper
-                  onClick={handleQuickClockIn}
-                  sx={{
-                    ...actionItemStyles,
-                    border: `1px solid ${colors.semantic.success}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.semantic.success,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <AccessTime sx={{ ...actionIconStyles, color: colors.semantic.success }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
-                    {clockActionLoading ? 'Clocking In...' : currentTimeEntry ? 'Clocked In' : 'Clock In'}
-                  </Typography>
-                </Paper>
-              )}
-
-              {/* Day Summary - First position */}
-              <Paper
-                component={Link}
-                to={`${basePath}/day-summary`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.success}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.success,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
-                  Day Summary
-                </Typography>
-              </Paper>
-
-              {/* Booking Requests - Second position */}
-              <Paper
-                component={Link}
-                to={`${basePath}/booking-requests`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.warning}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.warning,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiBadge-badge': {
-                      backgroundColor: 'white !important',
-                      color: `${colors.semantic.warning} !important`,
-                    },
-                  },
-                }}
-              >
-                <Badge badgeContent={bookingRequestsCount} color="warning">
-                  <RequestPage sx={{ ...actionIconStyles, color: colors.semantic.warning }} />
-                </Badge>
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.warning }}>
-                  Booking Requests
-                </Typography>
-              </Paper>
-
-              {/* Quick Tire Sale */}
-              <Paper
-                onClick={() => setTireSaleDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  border: `1px solid ${colors.tire?.new || '#1976d2'}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.tire?.new || '#1976d2',
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <TireRepair sx={{ ...actionIconStyles, color: colors.tire?.new || '#1976d2' }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.tire?.new || '#1976d2' }}>
-                  Quick Tire Sale
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setAppointmentDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.lighter,
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  New Appointment
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to={`${basePath}/inspections`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.info}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.info,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <AssignmentTurnedIn sx={{ ...actionIconStyles, color: colors.semantic.info }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
-                  Inspections
-                </Typography>
-              </Paper>
-
-              {/* My Jobs - Supervisor only - Before New Job */}
-              {role === 'supervisor' && (
-                <Paper
-                  component={Link}
-                  to={`${basePath}/my-jobs`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: colors.secondary.main,
-                    },
-                  }}
-                >
-                  <Work sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    My Jobs
-                  </Typography>
-                </Paper>
-              )}
-
-              <Paper
-                onClick={() => setJobDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  cursor: 'pointer',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: '#9c27b0',
-                  },
-                }}
-              >
-                <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  New Job
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setInvoiceDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.secondary.main,
-                  },
-                }}
-              >
-                <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  New Invoice
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setQuotationDialogOpen(true)}
-                sx={{
-                  ...actionItemStyles,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.lighter,
-                  },
-                }}
-              >
-                <Description sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                  New Quotation
-                </Typography>
-              </Paper>
-
-              {/* Payments - Admin only */}
-              {role === 'admin' && (
-                <Paper
-                  component={Link}
-                  to={`${basePath}/payments`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: '#00bcd4',
-                    },
-                  }}
-                >
-                  <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    Payments
-                  </Typography>
-                </Paper>
-              )}
-
-              {/* My Earnings - Supervisor only */}
-              {role === 'supervisor' && (
-                <Paper
-                  component={Link}
-                  to={`${basePath}/my-earnings`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: '#00bcd4',
-                    },
-                  }}
-                >
-                  <AttachMoney sx={{ ...actionIconStyles, color: '#00bcd4' }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    My Earnings
-                  </Typography>
-                </Paper>
-              )}
-
-              {/* My Commission - Supervisor only */}
-              {role === 'supervisor' && (
-                <Paper
-                  component={Link}
-                  to={`${basePath}/my-commission`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: colors.secondary.main,
-                    },
-                  }}
-                >
-                  <TireRepair sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    My Commission
-                  </Typography>
-                </Paper>
-              )}
-            </Box>
-
-            {/* Quick Navigation - Mobile without Divider */}
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                color: colors.primary.main,
-                fontSize: '1rem',
-                mb: 1.5,
-                mt: 2,
-                px: theme.custom.spacing.pagePadding.mobile
-              }}
-            >
-              Quick Navigation
-            </Typography>
-
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: 1
-            }}>
-              <Paper
-                component={Link}
-                to={`${basePath}/appointments`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.primary.lighter}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.primary.lighter,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.lighter }}>
-                  Appointments
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to={`${basePath}/jobs`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid #9c27b0`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: '#9c27b0',
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: '#9c27b0' }}>
-                  Jobs
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to={`${basePath}/inventory`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.primary.main}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.primary.main,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Inventory sx={{ ...actionIconStyles, color: colors.primary.main }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.main }}>
-                  Inventory
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to={`${basePath}/invoices`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.secondary.main}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.secondary.main,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.secondary.main }}>
-                  Invoices
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to={`${basePath}/quotations`}
-                sx={{
-                  ...actionItemStyles,
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.info}`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.info,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Description sx={{ ...actionIconStyles, color: colors.semantic.info }} />
-                <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
-                  Quotations
-                </Typography>
-              </Paper>
-            </Box>
-          </Box>
-          ) : (
-            // Desktop: Original Paper wrapper layout
-            <Paper
-              elevation={0}
-              sx={{
-                p: { xs: 1.5, sm: 2, md: 3 },
-                borderRadius: 2,
-                border: `1px solid ${colors.neutral[200]}`,
-                height: '100%',
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
-                  Quick Actions
-                </Typography>
-                <Chip label="Most Used" size="small" color="primary" sx={{ display: { xs: 'none', sm: 'flex' } }} />
-              </Box>
-
-              <Box sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  md: 'repeat(3, 1fr)',
-                  lg: 'repeat(5, 1fr)',
-                },
-                gap: { xs: 1, sm: 1.5, md: 2 },
-                mb: { xs: 1.5, sm: 2, md: 3 },
-              }}>
-                {role !== 'accountant' && (
-                  <Paper
-                    onClick={handleQuickClockIn}
-                    sx={{
-                      ...actionItemStyles,
-                      border: `1px solid ${colors.semantic.success}`,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        backgroundColor: colors.semantic.success,
-                        color: 'white',
-                        '& .MuiSvgIcon-root': {
-                          color: 'white !important',
-                        },
-                        '& .MuiTypography-root': {
-                          color: 'white !important',
-                        },
-                      },
-                    }}
-                  >
-                    <AccessTime sx={{ ...actionIconStyles, color: colors.semantic.success }} />
-                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
-                      {clockActionLoading ? 'Clocking In...' : currentTimeEntry ? 'Clocked In' : 'Clock In'}
-                    </Typography>
-                  </Paper>
-                )}
-
-                {/* Day Summary - First position */}
-                <Paper
-                  component={Link}
-                  to={`${basePath}/day-summary`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid ${colors.semantic.success}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.semantic.success,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <Assignment sx={{ ...actionIconStyles, color: colors.semantic.success }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.success }}>
-                    Day Summary
-                  </Typography>
-                </Paper>
-
-                {/* Booking Requests - Second position */}
-                <Paper
-                  component={Link}
-                  to={`${basePath}/booking-requests`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid ${colors.semantic.warning}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.semantic.warning,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiBadge-badge': {
-                        backgroundColor: 'white !important',
-                        color: `${colors.semantic.warning} !important`,
-                      },
-                    },
-                  }}
-                >
-                  <Badge badgeContent={bookingRequestsCount} color="warning">
-                    <RequestPage sx={{ ...actionIconStyles, color: colors.semantic.warning }} />
-                  </Badge>
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.warning }}>
-                    Booking Requests
-                  </Typography>
-                </Paper>
-
-                {/* Quick Tire Sale */}
-                <Paper
-                  onClick={() => setTireSaleDialogOpen(true)}
-                  sx={{
-                    ...actionItemStyles,
-                    border: `1px solid ${colors.tire?.new || '#1976d2'}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.tire?.new || '#1976d2',
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <TireRepair sx={{ ...actionIconStyles, color: colors.tire?.new || '#1976d2' }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.tire?.new || '#1976d2' }}>
-                    Quick Tire Sale
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  onClick={() => setAppointmentDialogOpen(true)}
-                  sx={{
-                    ...actionItemStyles,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: colors.primary.lighter,
-                    },
-                  }}
-                >
-                  <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    New Appointment
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  component={Link}
-                  to={`${basePath}/inspections`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid ${colors.semantic.info}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.semantic.info,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <AssignmentTurnedIn sx={{ ...actionIconStyles, color: colors.semantic.info }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
-                    Inspections
-                  </Typography>
-                </Paper>
-
-                {/* My Jobs - Supervisor only - Before New Job */}
-                {role === 'supervisor' && (
-                  <Paper
-                    component={Link}
-                    to={`${basePath}/my-jobs`}
-                    sx={{
-                      ...actionItemStyles,
-                      textDecoration: 'none',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        borderColor: colors.secondary.main,
-                      },
-                    }}
-                  >
-                    <Work sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                      My Jobs
-                    </Typography>
-                  </Paper>
-                )}
-
-                <Paper
-                  onClick={() => setJobDialogOpen(true)}
-                  sx={{
-                    ...actionItemStyles,
-                    cursor: 'pointer',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: '#9c27b0',
-                    },
-                  }}
-                >
-                  <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    New Job
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  onClick={() => setInvoiceDialogOpen(true)}
-                  sx={{
-                    ...actionItemStyles,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: colors.secondary.main,
-                    },
-                  }}
-                >
-                  <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    New Invoice
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  onClick={() => setQuotationDialogOpen(true)}
-                  sx={{
-                    ...actionItemStyles,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      borderColor: colors.primary.lighter,
-                    },
-                  }}
-                >
-                  <Description sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                    New Quotation
-                  </Typography>
-                </Paper>
-
-                {/* Payments - Admin only */}
-                {role === 'admin' && (
-                  <Paper
-                    component={Link}
-                    to={`${basePath}/payments`}
-                    sx={{
-                      ...actionItemStyles,
-                      textDecoration: 'none',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        borderColor: '#00bcd4',
-                      },
-                    }}
-                  >
-                    <Payment sx={{ ...actionIconStyles, color: '#00bcd4' }} />
-                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                      Payments
-                    </Typography>
-                  </Paper>
-                )}
-
-                {/* My Earnings - Supervisor only */}
-                {role === 'supervisor' && (
-                  <Paper
-                    component={Link}
-                    to={`${basePath}/my-earnings`}
-                    sx={{
-                      ...actionItemStyles,
-                      textDecoration: 'none',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        borderColor: '#00bcd4',
-                      },
-                    }}
-                  >
-                    <AttachMoney sx={{ ...actionIconStyles, color: '#00bcd4' }} />
-                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                      My Earnings
-                    </Typography>
-                  </Paper>
-                )}
-
-                {/* My Commission - Supervisor only */}
-                {role === 'supervisor' && (
-                  <Paper
-                    component={Link}
-                    to={`${basePath}/my-commission`}
-                    sx={{
-                      ...actionItemStyles,
-                      textDecoration: 'none',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        borderColor: colors.secondary.main,
-                      },
-                    }}
-                  >
-                    <TireRepair sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                    <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.text.primary }}>
-                      My Commission
-                    </Typography>
-                  </Paper>
-                )}
-              </Box>
-
-              <Divider sx={{ my: { xs: 1.5, sm: 2, md: 3 } }} />
-
-              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: { xs: 1, sm: 1.5, md: 2 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
-                Quick Navigation
-              </Typography>
-
-              <Box sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  md: 'repeat(3, 1fr)',
-                  lg: 'repeat(5, 1fr)',
-                },
-                gap: { xs: 1, sm: 1.5, md: 2 }
-              }}>
-                <Paper
-                  component={Link}
-                  to={`${basePath}/appointments`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid ${colors.primary.lighter}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.primary.lighter,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <CalendarMonth sx={{ ...actionIconStyles, color: colors.primary.lighter }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.lighter }}>
-                    Appointments
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  component={Link}
-                  to={`${basePath}/jobs`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid #9c27b0`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: '#9c27b0',
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <Work sx={{ ...actionIconStyles, color: '#9c27b0' }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: '#9c27b0' }}>
-                    Jobs
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  component={Link}
-                  to={`${basePath}/inventory`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid ${colors.primary.main}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.primary.main,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <Inventory sx={{ ...actionIconStyles, color: colors.primary.main }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.primary.main }}>
-                    Inventory
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  component={Link}
-                  to={`${basePath}/invoices`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid ${colors.secondary.main}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.secondary.main,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <Receipt sx={{ ...actionIconStyles, color: colors.secondary.main }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.secondary.main }}>
-                    Invoices
-                  </Typography>
-                </Paper>
-
-                <Paper
-                  component={Link}
-                  to={`${basePath}/quotations`}
-                  sx={{
-                    ...actionItemStyles,
-                    textDecoration: 'none',
-                    border: `1px solid ${colors.semantic.info}`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: colors.semantic.info,
-                      color: 'white',
-                      '& .MuiSvgIcon-root': {
-                        color: 'white !important',
-                      },
-                      '& .MuiTypography-root': {
-                        color: 'white !important',
-                      },
-                    },
-                  }}
-                >
-                  <Description sx={{ ...actionIconStyles, color: colors.semantic.info }} />
-                  <Typography variant="body2" sx={{ ...actionTextStyles, color: colors.semantic.info }}>
-                    Quotations
-                  </Typography>
-                </Paper>
-              </Box>
-            </Paper>
-          )}
+          <DashboardActionGroups groups={actionGroups} />
         </Grid>
 
         {/* Recent Activity */}
@@ -1223,21 +446,41 @@ export function AdminDashboard() {
               height: '100%',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1, sm: 1.5, md: 2 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: { xs: 1, sm: 1.5, md: 2 },
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  color: colors.primary.main,
+                  fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' },
+                }}
+              >
                 Recent Activity
               </Typography>
-              <Button size="small" sx={{ color: colors.primary.main, fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>
+              <Button
+                size="small"
+                sx={{
+                  color: colors.primary.main,
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                }}
+              >
                 View All
               </Button>
             </Box>
-            
+
             <List sx={{ p: 0 }}>
               {recentActivities.map((activity, index) => (
                 <React.Fragment key={activity.id}>
-                  <ListItem 
-                    alignItems="flex-start" 
-                    sx={{ 
+                  <ListItem
+                    alignItems="flex-start"
+                    sx={{
                       px: 0,
                       py: 1.5,
                       '&:hover': {
@@ -1251,12 +494,18 @@ export function AdminDashboard() {
                     </ListItemAvatar>
                     <ListItemText
                       primary={
-                        <Typography variant="body2" sx={{ fontWeight: 500, color: colors.text.primary }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, color: colors.text.primary }}
+                        >
                           {activity.text}
                         </Typography>
                       }
                       secondary={
-                        <Typography variant="caption" sx={{ color: colors.text.secondary }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: colors.text.secondary }}
+                        >
                           {activity.time}
                         </Typography>
                       }
@@ -1273,7 +522,11 @@ export function AdminDashboard() {
       </Grid>
 
       {/* Business Insights */}
-      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mt: { xs: 1, sm: 2, md: 3 } }}>
+      <Grid
+        container
+        spacing={{ xs: 1, sm: 2, md: 3 }}
+        sx={{ mt: { xs: 1, sm: 2, md: 3 } }}
+      >
         <Grid size={12}>
           <Paper
             elevation={0}
@@ -1284,64 +537,122 @@ export function AdminDashboard() {
               background: `linear-gradient(135deg, ${colors.primary.main}10 0%, ${colors.secondary.main}10 100%)`,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary.main, mb: { xs: 1.5, sm: 2, md: 3 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                color: colors.primary.main,
+                mb: { xs: 1.5, sm: 2, md: 3 },
+                fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' },
+              }}
+            >
               Business Insights
             </Typography>
 
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(2, 1fr)',
-                sm: 'repeat(3, 1fr)',
-                md: 'repeat(4, 1fr)',
-                lg: 'repeat(6, 1fr)',
-              },
-              gap: { xs: 1, sm: 1.5, md: 2, lg: 3 },
-            }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: 'repeat(2, 1fr)',
+                  sm: 'repeat(3, 1fr)',
+                  md: 'repeat(4, 1fr)',
+                  lg: 'repeat(6, 1fr)',
+                },
+                gap: { xs: 1, sm: 1.5, md: 2, lg: 3 },
+              }}
+            >
               <Paper sx={insightCardStyles}>
-                <Speed sx={{ ...insightIconStyles, color: colors.primary.main }} />
-                <Typography variant="h5" sx={insightValueStyles}>4.2 hrs</Typography>
-                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
+                <Speed
+                  sx={{ ...insightIconStyles, color: colors.primary.main }}
+                />
+                <Typography variant="h5" sx={insightValueStyles}>
+                  4.2 hrs
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={insightLabelStyles}
+                >
                   Avg Service Time
                 </Typography>
               </Paper>
 
               <Paper sx={insightCardStyles}>
-                <TireRepair sx={{ ...insightIconStyles, color: colors.secondary.main }} />
-                <Typography variant="h5" sx={insightValueStyles}>347</Typography>
-                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
+                <TireRepair
+                  sx={{ ...insightIconStyles, color: colors.secondary.main }}
+                />
+                <Typography variant="h5" sx={insightValueStyles}>
+                  347
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={insightLabelStyles}
+                >
                   Tires in Stock
                 </Typography>
               </Paper>
 
               <Paper sx={insightCardStyles}>
-                <LocalShipping sx={{ ...insightIconStyles, color: colors.semantic.success }} />
-                <Typography variant="h5" sx={insightValueStyles}>12</Typography>
-                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
+                <LocalShipping
+                  sx={{ ...insightIconStyles, color: colors.semantic.success }}
+                />
+                <Typography variant="h5" sx={insightValueStyles}>
+                  12
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={insightLabelStyles}
+                >
                   Pending Orders
                 </Typography>
               </Paper>
 
               <Paper sx={insightCardStyles}>
-                <SupervisorAccount sx={{ ...insightIconStyles, color: colors.semantic.info }} />
-                <Typography variant="h5" sx={insightValueStyles}>8</Typography>
-                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
+                <SupervisorAccount
+                  sx={{ ...insightIconStyles, color: colors.semantic.info }}
+                />
+                <Typography variant="h5" sx={insightValueStyles}>
+                  8
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={insightLabelStyles}
+                >
                   Active Staff
                 </Typography>
               </Paper>
 
               <Paper sx={insightCardStyles}>
-                <CalendarMonth sx={{ ...insightIconStyles, color: colors.semantic.warning }} />
-                <Typography variant="h5" sx={insightValueStyles}>156</Typography>
-                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
+                <CalendarMonth
+                  sx={{ ...insightIconStyles, color: colors.semantic.warning }}
+                />
+                <Typography variant="h5" sx={insightValueStyles}>
+                  156
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={insightLabelStyles}
+                >
                   Monthly Jobs
                 </Typography>
               </Paper>
 
               <Paper sx={insightCardStyles}>
-                <Receipt sx={{ ...insightIconStyles, color: colors.primary.dark }} />
-                <Typography variant="h5" sx={insightValueStyles}>$45.8K</Typography>
-                <Typography variant="caption" color="text.secondary" sx={insightLabelStyles}>
+                <Receipt
+                  sx={{ ...insightIconStyles, color: colors.primary.dark }}
+                />
+                <Typography variant="h5" sx={insightValueStyles}>
+                  $45.8K
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={insightLabelStyles}
+                >
                   Avg Invoice
                 </Typography>
               </Paper>
@@ -1398,8 +709,7 @@ export function AdminDashboard() {
       <QuickTireSaleDialog
         open={tireSaleDialogOpen}
         onClose={() => setTireSaleDialogOpen(false)}
-        onSuccess={() => {
-        }}
+        onSuccess={() => {}}
       />
     </Box>
   );

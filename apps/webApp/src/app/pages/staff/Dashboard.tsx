@@ -1,9 +1,45 @@
-import { Box, Typography, Grid, Button, Paper, Chip, CircularProgress, Avatar, Divider, Stack, useTheme, useMediaQuery } from '@mui/material';
-import { People, Inventory, Receipt, Schedule, Build, Assignment, AccessTime, Description, Work, CalendarMonth, TireRepair, Event, AttachMoney, AssignmentTurnedIn } from '@mui/icons-material';
+import {
+  Box,
+  Typography,
+  Grid,
+  Button,
+  Paper,
+  Chip,
+  CircularProgress,
+  Avatar,
+  Divider,
+  Stack,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  People,
+  Inventory,
+  Receipt,
+  Schedule,
+  Build,
+  Assignment,
+  AccessTime,
+  Description,
+  Work,
+  CalendarMonth,
+  TireRepair,
+  Event,
+  AttachMoney,
+  AssignmentTurnedIn,
+  CarRepair,
+} from '@mui/icons-material';
 import { Link } from 'react-router-dom';
+import {
+  DashboardActionGroups,
+  DashboardActionGroup,
+} from '../../components/dashboard/DashboardActionGroups';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { appointmentService, Appointment } from '../../requests/appointment.requests';
+import {
+  appointmentService,
+  Appointment,
+} from '../../requests/appointment.requests';
 import { colors } from '../../theme/colors';
 import { CreateJobDialog } from '../../components/payroll/CreateJobDialog';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
@@ -28,7 +64,9 @@ export function StaffDashboard() {
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [tireDialogOpen, setTireDialogOpen] = useState(false);
   const [tireSaleDialogOpen, setTireSaleDialogOpen] = useState(false);
-  const [currentTimeEntry, setCurrentTimeEntry] = useState<TimeEntryDto | null>(null);
+  const [currentTimeEntry, setCurrentTimeEntry] = useState<TimeEntryDto | null>(
+    null
+  );
   const [clockActionLoading, setClockActionLoading] = useState(false);
 
   useEffect(() => {
@@ -82,7 +120,11 @@ export function StaffDashboard() {
     return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
-  const formatTimeRange = (startTime: string, endTime?: string, duration?: number) => {
+  const formatTimeRange = (
+    startTime: string,
+    endTime?: string,
+    duration?: number
+  ) => {
     const start = formatTime(startTime);
 
     // If endTime is provided, use it
@@ -97,7 +139,9 @@ export function StaffDashboard() {
       const totalMinutes = hours * 60 + minutes + duration;
       const endHours = Math.floor(totalMinutes / 60) % 24;
       const endMinutes = totalMinutes % 60;
-      const endTimeStr = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+      const endTimeStr = `${endHours.toString().padStart(2, '0')}:${endMinutes
+        .toString()
+        .padStart(2, '0')}`;
       const end = formatTime(endTimeStr);
       return `${start} - ${end}`;
     }
@@ -111,12 +155,169 @@ export function StaffDashboard() {
 
     // Format as XXX-XXX-XXXX
     if (cleaned.length === 10) {
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+        6
+      )}`;
     }
 
     // Return original if not 10 digits
     return phone;
   };
+
+  const clockLabel = clockActionLoading
+    ? 'Clocking In...'
+    : currentTimeEntry
+    ? 'Clocked In'
+    : 'Clock In';
+
+  const actionGroups: DashboardActionGroup[] = [
+    {
+      title: 'My Work',
+      items: [
+        {
+          key: 'clock',
+          label: clockLabel,
+          icon: <AccessTime />,
+          color: colors.semantic.success,
+          onClick: handleQuickClockIn,
+        },
+        {
+          key: 'time-clock',
+          label: 'Time Clock',
+          icon: <Schedule />,
+          color: colors.semantic.info,
+          to: '/staff/time-clock',
+        },
+        {
+          key: 'add-my-job',
+          label: 'Add My Job',
+          icon: <Assignment />,
+          color: '#9c27b0',
+          onClick: () => setMyJobDialogOpen(true),
+        },
+        {
+          key: 'my-jobs',
+          label: 'My Jobs',
+          icon: <Work />,
+          color: '#9c27b0',
+          to: '/staff/jobs',
+        },
+        {
+          key: 'my-earnings',
+          label: 'My Earnings',
+          icon: <AttachMoney />,
+          color: colors.semantic.success,
+          to: '/staff/earnings',
+        },
+        {
+          key: 'my-commission',
+          label: 'My Commission',
+          icon: <TireRepair />,
+          color: colors.tire?.new || '#1976d2',
+          to: '/staff/commission',
+        },
+      ],
+    },
+    {
+      title: 'Operations',
+      items: [
+        {
+          key: 'appointments',
+          label: 'Appointments',
+          icon: <CalendarMonth />,
+          color: colors.primary.lighter,
+          to: '/staff/appointments',
+        },
+        {
+          key: 'repair-orders',
+          label: 'Repair Orders',
+          icon: <CarRepair />,
+          color: colors.secondary.main,
+          to: '/staff/repair-orders',
+        },
+        {
+          key: 'inspections',
+          label: 'Inspections',
+          icon: <AssignmentTurnedIn />,
+          color: colors.semantic.info,
+          to: '/staff/inspections',
+        },
+        {
+          key: 'availability',
+          label: 'Availability',
+          icon: <Event />,
+          color: colors.semantic.warning,
+          to: '/staff/availability',
+        },
+      ],
+    },
+    {
+      title: 'Sales & Billing',
+      items: [
+        {
+          key: 'tire-sale',
+          label: 'Quick Tire Sale',
+          icon: <TireRepair />,
+          color: colors.tire?.new || '#1976d2',
+          onClick: () => setTireSaleDialogOpen(true),
+        },
+        {
+          key: 'new-invoice',
+          label: 'New Invoice',
+          icon: <Receipt />,
+          color: colors.secondary.main,
+          onClick: () => setInvoiceDialogOpen(true),
+        },
+        {
+          key: 'invoices',
+          label: 'Invoices',
+          icon: <Receipt />,
+          color: colors.secondary.dark,
+          to: '/staff/invoices',
+        },
+        {
+          key: 'new-quote',
+          label: 'New Quote',
+          icon: <Description />,
+          color: colors.semantic.info,
+          onClick: () => setQuotationDialogOpen(true),
+        },
+        {
+          key: 'quotations',
+          label: 'Quotations',
+          icon: <Description />,
+          color: colors.primary.main,
+          to: '/staff/quotations',
+        },
+      ],
+    },
+    {
+      title: 'Inventory & Setup',
+      items: [
+        {
+          key: 'inventory',
+          label: 'Inventory',
+          icon: <Inventory />,
+          color: colors.primary.main,
+          to: '/staff/inventory',
+        },
+        {
+          key: 'add-tires',
+          label: 'Add Tires',
+          icon: <Build />,
+          color: colors.secondary.main,
+          onClick: () => setTireDialogOpen(true),
+        },
+        {
+          key: 'add-customer',
+          label: 'Add Customer',
+          icon: <People />,
+          color: colors.primary.lighter,
+          onClick: () => setCustomerDialogOpen(true),
+        },
+      ],
+    },
+  ];
 
   return (
     <Box sx={{ p: { xs: 1, sm: 0 } }}>
@@ -139,7 +340,9 @@ export function StaffDashboard() {
         {isMobile ? (
           /* Mobile Header */
           <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}
+            >
               <Avatar
                 sx={{
                   width: 44,
@@ -152,7 +355,10 @@ export function StaffDashboard() {
                 {user?.firstName?.charAt(0) || 'S'}
               </Avatar>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: colors.secondary.main }}
+                >
                   Welcome {user?.firstName || 'Staff'}{' '}
                   <span
                     style={{
@@ -164,16 +370,30 @@ export function StaffDashboard() {
                     👋
                   </span>
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                >
                   <AccessTime sx={{ fontSize: 12 }} />
-                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date().toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
                 </Typography>
               </Box>
             </Box>
           </Box>
         ) : (
           /* Desktop Header */
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 2,
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Avatar
                 sx={{
@@ -187,7 +407,10 @@ export function StaffDashboard() {
                 {user?.firstName?.charAt(0) || 'S'}
               </Avatar>
               <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: colors.secondary.main }}>
+                <Typography
+                  variant="h4"
+                  sx={{ fontWeight: 700, color: colors.secondary.main }}
+                >
                   Welcome Back {user?.firstName || 'Staff Member'}{' '}
                   <span
                     style={{
@@ -199,9 +422,17 @@ export function StaffDashboard() {
                     👋
                   </span>
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                >
                   <AccessTime sx={{ fontSize: 16 }} />
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
                 </Typography>
               </Box>
             </Box>
@@ -219,466 +450,7 @@ export function StaffDashboard() {
       <Grid container spacing={{ xs: 1.5, sm: 3 }}>
         {/* Quick Actions Section */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 1.5, sm: 3 },
-              borderRadius: 2,
-              border: `1px solid ${colors.neutral[200]}`,
-              mb: { xs: 1.5, sm: 3 },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
-              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.secondary.main }}>
-                Quick Actions
-              </Typography>
-              {!isMobile && <Chip label="Most Used" size="small" color="secondary" />}
-            </Box>
-
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(2, 1fr)',
-                sm: 'repeat(3, 1fr)',
-                md: 'repeat(4, 1fr)',
-                lg: 'repeat(6, 1fr)',
-              },
-              gap: { xs: 1, sm: 2 },
-            }}>
-              <Paper
-                onClick={handleQuickClockIn}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.semantic.success}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.success,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <AccessTime sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.success, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  {clockActionLoading ? 'Clocking In...' : currentTimeEntry ? 'Clocked In' : 'Clock In'}
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setAppointmentDialogOpen(true)}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.lighter,
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.lighter, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  New Appointment
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/appointments"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.lighter,
-                  },
-                }}
-              >
-                <CalendarMonth sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.lighter, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Appointments
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/inspections"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.info}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.info,
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <AssignmentTurnedIn sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.info, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.info, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Inspections
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setMyJobDialogOpen(true)}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.main,
-                  },
-                }}
-              >
-                <Assignment sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.main, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Add My Job
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/jobs"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.primary.main,
-                  },
-                }}
-              >
-                <Work sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.primary.main, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  My Jobs
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/earnings"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.semantic.success,
-                  },
-                }}
-              >
-                <AttachMoney sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  My Earnings
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/commission"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.secondary.main,
-                  },
-                }}
-              >
-                <TireRepair sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.secondary.main, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  My Commission
-                </Typography>
-              </Paper>
-
-              {/* Quick Tire Sale */}
-              <Paper
-                onClick={() => setTireSaleDialogOpen(true)}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.tire?.new || '#1976d2'}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.tire?.new || '#1976d2',
-                    color: 'white',
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <TireRepair sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.tire?.new || '#1976d2', mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.tire?.new || '#1976d2', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Quick Tire Sale
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setInvoiceDialogOpen(true)}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.secondary.main,
-                  },
-                }}
-              >
-                <Receipt sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.secondary.main, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  New Invoice
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setQuotationDialogOpen(true)}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.semantic.info,
-                  },
-                }}
-              >
-                <Description sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.info, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  New Quote
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setTireDialogOpen(true)}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.semantic.success,
-                  },
-                }}
-              >
-                <TireRepair sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Add Tires
-                </Typography>
-              </Paper>
-
-              <Paper
-                onClick={() => setCustomerDialogOpen(true)}
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: colors.semantic.warning,
-                  },
-                }}
-              >
-                <People sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.warning, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Add Customer
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/availability"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.neutral[200]}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderColor: '#9c27b0',
-                  },
-                }}
-              >
-                <Event sx={{ fontSize: { xs: 28, sm: 32 }, color: '#9c27b0', mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Availability
-                </Typography>
-              </Paper>
-            </Box>
-
-            <Divider sx={{ my: { xs: 1.5, sm: 2, md: 3 } }} />
-
-            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.primary.main, mb: { xs: 1, sm: 1.5, md: 2 }, fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' } }}>
-              Quick Navigation
-            </Typography>
-
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(2, 1fr)',
-                sm: 'repeat(2, 1fr)',
-                md: 'repeat(3, 1fr)',
-              },
-              gap: { xs: 1, sm: 1.5, md: 2 }
-            }}>
-              <Paper
-                component={Link}
-                to="/staff/inventory"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.success}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.success,
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Inventory sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.success, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.success, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Inventory
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/invoices"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.secondary.main}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.secondary.main,
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Receipt sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.secondary.main, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.secondary.main, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Invoices
-                </Typography>
-              </Paper>
-
-              <Paper
-                component={Link}
-                to="/staff/quotations"
-                sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: `1px solid ${colors.semantic.info}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    backgroundColor: colors.semantic.info,
-                    '& .MuiSvgIcon-root': {
-                      color: 'white !important',
-                    },
-                    '& .MuiTypography-root': {
-                      color: 'white !important',
-                    },
-                  },
-                }}
-              >
-                <Description sx={{ fontSize: { xs: 28, sm: 32 }, color: colors.semantic.info, mb: { xs: 0.5, sm: 1 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: colors.semantic.info, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Quotations
-                </Typography>
-              </Paper>
-            </Box>
-          </Paper>
+          <DashboardActionGroups groups={actionGroups} />
         </Grid>
 
         {/* Right Sidebar */}
@@ -698,15 +470,32 @@ export function StaffDashboard() {
               maxHeight: { xs: 'none', lg: '800px' },
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, color: colors.semantic.info }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 2,
+              }}
+            >
+              <Typography
+                variant={isMobile ? 'subtitle1' : 'h6'}
+                sx={{ fontWeight: 700, color: colors.semantic.info }}
+              >
                 Today's Schedule
               </Typography>
               {appointmentsLoading ? (
-                <CircularProgress size={20} sx={{ color: colors.semantic.info }} />
+                <CircularProgress
+                  size={20}
+                  sx={{ color: colors.semantic.info }}
+                />
               ) : (
                 <Chip
-                  label={`${todayAppointments.length} ${todayAppointments.length === 1 ? 'Appointment' : 'Appointments'}`}
+                  label={`${todayAppointments.length} ${
+                    todayAppointments.length === 1
+                      ? 'Appointment'
+                      : 'Appointments'
+                  }`}
                   size="small"
                   sx={{
                     backgroundColor: colors.semantic.info,
@@ -741,11 +530,16 @@ export function StaffDashboard() {
             >
               {appointmentsLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress size={32} sx={{ color: colors.semantic.info }} />
+                  <CircularProgress
+                    size={32}
+                    sx={{ color: colors.semantic.info }}
+                  />
                 </Box>
               ) : todayAppointments.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Schedule sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }} />
+                  <Schedule
+                    sx={{ fontSize: 48, color: colors.neutral[300], mb: 1 }}
+                  />
                   <Typography variant="body2" color="text.secondary">
                     No appointments scheduled for today
                   </Typography>
@@ -753,84 +547,114 @@ export function StaffDashboard() {
               ) : (
                 <Stack spacing={2} divider={<Divider />}>
                   {todayAppointments.map((appointment) => {
-                  const customerName = `${appointment.customer.firstName} ${appointment.customer.lastName}`;
-                  const customerPhone = appointment.customer.phone ? formatPhone(appointment.customer.phone) : 'No phone';
-                  const vehicleInfo = appointment.vehicle
-                    ? `${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}`
-                    : null;
-                  const technicianName = appointment.employee
-                    ? `${appointment.employee.firstName} ${appointment.employee.lastName}`
-                    : 'Unassigned';
+                    const customerName = `${appointment.customer.firstName} ${appointment.customer.lastName}`;
+                    const customerPhone = appointment.customer.phone
+                      ? formatPhone(appointment.customer.phone)
+                      : 'No phone';
+                    const vehicleInfo = appointment.vehicle
+                      ? `${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}`
+                      : null;
+                    const technicianName = appointment.employee
+                      ? `${appointment.employee.firstName} ${appointment.employee.lastName}`
+                      : 'Unassigned';
 
-                  return (
-                    <Box key={appointment.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar
+                    return (
+                      <Box key={appointment.id}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <Avatar
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              bgcolor: colors.semantic.info,
+                              fontSize: '0.875rem',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {appointment.customer.firstName.charAt(0)}
+                          </Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 700,
+                                color: colors.neutral[900],
+                              }}
+                            >
+                              {formatTimeRange(
+                                appointment.scheduledTime,
+                                appointment.endTime,
+                                appointment.duration
+                              )}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{ color: colors.neutral[900] }}
+                            >
+                              {appointment.serviceType}
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label={appointment.status}
+                            size="small"
+                            sx={{
+                              fontSize: '0.65rem',
+                              height: 20,
+                              backgroundColor:
+                                appointment.status === 'CONFIRMED'
+                                  ? colors.semantic.success
+                                  : appointment.status === 'IN_PROGRESS'
+                                  ? colors.semantic.warning
+                                  : colors.semantic.info,
+                              color: 'white',
+                            }}
+                          />
+                        </Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ ml: 5, color: colors.neutral[900] }}
+                        >
+                          {customerName} • {customerPhone}
+                        </Typography>
+                        <Typography
+                          variant="caption"
                           sx={{
-                            width: 32,
-                            height: 32,
-                            bgcolor: colors.semantic.info,
-                            fontSize: '0.875rem',
-                            fontWeight: 700,
+                            ml: 5,
+                            display: 'block',
+                            color: colors.neutral[900],
                           }}
                         >
-                          {appointment.customer.firstName.charAt(0)}
-                        </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: colors.neutral[900] }}>
-                            {formatTimeRange(appointment.scheduledTime, appointment.endTime, appointment.duration)}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: colors.neutral[900] }}>
-                            {appointment.serviceType}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={appointment.status}
-                          size="small"
-                          sx={{
-                            fontSize: '0.65rem',
-                            height: 20,
-                            backgroundColor:
-                              appointment.status === 'CONFIRMED' ? colors.semantic.success :
-                              appointment.status === 'IN_PROGRESS' ? colors.semantic.warning :
-                              colors.semantic.info,
-                            color: 'white',
-                          }}
-                        />
+                          {vehicleInfo ? `${vehicleInfo} • ` : ''}Tech:{' '}
+                          {technicianName}
+                        </Typography>
                       </Box>
-                      <Typography variant="body2" sx={{ ml: 5, color: colors.neutral[900] }}>
-                        {customerName} • {customerPhone}
-                      </Typography>
-                      <Typography variant="caption" sx={{ ml: 5, display: 'block', color: colors.neutral[900] }}>
-                        {vehicleInfo ? `${vehicleInfo} • ` : ''}Tech: {technicianName}
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Stack>
-            )}
-          </Box>
+                    );
+                  })}
+                </Stack>
+              )}
+            </Box>
 
-          <Button
-            fullWidth
-            variant="outlined"
-            component={Link}
-            to="/staff/appointments"
-            sx={{
-              borderColor: colors.semantic.info,
-              color: colors.semantic.info,
-              fontWeight: 600,
-              textTransform: 'none',
-              '&:hover': {
-                backgroundColor: colors.semantic.info,
-                color: 'white',
-              },
-            }}
-          >
-            View Full Schedule
-          </Button>
-        </Paper>
-      </Grid>
+            <Button
+              fullWidth
+              variant="outlined"
+              component={Link}
+              to="/staff/appointments"
+              sx={{
+                borderColor: colors.semantic.info,
+                color: colors.semantic.info,
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: colors.semantic.info,
+                  color: 'white',
+                },
+              }}
+            >
+              View Full Schedule
+            </Button>
+          </Paper>
+        </Grid>
       </Grid>
 
       {/* My Job Dialog - For staff to add their own job */}
@@ -894,8 +718,7 @@ export function StaffDashboard() {
       <QuickTireSaleDialog
         open={tireSaleDialogOpen}
         onClose={() => setTireSaleDialogOpen(false)}
-        onSuccess={() => {
-        }}
+        onSuccess={() => {}}
       />
     </Box>
   );
