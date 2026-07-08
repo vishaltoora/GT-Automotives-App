@@ -1,7 +1,20 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { Prisma, PaymentMethod, CommissionStatus, JobType, JobStatus } from '@prisma/client';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  Prisma,
+  PaymentMethod,
+  CommissionStatus,
+  JobType,
+  JobStatus,
+} from '@prisma/client';
 import { PrismaService } from '@gt-automotive/database';
-import { TireSaleRepository, TireSaleWithRelations } from './repositories/tire-sale.repository';
+import {
+  TireSaleRepository,
+  TireSaleWithRelations,
+} from './repositories/tire-sale.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { InvoicesService } from '../invoices/invoices.service';
 import { JobsService } from '../jobs/jobs.service';
@@ -13,13 +26,13 @@ import {
   CommissionReportDto,
   CommissionFiltersDto,
 } from '@gt-automotive/data';
-import { InvoiceItemType } from '@gt-automotive/data';
+import { InvoiceItemType, StringUtils } from '@gt-automotive/data';
 
 // Commission tiers (per tire, based on monthly volume)
 const COMMISSION_TIERS = [
-  { minTires: 0, maxTires: 30, rate: 3 },   // $3/tire for first 30
-  { minTires: 31, maxTires: 50, rate: 4 },  // $4/tire for 31-50
-  { minTires: 51, maxTires: 70, rate: 5 },  // $5/tire for 51-70
+  { minTires: 0, maxTires: 30, rate: 3 }, // $3/tire for first 30
+  { minTires: 31, maxTires: 50, rate: 4 }, // $4/tire for 31-50
+  { minTires: 51, maxTires: 70, rate: 5 }, // $5/tire for 51-70
   { minTires: 71, maxTires: Infinity, rate: 7 }, // $7/tire for 71+
 ];
 
@@ -30,7 +43,7 @@ export class TireSalesService {
     private readonly tireSaleRepository: TireSaleRepository,
     private readonly auditRepository: AuditRepository,
     private readonly invoicesService: InvoicesService,
-    private readonly jobsService: JobsService,
+    private readonly jobsService: JobsService
   ) {}
 
   /**
@@ -38,7 +51,10 @@ export class TireSalesService {
    */
   private getCommissionRate(monthlyTireCount: number): number {
     for (const tier of COMMISSION_TIERS) {
-      if (monthlyTireCount >= tier.minTires && monthlyTireCount <= tier.maxTires) {
+      if (
+        monthlyTireCount >= tier.minTires &&
+        monthlyTireCount <= tier.maxTires
+      ) {
         return tier.rate;
       }
     }
@@ -49,7 +65,10 @@ export class TireSalesService {
    * Check if a threshold was crossed (for retroactive recalculation)
    * Thresholds: 31 (Silver), 51 (Gold), 71 (Platinum)
    */
-  private checkThresholdCrossed(beforeCount: number, afterCount: number): number | null {
+  private checkThresholdCrossed(
+    beforeCount: number,
+    afterCount: number
+  ): number | null {
     const thresholds = [31, 51, 71];
     for (const threshold of thresholds) {
       if (beforeCount < threshold && afterCount >= threshold) {
@@ -62,7 +81,10 @@ export class TireSalesService {
   /**
    * Create a new tire sale
    */
-  async create(dto: CreateTireSaleDto, userId: string): Promise<TireSaleResponseDto> {
+  async create(
+    dto: CreateTireSaleDto,
+    userId: string
+  ): Promise<TireSaleResponseDto> {
     // Use provided soldById or default to current user
     const salespersonId = dto.soldById || userId;
     const isCashSale = dto.paymentMethod === PaymentMethod.CASH;
@@ -119,7 +141,10 @@ export class TireSalesService {
     const total = subtotal + taxAmount;
 
     // Calculate total tires in this sale
-    const totalTiresInSale = dto.items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalTiresInSale = dto.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
 
     // Get current monthly tire count for commission calculation (based on salesperson)
     const now = new Date();
@@ -146,11 +171,13 @@ export class TireSalesService {
       if (dto.customerData && !dto.customerId) {
         const newCustomer = await this.prisma.customer.create({
           data: {
-            firstName: dto.customerData.firstName,
-            lastName: dto.customerData.lastName,
+            firstName: StringUtils.capitalizeWords(dto.customerData.firstName),
+            lastName: StringUtils.capitalizeWords(dto.customerData.lastName),
             phone: dto.customerData.phone || null,
             email: dto.customerData.email || '',
-            businessName: dto.customerData.businessName || null,
+            businessName: dto.customerData.businessName
+              ? StringUtils.capitalizeWords(dto.customerData.businessName)
+              : null,
             address: dto.customerData.address || 'Prince George, BC',
           },
         });
@@ -220,9 +247,16 @@ export class TireSalesService {
     );
 
     // Check if threshold was crossed and recalculate pending commissions
-    const thresholdCrossed = this.checkThresholdCrossed(monthlyTireCount, newMonthlyTotal);
+    const thresholdCrossed = this.checkThresholdCrossed(
+      monthlyTireCount,
+      newMonthlyTotal
+    );
     if (thresholdCrossed) {
-      await this.recalculatePendingCommissions(salespersonId, now.getFullYear(), now.getMonth() + 1);
+      await this.recalculatePendingCommissions(
+        salespersonId,
+        now.getFullYear(),
+        now.getMonth() + 1
+      );
     }
 
     // Note: Jobs for commissions are created when admin processes commissions at end of month
@@ -257,14 +291,19 @@ export class TireSalesService {
     month: number
   ): Promise<void> {
     // Get all pending commissions for this month
-    const pendingSales = await this.tireSaleRepository.getPendingCommissionsForMonth(
+    const pendingSales =
+      await this.tireSaleRepository.getPendingCommissionsForMonth(
+        employeeId,
+        year,
+        month
+      );
+
+    // Get total tire count for the month
+    const monthlyTotal = await this.tireSaleRepository.getMonthlyTireCount(
       employeeId,
       year,
       month
     );
-
-    // Get total tire count for the month
-    const monthlyTotal = await this.tireSaleRepository.getMonthlyTireCount(employeeId, year, month);
 
     // Determine the new rate
     const newRate = this.getCommissionRate(monthlyTotal);
@@ -272,7 +311,10 @@ export class TireSalesService {
     // Update all pending sales with new rate
     const saleIds = pendingSales.map((s) => s.id);
     if (saleIds.length > 0) {
-      await this.tireSaleRepository.batchUpdateCommissionRate(saleIds, new Prisma.Decimal(newRate));
+      await this.tireSaleRepository.batchUpdateCommissionRate(
+        saleIds,
+        new Prisma.Decimal(newRate)
+      );
     }
   }
 
@@ -306,7 +348,11 @@ export class TireSalesService {
       repoFilters.endDate = new Date(filters.endDate);
     }
 
-    const { items, total } = await this.tireSaleRepository.findAll(repoFilters, page, limit);
+    const { items, total } = await this.tireSaleRepository.findAll(
+      repoFilters,
+      page,
+      limit
+    );
 
     return {
       items: items.map((item) => this.toResponseDto(item)),
@@ -319,7 +365,10 @@ export class TireSalesService {
   /**
    * Get tire sales for current user (staff view)
    */
-  async findMySales(userId: string, filters: TireSaleFiltersDto): Promise<{
+  async findMySales(
+    userId: string,
+    filters: TireSaleFiltersDto
+  ): Promise<{
     items: TireSaleResponseDto[];
     total: number;
     page: number;
@@ -342,7 +391,11 @@ export class TireSalesService {
   /**
    * Update tire sale (change salesperson)
    */
-  async update(id: string, dto: UpdateTireSaleDto, adminUserId: string): Promise<TireSaleResponseDto> {
+  async update(
+    id: string,
+    dto: UpdateTireSaleDto,
+    adminUserId: string
+  ): Promise<TireSaleResponseDto> {
     const sale = await this.tireSaleRepository.findById(id);
     if (!sale) {
       throw new NotFoundException('Tire sale not found');
@@ -421,7 +474,9 @@ export class TireSalesService {
   /**
    * Get commission report
    */
-  async getCommissionReport(filters: CommissionFiltersDto): Promise<CommissionReportDto> {
+  async getCommissionReport(
+    filters: CommissionFiltersDto
+  ): Promise<CommissionReportDto> {
     const now = new Date();
     const startDate = filters.startDate
       ? new Date(filters.startDate)
@@ -453,9 +508,15 @@ export class TireSalesService {
 
     const totals = {
       totalTiresSold: employees.reduce((sum, e) => sum + e.totalTiresSold, 0),
-      totalSalesAmount: employees.reduce((sum, e) => sum + e.totalSalesAmount, 0),
+      totalSalesAmount: employees.reduce(
+        (sum, e) => sum + e.totalSalesAmount,
+        0
+      ),
       totalCommission: employees.reduce((sum, e) => sum + e.totalCommission, 0),
-      pendingCommission: employees.reduce((sum, e) => sum + e.pendingCommission, 0),
+      pendingCommission: employees.reduce(
+        (sum, e) => sum + e.pendingCommission,
+        0
+      ),
       paidCommission: employees.reduce((sum, e) => sum + e.paidCommission, 0),
     };
 
@@ -470,7 +531,10 @@ export class TireSalesService {
   /**
    * Approve commission for payment
    */
-  async approveCommission(id: string, adminUserId: string): Promise<TireSaleResponseDto> {
+  async approveCommission(
+    id: string,
+    adminUserId: string
+  ): Promise<TireSaleResponseDto> {
     const sale = await this.tireSaleRepository.findById(id);
     if (!sale) {
       throw new NotFoundException('Tire sale not found');
@@ -510,14 +574,17 @@ export class TireSalesService {
     const m = month || now.getMonth() + 1;
 
     // Get all pending commission sales for this employee in the specified month
-    const pendingSales = await this.tireSaleRepository.getPendingCommissionsForMonth(
-      employeeId,
-      y,
-      m
-    );
+    const pendingSales =
+      await this.tireSaleRepository.getPendingCommissionsForMonth(
+        employeeId,
+        y,
+        m
+      );
 
     if (pendingSales.length === 0) {
-      throw new BadRequestException('No pending commissions found for this employee');
+      throw new BadRequestException(
+        'No pending commissions found for this employee'
+      );
     }
 
     // Calculate total commission amount
@@ -542,16 +609,24 @@ export class TireSalesService {
 
     // Calculate total tires sold
     const totalTiresSold = pendingSales.reduce((sum, sale) => {
-      return sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+      return (
+        sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0)
+      );
     }, 0);
 
     // Create ONE job for all commissions
-    const monthName = new Date(y, m - 1).toLocaleString('default', { month: 'long' });
+    const monthName = new Date(y, m - 1).toLocaleString('default', {
+      month: 'long',
+    });
     const job = await this.jobsService.create(
       {
         employeeId,
         title: `Tire Sales Commission - ${monthName} ${y}`,
-        description: `Commission for ${totalTiresSold} tire(s) sold across ${pendingSales.length} sale(s) in ${monthName} ${y}. Rate: $${this.getCommissionRate(totalTiresSold)}/tire.`,
+        description: `Commission for ${totalTiresSold} tire(s) sold across ${
+          pendingSales.length
+        } sale(s) in ${monthName} ${y}. Rate: $${this.getCommissionRate(
+          totalTiresSold
+        )}/tire.`,
         payAmount: totalCommissionAmount,
         jobType: JobType.COMMISSION,
         status: JobStatus.READY,
@@ -595,7 +670,11 @@ export class TireSalesService {
   /**
    * Get monthly stats for an employee
    */
-  async getMonthlyStats(employeeId: string, year?: number, month?: number): Promise<{
+  async getMonthlyStats(
+    employeeId: string,
+    year?: number,
+    month?: number
+  ): Promise<{
     totalTiresSold: number;
     currentRate: number;
     nextThreshold: number | null;
@@ -605,7 +684,11 @@ export class TireSalesService {
     const y = year || now.getFullYear();
     const m = month || now.getMonth() + 1;
 
-    const totalTiresSold = await this.tireSaleRepository.getMonthlyTireCount(employeeId, y, m);
+    const totalTiresSold = await this.tireSaleRepository.getMonthlyTireCount(
+      employeeId,
+      y,
+      m
+    );
     const currentRate = this.getCommissionRate(totalTiresSold);
 
     // Determine next threshold based on commission tiers:
@@ -676,7 +759,9 @@ export class TireSalesService {
       taxAmount: Number(sale.taxAmount),
       total: Number(sale.total),
       commissionRate: sale.commissionRate ? Number(sale.commissionRate) : null,
-      commissionAmount: sale.commissionAmount ? Number(sale.commissionAmount) : null,
+      commissionAmount: sale.commissionAmount
+        ? Number(sale.commissionAmount)
+        : null,
       commissionStatus: sale.commissionStatus,
       commissionPaidAt: sale.commissionPaidAt,
       notes: sale.notes,

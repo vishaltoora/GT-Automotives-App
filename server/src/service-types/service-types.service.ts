@@ -8,6 +8,7 @@ import {
   CreateServiceTypeDto,
   UpdateServiceTypeDto,
   ServiceTypeResponseDto,
+  StringUtils,
 } from '@gt-automotive/data';
 import { ServiceTypeRepository } from './service-type.repository';
 
@@ -43,7 +44,7 @@ export class ServiceTypesService {
 
     const created = await this.repository.create({
       code,
-      name: dto.name,
+      name: StringUtils.capitalizeWords(dto.name),
       duration: dto.duration,
       isActive: dto.isActive ?? true,
       sortOrder,
@@ -72,7 +73,9 @@ export class ServiceTypesService {
 
     const updated = await this.repository.update(id, {
       ...(code !== undefined && { code }),
-      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.name !== undefined && {
+        name: StringUtils.capitalizeWords(dto.name),
+      }),
       ...(dto.duration !== undefined && { duration: dto.duration }),
       ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),

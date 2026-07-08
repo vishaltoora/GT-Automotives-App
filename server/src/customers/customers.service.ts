@@ -3,7 +3,11 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { CreateCustomerDto, UpdateCustomerDto } from '@gt-automotive/data';
+import {
+  CreateCustomerDto,
+  UpdateCustomerDto,
+  StringUtils,
+} from '@gt-automotive/data';
 import { CustomerRepository } from './repositories/customer.repository';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { PrismaService } from '@gt-automotive/database';
@@ -32,8 +36,8 @@ export class CustomersService {
     // Create customer directly without user account
     const customer = await this.prisma.customer.create({
       data: {
-        firstName: createCustomerDto.firstName,
-        lastName: createCustomerDto.lastName,
+        firstName: StringUtils.capitalizeWords(createCustomerDto.firstName),
+        lastName: StringUtils.capitalizeWords(createCustomerDto.lastName),
         email: createCustomerDto.email,
         additionalEmails: createCustomerDto.additionalEmails ?? [],
         pstExempt: createCustomerDto.pstExempt ?? false,
@@ -41,7 +45,9 @@ export class CustomersService {
         fleetDiscount: createCustomerDto.fleetDiscount ?? false,
         phone: createCustomerDto.phone,
         address: createCustomerDto.address,
-        businessName: createCustomerDto.businessName,
+        businessName: createCustomerDto.businessName
+          ? StringUtils.capitalizeWords(createCustomerDto.businessName)
+          : createCustomerDto.businessName,
       },
     });
 
@@ -158,10 +164,10 @@ export class CustomersService {
       where: { id },
       data: {
         ...(updateCustomerDto.firstName && {
-          firstName: updateCustomerDto.firstName,
+          firstName: StringUtils.capitalizeWords(updateCustomerDto.firstName),
         }),
         ...(updateCustomerDto.lastName && {
-          lastName: updateCustomerDto.lastName,
+          lastName: StringUtils.capitalizeWords(updateCustomerDto.lastName),
         }),
         ...(updateCustomerDto.email !== undefined && {
           email: updateCustomerDto.email,
@@ -185,7 +191,9 @@ export class CustomersService {
           address: updateCustomerDto.address,
         }),
         ...(updateCustomerDto.businessName !== undefined && {
-          businessName: updateCustomerDto.businessName,
+          businessName: updateCustomerDto.businessName
+            ? StringUtils.capitalizeWords(updateCustomerDto.businessName)
+            : updateCustomerDto.businessName,
         }),
       },
       include: {

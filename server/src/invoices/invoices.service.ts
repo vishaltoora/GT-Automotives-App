@@ -11,6 +11,7 @@ import {
   CreateServiceDto,
   UpdateInvoiceDto,
   UpdateServiceDto,
+  StringUtils,
 } from '@gt-automotive/data';
 import {
   Invoice,
@@ -55,12 +56,14 @@ export class InvoicesService {
       try {
         // Create customer directly without user relationship
         const customerData: any = {
-          firstName,
-          lastName,
+          firstName: StringUtils.capitalizeWords(firstName),
+          lastName: StringUtils.capitalizeWords(lastName),
           email: email || '', // Empty string instead of generated email
           phone: phone || null,
           address: address || null,
-          businessName: businessName || null,
+          businessName: businessName
+            ? StringUtils.capitalizeWords(businessName)
+            : null,
         };
 
         const newCustomer = await this.customerRepository.create(customerData);
