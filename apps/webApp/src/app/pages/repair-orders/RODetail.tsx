@@ -38,6 +38,7 @@ import {
   Chat as ChatIcon,
   DirectionsCar,
   Edit,
+  LockOpen,
   Print as PrintIcon,
   ReceiptLong,
   Save,
@@ -136,6 +137,7 @@ function CurrentTab({
   const [savingNotes, setSavingNotes] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
@@ -239,6 +241,27 @@ function CurrentTab({
       onROChange({ ...ro, ...updated });
     } finally {
       setSavingStatus(false);
+    }
+  };
+
+  // A closed/invoiced RO can be reopened (e.g. it was closed by accident) as long
+  // as no payment has landed on its invoice. Reopening rebuilds the invoice on
+  // the next close, so it stays in sync with any edits made in between.
+  const canReopen =
+    canClose &&
+    (ro.status === 'CLOSED' || ro.status === 'INVOICED') &&
+    (!ro.invoice ||
+      (ro.invoice.status !== 'PAID' && ro.invoice.status !== 'PARTIALLY_PAID'));
+
+  const handleReopen = async () => {
+    setReopening(true);
+    try {
+      const updated = await repairOrderRequests.reopen(ro.id);
+      onROChange({ ...ro, ...updated });
+    } catch (error) {
+      showApiError(error, 'Failed to reopen repair order.');
+    } finally {
+      setReopening(false);
     }
   };
 
@@ -438,6 +461,18 @@ function CurrentTab({
                 />
               ))}
             </>
+          )}
+          {canReopen && (
+            <Chip
+              label={reopening ? 'Reopening…' : 'Reopen RO'}
+              size="small"
+              variant="outlined"
+              color="warning"
+              clickable
+              disabled={reopening}
+              onClick={handleReopen}
+              icon={<LockOpen fontSize="small" />}
+            />
           )}
           <Box sx={{ flexGrow: 1 }} />
           <Typography variant="body2" color="text.secondary">

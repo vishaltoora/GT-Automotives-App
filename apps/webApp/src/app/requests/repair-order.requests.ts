@@ -199,6 +199,11 @@ export const repairOrderRequests = {
       .post(`/repair-orders/${id}/close`, { companyId, feeItemId })
       .then((r) => r.data),
 
+  reopen: (id: string) =>
+    apiClient
+      .post<RepairOrder>(`/repair-orders/${id}/reopen`)
+      .then((r) => r.data),
+
   // Services
   addService: (
     roId: string,
