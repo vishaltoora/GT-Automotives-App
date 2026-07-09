@@ -41,7 +41,6 @@ import InvoiceDialog from '../../components/invoices/InvoiceDialog';
 import PaymentMethodDialog, {
   PaymentEntryInput,
 } from '../../components/invoices/PaymentMethodDialog';
-import { SquarePaymentForm } from '../../components/payments/SquarePaymentForm';
 
 const getCustomerName = (invoice: Invoice) => {
   const customer = invoice.customer;
@@ -70,7 +69,6 @@ const InvoiceDetails: React.FC = () => {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   // Payment-method dialog for recording a manual payment (cash, card, etc.).
   const [payMethodOpen, setPayMethodOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
@@ -217,18 +215,6 @@ const InvoiceDetails: React.FC = () => {
   const handleProcessPaymentFromMenu = () => {
     setMenuAnchorEl(null);
     handleProcessPayment();
-  };
-
-  const handlePayWithSquare = () => {
-    setPaymentDialogOpen(true);
-    setMenuAnchorEl(null);
-  };
-
-  const handlePaymentSuccess = (paymentId: string) => {
-    console.log('Payment successful:', paymentId);
-    setPaymentDialogOpen(false);
-    // Reload invoice to show updated payment status
-    loadInvoice();
   };
 
   const formatCurrency = (amount: number) => {
@@ -390,14 +376,6 @@ const InvoiceDetails: React.FC = () => {
                 </ListItemIcon>
                 <ListItemText>Print</ListItemText>
               </MenuItem>
-              {invoice.status === 'PENDING' && (
-                <MenuItem onClick={handlePayWithSquare}>
-                  <ListItemIcon>
-                    <PaymentIcon fontSize="small" color="primary" />
-                  </ListItemIcon>
-                  <ListItemText>Pay with Card</ListItemText>
-                </MenuItem>
-              )}
               {isPayable && (
                 <>
                   <MenuItem onClick={handleProcessPaymentFromMenu}>
@@ -450,16 +428,6 @@ const InvoiceDetails: React.FC = () => {
               >
                 Print
               </Button>
-              {invoice.status === 'PENDING' && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<PaymentIcon />}
-                  onClick={handlePayWithSquare}
-                >
-                  Pay with Card
-                </Button>
-              )}
               {isPayable && (
                 <>
                   <Button
@@ -868,18 +836,6 @@ const InvoiceDetails: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
-
-      {/* Square Online Payment Form */}
-      {invoice && (
-        <SquarePaymentForm
-          open={paymentDialogOpen}
-          onClose={() => setPaymentDialogOpen(false)}
-          invoiceId={invoice.id}
-          invoiceNumber={invoice.invoiceNumber}
-          amount={invoice.total}
-          onPaymentSuccess={handlePaymentSuccess}
-        />
-      )}
 
       {/* Manual payment (cash, card, cheque, e-transfer, …) */}
       {invoice && (

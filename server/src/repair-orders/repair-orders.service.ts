@@ -447,61 +447,20 @@ export class RepairOrdersService {
 
   // ---- Close → Invoice ----
 
-  async closeAndConvert(
-    id: string,
-    companyId: string,
-    roleName: string,
-    userId: string,
-    feeItemId?: string
-  ): Promise<any> {
-    if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
-      throw new ForbiddenException(
-        'Only admin or supervisor can close a repair order'
-      );
-    }
-
-    const ro = await this.prisma.repairOrder.findUnique({
-      where: { id },
-      include: {
-        customer: true,
-        services: { where: { status: 'COMPLETED' } },
-        invoice: true,
-        inspections: {
-          where: {
-            invoiceId: null,
-            status: { in: ['COMPLETED', 'FINALIZED'] },
-          },
-          orderBy: { createdAt: 'desc' },
-          select: { id: true },
-        },
-      },
-    });
-
-    if (!ro) throw new NotFoundException('Repair order not found');
-    if (ro.invoice)
-      throw new BadRequestException(
-        'Invoice already exists for this repair order'
-      );
-
-    // When a completed inspection is linked, the inspection drives the invoice:
-    // its fee becomes a line item alongside any completed RO services/parts.
-    // Delegate so tax rules, the PST-exempt gate, numbering, and the
-    // inspection<->invoice<->RO linkage all stay consistent in one place.
-    const linkedInspection = ro.inspections[0];
-    if (linkedInspection) {
-      if (!feeItemId) {
-        throw new BadRequestException(
-          'Select an inspection fee to invoice this repair order'
-        );
-      }
-      return this.inspectionsService.generateInvoice(
-        linkedInspection.id,
-        { feeItemId, companyId },
-        userId,
-        roleName
-      );
-    }
-
+  /**
+   * Build the invoice line items and tax totals for a repair order's completed
+   * services. Shared between the initial close→invoice and the re-sync path used
+   * when an accidentally-closed RO is reopened, edited, and closed again.
+   */
+  private buildRoInvoiceTotals(ro: any): {
+    items: any[];
+    subtotal: number;
+    gstRate: number;
+    pstRate: number;
+    gstAmount: number;
+    pstAmount: number;
+    total: number;
+  } {
     const completedServices = ro.services;
     const baseItems = completedServices.map((s: any) => ({
       description: s.description,
@@ -527,8 +486,8 @@ export class RepairOrdersService {
           : e.quantity * e.unitPrice,
     }));
 
-    const allItems = [...baseItems, ...extraItems];
-    const subtotal = allItems.reduce(
+    const items = [...baseItems, ...extraItems];
+    const subtotal = items.reduce(
       (sum: number, i: any) => sum + Number(i.total),
       0
     );
@@ -537,6 +496,129 @@ export class RepairOrdersService {
     const gstAmount = subtotal * gstRate;
     const pstAmount = subtotal * pstRate;
     const total = subtotal + gstAmount + pstAmount;
+
+    return { items, subtotal, gstRate, pstRate, gstAmount, pstAmount, total };
+  }
+
+  /** True once any money has been collected against the invoice. */
+  private invoiceHasPayment(invoice: any): boolean {
+    return (
+      !!invoice &&
+      (invoice.status === 'PAID' ||
+        invoice.status === 'PARTIALLY_PAID' ||
+        Number(invoice.amountPaid ?? 0) > 0)
+    );
+  }
+
+  async closeAndConvert(
+    id: string,
+    companyId: string,
+    roleName: string,
+    userId: string,
+    feeItemId?: string
+  ): Promise<any> {
+    if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
+      throw new ForbiddenException(
+        'Only admin or supervisor can close a repair order'
+      );
+    }
+
+    const ro = await this.prisma.repairOrder.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        services: { where: { status: 'COMPLETED' } },
+        invoice: true,
+        // Fetch all inspections (not just uninvoiced ones) so we can both find a
+        // billable inspection AND detect one already linked to the existing invoice.
+        inspections: {
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, invoiceId: true, status: true },
+        },
+      },
+    });
+
+    if (!ro) throw new NotFoundException('Repair order not found');
+
+    const existingInvoice = ro.invoice;
+    // A reopened RO keeps its (unpaid) invoice linked. Re-closing re-syncs that
+    // invoice in place. Once any payment has been recorded, the invoice is
+    // locked — money is on the books and its line items must not be rewritten.
+    if (this.invoiceHasPayment(existingInvoice)) {
+      throw new BadRequestException(
+        "This repair order's invoice already has a recorded payment and cannot be regenerated"
+      );
+    }
+
+    // If the existing invoice was generated from an inspection, its fee item is
+    // not stored on the RO services, so we can't safely rebuild it here. Block the
+    // re-sync and tell the user to edit the invoice directly.
+    if (
+      existingInvoice &&
+      ro.inspections.some((i: any) => i.invoiceId === existingInvoice.id)
+    ) {
+      throw new BadRequestException(
+        "This repair order's invoice was generated from an inspection. Edit the invoice directly to change it."
+      );
+    }
+
+    // When a completed, not-yet-invoiced inspection is linked, the inspection
+    // drives the invoice: its fee becomes a line item alongside any completed RO
+    // services/parts. Delegate so tax rules, the PST-exempt gate, numbering, and
+    // the inspection<->invoice<->RO linkage all stay consistent in one place.
+    // (Only for the initial close — a re-sync with an existing invoice is handled
+    // by the guard above.)
+    const linkedInspection = ro.inspections.find(
+      (i: any) =>
+        !i.invoiceId && (i.status === 'COMPLETED' || i.status === 'FINALIZED')
+    );
+    if (!existingInvoice && linkedInspection) {
+      if (!feeItemId) {
+        throw new BadRequestException(
+          'Select an inspection fee to invoice this repair order'
+        );
+      }
+      return this.inspectionsService.generateInvoice(
+        linkedInspection.id,
+        { feeItemId, companyId },
+        userId,
+        roleName
+      );
+    }
+
+    const { items, subtotal, gstRate, pstRate, gstAmount, pstAmount, total } =
+      this.buildRoInvoiceTotals(ro);
+
+    // Re-sync path: reopened RO with an existing unpaid invoice. Rebuild its line
+    // items and totals in place, keeping the same invoice id/number and PENDING
+    // status so any external references to the invoice stay valid.
+    if (existingInvoice) {
+      return this.prisma.$transaction(async (tx) => {
+        await tx.invoiceItem.deleteMany({
+          where: { invoiceId: existingInvoice.id },
+        });
+        const invoice = await tx.invoice.update({
+          where: { id: existingInvoice.id },
+          data: {
+            subtotal,
+            taxRate: gstRate + pstRate,
+            taxAmount: gstAmount + pstAmount,
+            gstRate,
+            gstAmount,
+            pstRate,
+            pstAmount,
+            total,
+            status: 'PENDING',
+            items: { create: items as any },
+          },
+        });
+        await tx.repairOrder.update({
+          where: { id },
+          data: { status: ROStatus.INVOICED, closedAt: new Date() },
+        });
+        return invoice;
+      });
+    }
 
     const invoiceNumber = await this.generateInvoiceNumber();
 
@@ -556,10 +638,10 @@ export class RepairOrdersService {
         pstRate,
         pstAmount,
         total,
-        status: 'DRAFT',
+        status: 'PENDING',
         createdBy: 'system',
         items: {
-          create: allItems as any,
+          create: items as any,
         },
       },
     });
@@ -570,6 +652,62 @@ export class RepairOrdersService {
     });
 
     return invoice;
+  }
+
+  /**
+   * Reopen a closed/invoiced repair order (e.g. it was closed by accident) so its
+   * services can be edited and its invoice re-synced. Only allowed while no
+   * payment has been recorded against the invoice. The linked invoice is kept
+   * (and later rebuilt on re-close by closeAndConvert). A completed appointment
+   * is pulled back to IN_PROGRESS.
+   */
+  async reopen(id: string, roleName: string): Promise<any> {
+    if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
+      throw new ForbiddenException(
+        'Only admin or supervisor can reopen a repair order'
+      );
+    }
+
+    const ro = await this.prisma.repairOrder.findUnique({
+      where: { id },
+      include: {
+        invoice: { select: { id: true, status: true, amountPaid: true } },
+        appointment: { select: { id: true, status: true } },
+      },
+    });
+
+    if (!ro) throw new NotFoundException('Repair order not found');
+
+    if (ro.status !== ROStatus.CLOSED && ro.status !== ROStatus.INVOICED) {
+      throw new BadRequestException(
+        'Only a closed repair order can be reopened'
+      );
+    }
+
+    if (this.invoiceHasPayment(ro.invoice)) {
+      throw new BadRequestException(
+        "Cannot reopen: a payment has already been recorded on this repair order's invoice"
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.repairOrder.update({
+        where: { id },
+        data: { status: ROStatus.IN_PROGRESS, closedAt: null },
+        include: this.roInclude,
+      });
+
+      // If the appointment had already flipped to COMPLETED, bring it back so the
+      // job reads as active again. (Normally it's still IN_PROGRESS when unpaid.)
+      if (ro.appointment && ro.appointment.status === 'COMPLETED') {
+        await tx.appointment.updateMany({
+          where: { id: ro.appointment.id, status: 'COMPLETED' },
+          data: { status: 'IN_PROGRESS' },
+        });
+      }
+
+      return this.applyMediaSasUrls(updated);
+    });
   }
 
   // ---- Helpers ----

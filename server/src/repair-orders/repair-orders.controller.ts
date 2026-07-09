@@ -120,6 +120,12 @@ export class RepairOrdersController {
     );
   }
 
+  @Post(':id/reopen')
+  @Roles('ADMIN', 'SUPERVISOR')
+  reopen(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.roService.reopen(id, user.role.name);
+  }
+
   // ---- Services ----
 
   @Post(':id/services')

@@ -79,7 +79,10 @@ export const formatPhoneNumber = (phone: string): string => {
   if (cleaned.length === 10) {
     return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
   } else if (cleaned.length === 11 && cleaned[0] === '1') {
-    return `${cleaned[0]}-${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+    return `${cleaned[0]}-${cleaned.slice(1, 4)}-${cleaned.slice(
+      4,
+      7
+    )}-${cleaned.slice(7)}`;
   }
   return phone;
 };
@@ -125,7 +128,7 @@ export const getStatusIcon = (status: string) => {
 export const formatStatusLabel = (status: string) => {
   return status
     .split('_')
-    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
     .join(' ');
 };
 
@@ -182,7 +185,11 @@ export interface AppointmentCardProps {
   };
   onEdit?: (appointment: any) => void;
   onDelete?: (appointmentId: string) => void;
-  onStatusChange?: (appointmentId: string, newStatus: string, paymentData?: any) => void | Promise<void>;
+  onStatusChange?: (
+    appointmentId: string,
+    newStatus: string,
+    paymentData?: any
+  ) => void | Promise<void>;
   onPaymentComplete?: () => void | Promise<void>;
   onCreateRepairOrder?: (appointment: any) => void | Promise<void>;
   onViewRepairOrder?: (repairOrderId: string) => void;
@@ -275,7 +282,15 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           },
         }}
       >
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <CardContent
+          sx={{
+            p: 2,
+            '&:last-child': { pb: 2 },
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           {/* Header: Time and Status */}
           <Box
             sx={{
@@ -287,19 +302,39 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ScheduleIcon color="action" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
-                <Typography variant="h6" sx={{ fontSize: { xs: '0.938rem', sm: '1.25rem' }, fontWeight: { xs: 700, sm: 500 } }}>
+                <ScheduleIcon
+                  color="action"
+                  sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: { xs: '0.938rem', sm: '1.25rem' },
+                    fontWeight: { xs: 700, sm: 500 },
+                  }}
+                >
                   {formatTimeRange(
                     appointment.scheduledTime,
                     appointment.endTime || ''
                   )}
                 </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}
+              >
                 ID: {appointment.id}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: 0.5,
+              }}
+            >
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <Chip
                   icon={getStatusIcon(appointment.status)}
@@ -323,7 +358,8 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   color="text.secondary"
                   sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}
                 >
-                  Booked by: {appointment.bookedByUser.firstName} {appointment.bookedByUser.lastName}
+                  Booked by: {appointment.bookedByUser.firstName}{' '}
+                  {appointment.bookedByUser.lastName}
                 </Typography>
               )}
             </Box>
@@ -352,7 +388,10 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               </MenuItem>
             )}
             {onDelete && (
-              <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+              <MenuItem
+                onClick={handleDeleteClick}
+                sx={{ color: 'error.main' }}
+              >
                 <ListItemIcon>
                   <DeleteIcon fontSize="small" color="error" />
                 </ListItemIcon>
@@ -425,7 +464,9 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           <Divider sx={{ my: 1.5 }} />
 
           {/* Customer Info */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}
+          >
             <Avatar
               sx={{
                 width: 32,
@@ -445,19 +486,27 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               </Typography>
               {appointment.customer.businessName && (
                 <Typography variant="caption" color="text.secondary">
-                  {appointment.customer.firstName} {appointment.customer.lastName}
+                  {appointment.customer.firstName}{' '}
+                  {appointment.customer.lastName}
                 </Typography>
               )}
               {appointment.customer.phone && (
-                <Typography variant="caption" color="text.primary" sx={{ display: 'block', fontWeight: 600 }}>
+                <Typography
+                  variant="caption"
+                  color="text.primary"
+                  sx={{ display: 'block', fontWeight: 600 }}
+                >
                   {formatPhoneNumber(appointment.customer.phone)}
                 </Typography>
               )}
               {/* Show service address for mobile service, otherwise show customer address */}
-              {appointment.appointmentType === 'MOBILE_SERVICE' && appointment.serviceAddress ? (
+              {appointment.appointmentType === 'MOBILE_SERVICE' &&
+              appointment.serviceAddress ? (
                 <Box
                   component="a"
-                  href={`https://maps.google.com/?q=${encodeURIComponent(appointment.serviceAddress)}`}
+                  href={`https://maps.google.com/?q=${encodeURIComponent(
+                    appointment.serviceAddress
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   sx={{
@@ -473,7 +522,9 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                     },
                   }}
                 >
-                  <LocationOnIcon sx={{ fontSize: '0.875rem', mt: 0.25, flexShrink: 0 }} />
+                  <LocationOnIcon
+                    sx={{ fontSize: '0.875rem', mt: 0.25, flexShrink: 0 }}
+                  />
                   <Typography
                     variant="caption"
                     sx={{
@@ -485,37 +536,43 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                     {appointment.serviceAddress}
                   </Typography>
                 </Box>
-              ) : appointment.customer.address && (
-                <Box
-                  component="a"
-                  href={`https://maps.google.com/?q=${encodeURIComponent(appointment.customer.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 0.5,
-                    mt: 0.5,
-                    textDecoration: 'none',
-                    color: 'primary.main',
-                    cursor: 'pointer',
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  <LocationOnIcon sx={{ fontSize: '0.875rem', mt: 0.25, flexShrink: 0 }} />
-                  <Typography
-                    variant="caption"
+              ) : (
+                appointment.customer.address && (
+                  <Box
+                    component="a"
+                    href={`https://maps.google.com/?q=${encodeURIComponent(
+                      appointment.customer.address
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     sx={{
-                      wordBreak: 'break-word',
-                      overflowWrap: 'break-word',
-                      lineHeight: 1.4,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 0.5,
+                      mt: 0.5,
+                      textDecoration: 'none',
+                      color: 'primary.main',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
                     }}
                   >
-                    {appointment.customer.address}
-                  </Typography>
-                </Box>
+                    <LocationOnIcon
+                      sx={{ fontSize: '0.875rem', mt: 0.25, flexShrink: 0 }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {appointment.customer.address}
+                    </Typography>
+                  </Box>
+                )
               )}
             </Box>
           </Box>
@@ -534,17 +591,22 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           )}
 
           {/* Assigned Employee(s) */}
-          {(appointment.employee || (appointment.employees && appointment.employees.length > 0)) && (
+          {(appointment.employee ||
+            (appointment.employees && appointment.employees.length > 0)) && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <PersonIcon fontSize="small" color="action" />
               <Typography variant="body2" color="text.secondary">
                 Assigned to:{' '}
                 {appointment.employees && appointment.employees.length > 0
                   ? appointment.employees
-                      .map((ae) => `${ae.employee.firstName} ${ae.employee.lastName}`)
+                      .map(
+                        (ae) =>
+                          `${ae.employee.firstName} ${ae.employee.lastName}`
+                      )
                       .reduce((acc, name, index, array) => {
                         if (index === 0) return name;
-                        if (index === array.length - 1) return `${acc} and ${name}`;
+                        if (index === array.length - 1)
+                          return `${acc} and ${name}`;
                         return `${acc}, ${name}`;
                       }, '')
                   : appointment.employee
@@ -566,7 +628,11 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 borderColor: 'primary.main',
               }}
             >
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+              >
                 Notes:
               </Typography>
               <Typography variant="body2">{appointment.notes}</Typography>
@@ -574,74 +640,91 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           )}
 
           {/* Quick Actions */}
-          {showActions && onStatusChange && appointment.status !== 'COMPLETED' && (
-            <Box sx={{ display: 'flex', gap: 1, mt: 'auto', pt: 2, flexWrap: 'wrap' }}>
-              {/* Start — mobile appointments only; at-shop uses the RO workflow instead */}
-              {isMobile &&
-                (appointment.status === 'SCHEDULED' || appointment.status === 'CONFIRMED') && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  startIcon={<HourglassEmptyIcon />}
-                  onClick={() => onStatusChange(appointment.id, 'IN_PROGRESS')}
-                >
-                  Start
-                </Button>
-              )}
-              {appointment.status === 'IN_PROGRESS' && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  startIcon={<CheckCircleIcon />}
-                  onClick={handleComplete}
-                >
-                  Complete
-                </Button>
-              )}
-              {/* Repair Order actions — garage appointments only */}
-              {appointment.repairOrder ? (
-                onViewRepairOrder && (
+          {showActions &&
+            onStatusChange &&
+            appointment.status !== 'COMPLETED' && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  mt: 'auto',
+                  pt: 2,
+                  flexWrap: 'wrap',
+                }}
+              >
+                {/* Start — mobile appointments only; at-shop uses the RO workflow instead */}
+                {isMobile &&
+                  (appointment.status === 'SCHEDULED' ||
+                    appointment.status === 'CONFIRMED') && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="warning"
+                      startIcon={<HourglassEmptyIcon />}
+                      onClick={() =>
+                        onStatusChange(appointment.id, 'IN_PROGRESS')
+                      }
+                    >
+                      Start
+                    </Button>
+                  )}
+                {/* Complete — mobile appointments only. Shop (AT_GARAGE) appointments
+                  complete automatically when the RO's invoice is paid in full. */}
+                {isMobile && appointment.status === 'IN_PROGRESS' && (
                   <Button
                     size="small"
                     variant="outlined"
-                    color="info"
-                    startIcon={<AssignmentIcon />}
-                    onClick={() => onViewRepairOrder(appointment.repairOrder!.id)}
+                    color="success"
+                    startIcon={<CheckCircleIcon />}
+                    onClick={handleComplete}
                   >
-                    View RO
+                    Complete
                   </Button>
-                )
-              ) : (
-                !isMobile &&
-                appointment.appointmentType === 'AT_GARAGE' &&
-                ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'].includes(appointment.status) &&
-                onCreateRepairOrder && (
+                )}
+                {/* Repair Order actions — garage appointments only */}
+                {appointment.repairOrder
+                  ? onViewRepairOrder && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="info"
+                        startIcon={<AssignmentIcon />}
+                        onClick={() =>
+                          onViewRepairOrder(appointment.repairOrder!.id)
+                        }
+                      >
+                        View RO
+                      </Button>
+                    )
+                  : !isMobile &&
+                    appointment.appointmentType === 'AT_GARAGE' &&
+                    ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'].includes(
+                      appointment.status
+                    ) &&
+                    onCreateRepairOrder && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<AssignmentIcon />}
+                        onClick={() => onCreateRepairOrder(appointment)}
+                      >
+                        Create RO
+                      </Button>
+                    )}
+                {['SCHEDULED', 'CONFIRMED'].includes(appointment.status) && (
                   <Button
                     size="small"
                     variant="outlined"
-                    color="primary"
-                    startIcon={<AssignmentIcon />}
-                    onClick={() => onCreateRepairOrder(appointment)}
+                    color="error"
+                    startIcon={<CancelIcon />}
+                    onClick={() => onStatusChange(appointment.id, 'CANCELLED')}
                   >
-                    Create RO
+                    Cancel
                   </Button>
-                )
-              )}
-              {['SCHEDULED', 'CONFIRMED'].includes(appointment.status) && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  startIcon={<CancelIcon />}
-                  onClick={() => onStatusChange(appointment.id, 'CANCELLED')}
-                >
-                  Cancel
-                </Button>
-              )}
-            </Box>
-          )}
+                )}
+              </Box>
+            )}
         </CardContent>
       </Card>
     </>
