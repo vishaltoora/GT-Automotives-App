@@ -58,16 +58,37 @@ const InvoiceList: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  // Persist search/filters across navigation (e.g. view details -> back)
+  const SEARCH_STORAGE_KEY = 'invoiceListSearchParams';
+  type InvoiceSearchParams = {
+    search: string;
+    status: string;
+    companyId: string;
+    startDate: string;
+    endDate: string;
+  };
+  const getStoredSearchParams = (): InvoiceSearchParams => {
+    const defaults: InvoiceSearchParams = {
+      search: '', // Combined search for invoice number and customer name
+      status: '',
+      companyId: '',
+      startDate: '',
+      endDate: '',
+    };
+    try {
+      const saved = sessionStorage.getItem(SEARCH_STORAGE_KEY);
+      if (saved) return { ...defaults, ...JSON.parse(saved) };
+    } catch {
+      // ignore malformed storage
+    }
+    return defaults;
+  };
   // Immediate input value for responsive typing (combined search)
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(
+    () => getStoredSearchParams().search || ''
+  );
   // Debounced search params that trigger API calls
-  const [searchParams, setSearchParams] = useState({
-    search: '', // Combined search for invoice number and customer name
-    status: '',
-    companyId: '',
-    startDate: '',
-    endDate: '',
-  });
+  const [searchParams, setSearchParams] = useState(getStoredSearchParams);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -92,7 +113,8 @@ const InvoiceList: React.FC = () => {
   const totalPages = Math.ceil(invoices.length / rowsPerPage);
 
   useEffect(() => {
-    loadInvoices();
+    // Invoices are loaded by the searchParams effect below (handleSearch),
+    // which also applies any restored search/filters on mount.
     loadCompanies();
   }, []);
 
@@ -113,6 +135,15 @@ const InvoiceList: React.FC = () => {
   // Trigger search when searchParams change
   useEffect(() => {
     handleSearch();
+  }, [searchParams]);
+
+  // Persist search/filters so they survive navigating to details and back
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(searchParams));
+    } catch {
+      // ignore storage write failures
+    }
   }, [searchParams]);
 
   const loadCompanies = async () => {
@@ -306,16 +337,17 @@ const InvoiceList: React.FC = () => {
     }
   };
 
-  const getCompanyColor = (companyName: string) => {
-    switch (companyName) {
-      case 'GT Automotives':
-        return 'primary';
-      case 'GT Car Detailing':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
+  // Retained for when the Company column is re-enabled
+  // const getCompanyColor = (companyName: string) => {
+  //   switch (companyName) {
+  //     case 'GT Automotives':
+  //       return 'primary';
+  //     case 'GT Car Detailing':
+  //       return 'secondary';
+  //     default:
+  //       return 'default';
+  //   }
+  // };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -328,6 +360,14 @@ const InvoiceList: React.FC = () => {
     // Parse as UTC and format to avoid timezone shift
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { timeZone: 'UTC' });
+  };
+
+  const getVehicleInfo = (invoice: Invoice) => {
+    const vehicle = invoice.vehicle;
+    if (!vehicle) return '';
+    return [vehicle.year, vehicle.make, vehicle.model]
+      .filter(Boolean)
+      .join(' ');
   };
 
   const canCreateInvoice =
@@ -661,6 +701,21 @@ const InvoiceList: React.FC = () => {
                   })()}
                 </Typography>
 
+                {(() => {
+                  const vehicleInfo = getVehicleInfo(invoice);
+                  const plate = invoice.vehicle?.licensePlate;
+                  if (!vehicleInfo && !plate) return null;
+                  return (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mb: 0.75, fontSize: '0.7rem' }}
+                    >
+                      {[vehicleInfo, plate].filter(Boolean).join(' · ')}
+                    </Typography>
+                  );
+                })()}
+
                 <Box
                   sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}
                 >
@@ -668,13 +723,6 @@ const InvoiceList: React.FC = () => {
                     label={invoice.status}
                     color={getStatusColor(invoice.status)}
                     size="small"
-                    sx={{ fontSize: '0.65rem', height: '20px' }}
-                  />
-                  <Chip
-                    label={invoice.company?.name || 'Unknown'}
-                    size="small"
-                    color={getCompanyColor(invoice.company?.name || 'Unknown')}
-                    variant="filled"
                     sx={{ fontSize: '0.65rem', height: '20px' }}
                   />
                 </Box>
@@ -741,7 +789,7 @@ const InvoiceList: React.FC = () => {
                 <TableCell>Invoice #</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Customer</TableCell>
-                <TableCell>Company</TableCell>
+                <TableCell>Vehicle</TableCell>
                 <TableCell>Total</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Payment</TableCell>
@@ -795,14 +843,28 @@ const InvoiceList: React.FC = () => {
                     })()}
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={invoice.company?.name || 'Unknown'}
-                      size="small"
-                      color={getCompanyColor(
-                        invoice.company?.name || 'Unknown'
-                      )}
-                      variant="filled"
-                    />
+                    {(() => {
+                      const vehicleInfo = getVehicleInfo(invoice);
+                      const plate = invoice.vehicle?.licensePlate;
+                      if (!vehicleInfo && !plate) return '-';
+                      return (
+                        <Box>
+                          {vehicleInfo && (
+                            <Typography variant="body2">
+                              {vehicleInfo}
+                            </Typography>
+                          )}
+                          {plate && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {plate}
+                            </Typography>
+                          )}
+                        </Box>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>{formatCurrency(invoice.total)}</TableCell>
                   <TableCell>
@@ -881,6 +943,7 @@ const InvoiceList: React.FC = () => {
         onConfirm={handlePaymentConfirm}
         invoiceNumber={invoiceToMarkPaid?.invoiceNumber || ''}
         invoiceId={invoiceToMarkPaid?.id}
+        defaultPaymentMethod={invoiceToMarkPaid?.paymentMethod}
         total={invoiceToMarkPaid ? Number(invoiceToMarkPaid.total) : undefined}
         amountPaid={
           invoiceToMarkPaid

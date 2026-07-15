@@ -452,7 +452,10 @@ export class RepairOrdersService {
    * services. Shared between the initial close→invoice and the re-sync path used
    * when an accidentally-closed RO is reopened, edited, and closed again.
    */
-  private buildRoInvoiceTotals(ro: any): {
+  private buildRoInvoiceTotals(
+    ro: any,
+    noTax = false
+  ): {
     items: any[];
     subtotal: number;
     gstRate: number;
@@ -491,8 +494,11 @@ export class RepairOrdersService {
       (sum: number, i: any) => sum + Number(i.total),
       0
     );
-    const gstRate = 0.05;
-    const pstRate = ro.customer?.pstExempt ? 0 : 0.07;
+    // CASH_NO_TAX (noTax) is an untaxed cash sale: zero out GST/PST so the
+    // recorded total matches the cash actually collected. Mirrors the regular
+    // invoice flow (invoices.service.ts, GA-30).
+    const gstRate = noTax ? 0 : 0.05;
+    const pstRate = noTax ? 0 : ro.customer?.pstExempt ? 0 : 0.07;
     const gstAmount = subtotal * gstRate;
     const pstAmount = subtotal * pstRate;
     const total = subtotal + gstAmount + pstAmount;
@@ -515,7 +521,8 @@ export class RepairOrdersService {
     companyId: string,
     roleName: string,
     userId: string,
-    feeItemId?: string
+    feeItemId?: string,
+    paymentMethod?: string
   ): Promise<any> {
     if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
       throw new ForbiddenException(
@@ -586,12 +593,14 @@ export class RepairOrdersService {
       );
     }
 
+    const noTax = paymentMethod === 'CASH_NO_TAX';
     const { items, subtotal, gstRate, pstRate, gstAmount, pstAmount, total } =
-      this.buildRoInvoiceTotals(ro);
+      this.buildRoInvoiceTotals(ro, noTax);
 
     // Re-sync path: reopened RO with an existing unpaid invoice. Rebuild its line
     // items and totals in place, keeping the same invoice id/number and PENDING
-    // status so any external references to the invoice stay valid.
+    // status so any external references to the invoice stay valid. The RO's
+    // chosen payment method is tagged on; payment is still recorded later.
     if (existingInvoice) {
       return this.prisma.$transaction(async (tx) => {
         await tx.invoiceItem.deleteMany({
@@ -609,6 +618,7 @@ export class RepairOrdersService {
             pstAmount,
             total,
             status: 'PENDING',
+            paymentMethod: (paymentMethod as any) ?? null,
             items: { create: items as any },
           },
         });
@@ -638,7 +648,10 @@ export class RepairOrdersService {
         pstRate,
         pstAmount,
         total,
+        // The RO's chosen payment method is tagged on the invoice, but it stays
+        // PENDING — payment is recorded later through the invoice payment flow.
         status: 'PENDING',
+        paymentMethod: (paymentMethod as any) ?? undefined,
         createdBy: 'system',
         items: {
           create: items as any,

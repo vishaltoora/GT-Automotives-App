@@ -61,6 +61,11 @@ import {
   InspectionFeeItem,
 } from '../../requests/inspection.requests';
 import { invoiceService } from '../../requests/invoice.requests';
+import {
+  PAYMENT_METHOD_SELECT_OPTIONS,
+  resolvePaymentMethod,
+  PaymentMethodValue,
+} from '../../constants/payment-methods';
 import { colors } from '../../theme/colors';
 
 // ---- Status config ----
@@ -144,6 +149,10 @@ function CurrentTab({
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [feeItems, setFeeItems] = useState<InspectionFeeItem[]>([]);
   const [selectedFeeItemId, setSelectedFeeItemId] = useState('');
+  // Optional payment method tagged onto the generated invoice. The invoice is
+  // saved as PENDING (not marked paid) — payment is recorded later through the
+  // invoice flow. CASH_NO_TAX drops GST/PST from the invoice total.
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   // After a successful close, the dialog switches to a print-actions state.
   const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
   const [createdInvoiceNumber, setCreatedInvoiceNumber] = useState('');
@@ -229,9 +238,11 @@ function CurrentTab({
       ? round2(serviceBase * FLEET_DISCOUNT_RATE)
       : 0;
 
+  // CASH_NO_TAX is an untaxed cash sale — drop GST/PST from the estimate/total.
+  const noTaxSelected = selectedPaymentMethod === 'CASH_NO_TAX';
   const estimatedSubtotal = estimatedTotal + shopSupplies - fleetDiscount;
-  const estimatedGst = estimatedSubtotal * GST_RATE;
-  const estimatedPst = estimatedSubtotal * pstRate;
+  const estimatedGst = noTaxSelected ? 0 : estimatedSubtotal * GST_RATE;
+  const estimatedPst = noTaxSelected ? 0 : estimatedSubtotal * pstRate;
   const estimatedGrandTotal = estimatedSubtotal + estimatedGst + estimatedPst;
 
   const handleStatusChange = async (status: ROStatus) => {
@@ -333,7 +344,12 @@ function CurrentTab({
       await repairOrderRequests.close(
         ro.id,
         selectedCompanyId,
-        invoiceableInspection ? selectedFeeItemId : undefined
+        invoiceableInspection ? selectedFeeItemId : undefined,
+        // A Square Terminal choice resolves to its real Credit/Debit method —
+        // the RO close only tags the invoice, it doesn't run a card-reader charge.
+        selectedPaymentMethod
+          ? resolvePaymentMethod(selectedPaymentMethod as PaymentMethodValue)
+          : undefined
       );
       const refreshed = await repairOrderRequests.getById(ro.id);
       onROChange(refreshed);
@@ -912,6 +928,21 @@ function CurrentTab({
       {ro.status !== 'INVOICED' && ro.status !== 'CLOSED' && (
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Box sx={{ maxWidth: 320, ml: 'auto' }}>
+            <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+              <InputLabel>Payment Method</InputLabel>
+              <Select
+                value={selectedPaymentMethod}
+                label="Payment Method"
+                onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+              >
+                <MenuItem value="">None (unpaid)</MenuItem>
+                {PAYMENT_METHOD_SELECT_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
                 Subtotal
@@ -942,7 +973,7 @@ function CurrentTab({
             )}
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="caption" color="text.secondary">
-                GST (5%)
+                {noTaxSelected ? 'GST (no tax)' : 'GST (5%)'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 ${estimatedGst.toFixed(2)}
@@ -950,7 +981,11 @@ function CurrentTab({
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="caption" color="text.secondary">
-                {pstExempt ? 'PST (exempt)' : 'PST (7%)'}
+                {noTaxSelected
+                  ? 'PST (no tax)'
+                  : pstExempt
+                  ? 'PST (exempt)'
+                  : 'PST (7%)'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 ${estimatedPst.toFixed(2)}
@@ -1139,6 +1174,21 @@ function CurrentTab({
                       ))}
                     </Select>
                   </FormControl>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Payment Method</InputLabel>
+                    <Select
+                      value={selectedPaymentMethod}
+                      label="Payment Method"
+                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                    >
+                      <MenuItem value="">None (unpaid)</MenuItem>
+                      {PAYMENT_METHOD_SELECT_OPTIONS.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Stack>
               )}
               {(() => {
@@ -1162,8 +1212,10 @@ function CurrentTab({
                     ? round2(completedServiceBase * FLEET_DISCOUNT_RATE)
                     : 0;
                 const previewSubtotal = rawBase + previewShop - previewFleet;
-                const previewGst = previewSubtotal * GST_RATE;
-                const previewPst = previewSubtotal * pstRate;
+                // CASH_NO_TAX is an untaxed cash sale — drop GST/PST from the total.
+                const noTax = selectedPaymentMethod === 'CASH_NO_TAX';
+                const previewGst = noTax ? 0 : previewSubtotal * GST_RATE;
+                const previewPst = noTax ? 0 : previewSubtotal * pstRate;
                 return (
                   <Box
                     sx={{
@@ -1217,7 +1269,7 @@ function CurrentTab({
                       sx={{ display: 'flex', justifyContent: 'space-between' }}
                     >
                       <Typography variant="caption" color="text.secondary">
-                        GST (5%)
+                        {noTax ? 'GST (no tax)' : 'GST (5%)'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         ${previewGst.toFixed(2)}
@@ -1227,7 +1279,11 @@ function CurrentTab({
                       sx={{ display: 'flex', justifyContent: 'space-between' }}
                     >
                       <Typography variant="caption" color="text.secondary">
-                        {pstExempt ? 'PST (exempt)' : 'PST (7%)'}
+                        {noTax
+                          ? 'PST (no tax)'
+                          : pstExempt
+                          ? 'PST (exempt)'
+                          : 'PST (7%)'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         ${previewPst.toFixed(2)}

@@ -1,4 +1,11 @@
-import { IsBoolean, IsDateString, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import {
   BreakType,
@@ -8,7 +15,13 @@ import {
   TimeEntryStatus,
 } from './prisma-enums';
 
-export { BreakType, PayType, PayrollAdjustmentType, TimeEntrySource, TimeEntryStatus };
+export {
+  BreakType,
+  PayType,
+  PayrollAdjustmentType,
+  TimeEntrySource,
+  TimeEntryStatus,
+};
 
 export class UpsertEmployeeCompensationDto {
   @IsEnum(PayType)
@@ -69,12 +82,41 @@ export class UpdateTimeEntryDto {
   @IsDateString()
   clockOutAt?: string;
 
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  breakMinutes?: number;
+
   @IsString()
   adjustmentReason!: string;
 
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+export class CreateTimeEntryDto {
+  @IsString()
+  employeeId!: string;
+
+  @IsDateString()
+  clockInAt!: string;
+
+  @IsDateString()
+  clockOutAt!: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  breakMinutes?: number;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
 
 export class CreatePayrollAdjustmentDto {

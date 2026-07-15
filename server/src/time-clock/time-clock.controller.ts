@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -12,6 +13,7 @@ import {
   ClockInDto,
   ClockOutDto,
   CreatePayrollAdjustmentDto,
+  CreateTimeEntryDto,
   ProcessPayrollDto,
   StartBreakDto,
   TimeEntryStatus,
@@ -38,7 +40,7 @@ export class TimeClockController {
   @Roles('ADMIN')
   adminClockIn(
     @Param('employeeId') employeeId: string,
-    @Body() dto: ClockInDto,
+    @Body() dto: ClockInDto
   ) {
     return this.timeClockService.clockIn(employeeId, dto);
   }
@@ -47,7 +49,7 @@ export class TimeClockController {
   @Roles('ADMIN')
   adminClockOut(
     @Param('employeeId') employeeId: string,
-    @Body() dto: ClockOutDto,
+    @Body() dto: ClockOutDto
   ) {
     return this.timeClockService.clockOut(employeeId, dto);
   }
@@ -82,9 +84,12 @@ export class TimeClockController {
     @CurrentUser() user: any,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('status') status?: TimeEntryStatus,
+    @Query('status') status?: TimeEntryStatus
   ) {
-    return this.timeClockService.getEntries({ startDate, endDate, status }, { ...user, role: { name: 'STAFF' } });
+    return this.timeClockService.getEntries(
+      { startDate, endDate, status },
+      { ...user, role: { name: 'STAFF' } }
+    );
   }
 
   @Get('my-compensation')
@@ -106,9 +111,18 @@ export class TimeClockController {
     @Query('employeeId') employeeId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('status') status?: TimeEntryStatus,
+    @Query('status') status?: TimeEntryStatus
   ) {
-    return this.timeClockService.getEntries({ employeeId, startDate, endDate, status }, user);
+    return this.timeClockService.getEntries(
+      { employeeId, startDate, endDate, status },
+      user
+    );
+  }
+
+  @Post('entries')
+  @Roles('ADMIN')
+  createEntry(@Body() dto: CreateTimeEntryDto, @CurrentUser() user: any) {
+    return this.timeClockService.createManualEntry(dto, user.id);
   }
 
   @Patch('entries/:id')
@@ -116,7 +130,7 @@ export class TimeClockController {
   updateEntry(
     @Param('id') id: string,
     @Body() dto: UpdateTimeEntryDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.timeClockService.updateEntry(id, dto, user.id);
   }
@@ -127,14 +141,26 @@ export class TimeClockController {
     return this.timeClockService.approveEntry(id, user.id);
   }
 
+  @Post('entries/:id/unapprove')
+  @Roles('ADMIN', 'SUPERVISOR')
+  unapproveEntry(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.timeClockService.unapproveEntry(id, user.id);
+  }
+
   @Post('entries/:id/void')
   @Roles('ADMIN')
   voidEntry(
     @Param('id') id: string,
     @Body('reason') reason: string | undefined,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.timeClockService.voidEntry(id, user.id, reason);
+  }
+
+  @Delete('entries/:id')
+  @Roles('ADMIN')
+  deleteEntry(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.timeClockService.deleteEntry(id, user.id);
   }
 
   @Get('employees/:employeeId/compensation')
@@ -148,14 +174,17 @@ export class TimeClockController {
   upsertCompensation(
     @Param('employeeId') employeeId: string,
     @Body() dto: UpsertEmployeeCompensationDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.timeClockService.upsertCompensation(employeeId, dto, user.id);
   }
 
   @Post('adjustments')
   @Roles('ADMIN')
-  createAdjustment(@Body() dto: CreatePayrollAdjustmentDto, @CurrentUser() user: any) {
+  createAdjustment(
+    @Body() dto: CreatePayrollAdjustmentDto,
+    @CurrentUser() user: any
+  ) {
     return this.timeClockService.createAdjustment(dto, user.id);
   }
 
@@ -164,9 +193,13 @@ export class TimeClockController {
   getAdjustments(
     @Query('employeeId') employeeId?: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('endDate') endDate?: string
   ) {
-    return this.timeClockService.getAdjustments({ employeeId, startDate, endDate });
+    return this.timeClockService.getAdjustments({
+      employeeId,
+      startDate,
+      endDate,
+    });
   }
 
   @Post('process-payroll')
@@ -180,8 +213,12 @@ export class TimeClockController {
   getPayrollSummary(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('employeeId') employeeId?: string,
+    @Query('employeeId') employeeId?: string
   ) {
-    return this.timeClockService.getPayrollSummary(startDate, endDate, employeeId);
+    return this.timeClockService.getPayrollSummary(
+      startDate,
+      endDate,
+      employeeId
+    );
   }
 }

@@ -2,6 +2,7 @@ import {
   ClockInDto,
   ClockOutDto,
   CreatePayrollAdjustmentDto,
+  CreateTimeEntryDto,
   EmployeeCompensationDto,
   PayrollAdjustmentDto,
   ProcessPayrollDto,
@@ -25,8 +26,13 @@ export function setClerkTokenGetter(getter: () => Promise<string | null>) {
 class TimeClockService {
   private baseUrl = `${API_BASE_URL}/api/time-clock`;
 
-  private async makeRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
-    const token = clerkTokenGetter ? await clerkTokenGetter() : localStorage.getItem('authToken');
+  private async makeRequest<T>(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const token = clerkTokenGetter
+      ? await clerkTokenGetter()
+      : localStorage.getItem('authToken');
 
     const response = await fetch(url, {
       ...options,
@@ -38,8 +44,12 @@ class TimeClockService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: 'Unknown error' }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
     }
 
     if (response.status === 204) {
@@ -47,7 +57,7 @@ class TimeClockService {
     }
 
     const text = await response.text();
-    return text ? JSON.parse(text) : null as T;
+    return text ? JSON.parse(text) : (null as T);
   }
 
   clockIn(dto: ClockInDto = {}): Promise<TimeEntryDto> {
@@ -57,18 +67,30 @@ class TimeClockService {
     });
   }
 
-  adminClockIn(employeeId: string, dto: ClockInDto = {}): Promise<TimeEntryDto> {
-    return this.makeRequest<TimeEntryDto>(`${this.baseUrl}/employees/${employeeId}/clock-in`, {
-      method: 'POST',
-      body: JSON.stringify(dto),
-    });
+  adminClockIn(
+    employeeId: string,
+    dto: ClockInDto = {}
+  ): Promise<TimeEntryDto> {
+    return this.makeRequest<TimeEntryDto>(
+      `${this.baseUrl}/employees/${employeeId}/clock-in`,
+      {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      }
+    );
   }
 
-  adminClockOut(employeeId: string, dto: ClockOutDto = {}): Promise<TimeEntryDto> {
-    return this.makeRequest<TimeEntryDto>(`${this.baseUrl}/employees/${employeeId}/clock-out`, {
-      method: 'POST',
-      body: JSON.stringify(dto),
-    });
+  adminClockOut(
+    employeeId: string,
+    dto: ClockOutDto = {}
+  ): Promise<TimeEntryDto> {
+    return this.makeRequest<TimeEntryDto>(
+      `${this.baseUrl}/employees/${employeeId}/clock-out`,
+      {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      }
+    );
   }
 
   startBreak(dto: StartBreakDto = {}): Promise<TimeEntryDto> {
@@ -95,16 +117,36 @@ class TimeClockService {
     return this.makeRequest<TimeEntryDto | null>(`${this.baseUrl}/my-current`);
   }
 
-  getMyEntries(filters?: { startDate?: string; endDate?: string; status?: TimeEntryStatus }): Promise<TimeEntryDto[]> {
-    return this.makeRequest<TimeEntryDto[]>(`${this.baseUrl}/my-entries${this.toQuery(filters)}`);
+  getMyEntries(filters?: {
+    startDate?: string;
+    endDate?: string;
+    status?: TimeEntryStatus;
+  }): Promise<TimeEntryDto[]> {
+    return this.makeRequest<TimeEntryDto[]>(
+      `${this.baseUrl}/my-entries${this.toQuery(filters)}`
+    );
   }
 
   getCurrentEntries(): Promise<TimeEntryDto[]> {
     return this.makeRequest<TimeEntryDto[]>(`${this.baseUrl}/current`);
   }
 
-  getEntries(filters?: { employeeId?: string; startDate?: string; endDate?: string; status?: TimeEntryStatus }): Promise<TimeEntryDto[]> {
-    return this.makeRequest<TimeEntryDto[]>(`${this.baseUrl}/entries${this.toQuery(filters)}`);
+  getEntries(filters?: {
+    employeeId?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: TimeEntryStatus;
+  }): Promise<TimeEntryDto[]> {
+    return this.makeRequest<TimeEntryDto[]>(
+      `${this.baseUrl}/entries${this.toQuery(filters)}`
+    );
+  }
+
+  createEntry(dto: CreateTimeEntryDto): Promise<TimeEntryDto> {
+    return this.makeRequest<TimeEntryDto>(`${this.baseUrl}/entries`, {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
   }
 
   updateEntry(id: string, dto: UpdateTimeEntryDto): Promise<TimeEntryDto> {
@@ -115,45 +157,95 @@ class TimeClockService {
   }
 
   approveEntry(id: string): Promise<TimeEntryDto> {
-    return this.makeRequest<TimeEntryDto>(`${this.baseUrl}/entries/${id}/approve`, {
-      method: 'POST',
+    return this.makeRequest<TimeEntryDto>(
+      `${this.baseUrl}/entries/${id}/approve`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  unapproveEntry(id: string): Promise<TimeEntryDto> {
+    return this.makeRequest<TimeEntryDto>(
+      `${this.baseUrl}/entries/${id}/unapprove`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  deleteEntry(id: string): Promise<{ id: string }> {
+    return this.makeRequest<{ id: string }>(`${this.baseUrl}/entries/${id}`, {
+      method: 'DELETE',
     });
   }
 
   voidEntry(id: string, reason: string): Promise<TimeEntryDto> {
-    return this.makeRequest<TimeEntryDto>(`${this.baseUrl}/entries/${id}/void`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
+    return this.makeRequest<TimeEntryDto>(
+      `${this.baseUrl}/entries/${id}/void`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }
+    );
   }
 
   getCompensation(employeeId: string): Promise<EmployeeCompensationDto | null> {
-    return this.makeRequest<EmployeeCompensationDto | null>(`${this.baseUrl}/employees/${employeeId}/compensation`);
+    return this.makeRequest<EmployeeCompensationDto | null>(
+      `${this.baseUrl}/employees/${employeeId}/compensation`
+    );
   }
 
   getMyCompensation(): Promise<EmployeeCompensationDto | null> {
-    return this.makeRequest<EmployeeCompensationDto | null>(`${this.baseUrl}/my-compensation`);
+    return this.makeRequest<EmployeeCompensationDto | null>(
+      `${this.baseUrl}/my-compensation`
+    );
   }
 
-  updateCompensation(employeeId: string, dto: UpsertEmployeeCompensationDto): Promise<EmployeeCompensationDto> {
-    return this.makeRequest<EmployeeCompensationDto>(`${this.baseUrl}/employees/${employeeId}/compensation`, {
-      method: 'POST',
-      body: JSON.stringify(dto),
-    });
+  updateCompensation(
+    employeeId: string,
+    dto: UpsertEmployeeCompensationDto
+  ): Promise<EmployeeCompensationDto> {
+    return this.makeRequest<EmployeeCompensationDto>(
+      `${this.baseUrl}/employees/${employeeId}/compensation`,
+      {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      }
+    );
   }
 
-  createAdjustment(dto: CreatePayrollAdjustmentDto): Promise<PayrollAdjustmentDto> {
-    return this.makeRequest<PayrollAdjustmentDto>(`${this.baseUrl}/adjustments`, {
-      method: 'POST',
-      body: JSON.stringify(dto),
-    });
+  createAdjustment(
+    dto: CreatePayrollAdjustmentDto
+  ): Promise<PayrollAdjustmentDto> {
+    return this.makeRequest<PayrollAdjustmentDto>(
+      `${this.baseUrl}/adjustments`,
+      {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      }
+    );
   }
 
-  getPayrollSummary(filters: { startDate: string; endDate: string; employeeId?: string }): Promise<PayrollSummaryDto> {
-    return this.makeRequest<PayrollSummaryDto>(`${this.baseUrl}/payroll-summary${this.toQuery(filters)}`);
+  getPayrollSummary(filters: {
+    startDate: string;
+    endDate: string;
+    employeeId?: string;
+  }): Promise<PayrollSummaryDto> {
+    return this.makeRequest<PayrollSummaryDto>(
+      `${this.baseUrl}/payroll-summary${this.toQuery(filters)}`
+    );
   }
 
-  processPayroll(dto: ProcessPayrollDto): Promise<{ employeeId: string; processedEntries: number; processedHours: number; grossPay: number; processedAt: string }> {
+  processPayroll(
+    dto: ProcessPayrollDto
+  ): Promise<{
+    employeeId: string;
+    processedEntries: number;
+    processedHours: number;
+    grossPay: number;
+    processedAt: string;
+  }> {
     return this.makeRequest(`${this.baseUrl}/process-payroll`, {
       method: 'POST',
       body: JSON.stringify(dto),

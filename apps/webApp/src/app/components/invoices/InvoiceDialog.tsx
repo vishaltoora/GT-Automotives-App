@@ -19,6 +19,10 @@ import {
 import { TransitionProps } from '@mui/material/transitions';
 import { invoiceService, InvoiceItem } from '../../requests/invoice.requests';
 import { InvoiceItemType } from '../../../enums';
+import {
+  resolvePaymentMethod,
+  PaymentMethodValue,
+} from '../../constants/payment-methods';
 import { customerService } from '../../requests/customer.requests';
 import { vehicleService } from '../../requests/vehicle.requests';
 import TireService from '../../requests/tire.requests';
@@ -438,7 +442,11 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       };
 
       if (formData.paymentMethod) {
-        invoiceData.paymentMethod = formData.paymentMethod;
+        // A Square Terminal choice resolves to its real Credit/Debit method
+        // (there's no live card-reader checkout when tagging an invoice).
+        invoiceData.paymentMethod = resolvePaymentMethod(
+          formData.paymentMethod as PaymentMethodValue
+        );
       }
       if (formData.notes) {
         invoiceData.notes = formData.notes;
