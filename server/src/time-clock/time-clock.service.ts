@@ -1,35 +1,51 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import {
   BreakType,
   ClockInDto,
   ClockOutDto,
   CreatePayrollAdjustmentDto,
+  CreateTimeEntryDto,
   PayrollAdjustmentType,
   PayType,
   ProcessPayrollDto,
   StartBreakDto,
+  TimeEntrySource,
   TimeEntryStatus,
   UpdateTimeEntryDto,
   UpsertEmployeeCompensationDto,
 } from '@gt-automotive/data';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 
-const ACTIVE_TIME_ENTRY_STATUSES = [TimeEntryStatus.OPEN, TimeEntryStatus.ON_BREAK];
+const ACTIVE_TIME_ENTRY_STATUSES = [
+  TimeEntryStatus.OPEN,
+  TimeEntryStatus.ON_BREAK,
+];
 const STAFF_PAYROLL_ROLES = ['ADMIN', 'SUPERVISOR', 'STAFF'];
 
 @Injectable()
 export class TimeClockService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditRepository: AuditRepository,
+    private readonly auditRepository: AuditRepository
   ) {}
 
-  async upsertCompensation(employeeId: string, dto: UpsertEmployeeCompensationDto, userId: string) {
+  async upsertCompensation(
+    employeeId: string,
+    dto: UpsertEmployeeCompensationDto,
+    userId: string
+  ) {
     await this.assertPayrollEmployee(employeeId);
     this.validateCompensation(dto);
 
-    const effectiveFrom = dto.effectiveFrom ? new Date(dto.effectiveFrom) : new Date();
+    const effectiveFrom = dto.effectiveFrom
+      ? new Date(dto.effectiveFrom)
+      : new Date();
 
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.employeeCompensation.updateMany({
@@ -184,12 +200,15 @@ export class TimeClockService {
     return entries.map((entry) => this.toTimeEntryDto(entry));
   }
 
-  async getEntries(filters: {
-    employeeId?: string;
-    startDate?: string;
-    endDate?: string;
-    status?: TimeEntryStatus;
-  }, currentUser: any) {
+  async getEntries(
+    filters: {
+      employeeId?: string;
+      startDate?: string;
+      endDate?: string;
+      status?: TimeEntryStatus;
+    },
+    currentUser: any
+  ) {
     const role = currentUser?.role?.name;
     const employeeId = role === 'STAFF' ? currentUser.id : filters.employeeId;
 
@@ -206,6 +225,70 @@ export class TimeClockService {
     return entries.map((entry) => this.toTimeEntryDto(entry));
   }
 
+  async createManualEntry(dto: CreateTimeEntryDto, userId: string) {
+    await this.assertPayrollEmployee(dto.employeeId);
+
+    const clockInAt = new Date(dto.clockInAt);
+    const clockOutAt = new Date(dto.clockOutAt);
+
+    if (
+      Number.isNaN(clockInAt.getTime()) ||
+      Number.isNaN(clockOutAt.getTime())
+    ) {
+      throw new BadRequestException('Invalid clock in or clock out time');
+    }
+
+    if (clockOutAt <= clockInAt) {
+      throw new BadRequestException('Clock out must be after clock in');
+    }
+
+    const breakMinutes = dto.breakMinutes ? Math.round(dto.breakMinutes) : 0;
+    if (breakMinutes < 0) {
+      throw new BadRequestException('Break minutes cannot be negative');
+    }
+    const grossMinutes = this.diffMinutes(clockInAt, clockOutAt);
+    if (breakMinutes >= grossMinutes) {
+      throw new BadRequestException(
+        'Break must be shorter than the total worked time'
+      );
+    }
+
+    const entry = await this.prisma.timeEntry.create({
+      data: {
+        employeeId: dto.employeeId,
+        clockInAt,
+        clockOutAt,
+        status: TimeEntryStatus.CLOCKED_OUT as any,
+        source: TimeEntrySource.ADMIN as any,
+        notes: dto.notes,
+        adjustedBy: userId,
+        adjustmentReason: dto.reason?.trim() || 'Manual entry added by admin',
+        breaks: breakMinutes
+          ? {
+              create: {
+                breakType: BreakType.MEAL as any,
+                isPaid: false,
+                startAt: clockInAt,
+                endAt: new Date(clockInAt.getTime() + breakMinutes * 60000),
+                notes: 'Manual break added by admin',
+              },
+            }
+          : undefined,
+      },
+      include: this.timeEntryInclude(),
+    });
+
+    await this.auditRepository.create({
+      userId,
+      action: 'CREATE_TIME_ENTRY',
+      resource: 'TimeEntry',
+      resourceId: entry.id,
+      newValue: entry,
+    });
+
+    return this.toTimeEntryDto(entry);
+  }
+
   async updateEntry(id: string, dto: UpdateTimeEntryDto, userId: string) {
     const existing = await this.prisma.timeEntry.findUnique({
       where: { id },
@@ -217,24 +300,69 @@ export class TimeClockService {
     }
 
     if (existing.status === TimeEntryStatus.APPROVED) {
-      throw new BadRequestException('Approved entries must be unapproved before editing');
+      throw new BadRequestException(
+        'Approved entries must be unapproved before editing'
+      );
     }
 
     if (!dto.adjustmentReason?.trim()) {
       throw new BadRequestException('Adjustment reason is required');
     }
 
-    const updated = await this.prisma.timeEntry.update({
-      where: { id },
-      data: {
-        clockInAt: dto.clockInAt ? new Date(dto.clockInAt) : undefined,
-        clockOutAt: dto.clockOutAt ? new Date(dto.clockOutAt) : undefined,
-        notes: dto.notes,
-        adjustedBy: userId,
-        adjustmentReason: dto.adjustmentReason,
-        status: TimeEntryStatus.ADJUSTED as any,
-      },
-      include: this.timeEntryInclude(),
+    const clockInAt = dto.clockInAt
+      ? new Date(dto.clockInAt)
+      : existing.clockInAt;
+    const clockOutAt = dto.clockOutAt
+      ? new Date(dto.clockOutAt)
+      : existing.clockOutAt;
+
+    const replaceBreaks = dto.breakMinutes !== undefined;
+    const breakMinutes = replaceBreaks ? Math.round(dto.breakMinutes || 0) : 0;
+
+    if (replaceBreaks) {
+      if (breakMinutes < 0) {
+        throw new BadRequestException('Break minutes cannot be negative');
+      }
+      const grossMinutes = this.diffMinutes(
+        clockInAt,
+        clockOutAt || new Date()
+      );
+      if (breakMinutes >= grossMinutes) {
+        throw new BadRequestException(
+          'Break must be shorter than the total worked time'
+        );
+      }
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (replaceBreaks) {
+        await tx.breakEntry.deleteMany({ where: { timeEntryId: id } });
+        if (breakMinutes > 0) {
+          await tx.breakEntry.create({
+            data: {
+              timeEntryId: id,
+              breakType: BreakType.MEAL as any,
+              isPaid: false,
+              startAt: clockInAt,
+              endAt: new Date(clockInAt.getTime() + breakMinutes * 60000),
+              notes: 'Break adjusted by admin',
+            },
+          });
+        }
+      }
+
+      return tx.timeEntry.update({
+        where: { id },
+        data: {
+          clockInAt: dto.clockInAt ? new Date(dto.clockInAt) : undefined,
+          clockOutAt: dto.clockOutAt ? new Date(dto.clockOutAt) : undefined,
+          notes: dto.notes,
+          adjustedBy: userId,
+          adjustmentReason: dto.adjustmentReason,
+          status: TimeEntryStatus.ADJUSTED as any,
+        },
+        include: this.timeEntryInclude(),
+      });
     });
 
     await this.auditRepository.create({
@@ -280,6 +408,69 @@ export class TimeClockService {
     return this.toTimeEntryDto(updated);
   }
 
+  async unapproveEntry(id: string, userId: string) {
+    const existing = await this.prisma.timeEntry.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Time entry not found');
+    }
+    if (existing.status !== TimeEntryStatus.APPROVED) {
+      throw new BadRequestException('Only approved entries can be unapproved');
+    }
+    if (existing.payrollProcessedAt) {
+      throw new BadRequestException(
+        'Cannot unapprove an entry that has already been processed for payroll'
+      );
+    }
+
+    const updated = await this.prisma.timeEntry.update({
+      where: { id },
+      data: {
+        status: TimeEntryStatus.CLOCKED_OUT as any,
+        approvedBy: null,
+        approvedAt: null,
+      },
+      include: this.timeEntryInclude(),
+    });
+
+    await this.auditRepository.create({
+      userId,
+      action: 'UNAPPROVE_TIME_ENTRY',
+      resource: 'TimeEntry',
+      resourceId: id,
+      oldValue: existing,
+      newValue: updated,
+    });
+
+    return this.toTimeEntryDto(updated);
+  }
+
+  async deleteEntry(id: string, userId: string) {
+    const existing = await this.prisma.timeEntry.findUnique({
+      where: { id },
+      include: this.timeEntryInclude(),
+    });
+    if (!existing) {
+      throw new NotFoundException('Time entry not found');
+    }
+    if (existing.payrollProcessedAt) {
+      throw new BadRequestException(
+        'Cannot delete an entry that has already been processed for payroll'
+      );
+    }
+
+    await this.prisma.timeEntry.delete({ where: { id } });
+
+    await this.auditRepository.create({
+      userId,
+      action: 'DELETE_TIME_ENTRY',
+      resource: 'TimeEntry',
+      resourceId: id,
+      oldValue: existing,
+    });
+
+    return { id };
+  }
+
   async voidEntry(id: string, userId: string, reason?: string) {
     const existing = await this.prisma.timeEntry.findUnique({ where: { id } });
     if (!existing) {
@@ -312,7 +503,9 @@ export class TimeClockService {
     await this.assertPayrollEmployee(dto.employeeId);
 
     if (dto.amount <= 0) {
-      throw new BadRequestException('Adjustment amount must be greater than zero');
+      throw new BadRequestException(
+        'Adjustment amount must be greater than zero'
+      );
     }
 
     const adjustment = await this.prisma.payrollAdjustment.create({
@@ -341,7 +534,11 @@ export class TimeClockService {
     return this.toAdjustmentDto(adjustment);
   }
 
-  async getAdjustments(filters: { employeeId?: string; startDate?: string; endDate?: string }) {
+  async getAdjustments(filters: {
+    employeeId?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
     const adjustments = await this.prisma.payrollAdjustment.findMany({
       where: {
         employeeId: filters.employeeId,
@@ -368,7 +565,10 @@ export class TimeClockService {
     });
 
     const processedHours = this.round2(
-      entries.reduce((sum, entry) => sum + this.calculateMinutes(entry).paidMinutes / 60, 0),
+      entries.reduce(
+        (sum, entry) => sum + this.calculateMinutes(entry).paidMinutes / 60,
+        0
+      )
     );
 
     const compensation = await this.prisma.employeeCompensation.findFirst({
@@ -376,7 +576,10 @@ export class TimeClockService {
       orderBy: { effectiveFrom: 'desc' },
     });
 
-    const hourlyRate = compensation?.payType === PayType.HOURLY ? Number(compensation.hourlyRate || 0) : 0;
+    const hourlyRate =
+      compensation?.payType === PayType.HOURLY
+        ? Number(compensation.hourlyRate || 0)
+        : 0;
     const grossPay = this.round2(processedHours * hourlyRate);
     const processedAt = new Date();
 
@@ -415,12 +618,22 @@ export class TimeClockService {
     };
   }
 
-  async getPayrollSummary(startDate: string, endDate: string, employeeId?: string) {
+  async getPayrollSummary(
+    startDate: string,
+    endDate: string,
+    employeeId?: string
+  ) {
     const [entries, adjustments, compensations] = await Promise.all([
       this.prisma.timeEntry.findMany({
         where: {
           employeeId,
-          status: { in: [TimeEntryStatus.APPROVED, TimeEntryStatus.CLOCKED_OUT, TimeEntryStatus.ADJUSTED] as any[] },
+          status: {
+            in: [
+              TimeEntryStatus.APPROVED,
+              TimeEntryStatus.CLOCKED_OUT,
+              TimeEntryStatus.ADJUSTED,
+            ] as any[],
+          },
           clockInAt: this.dateRangeFilter(startDate, endDate),
         },
         include: this.timeEntryInclude(),
@@ -443,10 +656,14 @@ export class TimeClockService {
     const byEmployee = new Map<string, any>();
     const getBucket = (employee: any) => {
       if (!byEmployee.has(employee.id)) {
-        const compensation = compensations.find((item) => item.employeeId === employee.id);
+        const compensation = compensations.find(
+          (item) => item.employeeId === employee.id
+        );
         byEmployee.set(employee.id, {
           employee: this.toEmployeeDto(employee),
-          compensation: compensation ? this.toCompensationDto(compensation) : undefined,
+          compensation: compensation
+            ? this.toCompensationDto(compensation)
+            : undefined,
           approvedHours: 0,
           pendingHours: 0,
           processedHours: 0,
@@ -476,7 +693,10 @@ export class TimeClockService {
     }
 
     for (const adjustment of adjustments) {
-      const user = await this.prisma.user.findUnique({ where: { id: adjustment.employeeId }, include: { role: true } });
+      const user = await this.prisma.user.findUnique({
+        where: { id: adjustment.employeeId },
+        include: { role: true },
+      });
       if (!user) continue;
       const bucket = getBucket(user);
       bucket.bonusPay += Number(adjustment.amount);
@@ -484,12 +704,14 @@ export class TimeClockService {
 
     for (const bucket of byEmployee.values()) {
       if (bucket.compensation?.payType === PayType.HOURLY) {
-        bucket.hourlyPay = bucket.unpaidApprovedHours * Number(bucket.compensation.hourlyRate || 0);
+        bucket.hourlyPay =
+          bucket.unpaidApprovedHours *
+          Number(bucket.compensation.hourlyRate || 0);
       } else if (bucket.compensation?.payType === PayType.SALARIED) {
         bucket.salaryPay = this.calculateSalaryForPeriod(
           Number(bucket.compensation.annualSalary || 0),
           startDate,
-          endDate,
+          endDate
         );
       }
       bucket.grossPay = bucket.hourlyPay + bucket.salaryPay + bucket.bonusPay;
@@ -503,16 +725,30 @@ export class TimeClockService {
     }
 
     const employees = Array.from(byEmployee.values());
-    const totals = employees.reduce((acc, item) => ({
-      approvedHours: this.round2(acc.approvedHours + item.approvedHours),
-      pendingHours: this.round2(acc.pendingHours + item.pendingHours),
-      processedHours: this.round2(acc.processedHours + item.processedHours),
-      unpaidApprovedHours: this.round2(acc.unpaidApprovedHours + item.unpaidApprovedHours),
-      hourlyPay: this.round2(acc.hourlyPay + item.hourlyPay),
-      salaryPay: this.round2(acc.salaryPay + item.salaryPay),
-      bonusPay: this.round2(acc.bonusPay + item.bonusPay),
-      grossPay: this.round2(acc.grossPay + item.grossPay),
-    }), { approvedHours: 0, pendingHours: 0, processedHours: 0, unpaidApprovedHours: 0, hourlyPay: 0, salaryPay: 0, bonusPay: 0, grossPay: 0 });
+    const totals = employees.reduce(
+      (acc, item) => ({
+        approvedHours: this.round2(acc.approvedHours + item.approvedHours),
+        pendingHours: this.round2(acc.pendingHours + item.pendingHours),
+        processedHours: this.round2(acc.processedHours + item.processedHours),
+        unpaidApprovedHours: this.round2(
+          acc.unpaidApprovedHours + item.unpaidApprovedHours
+        ),
+        hourlyPay: this.round2(acc.hourlyPay + item.hourlyPay),
+        salaryPay: this.round2(acc.salaryPay + item.salaryPay),
+        bonusPay: this.round2(acc.bonusPay + item.bonusPay),
+        grossPay: this.round2(acc.grossPay + item.grossPay),
+      }),
+      {
+        approvedHours: 0,
+        pendingHours: 0,
+        processedHours: 0,
+        unpaidApprovedHours: 0,
+        hourlyPay: 0,
+        salaryPay: 0,
+        bonusPay: 0,
+        grossPay: 0,
+      }
+    );
 
     return { startDate, endDate, employees, totals };
   }
@@ -528,17 +764,27 @@ export class TimeClockService {
     }
 
     if (!STAFF_PAYROLL_ROLES.includes(employee.role.name)) {
-      throw new ForbiddenException('Only staff, supervisors, and admins can use payroll time tracking');
+      throw new ForbiddenException(
+        'Only staff, supervisors, and admins can use payroll time tracking'
+      );
     }
   }
 
   private validateCompensation(dto: UpsertEmployeeCompensationDto) {
-    if (dto.payType === PayType.HOURLY && (!dto.hourlyRate || dto.hourlyRate <= 0)) {
+    if (
+      dto.payType === PayType.HOURLY &&
+      (!dto.hourlyRate || dto.hourlyRate <= 0)
+    ) {
       throw new BadRequestException('Hourly employees require an hourly rate');
     }
 
-    if (dto.payType === PayType.SALARIED && (!dto.annualSalary || dto.annualSalary <= 0)) {
-      throw new BadRequestException('Salaried employees require an annual salary');
+    if (
+      dto.payType === PayType.SALARIED &&
+      (!dto.annualSalary || dto.annualSalary <= 0)
+    ) {
+      throw new BadRequestException(
+        'Salaried employees require an annual salary'
+      );
     }
   }
 
@@ -596,7 +842,9 @@ export class TimeClockService {
       unpaidBreakMinutes: minutes.unpaidBreakMinutes,
       paidMinutes: minutes.paidMinutes,
       employee: entry.employee ? this.toEmployeeDto(entry.employee) : undefined,
-      breaks: (entry.breaks || []).map((breakEntry: any) => this.toBreakDto(breakEntry)),
+      breaks: (entry.breaks || []).map((breakEntry: any) =>
+        this.toBreakDto(breakEntry)
+      ),
     };
   }
 
@@ -609,7 +857,10 @@ export class TimeClockService {
       endAt: breakEntry.endAt?.toISOString(),
       isPaid: breakEntry.isPaid,
       notes: breakEntry.notes || undefined,
-      minutes: this.diffMinutes(breakEntry.startAt, breakEntry.endAt || new Date()),
+      minutes: this.diffMinutes(
+        breakEntry.startAt,
+        breakEntry.endAt || new Date()
+      ),
     };
   }
 
@@ -625,7 +876,9 @@ export class TimeClockService {
       createdBy: adjustment.createdBy,
       approvedBy: adjustment.approvedBy || undefined,
       approvedAt: adjustment.approvedAt?.toISOString(),
-      employee: adjustment.employee ? this.toEmployeeDto(adjustment.employee) : undefined,
+      employee: adjustment.employee
+        ? this.toEmployeeDto(adjustment.employee)
+        : undefined,
     };
   }
 
@@ -634,9 +887,18 @@ export class TimeClockService {
       id: compensation.id,
       employeeId: compensation.employeeId,
       payType: compensation.payType,
-      hourlyRate: compensation.hourlyRate === null ? undefined : Number(compensation.hourlyRate),
-      annualSalary: compensation.annualSalary === null ? undefined : Number(compensation.annualSalary),
-      expectedWeeklyHours: compensation.expectedWeeklyHours === null ? undefined : Number(compensation.expectedWeeklyHours),
+      hourlyRate:
+        compensation.hourlyRate === null
+          ? undefined
+          : Number(compensation.hourlyRate),
+      annualSalary:
+        compensation.annualSalary === null
+          ? undefined
+          : Number(compensation.annualSalary),
+      expectedWeeklyHours:
+        compensation.expectedWeeklyHours === null
+          ? undefined
+          : Number(compensation.expectedWeeklyHours),
       effectiveFrom: compensation.effectiveFrom.toISOString(),
       effectiveTo: compensation.effectiveTo?.toISOString(),
       isActive: compensation.isActive,
@@ -660,7 +922,12 @@ export class TimeClockService {
     const grossMinutes = this.diffMinutes(entry.clockInAt, end);
     const unpaidBreakMinutes = (entry.breaks || [])
       .filter((breakEntry: any) => !breakEntry.isPaid)
-      .reduce((sum: number, breakEntry: any) => sum + this.diffMinutes(breakEntry.startAt, breakEntry.endAt || new Date()), 0);
+      .reduce(
+        (sum: number, breakEntry: any) =>
+          sum +
+          this.diffMinutes(breakEntry.startAt, breakEntry.endAt || new Date()),
+        0
+      );
     return {
       grossMinutes,
       unpaidBreakMinutes,
@@ -676,11 +943,18 @@ export class TimeClockService {
     return Math.round(value * 100) / 100;
   }
 
-  private calculateSalaryForPeriod(annualSalary: number, startDate: string, endDate: string) {
+  private calculateSalaryForPeriod(
+    annualSalary: number,
+    startDate: string,
+    endDate: string
+  ) {
     if (!annualSalary) return 0;
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
+    const days = Math.max(
+      1,
+      Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1
+    );
     return this.round2((annualSalary / 365) * days);
   }
 }

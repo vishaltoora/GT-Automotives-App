@@ -49,6 +49,7 @@ import { InvoiceItem } from '../../requests/invoice.requests';
 import { Company } from '../../requests/company.requests';
 import { ServiceDto } from '@gt-automotive/data';
 import { InvoiceItemType } from '../../../enums';
+import { PAYMENT_METHOD_SELECT_OPTIONS } from '../../constants/payment-methods';
 import { colors } from '../../theme/colors';
 import ServiceSelect from '../services/ServiceSelect';
 import { PhoneInput } from '../common/PhoneInput';
@@ -720,14 +721,11 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       label="Payment Method"
                     >
                       <MenuItem value="">Pending Payment</MenuItem>
-                      <MenuItem value="CASH">💵 Cash (with Tax)</MenuItem>
-                      <MenuItem value="CASH_NO_TAX">💵 Cash (no Tax)</MenuItem>
-                      <MenuItem value="CREDIT_CARD">💳 Credit Card</MenuItem>
-                      <MenuItem value="DEBIT_CARD">💳 Debit Card</MenuItem>
-                      <MenuItem value="CHECK">📝 Check</MenuItem>
-                      <MenuItem value="E_TRANSFER">📱 E-Transfer</MenuItem>
-                      <MenuItem value="FINANCING">🏦 Financing</MenuItem>
-                      <MenuItem value="BANK_DEPOSIT">🏦 Bank Deposit</MenuItem>
+                      {PAYMENT_METHOD_SELECT_OPTIONS.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
 

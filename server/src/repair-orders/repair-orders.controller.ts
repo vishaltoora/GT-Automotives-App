@@ -108,6 +108,7 @@ export class RepairOrdersController {
     @Param('id') id: string,
     @Body('companyId') companyId: string,
     @Body('feeItemId') feeItemId: string | undefined,
+    @Body('paymentMethod') paymentMethod: string | undefined,
     @CurrentUser() user: any
   ) {
     if (!companyId) throw new BadRequestException('companyId is required');
@@ -116,7 +117,8 @@ export class RepairOrdersController {
       companyId,
       user.role.name,
       user.id,
-      feeItemId
+      feeItemId,
+      paymentMethod
     );
   }
 

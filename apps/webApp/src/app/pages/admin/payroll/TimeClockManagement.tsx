@@ -29,6 +29,7 @@ import {
 } from '@mui/material';
 import {
   AccessTime,
+  Add,
   CheckCircle,
   Coffee,
   Delete,
@@ -42,10 +43,12 @@ import {
   PlayArrow,
   Refresh,
   Save,
+  Undo,
   WorkspacePremium,
 } from '@mui/icons-material';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import {
+  CreateTimeEntryDto,
   PayType,
   TimeEntryDto,
   TimeEntryStatus,
@@ -58,6 +61,13 @@ import { useAuth } from '../../../hooks/useAuth';
 import { colors } from '../../../theme/colors';
 
 const formatHours = (minutes: number) => `${(minutes / 60).toFixed(2)} hrs`;
+const formatBreak = (minutes: number) => {
+  if (!minutes) return '—';
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins ? `${hours}h ${mins}m` : `${hours}h`;
+};
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-CA', {
     style: 'currency',
@@ -114,9 +124,15 @@ export function TimeClockManagement() {
   const [editingEntry, setEditingEntry] = useState<TimeEntryDto | null>(null);
   const [editClockInAt, setEditClockInAt] = useState('');
   const [editClockOutAt, setEditClockOutAt] = useState('');
+  const [editBreakMinutes, setEditBreakMinutes] = useState('');
   const [editReason, setEditReason] = useState('');
   const [deletingEntry, setDeletingEntry] = useState<TimeEntryDto | null>(null);
-  const [deleteReason, setDeleteReason] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [addEmployeeId, setAddEmployeeId] = useState('');
+  const [addClockInAt, setAddClockInAt] = useState('');
+  const [addClockOutAt, setAddClockOutAt] = useState('');
+  const [addBreakMinutes, setAddBreakMinutes] = useState('');
+  const [addReason, setAddReason] = useState('');
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | TimeEntryStatus>(
     'ALL'
@@ -128,9 +144,9 @@ export function TimeClockManagement() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (options?: { silent?: boolean }) => {
     try {
-      setLoading(true);
+      if (!options?.silent) setLoading(true);
       setError(null);
       const [userData, currentData, entryData] = await Promise.all([
         userService.getUsers(),
@@ -154,7 +170,7 @@ export function TimeClockManagement() {
     } catch (err: any) {
       setError(err.message || 'Failed to load time clock data');
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   };
 
@@ -355,7 +371,7 @@ export function TimeClockManagement() {
         startDate: monthStart,
         endDate: monthEnd,
       });
-      await loadData();
+      await loadData({ silent: true });
       setMessage(`Processed ${result.processedHours.toFixed(2)} payroll hours`);
     } catch (err: any) {
       setError(err.message || 'Failed to process payroll');
@@ -369,7 +385,7 @@ export function TimeClockManagement() {
       setSaving(true);
       setError(null);
       await timeClockService.approveEntry(id);
-      await loadData();
+      await loadData({ silent: true });
       setMessage('Time entry approved');
     } catch (err: any) {
       setError(err.message || 'Failed to approve entry');
@@ -382,6 +398,9 @@ export function TimeClockManagement() {
     setEditingEntry(entry);
     setEditClockInAt(toDateTimeLocal(entry.clockInAt));
     setEditClockOutAt(toDateTimeLocal(entry.clockOutAt));
+    setEditBreakMinutes(
+      entry.unpaidBreakMinutes ? String(entry.unpaidBreakMinutes) : ''
+    );
     setEditReason('');
   };
 
@@ -395,10 +414,11 @@ export function TimeClockManagement() {
         clockOutAt: editClockOutAt
           ? new Date(editClockOutAt).toISOString()
           : undefined,
+        breakMinutes: editBreakMinutes ? Number(editBreakMinutes) : 0,
         adjustmentReason: editReason,
       });
       setEditingEntry(null);
-      await loadData();
+      await loadData({ silent: true });
       setMessage('Time entry updated');
     } catch (err: any) {
       setError(err.message || 'Failed to update time entry');
@@ -407,9 +427,54 @@ export function TimeClockManagement() {
     }
   };
 
+  const unapproveEntry = async (id: string) => {
+    try {
+      setSaving(true);
+      setError(null);
+      await timeClockService.unapproveEntry(id);
+      await loadData({ silent: true });
+      setMessage('Time entry unapproved and reopened for editing');
+    } catch (err: any) {
+      setError(err.message || 'Failed to unapprove entry');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openAddEntry = () => {
+    setAddEmployeeId(selectedEmployeeId || users[0]?.id || '');
+    setAddClockInAt('');
+    setAddClockOutAt('');
+    setAddBreakMinutes('');
+    setAddReason('');
+    setAddOpen(true);
+  };
+
+  const saveAddEntry = async () => {
+    if (!addEmployeeId || !addClockInAt || !addClockOutAt) return;
+    const payload: CreateTimeEntryDto = {
+      employeeId: addEmployeeId,
+      clockInAt: new Date(addClockInAt).toISOString(),
+      clockOutAt: new Date(addClockOutAt).toISOString(),
+      breakMinutes: addBreakMinutes ? Number(addBreakMinutes) : undefined,
+      reason: addReason.trim() || undefined,
+    };
+    try {
+      setSaving(true);
+      setError(null);
+      await timeClockService.createEntry(payload);
+      setAddOpen(false);
+      await loadData({ silent: true });
+      setMessage('Time entry added');
+    } catch (err: any) {
+      setError(err.message || 'Failed to add time entry');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openDeleteEntry = (entry: TimeEntryDto) => {
     setDeletingEntry(entry);
-    setDeleteReason('');
   };
 
   const deleteEntry = async () => {
@@ -417,13 +482,10 @@ export function TimeClockManagement() {
     try {
       setSaving(true);
       setError(null);
-      await timeClockService.voidEntry(
-        deletingEntry.id,
-        deleteReason || 'Deleted by admin'
-      );
+      await timeClockService.deleteEntry(deletingEntry.id);
       setDeletingEntry(null);
-      await loadData();
-      setMessage('Time entry deleted');
+      await loadData({ silent: true });
+      setMessage('Time entry permanently deleted');
     } catch (err: any) {
       setError(err.message || 'Failed to delete time entry');
     } finally {
@@ -439,7 +501,7 @@ export function TimeClockManagement() {
       setSaving(true);
       setError(null);
       await action();
-      await loadData();
+      await loadData({ silent: true });
       setMessage(successMessage);
     } catch (err: any) {
       setError(err.message || 'Time clock action failed');
@@ -457,7 +519,7 @@ export function TimeClockManagement() {
           employee.lastName || ''
         }`.trim(),
       });
-      await loadData();
+      await loadData({ silent: true });
       setMessage(`${employee.firstName || employee.email} clocked in`);
     } catch (err: any) {
       setError(err.message || 'Failed to clock in employee');
@@ -475,7 +537,7 @@ export function TimeClockManagement() {
           employee.lastName || ''
         }`.trim(),
       });
-      await loadData();
+      await loadData({ silent: true });
       setMessage(`${employee.firstName || employee.email} clocked out`);
     } catch (err: any) {
       setError(err.message || 'Failed to clock out employee');
@@ -524,7 +586,7 @@ export function TimeClockManagement() {
         </Box>
         <Button
           startIcon={<Refresh />}
-          onClick={loadData}
+          onClick={() => loadData({ silent: true })}
           disabled={saving}
           sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
         >
@@ -565,6 +627,11 @@ export function TimeClockManagement() {
             icon={<Payment />}
             iconPosition="start"
             label="This Month's Entries"
+          />
+          <Tab
+            icon={<WorkspacePremium />}
+            iconPosition="start"
+            label="Compensation & Bonus"
           />
         </Tabs>
       </Box>
@@ -756,6 +823,487 @@ export function TimeClockManagement() {
           </CardContent>
         </Card>
 
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+          Employee Quick Clock In
+        </Typography>
+        <Card elevation={0} sx={{ border: `1px solid ${colors.neutral[200]}` }}>
+          {users.map((employee, index) => {
+            const activeEntry = currentEntryByEmployeeId.get(employee.id);
+            return (
+              <Box
+                key={employee.id}
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'stretch', sm: 'center' },
+                  gap: { xs: 1.5, sm: 2 },
+                  p: { xs: 2, sm: 2.5 },
+                  borderTop:
+                    index === 0 ? 'none' : `1px solid ${colors.neutral[200]}`,
+                }}
+              >
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    {employee.firstName} {employee.lastName}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block' }}
+                  >
+                    {employee.role?.name} · {employee.email}
+                  </Typography>
+                </Box>
+                {activeEntry && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    Since {format(new Date(activeEntry.clockInAt), 'h:mm a')} ·{' '}
+                    {formatHours(activeEntry.paidMinutes)}
+                  </Typography>
+                )}
+                <Chip
+                  size="small"
+                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                  color={
+                    activeEntry
+                      ? activeEntry.status === TimeEntryStatus.ON_BREAK
+                        ? 'warning'
+                        : 'success'
+                      : 'default'
+                  }
+                  label={activeEntry ? formatStatus(activeEntry.status) : 'Out'}
+                />
+                {activeEntry ? (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<Logout />}
+                    disabled={saving}
+                    onClick={() => clockOutEmployee(employee)}
+                    sx={{
+                      width: { xs: '100%', sm: 190 },
+                      flexShrink: 0,
+                    }}
+                  >
+                    Clock Out
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    startIcon={<Login />}
+                    disabled={saving}
+                    onClick={() => clockInEmployee(employee)}
+                    sx={{
+                      width: { xs: '100%', sm: 190 },
+                      flexShrink: 0,
+                    }}
+                  >
+                    Clock In
+                  </Button>
+                )}
+              </Box>
+            );
+          })}
+          {users.length === 0 && (
+            <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
+              No employees found
+            </Box>
+          )}
+        </Card>
+      </TabPanel>
+
+      {/* This Month's Entries tab */}
+      <TabPanel value={activeTab} index={1}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 2.5,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 2,
+              flexDirection: { xs: 'column', sm: 'row' },
+            }}
+          >
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Time Entries · {monthLabel}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Showing {filteredEntries.length} of {entries.length} entries
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={openAddEntry}
+              disabled={saving || users.length === 0}
+              sx={{ width: { xs: '100%', sm: 'auto' }, whiteSpace: 'nowrap' }}
+            >
+              Add Time
+            </Button>
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1.5,
+              width: { xs: '100%', sm: 'auto' },
+            }}
+          >
+            <TextField
+              select
+              size="small"
+              label="Employee"
+              value={filterEmployeeId}
+              onChange={(event) => setFilterEmployeeId(event.target.value)}
+              sx={{ minWidth: { sm: 180 }, flex: { xs: 1, sm: 'none' } }}
+            >
+              <MenuItem value="">All Employees</MenuItem>
+              {users.map((employee) => (
+                <MenuItem key={employee.id} value={employee.id}>
+                  {employee.firstName} {employee.lastName}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              size="small"
+              label="Status"
+              value={filterStatus}
+              onChange={(event) =>
+                setFilterStatus(event.target.value as 'ALL' | TimeEntryStatus)
+              }
+              sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
+            >
+              <MenuItem value="ALL">All Statuses</MenuItem>
+              {Object.values(TimeEntryStatus).map((status) => (
+                <MenuItem key={status} value={status}>
+                  {formatStatus(status)}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              type="date"
+              size="small"
+              label="From"
+              value={filterStartDate}
+              onChange={(event) => setFilterStartDate(event.target.value)}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{
+                min: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                max:
+                  filterEndDate || format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+              }}
+              sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
+            />
+            <TextField
+              type="date"
+              size="small"
+              label="To"
+              value={filterEndDate}
+              onChange={(event) => setFilterEndDate(event.target.value)}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{
+                min:
+                  filterStartDate ||
+                  format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                max: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+              }}
+              sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
+            />
+            {hasEntryFilters && (
+              <Button
+                size="small"
+                onClick={clearEntryFilters}
+                sx={{ alignSelf: 'center' }}
+              >
+                Clear
+              </Button>
+            )}
+          </Box>
+        </Box>
+
+        <Box sx={{ display: { xs: 'grid', lg: 'none' }, gap: 1.5 }}>
+          {filteredEntries.map((entry) => (
+            <Card
+              key={entry.id}
+              elevation={0}
+              sx={{ border: `1px solid ${colors.neutral[200]}` }}
+            >
+              <CardContent sx={{ p: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    alignItems: 'flex-start',
+                    mb: 1.5,
+                  }}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      {entry.employee?.firstName} {entry.employee?.lastName}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {format(new Date(entry.clockInAt), 'MMM d, yyyy')}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
+                      gap: 0.75,
+                    }}
+                  >
+                    <Chip size="small" label={formatStatus(entry.status)} />
+                    {entry.status === TimeEntryStatus.APPROVED && (
+                      <Chip
+                        size="small"
+                        color={entry.payrollProcessedAt ? 'success' : 'info'}
+                        variant="outlined"
+                        label={
+                          entry.payrollProcessedAt
+                            ? 'Processed'
+                            : 'Ready for Payroll'
+                        }
+                      />
+                    )}
+                  </Box>
+                </Box>
+
+                <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                  <Grid size={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Clock In
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {format(new Date(entry.clockInAt), 'h:mm a')}
+                    </Typography>
+                  </Grid>
+                  <Grid size={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Clock Out
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {entry.clockOutAt
+                        ? format(new Date(entry.clockOutAt), 'h:mm a')
+                        : 'Open'}
+                    </Typography>
+                  </Grid>
+                  <Grid size={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Break
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {formatBreak(entry.unpaidBreakMinutes)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Paid Hours
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {formatHours(entry.paidMinutes)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<Edit />}
+                    onClick={() => openEditEntry(entry)}
+                    disabled={
+                      saving || entry.status === TimeEntryStatus.APPROVED
+                    }
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    startIcon={<Delete />}
+                    onClick={() => openDeleteEntry(entry)}
+                    disabled={saving || Boolean(entry.payrollProcessedAt)}
+                  >
+                    Delete
+                  </Button>
+                  {entry.clockOutAt &&
+                    entry.status !== TimeEntryStatus.APPROVED && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<CheckCircle />}
+                        onClick={() => approveEntry(entry.id)}
+                        disabled={saving}
+                      >
+                        Approve
+                      </Button>
+                    )}
+                  {entry.status === TimeEntryStatus.APPROVED &&
+                    !entry.payrollProcessedAt && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="warning"
+                        startIcon={<Undo />}
+                        onClick={() => unapproveEntry(entry.id)}
+                        disabled={saving}
+                      >
+                        Unapprove
+                      </Button>
+                    )}
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+          {filteredEntries.length === 0 && (
+            <Paper
+              variant="outlined"
+              sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}
+            >
+              No time entries found for this month
+            </Paper>
+          )}
+        </Box>
+
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          sx={{ display: { xs: 'none', lg: 'block' } }}
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Employee</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Clock In</TableCell>
+                <TableCell>Clock Out</TableCell>
+                <TableCell align="right">Break</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Payroll</TableCell>
+                <TableCell align="right">Paid Hours</TableCell>
+                <TableCell align="right">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredEntries.map((entry) => (
+                <TableRow key={entry.id}>
+                  <TableCell>
+                    {entry.employee?.firstName} {entry.employee?.lastName}
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(entry.clockInAt), 'MMM d, yyyy')}
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(entry.clockInAt), 'h:mm a')}
+                  </TableCell>
+                  <TableCell>
+                    {entry.clockOutAt
+                      ? format(new Date(entry.clockOutAt), 'h:mm a')
+                      : '-'}
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatBreak(entry.unpaidBreakMinutes)}
+                  </TableCell>
+                  <TableCell>
+                    <Chip size="small" label={formatStatus(entry.status)} />
+                  </TableCell>
+                  <TableCell>
+                    {entry.status === TimeEntryStatus.APPROVED ? (
+                      <Chip
+                        size="small"
+                        color={entry.payrollProcessedAt ? 'success' : 'info'}
+                        variant="outlined"
+                        label={entry.payrollProcessedAt ? 'Processed' : 'Ready'}
+                      />
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatHours(entry.paidMinutes)}
+                  </TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Edit time entry">
+                      <IconButton
+                        size="small"
+                        onClick={() => openEditEntry(entry)}
+                        disabled={
+                          saving || entry.status === TimeEntryStatus.APPROVED
+                        }
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Permanently delete time entry">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => openDeleteEntry(entry)}
+                        disabled={saving || Boolean(entry.payrollProcessedAt)}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    {entry.clockOutAt &&
+                      entry.status !== TimeEntryStatus.APPROVED && (
+                        <Button
+                          size="small"
+                          startIcon={<CheckCircle />}
+                          onClick={() => approveEntry(entry.id)}
+                          disabled={saving}
+                        >
+                          Approve
+                        </Button>
+                      )}
+                    {entry.status === TimeEntryStatus.APPROVED &&
+                      !entry.payrollProcessedAt && (
+                        <Button
+                          size="small"
+                          color="warning"
+                          startIcon={<Undo />}
+                          onClick={() => unapproveEntry(entry.id)}
+                          disabled={saving}
+                        >
+                          Unapprove
+                        </Button>
+                      )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredEntries.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={9}
+                    align="center"
+                    sx={{ py: 4, color: 'text.secondary' }}
+                  >
+                    No time entries found for this month
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </TabPanel>
+
+      {/* Compensation & Bonus tab */}
+      <TabPanel value={activeTab} index={2}>
         <Card
           elevation={0}
           sx={{ mb: 4, border: `1px solid ${colors.neutral[200]}` }}
@@ -935,435 +1483,6 @@ export function TimeClockManagement() {
             )}
           </CardContent>
         </Card>
-
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-          Employee Quick Clock In
-        </Typography>
-        <Grid container spacing={{ xs: 1.5, sm: 2.5 }}>
-          {users.map((employee) => {
-            const activeEntry = currentEntryByEmployeeId.get(employee.id);
-            return (
-              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={employee.id}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    height: '100%',
-                    border: `1px solid ${colors.neutral[200]}`,
-                  }}
-                >
-                  <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 1.5,
-                        alignItems: 'flex-start',
-                      }}
-                    >
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 700 }}
-                        >
-                          {employee.firstName} {employee.lastName}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block' }}
-                        >
-                          {employee.role?.name} · {employee.email}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        size="small"
-                        color={
-                          activeEntry
-                            ? activeEntry.status === TimeEntryStatus.ON_BREAK
-                              ? 'warning'
-                              : 'success'
-                            : 'default'
-                        }
-                        label={
-                          activeEntry ? formatStatus(activeEntry.status) : 'Out'
-                        }
-                      />
-                    </Box>
-                    {activeEntry && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 2 }}
-                      >
-                        Since{' '}
-                        {format(new Date(activeEntry.clockInAt), 'h:mm a')} ·{' '}
-                        {formatHours(activeEntry.paidMinutes)}
-                      </Typography>
-                    )}
-                    {activeEntry ? (
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        color="error"
-                        startIcon={<Logout />}
-                        sx={{ mt: 2 }}
-                        disabled={saving}
-                        onClick={() => clockOutEmployee(employee)}
-                      >
-                        Clock Out
-                      </Button>
-                    ) : (
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={<Login />}
-                        sx={{ mt: 2 }}
-                        disabled={saving}
-                        onClick={() => clockInEmployee(employee)}
-                      >
-                        Clock In
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      </TabPanel>
-
-      {/* This Month's Entries tab */}
-      <TabPanel value={activeTab} index={1}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: { xs: 'stretch', sm: 'center' },
-            justifyContent: 'space-between',
-            gap: 2,
-            mb: 2.5,
-          }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Time Entries · {monthLabel}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Showing {filteredEntries.length} of {entries.length} entries
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 1.5,
-              width: { xs: '100%', sm: 'auto' },
-            }}
-          >
-            <TextField
-              select
-              size="small"
-              label="Employee"
-              value={filterEmployeeId}
-              onChange={(event) => setFilterEmployeeId(event.target.value)}
-              sx={{ minWidth: { sm: 180 }, flex: { xs: 1, sm: 'none' } }}
-            >
-              <MenuItem value="">All Employees</MenuItem>
-              {users.map((employee) => (
-                <MenuItem key={employee.id} value={employee.id}>
-                  {employee.firstName} {employee.lastName}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              size="small"
-              label="Status"
-              value={filterStatus}
-              onChange={(event) =>
-                setFilterStatus(event.target.value as 'ALL' | TimeEntryStatus)
-              }
-              sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
-            >
-              <MenuItem value="ALL">All Statuses</MenuItem>
-              {Object.values(TimeEntryStatus).map((status) => (
-                <MenuItem key={status} value={status}>
-                  {formatStatus(status)}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              type="date"
-              size="small"
-              label="From"
-              value={filterStartDate}
-              onChange={(event) => setFilterStartDate(event.target.value)}
-              InputLabelProps={{ shrink: true }}
-              inputProps={{
-                min: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-                max:
-                  filterEndDate || format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-              }}
-              sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
-            />
-            <TextField
-              type="date"
-              size="small"
-              label="To"
-              value={filterEndDate}
-              onChange={(event) => setFilterEndDate(event.target.value)}
-              InputLabelProps={{ shrink: true }}
-              inputProps={{
-                min:
-                  filterStartDate ||
-                  format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-                max: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-              }}
-              sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
-            />
-            {hasEntryFilters && (
-              <Button
-                size="small"
-                onClick={clearEntryFilters}
-                sx={{ alignSelf: 'center' }}
-              >
-                Clear
-              </Button>
-            )}
-          </Box>
-        </Box>
-
-        <Box sx={{ display: { xs: 'grid', lg: 'none' }, gap: 1.5 }}>
-          {filteredEntries.map((entry) => (
-            <Card
-              key={entry.id}
-              elevation={0}
-              sx={{ border: `1px solid ${colors.neutral[200]}` }}
-            >
-              <CardContent sx={{ p: 2 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 1.5,
-                    alignItems: 'flex-start',
-                    mb: 1.5,
-                  }}
-                >
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      {entry.employee?.firstName} {entry.employee?.lastName}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {format(new Date(entry.clockInAt), 'MMM d, yyyy')}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-end',
-                      gap: 0.75,
-                    }}
-                  >
-                    <Chip size="small" label={formatStatus(entry.status)} />
-                    {entry.status === TimeEntryStatus.APPROVED && (
-                      <Chip
-                        size="small"
-                        color={entry.payrollProcessedAt ? 'success' : 'info'}
-                        variant="outlined"
-                        label={
-                          entry.payrollProcessedAt
-                            ? 'Processed'
-                            : 'Ready for Payroll'
-                        }
-                      />
-                    )}
-                  </Box>
-                </Box>
-
-                <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-                  <Grid size={6}>
-                    <Typography variant="caption" color="text.secondary">
-                      Clock In
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {format(new Date(entry.clockInAt), 'h:mm a')}
-                    </Typography>
-                  </Grid>
-                  <Grid size={6}>
-                    <Typography variant="caption" color="text.secondary">
-                      Clock Out
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {entry.clockOutAt
-                        ? format(new Date(entry.clockOutAt), 'h:mm a')
-                        : 'Open'}
-                    </Typography>
-                  </Grid>
-                  <Grid size={6}>
-                    <Typography variant="caption" color="text.secondary">
-                      Paid Hours
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {formatHours(entry.paidMinutes)}
-                    </Typography>
-                  </Grid>
-                </Grid>
-
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<Edit />}
-                    onClick={() => openEditEntry(entry)}
-                    disabled={
-                      saving || entry.status === TimeEntryStatus.APPROVED
-                    }
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="error"
-                    startIcon={<Delete />}
-                    onClick={() => openDeleteEntry(entry)}
-                    disabled={saving || entry.status === TimeEntryStatus.VOIDED}
-                  >
-                    Delete
-                  </Button>
-                  {entry.clockOutAt &&
-                    entry.status !== TimeEntryStatus.APPROVED && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        startIcon={<CheckCircle />}
-                        onClick={() => approveEntry(entry.id)}
-                        disabled={saving}
-                      >
-                        Approve
-                      </Button>
-                    )}
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
-          {filteredEntries.length === 0 && (
-            <Paper
-              variant="outlined"
-              sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}
-            >
-              No time entries found for this month
-            </Paper>
-          )}
-        </Box>
-
-        <TableContainer
-          component={Paper}
-          variant="outlined"
-          sx={{ display: { xs: 'none', lg: 'block' } }}
-        >
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Employee</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Clock In</TableCell>
-                <TableCell>Clock Out</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Payroll</TableCell>
-                <TableCell align="right">Paid Hours</TableCell>
-                <TableCell align="right">Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredEntries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell>
-                    {entry.employee?.firstName} {entry.employee?.lastName}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(entry.clockInAt), 'MMM d, yyyy')}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(entry.clockInAt), 'h:mm a')}
-                  </TableCell>
-                  <TableCell>
-                    {entry.clockOutAt
-                      ? format(new Date(entry.clockOutAt), 'h:mm a')
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="small" label={formatStatus(entry.status)} />
-                  </TableCell>
-                  <TableCell>
-                    {entry.status === TimeEntryStatus.APPROVED ? (
-                      <Chip
-                        size="small"
-                        color={entry.payrollProcessedAt ? 'success' : 'info'}
-                        variant="outlined"
-                        label={entry.payrollProcessedAt ? 'Processed' : 'Ready'}
-                      />
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell align="right">
-                    {formatHours(entry.paidMinutes)}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit time entry">
-                      <IconButton
-                        size="small"
-                        onClick={() => openEditEntry(entry)}
-                        disabled={
-                          saving || entry.status === TimeEntryStatus.APPROVED
-                        }
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete time entry">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => openDeleteEntry(entry)}
-                        disabled={
-                          saving || entry.status === TimeEntryStatus.VOIDED
-                        }
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    {entry.clockOutAt &&
-                      entry.status !== TimeEntryStatus.APPROVED && (
-                        <Button
-                          size="small"
-                          startIcon={<CheckCircle />}
-                          onClick={() => approveEntry(entry.id)}
-                          disabled={saving}
-                        >
-                          Approve
-                        </Button>
-                      )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredEntries.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    align="center"
-                    sx={{ py: 4, color: 'text.secondary' }}
-                  >
-                    No time entries found for this month
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
       </TabPanel>
 
       <Dialog
@@ -1393,6 +1512,18 @@ export function TimeClockManagement() {
                 value={editClockOutAt}
                 onChange={(event) => setEditClockOutAt(event.target.value)}
                 InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <NumberInput
+                fullWidth
+                min={0}
+                label="Break (minutes)"
+                value={editBreakMinutes}
+                onChange={(v) =>
+                  setEditBreakMinutes(v === undefined ? '' : String(v))
+                }
+                helperText="Unpaid break deducted from paid hours"
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -1430,18 +1561,18 @@ export function TimeClockManagement() {
       >
         <DialogTitle>Delete Time Entry</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            This will remove the entry from active payroll by marking it voided.
-          </Typography>
-          <TextField
-            fullWidth
-            required
-            multiline
-            minRows={2}
-            label="Delete Reason"
-            value={deleteReason}
-            onChange={(event) => setDeleteReason(event.target.value)}
-          />
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This will permanently delete the time entry. This action cannot be
+            undone.
+          </Alert>
+          {deletingEntry && (
+            <Typography variant="body2" color="text.secondary">
+              {deletingEntry.employee?.firstName}{' '}
+              {deletingEntry.employee?.lastName} ·{' '}
+              {format(new Date(deletingEntry.clockInAt), 'MMM d, yyyy')} ·{' '}
+              {formatHours(deletingEntry.paidMinutes)}
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeletingEntry(null)} disabled={saving}>
@@ -1451,9 +1582,102 @@ export function TimeClockManagement() {
             variant="contained"
             color="error"
             onClick={deleteEntry}
-            disabled={saving || !deleteReason.trim()}
+            disabled={saving}
           >
-            Delete
+            Delete Permanently
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add Time Entry</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                select
+                fullWidth
+                label="Employee"
+                value={addEmployeeId}
+                onChange={(event) => setAddEmployeeId(event.target.value)}
+              >
+                {users.map((employee) => (
+                  <MenuItem key={employee.id} value={employee.id}>
+                    {employee.firstName} {employee.lastName} (
+                    {employee.role?.name})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                type="datetime-local"
+                label="Clock In"
+                value={addClockInAt}
+                onChange={(event) => setAddClockInAt(event.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                type="datetime-local"
+                label="Clock Out"
+                value={addClockOutAt}
+                onChange={(event) => setAddClockOutAt(event.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <NumberInput
+                fullWidth
+                min={0}
+                label="Break (minutes)"
+                value={addBreakMinutes}
+                onChange={(v) =>
+                  setAddBreakMinutes(v === undefined ? '' : String(v))
+                }
+                helperText="Unpaid break deducted from paid hours"
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                label="Reason / Notes (optional)"
+                value={addReason}
+                onChange={(event) => setAddReason(event.target.value)}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddOpen(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={saveAddEntry}
+            disabled={
+              saving ||
+              !addEmployeeId ||
+              !addClockInAt ||
+              !addClockOutAt ||
+              new Date(addClockOutAt) <= new Date(addClockInAt) ||
+              (Boolean(addBreakMinutes) &&
+                Number(addBreakMinutes) * 60000 >=
+                  new Date(addClockOutAt).getTime() -
+                    new Date(addClockInAt).getTime())
+            }
+          >
+            Add Entry
           </Button>
         </DialogActions>
       </Dialog>

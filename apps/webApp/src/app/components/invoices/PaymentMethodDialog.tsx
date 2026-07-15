@@ -25,6 +25,13 @@ import {
 import { PaymentMethod } from '../../../enums';
 import { NumberInput } from '../common';
 import { TerminalPaymentDialog } from '../payments/TerminalPaymentDialog';
+import {
+  PAYMENT_METHOD_SELECT_OPTIONS,
+  PaymentMethodValue,
+  TerminalMethod,
+  isTerminalMethod,
+  terminalToPaymentMethod,
+} from '../../constants/payment-methods';
 
 export interface PaymentEntryInput {
   paymentMethod: PaymentMethod;
@@ -46,49 +53,17 @@ interface PaymentMethodDialogProps {
   total?: number;
   amountPaid?: number;
   hasTax?: boolean;
+  // Pre-selects this method when the dialog opens (e.g. the method already
+  // tagged on the invoice). Falls back to Cash when absent/unrecognized.
+  defaultPaymentMethod?: string | null;
 }
 
+// Payment-method options are single-sourced from constants/payment-methods.
 // Square Terminal options aren't real PaymentMethod values — they trigger an
 // in-person card-reader checkout, then record as CREDIT_CARD / DEBIT_CARD.
-type TerminalMethod = 'TERMINAL_CREDIT' | 'TERMINAL_DEBIT';
-type MethodValue = PaymentMethod | TerminalMethod;
-
-const isTerminal = (m: MethodValue): m is TerminalMethod =>
-  m === 'TERMINAL_CREDIT' || m === 'TERMINAL_DEBIT';
-
-const terminalToPaymentMethod = (m: TerminalMethod): PaymentMethod =>
-  m === 'TERMINAL_CREDIT'
-    ? PaymentMethod.CREDIT_CARD
-    : PaymentMethod.DEBIT_CARD;
-
-const METHOD_OPTIONS: {
-  value: MethodValue;
-  label: string;
-  splitOk: boolean;
-}[] = [
-  { value: PaymentMethod.CASH, label: 'Cash (with GST/PST)', splitOk: true },
-  {
-    value: PaymentMethod.CASH_NO_TAX,
-    label: 'Cash (no GST/PST)',
-    splitOk: false,
-  },
-  { value: PaymentMethod.CREDIT_CARD, label: 'Credit Card', splitOk: true },
-  { value: PaymentMethod.DEBIT_CARD, label: 'Debit Card', splitOk: true },
-  {
-    value: 'TERMINAL_CREDIT',
-    label: 'Square Terminal – Credit Card',
-    splitOk: false,
-  },
-  {
-    value: 'TERMINAL_DEBIT',
-    label: 'Square Terminal – Debit Card',
-    splitOk: false,
-  },
-  { value: PaymentMethod.CHECK, label: 'Check', splitOk: true },
-  { value: PaymentMethod.E_TRANSFER, label: 'E-Transfer', splitOk: true },
-  { value: PaymentMethod.FINANCING, label: 'Financing', splitOk: true },
-  { value: PaymentMethod.BANK_DEPOSIT, label: 'Bank Deposit', splitOk: true },
-];
+type MethodValue = PaymentMethodValue;
+const isTerminal = isTerminalMethod;
+const METHOD_OPTIONS = PAYMENT_METHOD_SELECT_OPTIONS;
 
 interface Line {
   method: MethodValue;
@@ -104,9 +79,17 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
   total,
   amountPaid = 0,
   hasTax = false,
+  defaultPaymentMethod,
 }) => {
+  // Seed the picker with the invoice's tagged method when it's a recognized
+  // option; otherwise fall back to Cash.
+  const initialMethod: MethodValue =
+    defaultPaymentMethod &&
+    METHOD_OPTIONS.some((o) => o.value === defaultPaymentMethod)
+      ? (defaultPaymentMethod as MethodValue)
+      : PaymentMethod.CASH;
   const [lines, setLines] = useState<Line[]>([
-    { method: PaymentMethod.CASH, amount: '' },
+    { method: initialMethod, amount: '' },
   ]);
   const [payInFull, setPayInFull] = useState(true);
   // Set when a Square Terminal method is confirmed — opens the reader dialog.
@@ -125,7 +108,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
     if (open) {
       setLines([
         {
-          method: PaymentMethod.CASH,
+          method: initialMethod,
           amount: remaining != null ? remaining.toFixed(2) : '',
         },
       ]);
@@ -133,7 +116,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
       setTerminalMethod(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, defaultPaymentMethod]);
 
   const allocated = lines.reduce(
     (sum, l) => sum + (parseFloat(l.amount) || 0),

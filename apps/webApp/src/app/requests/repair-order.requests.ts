@@ -194,9 +194,18 @@ export const repairOrderRequests = {
       .patch<RepairOrder>(`/repair-orders/${id}`, data)
       .then((r) => r.data),
 
-  close: (id: string, companyId: string, feeItemId?: string) =>
+  close: (
+    id: string,
+    companyId: string,
+    feeItemId?: string,
+    paymentMethod?: string
+  ) =>
     apiClient
-      .post(`/repair-orders/${id}/close`, { companyId, feeItemId })
+      .post(`/repair-orders/${id}/close`, {
+        companyId,
+        feeItemId,
+        paymentMethod,
+      })
       .then((r) => r.data),
 
   reopen: (id: string) =>
