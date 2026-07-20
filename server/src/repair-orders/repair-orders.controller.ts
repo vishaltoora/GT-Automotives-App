@@ -134,6 +134,22 @@ export class RepairOrdersController {
     return this.roService.createQuotationFromServices(id, user.id);
   }
 
+  @Post(':id/send-estimate-email')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
+  sendEstimateEmail(
+    @Param('id') id: string,
+    @Body() body: { email?: string; emails?: string[] },
+    @CurrentUser() user: any
+  ) {
+    const emails =
+      body.emails && body.emails.length > 0
+        ? body.emails
+        : body.email
+        ? [body.email]
+        : undefined;
+    return this.roService.sendEstimateEmail(id, user.role.name, emails);
+  }
+
   // ---- Services ----
 
   @Post(':id/services')

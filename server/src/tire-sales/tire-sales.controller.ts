@@ -104,7 +104,7 @@ export class TireSalesController {
    * GET /api/tire-sales/employee-stats/:employeeId
    */
   @Get('employee-stats/:employeeId')
-  @Roles('ADMIN', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT')
   async getEmployeeStats(
     @Param('employeeId') employeeId: string,
     @Query('year') year?: string,
@@ -127,7 +127,7 @@ export class TireSalesController {
    * GET /api/tire-sales/reports/commissions
    */
   @Get('reports/commissions')
-  @Roles('ADMIN', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT')
   async getCommissionReport(
     @Query() filters: CommissionFiltersDto
   ): Promise<CommissionReportDto> {
@@ -164,7 +164,7 @@ export class TireSalesController {
    * POST /api/tire-sales/:id/approve-commission
    */
   @Post(':id/approve-commission')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   async approveCommission(
     @Param('id') id: string,
     @Request() req: any
@@ -178,7 +178,7 @@ export class TireSalesController {
    * POST /api/tire-sales/process-commissions/:employeeId
    */
   @Post('process-commissions/:employeeId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   async processEmployeeCommissions(
     @Param('employeeId') employeeId: string,
     @Query('year') year?: string,

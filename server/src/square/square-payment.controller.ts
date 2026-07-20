@@ -43,7 +43,7 @@ export class SquarePaymentController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async createPayment(
     @Body() createPaymentDto: CreateSquarePaymentDto
   ): Promise<SquarePaymentResponseDto> {
@@ -59,7 +59,7 @@ export class SquarePaymentController {
    */
   @Post('refund')
   @HttpCode(HttpStatus.OK)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async refundPayment(
     @Body() refundDto: RefundSquarePaymentDto
   ): Promise<SquarePaymentResponseDto> {
@@ -74,7 +74,7 @@ export class SquarePaymentController {
    */
   @Post('appointment')
   @HttpCode(HttpStatus.CREATED)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async createAppointmentPayment(
     @Body() paymentDto: CreateAppointmentPaymentDto
   ): Promise<SquarePaymentResponseDto> {
@@ -98,7 +98,7 @@ export class SquarePaymentController {
    */
   @Post('appointment/checkout')
   @HttpCode(HttpStatus.CREATED)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async createAppointmentCheckout(
     @Body() checkoutDto: CreateAppointmentCheckoutDto
   ): Promise<AppointmentCheckoutResponseDto> {
@@ -113,7 +113,7 @@ export class SquarePaymentController {
    * GET /api/square/payments/:squarePaymentId
    */
   @Get(':squarePaymentId')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async getPayment(
     @Param('squarePaymentId') squarePaymentId: string
   ): Promise<SquarePaymentResponseDto> {
@@ -125,7 +125,7 @@ export class SquarePaymentController {
    * GET /api/square/payments/invoice/:invoiceId
    */
   @Get('invoice/:invoiceId')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async getInvoicePayments(
     @Param('invoiceId') invoiceId: string
   ): Promise<SquarePaymentResponseDto[]> {
@@ -139,7 +139,7 @@ export class SquarePaymentController {
    */
   @Post('terminal/checkout')
   @HttpCode(HttpStatus.CREATED)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async createTerminalCheckout(
     @Body() checkoutDto: CreateTerminalCheckoutDto
   ): Promise<TerminalCheckoutResponseDto> {
@@ -169,7 +169,7 @@ export class SquarePaymentController {
    */
   @Post('terminal/checkout/bulk')
   @HttpCode(HttpStatus.CREATED)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async createBulkTerminalCheckout(
     @Body() dto: CreateBulkTerminalCheckoutDto
   ): Promise<{ checkoutId: string; status: string; amount: number }> {
@@ -188,7 +188,7 @@ export class SquarePaymentController {
    * GET /api/square/payments/terminal/checkout/:checkoutId
    */
   @Get('terminal/checkout/:checkoutId')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async getTerminalCheckout(
     @Param('checkoutId') checkoutId: string
   ): Promise<any> {
@@ -201,7 +201,7 @@ export class SquarePaymentController {
    */
   @Post('terminal/checkout/:checkoutId/cancel')
   @HttpCode(HttpStatus.OK)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async cancelTerminalCheckout(
     @Param('checkoutId') checkoutId: string
   ): Promise<void> {
@@ -214,7 +214,7 @@ export class SquarePaymentController {
    * GET /api/square/payments/terminal/devices
    */
   @Get('terminal/devices')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async listTerminalDevices(): Promise<TerminalDeviceDto[]> {
     const deviceCodes = await this.squarePaymentService.listTerminalDevices();
 
@@ -240,7 +240,7 @@ export class SquarePaymentController {
    */
   @Post('terminal/device-code')
   @HttpCode(HttpStatus.CREATED)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async createTerminalDeviceCode(
     @Body() dto: CreateTerminalDeviceCodeDto
   ): Promise<TerminalDeviceCodeResponseDto> {

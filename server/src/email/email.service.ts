@@ -1565,6 +1565,147 @@ export class EmailService {
   /**
    * Send quotation email with PDF attachment
    */
+  /**
+   * Estimate email for a repair order — attaches the quotation PDF plus a
+   * pre-inspection PDF (photos of defective parts with technician notes).
+   */
+  async sendEstimateEmail(
+    recipients: string[],
+    roNumber: string,
+    quotationNumber: string,
+    quotationPdfBase64: string,
+    preInspectionPdfBase64: string | null
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.enabled) {
+      this.logger.warn(
+        '[EMAIL] Email service disabled - skipping estimate email'
+      );
+      return {
+        success: false,
+        error: 'Email service is disabled (EMAIL_ENABLED is not true)',
+      };
+    }
+
+    const cleanRecipients = Array.from(
+      new Set(
+        (Array.isArray(recipients) ? recipients : [recipients])
+          .map((e) => (e || '').trim())
+          .filter((e) => e !== '')
+      )
+    );
+    if (cleanRecipients.length === 0) {
+      return {
+        success: false,
+        error: 'No valid recipients for estimate email',
+      };
+    }
+
+    try {
+      this.logger.log(
+        `[EMAIL] Sending estimate for ${roNumber} to ${cleanRecipients.join(
+          ', '
+        )}`
+      );
+
+      const logoImg = this.logoBase64
+        ? `<img src="${this.logoBase64}" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`
+        : `<img src="https://gt-automotives.com/logo.png" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`;
+
+      const subject = `Your Estimate ${quotationNumber} - GT Automotives`;
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 40px 20px; text-align: center;">
+              <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <tr><td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); border-radius: 8px 8px 0 0;">
+                  ${logoImg}
+                  <h1 style="margin: 20px 0 0; color: #ffffff; font-size: 28px; font-weight: 600;">Your Estimate</h1>
+                </td></tr>
+                <tr><td style="padding: 40px;">
+                  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                    Thank you for trusting GT Automotives. Please find your estimate for repair order <strong>${roNumber}</strong> attached.
+                  </p>
+                  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                    This email includes your <strong>quotation (${quotationNumber})</strong>${
+        preInspectionPdfBase64
+          ? ' along with a <strong>pre-inspection report</strong> showing photos of the items we recommend addressing'
+          : ''
+      }. If you have any questions or would like to proceed, just reply or give us a call.
+                  </p>
+                </td></tr>
+                <tr><td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                  <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
+                    <strong style="color: #1976d2;">GT Automotives</strong><br>
+                    473 3rd Ave<br>Prince George, BC V2L 3C1<br>
+                    Phone: 250-570-2333 / 250-986-9191<br>Email: gt-automotives@outlook.com
+                  </p>
+                  <p style="margin: 20px 0 0; font-size: 12px; color: #999999;">This is an automated email. Please do not reply to this message.</p>
+                </td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const attachment: { name: string; content: string }[] = [
+        {
+          name: `Estimate-${quotationNumber}.pdf`,
+          content: quotationPdfBase64,
+        },
+      ];
+      if (preInspectionPdfBase64) {
+        attachment.push({
+          name: `Pre-Inspection-${roNumber}.pdf`,
+          content: preInspectionPdfBase64,
+        });
+      }
+
+      const sendSmtpEmail: SendSmtpEmail = {
+        sender: { name: this.senderName, email: this.senderEmail },
+        to: cleanRecipients.map((email) => ({ email })),
+        subject,
+        htmlContent,
+        attachment,
+      };
+
+      const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      const messageId = (response as any)?.messageId || 'unknown';
+      this.logger.log(
+        `[EMAIL] Estimate email sent successfully. Message ID: ${messageId}`
+      );
+
+      try {
+        await this.prisma.emailLog.create({
+          data: {
+            type: EmailType.QUOTATION,
+            to: cleanRecipients.join(', '),
+            from: this.senderEmail,
+            subject,
+            status: EmailStatus.SENT,
+            sentAt: new Date(),
+          },
+        });
+      } catch (dbError) {
+        this.logger.error('[EMAIL] Failed to log estimate email:', dbError);
+      }
+
+      return { success: true, messageId };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `[EMAIL] Failed to send estimate email: ${errorMessage}`,
+        error
+      );
+      return { success: false, error: errorMessage };
+    }
+  }
+
   async sendQuotationEmail(
     customerEmail: string,
     quotationNumber: string,
@@ -1699,12 +1840,15 @@ export class EmailService {
     recipients: string[],
     inspectionRef: string,
     pdfBase64: string
-  ): Promise<{ success: boolean; messageId?: string }> {
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     if (!this.enabled) {
       this.logger.warn(
         '[EMAIL] Email service disabled - skipping inspection report email'
       );
-      return { success: false };
+      return {
+        success: false,
+        error: 'Email service is disabled (EMAIL_ENABLED is not true)',
+      };
     }
 
     // Normalize to a de-duplicated list of recipients
@@ -1839,7 +1983,7 @@ export class EmailService {
         `[EMAIL] Failed to send inspection report email: ${errorMessage}`,
         error
       );
-      return { success: false };
+      return { success: false, error: errorMessage };
     }
   }
 

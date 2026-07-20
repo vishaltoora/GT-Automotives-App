@@ -219,7 +219,7 @@ export class VehiclesService {
       throw new ForbiddenException(
         'Customer vehicle deletion needs proper customer context implementation'
       );
-    } else if (userRole !== 'ADMIN') {
+    } else if (userRole !== 'ADMIN' && userRole !== 'FOREMAN') {
       throw new ForbiddenException('Only administrators can delete vehicles');
     }
 

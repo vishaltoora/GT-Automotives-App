@@ -125,7 +125,7 @@ export class InvoicesController {
 
   @Post(':id/pay')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   markAsPaid(
     @Param('id') id: string,
     @Body('paymentMethod') paymentMethod: PaymentMethod,
@@ -136,7 +136,7 @@ export class InvoicesController {
 
   @Post(':id/payments')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   recordPayment(
     @Param('id') id: string,
     @Body()
@@ -206,7 +206,7 @@ export class InvoicesController {
 
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.invoicesService.remove(id, user.id);
   }

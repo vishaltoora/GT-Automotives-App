@@ -302,7 +302,7 @@ export class InspectionsService {
   }
 
   async remove(id: string, userId: string, userRole: string): Promise<void> {
-    if (userRole !== 'ADMIN') {
+    if (userRole !== 'ADMIN' && userRole !== 'FOREMAN') {
       throw new ForbiddenException('Only admins can delete inspections');
     }
 
@@ -384,7 +384,11 @@ export class InspectionsService {
     userId: string,
     userRole: string
   ) {
-    if (userRole !== 'ADMIN' && userRole !== 'SUPERVISOR') {
+    if (
+      userRole !== 'ADMIN' &&
+      userRole !== 'FOREMAN' &&
+      userRole !== 'SUPERVISOR'
+    ) {
       throw new ForbiddenException(
         'Only admin or supervisor can generate an invoice from an inspection'
       );
@@ -611,7 +615,9 @@ export class InspectionsService {
       );
 
       if (!emailResult.success) {
-        throw new Error('Email service returned failure status');
+        throw new Error(
+          emailResult.error || 'Email service returned failure status'
+        );
       }
 
       // Log audit trail
@@ -653,7 +659,7 @@ export class InspectionsService {
   }
 
   private assertAdmin(userRole: string) {
-    if (userRole !== 'ADMIN') {
+    if (userRole !== 'ADMIN' && userRole !== 'FOREMAN') {
       throw new ForbiddenException(
         'Only admins can manage inspection fee items'
       );
@@ -681,7 +687,7 @@ export class InspectionsService {
   }
 
   private assertStaffAccess(userRole: string) {
-    if (!['ADMIN', 'SUPERVISOR', 'STAFF'].includes(userRole)) {
+    if (!['ADMIN', 'SUPERVISOR', 'STAFF', 'FOREMAN'].includes(userRole)) {
       throw new ForbiddenException(
         'Inspection access is limited to staff users in this first draft'
       );

@@ -22,7 +22,6 @@ import {
 import {
   Dashboard,
   People,
-  SupervisorAccount,
   Inventory,
   Receipt,
   CalendarMonth,
@@ -49,6 +48,8 @@ import {
   LocalOffer,
   AssignmentTurnedIn,
   CarRepair,
+  AccessTime,
+  Work,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -120,7 +121,7 @@ export function ForemanLayout() {
       title: 'Business',
       icon: <BusinessCenter />,
       items: [
-        { text: 'Users', icon: <SupervisorAccount />, path: '/foreman/users' },
+        // User management is admin-only; foreman cannot manage users.
         { text: 'Customers', icon: <People />, path: '/foreman/customers' },
         {
           text: 'Vehicles',
@@ -171,6 +172,12 @@ export function ForemanLayout() {
           icon: <Email />,
           path: '/foreman/employee-schedule',
         },
+        {
+          text: 'Time Clock',
+          icon: <AccessTime />,
+          path: '/foreman/time-clock',
+        },
+        { text: 'Jobs', icon: <Work />, path: '/foreman/jobs' },
         { text: 'SMS History', icon: <Sms />, path: '/foreman/sms-history' },
       ],
     },

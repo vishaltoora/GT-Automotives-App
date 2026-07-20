@@ -544,7 +544,7 @@ ${
             ? `
           <div class="notes">
             <h3>Notes:</h3>
-            <p>${invoice.notes}</p>
+            <p style="white-space: pre-wrap;">${invoice.notes}</p>
           </div>
         `
             : ''
@@ -815,7 +815,7 @@ ${
             ? `
           <div style="margin-top: 12px;">
             <h3 style="margin-bottom: 8px;">Notes:</h3>
-            <p style="margin: 0;">${invoice.notes}</p>
+            <p style="margin: 0; white-space: pre-wrap;">${invoice.notes}</p>
           </div>
         `
             : ''

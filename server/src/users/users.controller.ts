@@ -44,7 +44,7 @@ export class UsersController {
   }
 
   @Post()
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   async create(
     @Body(new ValidationPipe())
     createUserDto: {
@@ -62,7 +62,7 @@ export class UsersController {
   }
 
   @Post('admin-staff')
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   async createAdminOrStaff(
     @Body(new ValidationPipe())
     createUserDto: {
@@ -83,7 +83,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   async update(
     @Param('id') id: string,
     @Body(new ValidationPipe())
@@ -103,7 +103,7 @@ export class UsersController {
   }
 
   @Put(':id/role')
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   async assignRole(
     @Param('id') id: string,
     @Body('roleId') roleId: string,
@@ -113,7 +113,7 @@ export class UsersController {
   }
 
   @Put(':id/role-by-name')
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   async assignRoleByName(
     @Param('id') id: string,
     @Body('roleName')
@@ -124,7 +124,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async delete(@Param('id') id: string, @CurrentUser() currentUser: any) {
     return this.usersService.delete(id, currentUser.id);
@@ -153,7 +153,7 @@ export class UsersController {
   }
 
   @Post(':id/reset-password')
-  @Roles('ADMIN', 'FOREMAN')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Param('id') id: string,

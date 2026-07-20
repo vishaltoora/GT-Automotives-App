@@ -154,6 +154,12 @@ export interface RepairOrder {
     status: string;
     total: number;
   };
+  quotation?: {
+    id: string;
+    quotationNumber: string;
+    status: string;
+    total: number;
+  };
 }
 
 // ---- API functions ----
@@ -220,6 +226,15 @@ export const repairOrderRequests = {
   // Create a quotation from the RO items flagged as quotation
   createQuotation: (id: string) =>
     apiClient.post(`/repair-orders/${id}/create-quotation`).then((r) => r.data),
+
+  // Email the customer an estimate (quotation PDF + pre-inspection photo PDF)
+  sendEstimateEmail: (
+    id: string,
+    emails?: string[]
+  ): Promise<{ success: boolean; message: string; emailUsed?: string }> =>
+    apiClient
+      .post(`/repair-orders/${id}/send-estimate-email`, { emails })
+      .then((r) => r.data),
 
   // Services
   addService: (

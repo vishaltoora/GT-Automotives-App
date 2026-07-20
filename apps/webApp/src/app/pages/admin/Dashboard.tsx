@@ -61,6 +61,8 @@ export function AdminDashboard() {
       ? '/supervisor'
       : role === 'accountant'
       ? '/accountant'
+      : role === 'foreman'
+      ? '/foreman'
       : '/admin';
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
@@ -366,6 +368,19 @@ export function AdminDashboard() {
     },
   ];
 
+  // Foreman has time-clock and jobs access like admin, but no EOD Day Summary
+  // page — drop that one quick action to avoid a dead link.
+  const foremanHiddenActions = new Set(['day-summary']);
+  const visibleActionGroups =
+    role === 'foreman'
+      ? actionGroups
+          .map((g) => ({
+            ...g,
+            items: g.items.filter((i) => !foremanHiddenActions.has(i.key)),
+          }))
+          .filter((g) => g.items.length > 0)
+      : actionGroups;
+
   return (
     <Box sx={{ px: { xs: 0.5, sm: 2, md: 3 } }}>
       {/* Header */}
@@ -432,7 +447,7 @@ export function AdminDashboard() {
       >
         {/* Quick Actions */}
         <Grid size={{ xs: 12, lg: 9 }}>
-          <DashboardActionGroups groups={actionGroups} />
+          <DashboardActionGroups groups={visibleActionGroups} />
         </Grid>
 
         {/* Recent Activity */}

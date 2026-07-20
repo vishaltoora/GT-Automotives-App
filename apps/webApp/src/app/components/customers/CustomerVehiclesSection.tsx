@@ -29,7 +29,7 @@ interface CustomerVehiclesSectionProps {
 /**
  * Inline vehicle management for the customer add/edit experience: lists the
  * customer's vehicles with full details and supports add / edit / delete.
- * Delete is admin-only and may be blocked server-side by service history.
+ * Delete is limited to admin/foreman and may be blocked server-side by service history.
  */
 export function CustomerVehiclesSection({
   customerId,
@@ -38,7 +38,9 @@ export function CustomerVehiclesSection({
   const { showApiError } = useErrorHelpers();
   const { confirm } = useConfirmation();
   const { role } = useAuth();
-  const isAdmin = role === 'admin';
+  // Vehicle deletion is permitted for admin and foreman (matches the server
+  // gate in vehicles.service). Deletes may still be blocked by service history.
+  const canDeleteVehicle = role === 'admin' || role === 'foreman';
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
@@ -160,7 +162,7 @@ export function CustomerVehiclesSection({
                       <EditIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  {isAdmin && (
+                  {canDeleteVehicle && (
                     <Tooltip title="Delete vehicle">
                       <span>
                         <IconButton

@@ -91,7 +91,7 @@ export function InspectionList() {
     useState<Inspection | null>(null);
 
   const routePrefix =
-    location.pathname.match(/^\/(admin|staff|supervisor)(?=\/)/)?.[0] ||
+    location.pathname.match(/^\/(admin|staff|supervisor|foreman)(?=\/)/)?.[0] ||
     '/staff';
 
   useEffect(() => {

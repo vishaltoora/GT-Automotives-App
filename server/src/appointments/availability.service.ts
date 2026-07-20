@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import {
   SetAvailabilityDto,
@@ -27,7 +31,9 @@ export class AvailabilityService {
     });
 
     if (!employee) {
-      throw new NotFoundException(`Employee with ID ${dto.employeeId} not found`);
+      throw new NotFoundException(
+        `Employee with ID ${dto.employeeId} not found`
+      );
     }
 
     // Upsert availability (update if exists, create if not)
@@ -108,7 +114,9 @@ export class AvailabilityService {
     });
 
     if (!employee) {
-      throw new NotFoundException(`Employee with ID ${dto.employeeId} not found`);
+      throw new NotFoundException(
+        `Employee with ID ${dto.employeeId} not found`
+      );
     }
 
     return this.prisma.timeSlotOverride.create({
@@ -151,7 +159,9 @@ export class AvailabilityService {
   /**
    * Check available time slots for a specific date and duration
    */
-  async checkAvailableSlots(dto: CheckAvailabilityDto): Promise<AvailableSlot[]> {
+  async checkAvailableSlots(
+    dto: CheckAvailabilityDto
+  ): Promise<AvailableSlot[]> {
     const dayOfWeek = dto.date.getDay();
 
     // Normalize date to UTC midnight to match how appointments are stored
@@ -169,14 +179,16 @@ export class AvailabilityService {
         include: { role: true },
       });
       if (!employee) {
-        throw new NotFoundException(`Employee with ID ${dto.employeeId} not found`);
+        throw new NotFoundException(
+          `Employee with ID ${dto.employeeId} not found`
+        );
       }
       employees = [employee];
     } else {
       // Get all STAFF, ADMIN, and SUPERVISOR users
       employees = await this.prisma.user.findMany({
         where: {
-          role: { name: { in: ['STAFF', 'ADMIN', 'SUPERVISOR'] } },
+          role: { name: { in: ['STAFF', 'ADMIN', 'SUPERVISOR', 'FOREMAN'] } },
           isActive: true,
         },
         include: { role: true },
@@ -210,7 +222,7 @@ export class AvailabilityService {
           status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
           OR: [
             { employeeId: employee.id },
-            { employees: { some: { employeeId: employee.id } } }
+            { employees: { some: { employeeId: employee.id } } },
           ],
         },
       });
@@ -221,12 +233,11 @@ export class AvailabilityService {
 
       if (recurringSlots.length > 0) {
         // Find the earliest start time and latest end time
-        const startTimes = recurringSlots.map(s => s.startTime);
-        const endTimes = recurringSlots.map(s => s.endTime);
+        const startTimes = recurringSlots.map((s) => s.startTime);
+        const endTimes = recurringSlots.map((s) => s.endTime);
         dayStart = startTimes.sort()[0]; // Earliest start
         dayEnd = endTimes.sort().reverse()[0]; // Latest end
       }
-
 
       // Generate time slots (every 15 minutes)
       const slots = this.generateTimeSlots(
@@ -242,7 +253,9 @@ export class AvailabilityService {
       slots.forEach((slot) => {
         availableSlots.push({
           employeeId: employee.id,
-          employeeName: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+          employeeName: `${employee.firstName || ''} ${
+            employee.lastName || ''
+          }`.trim(),
           startTime: slot.startTime,
           endTime: slot.endTime,
           available: slot.available,
@@ -262,7 +275,9 @@ export class AvailabilityService {
     startTime: string,
     duration: number,
     excludeAppointmentId?: string
-  ): Promise<boolean | { available: false; reason: string; suggestion: string }> {
+  ): Promise<
+    boolean | { available: false; reason: string; suggestion: string }
+  > {
     const dayOfWeek = date.getDay();
 
     // Normalize date to UTC midnight to match how appointments are stored
@@ -294,11 +309,20 @@ export class AvailabilityService {
 
     // Check if time is blocked by an override
     for (const override of overrides) {
-      if (!override.isAvailable && this.timeOverlaps(startTime, endTime, override.startTime, override.endTime)) {
+      if (
+        !override.isAvailable &&
+        this.timeOverlaps(
+          startTime,
+          endTime,
+          override.startTime,
+          override.endTime
+        )
+      ) {
         return {
           available: false,
           reason: `Employee has time off from ${override.startTime} to ${override.endTime}`,
-          suggestion: override.reason || 'Employee is unavailable during this time',
+          suggestion:
+            override.reason || 'Employee is unavailable during this time',
         };
       }
     }
@@ -306,7 +330,13 @@ export class AvailabilityService {
     // Check if there's an available override that covers this time
     const hasAvailableOverride = overrides.some(
       (override) =>
-        override.isAvailable && this.timeInRange(startTime, duration, override.startTime, override.endTime)
+        override.isAvailable &&
+        this.timeInRange(
+          startTime,
+          duration,
+          override.startTime,
+          override.endTime
+        )
     );
 
     // 2. Check recurring availability
@@ -318,11 +348,22 @@ export class AvailabilityService {
       },
     });
 
-    console.log(`[AVAILABILITY] Checking time ${startTime} for ${duration} min (end: ${endTime})`);
-    console.log(`[AVAILABILITY] Found ${recurringSlots.length} recurring slots:`);
-    recurringSlots.forEach(slot => {
-      const fits = this.timeInRange(startTime, duration, slot.startTime, slot.endTime);
-      console.log(`  - Slot: ${slot.startTime} - ${slot.endTime}, Fits: ${fits}`);
+    console.log(
+      `[AVAILABILITY] Checking time ${startTime} for ${duration} min (end: ${endTime})`
+    );
+    console.log(
+      `[AVAILABILITY] Found ${recurringSlots.length} recurring slots:`
+    );
+    recurringSlots.forEach((slot) => {
+      const fits = this.timeInRange(
+        startTime,
+        duration,
+        slot.startTime,
+        slot.endTime
+      );
+      console.log(
+        `  - Slot: ${slot.startTime} - ${slot.endTime}, Fits: ${fits}`
+      );
     });
 
     const withinRecurringSlot = recurringSlots.some((slot) =>
@@ -333,11 +374,15 @@ export class AvailabilityService {
 
     // If no override and not in recurring slot, not available
     if (!hasAvailableOverride && !withinRecurringSlot) {
-      const availableSlots = recurringSlots.map(s => `${s.startTime}-${s.endTime}`).join(', ');
+      const availableSlots = recurringSlots
+        .map((s) => `${s.startTime}-${s.endTime}`)
+        .join(', ');
       console.log(`[AVAILABILITY] ❌ NOT AVAILABLE - No recurring slot match`);
       return {
         available: false,
-        reason: `Employee's working hours on this day: ${availableSlots || 'Not scheduled to work'}`,
+        reason: `Employee's working hours on this day: ${
+          availableSlots || 'Not scheduled to work'
+        }`,
         suggestion: availableSlots
           ? `Please choose a time within: ${availableSlots}`
           : 'Employee is not scheduled to work on this day',
@@ -349,10 +394,7 @@ export class AvailabilityService {
     const whereClause: any = {
       scheduledDate: dateOnly,
       status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
-      OR: [
-        { employeeId },
-        { employees: { some: { employeeId } } }
-      ],
+      OR: [{ employeeId }, { employees: { some: { employeeId } } }],
     };
 
     // Exclude the current appointment if updating (don't conflict with itself)
@@ -369,25 +411,49 @@ export class AvailabilityService {
       where: whereClause,
     });
 
-    console.log(`[AVAILABILITY CHECK] Employee ${employeeId} on ${dateOnly.toISOString().split('T')[0]} at ${startTime}:`);
-    console.log(`  - Found ${conflictingAppointments.length} existing appointments`);
-    console.log(`  - Requested slot: ${startTime} - ${endTime} (${duration} min)`);
+    console.log(
+      `[AVAILABILITY CHECK] Employee ${employeeId} on ${
+        dateOnly.toISOString().split('T')[0]
+      } at ${startTime}:`
+    );
+    console.log(
+      `  - Found ${conflictingAppointments.length} existing appointments`
+    );
+    console.log(
+      `  - Requested slot: ${startTime} - ${endTime} (${duration} min)`
+    );
 
     if (conflictingAppointments.length > 0) {
-      console.log('  - Existing appointments in DB:', conflictingAppointments.map(a => ({
-        id: a.id,
-        date: a.scheduledDate,
-        time: a.scheduledTime,
-      })));
+      console.log(
+        '  - Existing appointments in DB:',
+        conflictingAppointments.map((a) => ({
+          id: a.id,
+          date: a.scheduledDate,
+          time: a.scheduledTime,
+        }))
+      );
     }
 
     for (const appointment of conflictingAppointments) {
-      const appointmentEnd = appointment.endTime || this.addMinutesToTime(appointment.scheduledTime, appointment.duration);
-      console.log(`  - Existing appointment: ${appointment.scheduledTime} - ${appointmentEnd}`);
-      const overlaps = this.timeOverlaps(startTime, endTime, appointment.scheduledTime, appointmentEnd);
-      console.log(`  - Checking overlap: ${startTime}-${endTime} vs ${appointment.scheduledTime}-${appointmentEnd} = ${overlaps}`);
+      const appointmentEnd =
+        appointment.endTime ||
+        this.addMinutesToTime(appointment.scheduledTime, appointment.duration);
+      console.log(
+        `  - Existing appointment: ${appointment.scheduledTime} - ${appointmentEnd}`
+      );
+      const overlaps = this.timeOverlaps(
+        startTime,
+        endTime,
+        appointment.scheduledTime,
+        appointmentEnd
+      );
+      console.log(
+        `  - Checking overlap: ${startTime}-${endTime} vs ${appointment.scheduledTime}-${appointmentEnd} = ${overlaps}`
+      );
       if (overlaps) {
-        console.log(`  ❌ CONFLICT DETECTED! Overlaps with appointment ${appointment.id}`);
+        console.log(
+          `  ❌ CONFLICT DETECTED! Overlaps with appointment ${appointment.id}`
+        );
         return {
           available: false,
           reason: `Employee already has an appointment from ${appointment.scheduledTime} to ${appointmentEnd}`,
@@ -408,12 +474,25 @@ export class AvailabilityService {
     dayStart: string,
     dayEnd: string,
     incrementMinutes: number,
-    recurringSlots: Array<{ startTime: string; endTime: string; isAvailable: boolean }>,
-    overrides: Array<{ startTime: string; endTime: string; isAvailable: boolean }>,
-    appointments: Array<{ scheduledTime: string; endTime?: string | null; duration: number }>,
+    recurringSlots: Array<{
+      startTime: string;
+      endTime: string;
+      isAvailable: boolean;
+    }>,
+    overrides: Array<{
+      startTime: string;
+      endTime: string;
+      isAvailable: boolean;
+    }>,
+    appointments: Array<{
+      scheduledTime: string;
+      endTime?: string | null;
+      duration: number;
+    }>,
     duration: number
   ) {
-    const slots: { startTime: string; endTime: string; available: boolean }[] = [];
+    const slots: { startTime: string; endTime: string; available: boolean }[] =
+      [];
     let currentTime = dayStart;
 
     while (currentTime < dayEnd) {
@@ -425,19 +504,43 @@ export class AvailabilityService {
       );
 
       const isOverrideBlocked = overrides.some(
-        (override) => !override.isAvailable && this.timeOverlaps(currentTime, slotEnd, override.startTime, override.endTime)
+        (override) =>
+          !override.isAvailable &&
+          this.timeOverlaps(
+            currentTime,
+            slotEnd,
+            override.startTime,
+            override.endTime
+          )
       );
 
       const isOverrideAvailable = overrides.some(
-        (override) => override.isAvailable && this.timeInRange(currentTime, duration, override.startTime, override.endTime)
+        (override) =>
+          override.isAvailable &&
+          this.timeInRange(
+            currentTime,
+            duration,
+            override.startTime,
+            override.endTime
+          )
       );
 
       const hasConflict = appointments.some((appt) => {
-        const apptEnd = appt.endTime || this.addMinutesToTime(appt.scheduledTime, appt.duration);
-        return this.timeOverlaps(currentTime, slotEnd, appt.scheduledTime, apptEnd);
+        const apptEnd =
+          appt.endTime ||
+          this.addMinutesToTime(appt.scheduledTime, appt.duration);
+        return this.timeOverlaps(
+          currentTime,
+          slotEnd,
+          appt.scheduledTime,
+          apptEnd
+        );
       });
 
-      const available = !isOverrideBlocked && (isOverrideAvailable || isRecurring) && !hasConflict;
+      const available =
+        !isOverrideBlocked &&
+        (isOverrideAvailable || isRecurring) &&
+        !hasConflict;
 
       slots.push({
         startTime: currentTime,
@@ -454,7 +557,12 @@ export class AvailabilityService {
   /**
    * Helper: Check if a time range is within a slot
    */
-  private timeInRange(startTime: string, duration: number, slotStart: string, slotEnd: string): boolean {
+  private timeInRange(
+    startTime: string,
+    duration: number,
+    slotStart: string,
+    slotEnd: string
+  ): boolean {
     const endTime = this.addMinutesToTime(startTime, duration);
     return startTime >= slotStart && endTime <= slotEnd;
   }
@@ -464,11 +572,18 @@ export class AvailabilityService {
    * Two appointments overlap if one starts before the other ends AND ends after the other starts
    * However, if one ends exactly when the other starts, they DO NOT overlap (back-to-back is allowed)
    */
-  private timeOverlaps(start1: string, end1: string, start2: string, end2: string): boolean {
+  private timeOverlaps(
+    start1: string,
+    end1: string,
+    start2: string,
+    end2: string
+  ): boolean {
     // Allow back-to-back appointments: 9:00-10:00 and 10:00-11:00 should NOT overlap
     // Overlapping means: start1 < end2 (starts before the other ends) AND end1 > start2 (ends after the other starts)
     // But we exclude the edge case where end1 === start2 or end2 === start1 (back-to-back)
-    return start1 < end2 && end1 > start2 && !(end1 === start2 || end2 === start1);
+    return (
+      start1 < end2 && end1 > start2 && !(end1 === start2 || end2 === start1)
+    );
   }
 
   /**
@@ -479,6 +594,9 @@ export class AvailabilityService {
     const totalMinutes = hours * 60 + mins + minutes;
     const newHours = Math.floor(totalMinutes / 60) % 24;
     const newMins = totalMinutes % 60;
-    return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+    return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(
+      2,
+      '0'
+    )}`;
   }
 }

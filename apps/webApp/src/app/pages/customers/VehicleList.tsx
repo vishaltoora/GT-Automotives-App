@@ -58,13 +58,15 @@ export function VehicleList() {
       const filtered = vehicles.filter((vehicle) => {
         const searchLower = searchTerm.toLowerCase();
         const customerDisplay = getCustomerDisplay(vehicle);
-        const customerText = `${customerDisplay.name} ${customerDisplay.email}`.toLowerCase();
+        const customerText =
+          `${customerDisplay.name} ${customerDisplay.email}`.toLowerCase();
         return (
           vehicle.make.toLowerCase().includes(searchLower) ||
           vehicle.model.toLowerCase().includes(searchLower) ||
           vehicle.year.toString().includes(searchTerm) ||
           (vehicle.vin && vehicle.vin.toLowerCase().includes(searchLower)) ||
-          (vehicle.licensePlate && vehicle.licensePlate.toLowerCase().includes(searchLower)) ||
+          (vehicle.licensePlate &&
+            vehicle.licensePlate.toLowerCase().includes(searchLower)) ||
           customerText.includes(searchLower)
         );
       });
@@ -91,7 +93,7 @@ export function VehicleList() {
   const handleDelete = async (vehicle: Vehicle) => {
     const vehicleDescription = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
     const confirmed = await confirmDelete(`vehicle "${vehicleDescription}"`);
-    
+
     if (confirmed) {
       try {
         await vehicleService.deleteVehicle(vehicle.id);
@@ -114,17 +116,26 @@ export function VehicleList() {
     const lastName = customer?.user?.lastName || customer?.lastName || '';
     const email = customer?.user?.email || customer?.email || '';
     const businessName = customer?.businessName || '';
-    const name = [firstName, lastName].filter(Boolean).join(' ') || businessName;
+    const name =
+      [firstName, lastName].filter(Boolean).join(' ') || businessName;
 
     return { name, email };
   };
 
-  const routePrefix = location.pathname.match(/^\/(admin|staff|supervisor|customer)(?=\/)/)?.[0] || '';
+  const routePrefix =
+    location.pathname.match(
+      /^\/(admin|staff|supervisor|foreman|customer)(?=\/)/
+    )?.[0] || '';
   const vehiclePath = (path: string) => `${routePrefix}/vehicles${path}`;
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -140,7 +151,12 @@ export function VehicleList() {
 
   return (
     <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4" component="h1">
           Vehicles
         </Typography>
@@ -200,7 +216,8 @@ export function VehicleList() {
                 const customerDisplay = getCustomerDisplay(vehicle);
                 const canDelete =
                   role === 'admin' ||
-                  (role === 'customer' && vehicle.customerId === vehicle.customer?.id);
+                  (role === 'customer' &&
+                    vehicle.customerId === vehicle.customer?.id);
 
                 return (
                   <TableRow key={vehicle.id} hover>
@@ -226,7 +243,10 @@ export function VehicleList() {
                               {customerDisplay.name || customerDisplay.email}
                             </Typography>
                             {customerDisplay.email && (
-                              <Typography variant="caption" color="textSecondary">
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                              >
                                 {customerDisplay.email}
                               </Typography>
                             )}
@@ -237,7 +257,10 @@ export function VehicleList() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontFamily: 'monospace' }}
+                      >
                         {vehicle.vin || '-'}
                       </Typography>
                     </TableCell>
@@ -247,7 +270,12 @@ export function VehicleList() {
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={0.5}
+                        justifyContent="flex-end"
+                      >
                         <SpeedIcon fontSize="small" color="action" />
                         <Typography variant="body2">
                           {formatMileage(vehicle.mileage)}
@@ -255,7 +283,11 @@ export function VehicleList() {
                       </Box>
                     </TableCell>
                     <TableCell align="center">
-                      <Stack direction="row" spacing={1} justifyContent="center">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center"
+                      >
                         <Chip
                           icon={<BuildIcon />}
                           label={vehicle._count?.invoices || 0}
@@ -270,7 +302,9 @@ export function VehicleList() {
                         <Tooltip title="View Details">
                           <IconButton
                             size="small"
-                            onClick={() => navigate(vehiclePath(`/${vehicle.id}`))}
+                            onClick={() =>
+                              navigate(vehiclePath(`/${vehicle.id}`))
+                            }
                           >
                             <ViewIcon />
                           </IconButton>
@@ -278,7 +312,9 @@ export function VehicleList() {
                         <Tooltip title="Edit">
                           <IconButton
                             size="small"
-                            onClick={() => navigate(vehiclePath(`/${vehicle.id}/edit`))}
+                            onClick={() =>
+                              navigate(vehiclePath(`/${vehicle.id}/edit`))
+                            }
                           >
                             <EditIcon />
                           </IconButton>

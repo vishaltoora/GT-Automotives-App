@@ -246,67 +246,83 @@ class InspectionService {
       )}:</span><span>${this.escapeHtml(value)}</span></div>`;
     };
 
+    const formatPhone = (phone?: string | null) => {
+      if (!phone) return '';
+      const c = phone.replace(/\D/g, '');
+      return c.length === 10
+        ? `${c.slice(0, 3)}-${c.slice(3, 6)}-${c.slice(6)}`
+        : phone;
+    };
+
+    const overallStatusMap: Record<
+      InspectionOverallStatus,
+      { label: string; cls: string }
+    > = {
+      GOOD: { label: 'Good — No issues found', cls: 'ov-good' },
+      ATTENTION_SOON: {
+        label: 'Attention Soon — Monitor recommended',
+        cls: 'ov-fair',
+      },
+      NEEDS_REPAIR: {
+        label: 'Needs Repair — Service recommended',
+        cls: 'ov-poor',
+      },
+      UNSAFE: {
+        label: 'Unsafe — Immediate attention required',
+        cls: 'ov-poor',
+      },
+    };
+    const overall = inspection.overallStatus
+      ? overallStatusMap[inspection.overallStatus]
+      : null;
+
     const sectionsHtml = inspection.template.sections
-      .map(
-        (section) => `
-      <section class="section">
-        <h2>${this.escapeHtml(section.title)}</h2>
-        ${section.items
+      .map((section) => {
+        const itemsHtml = section.items
           .map((item) => {
             const results = resultByItemId.get(item.id) || [];
-            return `
-            <div class="item">
-              <h3>${this.escapeHtml(item.label)}</h3>
-              ${results
-                .map(
-                  (result) => `
-                <div class="result">
-                  <div class="result-main">
-                    <span class="position">${
-                      result.position === 'GENERAL'
-                        ? ''
-                        : this.escapeHtml(result.position)
-                    }</span>
-                    <span class="status ${String(
-                      result.status || 'empty'
-                    ).toLowerCase()}">${this.escapeHtml(
-                    this.formatStatus(result.status)
-                  )}</span>
-                    ${
-                      result.value
-                        ? `<span class="value">${this.escapeHtml(
-                            result.value
-                          )}${
-                            item.unit ? ` ${this.escapeHtml(item.unit)}` : ''
-                          }</span>`
-                        : ''
-                    }
-                  </div>
-                  ${
-                    result.selectedOptions?.length
-                      ? `<p><strong>Affected part(s):</strong> ${this.escapeHtml(
-                          result.selectedOptions.join(', ')
-                        )}</p>`
-                      : ''
-                  }
-                  ${
-                    result.notes
-                      ? `<p><strong>Notes:</strong> ${this.escapeHtml(
-                          result.notes
-                        )}</p>`
-                      : ''
-                  }
-                </div>
-              `
-                )
-                .join('')}
-            </div>
-          `;
+            if (results.length === 0) return '';
+            const resultsHtml = results
+              .map((result) => {
+                const statusKey = String(
+                  result.status || 'empty'
+                ).toLowerCase();
+                const pos =
+                  result.position && result.position !== 'GENERAL'
+                    ? `<span class="ins-pos">${this.escapeHtml(
+                        result.position
+                      )}</span>`
+                    : '';
+                const val = result.value
+                  ? `<span class="ins-val">${this.escapeHtml(result.value)}${
+                      item.unit ? ` ${this.escapeHtml(item.unit)}` : ''
+                    }</span>`
+                  : '';
+                const options = result.selectedOptions?.length
+                  ? `<span class="ins-extra"><strong>Affected:</strong> ${this.escapeHtml(
+                      result.selectedOptions.join(', ')
+                    )}</span>`
+                  : '';
+                const notes = result.notes
+                  ? `<span class="ins-extra"><strong>Notes:</strong> ${this.escapeHtml(
+                      result.notes
+                    )}</span>`
+                  : '';
+                return `<div class="ins-result">${pos}<span class="ins-chip ${statusKey}">${this.escapeHtml(
+                  this.formatStatus(result.status)
+                )}</span>${val}${options}${notes}</div>`;
+              })
+              .join('');
+            return `<div class="ins-item"><div class="ins-item-label">${this.escapeHtml(
+              item.label
+            )}</div><div class="ins-item-results">${resultsHtml}</div></div>`;
           })
-          .join('')}
-      </section>
-    `
-      )
+          .join('');
+        if (!itemsHtml.trim()) return '';
+        return `<div class="ins-section"><h2 class="ins-section-title">${this.escapeHtml(
+          section.title
+        )}</h2><div class="ins-items">${itemsHtml}</div></div>`;
+      })
       .join('');
 
     return `
@@ -318,70 +334,57 @@ class InspectionService {
           )} - ${this.escapeHtml(customerName)}</title>
           <style>
             * { box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; color: #172033; margin: 0; padding: 24px; background: #f6f8fb; }
-            .report { width: 8.5in; max-width: 100%; min-height: 11in; margin: 0 auto; background: white; padding: 0.5in; border: 1px solid #d8dee9; }
-            .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 2px solid #243c55; padding-bottom: 10px; margin-bottom: 18px; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: #333; margin: 0; padding: 24px; background: #f6f8fb; }
+            .report { width: 8.5in; max-width: 100%; margin: 0 auto; background: white; padding: 0.5in; border: 1px solid #d8dee9; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 2px solid #243c55; padding-bottom: 10px; margin-bottom: 15px; }
             .company-info { flex: 1; }
             .company-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
             .logo { width: 80px; height: 80px; object-fit: contain; flex: 0 0 auto; }
-            .report-details { text-align: right; min-width: 190px; }
-            .report-details h2 { margin: 0; color: #333; font-size: 22px; }
             .company-info h1 { margin: 0; color: #243c55; font-size: 26px; }
             .company-info p { margin: 0; }
             .company-contact { margin-top: 8px !important; font-size: 13px; }
-            h1 { margin: 0 0 6px; font-size: 28px; color: #10264a; }
-            h2 { margin: 0 0 12px; font-size: 18px; color: #10264a; border-bottom: 1px solid #d8dee9; padding-bottom: 8px; }
-            h3 { margin: 0 0 8px; font-size: 14px; }
-            .meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; margin-bottom: 18px; font-size: 13px; }
-            .meta-left, .meta-right { display: grid; gap: 8px; min-width: 0; }
-            .meta-right { justify-items: end; margin-left: auto; min-width: 220px; }
-            .meta-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 4px; align-items: start; }
-            .meta-right .meta-row { grid-template-columns: max-content max-content; justify-content: end; gap: 4px; }
-            .meta-label { font-weight: 700; }
-            .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
-            .summary div { border: 1px solid #d8dee9; padding: 10px; text-align: center; font-weight: 700; }
-            .section { page-break-inside: avoid; margin-top: 22px; }
-            .item { border: 1px solid #e1e6ef; padding: 12px; margin-bottom: 10px; page-break-inside: avoid; }
-            .result { padding: 8px 0; border-top: 1px solid #eef2f7; }
-            .result:first-of-type { border-top: 0; }
-            .result-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-            .position { font-weight: 700; min-width: 34px; }
-            .status { border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 700; border: 1px solid #bcc7d6; }
-            .status.good { color: #1b5e20; border-color: #81c784; background: #e8f5e9; }
-            .status.fair { color: #8a5200; border-color: #ffcc80; background: #fff3e0; }
-            .status.poor { color: #b71c1c; border-color: #ef9a9a; background: #ffebee; }
-            .value { font-weight: 700; }
-            p { margin: 6px 0 0; font-size: 13px; }
-            .footer { margin-top: 28px; font-size: 12px; color: #5b6472; border-top: 1px solid #d8dee9; padding-top: 12px; }
+            .report-details { text-align: right; min-width: 190px; }
+            .report-details h2 { margin: 0; color: #333; font-size: 22px; }
+            .report-details p { margin-top: 6px; font-size: 13px; }
+            .meta { display: flex; justify-content: space-between; gap: 24px; margin: 12px 0; font-size: 13px; }
+            .meta > div { flex: 1; }
+            .meta-row { display: flex; gap: 6px; margin-bottom: 4px; }
+            .meta-label { font-weight: 700; color: #243c55; min-width: 70px; }
+            .overall { margin: 14px 0; padding: 12px 16px; border-radius: 6px; border: 1px solid; font-weight: 700; font-size: 15px; text-align: center; }
+            .overall.ov-good { border-color: #81c784; background: #e8f5e9; color: #1b5e20; }
+            .overall.ov-fair { border-color: #ffb74d; background: #fff3e0; color: #8a5200; }
+            .overall.ov-poor { border-color: #ef9a9a; background: #ffebee; color: #b71c1c; }
+            .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+            .summary-card { border: 1px solid #d8dee9; border-radius: 6px; padding: 12px; text-align: center; }
+            .summary-card .num { font-size: 24px; font-weight: 800; line-height: 1; }
+            .summary-card .lbl { font-size: 12px; font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .summary-card.good { color: #1b5e20; border-color: #81c784; background: #e8f5e9; }
+            .summary-card.fair { color: #8a5200; border-color: #ffcc80; background: #fff3e0; }
+            .summary-card.poor { color: #b71c1c; border-color: #ef9a9a; background: #ffebee; }
+            .ins-section { margin-top: 14px; }
+            .ins-section-title { margin: 0 0 8px; font-size: 14px; color: #10264a; border-bottom: 1px solid #d8dee9; padding-bottom: 5px; break-after: avoid; page-break-after: avoid; }
+            .ins-items { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px; align-items: start; }
+            .ins-item { border: 1px solid #e1e6ef; border-radius: 5px; padding: 6px 10px; page-break-inside: avoid; break-inside: avoid; }
+            .ins-item-label { font-weight: 600; font-size: 11.5px; color: #10264a; margin-bottom: 3px; }
+            .ins-result { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; padding: 1px 0; }
+            .ins-pos { font-weight: 700; color: #243c55; min-width: 30px; }
+            .ins-chip { border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; border: 1px solid; white-space: nowrap; color: #5b6472; border-color: #cfd6e0; background: #f2f5f9; }
+            .ins-chip.good { color: #1b5e20; border-color: #81c784; background: #e8f5e9; }
+            .ins-chip.fair { color: #8a5200; border-color: #ffcc80; background: #fff3e0; }
+            .ins-chip.poor { color: #b71c1c; border-color: #ef9a9a; background: #ffebee; }
+            .ins-val { font-weight: 700; color: #10264a; }
+            .ins-extra { width: 100%; margin-top: 2px; font-size: 10.5px; color: #555; }
+            .footer { margin-top: 25px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 12px; }
+            .footer .thanks { font-weight: bold; color: #1976d2; margin: 0 0 3px 0; }
+            .footer p { margin: 0; }
             @media print {
               * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              body { background: white; padding: 0; font-size: 11px; }
-              .report { border: 0; width: 100%; min-height: auto; max-width: none; padding: 16px; }
-              .header { gap: 14px; padding-bottom: 6px; margin-bottom: 10px; }
-              .company-brand { gap: 8px; margin-bottom: 4px; }
-              .logo { width: 58px; height: 58px; }
-              .company-info h1 { font-size: 20px; }
-              .company-info p { font-size: 11px !important; }
-              .company-contact { margin-top: 4px !important; font-size: 11px; }
-              .report-details { min-width: 150px; }
-              .report-details h2 { font-size: 16px; padding-bottom: 4px; margin-bottom: 6px; }
-              h2 { font-size: 14px; margin-bottom: 8px; padding-bottom: 5px; }
-              h3 { font-size: 11px; margin-bottom: 5px; }
-              .meta { gap: 18px; margin-bottom: 10px; font-size: 11px; }
-              .meta-left, .meta-right { gap: 4px; }
-              .meta-right { min-width: 0; }
-              .meta-row { grid-template-columns: max-content minmax(0, 1fr); gap: 3px; }
-              .summary { gap: 6px; margin: 10px 0; }
-              .summary div { padding: 6px; }
-              .section { margin-top: 12px; }
-              .item { padding: 7px; margin-bottom: 6px; }
-              .result { padding: 5px 0; }
-              .result-main { gap: 6px; }
-              .position { min-width: 24px; }
-              .status { padding: 2px 5px; font-size: 10px; }
-              p { margin-top: 4px; font-size: 11px; }
-              .footer { margin-top: 16px; font-size: 10px; padding-top: 8px; }
-              @page { size: 8.5in 11in; margin: 0.65in; }
+              body { background: white; padding: 0; }
+              .report { border: 0; width: 100%; max-width: none; padding: 0; }
+              .logo { width: 64px; height: 64px; }
+              .company-info h1 { font-size: 22px; }
+              .report-details h2 { font-size: 18px; }
+              @page { size: 8.5in 11in; margin: 16mm 12mm; }
             }
           </style>
         </head>
@@ -409,41 +412,63 @@ class InspectionService {
                 <p><strong>Type:</strong> ${this.escapeHtml(
                   inspection.template.name
                 )}<br>
-                <strong>RO:</strong> ${this.escapeHtml(
+                <strong>RO #:</strong> ${this.escapeHtml(
                   inspection.roNumber || '-'
                 )}<br>
                 <strong>Status:</strong> ${this.escapeHtml(
-                  inspection.status.replace('_', ' ')
+                  inspection.status.replace(/_/g, ' ')
                 )}<br>
                 <strong>Date:</strong> ${this.escapeHtml(
-                  new Date(inspection.createdAt).toLocaleDateString()
+                  new Date(
+                    inspection.completedAt || inspection.createdAt
+                  ).toLocaleDateString()
                 )}</p>
               </div>
             </div>
             <div class="meta">
-              <div class="meta-left">
+              <div>
                 ${metaRow('Customer', customerName)}
+                ${
+                  inspection.customer.businessName
+                    ? metaRow('Business', inspection.customer.businessName)
+                    : ''
+                }
+                ${metaRow('Phone', formatPhone(inspection.customer.phone))}
+              </div>
+              <div>
                 ${inspection.vehicle ? metaRow('Vehicle', vehicleName) : ''}
                 ${metaRow('VIN', inspection.vehicle?.vin)}
-              </div>
-              <div class="meta-right">
-                ${metaRow('Phone', inspection.customer.phone)}
+                ${metaRow('Plate', inspection.vehicle?.licensePlate)}
                 ${metaRow(
                   'Mileage',
                   inspection.mileage || inspection.vehicle?.mileage
                 )}
-                ${metaRow('Plate', inspection.vehicle?.licensePlate)}
               </div>
             </div>
+            ${
+              overall
+                ? `<div class="overall ${
+                    overall.cls
+                  }">Overall Status: ${this.escapeHtml(overall.label)}</div>`
+                : ''
+            }
             <div class="summary">
-              <div>Good<br>${statusCounts.good}</div>
-              <div>Fair<br>${statusCounts.fair}</div>
-              <div>Poor<br>${statusCounts.poor}</div>
+              <div class="summary-card good"><div class="num">${
+                statusCounts.good
+              }</div><div class="lbl">Good</div></div>
+              <div class="summary-card fair"><div class="num">${
+                statusCounts.fair
+              }</div><div class="lbl">Fair</div></div>
+              <div class="summary-card poor"><div class="num">${
+                statusCounts.poor
+              }</div><div class="lbl">Poor</div></div>
             </div>
             ${sectionsHtml}
-            <div class="footer">Generated from GT Automotives on ${this.escapeHtml(
-              new Date().toLocaleString()
-            )}</div>
+            <div class="footer">
+              <p class="thanks">Thank you for trusting GT Automotives with your vehicle!</p>
+              <p style="font-size: 12px;">GT Automotives - Your trusted automotive partner</p>
+              <p style="font-size: 10px; color: #666; margin-top: 2px;">Mobile Service Available | Licensed &amp; Insured | Satisfaction Guaranteed</p>
+            </div>
           </div>
         </body>
       </html>

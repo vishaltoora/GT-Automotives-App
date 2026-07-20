@@ -4,29 +4,35 @@ import {
   Button,
   Chip,
   CircularProgress,
+  IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
   CheckCircle,
   CheckCircleOutline,
-  Close as CloseIcon,
-  Done as DoneIcon,
+  Delete as DeleteIcon,
   RequestQuote,
+  ThumbDown,
+  ThumbDownOffAlt,
+  ThumbUp,
+  ThumbUpOffAlt,
 } from '@mui/icons-material';
 import {
   repairOrderRequests,
   ROService,
-  ROServiceApproval,
 } from '../../requests/repair-order.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { colors } from '../../theme/colors';
 
 interface ROItemsListProps {
   roId: string;
   services: ROService[];
   canEdit: boolean;
+  canDelete?: boolean;
   onChanged: () => Promise<void>;
 }
 
@@ -34,15 +40,6 @@ const TYPE_LABEL: Record<string, string> = {
   LABOR: 'Labor',
   PART: 'Part',
   OTHER: 'Other',
-};
-
-const APPROVAL_CHIP: Record<
-  ROServiceApproval,
-  { label: string; color: 'success' | 'error' | 'default' }
-> = {
-  APPROVED: { label: 'Approved', color: 'success' },
-  DECLINED: { label: 'Declined', color: 'error' },
-  PENDING: { label: 'Approval pending', color: 'default' },
 };
 
 /**
@@ -54,10 +51,13 @@ export function ROItemsList({
   roId,
   services,
   canEdit,
+  canDelete = false,
   onChanged,
 }: ROItemsListProps) {
   const { showApiError } = useErrorHelpers();
+  const { confirm } = useConfirmationHelpers();
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const mutate = async (
     serviceId: string,
@@ -71,6 +71,26 @@ export function ROItemsList({
       showApiError(error, 'Failed to update the item.');
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const handleDelete = async (s: ROService) => {
+    const ok = await confirm({
+      title: 'Delete Item',
+      message: `Delete "${s.description}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      severity: 'error',
+      confirmButtonColor: 'error',
+    });
+    if (!ok) return;
+    setDeletingId(s.id);
+    try {
+      await repairOrderRequests.removeService(roId, s.id);
+      await onChanged();
+    } catch (error) {
+      showApiError(error, 'Failed to delete the item.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -91,7 +111,8 @@ export function ROItemsList({
       {services.map((s) => {
         const saving = savingId === s.id;
         const completed = s.status === 'COMPLETED';
-        const approval = APPROVAL_CHIP[s.customerApproval];
+        const approved = s.customerApproval === 'APPROVED';
+        const declined = s.customerApproval === 'DECLINED';
         return (
           <Paper
             key={s.id}
@@ -134,23 +155,114 @@ export function ROItemsList({
                     size="small"
                     variant="outlined"
                   />
-                  {s.isQuotation && (
-                    <Chip
-                      label="Quotation"
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      icon={<RequestQuote sx={{ fontSize: 14 }} />}
-                    />
-                  )}
-                  <Chip
-                    label={approval.label}
-                    size="small"
-                    color={approval.color}
-                    variant={
-                      approval.color === 'default' ? 'outlined' : 'filled'
+
+                  {/* Customer approval — thumbs up/down toggle. Clicking the
+                      active one clears back to pending. Once completed, an
+                      approved item stays approved (can't be cleared). */}
+                  <Tooltip
+                    title={
+                      completed && approved
+                        ? 'Completed items stay approved'
+                        : approved
+                        ? 'Approved — tap to clear'
+                        : 'Approve'
                     }
-                  />
+                  >
+                    <span>
+                      <IconButton
+                        size="small"
+                        color="success"
+                        // Keep the green tint even when locked (disabled).
+                        sx={
+                          approved
+                            ? { '&.Mui-disabled': { color: 'success.main' } }
+                            : undefined
+                        }
+                        disabled={!canEdit || saving || (completed && approved)}
+                        onClick={() =>
+                          mutate(s.id, {
+                            customerApproval: approved ? 'PENDING' : 'APPROVED',
+                          })
+                        }
+                      >
+                        {approved ? (
+                          <ThumbUp fontSize="small" />
+                        ) : (
+                          <ThumbUpOffAlt fontSize="small" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip
+                    title={
+                      completed
+                        ? 'Completed items cannot be declined'
+                        : declined
+                        ? 'Declined — tap to clear'
+                        : 'Decline'
+                    }
+                  >
+                    <span>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        // Keep the red tint even when locked (disabled).
+                        sx={
+                          declined
+                            ? { '&.Mui-disabled': { color: 'error.main' } }
+                            : undefined
+                        }
+                        disabled={!canEdit || saving || completed}
+                        onClick={() =>
+                          mutate(
+                            s.id,
+                            declined
+                              ? { customerApproval: 'PENDING' }
+                              : // Declining takes the item off the quotation.
+                                {
+                                  customerApproval: 'DECLINED',
+                                  isQuotation: false,
+                                }
+                          )
+                        }
+                      >
+                        {declined ? (
+                          <ThumbDown fontSize="small" />
+                        ) : (
+                          <ThumbDownOffAlt fontSize="small" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+
+                  {/* Quotation flag — chip toggles select/deselect. A completed
+                      or declined item can't be on a quotation. */}
+                  {canEdit ? (
+                    <Chip
+                      label={
+                        s.isQuotation ? 'On quotation' : 'Add to quotation'
+                      }
+                      size="small"
+                      color={s.isQuotation ? 'primary' : 'default'}
+                      variant={s.isQuotation ? 'filled' : 'outlined'}
+                      icon={<RequestQuote sx={{ fontSize: 14 }} />}
+                      clickable
+                      disabled={saving || completed || declined}
+                      onClick={() =>
+                        mutate(s.id, { isQuotation: !s.isQuotation })
+                      }
+                    />
+                  ) : (
+                    s.isQuotation && (
+                      <Chip
+                        label="Quotation"
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        icon={<RequestQuote sx={{ fontSize: 14 }} />}
+                      />
+                    )
+                  )}
                 </Box>
                 <Typography
                   variant="body2"
@@ -191,7 +303,7 @@ export function ROItemsList({
                 <Stack
                   spacing={0.75}
                   sx={{
-                    minWidth: { sm: 200 },
+                    minWidth: { sm: 150 },
                     alignItems: { xs: 'stretch', sm: 'flex-end' },
                   }}
                 >
@@ -200,77 +312,52 @@ export function ROItemsList({
                       <CircularProgress size={16} />
                     </Box>
                   )}
-                  <Button
-                    size="small"
-                    variant={completed ? 'contained' : 'outlined'}
-                    color="success"
-                    disabled={saving}
-                    startIcon={
-                      completed ? (
-                        <CheckCircle fontSize="small" />
-                      ) : (
-                        <CheckCircleOutline fontSize="small" />
-                      )
-                    }
-                    onClick={() =>
-                      mutate(s.id, {
-                        status: completed ? 'PENDING' : 'COMPLETED',
-                      })
-                    }
-                    fullWidth
-                  >
-                    {completed ? 'Completed' : 'Mark complete'}
-                  </Button>
-                  <Stack
-                    direction="row"
-                    spacing={0.75}
-                    justifyContent="flex-end"
-                  >
+                  {/* A declined service isn't worked on, so hide completion. */}
+                  {!declined && (
                     <Button
                       size="small"
-                      variant={
-                        s.customerApproval === 'APPROVED'
-                          ? 'contained'
-                          : 'outlined'
-                      }
+                      variant={completed ? 'contained' : 'outlined'}
                       color="success"
                       disabled={saving}
-                      startIcon={<DoneIcon fontSize="small" />}
+                      startIcon={
+                        completed ? (
+                          <CheckCircle fontSize="small" />
+                        ) : (
+                          <CheckCircleOutline fontSize="small" />
+                        )
+                      }
                       onClick={() =>
-                        mutate(s.id, { customerApproval: 'APPROVED' })
+                        mutate(
+                          s.id,
+                          completed
+                            ? { status: 'PENDING' }
+                            : // Completing takes the item off the quotation.
+                              { status: 'COMPLETED', isQuotation: false }
+                        )
                       }
+                      fullWidth
                     >
-                      Approve
+                      {completed ? 'Completed' : 'Mark complete'}
                     </Button>
-                    <Button
-                      size="small"
-                      variant={
-                        s.customerApproval === 'DECLINED'
-                          ? 'contained'
-                          : 'outlined'
-                      }
-                      color="error"
-                      disabled={saving}
-                      startIcon={<CloseIcon fontSize="small" />}
-                      onClick={() =>
-                        mutate(s.id, { customerApproval: 'DECLINED' })
-                      }
-                    >
-                      Decline
-                    </Button>
-                  </Stack>
-                  <Chip
-                    label={s.isQuotation ? 'On quotation' : 'Add to quotation'}
-                    size="small"
-                    color={s.isQuotation ? 'primary' : 'default'}
-                    variant={s.isQuotation ? 'filled' : 'outlined'}
-                    icon={<RequestQuote sx={{ fontSize: 14 }} />}
-                    clickable
-                    disabled={saving}
-                    onClick={() =>
-                      mutate(s.id, { isQuotation: !s.isQuotation })
-                    }
-                  />
+                  )}
+                  {canDelete && (
+                    <Tooltip title="Delete item">
+                      <span>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          disabled={deletingId === s.id}
+                          onClick={() => handleDelete(s)}
+                        >
+                          {deletingId === s.id ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <DeleteIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
                 </Stack>
               )}
             </Box>

@@ -381,6 +381,7 @@ model Quotation {
   convertedToInvoiceId String?         @unique
   items                QuotationItem[]
   emailLogs            EmailLog[] // Email logs related to this quotation
+  repairOrder          RepairOrder? // RO this quotation was generated from (if any)
 
   @@index([status])
   @@index([customerName])
@@ -1539,6 +1540,7 @@ model RepairOrder {
   appointmentId   String      @unique // 1:1 with Appointment
   customerId      String
   vehicleId       String?
+  quotationId     String?     @unique // Quotation generated from this RO's quotation-flagged items (1:1)
   noVehicle       Boolean     @default(false) // Intentionally no vehicle (loose tires, battery, or other counter service)
   status          ROStatus    @default(OPEN)
   customerConcern String?     // What the customer reported
@@ -1554,6 +1556,7 @@ model RepairOrder {
   appointment  Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   customer     Customer      @relation(fields: [customerId], references: [id])
   vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id])
+  quotation    Quotation?    @relation(fields: [quotationId], references: [id])
   employees    ROEmployee[]
   services     ROService[]
   inspections  Inspection[]

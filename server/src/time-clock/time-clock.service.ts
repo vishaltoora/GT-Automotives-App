@@ -26,7 +26,7 @@ const ACTIVE_TIME_ENTRY_STATUSES = [
   TimeEntryStatus.OPEN,
   TimeEntryStatus.ON_BREAK,
 ];
-const STAFF_PAYROLL_ROLES = ['ADMIN', 'SUPERVISOR', 'STAFF'];
+const STAFF_PAYROLL_ROLES = ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'];
 
 @Injectable()
 export class TimeClockService {

@@ -9,6 +9,8 @@ import { AzureBlobService } from '../common/services/azure-blob.service';
 import { ROStatus } from '@prisma/client';
 import { InspectionsService } from '../inspections/inspections.service';
 import { QuotationsService } from '../quotations/quotations.service';
+import { PdfService } from '../pdf/pdf.service';
+import { EmailService } from '../email/email.service';
 import { buildAdjustmentItems } from '../invoices/invoice-adjustments';
 import {
   CreateRepairOrderDto,
@@ -68,13 +70,18 @@ export class RepairOrdersService {
     invoice: {
       select: { id: true, invoiceNumber: true, status: true, total: true },
     },
+    quotation: {
+      select: { id: true, quotationNumber: true, status: true, total: true },
+    },
   };
 
   constructor(
     private prisma: PrismaService,
     private azureBlob: AzureBlobService,
     private inspectionsService: InspectionsService,
-    private quotationsService: QuotationsService
+    private quotationsService: QuotationsService,
+    private pdfService: PdfService,
+    private emailService: EmailService
   ) {}
 
   /**
@@ -300,7 +307,11 @@ export class RepairOrdersService {
     }
 
     if (dto.status === ROStatus.CLOSED || dto.status === ROStatus.INVOICED) {
-      if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
+      if (
+        roleName !== 'ADMIN' &&
+        roleName !== 'FOREMAN' &&
+        roleName !== 'SUPERVISOR'
+      ) {
         throw new ForbiddenException(
           'Only admin or supervisor can close a repair order'
         );
@@ -415,7 +426,15 @@ export class RepairOrdersService {
       include: {
         customer: true,
         vehicle: true,
-        services: { where: { isQuotation: true } },
+        // Only quotation-flagged items that are still open — completed items are
+        // billed on the RO invoice and declined items are off the table.
+        services: {
+          where: {
+            isQuotation: true,
+            status: { not: 'COMPLETED' },
+            customerApproval: { not: 'DECLINED' },
+          },
+        },
       },
     });
 
@@ -437,8 +456,10 @@ export class RepairOrdersService {
       unitPrice: Number(s.unitPrice),
     }));
 
+    // NOTE: Quotation has no customerId column — it stores customer details
+    // inline (name/phone/email/address). Passing customerId here makes Prisma
+    // throw "Unknown argument `customerId`", so it must be omitted.
     const dto: any = {
-      customerId: ro.customerId,
       customerName: customerName || 'Customer',
       businessName: ro.customer.businessName ?? undefined,
       phone: ro.customer.phone ?? undefined,
@@ -451,7 +472,126 @@ export class RepairOrdersService {
       items,
     };
 
-    return this.quotationsService.create(dto, userId);
+    // If this RO already produced a quotation, refresh it in place (replaces
+    // items + recalculates totals) so re-running "Update Quotation" keeps the
+    // same quotation record instead of spawning duplicates.
+    if (ro.quotationId) {
+      return this.quotationsService.update(ro.quotationId, dto);
+    }
+
+    const quotation = await this.quotationsService.create(dto, userId);
+    await this.prisma.repairOrder.update({
+      where: { id: roId },
+      data: { quotationId: quotation.id },
+    });
+    return quotation;
+  }
+
+  /**
+   * Email the customer an estimate: the RO's quotation PDF plus a
+   * pre-inspection PDF (photos tagged DAMAGE_DOCUMENTATION with their notes).
+   * Requires the RO to have a quotation. `emails` overrides the customer's
+   * primary email when provided.
+   */
+  async sendEstimateEmail(
+    roId: string,
+    roleName: string,
+    emails?: string[]
+  ): Promise<{ success: boolean; message: string; emailUsed: string }> {
+    if (
+      roleName !== 'ADMIN' &&
+      roleName !== 'FOREMAN' &&
+      roleName !== 'SUPERVISOR' &&
+      roleName !== 'STAFF'
+    ) {
+      throw new ForbiddenException(
+        'You are not allowed to send estimate emails'
+      );
+    }
+
+    const ro = await this.prisma.repairOrder.findUnique({
+      where: { id: roId },
+      include: {
+        customer: true,
+        vehicle: true,
+        media: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+    if (!ro) throw new NotFoundException(`Repair order ${roId} not found`);
+    if (!ro.quotationId) {
+      throw new BadRequestException(
+        'Create a quotation for this repair order before sending an estimate.'
+      );
+    }
+
+    // Recipients: explicit list, else the customer's primary email.
+    const provided = Array.from(
+      new Set((emails ?? []).map((e) => (e || '').trim()).filter(Boolean))
+    );
+    const recipients =
+      provided.length > 0
+        ? provided
+        : ro.customer?.email
+        ? [ro.customer.email]
+        : [];
+    if (recipients.length === 0) {
+      throw new BadRequestException(
+        'No email address provided and the customer has no email on file.'
+      );
+    }
+
+    // Quotation PDF
+    const quotation = await this.quotationsService.findOne(ro.quotationId);
+    const quotationPdf = await this.pdfService.generateQuotationPdf(quotation);
+
+    // Pre-inspection PDF from defective-part photos (with SAS URLs for the
+    // private blob container). Only attached when such photos exist.
+    const defectPhotos = (ro.media ?? []).filter(
+      (m: any) => m.mediaType === 'DAMAGE_DOCUMENTATION'
+    );
+    let preInspectionPdf: string | null = null;
+    if (defectPhotos.length > 0) {
+      const withUrls = await Promise.all(
+        defectPhotos.map((m: any) => this.withMediaSasUrl(m))
+      );
+      preInspectionPdf = await this.pdfService.generatePreInspectionPdf({
+        roNumber: ro.roNumber,
+        customerName:
+          ro.customer?.businessName ||
+          `${ro.customer?.firstName ?? ''} ${
+            ro.customer?.lastName ?? ''
+          }`.trim(),
+        vehicleName: ro.vehicle
+          ? `${ro.vehicle.year} ${ro.vehicle.make} ${ro.vehicle.model}`
+          : undefined,
+        photos: withUrls.map((m: any) => ({
+          url: m.fileUrl,
+          note: m.caption,
+        })),
+      });
+    }
+
+    const result = await this.emailService.sendEstimateEmail(
+      recipients,
+      ro.roNumber,
+      (quotation as any).quotationNumber,
+      quotationPdf,
+      preInspectionPdf
+    );
+
+    if (!result.success) {
+      throw new BadRequestException(
+        `Failed to send estimate email: ${
+          result.error || 'Email service returned failure status'
+        }`
+      );
+    }
+
+    return {
+      success: true,
+      message: 'Estimate email sent successfully',
+      emailUsed: recipients.join(', '),
+    };
   }
 
   // ---- Media ----
@@ -535,6 +675,38 @@ export class RepairOrdersService {
    * services. Shared between the initial close→invoice and the re-sync path used
    * when an accidentally-closed RO is reopened, edited, and closed again.
    */
+  /**
+   * Assemble the invoice `notes` block for an RO-generated invoice: the RO's
+   * technician notes followed by a list of any customer-declined items (which
+   * are not billed, so they only appear here for the customer's record).
+   */
+  private async buildRoInvoiceNotes(
+    roId: string,
+    technicianNotes?: string | null
+  ): Promise<string | undefined> {
+    const parts: string[] = [];
+
+    if (technicianNotes && technicianNotes.trim()) {
+      parts.push(`Technician Notes:\n${technicianNotes.trim()}`);
+    }
+
+    const declined = await this.prisma.rOService.findMany({
+      where: {
+        repairOrderId: roId,
+        customerApproval: 'DECLINED',
+        isQuotation: false,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (declined.length > 0) {
+      // List declined items by name only (no quantity/price).
+      const lines = declined.map((s: any) => `• ${s.description}`).join('\n');
+      parts.push(`Customer Declined Items:\n${lines}`);
+    }
+
+    return parts.length > 0 ? parts.join('\n\n') : undefined;
+  }
+
   private buildRoInvoiceTotals(
     ro: any,
     noTax = false
@@ -607,7 +779,11 @@ export class RepairOrdersService {
     feeItemId?: string,
     paymentMethod?: string
   ): Promise<any> {
-    if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
+    if (
+      roleName !== 'ADMIN' &&
+      roleName !== 'FOREMAN' &&
+      roleName !== 'SUPERVISOR'
+    ) {
       throw new ForbiddenException(
         'Only admin or supervisor can close a repair order'
       );
@@ -617,9 +793,15 @@ export class RepairOrdersService {
       where: { id },
       include: {
         customer: true,
-        // Quotation-flagged items are never billed on the RO invoice — they are
-        // moved to a separate quotation via createQuotationFromServices().
-        services: { where: { status: 'COMPLETED', isQuotation: false } },
+        // All completed items are billed (a declined item can never be marked
+        // complete, so status COMPLETED already excludes declined work).
+        // Quotation-flagged items go to a separate quotation instead.
+        services: {
+          where: {
+            status: 'COMPLETED',
+            isQuotation: false,
+          },
+        },
         invoice: true,
         // Fetch all inspections (not just uninvoiced ones) so we can both find a
         // billable inspection AND detect one already linked to the existing invoice.
@@ -682,6 +864,11 @@ export class RepairOrdersService {
     const { items, subtotal, gstRate, pstRate, gstAmount, pstAmount, total } =
       this.buildRoInvoiceTotals(ro, noTax);
 
+    // Carry the RO's technician notes and any customer-declined items onto the
+    // invoice so they print/email with it. Declined items aren't billed (they're
+    // not in `items`), so they're listed here for the customer's record.
+    const invoiceNotes = await this.buildRoInvoiceNotes(id, ro.technicianNotes);
+
     // Re-sync path: reopened RO with an existing unpaid invoice. Rebuild its line
     // items and totals in place, keeping the same invoice id/number and PENDING
     // status so any external references to the invoice stay valid. The RO's
@@ -704,6 +891,7 @@ export class RepairOrdersService {
             total,
             status: 'PENDING',
             paymentMethod: (paymentMethod as any) ?? null,
+            notes: invoiceNotes,
             items: { create: items as any },
           },
         });
@@ -737,6 +925,7 @@ export class RepairOrdersService {
         // PENDING — payment is recorded later through the invoice payment flow.
         status: 'PENDING',
         paymentMethod: (paymentMethod as any) ?? undefined,
+        notes: invoiceNotes,
         createdBy: 'system',
         items: {
           create: items as any,
@@ -760,7 +949,11 @@ export class RepairOrdersService {
    * is pulled back to IN_PROGRESS.
    */
   async reopen(id: string, roleName: string): Promise<any> {
-    if (roleName !== 'ADMIN' && roleName !== 'SUPERVISOR') {
+    if (
+      roleName !== 'ADMIN' &&
+      roleName !== 'FOREMAN' &&
+      roleName !== 'SUPERVISOR'
+    ) {
       throw new ForbiddenException(
         'Only admin or supervisor can reopen a repair order'
       );

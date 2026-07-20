@@ -347,7 +347,12 @@ export function App() {
               }
             >
               <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<UserManagement />} />
+              {/* Same time-clock & jobs access as admin (Compensation & Bonus
+                  tab is hidden for foreman inside TimeClockManagement) */}
+              <Route path="time-clock" element={<TimeClockManagement />} />
+              <Route path="jobs" element={<JobsManagement />} />
+              <Route path="jobs/:employeeId" element={<JobsManagement />} />
+              {/* User management is admin-only — no foreman users route */}
               <Route path="customers" element={<CustomerList />} />
               <Route path="customers/new" element={<CustomerForm />} />
               <Route path="customers/:id/edit" element={<CustomerForm />} />

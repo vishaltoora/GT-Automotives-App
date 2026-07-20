@@ -32,12 +32,12 @@ export class TiresService {
   constructor(
     private tireRepository: TireRepository,
     private auditRepository: AuditRepository,
-    private prisma: PrismaService,
+    private prisma: PrismaService
   ) {}
 
   async findAll(
     filters?: TireFiltersDto,
-    userRole?: string,
+    userRole?: string
   ): Promise<TireResponseDto[]> {
     const tires = await this.tireRepository.findAll(filters);
     return this.formatTireResponse(tires, userRole);
@@ -53,10 +53,10 @@ export class TiresService {
 
   async search(
     searchParams: TireSearchDto,
-    userRole?: string,
+    userRole?: string
   ): Promise<TireSearchResultDto> {
     const result = await this.tireRepository.search(searchParams);
-    
+
     return {
       items: this.formatTireResponse(result.items, userRole),
       total: result.total,
@@ -70,10 +70,10 @@ export class TiresService {
   async create(
     createTireDto: CreateTireDto,
     userId: string,
-    userRole: string,
+    userRole: string
   ): Promise<TireResponseDto> {
     // Check if user has permission to create tires
-    if (!['STAFF', 'ADMIN'].includes(userRole)) {
+    if (!['STAFF', 'ADMIN', 'FOREMAN'].includes(userRole)) {
       throw new ForbiddenException('Insufficient permissions to create tires');
     }
 
@@ -125,7 +125,7 @@ export class TiresService {
 
     if (existingTires.length > 0) {
       throw new ConflictException(
-        'Tire with the same specifications already exists. Consider updating the quantity instead.',
+        'Tire with the same specifications already exists. Consider updating the quantity instead.'
       );
     }
 
@@ -169,10 +169,10 @@ export class TiresService {
     id: string,
     updateTireDto: UpdateTireDto,
     userId: string,
-    userRole: string,
+    userRole: string
   ): Promise<TireResponseDto> {
     // Check if user has permission to update tires
-    if (!['STAFF', 'ADMIN'].includes(userRole)) {
+    if (!['STAFF', 'ADMIN', 'FOREMAN'].includes(userRole)) {
       throw new ForbiddenException('Insufficient permissions to update tires');
     }
 
@@ -296,19 +296,23 @@ export class TiresService {
     return this.formatSingleTireResponse(updatedTire, userRole);
   }
 
-  async delete(id: string, userId: string, userRole: string): Promise<{ success: boolean }> {
+  async delete(
+    id: string,
+    userId: string,
+    userRole: string
+  ): Promise<{ success: boolean }> {
     // Only admin can delete tires
-    if (userRole !== 'ADMIN') {
+    if (userRole !== 'ADMIN' && userRole !== 'FOREMAN') {
       throw new ForbiddenException('Only administrators can delete tires');
     }
 
     const tire = await this.findById(id, userRole);
-    
+
     // Check if tire has been used in any invoices
     // TODO: Add check for invoice items when invoice module is implemented
-    
+
     const success = await this.tireRepository.delete(id);
-    
+
     if (!success) {
       throw new BadRequestException('Failed to delete tire');
     }
@@ -332,24 +336,29 @@ export class TiresService {
     id: string,
     adjustmentDto: StockAdjustmentDto,
     userId: string,
-    userRole: string,
+    userRole: string
   ): Promise<TireResponseDto> {
     // Check if user has permission to adjust stock
-    if (!['STAFF', 'ADMIN'].includes(userRole)) {
+    if (!['STAFF', 'ADMIN', 'FOREMAN'].includes(userRole)) {
       throw new ForbiddenException('Insufficient permissions to adjust stock');
     }
 
     const existingTire = await this.findById(id, userRole);
-    
+
     // Validate adjustment
-    if (adjustmentDto.type === 'remove' && adjustmentDto.quantity > existingTire.quantity) {
+    if (
+      adjustmentDto.type === 'remove' &&
+      adjustmentDto.quantity > existingTire.quantity
+    ) {
       throw new BadRequestException(
-        `Cannot remove ${adjustmentDto.quantity} items. Only ${existingTire.quantity} in stock.`,
+        `Cannot remove ${adjustmentDto.quantity} items. Only ${existingTire.quantity} in stock.`
       );
     }
 
     if (adjustmentDto.quantity < 0 && adjustmentDto.type !== 'remove') {
-      throw new BadRequestException('Quantity cannot be negative for add/set operations');
+      throw new BadRequestException(
+        'Quantity cannot be negative for add/set operations'
+      );
     }
 
     const oldQuantity = existingTire.quantity;
@@ -380,8 +389,10 @@ export class TiresService {
 
   async getLowStock(userRole: string): Promise<TireResponseDto[]> {
     // Check if user has permission to view stock reports
-    if (!['STAFF', 'ADMIN'].includes(userRole)) {
-      throw new ForbiddenException('Insufficient permissions to view stock reports');
+    if (!['STAFF', 'ADMIN', 'FOREMAN'].includes(userRole)) {
+      throw new ForbiddenException(
+        'Insufficient permissions to view stock reports'
+      );
     }
 
     const lowStockTires = await this.tireRepository.findLowStock();
@@ -390,11 +401,13 @@ export class TiresService {
 
   async getInventoryReport(
     filters?: { startDate?: string; endDate?: string },
-    userRole?: string,
+    userRole?: string
   ): Promise<InventoryReportDto> {
     // Only admin can view inventory reports
-    if (userRole !== 'ADMIN') {
-      throw new ForbiddenException('Only administrators can view inventory reports');
+    if (userRole !== 'ADMIN' && userRole !== 'FOREMAN') {
+      throw new ForbiddenException(
+        'Only administrators can view inventory reports'
+      );
     }
 
     const dateFilters = {
@@ -403,18 +416,24 @@ export class TiresService {
     };
 
     const report = await this.tireRepository.getInventoryReport(dateFilters);
-    
+
     return {
       ...report,
       lowStockItems: this.formatTireResponse(report.lowStockItems, userRole),
     };
   }
 
-  private formatTireResponse(tires: any[], userRole?: string): TireResponseDto[] {
+  private formatTireResponse(
+    tires: any[],
+    userRole?: string
+  ): TireResponseDto[] {
     return tires.map((tire) => this.formatSingleTireResponse(tire, userRole));
   }
 
-  private formatSingleTireResponse(tire: any, userRole?: string): TireResponseDto {
+  private formatSingleTireResponse(
+    tire: any,
+    userRole?: string
+  ): TireResponseDto {
     const response: any = {
       ...tire,
       brand: tire.brand?.name || tire.brand,
@@ -433,7 +452,7 @@ export class TiresService {
     delete response.locationId;
 
     // Hide cost from non-admin users
-    if (userRole !== 'ADMIN') {
+    if (userRole !== 'ADMIN' && userRole !== 'FOREMAN') {
       delete response.cost;
     }
 
@@ -444,7 +463,7 @@ export class TiresService {
   async findByBrandAndModel(
     brand: string,
     model: string,
-    userRole?: string,
+    userRole?: string
   ): Promise<TireResponseDto[]> {
     const tires = await this.tireRepository.findByBrandAndModel(brand, model);
     return this.formatTireResponse(tires, userRole);
@@ -453,7 +472,7 @@ export class TiresService {
   async findBySizeAndType(
     size: string,
     type?: TireType,
-    userRole?: string,
+    userRole?: string
   ): Promise<TireResponseDto[]> {
     const tires = await this.tireRepository.findBySizeAndType(size, type);
     return this.formatTireResponse(tires, userRole);
@@ -486,7 +505,7 @@ export class TiresService {
     const brands = await this.prisma.tireBrand.findMany({
       orderBy: { name: 'asc' },
     });
-    return brands.map(brand => ({
+    return brands.map((brand) => ({
       id: brand.id,
       name: brand.name,
       imageUrl: brand.imageUrl || undefined,
@@ -495,7 +514,10 @@ export class TiresService {
     }));
   }
 
-  async createTireBrand(dto: CreateTireBrandDto, userId: string): Promise<TireBrandDto> {
+  async createTireBrand(
+    dto: CreateTireBrandDto,
+    userId: string
+  ): Promise<TireBrandDto> {
     try {
       const brand = await this.prisma.tireBrand.create({
         data: {
@@ -521,15 +543,24 @@ export class TiresService {
         updatedAt: brand.updatedAt,
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Unique constraint')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Unique constraint')
+      ) {
         throw new ConflictException('Tire brand name already exists');
       }
       throw error;
     }
   }
 
-  async updateTireBrand(id: string, dto: UpdateTireBrandDto, userId: string): Promise<TireBrandDto> {
-    const existingBrand = await this.prisma.tireBrand.findUnique({ where: { id } });
+  async updateTireBrand(
+    id: string,
+    dto: UpdateTireBrandDto,
+    userId: string
+  ): Promise<TireBrandDto> {
+    const existingBrand = await this.prisma.tireBrand.findUnique({
+      where: { id },
+    });
     if (!existingBrand) {
       throw new NotFoundException('Tire brand not found');
     }
@@ -561,15 +592,23 @@ export class TiresService {
         updatedAt: brand.updatedAt,
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Unique constraint')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Unique constraint')
+      ) {
         throw new ConflictException('Tire brand name already exists');
       }
       throw error;
     }
   }
 
-  async deleteTireBrand(id: string, userId: string): Promise<{ success: boolean }> {
-    const existingBrand = await this.prisma.tireBrand.findUnique({ where: { id } });
+  async deleteTireBrand(
+    id: string,
+    userId: string
+  ): Promise<{ success: boolean }> {
+    const existingBrand = await this.prisma.tireBrand.findUnique({
+      where: { id },
+    });
     if (!existingBrand) {
       throw new NotFoundException('Tire brand not found');
     }
@@ -580,7 +619,9 @@ export class TiresService {
     });
 
     if (tiresUsingBrand > 0) {
-      throw new ConflictException('Cannot delete tire brand - it is being used by existing tires');
+      throw new ConflictException(
+        'Cannot delete tire brand - it is being used by existing tires'
+      );
     }
 
     await this.prisma.tireBrand.delete({ where: { id } });
@@ -603,7 +644,7 @@ export class TiresService {
     const sizes = await this.prisma.tireSize.findMany({
       orderBy: { size: 'asc' },
     });
-    return sizes.map(size => ({
+    return sizes.map((size) => ({
       id: size.id,
       size: size.size,
       createdAt: size.createdAt,
@@ -611,7 +652,10 @@ export class TiresService {
     }));
   }
 
-  async createTireSize(dto: CreateTireSizeDto, userId: string): Promise<TireSizeDto> {
+  async createTireSize(
+    dto: CreateTireSizeDto,
+    userId: string
+  ): Promise<TireSizeDto> {
     try {
       const size = await this.prisma.tireSize.create({
         data: {
@@ -635,15 +679,24 @@ export class TiresService {
         updatedAt: size.updatedAt,
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Unique constraint')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Unique constraint')
+      ) {
         throw new ConflictException('Tire size already exists');
       }
       throw error;
     }
   }
 
-  async updateTireSize(id: string, dto: UpdateTireSizeDto, userId: string): Promise<TireSizeDto> {
-    const existingSize = await this.prisma.tireSize.findUnique({ where: { id } });
+  async updateTireSize(
+    id: string,
+    dto: UpdateTireSizeDto,
+    userId: string
+  ): Promise<TireSizeDto> {
+    const existingSize = await this.prisma.tireSize.findUnique({
+      where: { id },
+    });
     if (!existingSize) {
       throw new NotFoundException('Tire size not found');
     }
@@ -673,15 +726,23 @@ export class TiresService {
         updatedAt: size.updatedAt,
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Unique constraint')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Unique constraint')
+      ) {
         throw new ConflictException('Tire size already exists');
       }
       throw error;
     }
   }
 
-  async deleteTireSize(id: string, userId: string): Promise<{ success: boolean }> {
-    const existingSize = await this.prisma.tireSize.findUnique({ where: { id } });
+  async deleteTireSize(
+    id: string,
+    userId: string
+  ): Promise<{ success: boolean }> {
+    const existingSize = await this.prisma.tireSize.findUnique({
+      where: { id },
+    });
     if (!existingSize) {
       throw new NotFoundException('Tire size not found');
     }
@@ -692,7 +753,9 @@ export class TiresService {
     });
 
     if (tiresUsingSize > 0) {
-      throw new ConflictException('Cannot delete tire size - it is being used by existing tires');
+      throw new ConflictException(
+        'Cannot delete tire size - it is being used by existing tires'
+      );
     }
 
     await this.prisma.tireSize.delete({ where: { id } });
@@ -716,7 +779,7 @@ export class TiresService {
       orderBy: { name: 'asc' },
     });
 
-    return locations.map(location => ({
+    return locations.map((location) => ({
       id: location.id,
       name: location.name,
       createdAt: location.createdAt,
@@ -730,7 +793,7 @@ export class TiresService {
       select: { name: true },
     });
 
-    return locations.map(location => location.name);
+    return locations.map((location) => location.name);
   }
 
   async createLocation(createLocationDto: any, userId: string): Promise<any> {
@@ -757,15 +820,24 @@ export class TiresService {
         updatedAt: location.updatedAt,
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Unique constraint')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Unique constraint')
+      ) {
         throw new ConflictException('Location already exists');
       }
       throw error;
     }
   }
 
-  async updateLocation(id: string, updateLocationDto: any, userId: string): Promise<any> {
-    const existingLocation = await this.prisma.location.findUnique({ where: { id } });
+  async updateLocation(
+    id: string,
+    updateLocationDto: any,
+    userId: string
+  ): Promise<any> {
+    const existingLocation = await this.prisma.location.findUnique({
+      where: { id },
+    });
     if (!existingLocation) {
       throw new NotFoundException('Location not found');
     }
@@ -795,15 +867,23 @@ export class TiresService {
         updatedAt: location.updatedAt,
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Unique constraint')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Unique constraint')
+      ) {
         throw new ConflictException('Location already exists');
       }
       throw error;
     }
   }
 
-  async deleteLocation(id: string, userId: string): Promise<{ success: boolean }> {
-    const existingLocation = await this.prisma.location.findUnique({ where: { id } });
+  async deleteLocation(
+    id: string,
+    userId: string
+  ): Promise<{ success: boolean }> {
+    const existingLocation = await this.prisma.location.findUnique({
+      where: { id },
+    });
     if (!existingLocation) {
       throw new NotFoundException('Location not found');
     }
@@ -814,7 +894,9 @@ export class TiresService {
     });
 
     if (tiresUsingLocation > 0) {
-      throw new ConflictException('Cannot delete location - it is being used by existing tires');
+      throw new ConflictException(
+        'Cannot delete location - it is being used by existing tires'
+      );
     }
 
     await this.prisma.location.delete({ where: { id } });

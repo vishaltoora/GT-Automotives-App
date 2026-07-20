@@ -63,12 +63,18 @@ export function CustomerList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>(undefined);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>(undefined);
+  const [selectedCustomer, setSelectedCustomer] = useState<
+    Customer | undefined
+  >(undefined);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<
+    string | undefined
+  >(undefined);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [detailsCustomerId, setDetailsCustomerId] = useState<string | null>(null);
+  const [detailsCustomerId, setDetailsCustomerId] = useState<string | null>(
+    null
+  );
   const [showOutstandingOnly, setShowOutstandingOnly] = useState(false);
 
   useEffect(() => {
@@ -90,14 +96,18 @@ export function CustomerList() {
     // Apply search term filter
     if (searchTerm) {
       filtered = filtered.filter((customer) => {
-        const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
+        const fullName =
+          `${customer.firstName} ${customer.lastName}`.toLowerCase();
         const searchLower = searchTerm.toLowerCase();
         return (
           fullName.includes(searchLower) ||
-          (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
+          (customer.email &&
+            customer.email.toLowerCase().includes(searchLower)) ||
           (customer.phone && customer.phone.includes(searchTerm)) ||
-          (customer.address && customer.address.toLowerCase().includes(searchLower)) ||
-          (customer.businessName && customer.businessName.toLowerCase().includes(searchLower))
+          (customer.address &&
+            customer.address.toLowerCase().includes(searchLower)) ||
+          (customer.businessName &&
+            customer.businessName.toLowerCase().includes(searchLower))
         );
       });
     }
@@ -124,7 +134,7 @@ export function CustomerList() {
   const handleDelete = async (customer: Customer) => {
     const customerName = `${customer.firstName} ${customer.lastName}`;
     const confirmed = await confirmDelete(`customer "${customerName}"`);
-    
+
     if (confirmed) {
       try {
         await customerService.deleteCustomer(customer.id);
@@ -137,7 +147,9 @@ export function CustomerList() {
   };
 
   const getInitials = (firstName?: string, lastName?: string) => {
-    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+    return `${firstName?.charAt(0) || ''}${
+      lastName?.charAt(0) || ''
+    }`.toUpperCase();
   };
 
   const formatCurrency = (amount: number) => {
@@ -196,7 +208,10 @@ export function CustomerList() {
             horizontal: 'right',
           }}
         >
-          {(role === 'staff' || role === 'supervisor' || role === 'admin') && (
+          {(role === 'staff' ||
+            role === 'supervisor' ||
+            role === 'admin' ||
+            role === 'foreman') && (
             <MenuItem onClick={handleEdit}>
               <ListItemIcon>
                 <EditIcon fontSize="small" />
@@ -241,13 +256,15 @@ export function CustomerList() {
     };
 
     return (
-      <Card sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        borderLeft: outstandingBalance > 0 ? 4 : 0,
-        borderColor: outstandingBalance > 0 ? 'warning.main' : undefined,
-      }}>
+      <Card
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          borderLeft: outstandingBalance > 0 ? 4 : 0,
+          borderColor: outstandingBalance > 0 ? 'warning.main' : undefined,
+        }}
+      >
         <CardContent sx={{ flexGrow: 1, p: 2 }}>
           {/* Outstanding Balance Indicator */}
           {outstandingBalance > 0 && (
@@ -281,7 +298,11 @@ export function CustomerList() {
                 {customer.firstName} {customer.lastName}
               </Typography>
               {customer.phone && (
-                <Typography variant="body2" fontWeight="bold" color="text.primary">
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="text.primary"
+                >
                   {formatPhoneForDisplay(customer.phone)}
                 </Typography>
               )}
@@ -294,7 +315,10 @@ export function CustomerList() {
                 </Box>
               )}
             </Box>
-            {(role === 'staff' || role === 'supervisor' || role === 'admin') && (
+            {(role === 'staff' ||
+              role === 'supervisor' ||
+              role === 'admin' ||
+              role === 'foreman') && (
               <>
                 <IconButton
                   size="small"
@@ -335,50 +359,52 @@ export function CustomerList() {
             )}
           </Box>
 
-        <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ mb: 2 }} />
 
-        {/* Contact Info */}
-        <Stack spacing={1} mb={2}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <EmailIcon fontSize="small" color="action" />
-            <Typography variant="body2" noWrap>
-              {customer.email || 'No email'}
-            </Typography>
-          </Box>
-          <Box display="flex" alignItems="start" gap={1}>
-            <LocationIcon fontSize="small" color="action" sx={{ mt: 0.3 }} />
-            <Typography variant="body2" sx={{ flex: 1, wordBreak: 'break-word' }}>
-              {customer.address || '-'}
-            </Typography>
-          </Box>
-        </Stack>
+          {/* Contact Info */}
+          <Stack spacing={1} mb={2}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <EmailIcon fontSize="small" color="action" />
+              <Typography variant="body2" noWrap>
+                {customer.email || 'No email'}
+              </Typography>
+            </Box>
+            <Box display="flex" alignItems="start" gap={1}>
+              <LocationIcon fontSize="small" color="action" sx={{ mt: 0.3 }} />
+              <Typography
+                variant="body2"
+                sx={{ flex: 1, wordBreak: 'break-word' }}
+              >
+                {customer.address || '-'}
+              </Typography>
+            </Box>
+          </Stack>
 
-        {/* Stats */}
-        <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-          <Chip
-            icon={<CarIcon />}
-            label={`${customer._count?.vehicles || 0} vehicles`}
-            size="small"
-            variant="outlined"
-            sx={{ fontSize: '0.7rem' }}
-          />
-          <Chip
-            icon={<ReceiptIcon />}
-            label={`${customer._count?.invoices || 0} invoices`}
-            size="small"
-            variant="outlined"
-            sx={{ fontSize: '0.7rem' }}
-          />
-          <Chip
-            icon={<CalendarIcon />}
-            label={`${customer._count?.appointments || 0} appts`}
-            size="small"
-            variant="outlined"
-            sx={{ fontSize: '0.7rem' }}
-          />
-        </Stack>
-      </CardContent>
-
+          {/* Stats */}
+          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+            <Chip
+              icon={<CarIcon />}
+              label={`${customer._count?.vehicles || 0} vehicles`}
+              size="small"
+              variant="outlined"
+              sx={{ fontSize: '0.7rem' }}
+            />
+            <Chip
+              icon={<ReceiptIcon />}
+              label={`${customer._count?.invoices || 0} invoices`}
+              size="small"
+              variant="outlined"
+              sx={{ fontSize: '0.7rem' }}
+            />
+            <Chip
+              icon={<CalendarIcon />}
+              label={`${customer._count?.appointments || 0} appts`}
+              size="small"
+              variant="outlined"
+              sx={{ fontSize: '0.7rem' }}
+            />
+          </Stack>
+        </CardContent>
       </Card>
     );
   };
@@ -428,7 +454,12 @@ export function CustomerList() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -455,21 +486,34 @@ export function CustomerList() {
         <Typography variant={isMobile ? 'h5' : 'h4'} component="h1">
           Customers
         </Typography>
-        {(role === 'staff' || role === 'supervisor' || role === 'admin') && !isMobile && (
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleAddClick}
-            size="large"
-          >
-            Add Customer
-          </Button>
-        )}
+        {(role === 'staff' ||
+          role === 'supervisor' ||
+          role === 'admin' ||
+          role === 'foreman') &&
+          !isMobile && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleAddClick}
+              size="large"
+            >
+              Add Customer
+            </Button>
+          )}
       </Box>
 
       {/* Search Bar with Filter and Add Button */}
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mb: 3, mx: { xs: 0.5, sm: 0 } }}>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 1,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          mb: 3,
+          mx: { xs: 0.5, sm: 0 },
+        }}
+      >
         <TextField
           sx={{ flex: 1, minWidth: { xs: '100%', sm: 200 } }}
           variant="outlined"
@@ -488,7 +532,11 @@ export function CustomerList() {
         {/* Outstanding Balance Filter Chip */}
         <Chip
           icon={<WarningIcon />}
-          label={isMobile ? `${customersWithOutstanding}` : `Outstanding (${customersWithOutstanding})`}
+          label={
+            isMobile
+              ? `${customersWithOutstanding}`
+              : `Outstanding (${customersWithOutstanding})`
+          }
           color={showOutstandingOnly ? 'warning' : 'default'}
           variant={showOutstandingOnly ? 'filled' : 'outlined'}
           onClick={() => setShowOutstandingOnly(!showOutstandingOnly)}
@@ -502,23 +550,27 @@ export function CustomerList() {
             },
           }}
         />
-        {(role === 'staff' || role === 'supervisor' || role === 'admin') && isMobile && (
-          <IconButton
-            color="primary"
-            onClick={handleAddClick}
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              },
-              width: 40,
-              height: 40,
-            }}
-          >
-            <AddIcon />
-          </IconButton>
-        )}
+        {(role === 'staff' ||
+          role === 'supervisor' ||
+          role === 'admin' ||
+          role === 'foreman') &&
+          isMobile && (
+            <IconButton
+              color="primary"
+              onClick={handleAddClick}
+              sx={{
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                },
+                width: 40,
+                height: 40,
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          )}
       </Box>
 
       {/* Card View for Mobile, Table for Desktop */}
@@ -595,12 +647,16 @@ export function CustomerList() {
                       <Stack spacing={0.5}>
                         <Box display="flex" alignItems="center" gap={0.5}>
                           <EmailIcon fontSize="small" color="action" />
-                          <Typography variant="body2">{customer.email || 'No email'}</Typography>
+                          <Typography variant="body2">
+                            {customer.email || 'No email'}
+                          </Typography>
                         </Box>
                         <Box display="flex" alignItems="center" gap={0.5}>
                           <PhoneIcon fontSize="small" color="action" />
                           <Typography variant="body2">
-                            {customer.phone ? formatPhoneForDisplay(customer.phone) : 'No phone'}
+                            {customer.phone
+                              ? formatPhoneForDisplay(customer.phone)
+                              : 'No phone'}
                           </Typography>
                         </Box>
                       </Stack>
@@ -612,7 +668,12 @@ export function CustomerList() {
                             {customer.businessName}
                           </Typography>
                         )}
-                        <Typography variant="body2" color={customer.businessName ? 'textSecondary' : 'inherit'}>
+                        <Typography
+                          variant="body2"
+                          color={
+                            customer.businessName ? 'textSecondary' : 'inherit'
+                          }
+                        >
                           {customer.address || '-'}
                         </Typography>
                       </Stack>
@@ -621,13 +682,17 @@ export function CustomerList() {
                       {(customer.stats?.outstandingBalance || 0) > 0 ? (
                         <Chip
                           icon={<WarningIcon />}
-                          label={formatCurrency(customer.stats?.outstandingBalance || 0)}
+                          label={formatCurrency(
+                            customer.stats?.outstandingBalance || 0
+                          )}
                           size="small"
                           color="warning"
                           sx={{ fontWeight: 'bold' }}
                         />
                       ) : (
-                        <Typography variant="body2" color="text.secondary">-</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          -
+                        </Typography>
                       )}
                     </TableCell>
                     <TableCell align="center">
@@ -657,23 +722,23 @@ export function CustomerList() {
                     <TableCell align="right">
                       <TableRowMenu customer={customer} />
                     </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={filteredCustomers.length}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-        />
-      </TableContainer>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            component="div"
+            count={filteredCustomers.length}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+          />
+        </TableContainer>
       )}
 
       {/* Pagination for Mobile Card View */}

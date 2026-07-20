@@ -332,7 +332,7 @@ ${
               ? `
             <div style="margin-top: 12px;">
               <h3 style="margin-bottom: 8px;">Notes:</h3>
-              <p style="margin: 0;">${invoice.notes}</p>
+              <p style="margin: 0; white-space: pre-wrap;">${invoice.notes}</p>
             </div>
           `
               : ''
@@ -881,65 +881,45 @@ ${
                 ).toLowerCase();
                 const chipStyle =
                   statusChipStyles[statusKey] || statusChipStyles.empty;
-                return `
-                  <div style="padding:6px 0; border-top:1px solid #eef2f7;">
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                      ${
-                        result.position && result.position !== 'GENERAL'
-                          ? `<span style="font-weight:700; color:#243c55; min-width:34px;">${escapeHtml(
-                              result.position
-                            )}</span>`
-                          : ''
-                      }
-                      <span style="border-radius:4px; padding:3px 10px; font-size:11px; font-weight:700; border:1px solid; ${chipStyle}">${escapeHtml(
-                  formatStatus(result.status)
-                )}</span>
-                      ${
-                        result.value
-                          ? `<span style="font-weight:700; color:#10264a;">${escapeHtml(
-                              result.value
-                            )}${
-                              item.unit ? ` ${escapeHtml(item.unit)}` : ''
-                            }</span>`
-                          : ''
-                      }
-                    </div>
-                    ${
-                      result.selectedOptions?.length
-                        ? `<p style="margin:4px 0 0; font-size:12px; color:#555;"><strong>Affected part(s):</strong> ${escapeHtml(
-                            result.selectedOptions.join(', ')
-                          )}</p>`
-                        : ''
-                    }
-                    ${
+                const pos =
+                  result.position && result.position !== 'GENERAL'
+                    ? `<span class="ins-pos">${escapeHtml(
+                        result.position
+                      )}</span>`
+                    : '';
+                const val = result.value
+                  ? `<span class="ins-val">${escapeHtml(result.value)}${
+                      item.unit ? ` ${escapeHtml(item.unit)}` : ''
+                    }</span>`
+                  : '';
+                const options = result.selectedOptions?.length
+                  ? `<span class="ins-extra"><strong>Affected:</strong> ${escapeHtml(
+                      result.selectedOptions.join(', ')
+                    )}</span>`
+                  : '';
+                const notes = result.notes
+                  ? `<span class="ins-extra"><strong>Notes:</strong> ${escapeHtml(
                       result.notes
-                        ? `<p style="margin:4px 0 0; font-size:12px; color:#555;"><strong>Notes:</strong> ${escapeHtml(
-                            result.notes
-                          )}</p>`
-                        : ''
-                    }
-                  </div>`;
+                    )}</span>`
+                  : '';
+                return `<div class="ins-result">${pos}<span class="ins-chip" style="${chipStyle}">${escapeHtml(
+                  formatStatus(result.status)
+                )}</span>${val}${options}${notes}</div>`;
               })
               .join('');
 
-            return `
-              <div style="border:1px solid #e1e6ef; border-radius:6px; padding:10px 12px; margin-bottom:8px; page-break-inside:avoid;">
-                <div style="font-weight:600; font-size:13px; color:#10264a; margin-bottom:2px;">${escapeHtml(
-                  item.label
-                )}</div>
-                ${resultsHtml}
+            return `<div class="ins-item">
+                <div class="ins-item-label">${escapeHtml(item.label)}</div>
+                <div class="ins-item-results">${resultsHtml}</div>
               </div>`;
           })
           .join('');
 
         if (!itemsHtml.trim()) return '';
 
-        return `
-          <div style="margin-top:18px; page-break-inside:avoid;">
-            <h2 style="margin:0 0 10px; font-size:16px; color:#10264a; border-bottom:1px solid #d8dee9; padding-bottom:6px;">${escapeHtml(
-              section.title
-            )}</h2>
-            ${itemsHtml}
+        return `<div class="ins-section">
+            <h2 class="ins-section-title">${escapeHtml(section.title)}</h2>
+            <div class="ins-items">${itemsHtml}</div>
           </div>`;
       })
       .join('');
@@ -963,11 +943,39 @@ ${
         <style>
           body { margin: 0; padding: 0; }
           * { box-sizing: border-box; }
-          @page { size: Letter; margin: 0; }
+          @page { size: Letter; margin: 16mm 12mm; }
+          .ins-section { margin-top: 14px; }
+          .ins-section-title {
+            margin: 0 0 8px; font-size: 14px; color: #10264a;
+            border-bottom: 1px solid #d8dee9; padding-bottom: 5px;
+            break-after: avoid; page-break-after: avoid;
+          }
+          .ins-items {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 6px 12px; align-items: start;
+          }
+          .ins-item {
+            border: 1px solid #e1e6ef; border-radius: 5px; padding: 6px 10px;
+            page-break-inside: avoid; break-inside: avoid;
+          }
+          .ins-item-label {
+            font-weight: 600; font-size: 11.5px; color: #10264a; margin-bottom: 3px;
+          }
+          .ins-result {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            font-size: 11px; padding: 1px 0;
+          }
+          .ins-pos { font-weight: 700; color: #243c55; min-width: 30px; }
+          .ins-chip {
+            border-radius: 4px; padding: 2px 8px; font-size: 10px;
+            font-weight: 700; border: 1px solid; white-space: nowrap;
+          }
+          .ins-val { font-weight: 700; color: #10264a; }
+          .ins-extra { width: 100%; margin-top: 2px; font-size: 10.5px; color: #555; }
         </style>
       </head>
       <body>
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: #333; padding: 10px; max-width: 800px; margin: 0 auto;">
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: #333; padding: 0; max-width: 800px; margin: 0 auto;">
           <!-- Header -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #243c55;">
             <div style="flex: 1;">
@@ -1095,6 +1103,150 @@ ${
    */
   async generateInspectionPdf(inspection: any): Promise<string> {
     const html = this.generateInspectionHtml(inspection);
+    const pdfBuffer = await this.generatePdfFromHtml(html);
+    return pdfBuffer.toString('base64');
+  }
+
+  /**
+   * Pre-inspection report: photos of defective parts, each with the
+   * technician's note. Image `url`s should be directly loadable (SAS URLs or
+   * data URIs) — Puppeteer fetches them during generation (waitUntil idle).
+   */
+  generatePreInspectionHtml(data: {
+    roNumber?: string;
+    customerName?: string;
+    vehicleName?: string;
+    date?: string | Date;
+    photos: { url: string; note?: string | null }[];
+  }): string {
+    const escapeHtml = (value: unknown): string =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    const gtLogoBase64 = this.loadGtLogoBase64('pre-inspection');
+    const gtLogo = gtLogoBase64
+      ? `<img src="${gtLogoBase64}" alt="GT Automotives Logo" style="width: 72px; height: 72px; object-fit: contain;" />`
+      : `<div style="width: 72px; height: 72px; background: #243c55; border-radius: 8px;"></div>`;
+
+    const dateStr = data.date
+      ? new Date(data.date).toLocaleDateString()
+      : new Date().toLocaleDateString();
+
+    const cards = (data.photos || [])
+      .map(
+        (p, i) => `
+        <div class="pi-card">
+          <div class="pi-img-wrap">
+            <img class="pi-img" src="${p.url}" alt="Defect photo ${i + 1}" />
+          </div>
+          <div class="pi-note">${
+            p.note && String(p.note).trim()
+              ? escapeHtml(p.note)
+              : '<span class="pi-note-empty">No note provided</span>'
+          }</div>
+        </div>`
+      )
+      .join('');
+
+    const emptyState = `<p style="text-align:center; color:#777; font-style:italic; margin-top:24px;">
+      No defective-part photos were documented for this pre-inspection.
+    </p>`;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { margin: 0; padding: 0; }
+          * { box-sizing: border-box; }
+          @page { size: Letter; margin: 16mm 12mm; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: #333; }
+          .header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 2px solid #243c55; padding-bottom: 10px; margin-bottom: 15px;
+          }
+          .brand { display: flex; align-items: center; gap: 12px; }
+          .brand h1 { margin: 0; color: #243c55; font-size: 24px; }
+          .brand p { margin: 0; font-size: 13px; color: #666; }
+          .doc { text-align: right; }
+          .doc h2 { margin: 0; color: #333; font-size: 20px; }
+          .doc p { margin: 6px 0 0; font-size: 13px; }
+          .meta { display: flex; gap: 24px; font-size: 13px; margin: 12px 0 4px; }
+          .meta .lbl { font-weight: 700; color: #243c55; }
+          .pi-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px;
+          }
+          .pi-card {
+            border: 1px solid #e1e6ef; border-radius: 6px; overflow: hidden;
+            page-break-inside: avoid; break-inside: avoid;
+          }
+          .pi-img-wrap {
+            width: 100%; height: 240px; background: #f2f5f9;
+            display: flex; align-items: center; justify-content: center;
+          }
+          .pi-img { max-width: 100%; max-height: 240px; object-fit: contain; }
+          .pi-note {
+            padding: 8px 10px; font-size: 12px; color: #333;
+            border-top: 1px solid #eef2f7; white-space: pre-wrap;
+          }
+          .pi-note-empty { color: #999; font-style: italic; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="brand">
+            ${gtLogo}
+            <div>
+              <h1>GT Automotives</h1>
+              <p>Professional Tire &amp; Auto Services</p>
+              <p style="font-style:italic; color:#888; font-size:12px;">16472991 Canada INC.</p>
+            </div>
+          </div>
+          <div class="doc">
+            <h2>PRE-INSPECTION</h2>
+            <p><strong>RO #:</strong> ${escapeHtml(data.roNumber || '-')}<br>
+            <strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+          </div>
+        </div>
+        <div class="meta">
+          ${
+            data.customerName
+              ? `<div><span class="lbl">Customer:</span> ${escapeHtml(
+                  data.customerName
+                )}</div>`
+              : ''
+          }
+          ${
+            data.vehicleName
+              ? `<div><span class="lbl">Vehicle:</span> ${escapeHtml(
+                  data.vehicleName
+                )}</div>`
+              : ''
+          }
+        </div>
+        ${
+          (data.photos || []).length
+            ? `<div class="pi-grid">${cards}</div>`
+            : emptyState
+        }
+      </body>
+      </html>
+    `;
+  }
+
+  async generatePreInspectionPdf(data: {
+    roNumber?: string;
+    customerName?: string;
+    vehicleName?: string;
+    date?: string | Date;
+    photos: { url: string; note?: string | null }[];
+  }): Promise<string> {
+    const html = this.generatePreInspectionHtml(data);
     const pdfBuffer = await this.generatePdfFromHtml(html);
     return pdfBuffer.toString('base64');
   }

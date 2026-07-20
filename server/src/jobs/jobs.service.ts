@@ -1,6 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JobRepository } from './repositories/job.repository';
-import { CreateJobDto, UpdateJobDto, JobResponseDto, JobSummaryDto } from '@gt-automotive/data';
+import {
+  CreateJobDto,
+  UpdateJobDto,
+  JobResponseDto,
+  JobSummaryDto,
+} from '@gt-automotive/data';
 import { Job, JobStatus, JobType } from '@prisma/client';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 
@@ -8,7 +17,7 @@ import { AuditRepository } from '../audit/repositories/audit.repository';
 export class JobsService {
   constructor(
     private readonly jobRepository: JobRepository,
-    private readonly auditRepository: AuditRepository,
+    private readonly auditRepository: AuditRepository
   ) {}
 
   async create(createJobDto: CreateJobDto, userId: string): Promise<Job> {
@@ -23,21 +32,32 @@ export class JobsService {
         throw new NotFoundException('Employee not found');
       }
 
-      if (employee.role.name !== 'STAFF' && employee.role.name !== 'ADMIN' && employee.role.name !== 'SUPERVISOR') {
-        throw new BadRequestException('Jobs can only be assigned to staff, admin, or supervisor users');
+      if (
+        employee.role.name !== 'STAFF' &&
+        employee.role.name !== 'ADMIN' &&
+        employee.role.name !== 'SUPERVISOR' &&
+        employee.role.name !== 'FOREMAN'
+      ) {
+        throw new BadRequestException(
+          'Jobs can only be assigned to staff, admin, or supervisor users'
+        );
       }
 
       const jobData: any = {
         employee: {
-          connect: { id: createJobDto.employeeId }
+          connect: { id: createJobDto.employeeId },
         },
         title: createJobDto.title,
         description: createJobDto.description,
         payAmount: createJobDto.payAmount,
         jobType: createJobDto.jobType,
         status: createJobDto.status,
-        dueDate: createJobDto.dueDate ? new Date(createJobDto.dueDate) : undefined,
-        completedAt: createJobDto.completedAt ? new Date(createJobDto.completedAt) : undefined,
+        dueDate: createJobDto.dueDate
+          ? new Date(createJobDto.dueDate)
+          : undefined,
+        completedAt: createJobDto.completedAt
+          ? new Date(createJobDto.completedAt)
+          : undefined,
         createdBy: userId,
       };
 
@@ -58,7 +78,10 @@ export class JobsService {
 
       return job;
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Failed to create job');
@@ -109,7 +132,11 @@ export class JobsService {
     return this.transformToResponseDto(jobs);
   }
 
-  async update(id: string, updateJobDto: UpdateJobDto, userId: string): Promise<Job> {
+  async update(
+    id: string,
+    updateJobDto: UpdateJobDto,
+    userId: string
+  ): Promise<Job> {
     const existingJob = await this.jobRepository.findById(id);
     if (!existingJob) {
       throw new NotFoundException('Job not found');
@@ -118,13 +145,20 @@ export class JobsService {
     try {
       const updateData: any = {};
 
-      if (updateJobDto.title !== undefined) updateData.title = updateJobDto.title;
-      if (updateJobDto.description !== undefined) updateData.description = updateJobDto.description;
-      if (updateJobDto.payAmount !== undefined) updateData.payAmount = updateJobDto.payAmount;
-      if (updateJobDto.status !== undefined) updateData.status = updateJobDto.status;
-      if (updateJobDto.jobType !== undefined) updateData.jobType = updateJobDto.jobType;
-      if (updateJobDto.dueDate !== undefined) updateData.dueDate = new Date(updateJobDto.dueDate);
-      if (updateJobDto.completedAt !== undefined) updateData.completedAt = new Date(updateJobDto.completedAt);
+      if (updateJobDto.title !== undefined)
+        updateData.title = updateJobDto.title;
+      if (updateJobDto.description !== undefined)
+        updateData.description = updateJobDto.description;
+      if (updateJobDto.payAmount !== undefined)
+        updateData.payAmount = updateJobDto.payAmount;
+      if (updateJobDto.status !== undefined)
+        updateData.status = updateJobDto.status;
+      if (updateJobDto.jobType !== undefined)
+        updateData.jobType = updateJobDto.jobType;
+      if (updateJobDto.dueDate !== undefined)
+        updateData.dueDate = new Date(updateJobDto.dueDate);
+      if (updateJobDto.completedAt !== undefined)
+        updateData.completedAt = new Date(updateJobDto.completedAt);
 
       const updatedJob = await this.jobRepository.update(id, updateData);
 
@@ -207,7 +241,7 @@ export class JobsService {
   }
 
   private transformToResponseDto(jobs: any[]): JobResponseDto[] {
-    return jobs.map(job => ({
+    return jobs.map((job) => ({
       id: job.id,
       jobNumber: job.jobNumber,
       employeeId: job.employeeId,
@@ -222,25 +256,31 @@ export class JobsService {
       createdBy: job.createdBy,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
-      employee: job.employee ? {
-        id: job.employee.id,
-        firstName: job.employee.firstName,
-        lastName: job.employee.lastName,
-        email: job.employee.email,
-      } : undefined,
-      appointment: job.appointment ? {
-        id: job.appointment.id,
-        scheduledDate: job.appointment.scheduledDate,
-        scheduledTime: job.appointment.scheduledTime,
-        serviceType: job.appointment.serviceType,
-      } : undefined,
-      payments: job.payments ? job.payments.map((payment: any) => ({
-        id: payment.id,
-        amount: Number(payment.amount),
-        status: payment.status,
-        paidAt: payment.paidAt,
-        paymentMethod: payment.paymentMethod,
-      })) : undefined,
+      employee: job.employee
+        ? {
+            id: job.employee.id,
+            firstName: job.employee.firstName,
+            lastName: job.employee.lastName,
+            email: job.employee.email,
+          }
+        : undefined,
+      appointment: job.appointment
+        ? {
+            id: job.appointment.id,
+            scheduledDate: job.appointment.scheduledDate,
+            scheduledTime: job.appointment.scheduledTime,
+            serviceType: job.appointment.serviceType,
+          }
+        : undefined,
+      payments: job.payments
+        ? job.payments.map((payment: any) => ({
+            id: payment.id,
+            amount: Number(payment.amount),
+            status: payment.status,
+            paidAt: payment.paidAt,
+            paymentMethod: payment.paymentMethod,
+          }))
+        : undefined,
     }));
   }
 }

@@ -628,11 +628,14 @@ export function TimeClockManagement() {
             iconPosition="start"
             label="This Month's Entries"
           />
-          <Tab
-            icon={<WorkspacePremium />}
-            iconPosition="start"
-            label="Compensation & Bonus"
-          />
+          {/* Compensation & Bonus is hidden for foreman. */}
+          {user?.role?.name !== 'FOREMAN' && (
+            <Tab
+              icon={<WorkspacePremium />}
+              iconPosition="start"
+              label="Compensation & Bonus"
+            />
+          )}
         </Tabs>
       </Box>
 
