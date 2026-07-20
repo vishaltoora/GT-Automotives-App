@@ -158,7 +158,9 @@ export function TimeClockManagement() {
       ]);
       const myCurrent = await timeClockService.getMyCurrent();
       const employees = userData.filter((user) =>
-        ['ADMIN', 'SUPERVISOR', 'STAFF'].includes(user.role?.name || '')
+        ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(
+          user.role?.name || ''
+        )
       );
       setUsers(employees);
       setCurrentEntries(currentData);

@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ### 🚨 Critical Rules
 
 - **[Environment Variables](.claude/rules/environment-variables.md)** - **CRITICAL**: Always use `import.meta.env.VITE_*` in frontend, NEVER `process.env.VITE_*`
+- **[Git Branching](.claude/rules/git-branching.md)** - **CRITICAL**: ALWAYS create new branches from an up-to-date `main` only, NEVER from another feature branch
 - **[Migration Management](.claude/agents/migration-manager.md)** - **CRITICAL**: NEVER modify schema.prisma without creating migrations first ⭐ NEW
 - **Database Migrations** - **CRITICAL**: NEVER use `prisma db push` - ALWAYS use `prisma migrate dev` for local and `prisma migrate deploy` for production. Using `db push` causes schema drift between local and production databases, leading to failed deployments and data issues.
 - **[DTO Single Source of Truth](.claude/docs/dto-single-source-of-truth.md)** - **CRITICAL**: All DTOs live in `libs/data`. Never add DTOs to `server/src/common/dto/`. After Prisma enum changes run `yarn enums:generate`. Never re-add `@nestjs/mapped-types` — use local `PartialType`/`OmitType`/`PickType` from `@gt-automotive/data`. ⭐ NEW
