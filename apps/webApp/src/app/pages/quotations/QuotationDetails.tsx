@@ -35,18 +35,22 @@ import {
   Cancel as RejectIcon,
   MoreVert as MoreVertIcon,
   Send as SendIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../requests/quotation.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { formatPhoneForDisplay } from '../../utils/phone';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import QuotationDialog from '../../components/quotations/QuotationDialog';
+import EmailPromptDialog from '../../components/common/EmailPromptDialog';
 
 const QuotationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { role } = useAuth();
   const { showApiError } = useErrorHelpers();
+  const { confirm } = useConfirmationHelpers();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -54,6 +58,16 @@ const QuotationDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+
+  // Emailing the quotation PDF is available to internal staff roles (matches
+  // the server @Roles on POST /quotations/:id/send-email), not customers.
+  const canEmailQuotation = [
+    'admin',
+    'foreman',
+    'supervisor',
+    'staff',
+  ].includes(role || '');
 
   useEffect(() => {
     if (id) {
@@ -94,7 +108,8 @@ const QuotationDetails: React.FC = () => {
 
   const handleConvert = () => {
     if (!quotation) return;
-    const basePath = role === 'admin' ? '/admin' : '/staff';
+    const basePath =
+      role === 'admin' ? '/admin' : role === 'foreman' ? '/foreman' : '/staff';
     navigate(`${basePath}/invoices/new?fromQuotation=${quotation.id}`);
   };
 
@@ -134,6 +149,40 @@ const QuotationDetails: React.FC = () => {
   const handleConvertFromMenu = () => {
     handleConvert();
     handleMenuClose();
+  };
+
+  const handleEmailFromMenu = () => {
+    setEmailDialogOpen(true);
+    handleMenuClose();
+  };
+
+  // Sends the quotation PDF to the chosen recipient. On failure we surface the
+  // error but leave the dialog open so the user can retry.
+  const handleEmailPromptSubmit = async (
+    email: string,
+    saveToQuote: boolean
+  ) => {
+    if (!quotation) return;
+    try {
+      const result = await quotationService.sendQuotationEmail(
+        quotation.id,
+        email,
+        saveToQuote
+      );
+      setEmailDialogOpen(false);
+      if (saveToQuote) loadQuotation();
+      await confirm({
+        title: 'Quotation Sent Successfully!',
+        message: `Quotation ${quotation.quotationNumber} has been emailed to ${
+          result.emailUsed || email
+        }`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
+    } catch (error) {
+      showApiError(error, 'Failed to send quotation email');
+      throw error;
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -208,7 +257,12 @@ const QuotationDetails: React.FC = () => {
         <Button
           startIcon={<BackIcon />}
           onClick={() => {
-            const basePath = role === 'admin' ? '/admin' : '/staff';
+            const basePath =
+              role === 'admin'
+                ? '/admin'
+                : role === 'foreman'
+                ? '/foreman'
+                : '/staff';
             navigate(`${basePath}/quotations`);
           }}
           sx={{ mt: 2 }}
@@ -256,7 +310,12 @@ const QuotationDetails: React.FC = () => {
             <Button
               startIcon={<BackIcon />}
               onClick={() => {
-                const basePath = role === 'admin' ? '/admin' : '/staff';
+                const basePath =
+                  role === 'admin'
+                    ? '/admin'
+                    : role === 'foreman'
+                    ? '/foreman'
+                    : '/staff';
                 navigate(`${basePath}/quotations`);
               }}
             >
@@ -276,6 +335,14 @@ const QuotationDetails: React.FC = () => {
                 </ListItemIcon>
                 <ListItemText>Print</ListItemText>
               </MenuItem>
+              {canEmailQuotation && (
+                <MenuItem onClick={handleEmailFromMenu}>
+                  <ListItemIcon>
+                    <EmailIcon fontSize="small" color="primary" />
+                  </ListItemIcon>
+                  <ListItemText>Send Email</ListItemText>
+                </MenuItem>
+              )}
               {quotation.status !== 'CONVERTED' && (
                 <>
                   <MenuItem onClick={handleEditFromMenu}>
@@ -326,7 +393,12 @@ const QuotationDetails: React.FC = () => {
             <Button
               startIcon={<BackIcon />}
               onClick={() => {
-                const basePath = role === 'admin' ? '/admin' : '/staff';
+                const basePath =
+                  role === 'admin'
+                    ? '/admin'
+                    : role === 'foreman'
+                    ? '/foreman'
+                    : '/staff';
                 navigate(`${basePath}/quotations`);
               }}
             >
@@ -340,6 +412,16 @@ const QuotationDetails: React.FC = () => {
               >
                 Print
               </Button>
+              {canEmailQuotation && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<EmailIcon />}
+                  onClick={() => setEmailDialogOpen(true)}
+                >
+                  Send Email
+                </Button>
+              )}
               {quotation.status !== 'CONVERTED' && (
                 <>
                   <Button
@@ -499,7 +581,8 @@ const QuotationDetails: React.FC = () => {
           // Mobile: Card-based layout
           <Stack spacing={2}>
             {quotation.items.map((item) => {
-              const displayTotal = item.total || item.quantity * item.unitPrice;
+              const displayTotal =
+                item.total || Number(item.quantity) * item.unitPrice;
               return (
                 <Card key={item.id} variant="outlined">
                   <CardContent>
@@ -589,7 +672,7 @@ const QuotationDetails: React.FC = () => {
                     </TableCell>
                     <TableCell align="right">
                       {formatCurrency(
-                        item.total || item.quantity * item.unitPrice
+                        item.total || Number(item.quantity) * item.unitPrice
                       )}
                     </TableCell>
                   </TableRow>
@@ -657,6 +740,17 @@ const QuotationDetails: React.FC = () => {
         onClose={() => setEditDialogOpen(false)}
         onSuccess={loadQuotation}
         quoteId={quotation.id}
+      />
+
+      {/* Email Prompt Dialog - send the quotation PDF to the customer */}
+      <EmailPromptDialog
+        open={emailDialogOpen}
+        onClose={() => setEmailDialogOpen(false)}
+        onSubmit={handleEmailPromptSubmit}
+        availableEmails={quotation.email ? [quotation.email] : []}
+        customerName={quotation.customerName || ''}
+        documentType="quotation"
+        documentNumber={quotation.quotationNumber || ''}
       />
     </Box>
   );

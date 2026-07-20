@@ -29,6 +29,9 @@ export function Home() {
         case 'admin':
           redirectPath = '/admin/dashboard';
           break;
+        case 'foreman':
+          redirectPath = '/foreman/dashboard';
+          break;
         case 'accountant':
           redirectPath = '/accountant/dashboard';
           break;

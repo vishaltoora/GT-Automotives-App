@@ -13,6 +13,7 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -38,9 +39,12 @@ import {
   Chat as ChatIcon,
   DirectionsCar,
   Edit,
+  Email as EmailIcon,
   LockOpen,
+  People as PeopleIcon,
   Print as PrintIcon,
   ReceiptLong,
+  RequestQuote,
   Save,
 } from '@mui/icons-material';
 import {
@@ -52,8 +56,13 @@ import { ServiceDrawer } from '../../components/repair-orders/ServiceDrawer';
 import { AddVehicleDialog } from '../../components/repair-orders/AddVehicleDialog';
 import { InspectVehicleDialog } from '../../components/repair-orders/InspectVehicleDialog';
 import { ROPhotoSection } from '../../components/repair-orders/ROPhotoSection';
+import { PreInspectionSection } from '../../components/repair-orders/PreInspectionSection';
+import EmailPromptDialog from '../../components/common/EmailPromptDialog';
+import { AssignEmployeesDialog } from '../../components/repair-orders/AssignEmployeesDialog';
+import { ROItemsList } from '../../components/repair-orders/ROItemsList';
 import { useAuth } from '../../hooks/useAuth';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { companyService, Company } from '../../requests/company.requests';
 import { vehicleService, Vehicle } from '../../requests/vehicle.requests';
 import {
@@ -133,6 +142,7 @@ function CurrentTab({
 }) {
   const navigate = useNavigate();
   const { showApiError, showValidationError } = useErrorHelpers();
+  const { confirm } = useConfirmationHelpers();
   const [serviceDrawerOpen, setServiceDrawerOpen] = useState(false);
   const [editingConcern, setEditingConcern] = useState(false);
   const [concern, setConcern] = useState(ro.customerConcern ?? '');
@@ -168,6 +178,53 @@ function CurrentTab({
   const [linkingVehicle, setLinkingVehicle] = useState(false);
   const [changingVehicle, setChangingVehicle] = useState(false);
   const [customerVehicles, setCustomerVehicles] = useState<Vehicle[]>([]);
+  const [assignEmployeesOpen, setAssignEmployeesOpen] = useState(false);
+  const [creatingQuotation, setCreatingQuotation] = useState(false);
+  const [createdQuotationId, setCreatedQuotationId] = useState<string | null>(
+    null
+  );
+  const [estimateEmailOpen, setEstimateEmailOpen] = useState(false);
+
+  // Re-fetch the RO after item-level mutations so the detail view stays in sync.
+  const refetchRO = async () => {
+    const refreshed = await repairOrderRequests.getById(ro.id);
+    onROChange(refreshed);
+  };
+
+  // Sends the customer an estimate (quotation PDF + pre-inspection photos PDF).
+  // Re-throws on failure so EmailPromptDialog stays open for a retry.
+  const handleSendEstimate = async (emails: string[]) => {
+    try {
+      const result = await repairOrderRequests.sendEstimateEmail(ro.id, emails);
+      setEstimateEmailOpen(false);
+      await confirm({
+        title: 'Estimate Sent',
+        message: `The estimate for ${ro.roNumber} was emailed to ${
+          result.emailUsed || emails.join(', ')
+        }.`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
+    } catch (error) {
+      showApiError(error, 'Failed to send the estimate email.');
+      throw error;
+    }
+  };
+
+  const hasQuotationItems = ro.services?.some((s) => s.isQuotation) ?? false;
+
+  const handleCreateQuotation = async () => {
+    setCreatingQuotation(true);
+    try {
+      const quotation = await repairOrderRequests.createQuotation(ro.id);
+      await refetchRO();
+      setCreatedQuotationId(quotation?.id ?? null);
+    } catch (error) {
+      showApiError(error, 'Failed to create quotation from repair order.');
+    } finally {
+      setCreatingQuotation(false);
+    }
+  };
 
   // Hide the picker once a vehicle is linked OR the RO is marked no-vehicle
   // (loose tires), unless the user explicitly chose to change the vehicle.
@@ -183,6 +240,9 @@ function CurrentTab({
 
   const completedServices =
     ro.services?.filter((s) => s.status === 'COMPLETED') ?? [];
+  // All completed items are billed (a declined item can't be marked complete).
+  const billableServices =
+    ro.services?.filter((s) => s.status === 'COMPLETED') ?? [];
   const totalServices = ro.services?.length ?? 0;
 
   // A completed, not-yet-invoiced inspection lets us bill its fee even when the
@@ -193,7 +253,7 @@ function CurrentTab({
   );
   const selectedFeeItem = feeItems.find((f) => f.id === selectedFeeItemId);
   const hasInvoiceableWork =
-    completedServices.length > 0 || Boolean(invoiceableInspection);
+    billableServices.length > 0 || Boolean(invoiceableInspection);
 
   // Validation gating: work can begin once the vehicle question is resolved —
   // either a vehicle is linked, or the RO is explicitly marked no-vehicle
@@ -209,9 +269,18 @@ function CurrentTab({
     : !isNoVehicle && !hasPhotos
     ? 'Add at least one photo first'
     : '';
+  // Pre-inspection only needs the vehicle question resolved — a photo is NOT
+  // required first (the technician inspects the vehicle, then documents it).
+  const inspectionEnabled = vehicleResolved;
+  const inspectionDisabledReason = vehicleResolved
+    ? ''
+    : 'Add a vehicle to this repair order, or mark it as no-vehicle';
+  // The running estimate excludes customer-declined items.
   const estimatedTotal =
-    ro.services?.reduce((sum, s) => sum + Number(s.total ?? 0), 0) ?? 0;
-  const completedSubtotal = completedServices.reduce(
+    ro.services
+      ?.filter((s) => s.customerApproval !== 'DECLINED')
+      .reduce((sum, s) => sum + Number(s.total ?? 0), 0) ?? 0;
+  const completedSubtotal = billableServices.reduce(
     (sum, s) => sum + Number(s.total ?? 0),
     0
   );
@@ -229,7 +298,7 @@ function CurrentTab({
   const pstRate = pstExempt ? 0 : 0.07;
 
   const serviceBase = (ro.services ?? [])
-    .filter((s) => s.type !== 'PART')
+    .filter((s) => s.type !== 'PART' && s.customerApproval !== 'DECLINED')
     .reduce((sum, s) => sum + Number(s.total ?? 0), 0);
   const shopSupplies =
     serviceBase > 0 ? round2(serviceBase * SHOP_SUPPLIES_RATE) : 0;
@@ -440,62 +509,135 @@ function CurrentTab({
 
   return (
     <Box>
-      {/* Status bar */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            flexWrap: 'wrap',
-          }}
-        >
-          <Chip
-            label={STATUS_META[ro.status].label}
-            color={STATUS_META[ro.status].color}
-            sx={{ fontWeight: 600 }}
-          />
-          {transitions.length > 0 && canEdit && (
-            <>
+      {/* Assigned Employees + Status cards, side by side */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <PeopleIcon fontSize="small" color="action" sx={{ mr: 1 }} />
               <Typography
-                variant="caption"
+                variant="subtitle2"
                 color="text.secondary"
-                sx={{ mx: 0.5 }}
+                sx={{ flexGrow: 1 }}
               >
-                →
+                Assigned Employees
               </Typography>
-              {transitions.map((s) => (
+              {canEdit && (
+                <IconButton
+                  size="small"
+                  onClick={() => setAssignEmployeesOpen(true)}
+                  aria-label="Edit assigned employees"
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              )}
+            </Box>
+            {ro.employees?.length > 0 ? (
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {ro.employees.map((e) => (
+                  <Chip
+                    key={e.id}
+                    label={
+                      e.role
+                        ? `${e.user.firstName} ${e.user.lastName} · ${e.role}`
+                        : `${e.user.firstName} ${e.user.lastName}`
+                    }
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))}
+              </Stack>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.disabled"
+                sx={{ fontStyle: 'italic' }}
+              >
+                No employees assigned
+              </Typography>
+            )}
+          </Paper>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center' }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                flexWrap: 'wrap',
+                width: '100%',
+              }}
+            >
+              {canEdit && transitions.length > 0 ? (
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel id="ro-status-label">Status</InputLabel>
+                  <Select
+                    labelId="ro-status-label"
+                    label="Status"
+                    value={ro.status}
+                    disabled={savingStatus}
+                    onChange={(e) =>
+                      handleStatusChange(e.target.value as ROStatus)
+                    }
+                    renderValue={(value) => (
+                      <Chip
+                        label={STATUS_META[value as ROStatus].label}
+                        color={STATUS_META[value as ROStatus].color}
+                        size="small"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    )}
+                  >
+                    {[ro.status, ...transitions].map((s) => (
+                      <MenuItem key={s} value={s}>
+                        {STATUS_META[s].label}
+                        {s === ro.status ? ' (current)' : ''}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
                 <Chip
-                  key={s}
-                  label={`Mark ${STATUS_META[s].label}`}
+                  label={STATUS_META[ro.status].label}
+                  color={STATUS_META[ro.status].color}
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+              {savingStatus && <CircularProgress size={18} />}
+              {canReopen && (
+                <Chip
+                  label={reopening ? 'Reopening…' : 'Reopen RO'}
                   size="small"
                   variant="outlined"
+                  color="warning"
                   clickable
-                  disabled={savingStatus}
-                  onClick={() => handleStatusChange(s)}
-                  color={STATUS_META[s].color}
+                  disabled={reopening}
+                  onClick={handleReopen}
+                  icon={<LockOpen fontSize="small" />}
                 />
-              ))}
-            </>
-          )}
-          {canReopen && (
-            <Chip
-              label={reopening ? 'Reopening…' : 'Reopen RO'}
-              size="small"
-              variant="outlined"
-              color="warning"
-              clickable
-              disabled={reopening}
-              onClick={handleReopen}
-              icon={<LockOpen fontSize="small" />}
-            />
-          )}
-          <Box sx={{ flexGrow: 1 }} />
-          <Typography variant="body2" color="text.secondary">
-            Opened {new Date(ro.openedAt).toLocaleDateString()}
-          </Typography>
-        </Box>
-      </Paper>
+              )}
+              <Box sx={{ flexGrow: 1 }} />
+              <Typography variant="body2" color="text.secondary">
+                Opened {new Date(ro.openedAt).toLocaleDateString()}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Customer & vehicle info */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -690,23 +832,6 @@ function CurrentTab({
             </Typography>
           </>
         )}
-
-        {ro.employees?.length > 0 && (
-          <>
-            <Divider sx={{ my: 1.5 }} />
-            <Typography variant="body2" color="text.secondary">
-              Assigned:{' '}
-              {ro.employees
-                .map(
-                  (e) =>
-                    `${e.user.firstName} ${e.user.lastName}${
-                      e.role ? ` (${e.role})` : ''
-                    }`
-                )
-                .join(', ')}
-            </Typography>
-          </>
-        )}
       </Paper>
 
       {/* Customer concern */}
@@ -791,6 +916,16 @@ function CurrentTab({
         />
       </Paper>
 
+      {/* Pre-inspection: defective-part photos + notes (feeds the estimate) */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+        <PreInspectionSection
+          roId={ro.id}
+          photos={ro.media ?? []}
+          onPhotosChange={(media) => onROChange({ ...ro, media })}
+          canEdit={canEdit}
+        />
+      </Paper>
+
       {/* Action buttons */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -811,9 +946,9 @@ function CurrentTab({
         ) : (
           <Tooltip
             title={
-              actionsEnabled
+              inspectionEnabled
                 ? 'Create a digital vehicle inspection linked to this RO'
-                : actionDisabledReason
+                : inspectionDisabledReason
             }
           >
             <span>
@@ -824,7 +959,7 @@ function CurrentTab({
                   setViewInspectionId(undefined);
                   setInspectOpen(true);
                 }}
-                disabled={!actionsEnabled}
+                disabled={!inspectionEnabled}
               >
                 Inspect Vehicle
               </Button>
@@ -922,6 +1057,95 @@ function CurrentTab({
             {notes || (canEdit ? 'Tap to add technician notes…' : 'No notes')}
           </Typography>
         )}
+      </Paper>
+
+      {/* GA-43/GA-44: Service & part items with per-item controls + quotation */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+            mb: 1.5,
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{ flexGrow: 1 }}
+          >
+            Services &amp; Parts
+          </Typography>
+          {ro.quotation && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<RequestQuote fontSize="small" />}
+              onClick={() =>
+                navigate(`${baseRoute}/quotations/${ro.quotation!.id}`)
+              }
+            >
+              View Quotation
+            </Button>
+          )}
+          {canEdit && (
+            <Tooltip
+              title={
+                hasQuotationItems
+                  ? ''
+                  : 'Flag at least one item as "On quotation" first'
+              }
+            >
+              <span>
+                <Button
+                  size="small"
+                  variant={ro.quotation ? 'contained' : 'outlined'}
+                  startIcon={
+                    creatingQuotation ? (
+                      <CircularProgress size={14} />
+                    ) : (
+                      <RequestQuote fontSize="small" />
+                    )
+                  }
+                  onClick={handleCreateQuotation}
+                  disabled={!hasQuotationItems || creatingQuotation}
+                >
+                  {ro.quotation ? 'Update Quotation' : 'Create Quotation'}
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+          {canEdit && (
+            <Tooltip
+              title={
+                ro.quotation
+                  ? 'Email the customer the quotation + pre-inspection photos'
+                  : 'Create a quotation first'
+              }
+            >
+              <span>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<EmailIcon fontSize="small" />}
+                  onClick={() => setEstimateEmailOpen(true)}
+                  disabled={!ro.quotation}
+                >
+                  Send Estimate
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+        </Box>
+        <ROItemsList
+          roId={ro.id}
+          services={ro.services ?? []}
+          canEdit={canEdit && ro.status !== 'INVOICED'}
+          canDelete={canClose && ro.status !== 'INVOICED'}
+          onChanged={refetchRO}
+        />
       </Paper>
 
       {/* Footer: totals + tax + close */}
@@ -1125,11 +1349,11 @@ function CurrentTab({
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 {invoiceableInspection
                   ? `A draft invoice will be created from the inspection fee${
-                      completedServices.length > 0
-                        ? ` plus ${completedServices.length} completed service item(s)`
+                      billableServices.length > 0
+                        ? ` plus ${billableServices.length} completed item(s)`
                         : ''
                     }. Select the inspection fee and company to invoice under.`
-                  : `A draft invoice will be created from the ${completedServices.length} completed service item(s). Select the company to invoice under.`}
+                  : `A draft invoice will be created from the ${billableServices.length} completed item(s). Select the company to invoice under.`}
               </Typography>
               {companiesLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
@@ -1199,7 +1423,7 @@ function CurrentTab({
                 // The inspection fee bills as a SERVICE, so it's part of the base
                 // shop supplies / fleet discount are computed from.
                 const completedServiceBase =
-                  completedServices
+                  billableServices
                     .filter((s) => s.type !== 'PART')
                     .reduce((sum, s) => sum + Number(s.total ?? 0), 0) +
                   feePrice;
@@ -1365,6 +1589,46 @@ function CurrentTab({
         }}
       />
 
+      {/* Assign employees dialog */}
+      <AssignEmployeesDialog
+        open={assignEmployeesOpen}
+        onClose={() => setAssignEmployeesOpen(false)}
+        roId={ro.id}
+        currentEmployees={ro.employees ?? []}
+        onSaved={(updated) => onROChange({ ...ro, ...updated })}
+      />
+
+      {/* Quotation created success dialog */}
+      <Dialog
+        open={Boolean(createdQuotationId)}
+        onClose={() => setCreatedQuotationId(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Quotation Created</DialogTitle>
+        <DialogContent>
+          <Alert severity="success">
+            A quotation was created from the flagged items on {ro.roNumber}.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreatedQuotationId(null)}>Close</Button>
+          <Button
+            variant="contained"
+            startIcon={<RequestQuote />}
+            onClick={() => {
+              const quotationId = createdQuotationId;
+              setCreatedQuotationId(null);
+              if (quotationId) {
+                navigate(`${baseRoute}/quotations/${quotationId}`);
+              }
+            }}
+          >
+            View Quotation
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Service drawer */}
       <ServiceDrawer
         open={serviceDrawerOpen}
@@ -1375,6 +1639,23 @@ function CurrentTab({
         canEdit={canEdit && ro.status !== 'INVOICED'}
         canDelete={canEdit}
         currentUserId={currentUserId}
+      />
+
+      {/* Send estimate email (quotation PDF + pre-inspection photos PDF) */}
+      <EmailPromptDialog
+        open={estimateEmailOpen}
+        onClose={() => setEstimateEmailOpen(false)}
+        multiple
+        onSubmit={async () => undefined}
+        onSubmitMultiple={handleSendEstimate}
+        availableEmails={[
+          ...(ro.customer?.email ? [ro.customer.email] : []),
+          ...((ro.customer as any)?.additionalEmails ?? []),
+        ]}
+        customerName={customerFullName(ro)}
+        customerId={ro.customerId}
+        documentType="quotation"
+        documentNumber={ro.quotation?.quotationNumber || ro.roNumber}
       />
     </Box>
   );
@@ -1539,7 +1820,7 @@ export function RODetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin, isSupervisor, isStaff } = useAuth();
+  const { user, isAdmin, isSupervisor, isStaff, isForeman } = useAuth();
 
   const [ro, setRo] = useState<RepairOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1550,10 +1831,12 @@ export function RODetail() {
     ? '/staff'
     : location.pathname.startsWith('/supervisor')
     ? '/supervisor'
+    : location.pathname.startsWith('/foreman')
+    ? '/foreman'
     : '/admin';
 
-  const canEdit = isAdmin || isSupervisor || isStaff;
-  const canClose = isAdmin || isSupervisor;
+  const canEdit = isAdmin || isSupervisor || isStaff || isForeman;
+  const canClose = isAdmin || isSupervisor || isForeman;
 
   useEffect(() => {
     if (!id) return;

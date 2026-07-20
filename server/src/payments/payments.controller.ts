@@ -15,7 +15,7 @@ import {
   UpdatePaymentDto,
   PaymentResponseDto,
   PaymentSummaryDto,
-  ProcessPaymentDto
+  ProcessPaymentDto,
 } from '@gt-automotive/data';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -30,27 +30,30 @@ export class PaymentsController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   create(@Body() createPaymentDto: CreatePaymentDto, @CurrentUser() user: any) {
     return this.paymentsService.create(createPaymentDto, user.id);
   }
 
   @Post('process')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
-  processPayment(@Body() processPaymentDto: ProcessPaymentDto, @CurrentUser() user: any) {
+  @Roles('ADMIN', 'FOREMAN')
+  processPayment(
+    @Body() processPaymentDto: ProcessPaymentDto,
+    @CurrentUser() user: any
+  ) {
     return this.paymentsService.processPayment(processPaymentDto, user.id);
   }
 
   @Get()
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
+  @Roles('STAFF', 'ADMIN', 'FOREMAN', 'SUPERVISOR')
   findAll(
     @Query('employeeId') employeeId?: string,
     @Query('status') status?: PaymentStatus,
     @Query('paymentMethod') paymentMethod?: PaymentMethod,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('endDate') endDate?: string
   ): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findAll({
       employeeId,
@@ -63,14 +66,16 @@ export class PaymentsController {
 
   @Get('summary')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
-  getPaymentSummary(@Query('employeeId') employeeId?: string): Promise<PaymentSummaryDto> {
+  @Roles('ADMIN', 'FOREMAN')
+  getPaymentSummary(
+    @Query('employeeId') employeeId?: string
+  ): Promise<PaymentSummaryDto> {
     return this.paymentsService.getPaymentSummary(employeeId);
   }
 
   @Get('my-summary')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
+  @Roles('STAFF', 'ADMIN', 'FOREMAN', 'SUPERVISOR')
   getMyPaymentSummary(@CurrentUser() user: any): Promise<PaymentSummaryDto> {
     // Always use the authenticated user's ID from token - staff can only see their own
     return this.paymentsService.getPaymentSummary(user.id);
@@ -78,20 +83,24 @@ export class PaymentsController {
 
   @Get('pending')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   findPendingPayments(): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findPendingPayments();
   }
 
   @Get('payroll-report')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   getPayrollReport(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('employeeId') employeeId?: string,
+    @Query('employeeId') employeeId?: string
   ) {
-    return this.paymentsService.getPayrollReport(startDate, endDate, employeeId);
+    return this.paymentsService.getPayrollReport(
+      startDate,
+      endDate,
+      employeeId
+    );
   }
 
   /**
@@ -100,7 +109,7 @@ export class PaymentsController {
    */
   @Get('by-payment-date')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async getByPaymentDate(@Query('paymentDate') paymentDate: string) {
     // Pass the string directly - service will handle YYYY-MM-DD format
     return this.paymentsService.getByPaymentDate(paymentDate);
@@ -108,7 +117,7 @@ export class PaymentsController {
 
   @Get('my-payments')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
+  @Roles('STAFF', 'ADMIN', 'FOREMAN', 'SUPERVISOR')
   findMyPayments(@CurrentUser() user: any): Promise<PaymentResponseDto[]> {
     // Always use the authenticated user's ID from token - staff can only see their own
     return this.paymentsService.findByEmployee(user.id);
@@ -116,49 +125,48 @@ export class PaymentsController {
 
   @Get('employee/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
-  findByEmployee(@Param('employeeId') employeeId: string): Promise<PaymentResponseDto[]> {
+  @Roles('ADMIN', 'FOREMAN')
+  findByEmployee(
+    @Param('employeeId') employeeId: string
+  ): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findByEmployee(employeeId);
   }
 
   @Get('job/:jobId')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
+  @Roles('STAFF', 'ADMIN', 'FOREMAN', 'SUPERVISOR')
   findByJob(@Param('jobId') jobId: string): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findByJob(jobId);
   }
 
   @Get(':id')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'ADMIN', 'SUPERVISOR')
+  @Roles('STAFF', 'ADMIN', 'FOREMAN', 'SUPERVISOR')
   findOne(@Param('id') id: string): Promise<PaymentResponseDto> {
     return this.paymentsService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   update(
     @Param('id') id: string,
     @Body() updatePaymentDto: UpdatePaymentDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.paymentsService.update(id, updatePaymentDto, user.id);
   }
 
   @Patch(':id/revert-status')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
-  revertPaymentStatus(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  @Roles('ADMIN', 'FOREMAN')
+  revertPaymentStatus(@Param('id') id: string, @CurrentUser() user: any) {
     return this.paymentsService.revertPaymentStatus(id, user.id);
   }
 
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.paymentsService.remove(id, user.id);
   }

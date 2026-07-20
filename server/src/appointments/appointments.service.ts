@@ -172,10 +172,11 @@ export class AppointmentsService {
         if (
           employee.role.name !== 'STAFF' &&
           employee.role.name !== 'ADMIN' &&
-          employee.role.name !== 'SUPERVISOR'
+          employee.role.name !== 'SUPERVISOR' &&
+          employee.role.name !== 'FOREMAN'
         ) {
           throw new BadRequestException(
-            `User ${employee.firstName} ${employee.lastName} is not a staff, admin, or supervisor member`
+            `User ${employee.firstName} ${employee.lastName} is not a staff, admin, supervisor, or foreman member`
           );
         }
 
@@ -1285,7 +1286,7 @@ export class AppointmentsService {
     // Get all staff, admin, and supervisor users
     const staffUsers = await this.prisma.user.findMany({
       where: {
-        role: { name: { in: ['STAFF', 'ADMIN', 'SUPERVISOR'] } },
+        role: { name: { in: ['STAFF', 'ADMIN', 'SUPERVISOR', 'FOREMAN'] } },
         isActive: true,
       },
     });

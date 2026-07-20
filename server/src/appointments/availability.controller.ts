@@ -31,8 +31,11 @@ export class AvailabilityController {
    */
   @Post('recurring')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
-  async setRecurring(@Body() dto: SetAvailabilityDto, @CurrentUser() user: any) {
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
+  async setRecurring(
+    @Body() dto: SetAvailabilityDto,
+    @CurrentUser() user: any
+  ) {
     console.log('[SET RECURRING AVAILABILITY] User:', {
       id: user?.id,
       email: user?.email,
@@ -41,7 +44,9 @@ export class AvailabilityController {
     });
     console.log('[SET RECURRING AVAILABILITY] DTO:', dto);
 
-    console.log('[SET RECURRING AVAILABILITY] ALLOWED: Proceeding with availability update');
+    console.log(
+      '[SET RECURRING AVAILABILITY] ALLOWED: Proceeding with availability update'
+    );
     return this.availabilityService.setRecurringAvailability(dto);
   }
 
@@ -51,8 +56,11 @@ export class AvailabilityController {
    */
   @Post('my-recurring')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
-  async setMyRecurring(@Body() dto: Omit<SetAvailabilityDto, 'employeeId'>, @CurrentUser() user: any) {
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN')
+  async setMyRecurring(
+    @Body() dto: Omit<SetAvailabilityDto, 'employeeId'>,
+    @CurrentUser() user: any
+  ) {
     // Always use the authenticated user's ID from token
     const secureDto: SetAvailabilityDto = {
       ...dto,
@@ -67,7 +75,7 @@ export class AvailabilityController {
    */
   @Get('recurring/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async getRecurring(@Param('employeeId') employeeId: string) {
     return this.availabilityService.getEmployeeAvailability(employeeId);
   }
@@ -78,7 +86,7 @@ export class AvailabilityController {
    */
   @Get('my-recurring')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN')
   async getMyRecurring(@CurrentUser() user: any) {
     return this.availabilityService.getEmployeeAvailability(user.id);
   }
@@ -89,7 +97,7 @@ export class AvailabilityController {
    */
   @Post('override')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async addOverride(@Body() dto: TimeSlotOverrideDto) {
     return this.availabilityService.addOverride(dto);
   }
@@ -100,8 +108,11 @@ export class AvailabilityController {
    */
   @Post('my-override')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
-  async addMyOverride(@Body() dto: Omit<TimeSlotOverrideDto, 'employeeId'>, @CurrentUser() user: any) {
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN')
+  async addMyOverride(
+    @Body() dto: Omit<TimeSlotOverrideDto, 'employeeId'>,
+    @CurrentUser() user: any
+  ) {
     // Always use the authenticated user's ID from token
     const secureDto: TimeSlotOverrideDto = {
       ...dto,
@@ -116,7 +127,7 @@ export class AvailabilityController {
    */
   @Get('override/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async getOverrides(
     @Param('employeeId') employeeId: string,
     @Query('startDate') startDate: string,
@@ -135,7 +146,7 @@ export class AvailabilityController {
    */
   @Get('my-overrides')
   @UseGuards(RoleGuard)
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN')
   async getMyOverrides(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
@@ -154,7 +165,7 @@ export class AvailabilityController {
    */
   @Delete('recurring/:availabilityId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async deleteRecurring(
     @Param('availabilityId') availabilityId: string,
     @CurrentUser() user: any
@@ -164,9 +175,15 @@ export class AvailabilityController {
       email: user?.email,
       role: user?.role?.name,
     });
-    console.log('[DELETE RECURRING AVAILABILITY] Availability ID:', availabilityId);
+    console.log(
+      '[DELETE RECURRING AVAILABILITY] Availability ID:',
+      availabilityId
+    );
 
-    return this.availabilityService.deleteRecurringAvailability(availabilityId, user);
+    return this.availabilityService.deleteRecurringAvailability(
+      availabilityId,
+      user
+    );
   }
 
   /**
@@ -175,8 +192,11 @@ export class AvailabilityController {
    */
   @Delete('override/:overrideId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  async deleteOverride(@Param('overrideId') overrideId: string, @CurrentUser() user: any) {
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
+  async deleteOverride(
+    @Param('overrideId') overrideId: string,
+    @CurrentUser() user: any
+  ) {
     return this.availabilityService.deleteOverride(overrideId);
   }
 
@@ -186,7 +206,7 @@ export class AvailabilityController {
    */
   @Post('check')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async checkAvailability(@Body() dto: CheckAvailabilityDto) {
     return this.availabilityService.checkAvailableSlots(dto);
   }
@@ -197,7 +217,7 @@ export class AvailabilityController {
    */
   @Get('check/:employeeId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async checkEmployeeAvailability(
     @Param('employeeId') employeeId: string,
     @Query('date') date: string,

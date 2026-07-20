@@ -63,12 +63,16 @@ const QuoteList: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingQuotationId, setEditingQuotationId] = useState<string | undefined>();
+  const [editingQuotationId, setEditingQuotationId] = useState<
+    string | undefined
+  >();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  const [quotationForEmail, setQuotationForEmail] = useState<Quote | null>(null);
+  const [quotationForEmail, setQuotationForEmail] = useState<Quote | null>(
+    null
+  );
 
   useEffect(() => {
     loadQuotations();
@@ -106,7 +110,8 @@ const QuoteList: React.FC = () => {
   };
 
   const handleView = (id: string) => {
-    const basePath = role === 'admin' ? '/admin' : '/staff';
+    const basePath =
+      role === 'admin' ? '/admin' : role === 'foreman' ? '/foreman' : '/staff';
     navigate(`${basePath}/quotations/${id}`);
   };
 
@@ -116,7 +121,9 @@ const QuoteList: React.FC = () => {
   };
 
   const handleDelete = async (quotation: Quote) => {
-    const confirmed = await confirmDelete(`quotation ${quotation.quotationNumber}`);
+    const confirmed = await confirmDelete(
+      `quotation ${quotation.quotationNumber}`
+    );
     if (confirmed) {
       try {
         await quotationService.deleteQuote(quotation.id);
@@ -139,7 +146,8 @@ const QuoteList: React.FC = () => {
 
   const handleConvert = (quotation: Quote) => {
     // Navigate to invoice creation with quotation data
-    const basePath = role === 'admin' ? '/admin' : '/staff';
+    const basePath =
+      role === 'admin' ? '/admin' : role === 'foreman' ? '/foreman' : '/staff';
     navigate(`${basePath}/invoices/new?fromQuotation=${quotation.id}`);
   };
 
@@ -173,11 +181,18 @@ const QuoteList: React.FC = () => {
     }
   };
 
-  const handleEmailPromptSubmit = async (email: string, saveToQuote: boolean) => {
+  const handleEmailPromptSubmit = async (
+    email: string,
+    saveToQuote: boolean
+  ) => {
     if (!quotationForEmail) return;
 
     try {
-      const result = await quotationService.sendQuotationEmail(quotationForEmail.id, email, saveToQuote);
+      const result = await quotationService.sendQuotationEmail(
+        quotationForEmail.id,
+        email,
+        saveToQuote
+      );
       setEmailDialogOpen(false);
       setQuotationForEmail(null);
 
@@ -188,7 +203,9 @@ const QuoteList: React.FC = () => {
 
       await confirm({
         title: 'Quotation Sent Successfully!',
-        message: `Quotation ${quotationForEmail.quotationNumber} has been emailed to ${result.emailUsed || email}`,
+        message: `Quotation ${
+          quotationForEmail.quotationNumber
+        } has been emailed to ${result.emailUsed || email}`,
         confirmText: 'OK',
         showCancelButton: false,
       });
@@ -197,7 +214,10 @@ const QuoteList: React.FC = () => {
     }
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quotation: Quote) => {
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    quotation: Quote
+  ) => {
     setAnchorEl(event.currentTarget);
     setSelectedQuote(quotation);
   };
@@ -282,33 +302,38 @@ const QuoteList: React.FC = () => {
     }
   };
 
-  const filteredQuotations = quotes.filter(quotation => {
+  const filteredQuotations = quotes.filter((quotation) => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
       quotation.quotationNumber.toLowerCase().includes(search) ||
       quotation.customerName.toLowerCase().includes(search) ||
-      (quotation.businessName && quotation.businessName.toLowerCase().includes(search))
+      (quotation.businessName &&
+        quotation.businessName.toLowerCase().includes(search))
     );
   });
 
   return (
-    <Box sx={{
-      p: {
-        xs: theme.custom.spacing.pagePadding.mobile,
-        sm: theme.custom.spacing.pagePadding.tablet,
-        md: theme.custom.spacing.pagePadding.desktop
-      }
-    }}>
-      <Box sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        justifyContent: 'space-between',
-        alignItems: { xs: 'stretch', sm: 'center' },
-        gap: { xs: 2, sm: 0 },
-        mb: { xs: 2, sm: 3 }
-      }}>
-        <Typography variant={isMobile ? "h5" : "h4"}>Quotes</Typography>
+    <Box
+      sx={{
+        p: {
+          xs: theme.custom.spacing.pagePadding.mobile,
+          sm: theme.custom.spacing.pagePadding.tablet,
+          md: theme.custom.spacing.pagePadding.desktop,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: { xs: 2, sm: 0 },
+          mb: { xs: 2, sm: 3 },
+        }}
+      >
+        <Typography variant={isMobile ? 'h5' : 'h4'}>Quotes</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -328,7 +353,10 @@ const QuoteList: React.FC = () => {
             fullWidth
             onClick={() => setFiltersExpanded(!filtersExpanded)}
             endIcon={filtersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            sx={{ mb: filtersExpanded ? 2 : 0, justifyContent: 'space-between' }}
+            sx={{
+              mb: filtersExpanded ? 2 : 0,
+              justifyContent: 'space-between',
+            }}
           >
             Search & Filters
           </Button>
@@ -338,7 +366,7 @@ const QuoteList: React.FC = () => {
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
-                size={isMobile ? "small" : "medium"}
+                size={isMobile ? 'small' : 'medium'}
                 placeholder="Search by customer name or quote number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -353,12 +381,22 @@ const QuoteList: React.FC = () => {
               />
             </Grid>
             <Grid size={{ xs: 6, md: 2 }}>
-              <Button fullWidth variant="outlined" size={isMobile ? "small" : "medium"} onClick={handleSearch}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size={isMobile ? 'small' : 'medium'}
+                onClick={handleSearch}
+              >
                 Search
               </Button>
             </Grid>
             <Grid size={{ xs: 6, md: 2 }}>
-              <Button fullWidth variant="outlined" size={isMobile ? "small" : "medium"} onClick={loadQuotations}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size={isMobile ? 'small' : 'medium'}
+                onClick={loadQuotations}
+              >
                 Clear
               </Button>
             </Grid>
@@ -366,7 +404,7 @@ const QuoteList: React.FC = () => {
         </Collapse>
       </Paper>
 
-{isMobile ? (
+      {isMobile ? (
         // Mobile: Card-based layout
         <Box>
           {loading ? (
@@ -384,9 +422,20 @@ const QuoteList: React.FC = () => {
                 .map((quotation) => (
                   <Card key={quotation.id} variant="outlined">
                     <CardContent>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          mb: 1.5,
+                        }}
+                      >
                         <Box sx={{ flex: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" gutterBottom>
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            gutterBottom
+                          >
                             {quotation.quotationNumber}
                           </Typography>
                           <Chip
@@ -407,16 +456,36 @@ const QuoteList: React.FC = () => {
                       <Divider sx={{ my: 1.5 }} />
 
                       {quotation.businessName && (
-                        <Typography variant="body2" fontWeight="bold" gutterBottom>
+                        <Typography
+                          variant="body2"
+                          fontWeight="bold"
+                          gutterBottom
+                        >
                           {quotation.businessName}
                         </Typography>
                       )}
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                      >
                         {quotation.customerName}
                       </Typography>
 
-                      <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Box
+                        sx={{
+                          mt: 1.5,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.5,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                          }}
+                        >
                           <Typography variant="body2" color="text.secondary">
                             Date:
                           </Typography>
@@ -425,20 +494,37 @@ const QuoteList: React.FC = () => {
                           </Typography>
                         </Box>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                          }}
+                        >
                           <Typography variant="body2" color="text.secondary">
                             Valid Until:
                           </Typography>
                           <Typography variant="body2">
-                            {quotation.validUntil ? formatDate(quotation.validUntil) : 'N/A'}
+                            {quotation.validUntil
+                              ? formatDate(quotation.validUntil)
+                              : 'N/A'}
                           </Typography>
                         </Box>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            mt: 0.5,
+                          }}
+                        >
                           <Typography variant="body1" fontWeight="bold">
                             Total:
                           </Typography>
-                          <Typography variant="body1" fontWeight="bold" color="primary.main">
+                          <Typography
+                            variant="body1"
+                            fontWeight="bold"
+                            color="primary.main"
+                          >
                             {formatCurrency(quotation.total)}
                           </Typography>
                         </Box>
@@ -511,9 +597,13 @@ const QuoteList: React.FC = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {quotation.validUntil ? formatDate(quotation.validUntil) : 'N/A'}
+                        {quotation.validUntil
+                          ? formatDate(quotation.validUntil)
+                          : 'N/A'}
                       </TableCell>
-                      <TableCell align="right">{formatCurrency(quotation.total)}</TableCell>
+                      <TableCell align="right">
+                        {formatCurrency(quotation.total)}
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={getStatusLabel(quotation.status)}
@@ -577,8 +667,8 @@ const QuoteList: React.FC = () => {
           </ListItemIcon>
           <ListItemText>View</ListItemText>
         </MenuItem>
-        
-        <MenuItem 
+
+        <MenuItem
           onClick={() => handleMenuAction('edit')}
           disabled={selectedQuote?.status === 'CONVERTED'}
         >

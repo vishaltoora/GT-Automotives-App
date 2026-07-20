@@ -34,7 +34,7 @@ export class AppointmentsController {
   constructor(
     private readonly appointmentsService: AppointmentsService,
     private readonly appointmentInvoiceService: AppointmentInvoiceService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaService
   ) {}
 
   /**
@@ -43,8 +43,11 @@ export class AppointmentsController {
    */
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
-  async create(@Body() createAppointmentDto: CreateAppointmentDto, @CurrentUser() user: any) {
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
+  async create(
+    @Body() createAppointmentDto: CreateAppointmentDto,
+    @CurrentUser() user: any
+  ) {
     return this.appointmentsService.create(createAppointmentDto, user.id);
   }
 
@@ -54,7 +57,7 @@ export class AppointmentsController {
    */
   @Get()
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async findAll(@Query() query: AppointmentQueryDto, @CurrentUser() user: any) {
     return this.appointmentsService.findAll(query, user);
   }
@@ -65,8 +68,11 @@ export class AppointmentsController {
    */
   @Get('calendar')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  async getCalendar(@Query() query: CalendarQueryDto, @CurrentUser() user: any) {
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
+  async getCalendar(
+    @Query() query: CalendarQueryDto,
+    @CurrentUser() user: any
+  ) {
     return this.appointmentsService.getCalendar(query, user);
   }
 
@@ -76,7 +82,7 @@ export class AppointmentsController {
    */
   @Get('today')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async getToday(@CurrentUser() user: any) {
     return this.appointmentsService.getTodayAppointments(user);
   }
@@ -87,7 +93,7 @@ export class AppointmentsController {
    */
   @Get('by-payment-date')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async getByPaymentDate(@Query() query: PaymentDateQueryDto) {
     return this.appointmentsService.getByPaymentDate(query.paymentDate);
   }
@@ -99,10 +105,10 @@ export class AppointmentsController {
    */
   @Get('payments-by-range')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async getPaymentsByDateRange(
     @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
+    @Query('endDate') endDate: string
   ) {
     return this.appointmentsService.getPaymentsByDateRange(startDate, endDate);
   }
@@ -113,8 +119,11 @@ export class AppointmentsController {
    */
   @Get('customer/:customerId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
-  async getCustomerAppointments(@Param('customerId') customerId: string, @CurrentUser() user: any) {
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
+  async getCustomerAppointments(
+    @Param('customerId') customerId: string,
+    @CurrentUser() user: any
+  ) {
     // TODO: Add permission check for customers to only see their own appointments
     return this.appointmentsService.getCustomerUpcoming(customerId);
   }
@@ -126,17 +135,20 @@ export class AppointmentsController {
    */
   @Post(':id/e-transfer-invoice')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async createETransferInvoice(
     @Param('id') id: string,
     @Body() dto: CreateETransferInvoiceDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     // 1. Verify appointment exists and is IN_PROGRESS or COMPLETED (for remaining payments)
     const appointment = await this.appointmentsService.findOne(id);
-    if (appointment.status !== 'IN_PROGRESS' && appointment.status !== 'COMPLETED') {
+    if (
+      appointment.status !== 'IN_PROGRESS' &&
+      appointment.status !== 'COMPLETED'
+    ) {
       throw new BadRequestException(
-        `Appointment must be IN_PROGRESS or COMPLETED to create invoice. Current status: ${appointment.status}`,
+        `Appointment must be IN_PROGRESS or COMPLETED to create invoice. Current status: ${appointment.status}`
       );
     }
 
@@ -206,16 +218,17 @@ export class AppointmentsController {
     }
 
     // No existing invoice - create invoice then update appointment
-    const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
-      appointmentId: id,
-      serviceAmount: dto.serviceAmount,
-      tipAmount,
-      productSaleAmount: dto.productSaleAmount,
-      productSaleItems: dto.productSaleItems,
-      userId: user.id,
-      paymentMethod: 'E_TRANSFER',
-      status: 'PAID',
-    });
+    const invoice =
+      await this.appointmentInvoiceService.createInvoiceFromAppointment({
+        appointmentId: id,
+        serviceAmount: dto.serviceAmount,
+        tipAmount,
+        productSaleAmount: dto.productSaleAmount,
+        productSaleItems: dto.productSaleItems,
+        userId: user.id,
+        paymentMethod: 'E_TRANSFER',
+        status: 'PAID',
+      });
 
     await this.prisma.appointment.update({
       where: { id },
@@ -265,17 +278,20 @@ export class AppointmentsController {
    */
   @Post(':id/square-device-invoice')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async createSquareDeviceInvoice(
     @Param('id') id: string,
     @Body() dto: CreateSquareDeviceInvoiceDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     // 1. Verify appointment exists and is IN_PROGRESS or COMPLETED (for remaining payments)
     const appointment = await this.appointmentsService.findOne(id);
-    if (appointment.status !== 'IN_PROGRESS' && appointment.status !== 'COMPLETED') {
+    if (
+      appointment.status !== 'IN_PROGRESS' &&
+      appointment.status !== 'COMPLETED'
+    ) {
       throw new BadRequestException(
-        `Appointment must be IN_PROGRESS or COMPLETED to create invoice. Current status: ${appointment.status}`,
+        `Appointment must be IN_PROGRESS or COMPLETED to create invoice. Current status: ${appointment.status}`
       );
     }
 
@@ -344,16 +360,17 @@ export class AppointmentsController {
     }
 
     // No existing invoice - create invoice then update appointment
-    const invoice = await this.appointmentInvoiceService.createInvoiceFromAppointment({
-      appointmentId: id,
-      serviceAmount: dto.serviceAmount,
-      tipAmount,
-      productSaleAmount: dto.productSaleAmount,
-      productSaleItems: dto.productSaleItems,
-      userId: user.id,
-      paymentMethod,
-      status: 'PAID',
-    });
+    const invoice =
+      await this.appointmentInvoiceService.createInvoiceFromAppointment({
+        appointmentId: id,
+        serviceAmount: dto.serviceAmount,
+        tipAmount,
+        productSaleAmount: dto.productSaleAmount,
+        productSaleItems: dto.productSaleItems,
+        userId: user.id,
+        paymentMethod,
+        status: 'PAID',
+      });
 
     await this.prisma.appointment.update({
       where: { id },
@@ -402,7 +419,7 @@ export class AppointmentsController {
    */
   @Get(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async findOne(@Param('id') id: string) {
     return this.appointmentsService.findOne(id);
   }
@@ -413,11 +430,11 @@ export class AppointmentsController {
    */
   @Patch(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async update(
     @Param('id') id: string,
     @Body() updateAppointmentDto: UpdateAppointmentDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.appointmentsService.update(id, updateAppointmentDto, user?.id);
   }
@@ -428,7 +445,7 @@ export class AppointmentsController {
    */
   @Patch(':id/cancel')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'CUSTOMER')
   async cancel(@Param('id') id: string) {
     return this.appointmentsService.cancel(id);
   }
@@ -439,7 +456,7 @@ export class AppointmentsController {
    */
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async remove(@Param('id') id: string) {
     return this.appointmentsService.remove(id);
   }

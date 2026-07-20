@@ -158,7 +158,9 @@ export function TimeClockManagement() {
       ]);
       const myCurrent = await timeClockService.getMyCurrent();
       const employees = userData.filter((user) =>
-        ['ADMIN', 'SUPERVISOR', 'STAFF'].includes(user.role?.name || '')
+        ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(
+          user.role?.name || ''
+        )
       );
       setUsers(employees);
       setCurrentEntries(currentData);
@@ -628,11 +630,14 @@ export function TimeClockManagement() {
             iconPosition="start"
             label="This Month's Entries"
           />
-          <Tab
-            icon={<WorkspacePremium />}
-            iconPosition="start"
-            label="Compensation & Bonus"
-          />
+          {/* Compensation & Bonus is hidden for foreman. */}
+          {user?.role?.name !== 'FOREMAN' && (
+            <Tab
+              icon={<WorkspacePremium />}
+              iconPosition="start"
+              label="Compensation & Bonus"
+            />
+          )}
         </Tabs>
       </Box>
 

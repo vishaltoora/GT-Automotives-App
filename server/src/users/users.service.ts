@@ -1,6 +1,6 @@
-import { 
-  Injectable, 
-  NotFoundException, 
+import {
+  Injectable,
+  NotFoundException,
   ConflictException,
   ForbiddenException,
   InternalServerErrorException,
@@ -17,7 +17,7 @@ export class UsersService {
     private userRepository: UserRepository,
     private roleRepository: RoleRepository,
     private auditRepository: AuditRepository,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   async findAll(filters?: { roleId?: string; isActive?: boolean }) {
@@ -54,7 +54,7 @@ export class UsersService {
       throw new NotFoundException('Role not found');
     }
 
-    // const hashedPassword = data.password 
+    // const hashedPassword = data.password
     //   ? await bcrypt.hash(data.password, 10)
     //   : undefined;
 
@@ -83,7 +83,7 @@ export class UsersService {
     firstName: string;
     lastName: string;
     phone?: string;
-    roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF';
+    roleName: 'ADMIN' | 'FOREMAN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF';
     createdBy: string;
     password: string;
   }) {
@@ -110,7 +110,9 @@ export class UsersService {
         // Create configured Clerk client with secret key
         const clerkClient = createClerkClient({
           secretKey: clerkSecretKey,
-          apiUrl: this.configService.get<string>('CLERK_API_URL') || 'https://api.clerk.com'
+          apiUrl:
+            this.configService.get<string>('CLERK_API_URL') ||
+            'https://api.clerk.com',
         });
 
         console.log('Creating Clerk user with data:', {
@@ -140,18 +142,22 @@ export class UsersService {
             role: data.roleName,
           },
         });
-
       } catch (clerkError: any) {
         console.error('Failed to create user in Clerk:', clerkError);
         console.error('Clerk error type:', typeof clerkError);
         console.error('Clerk error keys:', Object.keys(clerkError));
-        console.error('Clerk error full object:', JSON.stringify(clerkError, null, 2));
+        console.error(
+          'Clerk error full object:',
+          JSON.stringify(clerkError, null, 2)
+        );
 
         // Extract detailed error information
         let errorMessage = 'Unprocessable Entity';
 
         if (clerkError.errors && Array.isArray(clerkError.errors)) {
-          errorMessage = clerkError.errors.map((e: any) => `${e.message} (${e.longMessage || e.code})`).join(', ');
+          errorMessage = clerkError.errors
+            .map((e: any) => `${e.message} (${e.longMessage || e.code})`)
+            .join(', ');
         } else if (clerkError.message) {
           errorMessage = clerkError.message;
         } else if (clerkError.status) {
@@ -181,8 +187,8 @@ export class UsersService {
       action: 'ADMIN_STAFF_USER_CREATED',
       entityType: 'user',
       entityId: user.id,
-      details: { 
-        email: data.email, 
+      details: {
+        email: data.email,
         role: data.roleName,
         clerkId: clerkUserId,
       },
@@ -194,14 +200,17 @@ export class UsersService {
     };
   }
 
-  async update(id: string, data: {
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    isActive?: boolean;
-    updatedBy: string;
-  }) {
+  async update(
+    id: string,
+    data: {
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      isActive?: boolean;
+      updatedBy: string;
+    }
+  ) {
     const user = await this.findById(id);
 
     if (data.email && data.email !== user.email) {
@@ -255,14 +264,18 @@ export class UsersService {
       entityId: userId,
       details: {
         oldRole: user.role.name,
-        newRole: role.name
+        newRole: role.name,
       },
     });
 
     return updatedUser;
   }
 
-  async assignRoleByName(userId: string, roleName: 'ADMIN' | 'SUPERVISOR' | 'STAFF', assignedBy: string) {
+  async assignRoleByName(
+    userId: string,
+    roleName: 'ADMIN' | 'FOREMAN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF',
+    assignedBy: string
+  ) {
     const user = await this.findById(userId);
     const role = await this.roleRepository.findByName(roleName);
 
@@ -287,7 +300,7 @@ export class UsersService {
       entityId: userId,
       details: {
         oldRole: user.role.name,
-        newRole: roleName
+        newRole: roleName,
       },
     });
 
@@ -321,13 +334,21 @@ export class UsersService {
     return deactivatedUser;
   }
 
-  async changePassword(_userId: string, _oldPassword: string, _newPassword: string) {
+  async changePassword(
+    _userId: string,
+    _oldPassword: string,
+    _newPassword: string
+  ) {
     // Passwords are managed by Clerk, not our system
-    throw new ForbiddenException('Password management is handled by Clerk authentication system');
+    throw new ForbiddenException(
+      'Password management is handled by Clerk authentication system'
+    );
   }
 
   async resetPassword(_userId: string, _newPassword: string, _resetBy: string) {
     // Passwords are managed by Clerk, not our system
-    throw new ForbiddenException('Password management is handled by Clerk authentication system');
+    throw new ForbiddenException(
+      'Password management is handled by Clerk authentication system'
+    );
   }
 }

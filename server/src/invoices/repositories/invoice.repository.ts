@@ -109,7 +109,7 @@ export class InvoiceRepository extends BaseRepository<
             where: { id: (item as any).tireId as string },
             data: {
               quantity: {
-                decrement: item.quantity,
+                decrement: Number(item.quantity),
               },
             },
           });
@@ -178,7 +178,7 @@ export class InvoiceRepository extends BaseRepository<
                 where: { id: item.tireId },
                 data: {
                   quantity: {
-                    increment: item.quantity,
+                    increment: Number(item.quantity),
                   },
                 },
               });
@@ -223,7 +223,7 @@ export class InvoiceRepository extends BaseRepository<
               where: { id: (item as any).tireId as string },
               data: {
                 quantity: {
-                  decrement: item.quantity,
+                  decrement: Number(item.quantity),
                 },
               },
             });
@@ -762,7 +762,7 @@ export class InvoiceRepository extends BaseRepository<
             where: { id: item.tireId },
             data: {
               quantity: {
-                increment: item.quantity,
+                increment: Number(item.quantity),
               },
             },
           });

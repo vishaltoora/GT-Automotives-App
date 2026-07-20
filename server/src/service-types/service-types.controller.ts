@@ -27,7 +27,7 @@ export class ServiceTypesController {
   constructor(private readonly serviceTypesService: ServiceTypesService) {}
 
   @Get()
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   async findAll(
     @Query('activeOnly') activeOnly?: string
   ): Promise<ServiceTypeResponseDto[]> {
@@ -42,13 +42,13 @@ export class ServiceTypesController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   async findOne(@Param('id') id: string): Promise<ServiceTypeResponseDto> {
     return this.serviceTypesService.findOne(id);
   }
 
   @Post()
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async create(
     @Body(ValidationPipe) dto: CreateServiceTypeDto
   ): Promise<ServiceTypeResponseDto> {
@@ -56,7 +56,7 @@ export class ServiceTypesController {
   }
 
   @Put(':id')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async update(
     @Param('id') id: string,
     @Body(ValidationPipe) dto: UpdateServiceTypeDto
@@ -65,7 +65,7 @@ export class ServiceTypesController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async remove(@Param('id') id: string): Promise<ServiceTypeResponseDto> {
     return this.serviceTypesService.remove(id);
   }

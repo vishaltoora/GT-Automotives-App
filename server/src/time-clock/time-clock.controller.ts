@@ -31,13 +31,13 @@ export class TimeClockController {
   constructor(private readonly timeClockService: TimeClockService) {}
 
   @Post('clock-in')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   clockIn(@Body() dto: ClockInDto, @CurrentUser() user: any) {
     return this.timeClockService.clockIn(user.id, dto);
   }
 
   @Post('employees/:employeeId/clock-in')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   adminClockIn(
     @Param('employeeId') employeeId: string,
     @Body() dto: ClockInDto
@@ -46,7 +46,7 @@ export class TimeClockController {
   }
 
   @Post('employees/:employeeId/clock-out')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   adminClockOut(
     @Param('employeeId') employeeId: string,
     @Body() dto: ClockOutDto
@@ -55,31 +55,31 @@ export class TimeClockController {
   }
 
   @Post('start-break')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   startBreak(@Body() dto: StartBreakDto, @CurrentUser() user: any) {
     return this.timeClockService.startBreak(user.id, dto);
   }
 
   @Post('end-break')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   endBreak(@CurrentUser() user: any) {
     return this.timeClockService.endBreak(user.id);
   }
 
   @Post('clock-out')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   clockOut(@Body() dto: ClockOutDto, @CurrentUser() user: any) {
     return this.timeClockService.clockOut(user.id, dto);
   }
 
   @Get('my-current')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   getMyCurrent(@CurrentUser() user: any) {
     return this.timeClockService.getCurrentForEmployee(user.id);
   }
 
   @Get('my-entries')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   getMyEntries(
     @CurrentUser() user: any,
     @Query('startDate') startDate?: string,
@@ -93,19 +93,19 @@ export class TimeClockController {
   }
 
   @Get('my-compensation')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   getMyCompensation(@CurrentUser() user: any) {
     return this.timeClockService.getCompensation(user.id);
   }
 
   @Get('current')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   getCurrentEntries() {
     return this.timeClockService.getCurrentEntries();
   }
 
   @Get('entries')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   getEntries(
     @CurrentUser() user: any,
     @Query('employeeId') employeeId?: string,
@@ -120,13 +120,13 @@ export class TimeClockController {
   }
 
   @Post('entries')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   createEntry(@Body() dto: CreateTimeEntryDto, @CurrentUser() user: any) {
     return this.timeClockService.createManualEntry(dto, user.id);
   }
 
   @Patch('entries/:id')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   updateEntry(
     @Param('id') id: string,
     @Body() dto: UpdateTimeEntryDto,
@@ -136,19 +136,19 @@ export class TimeClockController {
   }
 
   @Post('entries/:id/approve')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   approveEntry(@Param('id') id: string, @CurrentUser() user: any) {
     return this.timeClockService.approveEntry(id, user.id);
   }
 
   @Post('entries/:id/unapprove')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   unapproveEntry(@Param('id') id: string, @CurrentUser() user: any) {
     return this.timeClockService.unapproveEntry(id, user.id);
   }
 
   @Post('entries/:id/void')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   voidEntry(
     @Param('id') id: string,
     @Body('reason') reason: string | undefined,
@@ -158,17 +158,18 @@ export class TimeClockController {
   }
 
   @Delete('entries/:id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   deleteEntry(@Param('id') id: string, @CurrentUser() user: any) {
     return this.timeClockService.deleteEntry(id, user.id);
   }
 
   @Get('employees/:employeeId/compensation')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   getCompensation(@Param('employeeId') employeeId: string) {
     return this.timeClockService.getCompensation(employeeId);
   }
 
+  // Compensation & bonus management is admin-only (hidden for foreman).
   @Post('employees/:employeeId/compensation')
   @Roles('ADMIN')
   upsertCompensation(
@@ -189,7 +190,7 @@ export class TimeClockController {
   }
 
   @Get('adjustments')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   getAdjustments(
     @Query('employeeId') employeeId?: string,
     @Query('startDate') startDate?: string,
@@ -209,7 +210,7 @@ export class TimeClockController {
   }
 
   @Get('payroll-summary')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   getPayrollSummary(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,

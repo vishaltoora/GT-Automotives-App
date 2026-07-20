@@ -170,7 +170,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   //    items (unitPrice holds the raw percentage, e.g. 10 for 10%).
   const getLineTotal = (item: InvoiceItem): number => {
     if (item.itemType === 'DISCOUNT') {
-      return -Math.abs(item.quantity * item.unitPrice);
+      return -Math.abs(Number(item.quantity) * item.unitPrice);
     }
     if (item.itemType === 'DISCOUNT_PERCENTAGE') {
       if (!item.unitPrice) return 0;
@@ -181,10 +181,10 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
             i.itemType !== 'DISCOUNT_PERCENTAGE' &&
             i.itemType !== 'TIPS'
         )
-        .reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+        .reduce((s, i) => s + Number(i.quantity) * i.unitPrice, 0);
       return -(otherItemsSubtotal * item.unitPrice) / 100;
     }
-    return item.quantity * item.unitPrice;
+    return Number(item.quantity) * item.unitPrice;
   };
 
   const calculateTotals = () => {
@@ -1030,6 +1030,8 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                     <NumberInput
                       fullWidth
                       size="small"
+                      allowDecimals
+                      decimalPlaces={2}
                       label="Quantity"
                       value={newItem.quantity}
                       onChange={(v) =>
@@ -1038,7 +1040,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           quantity: (v ?? '') as unknown as number,
                         })
                       }
-                      min={1}
+                      min={0}
                     />
                   </Grid>
                 )}

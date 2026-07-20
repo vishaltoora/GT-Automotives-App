@@ -27,7 +27,9 @@ import { useAuth } from '../../hooks/useAuth';
 const CashReport: React.FC = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reportDate, setReportDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -65,10 +67,24 @@ const CashReport: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Button startIcon={<BackIcon />} onClick={() => {
-          const basePath = role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : role === 'staff' ? '/staff' : role === 'accountant' ? '/accountant' : '/customer';
-          navigate(`${basePath}/invoices`);
-        }}>
+        <Button
+          startIcon={<BackIcon />}
+          onClick={() => {
+            const basePath =
+              role === 'admin'
+                ? '/admin'
+                : role === 'supervisor'
+                ? '/supervisor'
+                : role === 'staff'
+                ? '/staff'
+                : role === 'accountant'
+                ? '/accountant'
+                : role === 'foreman'
+                ? '/foreman'
+                : '/customer';
+            navigate(`${basePath}/invoices`);
+          }}
+        >
           Back to Invoices
         </Button>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -81,11 +97,17 @@ const CashReport: React.FC = () => {
           <Button
             variant="outlined"
             startIcon={<TodayIcon />}
-            onClick={() => setReportDate(new Date().toISOString().split('T')[0])}
+            onClick={() =>
+              setReportDate(new Date().toISOString().split('T')[0])
+            }
           >
             Today
           </Button>
-          <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint}>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            onClick={handlePrint}
+          >
             Print Report
           </Button>
         </Box>
@@ -125,7 +147,9 @@ const CashReport: React.FC = () => {
                     <Typography color="text.secondary" gutterBottom>
                       Total Revenue
                     </Typography>
-                    <Typography variant="h4">{formatCurrency(report.totalRevenue)}</Typography>
+                    <Typography variant="h4">
+                      {formatCurrency(report.totalRevenue)}
+                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -183,12 +207,15 @@ const CashReport: React.FC = () => {
                         <TableRow key={invoice.id}>
                           <TableCell>{invoice.invoiceNumber}</TableCell>
                           <TableCell>
-                            {invoice.customer?.user?.firstName} {invoice.customer?.user?.lastName}
+                            {invoice.customer?.user?.firstName}{' '}
+                            {invoice.customer?.user?.lastName}
                           </TableCell>
                           <TableCell>
                             {getPaymentMethodLabel(invoice.paymentMethod)}
                           </TableCell>
-                          <TableCell align="right">{formatCurrency(invoice.total)}</TableCell>
+                          <TableCell align="right">
+                            {formatCurrency(invoice.total)}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -198,7 +225,10 @@ const CashReport: React.FC = () => {
             )}
 
             {report.totalInvoices === 0 && (
-              <Typography variant="body1" sx={{ mt: 3, textAlign: 'center', color: 'text.secondary' }}>
+              <Typography
+                variant="body1"
+                sx={{ mt: 3, textAlign: 'center', color: 'text.secondary' }}
+              >
                 No paid invoices found for this date.
               </Typography>
             )}

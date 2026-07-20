@@ -304,7 +304,7 @@ model InvoiceItem {
   tireName    String?
   itemType    InvoiceItemType
   description String
-  quantity    Int
+  quantity    Decimal         @db.Decimal(10, 2)
   unitPrice   Decimal         @db.Decimal(10, 2)
   total       Decimal         @db.Decimal(10, 2)
   createdAt   DateTime        @default(now())
@@ -381,6 +381,7 @@ model Quotation {
   convertedToInvoiceId String?         @unique
   items                QuotationItem[]
   emailLogs            EmailLog[] // Email logs related to this quotation
+  repairOrder          RepairOrder? // RO this quotation was generated from (if any)
 
   @@index([status])
   @@index([customerName])
@@ -393,7 +394,7 @@ model QuotationItem {
   tireName    String?
   itemType    InvoiceItemType
   description String
-  quantity    Int
+  quantity    Decimal         @db.Decimal(10, 2)
   unitPrice   Decimal         @db.Decimal(10, 2)
   total       Decimal         @db.Decimal(10, 2)
   createdAt   DateTime        @default(now())
@@ -912,6 +913,7 @@ enum RoleName {
   STAFF
   SUPERVISOR
   ACCOUNTANT
+  FOREMAN
   ADMIN
 }
 
@@ -1405,6 +1407,7 @@ enum EmailType {
   SERVICE_COMPLETE
   PROMOTIONAL
   BOOKING_CONFIRMATION
+  INSPECTION_REPORT
 }
 
 model BookingRequest {
@@ -1537,6 +1540,7 @@ model RepairOrder {
   appointmentId   String      @unique // 1:1 with Appointment
   customerId      String
   vehicleId       String?
+  quotationId     String?     @unique // Quotation generated from this RO's quotation-flagged items (1:1)
   noVehicle       Boolean     @default(false) // Intentionally no vehicle (loose tires, battery, or other counter service)
   status          ROStatus    @default(OPEN)
   customerConcern String?     // What the customer reported
@@ -1552,6 +1556,7 @@ model RepairOrder {
   appointment  Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   customer     Customer      @relation(fields: [customerId], references: [id])
   vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id])
+  quotation    Quotation?    @relation(fields: [quotationId], references: [id])
   employees    ROEmployee[]
   services     ROService[]
   inspections  Inspection[]
@@ -1591,6 +1596,10 @@ model ROService {
   total           Decimal         @default(0) @db.Decimal(10, 2)
   technicianNotes String?
   status          ROServiceStatus @default(PENDING)
+  // Customer's approve/decline decision for this line item (independent of work completion)
+  customerApproval ROServiceApproval @default(PENDING)
+  // When true, this item should be quoted (via a quotation) rather than billed on the RO invoice
+  isQuotation     Boolean         @default(false)
   completedById   String?
   completedAt     DateTime?
   createdAt       DateTime        @default(now())
@@ -1649,6 +1658,12 @@ enum ROServiceStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  DECLINED
+}
+
+enum ROServiceApproval {
+  PENDING
+  APPROVED
   DECLINED
 }
 

@@ -425,7 +425,8 @@ class InvoiceService {
               </div>
             </div>
             <p style="margin-top: 8px; font-size: 13px;">${
-              invoice.company?.address || '473 3rd Ave, Prince George, BC V2L 3C1'
+              invoice.company?.address ||
+              '473 3rd Ave, Prince George, BC V2L 3C1'
             }<br>
             ${
               invoice.company?.phone
@@ -488,7 +489,7 @@ class InvoiceService {
                 <td>${item.quantity}</td>
                 <td>${formatCurrency(item.unitPrice)}</td>
                 <td>${formatCurrency(
-                  item.total || item.quantity * item.unitPrice
+                  item.total || Number(item.quantity) * item.unitPrice
                 )}</td>
               </tr>
             `
@@ -543,7 +544,7 @@ ${
             ? `
           <div class="notes">
             <h3>Notes:</h3>
-            <p>${invoice.notes}</p>
+            <p style="white-space: pre-wrap;">${invoice.notes}</p>
           </div>
         `
             : ''
@@ -630,7 +631,8 @@ ${
               </div>
             </div>
             <p style="margin-top: 8px; font-size: 13px;">${
-              invoice.company?.address || '473 3rd Ave, Prince George, BC V2L 3C1'
+              invoice.company?.address ||
+              '473 3rd Ave, Prince George, BC V2L 3C1'
             }<br>
             ${
               invoice.company?.phone
@@ -688,7 +690,7 @@ ${
               .map((item) => {
                 // Calculate display total - handle DISCOUNT_PERCENTAGE items
                 let displayTotal =
-                  item.total || item.quantity * Number(item.unitPrice);
+                  item.total || Number(item.quantity) * Number(item.unitPrice);
                 if (
                   String(item.itemType).toUpperCase() === 'DISCOUNT_PERCENTAGE'
                 ) {
@@ -813,7 +815,7 @@ ${
             ? `
           <div style="margin-top: 12px;">
             <h3 style="margin-bottom: 8px;">Notes:</h3>
-            <p style="margin: 0;">${invoice.notes}</p>
+            <p style="margin: 0; white-space: pre-wrap;">${invoice.notes}</p>
           </div>
         `
             : ''

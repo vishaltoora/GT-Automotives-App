@@ -104,7 +104,7 @@ export class InvoicesService {
     const items = sourceItems.map((item) => {
       // For DISCOUNT items, the total should be negative
       // For DISCOUNT_PERCENTAGE items, calculate percentage of other items
-      let total = item.quantity * item.unitPrice;
+      let total = Number(item.quantity) * item.unitPrice;
 
       if (item.itemType === 'DISCOUNT') {
         // DISCOUNT items should be negative
@@ -119,7 +119,7 @@ export class InvoicesService {
               i.itemType !== 'DISCOUNT_PERCENTAGE' &&
               i.itemType !== 'TIPS'
           )
-          .reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+          .reduce((sum, i) => sum + Number(i.quantity) * i.unitPrice, 0);
         total = -(otherItemsSubtotal * item.unitPrice) / 100;
       }
 
@@ -318,7 +318,7 @@ export class InvoicesService {
         ...itemFields,
         itemType: itemFields.itemType as InvoiceItemType,
         total: new Decimal(
-          itemFields.total || itemFields.quantity * itemFields.unitPrice
+          itemFields.total || Number(itemFields.quantity) * itemFields.unitPrice
         ),
         unitPrice: new Decimal(itemFields.unitPrice),
       }));
@@ -326,7 +326,7 @@ export class InvoicesService {
       // Recalculate totals based on new items - handle discount items specially
       let subtotal = 0;
       items.forEach((item) => {
-        let total = item.quantity * Number(item.unitPrice);
+        let total = Number(item.quantity) * Number(item.unitPrice);
 
         if (item.itemType === 'DISCOUNT') {
           // DISCOUNT items should be negative
@@ -341,7 +341,8 @@ export class InvoicesService {
                 i.itemType !== 'DISCOUNT_PERCENTAGE'
             )
             .reduce(
-              (sum: number, i: any) => sum + i.quantity * Number(i.unitPrice),
+              (sum: number, i: any) =>
+                sum + Number(i.quantity) * Number(i.unitPrice),
               0
             );
           total = -(otherItemsSubtotal * Number(item.unitPrice)) / 100;

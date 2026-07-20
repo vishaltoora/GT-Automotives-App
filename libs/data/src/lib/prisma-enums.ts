@@ -96,6 +96,7 @@ export const RoleName = {
   STAFF: 'STAFF',
   SUPERVISOR: 'SUPERVISOR',
   ACCOUNTANT: 'ACCOUNTANT',
+  FOREMAN: 'FOREMAN',
   ADMIN: 'ADMIN',
 } as const;
 export type RoleName = (typeof RoleName)[keyof typeof RoleName];
@@ -346,6 +347,7 @@ export const EmailType = {
   SERVICE_COMPLETE: 'SERVICE_COMPLETE',
   PROMOTIONAL: 'PROMOTIONAL',
   BOOKING_CONFIRMATION: 'BOOKING_CONFIRMATION',
+  INSPECTION_REPORT: 'INSPECTION_REPORT',
 } as const;
 export type EmailType = (typeof EmailType)[keyof typeof EmailType];
 
@@ -390,6 +392,13 @@ export const ROServiceStatus = {
   DECLINED: 'DECLINED',
 } as const;
 export type ROServiceStatus = (typeof ROServiceStatus)[keyof typeof ROServiceStatus];
+
+export const ROServiceApproval = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED',
+} as const;
+export type ROServiceApproval = (typeof ROServiceApproval)[keyof typeof ROServiceApproval];
 
 export const ROMediaType = {
   ARRIVAL_CONDITION: 'ARRIVAL_CONDITION',

@@ -26,7 +26,7 @@ import { InspectionsService } from './inspections.service';
 
 @Controller('inspections')
 @UseGuards(JwtAuthGuard, RoleGuard)
-@Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+@Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
 export class InspectionsController {
   constructor(private readonly inspectionsService: InspectionsService) {}
 
@@ -44,7 +44,7 @@ export class InspectionsController {
   }
 
   @Post('fee-items')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   createFeeItem(
     @Body() dto: CreateInspectionFeeItemDto,
     @CurrentUser() user: any
@@ -53,7 +53,7 @@ export class InspectionsController {
   }
 
   @Patch('fee-items/:itemId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   updateFeeItem(
     @Param('itemId') itemId: string,
     @Body() dto: UpdateInspectionFeeItemDto,
@@ -63,7 +63,7 @@ export class InspectionsController {
   }
 
   @Delete('fee-items/:itemId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   removeFeeItem(@Param('itemId') itemId: string, @CurrentUser() user: any) {
     return this.inspectionsService.removeFeeItem(itemId, user.role.name);
   }
@@ -113,7 +113,7 @@ export class InspectionsController {
   }
 
   @Post(':id/generate-invoice')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   generateInvoice(
     @Param('id') id: string,
     @Body() dto: GenerateInspectionInvoiceDto,
@@ -127,8 +127,31 @@ export class InspectionsController {
     );
   }
 
+  @Post(':id/send-report-email')
+  sendReportEmail(
+    @Param('id') id: string,
+    @Body()
+    body: { email?: string; emails?: string[]; saveToCustomer?: boolean },
+    @CurrentUser() user: any
+  ) {
+    // Accept either a single `email` (legacy) or an `emails` array (multi-recipient)
+    const emails =
+      body.emails && body.emails.length > 0
+        ? body.emails
+        : body.email
+        ? [body.email]
+        : undefined;
+    return this.inspectionsService.sendInspectionReportEmail(
+      id,
+      user.id,
+      user.role.name,
+      emails,
+      body.saveToCustomer
+    );
+  }
+
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.inspectionsService.remove(id, user.id, user.role.name);
   }

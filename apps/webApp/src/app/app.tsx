@@ -10,6 +10,7 @@ import { StaffLayout } from './layouts/StaffLayout';
 import { SupervisorLayout } from './layouts/SupervisorLayout';
 import { AccountantLayout } from './layouts/AccountantLayout';
 import { AdminLayout } from './layouts/AdminLayout';
+import { ForemanLayout } from './layouts/ForemanLayout';
 
 // Guards
 import { AuthGuard } from './guards/AuthGuard';
@@ -331,6 +332,71 @@ export function App() {
                 element={<CommissionManagement />}
               />
               <Route path="tire-sales" element={<TireSalesManagement />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Route>
+
+            {/* Foreman Routes - Admin permissions minus payroll & payments */}
+            <Route
+              path="/foreman/*"
+              element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={['foreman', 'admin']}>
+                    <ForemanLayout />
+                  </RoleGuard>
+                </AuthGuard>
+              }
+            >
+              <Route path="dashboard" element={<AdminDashboard />} />
+              {/* Same time-clock & jobs access as admin (Compensation & Bonus
+                  tab is hidden for foreman inside TimeClockManagement) */}
+              <Route path="time-clock" element={<TimeClockManagement />} />
+              <Route path="jobs" element={<JobsManagement />} />
+              <Route path="jobs/:employeeId" element={<JobsManagement />} />
+              {/* User management is admin-only — no foreman users route */}
+              <Route path="customers" element={<CustomerList />} />
+              <Route path="customers/new" element={<CustomerForm />} />
+              <Route path="customers/:id/edit" element={<CustomerForm />} />
+              <Route path="vehicles" element={<VehicleList />} />
+              <Route path="vehicles/new" element={<VehicleForm />} />
+              <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+              <Route path="inventory" element={<TireListSimple />} />
+              <Route path="inventory/new" element={<TireFormSimple />} />
+              <Route path="inventory/:id" element={<TireDetails />} />
+              <Route path="inventory/:id/edit" element={<TireFormSimple />} />
+              <Route
+                path="inventory/dashboard"
+                element={<InventoryDashboard />}
+              />
+              <Route path="invoices" element={<InvoiceList />} />
+              <Route path="invoices/:id" element={<InvoiceDetails />} />
+              <Route path="invoices/cash-report" element={<CashReport />} />
+              <Route path="quotations" element={<QuoteList />} />
+              <Route path="quotations/:id" element={<QuotationDetails />} />
+              <Route
+                path="purchase-invoices"
+                element={<PurchaseExpenseInvoiceManagement />}
+              />
+              {/* Unified purchase & expense invoices */}
+              <Route path="appointments" element={<AppointmentsManagement />} />
+              <Route path="inspections" element={<InspectionList />} />
+              <Route path="inspections/:id" element={<InspectionEditor />} />
+              <Route
+                path="inspection-items"
+                element={<InspectionFeeItemManagement />}
+              />
+              <Route path="repair-orders" element={<ROList />} />
+              <Route path="repair-orders/:id" element={<RODetail />} />
+              <Route path="booking-requests" element={<BookingRequests />} />
+              <Route
+                path="availability"
+                element={<EmployeeAvailabilityManagement />}
+              />
+              <Route path="sms-history" element={<SmsHistory />} />
+              <Route path="employee-schedule" element={<EmployeeSchedule />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="analytics" element={<div>Analytics</div>} />
+              <Route path="security" element={<div>Security Settings</div>} />
+              <Route path="settings" element={<div>System Settings</div>} />
               <Route index element={<Navigate to="dashboard" replace />} />
             </Route>
 

@@ -365,7 +365,7 @@ class QuoteService {
                 <td>${item.quantity}</td>
                 <td>${formatCurrency(item.unitPrice)}</td>
                 <td>${formatCurrency(
-                  item.total || item.quantity * item.unitPrice
+                  item.total || Number(item.quantity) * item.unitPrice
                 )}</td>
               </tr>
             `

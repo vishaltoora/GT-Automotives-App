@@ -30,6 +30,7 @@ import {
   Print as PrintIcon,
   Payment as PaymentIcon,
   Cancel as CancelIcon,
+  Email as EmailIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { invoiceService, Invoice } from '../../requests/invoice.requests';
@@ -38,6 +39,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
+import EmailPromptDialog from '../../components/common/EmailPromptDialog';
 import PaymentMethodDialog, {
   PaymentEntryInput,
 } from '../../components/invoices/PaymentMethodDialog';
@@ -64,7 +66,7 @@ const InvoiceDetails: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { role, isStaff, isAdmin } = useAuth();
-  const { confirmCancel } = useConfirmationHelpers();
+  const { confirmCancel, confirm } = useConfirmationHelpers();
   const { showApiError } = useErrorHelpers();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +74,7 @@ const InvoiceDetails: React.FC = () => {
   // Payment-method dialog for recording a manual payment (cash, card, etc.).
   const [payMethodOpen, setPayMethodOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -114,6 +117,8 @@ const InvoiceDetails: React.FC = () => {
         ? '/staff'
         : role === 'accountant'
         ? '/accountant'
+        : role === 'foreman'
+        ? '/foreman'
         : '/customer';
     navigate(`${basePath}/invoices`);
   };
@@ -142,6 +147,8 @@ const InvoiceDetails: React.FC = () => {
         ? '/staff'
         : role === 'accountant'
         ? '/accountant'
+        : role === 'foreman'
+        ? '/foreman'
         : '/customer';
     navigate(`${basePath}/invoices/${newInvoice.id}`);
   };
@@ -217,6 +224,48 @@ const InvoiceDetails: React.FC = () => {
     handleProcessPayment();
   };
 
+  const handleEmail = () => {
+    setEmailDialogOpen(true);
+  };
+
+  const handleEmailFromMenu = () => {
+    setMenuAnchorEl(null);
+    handleEmail();
+  };
+
+  // Sends the invoice PDF to the selected recipient(s). Re-throws on failure so
+  // the EmailPromptDialog keeps its spinner/dialog open for a retry.
+  const handleEmailPromptSubmit = async (
+    emails: string[],
+    saveToCustomer: boolean
+  ) => {
+    if (!invoice) return;
+    try {
+      const result = await invoiceService.sendInvoiceEmail(
+        invoice.id,
+        emails,
+        saveToCustomer
+      );
+      setEmailDialogOpen(false);
+      if (saveToCustomer) loadInvoice();
+      await confirm({
+        title: 'Invoice Sent Successfully!',
+        message: `Invoice ${invoice.invoiceNumber} has been emailed to ${
+          result.emailUsed || emails.join(', ')
+        }${
+          saveToCustomer
+            ? '\n\nNew emails have been saved to the customer profile.'
+            : ''
+        }`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
+    } catch (error) {
+      showApiError(error, 'Failed to send invoice email');
+      throw error;
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -246,6 +295,15 @@ const InvoiceDetails: React.FC = () => {
   };
 
   const canManageInvoice = isStaff || isAdmin;
+  // Emailing the invoice PDF is available to all internal staff roles (matches
+  // the server @Roles on POST /invoices/:id/send-email), not customers.
+  const canEmailInvoice = [
+    'admin',
+    'foreman',
+    'supervisor',
+    'staff',
+    'accountant',
+  ].includes(role || '');
   // An invoice can take a payment until it's fully paid, cancelled, or refunded.
   const isPayable =
     canManageInvoice &&
@@ -292,6 +350,8 @@ const InvoiceDetails: React.FC = () => {
                 ? '/staff'
                 : role === 'accountant'
                 ? '/accountant'
+                : role === 'foreman'
+                ? '/foreman'
                 : '/customer';
             navigate(`${basePath}/invoices`);
           }}
@@ -348,6 +408,8 @@ const InvoiceDetails: React.FC = () => {
                     ? '/staff'
                     : role === 'accountant'
                     ? '/accountant'
+                    : role === 'foreman'
+                    ? '/foreman'
                     : '/customer';
                 navigate(`${basePath}/invoices`);
               }}
@@ -376,6 +438,14 @@ const InvoiceDetails: React.FC = () => {
                 </ListItemIcon>
                 <ListItemText>Print</ListItemText>
               </MenuItem>
+              {canEmailInvoice && (
+                <MenuItem onClick={handleEmailFromMenu}>
+                  <ListItemIcon>
+                    <EmailIcon fontSize="small" color="primary" />
+                  </ListItemIcon>
+                  <ListItemText>Send Email</ListItemText>
+                </MenuItem>
+              )}
               {isPayable && (
                 <>
                   <MenuItem onClick={handleProcessPaymentFromMenu}>
@@ -414,6 +484,8 @@ const InvoiceDetails: React.FC = () => {
                     ? '/staff'
                     : role === 'accountant'
                     ? '/accountant'
+                    : role === 'foreman'
+                    ? '/foreman'
                     : '/customer';
                 navigate(`${basePath}/invoices`);
               }}
@@ -428,6 +500,16 @@ const InvoiceDetails: React.FC = () => {
               >
                 Print
               </Button>
+              {canEmailInvoice && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<EmailIcon />}
+                  onClick={handleEmail}
+                >
+                  Send Email
+                </Button>
+              )}
               {isPayable && (
                 <>
                   <Button
@@ -581,7 +663,8 @@ const InvoiceDetails: React.FC = () => {
                 {invoice.items?.map((item) => {
                   // Calculate display total - handle DISCOUNT_PERCENTAGE items
                   let displayTotal =
-                    item.total || item.quantity * Number(item.unitPrice);
+                    item.total ||
+                    Number(item.quantity) * Number(item.unitPrice);
                   if (
                     String(item.itemType).toUpperCase() ===
                     'DISCOUNT_PERCENTAGE'
@@ -596,7 +679,8 @@ const InvoiceDetails: React.FC = () => {
                       .reduce(
                         (sum, i) =>
                           sum +
-                          (Number(i.total) || i.quantity * Number(i.unitPrice)),
+                          (Number(i.total) ||
+                            Number(i.quantity) * Number(i.unitPrice)),
                         0
                       );
                     displayTotal =
@@ -679,7 +763,8 @@ const InvoiceDetails: React.FC = () => {
                     {invoice.items?.map((item) => {
                       // Calculate display total - handle DISCOUNT_PERCENTAGE items
                       let displayTotal =
-                        item.total || item.quantity * Number(item.unitPrice);
+                        item.total ||
+                        Number(item.quantity) * Number(item.unitPrice);
                       if (
                         String(item.itemType).toUpperCase() ===
                         'DISCOUNT_PERCENTAGE'
@@ -696,7 +781,7 @@ const InvoiceDetails: React.FC = () => {
                             (sum, i) =>
                               sum +
                               (Number(i.total) ||
-                                i.quantity * Number(i.unitPrice)),
+                                Number(i.quantity) * Number(i.unitPrice)),
                             0
                           );
                         displayTotal =
@@ -756,7 +841,9 @@ const InvoiceDetails: React.FC = () => {
                   <Typography variant="h6" gutterBottom>
                     Notes
                   </Typography>
-                  <Typography variant="body2">{invoice.notes}</Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {invoice.notes}
+                  </Typography>
                 </CardContent>
               </Card>
             )}
@@ -850,6 +937,23 @@ const InvoiceDetails: React.FC = () => {
           hasTax={Number(invoice.taxAmount) > 0}
         />
       )}
+
+      {/* Email Prompt Dialog - send the invoice PDF to one or more recipients */}
+      <EmailPromptDialog
+        open={emailDialogOpen}
+        onClose={() => setEmailDialogOpen(false)}
+        multiple
+        onSubmit={async () => undefined}
+        onSubmitMultiple={handleEmailPromptSubmit}
+        availableEmails={[
+          ...(invoice.customer?.email ? [invoice.customer.email] : []),
+          ...((invoice.customer as any)?.additionalEmails ?? []),
+        ]}
+        customerName={getCustomerName(invoice)}
+        customerId={(invoice as any).customerId}
+        documentType="invoice"
+        documentNumber={invoice.invoiceNumber || ''}
+      />
     </Box>
   );
 };

@@ -32,7 +32,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 
 @Controller('repair-orders')
 @UseGuards(JwtAuthGuard, RoleGuard)
-@Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+@Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
 export class RepairOrdersController {
   constructor(
     private readonly roService: RepairOrdersService,
@@ -49,13 +49,13 @@ export class RepairOrdersController {
   }
 
   @Post('catalog')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   createCatalogItem(@Body() dto: CreateServiceCatalogItemDto) {
     return this.roService.createCatalogItem(dto);
   }
 
   @Patch('catalog/:itemId')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   updateCatalogItem(
     @Param('itemId') itemId: string,
     @Body() dto: UpdateServiceCatalogItemDto
@@ -64,7 +64,7 @@ export class RepairOrdersController {
   }
 
   @Delete('catalog/:itemId')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   removeCatalogItem(@Param('itemId') itemId: string) {
     return this.roService.removeCatalogItem(itemId);
   }
@@ -87,13 +87,13 @@ export class RepairOrdersController {
   }
 
   @Post()
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   create(@Body() dto: CreateRepairOrderDto) {
     return this.roService.create(dto);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   update(
     @Param('id') id: string,
     @Body() dto: UpdateRepairOrderDto,
@@ -103,7 +103,7 @@ export class RepairOrdersController {
   }
 
   @Post(':id/close')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   closeAndConvert(
     @Param('id') id: string,
     @Body('companyId') companyId: string,
@@ -123,21 +123,43 @@ export class RepairOrdersController {
   }
 
   @Post(':id/reopen')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   reopen(@Param('id') id: string, @CurrentUser() user: any) {
     return this.roService.reopen(id, user.role.name);
+  }
+
+  @Post(':id/create-quotation')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
+  createQuotation(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.roService.createQuotationFromServices(id, user.id);
+  }
+
+  @Post(':id/send-estimate-email')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
+  sendEstimateEmail(
+    @Param('id') id: string,
+    @Body() body: { email?: string; emails?: string[] },
+    @CurrentUser() user: any
+  ) {
+    const emails =
+      body.emails && body.emails.length > 0
+        ? body.emails
+        : body.email
+        ? [body.email]
+        : undefined;
+    return this.roService.sendEstimateEmail(id, user.role.name, emails);
   }
 
   // ---- Services ----
 
   @Post(':id/services')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   addService(@Param('id') id: string, @Body() dto: CreateROServiceDto) {
     return this.roService.addService(id, dto);
   }
 
   @Patch(':id/services/:serviceId')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   updateService(
     @Param('id') id: string,
     @Param('serviceId') serviceId: string,
@@ -148,7 +170,7 @@ export class RepairOrdersController {
   }
 
   @Delete(':id/services/:serviceId')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   removeService(
     @Param('id') id: string,
     @Param('serviceId') serviceId: string
@@ -159,7 +181,7 @@ export class RepairOrdersController {
   // ---- Media (Photos) ----
 
   @Post(':id/media')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   @UseInterceptors(FileInterceptor('file'))
   async uploadMedia(
     @Param('id') id: string,
@@ -216,7 +238,7 @@ export class RepairOrdersController {
   }
 
   @Post(':id/services/:serviceId/media')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   @UseInterceptors(FileInterceptor('file'))
   async uploadServiceMedia(
     @Param('id') id: string,
@@ -272,7 +294,7 @@ export class RepairOrdersController {
   }
 
   @Patch(':id/media/:mediaId')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   updateMedia(
     @Param('id') id: string,
     @Param('mediaId') mediaId: string,
@@ -282,7 +304,7 @@ export class RepairOrdersController {
   }
 
   @Delete(':id/media/:mediaId')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   removeMedia(@Param('id') id: string, @Param('mediaId') mediaId: string) {
     return this.roService.removeMedia(id, mediaId, this.azureBlobService);
   }

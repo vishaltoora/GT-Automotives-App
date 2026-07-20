@@ -315,6 +315,8 @@ const InvoiceList: React.FC = () => {
           ? '/staff'
           : role === 'accountant'
           ? '/accountant'
+          : role === 'foreman'
+          ? '/foreman'
           : '/customer';
       navigate(`${basePath}/invoices/${invoice.id}`);
     }
@@ -371,9 +373,15 @@ const InvoiceList: React.FC = () => {
   };
 
   const canCreateInvoice =
-    role === 'staff' || role === 'supervisor' || role === 'admin';
+    role === 'staff' ||
+    role === 'supervisor' ||
+    role === 'admin' ||
+    role === 'foreman';
   const canManageInvoice =
-    role === 'staff' || role === 'supervisor' || role === 'admin';
+    role === 'staff' ||
+    role === 'supervisor' ||
+    role === 'admin' ||
+    role === 'foreman';
   const canDeleteInvoice = role === 'admin';
 
   const getInvoiceActions = (invoice: Invoice): ActionItem[] => {
@@ -392,6 +400,8 @@ const InvoiceList: React.FC = () => {
               ? '/staff'
               : role === 'accountant'
               ? '/accountant'
+              : role === 'foreman'
+              ? '/foreman'
               : '/customer';
           navigate(`${basePath}/invoices/${invoice.id}`);
         },
@@ -651,6 +661,8 @@ const InvoiceList: React.FC = () => {
                             ? '/staff'
                             : role === 'accountant'
                             ? '/accountant'
+                            : role === 'foreman'
+                            ? '/foreman'
                             : '/customer';
                         navigate(`${basePath}/invoices/${invoice.id}`);
                       }}
@@ -811,6 +823,8 @@ const InvoiceList: React.FC = () => {
                             ? '/staff'
                             : role === 'accountant'
                             ? '/accountant'
+                            : role === 'foreman'
+                            ? '/foreman'
                             : '/customer';
                         navigate(`${basePath}/invoices/${invoice.id}`);
                       }}

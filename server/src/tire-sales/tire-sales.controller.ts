@@ -32,10 +32,10 @@ export class TireSalesController {
    * POST /api/tire-sales
    */
   @Post()
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN')
   async create(
     @Body() createDto: CreateTireSaleDto,
-    @Request() req: any,
+    @Request() req: any
   ): Promise<TireSaleResponseDto> {
     const userId = req.user?.id;
     return this.tireSalesService.create(createDto, userId);
@@ -46,7 +46,7 @@ export class TireSalesController {
    * GET /api/tire-sales
    */
   @Get()
-  @Roles('SUPERVISOR', 'ADMIN', 'ACCOUNTANT')
+  @Roles('SUPERVISOR', 'ADMIN', 'FOREMAN', 'ACCOUNTANT')
   async findAll(@Query() filters: TireSaleFiltersDto): Promise<{
     items: TireSaleResponseDto[];
     total: number;
@@ -61,10 +61,10 @@ export class TireSalesController {
    * GET /api/tire-sales/my-sales
    */
   @Get('my-sales')
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN')
   async findMySales(
     @Request() req: any,
-    @Query() filters: TireSaleFiltersDto,
+    @Query() filters: TireSaleFiltersDto
   ): Promise<{
     items: TireSaleResponseDto[];
     total: number;
@@ -80,11 +80,11 @@ export class TireSalesController {
    * GET /api/tire-sales/my-stats
    */
   @Get('my-stats')
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN')
   async getMyStats(
     @Request() req: any,
     @Query('year') year?: string,
-    @Query('month') month?: string,
+    @Query('month') month?: string
   ): Promise<{
     totalTiresSold: number;
     currentRate: number;
@@ -95,7 +95,7 @@ export class TireSalesController {
     return this.tireSalesService.getMonthlyStats(
       userId,
       year ? parseInt(year, 10) : undefined,
-      month ? parseInt(month, 10) : undefined,
+      month ? parseInt(month, 10) : undefined
     );
   }
 
@@ -104,11 +104,11 @@ export class TireSalesController {
    * GET /api/tire-sales/employee-stats/:employeeId
    */
   @Get('employee-stats/:employeeId')
-  @Roles('ADMIN', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT')
   async getEmployeeStats(
     @Param('employeeId') employeeId: string,
     @Query('year') year?: string,
-    @Query('month') month?: string,
+    @Query('month') month?: string
   ): Promise<{
     totalTiresSold: number;
     currentRate: number;
@@ -118,7 +118,7 @@ export class TireSalesController {
     return this.tireSalesService.getMonthlyStats(
       employeeId,
       year ? parseInt(year, 10) : undefined,
-      month ? parseInt(month, 10) : undefined,
+      month ? parseInt(month, 10) : undefined
     );
   }
 
@@ -127,9 +127,9 @@ export class TireSalesController {
    * GET /api/tire-sales/reports/commissions
    */
   @Get('reports/commissions')
-  @Roles('ADMIN', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT')
   async getCommissionReport(
-    @Query() filters: CommissionFiltersDto,
+    @Query() filters: CommissionFiltersDto
   ): Promise<CommissionReportDto> {
     return this.tireSalesService.getCommissionReport(filters);
   }
@@ -139,7 +139,7 @@ export class TireSalesController {
    * GET /api/tire-sales/:id
    */
   @Get(':id')
-  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'ACCOUNTANT')
+  @Roles('STAFF', 'SUPERVISOR', 'ADMIN', 'FOREMAN', 'ACCOUNTANT')
   async findOne(@Param('id') id: string): Promise<TireSaleResponseDto> {
     return this.tireSalesService.findOne(id);
   }
@@ -149,11 +149,11 @@ export class TireSalesController {
    * PATCH /api/tire-sales/:id
    */
   @Patch(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateTireSaleDto,
-    @Request() req: any,
+    @Request() req: any
   ): Promise<TireSaleResponseDto> {
     const userId = req.user?.id;
     return this.tireSalesService.update(id, updateDto, userId);
@@ -164,10 +164,10 @@ export class TireSalesController {
    * POST /api/tire-sales/:id/approve-commission
    */
   @Post(':id/approve-commission')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   async approveCommission(
     @Param('id') id: string,
-    @Request() req: any,
+    @Request() req: any
   ): Promise<TireSaleResponseDto> {
     const userId = req.user?.id;
     return this.tireSalesService.approveCommission(id, userId);
@@ -178,19 +178,19 @@ export class TireSalesController {
    * POST /api/tire-sales/process-commissions/:employeeId
    */
   @Post('process-commissions/:employeeId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   async processEmployeeCommissions(
     @Param('employeeId') employeeId: string,
     @Query('year') year?: string,
     @Query('month') month?: string,
-    @Request() req?: any,
+    @Request() req?: any
   ): Promise<{ jobId: string; totalAmount: number; salesCount: number }> {
     const adminUserId = req.user?.id;
     return this.tireSalesService.processEmployeeCommissions(
       employeeId,
       adminUserId,
       year ? parseInt(year, 10) : undefined,
-      month ? parseInt(month, 10) : undefined,
+      month ? parseInt(month, 10) : undefined
     );
   }
 }

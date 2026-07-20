@@ -8,52 +8,128 @@ async function main() {
   // Create permissions
   console.log('Creating permissions...');
   const permissionMap = new Map<string, any>();
-  
+
   const allPermissions = [
     // User management
     { resource: 'users', action: 'create', description: 'Create new users' },
     { resource: 'users', action: 'read', description: 'View user information' },
-    { resource: 'users', action: 'update', description: 'Update user information' },
+    {
+      resource: 'users',
+      action: 'update',
+      description: 'Update user information',
+    },
     { resource: 'users', action: 'delete', description: 'Delete users' },
-    
+
     // Customer management
-    { resource: 'customers', action: 'create', description: 'Create new customers' },
-    { resource: 'customers', action: 'read', description: 'View customer information' },
-    { resource: 'customers', action: 'update', description: 'Update customer information' },
-    { resource: 'customers', action: 'delete', description: 'Delete customers' },
-    
+    {
+      resource: 'customers',
+      action: 'create',
+      description: 'Create new customers',
+    },
+    {
+      resource: 'customers',
+      action: 'read',
+      description: 'View customer information',
+    },
+    {
+      resource: 'customers',
+      action: 'update',
+      description: 'Update customer information',
+    },
+    {
+      resource: 'customers',
+      action: 'delete',
+      description: 'Delete customers',
+    },
+
     // Vehicle management
     { resource: 'vehicles', action: 'create', description: 'Add new vehicles' },
-    { resource: 'vehicles', action: 'read', description: 'View vehicle information' },
-    { resource: 'vehicles', action: 'update', description: 'Update vehicle information' },
+    {
+      resource: 'vehicles',
+      action: 'read',
+      description: 'View vehicle information',
+    },
+    {
+      resource: 'vehicles',
+      action: 'update',
+      description: 'Update vehicle information',
+    },
     { resource: 'vehicles', action: 'delete', description: 'Delete vehicles' },
-    
+
     // Tire inventory
-    { resource: 'tires', action: 'create', description: 'Add new tire inventory' },
+    {
+      resource: 'tires',
+      action: 'create',
+      description: 'Add new tire inventory',
+    },
     { resource: 'tires', action: 'read', description: 'View tire inventory' },
-    { resource: 'tires', action: 'update', description: 'Update tire inventory' },
-    { resource: 'tires', action: 'delete', description: 'Delete tire inventory' },
-    
+    {
+      resource: 'tires',
+      action: 'update',
+      description: 'Update tire inventory',
+    },
+    {
+      resource: 'tires',
+      action: 'delete',
+      description: 'Delete tire inventory',
+    },
+
     // Invoice management
-    { resource: 'invoices', action: 'create', description: 'Create new invoices' },
+    {
+      resource: 'invoices',
+      action: 'create',
+      description: 'Create new invoices',
+    },
     { resource: 'invoices', action: 'read', description: 'View invoices' },
     { resource: 'invoices', action: 'update', description: 'Update invoices' },
     { resource: 'invoices', action: 'delete', description: 'Delete invoices' },
-    { resource: 'invoices', action: 'approve', description: 'Approve invoices' },
-    
+    {
+      resource: 'invoices',
+      action: 'approve',
+      description: 'Approve invoices',
+    },
+
     // Appointment management
-    { resource: 'appointments', action: 'create', description: 'Schedule appointments' },
-    { resource: 'appointments', action: 'read', description: 'View appointments' },
-    { resource: 'appointments', action: 'update', description: 'Update appointments' },
-    { resource: 'appointments', action: 'delete', description: 'Cancel appointments' },
-    
+    {
+      resource: 'appointments',
+      action: 'create',
+      description: 'Schedule appointments',
+    },
+    {
+      resource: 'appointments',
+      action: 'read',
+      description: 'View appointments',
+    },
+    {
+      resource: 'appointments',
+      action: 'update',
+      description: 'Update appointments',
+    },
+    {
+      resource: 'appointments',
+      action: 'delete',
+      description: 'Cancel appointments',
+    },
+
     // Reports
-    { resource: 'reports', action: 'read', description: 'View business reports' },
+    {
+      resource: 'reports',
+      action: 'read',
+      description: 'View business reports',
+    },
     { resource: 'reports', action: 'export', description: 'Export reports' },
-    
+
     // Settings
-    { resource: 'settings', action: 'read', description: 'View system settings' },
-    { resource: 'settings', action: 'update', description: 'Update system settings' },
+    {
+      resource: 'settings',
+      action: 'read',
+      description: 'View system settings',
+    },
+    {
+      resource: 'settings',
+      action: 'update',
+      description: 'Update system settings',
+    },
   ];
 
   for (const perm of allPermissions) {
@@ -110,12 +186,14 @@ async function main() {
     where: { name: RoleName.SUPERVISOR },
     update: {
       displayName: 'Supervisor',
-      description: 'Supervisors with elevated access to appointments and expenses',
+      description:
+        'Supervisors with elevated access to appointments and expenses',
     },
     create: {
       name: RoleName.SUPERVISOR,
       displayName: 'Supervisor',
-      description: 'Supervisors with elevated access to appointments and expenses',
+      description:
+        'Supervisors with elevated access to appointments and expenses',
     },
   });
 
@@ -133,7 +211,21 @@ async function main() {
     },
   });
 
-  console.log('✅ Created 4 roles');
+  // Foreman Role - all administrative permissions except payment and payroll
+  const foremanRole = await prisma.role.upsert({
+    where: { name: RoleName.FOREMAN },
+    update: {
+      displayName: 'Foreman',
+      description: 'All administrative permissions except payment and payroll',
+    },
+    create: {
+      name: RoleName.FOREMAN,
+      displayName: 'Foreman',
+      description: 'All administrative permissions except payment and payroll',
+    },
+  });
+
+  console.log('✅ Created 5 roles');
 
   // Assign permissions to roles
   console.log('Assigning permissions to roles...');
@@ -143,11 +235,11 @@ async function main() {
 
   // Customer permissions
   const customerPermissions = [
-    'customers:read',     // Own data only (enforced in code)
-    'vehicles:read',      // Own vehicles
+    'customers:read', // Own data only (enforced in code)
+    'vehicles:read', // Own vehicles
     'vehicles:create',
     'vehicles:update',
-    'invoices:read',      // Own invoices
+    'invoices:read', // Own invoices
     'appointments:create',
     'appointments:read',
     'appointments:update',
@@ -247,12 +339,23 @@ async function main() {
     });
   }
 
+  // Foreman permissions (all administrative permissions except payment & payroll)
+  // Note: there are no payment/payroll permission resources, so this mirrors Admin.
+  for (const [_, permission] of permissionMap) {
+    await prisma.rolePermission.create({
+      data: {
+        roleId: foremanRole.id,
+        permissionId: permission.id,
+      },
+    });
+  }
+
   console.log('✅ Assigned permissions to roles');
 
   // Create production admin user
   if (process.env.NODE_ENV === 'production') {
     console.log('Creating production admin user...');
-    
+
     // Vishal Toora - Production Admin User
     const productionAdmin = await prisma.user.upsert({
       where: { email: 'vishal.alawalpuria@gmail.com' },
@@ -363,17 +466,31 @@ async function main() {
 
     // Get existing tire brands (created by migration)
     const brands = await prisma.tireBrand.findMany({
-      where: { name: { in: ['Michelin', 'Bridgestone', 'Goodyear', 'Continental', 'BF Goodrich'] } }
+      where: {
+        name: {
+          in: [
+            'Michelin',
+            'Bridgestone',
+            'Goodyear',
+            'Continental',
+            'BF Goodrich',
+          ],
+        },
+      },
     });
     const brandMap = new Map<string, string>();
-    brands.forEach(brand => brandMap.set(brand.name, brand.id));
+    brands.forEach((brand) => brandMap.set(brand.name, brand.id));
 
     // Get existing tire sizes (created by migration)
     const sizes = await prisma.tireSize.findMany({
-      where: { size: { in: ['225/45R17', '215/60R16', '245/40R18', '235/65R17', '265/70R17'] } }
+      where: {
+        size: {
+          in: ['225/45R17', '215/60R16', '245/40R18', '235/65R17', '265/70R17'],
+        },
+      },
     });
     const sizeMap = new Map<string, string>();
-    sizes.forEach(size => sizeMap.set(size.size, size.id));
+    sizes.forEach((size) => sizeMap.set(size.size, size.id));
 
     // Now create tires with proper relationships
     const tireData = [
@@ -384,7 +501,7 @@ async function main() {
         condition: 'NEW' as const,
         quantity: 20,
         price: 285.99,
-        cost: 180.00,
+        cost: 180.0,
         minStock: 5,
       },
       {
@@ -394,7 +511,7 @@ async function main() {
         condition: 'NEW' as const,
         quantity: 15,
         price: 165.99,
-        cost: 105.00,
+        cost: 105.0,
         minStock: 5,
       },
       {
@@ -404,7 +521,7 @@ async function main() {
         condition: 'NEW' as const,
         quantity: 12,
         price: 310.99,
-        cost: 195.00,
+        cost: 195.0,
         minStock: 3,
       },
       {
@@ -414,7 +531,7 @@ async function main() {
         condition: 'NEW' as const,
         quantity: 25,
         price: 175.99,
-        cost: 110.00,
+        cost: 110.0,
         minStock: 8,
       },
       {
@@ -424,7 +541,7 @@ async function main() {
         condition: 'NEW' as const,
         quantity: 10,
         price: 245.99,
-        cost: 155.00,
+        cost: 155.0,
         minStock: 4,
       },
     ];

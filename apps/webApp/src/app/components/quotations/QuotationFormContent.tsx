@@ -110,7 +110,7 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
 
   const calculateTotals = () => {
     const subtotal = items.reduce(
-      (sum, item) => sum + item.quantity * Number(item.unitPrice),
+      (sum, item) => sum + Number(item.quantity) * Number(item.unitPrice),
       0
     );
     const gstAmount = subtotal * (formData.gstRate || 0.05);
@@ -385,6 +385,8 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
             <Grid size={{ xs: 12, md: 2 }}>
               <NumberInput
                 fullWidth
+                allowDecimals
+                decimalPlaces={2}
                 label="Quantity"
                 value={newItem.quantity}
                 onChange={(v) =>
@@ -393,7 +395,7 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                     quantity: (v ?? '') as unknown as number,
                   })
                 }
-                min={1}
+                min={0}
               />
             </Grid>
 
@@ -493,7 +495,10 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                         ${Number(item.unitPrice).toFixed(2)}
                       </TableCell>
                       <TableCell align="right">
-                        ${(item.quantity * Number(item.unitPrice)).toFixed(2)}
+                        $
+                        {(
+                          Number(item.quantity) * Number(item.unitPrice)
+                        ).toFixed(2)}
                       </TableCell>
                       <TableCell align="center">
                         <Tooltip title="Remove Item">

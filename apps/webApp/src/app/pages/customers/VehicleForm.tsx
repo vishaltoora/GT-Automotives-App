@@ -131,7 +131,7 @@ export function VehicleForm() {
 
   const routePrefix =
     location.pathname.match(
-      /^\/(admin|staff|supervisor|customer)(?=\/)/
+      /^\/(admin|staff|supervisor|foreman|customer)(?=\/)/
     )?.[0] || '';
   const vehiclesPath = `${routePrefix}/vehicles`;
   const selectedCustomer =

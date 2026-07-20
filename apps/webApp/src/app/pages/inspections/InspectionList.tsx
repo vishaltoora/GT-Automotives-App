@@ -34,6 +34,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
+  Email as EmailIcon,
   AssignmentTurnedIn as InspectionIcon,
   MoreVert as MoreVertIcon,
   Print as PrintIcon,
@@ -52,6 +53,7 @@ import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useAuth } from '../../hooks/useAuth';
 import { GenerateInvoiceDialog } from '../../components/inspections/GenerateInvoiceDialog';
 import { NumberInput } from '../../components/common';
+import EmailPromptDialog from '../../components/common/EmailPromptDialog';
 
 const statusColor = (status: string) => {
   if (status === 'COMPLETED' || status === 'FINALIZED') return 'success';
@@ -84,9 +86,12 @@ export function InspectionList() {
   );
   const [invoiceDialogInspection, setInvoiceDialogInspection] =
     useState<Inspection | null>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [inspectionForEmail, setInspectionForEmail] =
+    useState<Inspection | null>(null);
 
   const routePrefix =
-    location.pathname.match(/^\/(admin|staff|supervisor)(?=\/)/)?.[0] ||
+    location.pathname.match(/^\/(admin|staff|supervisor|foreman)(?=\/)/)?.[0] ||
     '/staff';
 
   useEffect(() => {
@@ -121,6 +126,7 @@ export function InspectionList() {
   const canPrintActionInspection =
     actionInspection?.status === 'COMPLETED' ||
     actionInspection?.status === 'FINALIZED';
+  const canEmailActionInspection = canPrintActionInspection;
   const canInvoice = isAdmin || isSupervisor;
   const canInvoiceActionInspection =
     canInvoice &&
@@ -244,8 +250,54 @@ export function InspectionList() {
     }
   };
 
+  const handleSendReportEmail = (inspection: Inspection) => {
+    setInspectionForEmail(inspection);
+    setEmailDialogOpen(true);
+  };
+
+  const handleEmailPromptSubmit = async (
+    emails: string[],
+    saveToCustomer: boolean
+  ) => {
+    if (!inspectionForEmail) return;
+    const inspection = inspectionForEmail;
+
+    try {
+      const result = await inspectionService.sendInspectionReportEmail(
+        inspection.id,
+        emails,
+        saveToCustomer
+      );
+
+      // Close the email dialog first so its loading spinner doesn't linger
+      // behind the success confirmation dialog.
+      setEmailDialogOpen(false);
+      setInspectionForEmail(null);
+
+      if (saveToCustomer) {
+        loadData();
+      }
+
+      await confirm({
+        title: 'Inspection Report Sent!',
+        message: `The inspection report has been emailed to ${
+          result.emailUsed || emails.join(', ')
+        }${
+          saveToCustomer
+            ? '\n\nNew emails have been saved to the customer profile.'
+            : ''
+        }`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
+    } catch (error) {
+      showApiError(error, 'Failed to send inspection report email');
+      throw error; // Re-throw to keep dialog open on failure
+    }
+  };
+
   const handleAction = (
-    action: 'open' | 'edit' | 'print' | 'invoice' | 'delete'
+    action: 'open' | 'edit' | 'print' | 'email' | 'invoice' | 'delete'
   ) => {
     if (!actionInspectionId) return;
 
@@ -255,6 +307,10 @@ export function InspectionList() {
         return;
       }
       void handlePrintInspection(actionInspectionId);
+    } else if (action === 'email') {
+      if (canEmailActionInspection && actionInspection) {
+        handleSendReportEmail(actionInspection);
+      }
     } else if (action === 'invoice') {
       if (canInvoiceActionInspection && actionInspection) {
         setInvoiceDialogInspection(actionInspection);
@@ -688,6 +744,14 @@ export function InspectionList() {
                 <ListItemText>Print</ListItemText>
               </MenuItem>
             )}
+            {canEmailActionInspection && (
+              <MenuItem onClick={() => handleAction('email')}>
+                <ListItemIcon>
+                  <EmailIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Send Report Email</ListItemText>
+              </MenuItem>
+            )}
             {isAdmin && (
               <MenuItem
                 onClick={() => handleAction('delete')}
@@ -708,6 +772,41 @@ export function InspectionList() {
         inspection={invoiceDialogInspection}
         onClose={() => setInvoiceDialogInspection(null)}
         onGenerated={handleInvoiceGenerated}
+      />
+
+      {/* Email Prompt Dialog - Select one or more recipient emails */}
+      <EmailPromptDialog
+        open={emailDialogOpen}
+        onClose={() => {
+          setEmailDialogOpen(false);
+          setInspectionForEmail(null);
+        }}
+        multiple
+        onSubmit={async () => undefined}
+        onSubmitMultiple={handleEmailPromptSubmit}
+        availableEmails={(() => {
+          const customer = inspectionForEmail?.customer;
+          return [
+            ...(customer?.email ? [customer.email] : []),
+            ...(customer?.additionalEmails ?? []),
+          ];
+        })()}
+        customerName={(() => {
+          const customer = inspectionForEmail?.customer;
+          if (customer?.firstName || customer?.lastName) {
+            return `${customer.firstName || ''} ${
+              customer.lastName || ''
+            }`.trim();
+          }
+          return customer?.businessName || 'Customer';
+        })()}
+        customerId={inspectionForEmail?.customer?.id}
+        documentType="inspection"
+        documentNumber={
+          inspectionForEmail?.roNumber ||
+          inspectionForEmail?.template?.name ||
+          'Inspection Report'
+        }
       />
     </Box>
   );

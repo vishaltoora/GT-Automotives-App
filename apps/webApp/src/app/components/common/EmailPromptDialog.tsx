@@ -39,7 +39,7 @@ interface EmailPromptDialogProps {
   multiple?: boolean;
   customerName: string;
   customerId?: string;
-  documentType: 'invoice' | 'quotation';
+  documentType: 'invoice' | 'quotation' | 'inspection';
   documentNumber: string;
 }
 
@@ -171,7 +171,12 @@ export const EmailPromptDialog: React.FC<EmailPromptDialogProps> = ({
     onClose();
   };
 
-  const docLabel = documentType === 'invoice' ? 'Invoice' : 'Quotation';
+  const docLabel =
+    documentType === 'invoice'
+      ? 'Invoice'
+      : documentType === 'inspection'
+      ? 'Inspection Report'
+      : 'Quotation';
   const canSubmit = multiple ? selected.length > 0 : !!email.trim();
 
   return (
@@ -307,8 +312,9 @@ export const EmailPromptDialog: React.FC<EmailPromptDialogProps> = ({
                     color="text.secondary"
                     sx={{ mb: 1 }}
                   >
-                    Select the email address(es) to send {documentType}{' '}
-                    <strong>{documentNumber}</strong> to
+                    Select the email address(es) to send{' '}
+                    {docLabel.toLowerCase()} <strong>{documentNumber}</strong>{' '}
+                    to
                     {customerName ? (
                       <>
                         {' '}
@@ -444,7 +450,7 @@ export const EmailPromptDialog: React.FC<EmailPromptDialogProps> = ({
                   >
                     Customer <strong>{customerName}</strong> does not have an
                     email on file. Please enter an email address to send{' '}
-                    {documentType} <strong>{documentNumber}</strong>.
+                    {docLabel.toLowerCase()} <strong>{documentNumber}</strong>.
                   </Typography>
 
                   <TextField

@@ -471,7 +471,8 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                     <Stack spacing={2}>
                       {invoice.items?.map((item) => {
                         let displayTotal =
-                          item.total || item.quantity * Number(item.unitPrice);
+                          item.total ||
+                          Number(item.quantity) * Number(item.unitPrice);
                         if (
                           String(item.itemType).toUpperCase() ===
                           'DISCOUNT_PERCENTAGE'
@@ -488,7 +489,7 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                               (sum, i) =>
                                 sum +
                                 (Number(i.total) ||
-                                  i.quantity * Number(i.unitPrice)),
+                                  Number(i.quantity) * Number(i.unitPrice)),
                               0
                             );
                           displayTotal =
@@ -577,7 +578,7 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                           {invoice.items?.map((item) => {
                             let displayTotal =
                               item.total ||
-                              item.quantity * Number(item.unitPrice);
+                              Number(item.quantity) * Number(item.unitPrice);
                             if (
                               String(item.itemType).toUpperCase() ===
                               'DISCOUNT_PERCENTAGE'
@@ -594,7 +595,7 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                                   (sum, i) =>
                                     sum +
                                     (Number(i.total) ||
-                                      i.quantity * Number(i.unitPrice)),
+                                      Number(i.quantity) * Number(i.unitPrice)),
                                   0
                                 );
                               displayTotal =

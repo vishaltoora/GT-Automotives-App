@@ -11,6 +11,10 @@ export class SmsService {
   private readonly fromNumber!: string;
   private readonly enabled: boolean;
 
+  // Single source of truth for the shop address used in SMS footers
+  private readonly shopAddress =
+    'GT Automotives\n473 3rd Ave, Prince George, BC V2L 3C1';
+
   constructor(private readonly prisma: PrismaService) {
     this.enabled = process.env.SMS_ENABLED === 'true';
 
@@ -26,7 +30,9 @@ export class SmsService {
 
         const fromNumber = process.env.TELNYX_PHONE_NUMBER;
         if (!fromNumber) {
-          this.logger.error('TELNYX_PHONE_NUMBER is not set - SMS will be disabled');
+          this.logger.error(
+            'TELNYX_PHONE_NUMBER is not set - SMS will be disabled'
+          );
           (this as any).enabled = false;
           return;
         }
@@ -40,7 +46,10 @@ export class SmsService {
         this.logger.log('SMS Service initialized successfully with Telnyx');
         this.logger.log(`From number: ${this.fromNumber}`);
       } catch (error) {
-        this.logger.error('Failed to initialize Telnyx SDK - SMS will be disabled:', error);
+        this.logger.error(
+          'Failed to initialize Telnyx SDK - SMS will be disabled:',
+          error
+        );
         (this as any).enabled = false;
       }
     } else {
@@ -84,11 +93,19 @@ export class SmsService {
     customerId?: string;
     userId?: string;
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    this.logger.log(`[SMS] sendSms called - enabled: ${this.enabled}, to: ${params.to}, type: ${params.type}`);
+    this.logger.log(
+      `[SMS] sendSms called - enabled: ${this.enabled}, to: ${params.to}, type: ${params.type}`
+    );
 
     if (!this.enabled) {
-      this.logger.warn('[SMS] SMS Service is DISABLED. Set SMS_ENABLED=true to enable.');
-      this.logger.warn('[SMS] Would send:', { to: params.to, type: params.type, appointmentId: params.appointmentId });
+      this.logger.warn(
+        '[SMS] SMS Service is DISABLED. Set SMS_ENABLED=true to enable.'
+      );
+      this.logger.warn('[SMS] Would send:', {
+        to: params.to,
+        type: params.type,
+        appointmentId: params.appointmentId,
+      });
       return { success: false, error: 'SMS service is disabled' };
     }
 
@@ -96,13 +113,19 @@ export class SmsService {
     const formattedPhone = this.formatPhoneNumber(params.to);
     if (!formattedPhone) {
       this.logger.error(`Invalid phone number format: ${params.to}`);
-      return { success: false, error: 'Invalid phone number format. Please use format: +1XXXXXXXXXX or XXXXXXXXXX' };
+      return {
+        success: false,
+        error:
+          'Invalid phone number format. Please use format: +1XXXXXXXXXX or XXXXXXXXXX',
+      };
     }
 
     // Validate phone number format (E.164)
     const phoneRegex = /^\+1\d{10}$/;
     if (!phoneRegex.test(formattedPhone)) {
-      this.logger.error(`Invalid phone number format after formatting: ${formattedPhone}`);
+      this.logger.error(
+        `Invalid phone number format after formatting: ${formattedPhone}`
+      );
       return { success: false, error: 'Invalid phone number format' };
     }
 
@@ -119,13 +142,28 @@ export class SmsService {
 
       // Check specific customer preferences
       if (params.type === 'PROMOTIONAL' && !prefs.promotional) {
-        return { success: false, error: 'Customer opted out of promotional messages' };
+        return {
+          success: false,
+          error: 'Customer opted out of promotional messages',
+        };
       }
-      if (params.type === 'APPOINTMENT_REMINDER' && !prefs.appointmentReminders) {
-        return { success: false, error: 'Customer opted out of appointment reminders' };
+      if (
+        params.type === 'APPOINTMENT_REMINDER' &&
+        !prefs.appointmentReminders
+      ) {
+        return {
+          success: false,
+          error: 'Customer opted out of appointment reminders',
+        };
       }
-      if (['SERVICE_STATUS', 'SERVICE_COMPLETE'].includes(params.type) && !prefs.serviceUpdates) {
-        return { success: false, error: 'Customer opted out of service updates' };
+      if (
+        ['SERVICE_STATUS', 'SERVICE_COMPLETE'].includes(params.type) &&
+        !prefs.serviceUpdates
+      ) {
+        return {
+          success: false,
+          error: 'Customer opted out of service updates',
+        };
       }
     }
 
@@ -141,11 +179,23 @@ export class SmsService {
       }
 
       // Check specific staff/admin preferences
-      if (params.type === 'STAFF_APPOINTMENT_ALERT' && !prefs.appointmentAlerts) {
-        return { success: false, error: 'User opted out of appointment alerts' };
+      if (
+        params.type === 'STAFF_APPOINTMENT_ALERT' &&
+        !prefs.appointmentAlerts
+      ) {
+        return {
+          success: false,
+          error: 'User opted out of appointment alerts',
+        };
       }
-      if (params.type === 'STAFF_SCHEDULE_REMINDER' && !prefs.scheduleReminders) {
-        return { success: false, error: 'User opted out of schedule reminders' };
+      if (
+        params.type === 'STAFF_SCHEDULE_REMINDER' &&
+        !prefs.scheduleReminders
+      ) {
+        return {
+          success: false,
+          error: 'User opted out of schedule reminders',
+        };
       }
       if (params.type === 'ADMIN_DAILY_SUMMARY' && !prefs.dailySummary) {
         return { success: false, error: 'User opted out of daily summaries' };
@@ -191,9 +241,9 @@ export class SmsService {
 
       this.logger.log(`SMS sent successfully: ${response.data.id}`);
       return { success: true, messageId: response.data.id };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`Failed to send SMS: ${errorMessage}`, errorStack);
 
@@ -229,7 +279,9 @@ export class SmsService {
    * Send appointment confirmation to customer (immediately after booking)
    */
   async sendAppointmentConfirmation(appointmentId: string): Promise<void> {
-    this.logger.log(`[SMS] sendAppointmentConfirmation called for appointment: ${appointmentId}`);
+    this.logger.log(
+      `[SMS] sendAppointmentConfirmation called for appointment: ${appointmentId}`
+    );
     this.logger.log(`[SMS] SMS Service enabled: ${this.enabled}`);
 
     const appointment = await this.prisma.appointment.findUnique({
@@ -246,20 +298,44 @@ export class SmsService {
     }
 
     if (!appointment.customer.phone) {
-      this.logger.warn(`[SMS] Customer ${appointment.customer.id} (${appointment.customer.firstName} ${appointment.customer.lastName}) has no phone number. Skipping SMS.`);
+      this.logger.warn(
+        `[SMS] Customer ${appointment.customer.id} (${appointment.customer.firstName} ${appointment.customer.lastName}) has no phone number. Skipping SMS.`
+      );
       return;
     }
 
-    this.logger.log(`[SMS] Sending confirmation to: ${appointment.customer.phone}`);
+    this.logger.log(
+      `[SMS] Sending confirmation to: ${appointment.customer.phone}`
+    );
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
 
     // CRITICAL: Format date from business date string directly to avoid timezone issues
     // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const weekdayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
 
     const [year, month, day] = businessDate.split('-').map(Number);
     const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
@@ -278,7 +354,9 @@ export class SmsService {
     });
 
     const serviceType = appointment.serviceType || 'service';
-    const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const vehicle = `${appointment.vehicle?.year || ''} ${
+      appointment.vehicle?.make || ''
+    } ${appointment.vehicle?.model || ''}`.trim();
     const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
     const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
 
@@ -290,7 +368,8 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
-    message += `Have a great day!`;
+    message += `Have a great day!\n\n`;
+    message += this.shopAddress;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -305,7 +384,9 @@ export class SmsService {
    * Send appointment cancellation notification to customer
    */
   async sendAppointmentCancellation(appointmentId: string): Promise<void> {
-    this.logger.log(`📱 sendAppointmentCancellation called for appointment: ${appointmentId}`);
+    this.logger.log(
+      `📱 sendAppointmentCancellation called for appointment: ${appointmentId}`
+    );
 
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -321,20 +402,44 @@ export class SmsService {
     }
 
     if (!appointment.customer.phone) {
-      this.logger.warn(`❌ Customer ${appointment.customer.firstName} ${appointment.customer.lastName} has no phone number`);
+      this.logger.warn(
+        `❌ Customer ${appointment.customer.firstName} ${appointment.customer.lastName} has no phone number`
+      );
       return;
     }
 
-    this.logger.log(`✅ Sending cancellation SMS to ${appointment.customer.phone}`);
+    this.logger.log(
+      `✅ Sending cancellation SMS to ${appointment.customer.phone}`
+    );
 
     // Format date correctly using timezone-aware utility
     const businessDate = extractBusinessDate(appointment.scheduledDate);
 
     // CRITICAL: Format date from business date string directly to avoid timezone issues
     // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const weekdayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
 
     const [year, month, day] = businessDate.split('-').map(Number);
     const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
@@ -353,7 +458,9 @@ export class SmsService {
     });
 
     const serviceType = appointment.serviceType || 'service';
-    const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const vehicle = `${appointment.vehicle?.year || ''} ${
+      appointment.vehicle?.make || ''
+    } ${appointment.vehicle?.model || ''}`.trim();
     const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
     const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
 
@@ -365,8 +472,7 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
-    message += `Have a great day!\n\n`;
-    message += `GT Automotives\n473 3rd Ave, Prince George, BC V2L 3C1`;
+    message += `Have a great day!`;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -381,7 +487,9 @@ export class SmsService {
    * Send appointment update notification to customer (when date/time changes)
    */
   async sendAppointmentUpdate(appointmentId: string): Promise<void> {
-    this.logger.log(`📱 sendAppointmentUpdate called for appointment: ${appointmentId}`);
+    this.logger.log(
+      `📱 sendAppointmentUpdate called for appointment: ${appointmentId}`
+    );
 
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -397,7 +505,9 @@ export class SmsService {
     }
 
     if (!appointment.customer.phone) {
-      this.logger.warn(`❌ Customer ${appointment.customer.firstName} ${appointment.customer.lastName} has no phone number`);
+      this.logger.warn(
+        `❌ Customer ${appointment.customer.firstName} ${appointment.customer.lastName} has no phone number`
+      );
       return;
     }
 
@@ -407,9 +517,29 @@ export class SmsService {
     const businessDate = extractBusinessDate(appointment.scheduledDate);
 
     // CRITICAL: Format date from business date string directly to avoid timezone issues
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const weekdayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
 
     const [year, month, day] = businessDate.split('-').map(Number);
     const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
@@ -428,7 +558,9 @@ export class SmsService {
     });
 
     const serviceType = appointment.serviceType || 'service';
-    const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const vehicle = `${appointment.vehicle?.year || ''} ${
+      appointment.vehicle?.make || ''
+    } ${appointment.vehicle?.model || ''}`.trim();
     const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
     const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
 
@@ -440,7 +572,7 @@ export class SmsService {
       message += `Vehicle: ${vehicle}\n`;
     }
     message += `\nQuestions? Call/text at ${contactPhone}\n\n`;
-    message += `GT Automotives\n473 3rd Ave, Prince George, BC V2L 3C1`;
+    message += this.shopAddress;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -454,7 +586,10 @@ export class SmsService {
   /**
    * Send appointment reminder to customer
    */
-  async sendAppointmentReminder(appointmentId: string, daysAhead: number): Promise<void> {
+  async sendAppointmentReminder(
+    appointmentId: string,
+    daysAhead: number
+  ): Promise<void> {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
@@ -472,9 +607,29 @@ export class SmsService {
 
     // CRITICAL: Format date from business date string directly to avoid timezone issues
     // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const weekdayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
 
     const [year, month, day] = businessDate.split('-').map(Number);
     const dateForWeekday = new Date(Date.UTC(year, month - 1, day));
@@ -493,7 +648,9 @@ export class SmsService {
     });
 
     const serviceType = appointment.serviceType || 'service';
-    const vehicle = `${appointment.vehicle?.year || ''} ${appointment.vehicle?.make || ''} ${appointment.vehicle?.model || ''}`.trim();
+    const vehicle = `${appointment.vehicle?.year || ''} ${
+      appointment.vehicle?.make || ''
+    } ${appointment.vehicle?.model || ''}`.trim();
     const isMobileService = appointment.appointmentType === 'MOBILE_SERVICE';
     const contactPhone = isMobileService ? '(250) 570-2333' : '(250) 986-9191';
 
@@ -512,7 +669,7 @@ export class SmsService {
     }
     message += `\nTo reschedule, call/text at ${contactPhone}\n\n`;
     message += `Have a great day!\n\n`;
-    message += `GT Automotives\n473 3rd Ave, Prince George, BC V2L 3C1`;
+    message += this.shopAddress;
 
     await this.sendSms({
       to: appointment.customer.phone,
@@ -526,7 +683,10 @@ export class SmsService {
   /**
    * Send staff appointment alert (when new appointment is assigned)
    */
-  async sendStaffAppointmentAlert(appointmentId: string, staffId: string): Promise<void> {
+  async sendStaffAppointmentAlert(
+    appointmentId: string,
+    staffId: string
+  ): Promise<void> {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
@@ -548,8 +708,20 @@ export class SmsService {
 
     // CRITICAL: Format date from business date string directly to avoid timezone issues
     // Creating a Date object causes UTC conversion which shifts dates after 5 PM PST
-    const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNamesShort = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const weekdayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const [year, month, day] = businessDate.split('-').map(Number);
@@ -578,7 +750,8 @@ export class SmsService {
       ? `Hi ${staffName}! New mobile service assigned to you!\n\n`
       : `Hi ${staffName}! New service assigned to you!\n\n`;
 
-    message += `Service: ${serviceType}\n` +
+    message +=
+      `Service: ${serviceType}\n` +
       `Customer: ${customerName}\n` +
       `Date: ${formattedDate} at ${time}\n`;
 
@@ -601,7 +774,10 @@ export class SmsService {
   /**
    * Send daily schedule reminder to staff
    */
-  async sendStaffScheduleReminder(staffId: string, appointmentIds: string[]): Promise<void> {
+  async sendStaffScheduleReminder(
+    staffId: string,
+    appointmentIds: string[]
+  ): Promise<void> {
     const staff = await this.prisma.user.findUnique({
       where: { id: staffId },
     });
@@ -622,10 +798,14 @@ export class SmsService {
 
     appointments.forEach((apt, index) => {
       const customerName = `${apt.customer.firstName} ${apt.customer.lastName}`;
-      message += `${index + 1}. ${apt.scheduledTime} - ${apt.serviceType} (${customerName})\n`;
+      message += `${index + 1}. ${apt.scheduledTime} - ${
+        apt.serviceType
+      } (${customerName})\n`;
     });
 
-    message += `\nTotal: ${appointments.length} appointment${appointments.length > 1 ? 's' : ''}\n\n`;
+    message += `\nTotal: ${appointments.length} appointment${
+      appointments.length > 1 ? 's' : ''
+    }\n\n`;
     message += `GT Automotives`;
 
     await this.sendSms({
@@ -639,12 +819,15 @@ export class SmsService {
   /**
    * Send admin daily summary (end of day)
    */
-  async sendAdminDailySummary(adminId: string, summary: {
-    appointmentsCompleted: number;
-    appointmentsCancelled: number;
-    revenue: number;
-    pendingPayments: number;
-  }): Promise<void> {
+  async sendAdminDailySummary(
+    adminId: string,
+    summary: {
+      appointmentsCompleted: number;
+      appointmentsCancelled: number;
+      revenue: number;
+      pendingPayments: number;
+    }
+  ): Promise<void> {
     const admin = await this.prisma.user.findUnique({
       where: { id: adminId },
     });
@@ -653,7 +836,12 @@ export class SmsService {
       return;
     }
 
-    const message = `Daily Summary - ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}\n\n` +
+    const message =
+      `Daily Summary - ${new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      })}\n\n` +
       `✅ Completed: ${summary.appointmentsCompleted}\n` +
       `❌ Cancelled: ${summary.appointmentsCancelled}\n` +
       `💰 Revenue: $${summary.revenue.toFixed(2)}\n` +
@@ -756,7 +944,10 @@ export class SmsService {
 
     if (eligibleAdmins.length === 0) {
       this.logger.warn('No admin users opted in for EOD summary');
-      return { success: false, message: 'No admin users opted in for EOD summary' };
+      return {
+        success: false,
+        message: 'No admin users opted in for EOD summary',
+      };
     }
 
     // Format payment methods helper
@@ -771,7 +962,10 @@ export class SmsService {
 
       return Object.entries(methods)
         .filter(([_, amount]) => amount > 0)
-        .map(([method, amount]) => `${methodLabels[method] || method}: $${amount.toFixed(2)}`)
+        .map(
+          ([method, amount]) =>
+            `${methodLabels[method] || method}: $${amount.toFixed(2)}`
+        )
         .join('\n');
     };
 
@@ -784,8 +978,12 @@ export class SmsService {
     });
 
     // Build EOD message
-    const atGarageBreakdown = formatPaymentMethods(data.atGaragePaymentsByMethod);
-    const mobileServiceBreakdown = formatPaymentMethods(data.mobileServicePaymentsByMethod);
+    const atGarageBreakdown = formatPaymentMethods(
+      data.atGaragePaymentsByMethod
+    );
+    const mobileServiceBreakdown = formatPaymentMethods(
+      data.mobileServicePaymentsByMethod
+    );
 
     // Helper function to build message for each admin
     const buildMessage = (adminName: string) => {
@@ -836,12 +1034,16 @@ export class SmsService {
     message += `\n\nGT Automotives`;
 
     // Send SMS to each eligible admin
-    this.logger.log(`Sending EOD summary to ${eligibleAdmins.length} admin users`);
+    this.logger.log(
+      `Sending EOD summary to ${eligibleAdmins.length} admin users`
+    );
 
     const results = await Promise.all(
       eligibleAdmins.map(async (admin) => {
         try {
-          this.logger.log(`Attempting to send EOD SMS to admin ${admin.id} (${admin.email}) at phone ${admin.phone}`);
+          this.logger.log(
+            `Attempting to send EOD SMS to admin ${admin.id} (${admin.email}) at phone ${admin.phone}`
+          );
 
           // Build personalized message with admin's first name
           const adminName = admin.firstName || admin.email.split('@')[0];
@@ -855,15 +1057,27 @@ export class SmsService {
           });
 
           if (result.success) {
-            this.logger.log(`EOD SMS sent successfully to admin ${admin.id}, messageId: ${result.messageId}`);
-            return { userId: admin.id, success: true, messageId: result.messageId };
+            this.logger.log(
+              `EOD SMS sent successfully to admin ${admin.id}, messageId: ${result.messageId}`
+            );
+            return {
+              userId: admin.id,
+              success: true,
+              messageId: result.messageId,
+            };
           } else {
-            this.logger.error(`EOD SMS failed for admin ${admin.id}: ${result.error}`);
+            this.logger.error(
+              `EOD SMS failed for admin ${admin.id}: ${result.error}`
+            );
             return { userId: admin.id, success: false, error: result.error };
           }
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          this.logger.error(`Exception sending EOD summary to admin ${admin.id}:`, error);
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          this.logger.error(
+            `Exception sending EOD summary to admin ${admin.id}:`,
+            error
+          );
           return { userId: admin.id, success: false, error: errorMessage };
         }
       })

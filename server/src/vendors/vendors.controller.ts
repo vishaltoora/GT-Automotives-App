@@ -11,7 +11,12 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { VendorsService } from './vendors.service';
-import { CreateVendorDto, UpdateVendorDto, VendorResponseDto, VendorSearchDto } from '@gt-automotive/data';
+import {
+  CreateVendorDto,
+  UpdateVendorDto,
+  VendorResponseDto,
+  VendorSearchDto,
+} from '@gt-automotive/data';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -22,18 +27,18 @@ export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
   @Post()
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async create(
-    @Body(ValidationPipe) createVendorDto: CreateVendorDto,
+    @Body(ValidationPipe) createVendorDto: CreateVendorDto
   ): Promise<VendorResponseDto> {
     return this.vendorsService.create(createVendorDto);
   }
 
   @Get()
-  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findAll(
     @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query('limit') limit?: string
   ): Promise<{
     data: VendorResponseDto[];
     total: number;
@@ -46,9 +51,9 @@ export class VendorsController {
   }
 
   @Get('search')
-  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async search(
-    @Query(ValidationPipe) searchDto: VendorSearchDto,
+    @Query(ValidationPipe) searchDto: VendorSearchDto
   ): Promise<VendorResponseDto[]> {
     const query = searchDto.query || '';
     const limit = searchDto.limit ? parseInt(searchDto.limit, 10) : 10;
@@ -56,28 +61,28 @@ export class VendorsController {
   }
 
   @Get('active')
-  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findActive(): Promise<VendorResponseDto[]> {
     return this.vendorsService.findActive();
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   async findOne(@Param('id') id: string): Promise<VendorResponseDto> {
     return this.vendorsService.findOne(id);
   }
 
   @Put(':id')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async update(
     @Param('id') id: string,
-    @Body(ValidationPipe) updateVendorDto: UpdateVendorDto,
+    @Body(ValidationPipe) updateVendorDto: UpdateVendorDto
   ): Promise<VendorResponseDto> {
     return this.vendorsService.update(id, updateVendorDto);
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async remove(@Param('id') id: string): Promise<VendorResponseDto> {
     return this.vendorsService.remove(id);
   }
