@@ -23,7 +23,7 @@ export class QuotationsController {
   constructor(private readonly quotationsService: QuotationsService) {}
 
   @Post()
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   create(@Body() createQuoteDto: CreateQuoteDto, @Request() req: any) {
     const userId = req.user?.sub || req.user?.id || 'system';
     console.log('=== QUOTATION CREATE REQUEST ===');
@@ -37,19 +37,19 @@ export class QuotationsController {
   }
 
   @Get()
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   findAll() {
     return this.quotationsService.findAll();
   }
 
   @Get('search')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   search(
     @Query('customerName') customerName?: string,
     @Query('quotationNumber') quotationNumber?: string,
     @Query('status') status?: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('endDate') endDate?: string
   ) {
     return this.quotationsService.search({
       customerName,
@@ -61,39 +61,48 @@ export class QuotationsController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   findOne(@Param('id') id: string) {
     return this.quotationsService.findOne(id);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   update(@Param('id') id: string, @Body() updateQuoteDto: UpdateQuoteDto) {
     return this.quotationsService.update(id, updateQuoteDto);
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   remove(@Param('id') id: string) {
     return this.quotationsService.remove(id);
   }
 
   @Post(':id/send-email')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   sendEmail(
     @Param('id') id: string,
     @Body() body: { email?: string; saveToQuote?: boolean },
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
-    return this.quotationsService.sendQuotationEmail(id, user.id, body.email, body.saveToQuote);
+    return this.quotationsService.sendQuotationEmail(
+      id,
+      user.id,
+      body.email,
+      body.saveToQuote
+    );
   }
 
   @Post(':id/convert')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   convertToInvoice(
     @Param('id') id: string,
     @Body() body: { customerId: string; vehicleId?: string }
   ) {
-    return this.quotationsService.convertToInvoice(id, body.customerId, body.vehicleId);
+    return this.quotationsService.convertToInvoice(
+      id,
+      body.customerId,
+      body.vehicleId
+    );
   }
 }

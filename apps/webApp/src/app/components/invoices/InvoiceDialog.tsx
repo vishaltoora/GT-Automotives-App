@@ -110,7 +110,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   };
 
   const calculateItemTotal = (item: InvoiceItem) => {
-    const baseTotal = item.quantity * item.unitPrice;
+    const baseTotal = Number(item.quantity) * item.unitPrice;
 
     // For DISCOUNT items (fixed amount), the total must always reduce the
     // invoice. unitPrice may be stored negative (manual) or positive
@@ -131,7 +131,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             i.itemType !== InvoiceItemType.DISCOUNT &&
             i.itemType !== InvoiceItemType.DISCOUNT_PERCENTAGE
         )
-        .reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+        .reduce((sum, i) => sum + Number(i.quantity) * i.unitPrice, 0);
       const percentageDiscount = (otherItemsSubtotal * item.unitPrice) / 100;
       return {
         subtotal: baseTotal,
@@ -253,7 +253,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       const populatedItems = invoiceData.items.map((item: any) => ({
         itemType: item.itemType,
         description: item.description,
-        quantity: item.quantity,
+        quantity: Number(item.quantity),
         unitPrice: item.unitPrice,
         tireId: item.tireId || undefined,
         discountType: item.discountType || 'amount',
@@ -353,7 +353,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       const invoiceItems: InvoiceItem[] = quotation.items.map((item) => ({
         itemType: item.itemType as InvoiceItemType,
         description: item.description,
-        quantity: item.quantity,
+        quantity: Number(item.quantity),
         unitPrice: item.unitPrice,
         tireId: item.tireId,
         tireName: item.tireName,

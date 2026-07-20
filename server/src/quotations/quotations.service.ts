@@ -50,7 +50,7 @@ export class QuotationsService {
       // Calculate totals
       let subtotal = 0;
       const processedItems = items.map((item) => {
-        const total = item.quantity * item.unitPrice;
+        const total = Number(item.quantity) * item.unitPrice;
         subtotal += total;
         return {
           ...item,
@@ -153,7 +153,7 @@ export class QuotationsService {
       // Calculate new totals
       let subtotal = 0;
       const processedItems = items.map((item) => {
-        const total = item.quantity * item.unitPrice;
+        const total = Number(item.quantity) * item.unitPrice;
         subtotal += total;
         return {
           ...item,

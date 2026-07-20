@@ -12,14 +12,12 @@ import { colors } from '../../theme/colors';
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 const SignIn = publishableKey ? ClerkSignIn : MockSignIn;
 
-
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, role, user, isLoading } = useAuth();
 
   useEffect(() => {
-
     // Add a small delay to avoid redirect loops during authentication state changes
     const timeoutId = setTimeout(() => {
       // Only redirect if authenticated AND has a synced user with role
@@ -32,16 +30,29 @@ export function Login() {
         let redirectPath = '/';
         switch (role) {
           case 'admin':
-            redirectPath = from?.startsWith('/admin') ? from : '/admin/dashboard';
+            redirectPath = from?.startsWith('/admin')
+              ? from
+              : '/admin/dashboard';
+            break;
+          case 'foreman':
+            redirectPath = from?.startsWith('/foreman')
+              ? from
+              : '/foreman/dashboard';
             break;
           case 'accountant':
-            redirectPath = from?.startsWith('/accountant') ? from : '/accountant/dashboard';
+            redirectPath = from?.startsWith('/accountant')
+              ? from
+              : '/accountant/dashboard';
             break;
           case 'supervisor':
-            redirectPath = from?.startsWith('/supervisor') ? from : '/supervisor/dashboard';
+            redirectPath = from?.startsWith('/supervisor')
+              ? from
+              : '/supervisor/dashboard';
             break;
           case 'staff':
-            redirectPath = from?.startsWith('/staff') ? from : '/staff/dashboard';
+            redirectPath = from?.startsWith('/staff')
+              ? from
+              : '/staff/dashboard';
             break;
           // Customer portal disabled — send customers to the public site.
           case 'customer':
@@ -61,6 +72,8 @@ export function Login() {
     const roleDisplayName =
       role === 'admin'
         ? 'Admin Panel'
+        : role === 'foreman'
+        ? 'Foreman Dashboard'
         : role === 'accountant'
         ? 'Accountant Dashboard'
         : role === 'supervisor'

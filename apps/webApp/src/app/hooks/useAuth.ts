@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useUser as useClerkUser, useAuth as useClerkAuthHook, useClerk } from '@clerk/clerk-react';
-import { useUser as useMockUser, useAuth as useMockAuth } from '../providers/MockClerkProvider';
+import {
+  useUser as useClerkUser,
+  useAuth as useClerkAuthHook,
+  useClerk,
+} from '@clerk/clerk-react';
+import {
+  useUser as useMockUser,
+  useAuth as useMockAuth,
+} from '../providers/MockClerkProvider';
 // Conditionally use Clerk or Mock hooks based on environment
 // Use direct import.meta.env access like ClerkProvider for consistency
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
@@ -27,12 +34,12 @@ interface AppUser {
 export function useAuth() {
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Use Clerk hooks
   const { user: clerkUser, isLoaded, isSignedIn } = useUser();
   const { getToken } = useClerkAuth();
   const clerk = publishableKey ? useClerk() : null;
-  
+
   // Development mode bypass - for testing without backend
   const isDevelopment = false; // Set to false to enable Clerk authentication
 
@@ -42,7 +49,7 @@ export function useAuth() {
       if (isDevelopment) {
         // Store mock token for API requests
         localStorage.setItem('authToken', 'mock-jwt-token-development');
-        
+
         // Simulate a logged-in admin user for development
         const mockUser: AppUser = {
           id: 'dev-user-1',
@@ -51,35 +58,35 @@ export function useAuth() {
           lastName: 'Admin',
           role: {
             id: 1,
-            name: 'admin'
+            name: 'admin',
           },
-          isActive: true
+          isActive: true,
         };
         setAppUser(mockUser);
         setLoading(false);
         return;
       }
-      
+
       if (!isLoaded) {
         setLoading(true);
         return;
       }
-      
+
       if (isSignedIn && clerkUser) {
         try {
           setLoading(true);
           const token = await getToken();
-          
+
           if (!token) {
             // User is signed in with Clerk but no token yet
             // This happens on first sign-in before backend sync
             setLoading(false);
             return;
           }
-          
+
           // Store token in localStorage for services to use
           localStorage.setItem('authToken', token);
-          
+
           // First check if user exists in our database
           const response = await axios.get(`${API_URL}/api/auth/me`, {
             headers: {
@@ -92,7 +99,10 @@ export function useAuth() {
           // The proper sync should happen via Clerk webhook
           const userEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
 
-          if (error.response?.status === 404 || error.response?.status === 401) {
+          if (
+            error.response?.status === 404 ||
+            error.response?.status === 401
+          ) {
             // Check if this is Vishal's account
             if (userEmail === 'vishal.alawalpuria@gmail.com') {
               // This is Vishal - should be admin
@@ -102,9 +112,12 @@ export function useAuth() {
                 firstName: clerkUser.firstName || 'Vishal',
                 lastName: clerkUser.lastName || 'Toora',
                 role: { id: 1, name: 'admin' }, // Admin role
-                isActive: true
+                isActive: true,
               });
-            } else if (userEmail.endsWith('@gtautomotive.com') || userEmail === 'staff@example.com') {
+            } else if (
+              userEmail.endsWith('@gtautomotive.com') ||
+              userEmail === 'staff@example.com'
+            ) {
               // Staff users - company email or test staff account
               setAppUser({
                 id: clerkUser.id,
@@ -112,7 +125,7 @@ export function useAuth() {
                 firstName: clerkUser.firstName || 'Staff',
                 lastName: clerkUser.lastName || 'Member',
                 role: { id: 2, name: 'staff' }, // Staff role
-                isActive: true
+                isActive: true,
               });
             } else {
               // Default to customer role for other users
@@ -122,7 +135,7 @@ export function useAuth() {
                 firstName: clerkUser.firstName || 'User',
                 lastName: clerkUser.lastName || '',
                 role: { id: 3, name: 'customer' }, // Default to customer role
-                isActive: true
+                isActive: true,
               });
             }
           } else {
@@ -134,7 +147,7 @@ export function useAuth() {
               firstName: clerkUser.firstName || 'User',
               lastName: clerkUser.lastName || '',
               role: { id: 3, name: 'customer' }, // Default to customer role
-              isActive: true
+              isActive: true,
             });
           }
         } finally {
@@ -177,9 +190,11 @@ export function useAuth() {
   // Don't mark as finished loading until we have either:
   // 1. User data loaded OR
   // 2. Determined user is not authenticated
-  const isStillLoading = loading || (!isDevelopment && !isLoaded) || 
+  const isStillLoading =
+    loading ||
+    (!isDevelopment && !isLoaded) ||
     (isSignedIn && clerkUser && !appUser && !isDevelopment);
-  
+
   return {
     user: appUser,
     clerkUser,
@@ -187,6 +202,7 @@ export function useAuth() {
     isLoading: isStillLoading,
     role: userRole,
     isAdmin: userRole === 'admin',
+    isForeman: userRole === 'foreman',
     isAccountant: userRole === 'accountant',
     isSupervisor: userRole === 'supervisor',
     isStaff: userRole === 'staff',

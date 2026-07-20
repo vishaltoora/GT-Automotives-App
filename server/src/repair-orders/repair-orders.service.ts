@@ -8,6 +8,7 @@ import { PrismaService } from '@gt-automotive/database';
 import { AzureBlobService } from '../common/services/azure-blob.service';
 import { ROStatus } from '@prisma/client';
 import { InspectionsService } from '../inspections/inspections.service';
+import { QuotationsService } from '../quotations/quotations.service';
 import { buildAdjustmentItems } from '../invoices/invoice-adjustments';
 import {
   CreateRepairOrderDto,
@@ -72,7 +73,8 @@ export class RepairOrdersService {
   constructor(
     private prisma: PrismaService,
     private azureBlob: AzureBlobService,
-    private inspectionsService: InspectionsService
+    private inspectionsService: InspectionsService,
+    private quotationsService: QuotationsService
   ) {}
 
   /**
@@ -283,7 +285,12 @@ export class RepairOrdersService {
   ): Promise<any> {
     await this.assertExists(id);
 
-    const data: any = { ...dto };
+    // employeeIds is not a column on RepairOrder — it drives the ROEmployee
+    // join table and is handled separately below.
+    const { employeeIds, ...rest } = dto as UpdateRepairOrderDto & {
+      employeeIds?: string[];
+    };
+    const data: any = { ...rest };
 
     // A vehicle and the "no vehicle" (loose tires) flag are mutually exclusive.
     if (dto.vehicleId) {
@@ -301,10 +308,28 @@ export class RepairOrdersService {
       data.closedAt = new Date();
     }
 
-    return this.prisma.repairOrder.update({
-      where: { id },
-      data,
-      include: this.roInclude,
+    return this.prisma.$transaction(async (tx) => {
+      // Reassign employees when employeeIds is provided (first = Lead, rest =
+      // Assistant). An empty array clears all assignments.
+      if (employeeIds) {
+        await tx.rOEmployee.deleteMany({ where: { repairOrderId: id } });
+        if (employeeIds.length) {
+          await tx.rOEmployee.createMany({
+            data: employeeIds.map((userId, index) => ({
+              repairOrderId: id,
+              userId,
+              role: index === 0 ? 'Lead' : 'Assistant',
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      return tx.repairOrder.update({
+        where: { id },
+        data,
+        include: this.roInclude,
+      });
     });
   }
 
@@ -323,6 +348,7 @@ export class RepairOrdersService {
         unitPrice: price,
         total: qty * price,
         technicianNotes: dto.technicianNotes,
+        isQuotation: dto.isQuotation ?? false,
       },
       include: {
         completedBy: { select: { id: true, firstName: true, lastName: true } },
@@ -369,6 +395,63 @@ export class RepairOrdersService {
     });
     if (!service) throw new NotFoundException('Service item not found');
     await this.prisma.rOService.delete({ where: { id: serviceId } });
+  }
+
+  // ---- Quotation from RO items ----
+
+  /**
+   * Build a customer quotation from the repair order's quotation-flagged items
+   * (isQuotation = true). These are items the customer still needs to decide on,
+   * so they are quoted rather than billed on the RO invoice. Delegates to
+   * QuotationsService so numbering, tax rules and customer linkage stay in one
+   * place. Returns the created quotation.
+   */
+  async createQuotationFromServices(
+    roId: string,
+    userId: string
+  ): Promise<any> {
+    const ro = await this.prisma.repairOrder.findUnique({
+      where: { id: roId },
+      include: {
+        customer: true,
+        vehicle: true,
+        services: { where: { isQuotation: true } },
+      },
+    });
+
+    if (!ro) throw new NotFoundException(`Repair order ${roId} not found`);
+    if (!ro.services.length) {
+      throw new BadRequestException(
+        'No items are flagged for quotation on this repair order'
+      );
+    }
+
+    const customerName = `${ro.customer.firstName ?? ''} ${
+      ro.customer.lastName ?? ''
+    }`.trim();
+
+    const items = ro.services.map((s: any) => ({
+      itemType: s.type === 'PART' ? 'PART' : 'SERVICE',
+      description: s.description,
+      quantity: Number(s.quantity),
+      unitPrice: Number(s.unitPrice),
+    }));
+
+    const dto: any = {
+      customerId: ro.customerId,
+      customerName: customerName || 'Customer',
+      businessName: ro.customer.businessName ?? undefined,
+      phone: ro.customer.phone ?? undefined,
+      email: ro.customer.email ?? undefined,
+      address: ro.customer.address ?? undefined,
+      vehicleMake: ro.vehicle?.make ?? undefined,
+      vehicleModel: ro.vehicle?.model ?? undefined,
+      vehicleYear: ro.vehicle?.year ?? undefined,
+      notes: `Generated from repair order ${ro.roNumber}`,
+      items,
+    };
+
+    return this.quotationsService.create(dto, userId);
   }
 
   // ---- Media ----
@@ -534,7 +617,9 @@ export class RepairOrdersService {
       where: { id },
       include: {
         customer: true,
-        services: { where: { status: 'COMPLETED' } },
+        // Quotation-flagged items are never billed on the RO invoice — they are
+        // moved to a separate quotation via createQuotationFromServices().
+        services: { where: { status: 'COMPLETED', isQuotation: false } },
         invoice: true,
         // Fetch all inspections (not just uninvoiced ones) so we can both find a
         // billable inspection AND detect one already linked to the existing invoice.

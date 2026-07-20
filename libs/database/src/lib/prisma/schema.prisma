@@ -304,7 +304,7 @@ model InvoiceItem {
   tireName    String?
   itemType    InvoiceItemType
   description String
-  quantity    Int
+  quantity    Decimal         @db.Decimal(10, 2)
   unitPrice   Decimal         @db.Decimal(10, 2)
   total       Decimal         @db.Decimal(10, 2)
   createdAt   DateTime        @default(now())
@@ -393,7 +393,7 @@ model QuotationItem {
   tireName    String?
   itemType    InvoiceItemType
   description String
-  quantity    Int
+  quantity    Decimal         @db.Decimal(10, 2)
   unitPrice   Decimal         @db.Decimal(10, 2)
   total       Decimal         @db.Decimal(10, 2)
   createdAt   DateTime        @default(now())
@@ -912,6 +912,7 @@ enum RoleName {
   STAFF
   SUPERVISOR
   ACCOUNTANT
+  FOREMAN
   ADMIN
 }
 
@@ -1405,6 +1406,7 @@ enum EmailType {
   SERVICE_COMPLETE
   PROMOTIONAL
   BOOKING_CONFIRMATION
+  INSPECTION_REPORT
 }
 
 model BookingRequest {
@@ -1591,6 +1593,10 @@ model ROService {
   total           Decimal         @default(0) @db.Decimal(10, 2)
   technicianNotes String?
   status          ROServiceStatus @default(PENDING)
+  // Customer's approve/decline decision for this line item (independent of work completion)
+  customerApproval ROServiceApproval @default(PENDING)
+  // When true, this item should be quoted (via a quotation) rather than billed on the RO invoice
+  isQuotation     Boolean         @default(false)
   completedById   String?
   completedAt     DateTime?
   createdAt       DateTime        @default(now())
@@ -1649,6 +1655,12 @@ enum ROServiceStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  DECLINED
+}
+
+enum ROServiceApproval {
+  PENDING
+  APPROVED
   DECLINED
 }
 

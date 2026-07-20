@@ -13,9 +13,10 @@ export class EmailController {
    */
   @Post('send-eod-summary')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async sendEODSummary(
-    @Body() data: {
+    @Body()
+    data: {
       date: string;
       totalPayments: number;
       totalOwed: number;
@@ -26,7 +27,7 @@ export class EmailController {
       mobileServicePayments: number;
       mobileServiceCount: number;
       mobileServicePaymentsByMethod: Record<string, number>;
-    },
+    }
   ) {
     const result = await this.emailService.sendEODSummary(data);
     return result;
@@ -37,9 +38,10 @@ export class EmailController {
    */
   @Post('send-employee-schedule')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async sendEmployeeSchedule(
-    @Body() data: {
+    @Body()
+    data: {
       employeeEmail: string;
       employeeName: string;
       date: string;
@@ -52,7 +54,7 @@ export class EmailController {
         duration: number;
         notes?: string;
       }>;
-    },
+    }
   ) {
     const result = await this.emailService.sendEmployeeDaySchedule(data);
     return result;

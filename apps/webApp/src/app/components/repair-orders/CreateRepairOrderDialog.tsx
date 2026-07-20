@@ -17,6 +17,8 @@ import { Build, Search, DirectionsCar } from '@mui/icons-material';
 import { vehicleService } from '../../requests/vehicle.requests';
 import { repairOrderRequests } from '../../requests/repair-order.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { userService, User } from '../../requests/user.requests';
+import { EmployeeChipSelector } from '../appointments/EmployeeChipSelector';
 
 const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/;
 const normalizeVin = (value: string) =>
@@ -49,6 +51,9 @@ export function CreateRepairOrderDialog({
   const [engineType, setEngineType] = useState('');
   const [decoding, setDecoding] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<User[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
 
   const vehicle = appointment?.vehicle ?? null;
   const customer = appointment?.customer ?? null;
@@ -62,6 +67,59 @@ export function CreateRepairOrderDialog({
       setEngineType(vehicle?.engineType ?? '');
     }
   }, [open, vehicle?.vin, vehicle?.engineType]);
+
+  // Load assignable employees and pre-select the ones already on the
+  // appointment so the user can confirm or change the RO's crew on creation.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      setEmployeesLoading(true);
+      try {
+        const allUsers = await userService.getUsers();
+        const assignable = allUsers.filter(
+          (user) =>
+            (user.role?.name === 'STAFF' ||
+              user.role?.name === 'ADMIN' ||
+              user.role?.name === 'SUPERVISOR' ||
+              user.role?.name === 'FOREMAN') &&
+            user.isActive
+        );
+        const uniqueUsers = assignable.filter(
+          (user, index, self) =>
+            index === self.findIndex((u) => u.id === user.id)
+        );
+        if (cancelled) return;
+        setEmployees(uniqueUsers);
+
+        // Pre-select from the appointment's assigned employees (new multi-assign
+        // shape, falling back to the legacy single employee).
+        const preIds: string[] =
+          appointment?.employees && appointment.employees.length > 0
+            ? appointment.employees.map((ae: any) => ae.employee.id)
+            : appointment?.employee
+            ? [appointment.employee.id]
+            : [];
+        setSelectedEmployees(uniqueUsers.filter((u) => preIds.includes(u.id)));
+      } catch (error) {
+        if (!cancelled) showApiError(error, 'Failed to load employees.');
+      } finally {
+        if (!cancelled) setEmployeesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, appointment?.id]);
+
+  const handleEmployeeToggle = (employee: User) => {
+    setSelectedEmployees((prev) =>
+      prev.some((e) => e.id === employee.id)
+        ? prev.filter((e) => e.id !== employee.id)
+        : [...prev, employee]
+    );
+  };
 
   const handleDecodeVin = async () => {
     const normalized = normalizeVin(vin);
@@ -107,12 +165,7 @@ export function CreateRepairOrderDialog({
         });
       }
 
-      const employeeIds: string[] =
-        appointment.employees && appointment.employees.length > 0
-          ? appointment.employees.map((ae: any) => ae.employee.id)
-          : appointment.employee
-          ? [appointment.employee.id]
-          : [];
+      const employeeIds: string[] = selectedEmployees.map((e) => e.id);
 
       const ro = await repairOrderRequests.create({
         appointmentId: appointment.id,
@@ -223,6 +276,19 @@ export function CreateRepairOrderDialog({
             />
           </Stack>
         )}
+
+        {/* Assign one or more employees to this repair order. Pre-filled from the
+            appointment's crew; can be confirmed or changed here. */}
+        <Box sx={{ mt: 3 }}>
+          <EmployeeChipSelector
+            employees={employees}
+            selectedEmployees={selectedEmployees}
+            availableSlots={[]}
+            scheduledTime=""
+            onEmployeeToggle={handleEmployeeToggle}
+            loading={employeesLoading}
+          />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>

@@ -30,21 +30,21 @@ export class InvoicesController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   create(@Body() createInvoiceDto: CreateInvoiceDto, @CurrentUser() user: any) {
     return this.invoicesService.create(createInvoiceDto, user.id);
   }
 
   @Get()
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   findAll(@CurrentUser() user: any) {
     return this.invoicesService.findAll(user);
   }
 
   @Get('search')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   search(
     @Query('customerName') customerName?: string,
     @Query('invoiceNumber') invoiceNumber?: string,
@@ -69,7 +69,7 @@ export class InvoicesController {
 
   @Get('cash-report')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   getDailyCashReport(@Query('date') date: string, @CurrentUser() user: any) {
     // Use business timezone date if no date provided
     const reportDate = date || getCurrentBusinessDate();
@@ -78,7 +78,7 @@ export class InvoicesController {
 
   @Get('customer/:customerId')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   getCustomerInvoices(
     @Param('customerId') customerId: string,
     @CurrentUser() user: any
@@ -88,7 +88,7 @@ export class InvoicesController {
 
   @Get('day-summary')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   getDaySummaryInvoices(@Query('date') date: string, @CurrentUser() user: any) {
     const reportDate = date || getCurrentBusinessDate();
     return this.invoicesService.getDaySummaryInvoices(reportDate, user);
@@ -96,7 +96,7 @@ export class InvoicesController {
 
   @Get('outstanding')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   getOutstandingInvoices(
     @Query('date') date: string,
     @CurrentUser() user: any
@@ -107,14 +107,14 @@ export class InvoicesController {
 
   @Get(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
     return this.invoicesService.findOne(id, user);
   }
 
   @Patch(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   update(
     @Param('id') id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
@@ -172,7 +172,7 @@ export class InvoicesController {
 
   @Post('combine')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   combineInvoices(
     @Body('customerId') customerId: string,
     @CurrentUser() user: any
@@ -182,7 +182,7 @@ export class InvoicesController {
 
   @Post(':id/send-email')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   sendEmail(
     @Param('id') id: string,
     @Body()
@@ -206,7 +206,7 @@ export class InvoicesController {
 
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.invoicesService.remove(id, user.id);
   }
@@ -214,21 +214,21 @@ export class InvoicesController {
   // Service endpoints
   @Get('services/all')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   getAllServices() {
     return this.invoicesService.getAllServices();
   }
 
   @Post('services')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   createService(@Body() createServiceDto: CreateServiceDto) {
     return this.invoicesService.createService(createServiceDto);
   }
 
   @Patch('services/:id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
   updateService(
     @Param('id') id: string,
     @Body() updateServiceDto: UpdateServiceDto
@@ -238,7 +238,7 @@ export class InvoicesController {
 
   @Delete('services/:id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   deleteService(@Param('id') id: string) {
     return this.invoicesService.deleteService(id);
   }

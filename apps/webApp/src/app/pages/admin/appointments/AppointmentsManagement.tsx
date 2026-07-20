@@ -1305,9 +1305,7 @@ export const AppointmentsManagement: React.FC = () => {
                                   if (apt) handleDelete(apt);
                                 }}
                                 onStatusChange={handleStatusChange}
-                                onCreateRepairOrder={
-                                  isStaff ? undefined : handleCreateRepairOrder
-                                }
+                                onCreateRepairOrder={handleCreateRepairOrder}
                                 onViewRepairOrder={handleViewRepairOrder}
                                 onPaymentComplete={() => {
                                   loadAppointments();
@@ -1989,11 +1987,7 @@ export const AppointmentsManagement: React.FC = () => {
                                   onEdit={handleEdit}
                                   onDelete={handleDeleteById}
                                   onStatusChange={handleStatusChange}
-                                  onCreateRepairOrder={
-                                    isStaff
-                                      ? undefined
-                                      : handleCreateRepairOrder
-                                  }
+                                  onCreateRepairOrder={handleCreateRepairOrder}
                                   onViewRepairOrder={handleViewRepairOrder}
                                   onPaymentComplete={() => {
                                     loadAppointments();
@@ -2031,7 +2025,7 @@ export const AppointmentsManagement: React.FC = () => {
           onEditAppointment={handleEdit as any}
           onDeleteAppointment={handleDeleteById}
           onStatusChange={handleStatusChange}
-          onCreateRepairOrder={isStaff ? undefined : handleCreateRepairOrder}
+          onCreateRepairOrder={handleCreateRepairOrder}
           onViewRepairOrder={handleViewRepairOrder}
           onAddAppointment={handleCreate}
           onRefresh={async () => {

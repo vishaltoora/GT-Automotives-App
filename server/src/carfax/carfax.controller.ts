@@ -7,7 +7,7 @@ import { CarfaxService } from './carfax.service';
 
 @Controller('carfax')
 @UseGuards(JwtAuthGuard, RoleGuard)
-@Roles('ADMIN')
+@Roles('ADMIN', 'FOREMAN')
 export class CarfaxController {
   constructor(
     private readonly carfaxService: CarfaxService,

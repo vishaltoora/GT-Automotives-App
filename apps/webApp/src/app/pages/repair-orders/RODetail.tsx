@@ -13,6 +13,7 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -39,8 +40,10 @@ import {
   DirectionsCar,
   Edit,
   LockOpen,
+  People as PeopleIcon,
   Print as PrintIcon,
   ReceiptLong,
+  RequestQuote,
   Save,
 } from '@mui/icons-material';
 import {
@@ -52,6 +55,8 @@ import { ServiceDrawer } from '../../components/repair-orders/ServiceDrawer';
 import { AddVehicleDialog } from '../../components/repair-orders/AddVehicleDialog';
 import { InspectVehicleDialog } from '../../components/repair-orders/InspectVehicleDialog';
 import { ROPhotoSection } from '../../components/repair-orders/ROPhotoSection';
+import { AssignEmployeesDialog } from '../../components/repair-orders/AssignEmployeesDialog';
+import { ROItemsList } from '../../components/repair-orders/ROItemsList';
 import { useAuth } from '../../hooks/useAuth';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { companyService, Company } from '../../requests/company.requests';
@@ -168,6 +173,32 @@ function CurrentTab({
   const [linkingVehicle, setLinkingVehicle] = useState(false);
   const [changingVehicle, setChangingVehicle] = useState(false);
   const [customerVehicles, setCustomerVehicles] = useState<Vehicle[]>([]);
+  const [assignEmployeesOpen, setAssignEmployeesOpen] = useState(false);
+  const [creatingQuotation, setCreatingQuotation] = useState(false);
+  const [createdQuotationId, setCreatedQuotationId] = useState<string | null>(
+    null
+  );
+
+  // Re-fetch the RO after item-level mutations so the detail view stays in sync.
+  const refetchRO = async () => {
+    const refreshed = await repairOrderRequests.getById(ro.id);
+    onROChange(refreshed);
+  };
+
+  const hasQuotationItems = ro.services?.some((s) => s.isQuotation) ?? false;
+
+  const handleCreateQuotation = async () => {
+    setCreatingQuotation(true);
+    try {
+      const quotation = await repairOrderRequests.createQuotation(ro.id);
+      await refetchRO();
+      setCreatedQuotationId(quotation?.id ?? null);
+    } catch (error) {
+      showApiError(error, 'Failed to create quotation from repair order.');
+    } finally {
+      setCreatingQuotation(false);
+    }
+  };
 
   // Hide the picker once a vehicle is linked OR the RO is marked no-vehicle
   // (loose tires), unless the user explicitly chose to change the vehicle.
@@ -450,34 +481,40 @@ function CurrentTab({
             flexWrap: 'wrap',
           }}
         >
-          <Chip
-            label={STATUS_META[ro.status].label}
-            color={STATUS_META[ro.status].color}
-            sx={{ fontWeight: 600 }}
-          />
-          {transitions.length > 0 && canEdit && (
-            <>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mx: 0.5 }}
+          {canEdit && transitions.length > 0 ? (
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel id="ro-status-label">Status</InputLabel>
+              <Select
+                labelId="ro-status-label"
+                label="Status"
+                value={ro.status}
+                disabled={savingStatus}
+                onChange={(e) => handleStatusChange(e.target.value as ROStatus)}
+                renderValue={(value) => (
+                  <Chip
+                    label={STATUS_META[value as ROStatus].label}
+                    color={STATUS_META[value as ROStatus].color}
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
               >
-                →
-              </Typography>
-              {transitions.map((s) => (
-                <Chip
-                  key={s}
-                  label={`Mark ${STATUS_META[s].label}`}
-                  size="small"
-                  variant="outlined"
-                  clickable
-                  disabled={savingStatus}
-                  onClick={() => handleStatusChange(s)}
-                  color={STATUS_META[s].color}
-                />
-              ))}
-            </>
+                {[ro.status, ...transitions].map((s) => (
+                  <MenuItem key={s} value={s}>
+                    {STATUS_META[s].label}
+                    {s === ro.status ? ' (current)' : ''}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ) : (
+            <Chip
+              label={STATUS_META[ro.status].label}
+              color={STATUS_META[ro.status].color}
+              sx={{ fontWeight: 600 }}
+            />
           )}
+          {savingStatus && <CircularProgress size={18} />}
           {canReopen && (
             <Chip
               label={reopening ? 'Reopening…' : 'Reopen RO'}
@@ -496,6 +533,161 @@ function CurrentTab({
           </Typography>
         </Box>
       </Paper>
+
+      {/* GA-42: Assigned Employees + Pre-Inspection cards */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <PeopleIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ flexGrow: 1 }}
+              >
+                Assigned Employees
+              </Typography>
+              {canEdit && (
+                <IconButton
+                  size="small"
+                  onClick={() => setAssignEmployeesOpen(true)}
+                  aria-label="Edit assigned employees"
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              )}
+            </Box>
+            {ro.employees?.length > 0 ? (
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {ro.employees.map((e) => (
+                  <Chip
+                    key={e.id}
+                    label={
+                      e.role
+                        ? `${e.user.firstName} ${e.user.lastName} · ${e.role}`
+                        : `${e.user.firstName} ${e.user.lastName}`
+                    }
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))}
+              </Stack>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.disabled"
+                sx={{ fontStyle: 'italic' }}
+              >
+                No employees assigned
+              </Typography>
+            )}
+          </Paper>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <InspectIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+              <Typography variant="subtitle2" color="text.secondary">
+                Pre-Inspection
+              </Typography>
+            </Box>
+            {ro.inspections?.length > 0 ? (
+              <Box>
+                <Typography variant="body1" fontWeight={600}>
+                  {ro.inspections[0].template?.name ?? 'Vehicle Inspection'}
+                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ mt: 1 }}
+                  flexWrap="wrap"
+                  useFlexGap
+                >
+                  <Chip
+                    label={ro.inspections[0].status}
+                    size="small"
+                    variant="outlined"
+                  />
+                  {ro.inspections[0].overallStatus && (
+                    <Chip
+                      label={ro.inspections[0].overallStatus}
+                      size="small"
+                      color={
+                        ro.inspections[0].overallStatus === 'PASS'
+                          ? 'success'
+                          : ro.inspections[0].overallStatus === 'FAIL'
+                          ? 'error'
+                          : 'default'
+                      }
+                    />
+                  )}
+                </Stack>
+                <Button
+                  size="small"
+                  startIcon={<InspectIcon fontSize="small" />}
+                  sx={{ mt: 1.5 }}
+                  onClick={() => {
+                    setViewInspectionId(ro.inspections[0].id);
+                    setInspectOpen(true);
+                  }}
+                >
+                  View
+                </Button>
+              </Box>
+            ) : (
+              <Box>
+                <Typography
+                  variant="body2"
+                  color="text.disabled"
+                  sx={{ fontStyle: 'italic', mb: 1.5 }}
+                >
+                  No inspection started
+                </Typography>
+                <Tooltip
+                  title={
+                    actionsEnabled
+                      ? 'Create a digital vehicle inspection linked to this RO'
+                      : actionDisabledReason
+                  }
+                >
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<InspectIcon fontSize="small" />}
+                      disabled={!actionsEnabled || !canEdit}
+                      onClick={() => {
+                        setViewInspectionId(undefined);
+                        setInspectOpen(true);
+                      }}
+                    >
+                      Start Inspection
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Customer & vehicle info */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -687,23 +879,6 @@ function CurrentTab({
               Appointment:{' '}
               {new Date(ro.appointment.scheduledDate).toLocaleDateString()} @{' '}
               {ro.appointment.scheduledTime} · {ro.appointment.serviceType}
-            </Typography>
-          </>
-        )}
-
-        {ro.employees?.length > 0 && (
-          <>
-            <Divider sx={{ my: 1.5 }} />
-            <Typography variant="body2" color="text.secondary">
-              Assigned:{' '}
-              {ro.employees
-                .map(
-                  (e) =>
-                    `${e.user.firstName} ${e.user.lastName}${
-                      e.role ? ` (${e.role})` : ''
-                    }`
-                )
-                .join(', ')}
             </Typography>
           </>
         )}
@@ -922,6 +1097,60 @@ function CurrentTab({
             {notes || (canEdit ? 'Tap to add technician notes…' : 'No notes')}
           </Typography>
         )}
+      </Paper>
+
+      {/* GA-43/GA-44: Service & part items with per-item controls + quotation */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+            mb: 1.5,
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{ flexGrow: 1 }}
+          >
+            Services &amp; Parts
+          </Typography>
+          {canEdit && (
+            <Tooltip
+              title={
+                hasQuotationItems
+                  ? ''
+                  : 'Flag at least one item as "On quotation" first'
+              }
+            >
+              <span>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={
+                    creatingQuotation ? (
+                      <CircularProgress size={14} />
+                    ) : (
+                      <RequestQuote fontSize="small" />
+                    )
+                  }
+                  onClick={handleCreateQuotation}
+                  disabled={!hasQuotationItems || creatingQuotation}
+                >
+                  Create Quotation
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+        </Box>
+        <ROItemsList
+          roId={ro.id}
+          services={ro.services ?? []}
+          canEdit={canEdit && ro.status !== 'INVOICED'}
+          onChanged={refetchRO}
+        />
       </Paper>
 
       {/* Footer: totals + tax + close */}
@@ -1364,6 +1593,46 @@ function CurrentTab({
             .catch(() => {});
         }}
       />
+
+      {/* Assign employees dialog */}
+      <AssignEmployeesDialog
+        open={assignEmployeesOpen}
+        onClose={() => setAssignEmployeesOpen(false)}
+        roId={ro.id}
+        currentEmployees={ro.employees ?? []}
+        onSaved={(updated) => onROChange({ ...ro, ...updated })}
+      />
+
+      {/* Quotation created success dialog */}
+      <Dialog
+        open={Boolean(createdQuotationId)}
+        onClose={() => setCreatedQuotationId(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Quotation Created</DialogTitle>
+        <DialogContent>
+          <Alert severity="success">
+            A quotation was created from the flagged items on {ro.roNumber}.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreatedQuotationId(null)}>Close</Button>
+          <Button
+            variant="contained"
+            startIcon={<RequestQuote />}
+            onClick={() => {
+              const quotationId = createdQuotationId;
+              setCreatedQuotationId(null);
+              if (quotationId) {
+                navigate(`${baseRoute}/quotations/${quotationId}`);
+              }
+            }}
+          >
+            View Quotation
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Service drawer */}
       <ServiceDrawer

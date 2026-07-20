@@ -7,13 +7,13 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Get()
-  @Roles('ADMIN', 'ACCOUNTANT', 'STAFF', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'STAFF', 'SUPERVISOR')
   findAll() {
     return this.companiesService.findAll();
   }
 
   @Get('default')
-  @Roles('ADMIN', 'ACCOUNTANT', 'STAFF', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'STAFF', 'SUPERVISOR')
   findDefault() {
     return this.companiesService.findDefault();
   }

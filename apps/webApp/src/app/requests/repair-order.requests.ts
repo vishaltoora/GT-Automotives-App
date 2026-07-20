@@ -37,6 +37,7 @@ export type ROServiceStatus =
   | 'IN_PROGRESS'
   | 'COMPLETED'
   | 'DECLINED';
+export type ROServiceApproval = 'PENDING' | 'APPROVED' | 'DECLINED';
 export type ROMediaType =
   | 'ARRIVAL_CONDITION'
   | 'DAMAGE_DOCUMENTATION'
@@ -62,6 +63,8 @@ export interface ROService {
   total: number;
   technicianNotes?: string;
   status: ROServiceStatus;
+  customerApproval: ROServiceApproval;
+  isQuotation: boolean;
   completedById?: string;
   completedAt?: string;
   completedBy?: { id: string; firstName: string; lastName: string };
@@ -188,6 +191,7 @@ export const repairOrderRequests = {
       mileageIn: number;
       mileageOut: number;
       estimatedCost: number;
+      employeeIds: string[];
     }>
   ) =>
     apiClient
@@ -213,6 +217,10 @@ export const repairOrderRequests = {
       .post<RepairOrder>(`/repair-orders/${id}/reopen`)
       .then((r) => r.data),
 
+  // Create a quotation from the RO items flagged as quotation
+  createQuotation: (id: string) =>
+    apiClient.post(`/repair-orders/${id}/create-quotation`).then((r) => r.data),
+
   // Services
   addService: (
     roId: string,
@@ -222,6 +230,7 @@ export const repairOrderRequests = {
       quantity?: number;
       unitPrice?: number;
       technicianNotes?: string;
+      isQuotation?: boolean;
     }
   ) =>
     apiClient
@@ -238,6 +247,8 @@ export const repairOrderRequests = {
       unitPrice: number;
       technicianNotes: string;
       status: ROServiceStatus;
+      customerApproval: ROServiceApproval;
+      isQuotation: boolean;
     }>
   ) =>
     apiClient

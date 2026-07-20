@@ -28,20 +28,22 @@ import { RoleGuard } from '../auth/guards/role.guard';
 @Controller('expense-invoices')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class ExpenseInvoicesController {
-  constructor(private readonly expenseInvoicesService: ExpenseInvoicesService) {}
+  constructor(
+    private readonly expenseInvoicesService: ExpenseInvoicesService
+  ) {}
 
   @Post()
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async create(
-    @Body(ValidationPipe) createDto: CreateExpenseInvoiceDto,
+    @Body(ValidationPipe) createDto: CreateExpenseInvoiceDto
   ): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.create(createDto);
   }
 
   @Get()
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async findAll(
-    @Query(ValidationPipe) filterDto: ExpenseInvoiceFilterDto,
+    @Query(ValidationPipe) filterDto: ExpenseInvoiceFilterDto
   ): Promise<{
     data: ExpenseInvoiceResponseDto[];
     total: number;
@@ -55,18 +57,18 @@ export class ExpenseInvoicesController {
   // Otherwise NestJS will match :id first and treat "image-url" as part of the id
 
   @Get(':id/image-url')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async getImageUrl(@Param('id') id: string): Promise<{ imageUrl: string }> {
     const imageUrl = await this.expenseInvoicesService.getImageUrl(id);
     return { imageUrl };
   }
 
   @Post(':id/upload')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(
     @Param('id') id: string,
-    @UploadedFile() file: any,
+    @UploadedFile() file: any
   ): Promise<ExpenseInvoiceResponseDto> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -76,34 +78,36 @@ export class ExpenseInvoicesController {
       id,
       file.buffer,
       file.originalname,
-      file.mimetype,
+      file.mimetype
     );
   }
 
   @Delete(':id/image')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
-  async deleteImage(@Param('id') id: string): Promise<ExpenseInvoiceResponseDto> {
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
+  async deleteImage(
+    @Param('id') id: string
+  ): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.deleteImage(id);
   }
 
   // Generic :id routes come AFTER specific routes
   @Get(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async findOne(@Param('id') id: string): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.findOne(id);
   }
 
   @Put(':id')
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   async update(
     @Param('id') id: string,
-    @Body(ValidationPipe) updateDto: UpdateExpenseInvoiceDto,
+    @Body(ValidationPipe) updateDto: UpdateExpenseInvoiceDto
   ): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.update(id, updateDto);
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   async remove(@Param('id') id: string): Promise<ExpenseInvoiceResponseDto> {
     return this.expenseInvoicesService.remove(id);
   }

@@ -27,6 +27,8 @@ import {
 } from './peace-of-mind-template';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import { InvoicesService } from '../invoices/invoices.service';
+import { PdfService } from '../pdf/pdf.service';
+import { EmailService } from '../email/email.service';
 
 const INSPECTION_INCLUDE = {
   template: {
@@ -55,7 +57,9 @@ export class InspectionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditRepository: AuditRepository,
-    private readonly invoicesService: InvoicesService
+    private readonly invoicesService: InvoicesService,
+    private readonly pdfService: PdfService,
+    private readonly emailService: EmailService
   ) {}
 
   async findTemplates(type?: InspectionType) {
@@ -508,6 +512,134 @@ export class InspectionsService {
     });
 
     return this.findOne(id, userRole);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Email the inspection report to the customer as a PDF attachment
+  // ---------------------------------------------------------------------------
+
+  async sendInspectionReportEmail(
+    id: string,
+    userId: string,
+    userRole: string,
+    emails?: string[],
+    saveToCustomer?: boolean
+  ) {
+    this.assertStaffAccess(userRole);
+
+    // Load inspection with all relations needed for the PDF
+    const inspection = await this.prisma.inspection.findUnique({
+      where: { id },
+      include: INSPECTION_INCLUDE,
+    });
+
+    if (!inspection) {
+      throw new NotFoundException('Inspection not found');
+    }
+
+    const customer = inspection.customer;
+
+    // Clean + de-duplicate the provided recipients
+    const providedEmails = Array.from(
+      new Set((emails ?? []).map((e) => e.trim()).filter((e) => e !== ''))
+    );
+
+    // Use the explicitly selected recipients, falling back to the customer's primary email
+    const recipients =
+      providedEmails.length > 0
+        ? providedEmails
+        : customer?.email
+        ? [customer.email]
+        : [];
+
+    if (recipients.length === 0) {
+      throw new BadRequestException(
+        'No email address provided and customer does not have an email address'
+      );
+    }
+
+    // If saveToCustomer is true, persist any new emails back to the customer
+    if (saveToCustomer && customer) {
+      const knownEmails = [
+        customer.email,
+        ...(customer.additionalEmails ?? []),
+      ].filter((e): e is string => !!e);
+      let primary = customer.email ?? undefined;
+      const additional = [...(customer.additionalEmails ?? [])];
+
+      for (const email of recipients) {
+        if (knownEmails.includes(email)) continue;
+        if (!primary) {
+          primary = email;
+        } else {
+          additional.push(email);
+        }
+        knownEmails.push(email);
+      }
+
+      const dedupedAdditional = Array.from(new Set(additional)).filter(
+        (e) => e !== primary
+      );
+
+      if (
+        primary !== (customer.email ?? undefined) ||
+        dedupedAdditional.length !== (customer.additionalEmails ?? []).length
+      ) {
+        await this.prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            email: primary ?? null,
+            additionalEmails: dedupedAdditional,
+          },
+        });
+      }
+    }
+
+    // Reference used in the subject line and attachment file name
+    const inspectionRef =
+      inspection.roNumber || inspection.id.slice(0, 8).toUpperCase();
+
+    try {
+      // Generate PDF
+      const pdfBase64 = await this.pdfService.generateInspectionPdf(inspection);
+
+      // Send email to all recipients
+      const emailResult = await this.emailService.sendInspectionReportEmail(
+        recipients,
+        inspectionRef,
+        pdfBase64
+      );
+
+      if (!emailResult.success) {
+        throw new Error('Email service returned failure status');
+      }
+
+      // Log audit trail
+      await this.auditRepository.create({
+        userId,
+        action: 'SEND_INSPECTION_REPORT_EMAIL',
+        entityType: 'inspection',
+        entityId: id,
+        details: {
+          emails: recipients,
+          inspectionRef,
+          messageId: emailResult.messageId,
+          emailsSavedToCustomer: !!saveToCustomer,
+        } as any,
+      });
+
+      return {
+        success: true,
+        message: 'Inspection report email sent successfully',
+        emailUsed: recipients.join(', '),
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to send inspection report email: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+    }
   }
 
   private async ensureFeeItem(id: string) {

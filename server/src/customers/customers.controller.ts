@@ -23,10 +23,10 @@ export class CustomersController {
 
   @Post()
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF')
   create(
     @Body() createCustomerDto: CreateCustomerDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.customersService.create(createCustomerDto, user.id);
   }
@@ -39,27 +39,20 @@ export class CustomersController {
   // Lightweight endpoint for dropdowns/autocomplete - no stats, just basic info
   @Get('simple')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
   findAllSimple() {
     return this.customersService.findAllSimple();
   }
 
   @Get('search')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
-  search(
-    @Query('q') searchTerm: string,
-    @CurrentUser() user: any,
-  ) {
+  @Roles('ADMIN', 'FOREMAN', 'ACCOUNTANT', 'SUPERVISOR', 'STAFF')
+  search(@Query('q') searchTerm: string, @CurrentUser() user: any) {
     return this.customersService.search(searchTerm, user.id, user.role.name);
   }
 
-
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
     return this.customersService.findOne(id, user.id, user.role.name);
   }
 
@@ -67,18 +60,20 @@ export class CustomersController {
   update(
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
-    return this.customersService.update(id, updateCustomerDto, user.id, user.role.name);
+    return this.customersService.update(
+      id,
+      updateCustomerDto,
+      user.id,
+      user.role.name
+    );
   }
 
   @Delete(':id')
   @UseGuards(RoleGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
-  remove(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.customersService.remove(id, user.id);
   }
 }

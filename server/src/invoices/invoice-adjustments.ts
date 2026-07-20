@@ -32,7 +32,7 @@ export function serviceSubtotal(items: AdjustableItem[]): number {
         i.description !== SHOP_SUPPLIES_DESC &&
         i.description !== FLEET_DISCOUNT_DESC
     )
-    .reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+    .reduce((sum, i) => sum + Number(i.quantity) * i.unitPrice, 0);
 }
 
 /**

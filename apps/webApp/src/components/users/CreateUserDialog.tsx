@@ -48,7 +48,12 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     phone: '',
     password: '',
     confirmPassword: '',
-    roleName: 'STAFF' as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF',
+    roleName: 'STAFF' as
+      | 'ADMIN'
+      | 'FOREMAN'
+      | 'ACCOUNTANT'
+      | 'SUPERVISOR'
+      | 'STAFF',
     smsEnabled: true,
   });
 
@@ -69,7 +74,8 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     } else if (formData.username.length < 3) {
       newErrors.username = 'Username must be at least 3 characters';
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores';
+      newErrors.username =
+        'Username can only contain letters, numbers, and underscores';
     }
 
     if (!formData.firstName) {
@@ -96,7 +102,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -130,12 +136,17 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         let errorMessage = error.message || 'Failed to create user';
 
         // Check for specific Clerk errors
-        if (errorMessage.includes('already exists') || errorMessage.includes('identifier_already_exists')) {
+        if (
+          errorMessage.includes('already exists') ||
+          errorMessage.includes('identifier_already_exists')
+        ) {
           errorMessage = 'A user with this email or username already exists';
         } else if (errorMessage.includes('password')) {
-          errorMessage = 'Password does not meet minimum requirements. Please use a different password.';
+          errorMessage =
+            'Password does not meet minimum requirements. Please use a different password.';
         } else if (errorMessage.includes('username')) {
-          errorMessage = 'Username is invalid or already taken. Please try a different username.';
+          errorMessage =
+            'Username is invalid or already taken. Please try a different username.';
         }
 
         throw new Error(errorMessage);
@@ -209,14 +220,17 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <Alert severity="info">
-              This will create an admin or staff user who can log in to manage the system.
+              This will create an admin or staff user who can log in to manage
+              the system.
             </Alert>
-            
+
             <TextField
               label="Email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               error={!!errors.email}
               helperText={errors.email}
               fullWidth
@@ -226,9 +240,16 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             <TextField
               label="Username"
               value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  username: e.target.value.toLowerCase(),
+                })
+              }
               error={!!errors.username}
-              helperText={errors.username || 'User can login with username or email'}
+              helperText={
+                errors.username || 'User can login with username or email'
+              }
               fullWidth
               required
             />
@@ -237,7 +258,9 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               <TextField
                 label="First Name"
                 value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
                 error={!!errors.firstName}
                 helperText={errors.firstName}
                 fullWidth
@@ -247,7 +270,9 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               <TextField
                 label="Last Name"
                 value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
                 error={!!errors.lastName}
                 helperText={errors.lastName}
                 fullWidth
@@ -268,14 +293,18 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                 control={
                   <Switch
                     checked={formData.smsEnabled}
-                    onChange={(e) => setFormData({ ...formData, smsEnabled: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, smsEnabled: e.target.checked })
+                    }
                     disabled={!formData.phone}
                     color="primary"
                   />
                 }
                 label={
                   <Box>
-                    <Typography variant="body1">Enable SMS Notifications</Typography>
+                    <Typography variant="body1">
+                      Enable SMS Notifications
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {formData.phone
                         ? 'Receive appointment alerts, schedule reminders, and urgent notifications'
@@ -291,15 +320,28 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               <Select
                 value={formData.roleName}
                 label="Role"
-                onChange={(e) => setFormData({ ...formData, roleName: e.target.value as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF' })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    roleName: e.target.value as
+                      | 'ADMIN'
+                      | 'FOREMAN'
+                      | 'ACCOUNTANT'
+                      | 'SUPERVISOR'
+                      | 'STAFF',
+                  })
+                }
               >
                 <MenuItem value="STAFF">Staff</MenuItem>
                 <MenuItem value="SUPERVISOR">Supervisor</MenuItem>
                 <MenuItem value="ACCOUNTANT">Accountant</MenuItem>
+                <MenuItem value="FOREMAN">Foreman</MenuItem>
                 <MenuItem value="ADMIN">Admin</MenuItem>
               </Select>
               <FormHelperText>
-                Admins have full access, Accountants access invoices/reports, Supervisors have elevated operational access, Staff have limited access
+                Admins have full access, Accountants access invoices/reports,
+                Supervisors have elevated operational access, Staff have limited
+                access
               </FormHelperText>
             </FormControl>
 
@@ -307,9 +349,13 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               label="Password"
               type="password"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
               error={!!errors.password}
-              helperText={errors.password || 'Minimum 8 characters (any combination)'}
+              helperText={
+                errors.password || 'Minimum 8 characters (any combination)'
+              }
               fullWidth
               required
             />
@@ -318,7 +364,9 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               label="Confirm Password"
               type="password"
               value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, confirmPassword: e.target.value })
+              }
               error={!!errors.confirmPassword}
               helperText={errors.confirmPassword}
               fullWidth

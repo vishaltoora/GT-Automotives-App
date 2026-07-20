@@ -581,7 +581,8 @@ const InvoiceDetails: React.FC = () => {
                 {invoice.items?.map((item) => {
                   // Calculate display total - handle DISCOUNT_PERCENTAGE items
                   let displayTotal =
-                    item.total || item.quantity * Number(item.unitPrice);
+                    item.total ||
+                    Number(item.quantity) * Number(item.unitPrice);
                   if (
                     String(item.itemType).toUpperCase() ===
                     'DISCOUNT_PERCENTAGE'
@@ -596,7 +597,8 @@ const InvoiceDetails: React.FC = () => {
                       .reduce(
                         (sum, i) =>
                           sum +
-                          (Number(i.total) || i.quantity * Number(i.unitPrice)),
+                          (Number(i.total) ||
+                            Number(i.quantity) * Number(i.unitPrice)),
                         0
                       );
                     displayTotal =
@@ -679,7 +681,8 @@ const InvoiceDetails: React.FC = () => {
                     {invoice.items?.map((item) => {
                       // Calculate display total - handle DISCOUNT_PERCENTAGE items
                       let displayTotal =
-                        item.total || item.quantity * Number(item.unitPrice);
+                        item.total ||
+                        Number(item.quantity) * Number(item.unitPrice);
                       if (
                         String(item.itemType).toUpperCase() ===
                         'DISCOUNT_PERCENTAGE'
@@ -696,7 +699,7 @@ const InvoiceDetails: React.FC = () => {
                             (sum, i) =>
                               sum +
                               (Number(i.total) ||
-                                i.quantity * Number(i.unitPrice)),
+                                Number(i.quantity) * Number(i.unitPrice)),
                             0
                           );
                         displayTotal =

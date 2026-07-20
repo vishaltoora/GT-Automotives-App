@@ -61,7 +61,12 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
     lastName: '',
     phone: '',
     isActive: true,
-    roleName: 'STAFF' as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF',
+    roleName: 'STAFF' as
+      | 'ADMIN'
+      | 'FOREMAN'
+      | 'ACCOUNTANT'
+      | 'SUPERVISOR'
+      | 'STAFF',
     smsEnabled: true,
   });
 
@@ -80,7 +85,10 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
           },
         }
       );
-      setFormData(prev => ({ ...prev, smsEnabled: response.data.optedIn || false }));
+      setFormData((prev) => ({
+        ...prev,
+        smsEnabled: response.data.optedIn || false,
+      }));
     } catch (error) {
       console.error('Failed to load SMS preferences:', error);
       // Don't show error to user - just default to disabled
@@ -95,7 +103,12 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
         lastName: user.lastName,
         phone: user.phone || '',
         isActive: user.isActive,
-        roleName: user.role.name as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF',
+        roleName: user.role.name as
+          | 'ADMIN'
+          | 'FOREMAN'
+          | 'ACCOUNTANT'
+          | 'SUPERVISOR'
+          | 'STAFF',
         smsEnabled: false, // Will be updated by loadSmsPreferences
       });
 
@@ -250,12 +263,14 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
             <Typography variant="subtitle2" color="text.secondary">
               Basic Information
             </Typography>
-            
+
             <TextField
               label="Email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               error={!!errors.email}
               helperText={errors.email}
               fullWidth
@@ -266,7 +281,9 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
               <TextField
                 label="First Name"
                 value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
                 error={!!errors.firstName}
                 helperText={errors.firstName}
                 fullWidth
@@ -276,7 +293,9 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
               <TextField
                 label="Last Name"
                 value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
                 error={!!errors.lastName}
                 helperText={errors.lastName}
                 fullWidth
@@ -297,14 +316,18 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
                 control={
                   <Switch
                     checked={formData.smsEnabled}
-                    onChange={(e) => setFormData({ ...formData, smsEnabled: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, smsEnabled: e.target.checked })
+                    }
                     disabled={!formData.phone}
                     color="primary"
                   />
                 }
                 label={
                   <Box>
-                    <Typography variant="body1">Enable SMS Notifications</Typography>
+                    <Typography variant="body1">
+                      Enable SMS Notifications
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {formData.phone
                         ? 'Receive appointment alerts, schedule reminders, and urgent notifications'
@@ -326,11 +349,22 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
               <Select
                 value={formData.roleName}
                 label="Role"
-                onChange={(e) => setFormData({ ...formData, roleName: e.target.value as 'ADMIN' | 'ACCOUNTANT' | 'SUPERVISOR' | 'STAFF' })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    roleName: e.target.value as
+                      | 'ADMIN'
+                      | 'FOREMAN'
+                      | 'ACCOUNTANT'
+                      | 'SUPERVISOR'
+                      | 'STAFF',
+                  })
+                }
               >
                 <MenuItem value="STAFF">Staff</MenuItem>
                 <MenuItem value="SUPERVISOR">Supervisor</MenuItem>
                 <MenuItem value="ACCOUNTANT">Accountant</MenuItem>
+                <MenuItem value="FOREMAN">Foreman</MenuItem>
                 <MenuItem value="ADMIN">Admin</MenuItem>
               </Select>
               <FormHelperText>
@@ -342,7 +376,9 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
               control={
                 <Switch
                   checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isActive: e.target.checked })
+                  }
                 />
               }
               label="Account Active"

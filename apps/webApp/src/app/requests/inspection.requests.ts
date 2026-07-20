@@ -126,6 +126,7 @@ export interface Inspection {
     lastName: string;
     businessName?: string;
     email?: string;
+    additionalEmails?: string[];
     phone?: string;
   };
   vehicle?: {
@@ -562,6 +563,23 @@ class InspectionService {
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
+  }
+
+  async sendInspectionReportEmail(
+    id: string,
+    emails?: string | string[],
+    saveToCustomer?: boolean
+  ): Promise<{ success: boolean; message: string; emailUsed?: string }> {
+    const emailList = Array.isArray(emails)
+      ? emails
+      : emails
+      ? [emails]
+      : undefined;
+    const response = await apiClient.post(
+      `/inspections/${id}/send-report-email`,
+      { emails: emailList, saveToCustomer }
+    );
+    return response.data;
   }
 }
 

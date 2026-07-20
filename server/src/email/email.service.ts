@@ -1693,6 +1693,157 @@ export class EmailService {
   }
 
   /**
+   * Send vehicle inspection report email with PDF attachment
+   */
+  async sendInspectionReportEmail(
+    recipients: string[],
+    inspectionRef: string,
+    pdfBase64: string
+  ): Promise<{ success: boolean; messageId?: string }> {
+    if (!this.enabled) {
+      this.logger.warn(
+        '[EMAIL] Email service disabled - skipping inspection report email'
+      );
+      return { success: false };
+    }
+
+    // Normalize to a de-duplicated list of recipients
+    const cleanRecipients = Array.from(
+      new Set(
+        (Array.isArray(recipients) ? recipients : [recipients])
+          .map((e) => e.trim())
+          .filter((e) => e !== '')
+      )
+    );
+
+    if (cleanRecipients.length === 0) {
+      this.logger.warn(
+        '[EMAIL] No valid recipients for inspection report email'
+      );
+      return { success: false };
+    }
+
+    try {
+      this.logger.log(
+        `[EMAIL] Sending inspection report ${inspectionRef} to ${cleanRecipients.join(
+          ', '
+        )}`
+      );
+
+      const logoImg = this.logoBase64
+        ? `<img src="${this.logoBase64}" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`
+        : `<img src="https://gt-automotives.com/logo.png" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`;
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 40px 20px; text-align: center;">
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); border-radius: 8px 8px 0 0;">
+                      ${logoImg}
+                      <h1 style="margin: 20px 0 0; color: #ffffff; font-size: 28px; font-weight: 600;">Vehicle Inspection Report</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px;">
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        Thank you for trusting GT Automotives with your vehicle! Please find your inspection report <strong>${inspectionRef}</strong> attached to this email.
+                      </p>
+
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        The report is attached as a PDF file and summarizes the condition of your vehicle. If you have any questions or would like to schedule any recommended service, please don't hesitate to contact us.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                      <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
+                        <strong style="color: #1976d2;">GT Automotives</strong><br>
+                        473 3rd Ave<br>
+                        Prince George, BC V2L 3C1<br>
+                        Phone: 250-570-2333 / 250-986-9191<br>
+                        Email: gt-automotives@outlook.com
+                      </p>
+                      <p style="margin: 20px 0 0; font-size: 12px; color: #999999;">
+                        This is an automated email. Please do not reply to this message.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const subject = `Vehicle Inspection Report ${inspectionRef} - GT Automotives`;
+
+      const sendSmtpEmail: SendSmtpEmail = {
+        sender: { name: this.senderName, email: this.senderEmail },
+        to: cleanRecipients.map((email) => ({ email })),
+        subject,
+        htmlContent,
+        attachment: [
+          {
+            name: `Inspection-Report-${inspectionRef}.pdf`,
+            content: pdfBase64,
+          },
+        ],
+      };
+
+      const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      const messageId = (response as any)?.messageId || 'unknown';
+
+      this.logger.log(
+        `[EMAIL] Inspection report email sent successfully. Message ID: ${messageId}`
+      );
+
+      // Log to database (no inspection FK column on EmailLog, so log without it)
+      try {
+        await this.prisma.emailLog.create({
+          data: {
+            type: EmailType.INSPECTION_REPORT,
+            to: cleanRecipients.join(', '),
+            from: this.senderEmail,
+            subject,
+            status: EmailStatus.SENT,
+            sentAt: new Date(),
+          },
+        });
+      } catch (dbError) {
+        this.logger.error(
+          '[EMAIL] Failed to log inspection report email to database:',
+          dbError
+        );
+      }
+
+      return { success: true, messageId };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `[EMAIL] Failed to send inspection report email: ${errorMessage}`,
+        error
+      );
+      return { success: false };
+    }
+  }
+
+  /**
    * Send booking request notification to staff/admin
    */
   async sendBookingRequestNotification(data: {

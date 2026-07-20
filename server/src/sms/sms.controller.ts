@@ -9,7 +9,7 @@ import { PrismaService } from '@gt-automotive/database';
 export class SmsController {
   constructor(
     private readonly smsService: SmsService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaService
   ) {}
 
   /**
@@ -26,11 +26,11 @@ export class SmsController {
    */
   @Get('history')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   async getHistory(
     @Query('customerId') customerId?: string,
     @Query('userId') userId?: string,
-    @Query('limit') limit = '50',
+    @Query('limit') limit = '50'
   ) {
     const messages = await this.prisma.smsMessage.findMany({
       where: {
@@ -115,13 +115,14 @@ export class SmsController {
   @Post('preferences/customer')
   @UseGuards(JwtAuthGuard)
   async updateCustomerPreferences(
-    @Body() data: {
+    @Body()
+    data: {
       customerId: string;
       optedIn?: boolean;
       appointmentReminders?: boolean;
       serviceUpdates?: boolean;
       promotional?: boolean;
-    },
+    }
   ) {
     const updateData: any = {
       appointmentReminders: data.appointmentReminders,
@@ -160,14 +161,15 @@ export class SmsController {
   @Post('preferences/user')
   @UseGuards(JwtAuthGuard)
   async updateUserPreferences(
-    @Body() data: {
+    @Body()
+    data: {
       userId: string;
       optedIn?: boolean;
       appointmentAlerts?: boolean;
       scheduleReminders?: boolean;
       dailySummary?: boolean;
       urgentAlerts?: boolean;
-    },
+    }
   ) {
     const updateData: any = {
       appointmentAlerts: data.appointmentAlerts,
@@ -205,7 +207,7 @@ export class SmsController {
    */
   @Get('statistics')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'FOREMAN')
   async getStatistics() {
     const totalMessages = await this.prisma.smsMessage.count();
 
@@ -250,7 +252,10 @@ export class SmsController {
       deliveredMessages,
       failedMessages,
       totalCost,
-      deliveryRate: totalMessages > 0 ? (deliveredMessages / totalMessages * 100).toFixed(2) : 0,
+      deliveryRate:
+        totalMessages > 0
+          ? ((deliveredMessages / totalMessages) * 100).toFixed(2)
+          : 0,
       messagesByType,
       optedInCustomers,
       optedInUsers,
@@ -262,9 +267,10 @@ export class SmsController {
    */
   @Post('send-eod-summary')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'FOREMAN', 'STAFF')
   async sendEODSummary(
-    @Body() data: {
+    @Body()
+    data: {
       date: string;
       totalPayments: number;
       totalOwed: number;
@@ -275,7 +281,7 @@ export class SmsController {
       mobileServicePayments: number;
       mobileServiceCount: number;
       mobileServicePaymentsByMethod: Record<string, number>;
-    },
+    }
   ) {
     const result = await this.smsService.sendEODSummary(data);
     return result;

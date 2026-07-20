@@ -499,7 +499,8 @@ const QuotationDetails: React.FC = () => {
           // Mobile: Card-based layout
           <Stack spacing={2}>
             {quotation.items.map((item) => {
-              const displayTotal = item.total || item.quantity * item.unitPrice;
+              const displayTotal =
+                item.total || Number(item.quantity) * item.unitPrice;
               return (
                 <Card key={item.id} variant="outlined">
                   <CardContent>
@@ -589,7 +590,7 @@ const QuotationDetails: React.FC = () => {
                     </TableCell>
                     <TableCell align="right">
                       {formatCurrency(
-                        item.total || item.quantity * item.unitPrice
+                        item.total || Number(item.quantity) * item.unitPrice
                       )}
                     </TableCell>
                   </TableRow>

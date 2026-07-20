@@ -9,12 +9,19 @@ import {
 } from 'class-validator';
 import {
   ROMediaType,
+  ROServiceApproval,
   ROServiceStatus,
   ROServiceType,
   ROStatus,
 } from './prisma-enums';
 
-export { ROMediaType, ROServiceStatus, ROServiceType, ROStatus };
+export {
+  ROMediaType,
+  ROServiceApproval,
+  ROServiceStatus,
+  ROServiceType,
+  ROStatus,
+};
 
 // ---- ROService DTOs ----
 
@@ -35,6 +42,10 @@ export class CreateROServiceDto {
   @IsOptional()
   @IsString()
   technicianNotes?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isQuotation?: boolean;
 }
 
 export class UpdateROServiceDto {
@@ -59,6 +70,14 @@ export class UpdateROServiceDto {
   @IsOptional()
   @IsEnum(ROServiceStatus)
   status?: ROServiceStatus;
+
+  @IsOptional()
+  @IsEnum(ROServiceApproval)
+  customerApproval?: ROServiceApproval;
+
+  @IsOptional()
+  @IsBoolean()
+  isQuotation?: boolean;
 }
 
 // ---- RepairOrder DTOs ----
@@ -122,6 +141,11 @@ export class UpdateRepairOrderDto {
 
   @IsOptional()
   estimatedCost?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  employeeIds?: string[];
 }
 
 export class ROQueryDto {
