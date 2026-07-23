@@ -65,7 +65,7 @@ const InvoiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { role, isStaff, isAdmin } = useAuth();
+  const { role, isStaff, isAdmin, isForeman, isSupervisor } = useAuth();
   const { confirmCancel, confirm } = useConfirmationHelpers();
   const { showApiError } = useErrorHelpers();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -294,7 +294,9 @@ const InvoiceDetails: React.FC = () => {
     }
   };
 
-  const canManageInvoice = isStaff || isAdmin;
+  // Matches the roles the backend permits for recording invoice payments
+  // (POST /invoices/:id/payments) and InvoiceList's canManageInvoice.
+  const canManageInvoice = isStaff || isAdmin || isForeman || isSupervisor;
   // Emailing the invoice PDF is available to all internal staff roles (matches
   // the server @Roles on POST /invoices/:id/send-email), not customers.
   const canEmailInvoice = [
@@ -935,6 +937,9 @@ const InvoiceDetails: React.FC = () => {
           total={Number(invoice.total)}
           amountPaid={Number((invoice as any).amountPaid ?? 0)}
           hasTax={Number(invoice.taxAmount) > 0}
+          subtotal={Number(invoice.subtotal)}
+          gstRate={Number((invoice as any).gstRate ?? 0)}
+          pstRate={Number((invoice as any).pstRate ?? 0)}
         />
       )}
 

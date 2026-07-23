@@ -145,21 +145,11 @@ export class AppointmentsService {
     const [year, month, day] = dto.scheduledDate.split('-').map(Number);
     const normalizedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
 
-    // Auto-assign employee if none provided
-    let finalEmployeeIds = employeeIds;
-    if (finalEmployeeIds.length === 0) {
-      const foundEmployeeId = await this.findAvailableEmployee(
-        normalizedDate,
-        dto.scheduledTime,
-        dto.duration
-      );
-      if (!foundEmployeeId) {
-        throw new ConflictException(
-          'No available employees for the requested time slot'
-        );
-      }
-      finalEmployeeIds = [foundEmployeeId];
-    } else {
+    // Do NOT auto-assign an employee. Appointments are created unassigned and
+    // an employee is assigned manually later. Only validate employees when the
+    // caller explicitly provides them.
+    const finalEmployeeIds = employeeIds;
+    if (finalEmployeeIds.length > 0) {
       // Validate all provided employees exist and are available
       for (const empId of finalEmployeeIds) {
         const employee = await this.prisma.user.findUnique({
@@ -1273,38 +1263,6 @@ export class AppointmentsService {
       include: this.appointmentInclude,
       orderBy: [{ scheduledDate: 'asc' }, { scheduledTime: 'asc' }],
     });
-  }
-
-  /**
-   * Helper: Find an available employee for a time slot
-   */
-  private async findAvailableEmployee(
-    date: Date,
-    startTime: string,
-    duration: number
-  ): Promise<string | null> {
-    // Get all staff, admin, and supervisor users
-    const staffUsers = await this.prisma.user.findMany({
-      where: {
-        role: { name: { in: ['STAFF', 'ADMIN', 'SUPERVISOR', 'FOREMAN'] } },
-        isActive: true,
-      },
-    });
-
-    // Check each staff/admin member's availability
-    for (const staff of staffUsers) {
-      const isAvailable = await this.availabilityService.isEmployeeAvailable(
-        staff.id,
-        date,
-        startTime,
-        duration
-      );
-      if (isAvailable) {
-        return staff.id;
-      }
-    }
-
-    return null;
   }
 
   /**

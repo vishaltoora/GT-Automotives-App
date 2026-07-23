@@ -53,6 +53,11 @@ interface PaymentMethodDialogProps {
   total?: number;
   amountPaid?: number;
   hasTax?: boolean;
+  // Pre-tax subtotal and tax rates — needed to recompute tax for a partial
+  // tax-free split (some paid Cash-no-tax, remainder taxed).
+  subtotal?: number;
+  gstRate?: number;
+  pstRate?: number;
   // Pre-selects this method when the dialog opens (e.g. the method already
   // tagged on the invoice). Falls back to Cash when absent/unrecognized.
   defaultPaymentMethod?: string | null;
@@ -79,6 +84,9 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
   total,
   amountPaid = 0,
   hasTax = false,
+  subtotal,
+  gstRate = 0,
+  pstRate = 0,
   defaultPaymentMethod,
 }) => {
   // Seed the picker with the invoice's tagged method when it's a recognized
@@ -126,6 +134,44 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
     (l) => l.method === PaymentMethod.CASH_NO_TAX
   );
 
+  // --- Partial tax-free split -------------------------------------------------
+  // When Cash (no tax) is combined with a taxable method, only the taxable
+  // portion of the subtotal is taxed. The Cash-no-tax line(s) carry tax-free
+  // dollars; the single taxable line collects "the rest" plus its GST/PST.
+  const taxRate = (Number(gstRate) || 0) + (Number(pstRate) || 0);
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const isTaxableMethod = (m: MethodValue) =>
+    m !== PaymentMethod.CASH_NO_TAX && !isTerminal(m);
+  const noTaxLines = lines.filter(
+    (l) => l.method === PaymentMethod.CASH_NO_TAX
+  );
+  const taxableLines = lines.filter((l) => isTaxableMethod(l.method));
+  const mixedNoTax =
+    isSplit &&
+    noTaxLines.length > 0 &&
+    taxableLines.length > 0 &&
+    subtotal != null &&
+    taxRate > 0;
+  const cashNoTaxBase = noTaxLines.reduce(
+    (s, l) => s + (parseFloat(l.amount) || 0),
+    0
+  );
+  const taxableSubtotal = subtotal != null ? subtotal - cashNoTaxBase : 0;
+  const mixedTaxAmount = mixedNoTax
+    ? Math.max(0, taxableSubtotal) * taxRate
+    : 0;
+  const mixedTaxableCharged = mixedNoTax
+    ? round2(Math.max(0, taxableSubtotal) * (1 + taxRate))
+    : 0;
+  const mixedGrandTotal = round2(cashNoTaxBase + mixedTaxableCharged);
+  // A mixed split is only well-defined with exactly one taxable "remainder".
+  const mixedInvalid =
+    mixedNoTax &&
+    (taxableLines.length !== 1 ||
+      cashNoTaxBase <= 0 ||
+      taxableSubtotal < -0.005 ||
+      noTaxLines.some((l) => !(parseFloat(l.amount) > 0)));
+
   const updateLine = (index: number, patch: Partial<Line>) => {
     setLines((prev) =>
       prev.map((l, i) => (i === index ? { ...l, ...patch } : l))
@@ -150,7 +196,22 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
       );
       return;
     }
-    if (!isSplit && payInFull) {
+    if (mixedNoTax) {
+      // Partial tax-free split: send the cash-no-tax dollars as-is and the
+      // taxable line as its computed tax-inclusive charge. The backend
+      // recomputes the invoice tax/total from these amounts.
+      const entries: PaymentEntryInput[] = [
+        ...noTaxLines.map((l) => ({
+          paymentMethod: PaymentMethod.CASH_NO_TAX,
+          amount: round2(parseFloat(l.amount)),
+        })),
+        {
+          paymentMethod: taxableLines[0].method as PaymentMethod,
+          amount: mixedTaxableCharged,
+        },
+      ];
+      onConfirm(entries);
+    } else if (!isSplit && payInFull) {
       onConfirm([{ paymentMethod: lines[0].method as PaymentMethod }]);
     } else {
       onConfirm(
@@ -182,6 +243,8 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
   const needsAmounts = isSplit || !payInFull;
   const confirmDisabled = terminalSelected
     ? !invoiceId || remaining == null || remaining <= 0
+    : mixedNoTax
+    ? mixedInvalid
     : needsAmounts &&
       (lines.some((l) => !(parseFloat(l.amount) > 0)) ||
         (remaining != null && allocated > remaining + 0.005));
@@ -242,7 +305,13 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
                     <MenuItem
                       key={opt.value}
                       value={opt.value}
-                      disabled={isSplit && !opt.splitOk}
+                      // Cash (no tax) is allowed in a split so it can be combined
+                      // with a taxable method (partial tax-free split).
+                      disabled={
+                        isSplit &&
+                        !opt.splitOk &&
+                        opt.value !== PaymentMethod.CASH_NO_TAX
+                      }
                     >
                       {opt.label}
                     </MenuItem>
@@ -250,20 +319,35 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
                 </Select>
               </FormControl>
 
-              {(isSplit || !payInFull) && (
-                <NumberInput
-                  allowDecimals
-                  label="Amount"
-                  value={line.amount}
-                  onChange={(v) =>
-                    updateLine(index, {
-                      amount: v === undefined ? '' : String(v),
-                    })
-                  }
-                  min={0}
-                  sx={{ width: 130 }}
-                />
-              )}
+              {(isSplit || !payInFull) &&
+                (mixedNoTax && isTaxableMethod(line.method) ? (
+                  // Taxable "remainder" line: amount is auto-computed (remaining
+                  // subtotal + tax) and not directly editable.
+                  <NumberInput
+                    allowDecimals
+                    label="Amount (incl. tax)"
+                    value={
+                      mixedTaxableCharged ? mixedTaxableCharged.toFixed(2) : ''
+                    }
+                    onChange={() => undefined}
+                    disabled
+                    min={0}
+                    sx={{ width: 130 }}
+                  />
+                ) : (
+                  <NumberInput
+                    allowDecimals
+                    label="Amount"
+                    value={line.amount}
+                    onChange={(v) =>
+                      updateLine(index, {
+                        amount: v === undefined ? '' : String(v),
+                      })
+                    }
+                    min={0}
+                    sx={{ width: 130 }}
+                  />
+                ))}
 
               {isSplit && (
                 <IconButton
@@ -277,7 +361,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
             </Box>
           ))}
 
-          {noTaxSelected && hasTax && (
+          {noTaxSelected && hasTax && !mixedNoTax && (
             <Alert severity="warning" sx={{ mt: 1, mb: 1 }}>
               This removes GST/PST from the invoice — the total will be reduced
               to the pre-tax subtotal. Only allowed before any payment is
@@ -306,7 +390,7 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
             </Alert>
           )}
 
-          {!noTaxSelected && !terminalSelected && (
+          {!terminalSelected && (
             <Box sx={{ mt: 1 }}>
               <Button size="small" startIcon={<AddIcon />} onClick={addLine}>
                 Add another method (split)
@@ -314,16 +398,52 @@ export const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
             </Box>
           )}
 
-          {isSplit && remaining != null && (
-            <Typography
-              variant="caption"
-              color={allocated > remaining + 0.005 ? 'error' : 'text.secondary'}
-              sx={{ display: 'block', mt: 1 }}
-            >
-              Allocated ${allocated.toFixed(2)} of ${remaining.toFixed(2)}
-              {allocated < remaining - 0.005 &&
-                ` · $${(remaining - allocated).toFixed(2)} will remain owing`}
-            </Typography>
+          {mixedNoTax ? (
+            <Box sx={{ mt: 1.5 }}>
+              {taxableLines.length !== 1 ? (
+                <Alert severity="warning">
+                  Only one taxable method can be combined with Cash (no tax).
+                  Keep a single card/other line for the taxed remainder.
+                </Alert>
+              ) : taxableSubtotal < -0.005 ? (
+                <Alert severity="error">
+                  Cash (no tax) amount exceeds the invoice subtotal ($
+                  {Number(subtotal).toFixed(2)}).
+                </Alert>
+              ) : (
+                <Alert severity="info" icon={false}>
+                  <Typography variant="body2" component="div">
+                    Tax-free (cash):{' '}
+                    <strong>${cashNoTaxBase.toFixed(2)}</strong>
+                    <br />
+                    Taxed remainder: ${Math.max(0, taxableSubtotal).toFixed(
+                      2
+                    )}{' '}
+                    + {(taxRate * 100).toFixed(0)}% tax ($
+                    {mixedTaxAmount.toFixed(2)}) ={' '}
+                    <strong>${mixedTaxableCharged.toFixed(2)}</strong>
+                    <br />
+                    New invoice total:{' '}
+                    <strong>${mixedGrandTotal.toFixed(2)}</strong>
+                  </Typography>
+                </Alert>
+              )}
+            </Box>
+          ) : (
+            isSplit &&
+            remaining != null && (
+              <Typography
+                variant="caption"
+                color={
+                  allocated > remaining + 0.005 ? 'error' : 'text.secondary'
+                }
+                sx={{ display: 'block', mt: 1 }}
+              >
+                Allocated ${allocated.toFixed(2)} of ${remaining.toFixed(2)}
+                {allocated < remaining - 0.005 &&
+                  ` · $${(remaining - allocated).toFixed(2)} will remain owing`}
+              </Typography>
+            )
           )}
         </Box>
       </DialogContent>

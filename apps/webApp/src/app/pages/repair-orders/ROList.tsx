@@ -129,7 +129,7 @@ export function ROList() {
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
         <TextField
           size="small"
-          placeholder="Search RO# or customer…"
+          placeholder="Search RO#, customer, phone, vehicle or VIN…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           InputProps={{
@@ -258,6 +258,15 @@ export function ROList() {
                         <Typography variant="body2">
                           {vehicleLabel(ro)}
                         </Typography>
+                        {ro.vehicle?.vin && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: 'block' }}
+                          >
+                            VIN: {ro.vehicle.vin}
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Chip

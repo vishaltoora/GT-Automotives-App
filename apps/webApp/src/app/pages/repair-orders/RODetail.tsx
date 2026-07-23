@@ -130,6 +130,7 @@ function CurrentTab({
   onROChange,
   canEdit,
   canClose,
+  isAdmin,
   currentUserId,
   baseRoute,
 }: {
@@ -137,6 +138,7 @@ function CurrentTab({
   onROChange: (updated: RepairOrder) => void;
   canEdit: boolean;
   canClose: boolean;
+  isAdmin: boolean;
   currentUserId: string;
   baseRoute: string;
 }) {
@@ -505,7 +507,18 @@ function CurrentTab({
     }
   };
 
-  const transitions = STATUS_TRANSITIONS[ro.status];
+  const transitions = [...STATUS_TRANSITIONS[ro.status]];
+  // Admin-only manual override: bump a closed RO to INVOICED. Normally an RO
+  // flips to INVOICED automatically once its invoice is created/paid, but for
+  // older ROs where that didn't happen, admin can set it manually.
+  if (
+    isAdmin &&
+    ro.status === 'CLOSED' &&
+    !!ro.invoice &&
+    !transitions.includes('INVOICED')
+  ) {
+    transitions.push('INVOICED');
+  }
 
   return (
     <Box>
@@ -1910,6 +1923,7 @@ export function RODetail() {
           onROChange={setRo}
           canEdit={canEdit}
           canClose={canClose}
+          isAdmin={isAdmin}
           currentUserId={user?.id ?? ''}
           baseRoute={baseRoute}
         />

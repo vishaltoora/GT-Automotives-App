@@ -526,7 +526,7 @@ const InvoiceList: React.FC = () => {
               <TextField
                 fullWidth
                 label="Search"
-                placeholder="Invoice # or Customer Name..."
+                placeholder="Invoice #, Customer, Phone, Vehicle or VIN..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 size={isMobile ? 'small' : 'medium'}
@@ -716,15 +716,29 @@ const InvoiceList: React.FC = () => {
                 {(() => {
                   const vehicleInfo = getVehicleInfo(invoice);
                   const plate = invoice.vehicle?.licensePlate;
-                  if (!vehicleInfo && !plate) return null;
+                  const vin = invoice.vehicle?.vin;
+                  if (!vehicleInfo && !plate && !vin) return null;
                   return (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mb: 0.75, fontSize: '0.7rem' }}
-                    >
-                      {[vehicleInfo, plate].filter(Boolean).join(' · ')}
-                    </Typography>
+                    <Box sx={{ mb: 0.75 }}>
+                      {(vehicleInfo || plate) && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', fontSize: '0.7rem' }}
+                        >
+                          {[vehicleInfo, plate].filter(Boolean).join(' · ')}
+                        </Typography>
+                      )}
+                      {vin && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', fontSize: '0.7rem' }}
+                        >
+                          VIN: {vin}
+                        </Typography>
+                      )}
+                    </Box>
                   );
                 })()}
 
@@ -860,7 +874,8 @@ const InvoiceList: React.FC = () => {
                     {(() => {
                       const vehicleInfo = getVehicleInfo(invoice);
                       const plate = invoice.vehicle?.licensePlate;
-                      if (!vehicleInfo && !plate) return '-';
+                      const vin = invoice.vehicle?.vin;
+                      if (!vehicleInfo && !plate && !vin) return '-';
                       return (
                         <Box>
                           {vehicleInfo && (
@@ -868,10 +883,20 @@ const InvoiceList: React.FC = () => {
                               {vehicleInfo}
                             </Typography>
                           )}
+                          {vin && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block' }}
+                            >
+                              VIN: {vin}
+                            </Typography>
+                          )}
                           {plate && (
                             <Typography
                               variant="caption"
                               color="text.secondary"
+                              sx={{ display: 'block' }}
                             >
                               {plate}
                             </Typography>
@@ -967,6 +992,11 @@ const InvoiceList: React.FC = () => {
         hasTax={
           invoiceToMarkPaid ? Number(invoiceToMarkPaid.taxAmount) > 0 : false
         }
+        subtotal={
+          invoiceToMarkPaid ? Number(invoiceToMarkPaid.subtotal) : undefined
+        }
+        gstRate={invoiceToMarkPaid ? Number(invoiceToMarkPaid.gstRate ?? 0) : 0}
+        pstRate={invoiceToMarkPaid ? Number(invoiceToMarkPaid.pstRate ?? 0) : 0}
       />
 
       {/* Email Prompt Dialog - Select one or more recipient emails */}
