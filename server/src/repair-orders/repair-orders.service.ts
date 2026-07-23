@@ -331,14 +331,24 @@ export class RepairOrdersService {
       data.vehicleId = null;
     }
 
-    if (dto.status === ROStatus.CLOSED || dto.status === ROStatus.INVOICED) {
+    if (dto.status === ROStatus.INVOICED) {
+      // Manually flipping a repair order to INVOICED is an admin-only override
+      // (normally an RO becomes INVOICED automatically when its invoice is
+      // created on close).
+      if (roleName !== 'ADMIN') {
+        throw new ForbiddenException(
+          'Only admin can set a repair order to invoiced'
+        );
+      }
+      data.closedAt = new Date();
+    } else if (dto.status === ROStatus.CLOSED) {
       if (
         roleName !== 'ADMIN' &&
         roleName !== 'FOREMAN' &&
         roleName !== 'SUPERVISOR'
       ) {
         throw new ForbiddenException(
-          'Only admin or supervisor can close a repair order'
+          'Only admin, foreman, or supervisor can close a repair order'
         );
       }
       data.closedAt = new Date();
@@ -413,6 +423,10 @@ export class RepairOrdersService {
     if (dto.status === 'COMPLETED') {
       data.completedById = userId;
       data.completedAt = new Date();
+      // Completing a job means the work was actually done, so it's billable —
+      // clear any quotation flag so it flows onto the RO's invoice. (An invoice
+      // only pulls services that are COMPLETED and not quotation-flagged.)
+      data.isQuotation = false;
     }
 
     return this.prisma.rOService.update({
