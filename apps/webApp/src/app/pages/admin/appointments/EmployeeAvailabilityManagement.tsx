@@ -126,7 +126,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
   });
 
   // Temp time inputs for each day
-  const [tempTimes, setTempTimes] = useState<{ [key: number]: { start: string; end: string } }>({
+  const [tempTimes, setTempTimes] = useState<{
+    [key: number]: { start: string; end: string };
+  }>({
     0: { start: '09:00', end: '17:00' },
     1: { start: '09:00', end: '17:00' },
     2: { start: '09:00', end: '17:00' },
@@ -150,7 +152,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // Check if current user is staff or supervisor (not admin) - case insensitive
+  // Self-service roles (staff, supervisor) manage only their own availability
+  // via the secure "my-*" endpoints. Admin and foreman manage everyone's
+  // availability via the admin endpoints. Case insensitive.
   const userRole = currentUser?.role?.name?.toUpperCase();
   const isStaffOrSupervisor = userRole === 'STAFF' || userRole === 'SUPERVISOR';
 
@@ -172,68 +176,85 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       if (isStaffOrSupervisor && currentUser) {
         try {
           // Use secure endpoints that fetch based on token
-          const availability = await availabilityService.getMyRecurringAvailability();
+          const availability =
+            await availabilityService.getMyRecurringAvailability();
 
           const startDate = new Date();
           const endDate = new Date();
           endDate.setMonth(endDate.getMonth() + 3);
-          const upcomingOverrides = await availabilityService.getMyOverrides(startDate, endDate);
+          const upcomingOverrides = await availabilityService.getMyOverrides(
+            startDate,
+            endDate
+          );
 
           // Calculate metrics
           const uniqueDays = new Set(availability.map((a: any) => a.dayOfWeek));
           const activeDays = uniqueDays.size;
           const totalSlots = availability.length;
 
-          setEmployees([{
-            id: currentUser.id,
-            email: currentUser.email,
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            role: currentUser.role,
-            isActive: currentUser.isActive,
-            availability,
-            upcomingOverrides,
-            totalSlots,
-            activeDays,
-          }]);
+          setEmployees([
+            {
+              id: currentUser.id,
+              email: currentUser.email,
+              firstName: currentUser.firstName,
+              lastName: currentUser.lastName,
+              role: currentUser.role,
+              isActive: currentUser.isActive,
+              availability,
+              upcomingOverrides,
+              totalSlots,
+              activeDays,
+            },
+          ]);
 
           // Automatically expand staff user's own card
           setExpandedCards(new Set([currentUser.id]));
         } catch (err) {
           console.error('Failed to load own availability:', err);
           // Show user card with empty data if loading fails
-          setEmployees([{
-            id: currentUser.id,
-            email: currentUser.email,
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            role: currentUser.role,
-            isActive: currentUser.isActive,
-            availability: [],
-            upcomingOverrides: [],
-            totalSlots: 0,
-            activeDays: 0,
-          }]);
+          setEmployees([
+            {
+              id: currentUser.id,
+              email: currentUser.email,
+              firstName: currentUser.firstName,
+              lastName: currentUser.lastName,
+              role: currentUser.role,
+              isActive: currentUser.isActive,
+              availability: [],
+              upcomingOverrides: [],
+              totalSlots: 0,
+              activeDays: 0,
+            },
+          ]);
         }
       } else {
         // Admin users can see all staff and admin members
         const allUsers = await userService.getUsers();
 
-        const staffUsers = allUsers.filter((user) =>
-          (user.role?.name?.toUpperCase() === 'STAFF' || user.role?.name?.toUpperCase() === 'ADMIN' || user.role?.name?.toUpperCase() === 'SUPERVISOR') &&
-          user.isActive
+        const staffUsers = allUsers.filter(
+          (user) =>
+            (user.role?.name?.toUpperCase() === 'STAFF' ||
+              user.role?.name?.toUpperCase() === 'ADMIN' ||
+              user.role?.name?.toUpperCase() === 'SUPERVISOR' ||
+              user.role?.name?.toUpperCase() === 'FOREMAN') &&
+            user.isActive
         );
 
         // Load availability and overrides for each employee (ADMIN endpoints)
         const employeesWithData = await Promise.all(
           staffUsers.map(async (user) => {
             try {
-              const availability = await availabilityService.getEmployeeAvailability(user.id);
+              const availability =
+                await availabilityService.getEmployeeAvailability(user.id);
 
               const startDate = new Date();
               const endDate = new Date();
               endDate.setMonth(endDate.getMonth() + 3);
-              const upcomingOverrides = await availabilityService.getOverrides(user.id, startDate, endDate);
+              const upcomingOverrides = await availabilityService.getOverrides(
+                user.id,
+                startDate,
+                endDate
+              );
 
               // Calculate metrics
               const uniqueDays = new Set(availability.map((a) => a.dayOfWeek));
@@ -341,7 +362,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       if (!selectedEmployeeId) return;
 
       // Count total slots to add
-      const totalSlots = Object.values(weeklySlots).reduce((sum, slots) => sum + slots.length, 0);
+      const totalSlots = Object.values(weeklySlots).reduce(
+        (sum, slots) => sum + slots.length,
+        0
+      );
 
       if (totalSlots === 0) {
         showError({
@@ -384,7 +408,11 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     }
   };
 
-  const handleAddSlotToDay = (dayOfWeek: number, startTime: string, endTime: string) => {
+  const handleAddSlotToDay = (
+    dayOfWeek: number,
+    startTime: string,
+    endTime: string
+  ) => {
     if (!startTime || !endTime) {
       showError({
         title: 'Invalid time',
@@ -407,7 +435,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     }));
   };
 
-  const handleRemoveSlotFromDay = async (dayOfWeek: number, slotIndex: number) => {
+  const handleRemoveSlotFromDay = async (
+    dayOfWeek: number,
+    slotIndex: number
+  ) => {
     const slot = weeklySlots[dayOfWeek][slotIndex];
 
     // If it's an existing slot from the database, delete it via API
@@ -426,7 +457,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
           // Update local state immediately by removing the slot
           setWeeklySlots((prev) => ({
             ...prev,
-            [dayOfWeek]: prev[dayOfWeek].filter((_, index) => index !== slotIndex),
+            [dayOfWeek]: prev[dayOfWeek].filter(
+              (_, index) => index !== slotIndex
+            ),
           }));
 
           // Reload data in background to sync with server
@@ -449,7 +482,15 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
 
   const handleApplyQuickTemplate = (template: keyof typeof QUICK_SCHEDULES) => {
     const schedule = QUICK_SCHEDULES[template];
-    const newSlots: WeeklySlots = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    const newSlots: WeeklySlots = {
+      0: [],
+      1: [],
+      2: [],
+      3: [],
+      4: [],
+      5: [],
+      6: [],
+    };
 
     schedule.days.forEach((day) => {
       newSlots[day] = [{ startTime: schedule.start, endTime: schedule.end }];
@@ -458,7 +499,11 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     setWeeklySlots(newSlots);
   };
 
-  const handleUpdateTempTime = (dayOfWeek: number, field: 'start' | 'end', value: string) => {
+  const handleUpdateTempTime = (
+    dayOfWeek: number,
+    field: 'start' | 'end',
+    value: string
+  ) => {
     setTempTimes((prev) => ({
       ...prev,
       [dayOfWeek]: {
@@ -501,10 +546,16 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteOverride = async (employeeId: string, overrideId: string, isAvailable: boolean) => {
+  const handleDeleteOverride = async (
+    employeeId: string,
+    overrideId: string,
+    isAvailable: boolean
+  ) => {
     const confirmed = await confirm({
       title: 'Delete Override',
-      message: `Are you sure you want to delete this ${isAvailable ? 'extra shift' : 'time off'}?`,
+      message: `Are you sure you want to delete this ${
+        isAvailable ? 'extra shift' : 'time off'
+      }?`,
       confirmText: 'Delete',
       severity: 'warning',
     });
@@ -522,10 +573,16 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     }
   };
 
-  const handleQuickSchedule = async (employeeId: string, scheduleType: keyof typeof QUICK_SCHEDULES) => {
+  const handleQuickSchedule = async (
+    employeeId: string,
+    scheduleType: keyof typeof QUICK_SCHEDULES
+  ) => {
     const confirmed = await confirm({
       title: 'Apply Quick Schedule',
-      message: `Apply ${scheduleType.replace('_', ' ')} schedule? This will add multiple time slots.`,
+      message: `Apply ${scheduleType.replace(
+        '_',
+        ' '
+      )} schedule? This will add multiple time slots.`,
       confirmText: 'Apply',
       severity: 'info',
     });
@@ -562,7 +619,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
     }
   };
 
-  const getAvailabilityForDay = (availability: EmployeeAvailability[], dayOfWeek: number) => {
+  const getAvailabilityForDay = (
+    availability: EmployeeAvailability[],
+    dayOfWeek: number
+  ) => {
     return availability.filter((a) => a.dayOfWeek === dayOfWeek);
   };
 
@@ -572,7 +632,12 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -607,11 +672,14 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
         gap={{ xs: 1, sm: 0 }}
         mb={3}
       >
-        <Typography variant="h4" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
+        <Typography
+          variant="h4"
+          sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
+        >
           Employee Availability
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {employees.length} Team Member{employees.length !== 1 ? 's' : ''} (Staff & Admin)
+          {employees.length} Team Member{employees.length !== 1 ? 's' : ''}
         </Typography>
       </Box>
 
@@ -625,8 +693,17 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
               <Card>
                 <CardContent>
                   {/* Card Header */}
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Box display="flex" alignItems="center" gap={{ xs: 1.5, sm: 2 }} flex={1}>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      gap={{ xs: 1.5, sm: 2 }}
+                      flex={1}
+                    >
                       <Avatar
                         sx={{
                           bgcolor: 'primary.main',
@@ -638,7 +715,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                         {getInitials(employee.firstName, employee.lastName)}
                       </Avatar>
                       <Box flex={1} minWidth={0}>
-                        <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                        <Typography
+                          variant="h6"
+                          sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                        >
                           {employee.firstName} {employee.lastName}
                         </Typography>
                         <Typography
@@ -675,20 +755,34 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                     <Chip
                       icon={<EventIcon />}
                       label={`${employee.upcomingOverrides.length} Upcoming Overrides`}
-                      color={employee.upcomingOverrides.length > 0 ? 'warning' : 'default'}
+                      color={
+                        employee.upcomingOverrides.length > 0
+                          ? 'warning'
+                          : 'default'
+                      }
                       size="small"
                     />
                   </Box>
 
                   {/* Quick Actions (when collapsed) */}
                   {!isExpanded && (
-                    <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={1} mt={2}>
+                    <Box
+                      display="flex"
+                      flexDirection={{ xs: 'column', sm: 'row' }}
+                      gap={1}
+                      mt={2}
+                    >
                       <Button
                         size="small"
                         variant="outlined"
                         startIcon={<ScheduleIcon />}
-                        onClick={() => handleOpenAvailabilityDialog(employee.id)}
-                        sx={{ textTransform: 'none', width: { xs: '100%', sm: 'auto' } }}
+                        onClick={() =>
+                          handleOpenAvailabilityDialog(employee.id)
+                        }
+                        sx={{
+                          textTransform: 'none',
+                          width: { xs: '100%', sm: 'auto' },
+                        }}
                       >
                         Manage Availability
                       </Button>
@@ -697,7 +791,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                         variant="outlined"
                         startIcon={<EventIcon />}
                         onClick={() => handleOpenOverrideDialog(employee.id)}
-                        sx={{ textTransform: 'none', width: { xs: '100%', sm: 'auto' } }}
+                        sx={{
+                          textTransform: 'none',
+                          width: { xs: '100%', sm: 'auto' },
+                        }}
                       >
                         Add Override
                       </Button>
@@ -712,7 +809,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                         <Typography
                           variant="subtitle2"
                           gutterBottom
-                          sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' }, mb: { xs: 0.5, sm: 1 } }}
+                          sx={{
+                            fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                            mb: { xs: 0.5, sm: 1 },
+                          }}
                         >
                           Quick Schedules
                         </Typography>
@@ -725,7 +825,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                           <Button
                             size="small"
                             variant="outlined"
-                            onClick={() => handleQuickSchedule(employee.id, 'WEEKDAYS')}
+                            onClick={() =>
+                              handleQuickSchedule(employee.id, 'WEEKDAYS')
+                            }
                             sx={{
                               textTransform: 'none',
                               fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -738,7 +840,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                           <Button
                             size="small"
                             variant="outlined"
-                            onClick={() => handleQuickSchedule(employee.id, 'WEEKENDS')}
+                            onClick={() =>
+                              handleQuickSchedule(employee.id, 'WEEKENDS')
+                            }
                             sx={{
                               textTransform: 'none',
                               fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -751,7 +855,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                           <Button
                             size="small"
                             variant="outlined"
-                            onClick={() => handleQuickSchedule(employee.id, 'ALL_WEEK')}
+                            onClick={() =>
+                              handleQuickSchedule(employee.id, 'ALL_WEEK')
+                            }
                             sx={{
                               textTransform: 'none',
                               fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -764,7 +870,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                           <Button
                             size="small"
                             variant="outlined"
-                            onClick={() => handleQuickSchedule(employee.id, 'EXTENDED')}
+                            onClick={() =>
+                              handleQuickSchedule(employee.id, 'EXTENDED')
+                            }
                             sx={{
                               textTransform: 'none',
                               fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -781,7 +889,14 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
 
                       {/* Weekly Schedule */}
                       <Box mb={3}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1}>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          mb={2}
+                          flexWrap="wrap"
+                          gap={1}
+                        >
                           <Typography variant="subtitle2">
                             Weekly Schedule
                           </Typography>
@@ -789,7 +904,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                             size="small"
                             variant="contained"
                             startIcon={<ScheduleIcon />}
-                            onClick={() => handleOpenAvailabilityDialog(employee.id)}
+                            onClick={() =>
+                              handleOpenAvailabilityDialog(employee.id)
+                            }
                             sx={{ width: { xs: '100%', sm: 'auto' } }}
                           >
                             Manage Availability
@@ -797,17 +914,28 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                         </Box>
 
                         {/* Desktop Table View */}
-                        <TableContainer component={Paper} variant="outlined" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        <TableContainer
+                          component={Paper}
+                          variant="outlined"
+                          sx={{ display: { xs: 'none', sm: 'block' } }}
+                        >
                           <Table size="small">
                             <TableHead>
                               <TableRow>
-                                <TableCell><strong>Day</strong></TableCell>
-                                <TableCell><strong>Time Slots</strong></TableCell>
+                                <TableCell>
+                                  <strong>Day</strong>
+                                </TableCell>
+                                <TableCell>
+                                  <strong>Time Slots</strong>
+                                </TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {DAYS_OF_WEEK.map((day) => {
-                                const slots = getAvailabilityForDay(employee.availability, day.value);
+                                const slots = getAvailabilityForDay(
+                                  employee.availability,
+                                  day.value
+                                );
                                 return (
                                   <TableRow key={day.value}>
                                     <TableCell width="150px">
@@ -815,16 +943,30 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                     </TableCell>
                                     <TableCell>
                                       {slots.length === 0 ? (
-                                        <Typography variant="body2" color="text.secondary">
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
                                           Not available
                                         </Typography>
                                       ) : (
-                                        <Box display="flex" flexWrap="wrap" gap={1}>
+                                        <Box
+                                          display="flex"
+                                          flexWrap="wrap"
+                                          gap={1}
+                                        >
                                           {slots.map((slot) => (
                                             <Chip
                                               key={slot.id}
-                                              label={formatTimeRange(slot.startTime, slot.endTime)}
-                                              color={slot.isAvailable ? 'success' : 'default'}
+                                              label={formatTimeRange(
+                                                slot.startTime,
+                                                slot.endTime
+                                              )}
+                                              color={
+                                                slot.isAvailable
+                                                  ? 'success'
+                                                  : 'default'
+                                              }
                                               size="small"
                                             />
                                           ))}
@@ -842,25 +984,54 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                         <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
                           <Stack spacing={1}>
                             {DAYS_OF_WEEK.map((day) => {
-                              const slots = getAvailabilityForDay(employee.availability, day.value);
+                              const slots = getAvailabilityForDay(
+                                employee.availability,
+                                day.value
+                              );
                               return (
-                                <Paper key={day.value} variant="outlined" sx={{ p: 1.5 }}>
-                                  <Typography variant="subtitle2" fontWeight="bold" mb={1}>
+                                <Paper
+                                  key={day.value}
+                                  variant="outlined"
+                                  sx={{ p: 1.5 }}
+                                >
+                                  <Typography
+                                    variant="subtitle2"
+                                    fontWeight="bold"
+                                    mb={1}
+                                  >
                                     {day.label}
                                   </Typography>
                                   {slots.length === 0 ? (
-                                    <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      fontSize="0.875rem"
+                                    >
                                       Not available
                                     </Typography>
                                   ) : (
-                                    <Box display="flex" flexWrap="wrap" gap={0.5}>
+                                    <Box
+                                      display="flex"
+                                      flexWrap="wrap"
+                                      gap={0.5}
+                                    >
                                       {slots.map((slot) => (
                                         <Chip
                                           key={slot.id}
-                                          label={formatTimeRange(slot.startTime, slot.endTime)}
-                                          color={slot.isAvailable ? 'success' : 'default'}
+                                          label={formatTimeRange(
+                                            slot.startTime,
+                                            slot.endTime
+                                          )}
+                                          color={
+                                            slot.isAvailable
+                                              ? 'success'
+                                              : 'default'
+                                          }
                                           size="small"
-                                          sx={{ fontSize: '0.75rem', height: '24px' }}
+                                          sx={{
+                                            fontSize: '0.75rem',
+                                            height: '24px',
+                                          }}
                                         />
                                       ))}
                                     </Box>
@@ -876,7 +1047,14 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
 
                       {/* Upcoming Overrides */}
                       <Box>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1}>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          mb={2}
+                          flexWrap="wrap"
+                          gap={1}
+                        >
                           <Typography variant="subtitle2">
                             Upcoming Time Off & Extra Shifts
                           </Typography>
@@ -884,7 +1062,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                             size="small"
                             variant="contained"
                             startIcon={<EventIcon />}
-                            onClick={() => handleOpenOverrideDialog(employee.id)}
+                            onClick={() =>
+                              handleOpenOverrideDialog(employee.id)
+                            }
                             sx={{ width: { xs: '100%', sm: 'auto' } }}
                           >
                             Add Override
@@ -892,53 +1072,100 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                         </Box>
                         {employee.upcomingOverrides.length === 0 ? (
                           <Paper variant="outlined" sx={{ p: 2 }}>
-                            <Typography variant="body2" color="text.secondary" align="center">
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              align="center"
+                            >
                               No upcoming overrides
                             </Typography>
                           </Paper>
                         ) : (
                           <>
                             {/* Desktop Table View */}
-                            <TableContainer component={Paper} variant="outlined" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                            <TableContainer
+                              component={Paper}
+                              variant="outlined"
+                              sx={{ display: { xs: 'none', sm: 'block' } }}
+                            >
                               <Table size="small">
                                 <TableHead>
                                   <TableRow>
-                                    <TableCell><strong>Date</strong></TableCell>
-                                    <TableCell><strong>Time</strong></TableCell>
-                                    <TableCell><strong>Type</strong></TableCell>
-                                    <TableCell><strong>Reason</strong></TableCell>
-                                    <TableCell align="right"><strong>Actions</strong></TableCell>
+                                    <TableCell>
+                                      <strong>Date</strong>
+                                    </TableCell>
+                                    <TableCell>
+                                      <strong>Time</strong>
+                                    </TableCell>
+                                    <TableCell>
+                                      <strong>Type</strong>
+                                    </TableCell>
+                                    <TableCell>
+                                      <strong>Reason</strong>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <strong>Actions</strong>
+                                    </TableCell>
                                   </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                  {employee.upcomingOverrides.map((override) => (
-                                    <TableRow key={override.id}>
-                                      <TableCell>
-                                        {new Date(override.date).toLocaleDateString()}
-                                      </TableCell>
-                                      <TableCell>
-                                        {formatTimeRange(override.startTime, override.endTime)}
-                                      </TableCell>
-                                      <TableCell>
-                                        <Chip
-                                          icon={override.isAvailable ? <EventAvailableIcon /> : <EventBusyIcon />}
-                                          label={override.isAvailable ? 'Extra Shift' : 'Time Off'}
-                                          color={override.isAvailable ? 'success' : 'error'}
-                                          size="small"
-                                        />
-                                      </TableCell>
-                                      <TableCell>{override.reason || '—'}</TableCell>
-                                      <TableCell align="right">
-                                        <IconButton
-                                          size="small"
-                                          color="error"
-                                          onClick={() => handleDeleteOverride(employee.id, override.id, override.isAvailable)}
-                                        >
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
+                                  {employee.upcomingOverrides.map(
+                                    (override) => (
+                                      <TableRow key={override.id}>
+                                        <TableCell>
+                                          {new Date(
+                                            override.date
+                                          ).toLocaleDateString()}
+                                        </TableCell>
+                                        <TableCell>
+                                          {formatTimeRange(
+                                            override.startTime,
+                                            override.endTime
+                                          )}
+                                        </TableCell>
+                                        <TableCell>
+                                          <Chip
+                                            icon={
+                                              override.isAvailable ? (
+                                                <EventAvailableIcon />
+                                              ) : (
+                                                <EventBusyIcon />
+                                              )
+                                            }
+                                            label={
+                                              override.isAvailable
+                                                ? 'Extra Shift'
+                                                : 'Time Off'
+                                            }
+                                            color={
+                                              override.isAvailable
+                                                ? 'success'
+                                                : 'error'
+                                            }
+                                            size="small"
+                                          />
+                                        </TableCell>
+                                        <TableCell>
+                                          {override.reason || '—'}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={() =>
+                                              handleDeleteOverride(
+                                                employee.id,
+                                                override.id,
+                                                override.isAvailable
+                                              )
+                                            }
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </IconButton>
+                                        </TableCell>
+                                      </TableRow>
+                                    )
+                                  )}
                                 </TableBody>
                               </Table>
                             </TableContainer>
@@ -947,35 +1174,89 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                             <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
                               <Stack spacing={1}>
                                 {employee.upcomingOverrides.map((override) => (
-                                  <Paper key={override.id} variant="outlined" sx={{ p: 1.5 }}>
-                                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                                  <Paper
+                                    key={override.id}
+                                    variant="outlined"
+                                    sx={{ p: 1.5 }}
+                                  >
+                                    <Box
+                                      display="flex"
+                                      justifyContent="space-between"
+                                      alignItems="flex-start"
+                                      mb={1}
+                                    >
                                       <Box flex={1}>
-                                        <Typography variant="subtitle2" fontWeight="bold">
-                                          {new Date(override.date).toLocaleDateString()}
+                                        <Typography
+                                          variant="subtitle2"
+                                          fontWeight="bold"
+                                        >
+                                          {new Date(
+                                            override.date
+                                          ).toLocaleDateString()}
                                         </Typography>
-                                        <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
-                                          {formatTimeRange(override.startTime, override.endTime)}
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                          fontSize="0.875rem"
+                                        >
+                                          {formatTimeRange(
+                                            override.startTime,
+                                            override.endTime
+                                          )}
                                         </Typography>
                                       </Box>
                                       <IconButton
                                         size="small"
                                         color="error"
-                                        onClick={() => handleDeleteOverride(employee.id, override.id, override.isAvailable)}
+                                        onClick={() =>
+                                          handleDeleteOverride(
+                                            employee.id,
+                                            override.id,
+                                            override.isAvailable
+                                          )
+                                        }
                                       >
                                         <DeleteIcon fontSize="small" />
                                       </IconButton>
                                     </Box>
-                                    <Box display="flex" flexDirection="column" gap={0.5}>
+                                    <Box
+                                      display="flex"
+                                      flexDirection="column"
+                                      gap={0.5}
+                                    >
                                       <Chip
-                                        icon={override.isAvailable ? <EventAvailableIcon /> : <EventBusyIcon />}
-                                        label={override.isAvailable ? 'Extra Shift' : 'Time Off'}
-                                        color={override.isAvailable ? 'success' : 'error'}
+                                        icon={
+                                          override.isAvailable ? (
+                                            <EventAvailableIcon />
+                                          ) : (
+                                            <EventBusyIcon />
+                                          )
+                                        }
+                                        label={
+                                          override.isAvailable
+                                            ? 'Extra Shift'
+                                            : 'Time Off'
+                                        }
+                                        color={
+                                          override.isAvailable
+                                            ? 'success'
+                                            : 'error'
+                                        }
                                         size="small"
-                                        sx={{ width: 'fit-content', fontSize: '0.75rem', height: '24px' }}
+                                        sx={{
+                                          width: 'fit-content',
+                                          fontSize: '0.75rem',
+                                          height: '24px',
+                                        }}
                                       />
                                       {override.reason && (
-                                        <Typography variant="body2" fontSize="0.8125rem" color="text.secondary">
-                                          <strong>Reason:</strong> {override.reason}
+                                        <Typography
+                                          variant="body2"
+                                          fontSize="0.8125rem"
+                                          color="text.secondary"
+                                        >
+                                          <strong>Reason:</strong>{' '}
+                                          {override.reason}
                                         </Typography>
                                       )}
                                     </Box>
@@ -998,7 +1279,8 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
       {employees.length === 0 && (
         <Paper sx={{ p: 4 }}>
           <Typography variant="body1" color="text.secondary" align="center">
-            No team members found. Add staff or admin users to manage their availability.
+            No team members found. Add staff or admin users to manage their
+            availability.
           </Typography>
         </Paper>
       )}
@@ -1054,11 +1336,16 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
             </Typography>
             <Typography
               variant="body2"
-              sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' }, color: 'rgba(255, 255, 255, 0.9)' }}
+              sx={{
+                fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                color: 'rgba(255, 255, 255, 0.9)',
+              }}
             >
               {selectedEmployeeId &&
                 (() => {
-                  const employee = employees.find((e) => e.id === selectedEmployeeId);
+                  const employee = employees.find(
+                    (e) => e.id === selectedEmployeeId
+                  );
                   return employee
                     ? `${employee.firstName} ${employee.lastName}'s Schedule`
                     : '';
@@ -1098,8 +1385,13 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
               <Button
                 fullWidth
                 onClick={() => setTemplatesExpanded(!templatesExpanded)}
-                endIcon={templatesExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                sx={{ mb: templatesExpanded ? 2 : 0, justifyContent: 'space-between' }}
+                endIcon={
+                  templatesExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                }
+                sx={{
+                  mb: templatesExpanded ? 2 : 0,
+                  justifyContent: 'space-between',
+                }}
               >
                 Quick Templates
               </Button>
@@ -1205,8 +1497,18 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                       }}
                     >
                       {/* Day Header */}
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={{ xs: 1, sm: 2 }}>
-                        <Box display="flex" alignItems="center" gap={{ xs: 0.5, sm: 1 }} flexWrap="wrap">
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mb={{ xs: 1, sm: 2 }}
+                      >
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          gap={{ xs: 0.5, sm: 1 }}
+                          flexWrap="wrap"
+                        >
                           <Typography
                             variant="h6"
                             sx={{
@@ -1219,7 +1521,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                           {hasSlots && (
                             <Chip
                               icon={<CheckCircleIcon />}
-                              label={`${weeklySlots[day.value].length} slot${weeklySlots[day.value].length !== 1 ? 's' : ''}`}
+                              label={`${weeklySlots[day.value].length} slot${
+                                weeklySlots[day.value].length !== 1 ? 's' : ''
+                              }`}
                               color="primary"
                               size="small"
                               sx={{
@@ -1237,13 +1541,22 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                       {/* Existing Slots */}
                       {hasSlots ? (
                         <Box mb={{ xs: 1.5, sm: 2 }}>
-                          <Box display="flex" flexWrap="wrap" gap={{ xs: 0.75, sm: 1.5 }}>
+                          <Box
+                            display="flex"
+                            flexWrap="wrap"
+                            gap={{ xs: 0.75, sm: 1.5 }}
+                          >
                             {weeklySlots[day.value].map((slot, index) => (
                               <Chip
                                 key={index}
                                 icon={<AccessTimeIcon />}
-                                label={formatTimeRange(slot.startTime, slot.endTime)}
-                                onDelete={() => handleRemoveSlotFromDay(day.value, index)}
+                                label={formatTimeRange(
+                                  slot.startTime,
+                                  slot.endTime
+                                )}
+                                onDelete={() =>
+                                  handleRemoveSlotFromDay(day.value, index)
+                                }
                                 color="primary"
                                 variant="filled"
                                 size="medium"
@@ -1312,7 +1625,13 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                 label="Start"
                                 type="time"
                                 value={tempTimes[day.value].start}
-                                onChange={(e) => handleUpdateTempTime(day.value, 'start', e.target.value)}
+                                onChange={(e) =>
+                                  handleUpdateTempTime(
+                                    day.value,
+                                    'start',
+                                    e.target.value
+                                  )
+                                }
                                 slotProps={{
                                   inputLabel: { shrink: true },
                                 }}
@@ -1334,7 +1653,13 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                                 label="End"
                                 type="time"
                                 value={tempTimes[day.value].end}
-                                onChange={(e) => handleUpdateTempTime(day.value, 'end', e.target.value)}
+                                onChange={(e) =>
+                                  handleUpdateTempTime(
+                                    day.value,
+                                    'end',
+                                    e.target.value
+                                  )
+                                }
                                 slotProps={{
                                   inputLabel: { shrink: true },
                                 }}
@@ -1453,7 +1778,12 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                 order: { xs: 3, sm: 1 },
               }}
             >
-              Total: {Object.values(weeklySlots).reduce((sum, slots) => sum + slots.length, 0)} time slot(s)
+              Total:{' '}
+              {Object.values(weeklySlots).reduce(
+                (sum, slots) => sum + slots.length,
+                0
+              )}{' '}
+              time slot(s)
             </Typography>
           </Box>
         </DialogActions>
@@ -1488,7 +1818,7 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
             px: { xs: 2, sm: 3 },
           }}
         >
-          <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
+          <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold">
             Add Time Off / Extra Shift
           </Typography>
           <IconButton
@@ -1513,7 +1843,10 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   exclusive
                   onChange={(_, value) => {
                     if (value !== null) {
-                      setOverrideForm({ ...overrideForm, isAvailable: value === 'available' });
+                      setOverrideForm({
+                        ...overrideForm,
+                        isAvailable: value === 'available',
+                      });
                     }
                   }}
                   fullWidth
@@ -1525,11 +1858,21 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   }}
                 >
                   <ToggleButton value="unavailable" color="error">
-                    <EventBusyIcon sx={{ mr: { xs: 0.5, sm: 1 }, fontSize: { xs: 20, sm: 24 } }} />
+                    <EventBusyIcon
+                      sx={{
+                        mr: { xs: 0.5, sm: 1 },
+                        fontSize: { xs: 20, sm: 24 },
+                      }}
+                    />
                     Time Off
                   </ToggleButton>
                   <ToggleButton value="available" color="success">
-                    <EventAvailableIcon sx={{ mr: { xs: 0.5, sm: 1 }, fontSize: { xs: 20, sm: 24 } }} />
+                    <EventAvailableIcon
+                      sx={{
+                        mr: { xs: 0.5, sm: 1 },
+                        fontSize: { xs: 20, sm: 24 },
+                      }}
+                    />
                     Extra Shift
                   </ToggleButton>
                 </ToggleButtonGroup>
@@ -1538,12 +1881,14 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                 <DatePicker
                   label="Date"
                   value={overrideForm.date}
-                  onChange={(date) => date && setOverrideForm({ ...overrideForm, date })}
+                  onChange={(date) =>
+                    date && setOverrideForm({ ...overrideForm, date })
+                  }
                   slotProps={{
                     textField: {
                       fullWidth: true,
-                      size: isMobile ? 'small' : 'medium'
-                    }
+                      size: isMobile ? 'small' : 'medium',
+                    },
                   }}
                 />
               </Grid>
@@ -1554,7 +1899,12 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   label="Start Time"
                   type="time"
                   value={overrideForm.startTime}
-                  onChange={(e) => setOverrideForm({ ...overrideForm, startTime: e.target.value })}
+                  onChange={(e) =>
+                    setOverrideForm({
+                      ...overrideForm,
+                      startTime: e.target.value,
+                    })
+                  }
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
@@ -1565,7 +1915,12 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   label="End Time"
                   type="time"
                   value={overrideForm.endTime}
-                  onChange={(e) => setOverrideForm({ ...overrideForm, endTime: e.target.value })}
+                  onChange={(e) =>
+                    setOverrideForm({
+                      ...overrideForm,
+                      endTime: e.target.value,
+                    })
+                  }
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
@@ -1575,7 +1930,9 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
                   size={isMobile ? 'small' : 'medium'}
                   label="Reason (Optional)"
                   value={overrideForm.reason}
-                  onChange={(e) => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                  onChange={(e) =>
+                    setOverrideForm({ ...overrideForm, reason: e.target.value })
+                  }
                   placeholder="Vacation, Sick Leave, Extra Coverage..."
                   multiline
                   rows={isMobile ? 2 : 3}
@@ -1584,7 +1941,15 @@ export const EmployeeAvailabilityManagement: React.FC = () => {
             </Grid>
           </LocalizationProvider>
         </DialogContent>
-        <DialogActions sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2 }, gap: 1, flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <DialogActions
+          sx={{
+            px: { xs: 2, sm: 3 },
+            py: { xs: 2, sm: 2 },
+            gap: 1,
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+          }}
+        >
           <Button
             onClick={() => setOverrideDialogOpen(false)}
             size="medium"

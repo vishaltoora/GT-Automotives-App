@@ -452,10 +452,28 @@ export class InvoicesService {
       }
     }
 
+    // Reverse case: reverting a paid invoice back to an unpaid status via edit.
+    // Without this the status flips to PENDING/DRAFT but amountPaid, paidAt and
+    // the payment ledger stay intact — so the invoice still reads as fully paid
+    // (remaining $0, can't take a new payment). Reset the payment state and
+    // clear the ledger rows so it's genuinely owing again.
+    const revertToUnpaid =
+      (updateInvoiceDto.status === 'PENDING' ||
+        updateInvoiceDto.status === 'DRAFT') &&
+      currentPaid > 0.005;
+    if (revertToUnpaid) {
+      updateData.amountPaid = new Decimal(0);
+      updateData.paidAt = null;
+    }
+
     // Use updateWithItems if items are provided, otherwise use regular update
     const updated = items
       ? await this.invoiceRepository.updateWithItems(id, updateData, items)
       : await this.invoiceRepository.update(id, updateData);
+
+    if (revertToUnpaid) {
+      await this.invoiceRepository.clearPayments(id);
+    }
 
     if (ledgerTopUp) {
       await this.invoiceRepository.recordLedgerRow({
@@ -594,26 +612,95 @@ export class InvoicesService {
     let total = Number(invoice.total);
     const hasTax = Number(invoice.taxAmount ?? 0) > 0;
 
-    // CASH_NO_TAX strips GST/PST off the invoice. It can't be mixed into a split
-    // (an invoice is taxed or not, not half-and-half) and only applies before
-    // any money has been collected. (GA-30.)
-    const usesNoTax = entries.some((e) => e.paymentMethod === 'CASH_NO_TAX');
+    // CASH_NO_TAX marks money collected tax-free. Two shapes are supported:
+    //   1. Whole invoice untaxed — every entry is CASH_NO_TAX: strip all GST/PST
+    //      so the invoice total drops to the pre-tax subtotal.
+    //   2. Partial tax-free split — CASH_NO_TAX mixed with taxable method(s):
+    //      only the taxable portion of the subtotal is taxed. e.g. subtotal $110,
+    //      pay $50 CASH_NO_TAX + rest on Visa → tax applies to the remaining $60,
+    //      total becomes $110 + $60*rate.
+    // Both only apply before any money has been collected. (GA-30, GA-48.)
+    const noTaxEntries = entries.filter(
+      (e) => e.paymentMethod === 'CASH_NO_TAX'
+    );
+    const usesNoTax = noTaxEntries.length > 0;
+    const allNoTax = usesNoTax && noTaxEntries.length === entries.length;
     let stripTax = false;
-    if (usesNoTax) {
-      if (entries.length > 1) {
-        throw new BadRequestException(
-          'Cash (no GST/PST) cannot be combined with other methods in a split payment'
-        );
-      }
+    // Recomputed tax fields for the partial (mixed) case.
+    let partialTax: {
+      gstAmount: number;
+      pstAmount: number;
+      taxAmount: number;
+      total: number;
+    } | null = null;
+
+    if (usesNoTax && hasTax && currentPaid > 0) {
+      throw new BadRequestException(
+        'Cash (no GST/PST) cannot be applied to an invoice that already has tax and a recorded payment'
+      );
+    }
+
+    if (allNoTax) {
       if (hasTax) {
-        if (currentPaid > 0) {
-          throw new BadRequestException(
-            'Cash (no GST/PST) cannot be applied to an invoice that already has tax and a recorded payment'
-          );
-        }
         stripTax = true;
         total = Number(invoice.subtotal);
       }
+    } else if (usesNoTax && hasTax) {
+      // Mixed split: cash-no-tax lines carry tax-free dollars, the remaining
+      // subtotal is taxed. Requires the split to settle the invoice in full.
+      // (Only meaningful when the invoice actually has tax — otherwise there's
+      // nothing to recompute and it's treated as an ordinary split below.)
+      const subtotal = Number(invoice.subtotal);
+      const gstRate = Number(invoice.gstRate ?? 0);
+      const pstRate = Number(invoice.pstRate ?? 0);
+      const rate =
+        gstRate + pstRate > 0
+          ? gstRate + pstRate
+          : Number(invoice.taxRate ?? 0);
+
+      if (entries.some((e) => e.amount == null)) {
+        throw new BadRequestException(
+          'Each entry in a partial tax-free split must have an amount'
+        );
+      }
+      const cashNoTaxTotal = noTaxEntries.reduce(
+        (s, e) => s + Number(e.amount),
+        0
+      );
+      const taxableSubtotal = subtotal - cashNoTaxTotal;
+      if (taxableSubtotal < -0.005) {
+        throw new BadRequestException(
+          'Cash (no GST/PST) amount cannot exceed the invoice subtotal'
+        );
+      }
+      const newGst =
+        gstRate + pstRate > 0
+          ? taxableSubtotal * gstRate
+          : taxableSubtotal * rate;
+      const newPst = gstRate + pstRate > 0 ? taxableSubtotal * pstRate : 0;
+      const newTax = newGst + newPst;
+      const newTotal = subtotal + newTax;
+
+      // The split must pay the recomputed total in full (tax-free portion +
+      // taxable portion including its tax).
+      const paySum = entries.reduce((s, e) => s + Number(e.amount ?? 0), 0);
+      if (Math.abs(paySum - newTotal) > 0.02) {
+        throw new BadRequestException(
+          `A partial tax-free split must settle the invoice in full. Expected ${newTotal.toFixed(
+            2
+          )} (subtotal ${subtotal.toFixed(2)} + tax ${newTax.toFixed(
+            2
+          )}), got ${paySum.toFixed(2)}`
+        );
+      }
+
+      partialTax = {
+        gstAmount: newGst,
+        pstAmount: newPst,
+        taxAmount: newTax,
+        total: newTotal,
+      };
+      total = newTotal;
     }
 
     const remaining = Math.max(0, total - currentPaid);
@@ -666,6 +753,13 @@ export class InvoicesService {
       invoiceUpdate.taxRate = new Decimal(0);
       invoiceUpdate.taxAmount = new Decimal(0);
       invoiceUpdate.total = new Decimal(total);
+    } else if (partialTax) {
+      // Keep the tax rates; only the taxed amounts and total shrink because
+      // part of the subtotal was paid tax-free.
+      invoiceUpdate.gstAmount = new Decimal(partialTax.gstAmount);
+      invoiceUpdate.pstAmount = new Decimal(partialTax.pstAmount);
+      invoiceUpdate.taxAmount = new Decimal(partialTax.taxAmount);
+      invoiceUpdate.total = new Decimal(partialTax.total);
     }
 
     const updated = await this.invoiceRepository.addPayments(

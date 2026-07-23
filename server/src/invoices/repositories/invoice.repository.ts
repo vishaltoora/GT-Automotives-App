@@ -258,6 +258,16 @@ export class InvoiceRepository extends BaseRepository<
     });
   }
 
+  /**
+   * Remove all payment ledger rows for an invoice. Used when an invoice is
+   * reverted from a paid state back to unpaid (PENDING/DRAFT) via edit, so the
+   * money stops counting toward the Day Summary and the invoice is genuinely
+   * owing again.
+   */
+  async clearPayments(invoiceId: string): Promise<void> {
+    await this.prisma.invoicePayment.deleteMany({ where: { invoiceId } });
+  }
+
   /** Append one or more payment rows and update the invoice atomically. */
   async addPayments(
     invoiceId: string,
@@ -645,6 +655,22 @@ export class InvoiceRepository extends BaseRepository<
                   mode: 'insensitive',
                 },
               },
+              {
+                phone: {
+                  contains: searchTerm,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          },
+        },
+        {
+          vehicle: {
+            OR: [
+              { make: { contains: searchTerm, mode: 'insensitive' } },
+              { model: { contains: searchTerm, mode: 'insensitive' } },
+              { vin: { contains: searchTerm, mode: 'insensitive' } },
+              { licensePlate: { contains: searchTerm, mode: 'insensitive' } },
             ],
           },
         },

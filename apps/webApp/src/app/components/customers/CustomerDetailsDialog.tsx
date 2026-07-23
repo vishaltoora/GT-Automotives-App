@@ -1781,6 +1781,9 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
             (selectedInvoiceForPayment as any).amountPaid ?? 0
           )}
           hasTax={Number((selectedInvoiceForPayment as any).taxAmount ?? 0) > 0}
+          subtotal={Number((selectedInvoiceForPayment as any).subtotal ?? 0)}
+          gstRate={Number((selectedInvoiceForPayment as any).gstRate ?? 0)}
+          pstRate={Number((selectedInvoiceForPayment as any).pstRate ?? 0)}
         />
       )}
 

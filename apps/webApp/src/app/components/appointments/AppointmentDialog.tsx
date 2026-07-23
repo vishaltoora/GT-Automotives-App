@@ -212,7 +212,8 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         (user) =>
           (user.role?.name === 'STAFF' ||
             user.role?.name === 'ADMIN' ||
-            user.role?.name === 'SUPERVISOR') &&
+            user.role?.name === 'SUPERVISOR' ||
+            user.role?.name === 'FOREMAN') &&
           user.isActive
       );
 

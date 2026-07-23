@@ -226,6 +226,31 @@ export class RepairOrdersService {
             businessName: { contains: query.search, mode: 'insensitive' },
           },
         },
+        {
+          customer: {
+            phone: { contains: query.search, mode: 'insensitive' },
+          },
+        },
+        {
+          vehicle: {
+            make: { contains: query.search, mode: 'insensitive' },
+          },
+        },
+        {
+          vehicle: {
+            model: { contains: query.search, mode: 'insensitive' },
+          },
+        },
+        {
+          vehicle: {
+            vin: { contains: query.search, mode: 'insensitive' },
+          },
+        },
+        {
+          vehicle: {
+            licensePlate: { contains: query.search, mode: 'insensitive' },
+          },
+        },
       ];
     }
 
