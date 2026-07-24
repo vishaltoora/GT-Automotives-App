@@ -9,6 +9,7 @@ import { Quotation, QuotationItem, Tire } from '@prisma/client';
 import { PrismaService } from '@gt-automotive/database';
 import { PdfService } from '../pdf/pdf.service';
 import { EmailService } from '../email/email.service';
+import { toBusinessCalendarDate } from '../config/timezone.config';
 
 type QuotationWithItems = Quotation & {
   items: (QuotationItem & {
@@ -248,6 +249,9 @@ export class QuotationsService {
         status: 'PENDING',
         notes: quotation.notes,
         createdBy: quotation.createdBy,
+        // Business calendar date (midnight UTC), not a raw instant, so an invoice
+        // created from a quote after 5 PM PST isn't dated to the next (UTC) day.
+        invoiceDate: toBusinessCalendarDate(),
         items: {
           create: quotation.items.map((item) => ({
             tireId: item.tireId,
