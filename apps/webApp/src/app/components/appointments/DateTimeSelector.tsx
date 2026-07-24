@@ -8,6 +8,8 @@ interface DateTimeSelectorProps {
   time: string;
   onDateChange: (date: Date | null) => void;
   onTimeChange: (time: string) => void;
+  /** Earliest selectable date. Past days before this are disabled. */
+  minDate?: Date;
 }
 
 export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
@@ -15,6 +17,7 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   time,
   onDateChange,
   onTimeChange,
+  minDate,
 }) => {
   const timeOptions = generateTimeOptions();
 
@@ -26,6 +29,7 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
           label="Date"
           value={date}
           onChange={onDateChange}
+          minDate={minDate}
           slotProps={{
             textField: {
               fullWidth: true,

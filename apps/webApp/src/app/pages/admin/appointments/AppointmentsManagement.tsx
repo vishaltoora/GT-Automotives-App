@@ -260,7 +260,10 @@ export const AppointmentsManagement: React.FC = () => {
     loadTodayAppointments();
   };
 
-  const handleCreate = () => {
+  // `date` is the day to prefill (e.g. the clicked calendar day). Omitted from
+  // the toolbar buttons, which default to today.
+  const handleCreate = (date?: Date) => {
+    setSelectedDate(date ?? new Date());
     setSelectedAppointment(undefined);
     setDialogOpen(true);
   };
@@ -604,7 +607,7 @@ export const AppointmentsManagement: React.FC = () => {
               </Typography>
               <IconButton
                 color="primary"
-                onClick={handleCreate}
+                onClick={() => handleCreate()}
                 sx={{
                   bgcolor: 'primary.main',
                   color: 'white',
@@ -852,7 +855,7 @@ export const AppointmentsManagement: React.FC = () => {
                     color="primary"
                     size="small"
                     startIcon={<AddIcon />}
-                    onClick={handleCreate}
+                    onClick={() => handleCreate()}
                   >
                     Add Appointment
                   </Button>
@@ -2014,6 +2017,7 @@ export const AppointmentsManagement: React.FC = () => {
           onClose={() => setDialogOpen(false)}
           onSuccess={handleDialogSuccess}
           appointment={selectedAppointment}
+          initialDate={selectedDate}
         />
 
         {/* Day Appointments Dialog */}
@@ -2027,7 +2031,7 @@ export const AppointmentsManagement: React.FC = () => {
           onStatusChange={handleStatusChange}
           onCreateRepairOrder={handleCreateRepairOrder}
           onViewRepairOrder={handleViewRepairOrder}
-          onAddAppointment={handleCreate}
+          onAddAppointment={() => handleCreate(selectedDate)}
           onRefresh={async () => {
             // Reload appointments and payment data when payment is received in dialog
             await loadMonthAppointments();

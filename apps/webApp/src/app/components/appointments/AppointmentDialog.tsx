@@ -46,7 +46,19 @@ interface AppointmentDialogProps {
   preselectedServiceType?: string;
   preselectedAppointmentType?: 'AT_GARAGE' | 'MOBILE_SERVICE';
   preselectedServiceAddress?: string;
+  /**
+   * Date to prefill when creating a new appointment (e.g. the day clicked on the
+   * calendar). A past date is clamped up to today; the past is never bookable.
+   */
+  initialDate?: Date;
 }
+
+/** Local midnight of today — the earliest date an appointment can be booked. */
+const startOfToday = (): Date => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
 export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   open,
@@ -57,6 +69,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   preselectedServiceType,
   preselectedAppointmentType,
   preselectedServiceAddress,
+  initialDate,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,8 +170,14 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         if (preselectedCustomerId) {
           loadCustomerDetails(preselectedCustomerId);
         }
+        // Default to the selected calendar day, but never book in the past:
+        // a past day is clamped up to today. Future days pass through as-is.
+        const today = startOfToday();
+        const scheduledDate =
+          initialDate && initialDate >= today ? initialDate : today;
         setFormData((prev) => ({
           ...prev,
+          scheduledDate,
           serviceType: preselectedServiceType || prev.serviceType,
           appointmentType: preselectedAppointmentType || 'AT_GARAGE',
           serviceAddress: preselectedServiceAddress || '',
@@ -175,6 +194,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     preselectedServiceType,
     preselectedAppointmentType,
     preselectedServiceAddress,
+    initialDate,
   ]);
 
   // Auto-adjust time if date changes to today and selected time is in the past
@@ -299,6 +319,15 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
       if (!formData.customerId) {
         setError('Please select a customer');
+        return;
+      }
+
+      // New appointments cannot be booked in the past. Editing an existing
+      // (possibly past) appointment is still allowed.
+      if (!appointment && formData.scheduledDate < startOfToday()) {
+        setError(
+          'Appointment date cannot be in the past. Please choose today or a future date.'
+        );
         return;
       }
 
@@ -572,6 +601,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
             <DateTimeSelector
               date={formData.scheduledDate}
               time={formData.scheduledTime}
+              minDate={appointment ? undefined : startOfToday()}
               onDateChange={(date) =>
                 date &&
                 setFormData((prev) => ({ ...prev, scheduledDate: date }))
