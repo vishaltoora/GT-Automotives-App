@@ -5,6 +5,7 @@ import { BaseRepository } from '../../common/repositories/base.repository';
 import { PrismaService } from '@gt-automotive/database';
 import {
   extractBusinessDate,
+  businessDayUtcRange,
   POSTGRES_TIMEZONE,
 } from '../../config/timezone.config';
 
@@ -566,17 +567,16 @@ export class InvoiceRepository extends BaseRepository<
   }
 
   async getDailyCashReport(date: Date): Promise<any> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    // Bucket by the business (Vancouver) day, not the server-local day. Using
+    // setHours() ranges counted invoices created after 5 PM PST on the next day.
+    const dateOnly = extractBusinessDate(date);
+    const { start: startOfDay, end: endOfDay } = businessDayUtcRange(dateOnly);
 
     const invoices = await this.prisma.invoice.findMany({
       where: {
         createdAt: {
           gte: startOfDay,
-          lte: endOfDay,
+          lt: endOfDay,
         },
         status: 'PAID',
       },
@@ -590,7 +590,7 @@ export class InvoiceRepository extends BaseRepository<
       where: {
         createdAt: {
           gte: startOfDay,
-          lte: endOfDay,
+          lt: endOfDay,
         },
         status: 'PAID',
       },
@@ -601,7 +601,7 @@ export class InvoiceRepository extends BaseRepository<
     });
 
     return {
-      date: extractBusinessDate(date),
+      date: dateOnly,
       totalInvoices: invoices.length,
       totalRevenue: invoices.reduce((sum, inv) => sum + Number(inv.total), 0),
       byPaymentMethod,

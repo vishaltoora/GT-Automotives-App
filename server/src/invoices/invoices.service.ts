@@ -27,6 +27,7 @@ import { PdfService } from '../pdf/pdf.service';
 import { EmailService } from '../email/email.service';
 import { CarfaxService } from '../carfax/carfax.service';
 import { buildAdjustmentItems } from './invoice-adjustments';
+import { toBusinessCalendarDate } from '../config/timezone.config';
 
 @Injectable()
 export class InvoicesService {
@@ -212,9 +213,11 @@ export class InvoicesService {
         notes: createInvoiceDto.notes,
         createdBy: userId,
         paidAt: paidInFull ? new Date() : undefined,
-        invoiceDate: createInvoiceDto.invoiceDate
-          ? new Date(createInvoiceDto.invoiceDate)
-          : new Date(),
+        // invoiceDate is a business calendar date, not an instant: pin it to
+        // midnight UTC of the business day. Using raw new Date() here caused
+        // invoices created after 5 PM PST to display the next day (the frontend
+        // formats invoiceDate in UTC).
+        invoiceDate: toBusinessCalendarDate(createInvoiceDto.invoiceDate),
       },
       items,
       // When the invoice is created already paid, record the up-front payment in
@@ -418,7 +421,10 @@ export class InvoicesService {
       updateData.paidAt = new Date(updateInvoiceDto.paidAt);
     }
     if (updateInvoiceDto.invoiceDate) {
-      updateData.invoiceDate = new Date(updateInvoiceDto.invoiceDate);
+      // Keep invoiceDate a business calendar date at midnight UTC (see create()).
+      updateData.invoiceDate = toBusinessCalendarDate(
+        updateInvoiceDto.invoiceDate
+      );
     }
 
     // If this edit marks the invoice paid, reconcile the payment ledger so the

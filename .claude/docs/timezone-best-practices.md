@@ -9,12 +9,15 @@
 ## 🚨 **CRITICAL: The Timezone Bug Pattern**
 
 ### The Problem
+
 After 5 PM PST, dates would shift by ±1 day due to UTC conversion:
+
 - Booking appointment for Nov 18 at 8 PM → Email shows Nov 17
 - Selecting Nov 18 in employee schedule → Shows 0 appointments
 - EOD summary for Nov 18 → Shows Nov 17 data
 
 ### Root Cause
+
 ```typescript
 // ❌ WRONG - Causes timezone conversion
 const dateStr = date.toISOString().split('T')[0];
@@ -37,7 +40,10 @@ scheduledDate!: Date;
 
 ```typescript
 // ✅ CORRECT
-import { IsDateString, IsOptionalDateString } from '../decorators/date-validation.decorator';
+import {
+  IsDateString,
+  IsOptionalDateString,
+} from '../decorators/date-validation.decorator';
 
 export class AppointmentQueryDto {
   @IsOptionalDateString()
@@ -112,7 +118,7 @@ const sql = `
 import { formatDisplayDate } from '@/utils/dateUtils';
 
 // ✅ CORRECT
-const display = formatDisplayDate("2025-11-18");
+const display = formatDisplayDate('2025-11-18');
 // Returns "Monday, November 18, 2025"
 
 // ❌ WRONG - Can cause timezone shifts
@@ -151,15 +157,59 @@ const dateStr = extractBusinessDate(appointment.scheduledDate);
 // If has time (timestamp): Converts to PST → "2025-11-18"
 
 // ❌ WRONG - Always converts to PST
-const dateStr = appointment.scheduledDate.toLocaleString('en-US', {
-  timeZone: 'America/Vancouver'
-}).split(',')[0];
+const dateStr = appointment.scheduledDate
+  .toLocaleString('en-US', {
+    timeZone: 'America/Vancouver',
+  })
+  .split(',')[0];
 // Midnight UTC → 4 PM previous day PST → Wrong date!
 ```
 
 **How it works**:
+
 - **Midnight UTC dates** (00:00:00.000): Calendar dates, extract UTC components
 - **Non-midnight dates**: Timestamps, convert to business timezone
+
+### Rule #8: Filtering Timestamp Columns by Business Day ⭐ NEW
+
+**NEVER** filter a real timestamp column (`createdAt`, `openedAt`, `paidAt`) by a
+calendar day using server-local `new Date(dateStr)` / `setHours()` ranges — on a
+UTC production server those bounds are 7-8 hours off, so records created after
+5 PM PST land on the **next** day.
+
+Use one of these instead:
+
+```typescript
+// ✅ Prisma where-filter: convert the business day to correct UTC instants
+import { businessDayUtcRange } from '../config/timezone.config';
+const { start, end } = businessDayUtcRange('2026-07-23');
+where.createdAt = { gte: start, lt: end }; // [inclusive, exclusive)
+
+// ✅ Raw SQL: compare in the business timezone
+// WHERE DATE(ip."paidAt" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Vancouver') = $1::date
+
+// ❌ WRONG - server-local bounds, off by the PST/PDT offset on a UTC server
+const start = new Date(dateStr);
+start.setHours(0, 0, 0, 0);
+const end = new Date(dateStr);
+end.setHours(23, 59, 59, 999);
+where.createdAt = { gte: start, lte: end };
+```
+
+**For date-only fields** (e.g. `invoiceDate`) store the value as a midnight-UTC
+calendar date with `toBusinessCalendarDate()` so it reads back and displays
+consistently regardless of when it was created:
+
+```typescript
+import { toBusinessCalendarDate } from '../config/timezone.config';
+// "2026-07-23" | ISO instant | undefined (→ current business date) → 2026-07-23T00:00:00Z
+invoiceDate: toBusinessCalendarDate(dto.invoiceDate),
+```
+
+**Frontend:** to display a real timestamp (like `openedAt`) as the shop's day on
+any device, use `formatBusinessDate()` from `utils/dateUtils.ts` (converts the
+instant to `America/Vancouver`). Keep formatting midnight-UTC calendar dates
+(like `invoiceDate`) in UTC: `toLocaleDateString('en-US', { timeZone: 'UTC' })`.
 
 ---
 
@@ -169,15 +219,15 @@ const dateStr = appointment.scheduledDate.toLocaleString('en-US', {
 
 ```typescript
 import {
-  extractDateString,    // Date → YYYY-MM-DD (NO timezone conversion)
-  parseDateString,      // YYYY-MM-DD → Date (for DatePicker)
-  formatDisplayDate,    // YYYY-MM-DD → "Monday, November 18, 2025"
-  getTodayString,       // Get today as YYYY-MM-DD
-  addDays,              // Add days to date string
-  compareDates,         // Compare two date strings
-  isToday,              // Check if date is today
-  isPast,               // Check if date is in past
-  isFuture,             // Check if date is in future
+  extractDateString, // Date → YYYY-MM-DD (NO timezone conversion)
+  parseDateString, // YYYY-MM-DD → Date (for DatePicker)
+  formatDisplayDate, // YYYY-MM-DD → "Monday, November 18, 2025"
+  getTodayString, // Get today as YYYY-MM-DD
+  addDays, // Add days to date string
+  compareDates, // Compare two date strings
+  isToday, // Check if date is today
+  isPast, // Check if date is in past
+  isFuture, // Check if date is in future
 } from '@/utils/dateUtils';
 ```
 
@@ -185,13 +235,16 @@ import {
 
 ```typescript
 import {
-  getCurrentBusinessDate,      // Get current PST/PDT date as YYYY-MM-DD
-  getCurrentBusinessDateTime,  // Get current PST/PDT datetime
-  extractBusinessDate,         // Convert Date/string → YYYY-MM-DD
-  pgTimezoneClause,            // PostgreSQL AT TIME ZONE helper
-  pgDateEquals,                // PostgreSQL date comparison
-  BUSINESS_TIMEZONE,           // 'America/Vancouver'
-  POSTGRES_TIMEZONE,           // 'America/Vancouver'
+  getCurrentBusinessDate, // Get current PST/PDT date as YYYY-MM-DD
+  getCurrentBusinessDateTime, // Get current PST/PDT datetime
+  extractBusinessDate, // Convert Date/string → YYYY-MM-DD
+  toBusinessCalendarDate, // YYYY-MM-DD | ISO | none → midnight-UTC calendar Date (e.g. invoiceDate)
+  businessDayUtcRange, // YYYY-MM-DD → { start, end } UTC instants for Prisma range filters on timestamps
+  shiftBusinessDate, // (YYYY-MM-DD, days) → YYYY-MM-DD (DST-safe calendar math)
+  pgTimezoneClause, // PostgreSQL AT TIME ZONE helper
+  pgDateEquals, // PostgreSQL date comparison
+  BUSINESS_TIMEZONE, // 'America/Vancouver'
+  POSTGRES_TIMEZONE, // 'America/Vancouver'
 } from '../config/timezone.config';
 ```
 
@@ -199,10 +252,10 @@ import {
 
 ```typescript
 import {
-  IsDateString,             // Required YYYY-MM-DD field
-  IsOptionalDateString,     // Optional YYYY-MM-DD field
-  IsTimestampString,        // Required ISO 8601 timestamp
-  IsOptionalTimestampString,// Optional ISO 8601 timestamp
+  IsDateString, // Required YYYY-MM-DD field
+  IsOptionalDateString, // Optional YYYY-MM-DD field
+  IsTimestampString, // Required ISO 8601 timestamp
+  IsOptionalTimestampString, // Optional ISO 8601 timestamp
 } from '../decorators/date-validation.decorator';
 ```
 
@@ -334,11 +387,11 @@ const dateStr = extractDateString(date);
 
 ```typescript
 // ❌ WRONG
-const date = new Date("2025-11-18");
+const date = new Date('2025-11-18');
 
 // ✅ CORRECT
 import { parseDateString } from '@/utils/dateUtils';
-const date = parseDateString("2025-11-18");
+const date = parseDateString('2025-11-18');
 ```
 
 ### ❌ Don't: Use @Type(() => Date) in DTOs
@@ -382,8 +435,8 @@ const display = `${monthNames[month - 1]} ${day}, ${year}`;
 // ❌ WRONG
 await prisma.appointment.create({
   data: {
-    scheduledDate: "2025-11-18", // Database expects Date type
-  }
+    scheduledDate: '2025-11-18', // Database expects Date type
+  },
 });
 
 // ✅ CORRECT
@@ -393,7 +446,7 @@ const normalizedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
 await prisma.appointment.create({
   data: {
     scheduledDate: normalizedDate, // Date object for database
-  }
+  },
 });
 ```
 
@@ -432,11 +485,13 @@ When reviewing PRs with date-related changes:
 ### Why Timezones Are Hard
 
 1. **JavaScript Date is always UTC internally**
+
    - `new Date("2025-11-18")` creates midnight UTC
    - At 8 PM PST on Nov 18, UTC is already Nov 19
    - `toISOString()` always returns UTC time
 
 2. **PostgreSQL stores timestamps in UTC**
+
    - `AT TIME ZONE` converts to specified timezone
    - `DATE()` extracts date part in current timezone
 
@@ -459,11 +514,13 @@ When reviewing PRs with date-related changes:
 ### Problem: Dates shift by ±1 day after 5 PM PST
 
 **Symptoms:**
+
 - Booking for Nov 18 shows Nov 17 in emails
 - Employee schedule for Nov 18 shows 0 appointments
 - Calendar shows appointments on wrong days
 
 **Solution:**
+
 1. Check if `toISOString()` is used - replace with `extractDateString()`
 2. Check if DTO has `@Type(() => Date)` - replace with `@IsDateString()`
 3. Check if SQL queries missing `AT TIME ZONE` clause
@@ -471,6 +528,7 @@ When reviewing PRs with date-related changes:
 ### Problem: DatePicker shows wrong date
 
 **Symptoms:**
+
 - Selecting Nov 18 in picker shows Nov 17 in form
 - Date changes when page refreshes
 
@@ -488,6 +546,7 @@ const date = parseDateString(dateString);
 ### Problem: Database dates don't match displayed dates
 
 **Symptoms:**
+
 - Database shows Nov 18 but UI shows Nov 17
 - Queries return wrong dates
 
@@ -509,6 +568,7 @@ WHERE DATE("scheduledDate" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Vancouver') 
 3. **Backend/Database:** Convert to Date objects for storage, use `extractBusinessDate()` for extraction
 
 **Key Takeaway:**
+
 > Dates travel as strings (YYYY-MM-DD) from frontend → API → backend. Only convert to Date objects at the last moment before database storage. Extract back to strings immediately after database retrieval.
 
 ---

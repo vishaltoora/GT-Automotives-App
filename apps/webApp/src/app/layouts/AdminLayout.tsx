@@ -74,7 +74,7 @@ export function AdminLayout() {
     business: true,
     scheduling: true,
     operations: true,
-    analytics: true,
+    reports: true,
     system: true,
   });
   const { user, logout } = useAuth();
@@ -205,11 +205,15 @@ export function AdminLayout() {
       ],
     },
     {
-      id: 'analytics',
-      title: 'Analytics',
+      id: 'reports',
+      title: 'Reports',
       icon: <BarChart />,
       items: [
-        { text: 'Reports', icon: <Analytics />, path: '/admin/reports' },
+        {
+          text: 'Financial Reports',
+          icon: <Analytics />,
+          path: '/admin/reports',
+        },
         {
           text: 'Employee Payments',
           icon: <Payment />,

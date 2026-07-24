@@ -13,6 +13,9 @@ import {
   DialogTitle,
   Grid,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
   MenuItem,
   Paper,
   Tab,
@@ -24,7 +27,6 @@ import {
   TableRow,
   Tabs,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -38,6 +40,7 @@ import {
   HourglassEmpty,
   Login,
   Logout,
+  MoreVert,
   Payment,
   PendingActions,
   PlayArrow,
@@ -78,6 +81,23 @@ const formatStatus = (status: TimeEntryStatus) => {
   if (status === TimeEntryStatus.ON_BREAK) return 'On Break';
   if (status === TimeEntryStatus.CLOCKED_OUT) return 'Clocked Out';
   return status.replace('_', ' ');
+};
+const getStatusColor = (
+  status: TimeEntryStatus
+):
+  | 'default'
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'warning'
+  | 'info'
+  | 'error' => {
+  if (status === TimeEntryStatus.APPROVED) return 'success'; // green
+  if (status === TimeEntryStatus.OPEN) return 'info'; // blue - actively clocked in
+  if (status === TimeEntryStatus.ON_BREAK) return 'warning'; // amber
+  if (status === TimeEntryStatus.CLOCKED_OUT) return 'secondary'; // purple
+  if (status === TimeEntryStatus.VOIDED) return 'error'; // red
+  return 'default';
 };
 const toDateTimeLocal = (value?: string) => {
   if (!value) return '';
@@ -123,6 +143,11 @@ export function TimeClockManagement() {
   const [bonusReason, setBonusReason] = useState('');
   const [editingEntry, setEditingEntry] = useState<TimeEntryDto | null>(null);
   const [editClockInAt, setEditClockInAt] = useState('');
+  // Row action (3-dot) menu — tracks which entry's menu is open.
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
+  const [actionEntry, setActionEntry] = useState<TimeEntryDto | null>(null);
   const [editClockOutAt, setEditClockOutAt] = useState('');
   const [editBreakMinutes, setEditBreakMinutes] = useState('');
   const [editReason, setEditReason] = useState('');
@@ -394,6 +419,18 @@ export function TimeClockManagement() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const openActionMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    entry: TimeEntryDto
+  ) => {
+    setActionMenuAnchor(event.currentTarget);
+    setActionEntry(entry);
+  };
+  const closeActionMenu = () => {
+    setActionMenuAnchor(null);
+    setActionEntry(null);
   };
 
   const openEditEntry = (entry: TimeEntryDto) => {
@@ -1072,7 +1109,12 @@ export function TimeClockManagement() {
                       gap: 0.75,
                     }}
                   >
-                    <Chip size="small" label={formatStatus(entry.status)} />
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      color={getStatusColor(entry.status)}
+                      label={formatStatus(entry.status)}
+                    />
                     {entry.status === TimeEntryStatus.APPROVED && (
                       <Chip
                         size="small"
@@ -1200,7 +1242,6 @@ export function TimeClockManagement() {
                 <TableCell>Clock Out</TableCell>
                 <TableCell align="right">Break</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell>Payroll</TableCell>
                 <TableCell align="right">Paid Hours</TableCell>
                 <TableCell align="right">Action</TableCell>
               </TableRow>
@@ -1226,75 +1267,35 @@ export function TimeClockManagement() {
                     {formatBreak(entry.unpaidBreakMinutes)}
                   </TableCell>
                   <TableCell>
-                    <Chip size="small" label={formatStatus(entry.status)} />
-                  </TableCell>
-                  <TableCell>
-                    {entry.status === TimeEntryStatus.APPROVED ? (
-                      <Chip
-                        size="small"
-                        color={entry.payrollProcessedAt ? 'success' : 'info'}
-                        variant="outlined"
-                        label={entry.payrollProcessedAt ? 'Processed' : 'Ready'}
-                      />
-                    ) : (
-                      '-'
-                    )}
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      color={getStatusColor(entry.status)}
+                      label={formatStatus(entry.status)}
+                    />
                   </TableCell>
                   <TableCell align="right">
-                    {formatHours(entry.paidMinutes)}
+                    <Chip
+                      label={formatHours(entry.paidMinutes)}
+                      color={entry.paidMinutes > 540 ? 'warning' : 'success'}
+                      sx={{ fontSize: '0.95rem', fontWeight: 700, height: 32 }}
+                    />
                   </TableCell>
                   <TableCell align="right">
-                    <Tooltip title="Edit time entry">
-                      <IconButton
-                        size="small"
-                        onClick={() => openEditEntry(entry)}
-                        disabled={
-                          saving || entry.status === TimeEntryStatus.APPROVED
-                        }
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Permanently delete time entry">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => openDeleteEntry(entry)}
-                        disabled={saving || Boolean(entry.payrollProcessedAt)}
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    {entry.clockOutAt &&
-                      entry.status !== TimeEntryStatus.APPROVED && (
-                        <Button
-                          size="small"
-                          startIcon={<CheckCircle />}
-                          onClick={() => approveEntry(entry.id)}
-                          disabled={saving}
-                        >
-                          Approve
-                        </Button>
-                      )}
-                    {entry.status === TimeEntryStatus.APPROVED &&
-                      !entry.payrollProcessedAt && (
-                        <Button
-                          size="small"
-                          color="warning"
-                          startIcon={<Undo />}
-                          onClick={() => unapproveEntry(entry.id)}
-                          disabled={saving}
-                        >
-                          Unapprove
-                        </Button>
-                      )}
+                    <IconButton
+                      size="small"
+                      onClick={(e) => openActionMenu(e, entry)}
+                      disabled={saving}
+                    >
+                      <MoreVert fontSize="small" />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
               {filteredEntries.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={8}
                     align="center"
                     sx={{ py: 4, color: 'text.secondary' }}
                   >
@@ -1305,6 +1306,81 @@ export function TimeClockManagement() {
             </TableBody>
           </Table>
         </TableContainer>
+        <Menu
+          anchorEl={actionMenuAnchor}
+          open={Boolean(actionMenuAnchor)}
+          onClose={closeActionMenu}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          {actionEntry && [
+            <MenuItem
+              key="edit"
+              disabled={
+                saving || actionEntry.status === TimeEntryStatus.APPROVED
+              }
+              onClick={() => {
+                const entry = actionEntry;
+                closeActionMenu();
+                openEditEntry(entry);
+              }}
+            >
+              <ListItemIcon>
+                <Edit fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Edit</ListItemText>
+            </MenuItem>,
+            actionEntry.clockOutAt &&
+            actionEntry.status !== TimeEntryStatus.APPROVED ? (
+              <MenuItem
+                key="approve"
+                disabled={saving}
+                onClick={() => {
+                  const id = actionEntry.id;
+                  closeActionMenu();
+                  approveEntry(id);
+                }}
+              >
+                <ListItemIcon>
+                  <CheckCircle fontSize="small" color="success" />
+                </ListItemIcon>
+                <ListItemText>Approve</ListItemText>
+              </MenuItem>
+            ) : null,
+            actionEntry.status === TimeEntryStatus.APPROVED &&
+            !actionEntry.payrollProcessedAt ? (
+              <MenuItem
+                key="unapprove"
+                disabled={saving}
+                onClick={() => {
+                  const id = actionEntry.id;
+                  closeActionMenu();
+                  unapproveEntry(id);
+                }}
+              >
+                <ListItemIcon>
+                  <Undo fontSize="small" color="warning" />
+                </ListItemIcon>
+                <ListItemText>Unapprove</ListItemText>
+              </MenuItem>
+            ) : null,
+            <MenuItem
+              key="delete"
+              disabled={saving || Boolean(actionEntry.payrollProcessedAt)}
+              onClick={() => {
+                const entry = actionEntry;
+                closeActionMenu();
+                openDeleteEntry(entry);
+              }}
+              sx={{ color: 'error.main' }}
+            >
+              <ListItemIcon>
+                <Delete fontSize="small" color="error" />
+              </ListItemIcon>
+              <ListItemText>Delete</ListItemText>
+            </MenuItem>,
+          ]}
+        </Menu>
       </TabPanel>
 
       {/* Compensation & Bonus tab */}

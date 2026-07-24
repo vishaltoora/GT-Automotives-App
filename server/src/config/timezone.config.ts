@@ -40,9 +40,7 @@ export function getCurrentBusinessDate(): string {
 export function getCurrentBusinessDateTime(): Date {
   const now = new Date();
   // Convert to business timezone
-  return new Date(
-    now.toLocaleString('en-US', { timeZone: BUSINESS_TIMEZONE })
-  );
+  return new Date(now.toLocaleString('en-US', { timeZone: BUSINESS_TIMEZONE }));
 }
 
 /**
@@ -96,6 +94,98 @@ export function extractBusinessDate(date: Date | string): string {
   const month = String(pstDate.getMonth() + 1).padStart(2, '0');
   const day = String(pstDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Normalize a value to a business *calendar date* stored at midnight UTC.
+ *
+ * Use this for date-only fields such as an invoice date, where the app treats
+ * the value as "the business day" rather than an exact instant. Storing it at
+ * midnight UTC (via Date.UTC) keeps it identical across dev (PST) and production
+ * (UTC) servers, lets extractBusinessDate() read it back correctly, and makes
+ * UTC-based display (`toLocaleDateString('en-US', { timeZone: 'UTC' })`) show the
+ * intended day regardless of browser timezone.
+ *
+ * @param value YYYY-MM-DD string, an ISO timestamp/Date, or omitted (uses the
+ *              current business date). ISO timestamps are first collapsed to the
+ *              business-timezone calendar day before being pinned to midnight UTC.
+ */
+export function toBusinessCalendarDate(value?: Date | string): Date {
+  const dateStr = value ? extractBusinessDate(value) : getCurrentBusinessDate();
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+}
+
+/**
+ * Shift a business date (YYYY-MM-DD) by a number of days and return YYYY-MM-DD.
+ * Pure calendar arithmetic (done in UTC), so it is unaffected by DST.
+ */
+export function shiftBusinessDate(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1, day + days));
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Minutes the business timezone is offset from UTC on a given calendar day.
+ * Negative for Pacific time (UTC-8 PST / UTC-7 PDT). Sampled at noon UTC so the
+ * result is never taken at a DST transition boundary.
+ */
+function businessTimezoneOffsetMinutes(
+  year: number,
+  month: number,
+  day: number
+): number {
+  const reference = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIMEZONE,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(reference);
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  // Hour can come back as "24" for midnight in some environments.
+  const hour = get('hour') % 24;
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    hour,
+    get('minute'),
+    get('second')
+  );
+  return (asUtc - reference.getTime()) / 60000;
+}
+
+/**
+ * UTC start/end instants that bound a business-timezone calendar day.
+ *
+ * Use this for Prisma range filters on real timestamp columns (createdAt,
+ * openedAt, paidAt) so a record created late in the day — e.g. after 5 PM PST,
+ * which is already the next day in UTC — is still counted on the correct
+ * business day. `start` is inclusive, `end` is exclusive.
+ *
+ * @param dateStr business date in YYYY-MM-DD format
+ */
+export function businessDayUtcRange(dateStr: string): {
+  start: Date;
+  end: Date;
+} {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const offsetMinutes = businessTimezoneOffsetMinutes(year, month, day);
+  const start = new Date(
+    Date.UTC(year, month - 1, day, 0, 0, 0, 0) - offsetMinutes * 60000
+  );
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
 }
 
 /**

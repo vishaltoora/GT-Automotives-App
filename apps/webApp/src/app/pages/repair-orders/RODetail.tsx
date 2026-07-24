@@ -62,6 +62,7 @@ import { AssignEmployeesDialog } from '../../components/repair-orders/AssignEmpl
 import { ROItemsList } from '../../components/repair-orders/ROItemsList';
 import { useAuth } from '../../hooks/useAuth';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
+import { formatBusinessDate } from '../../utils/dateUtils';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { companyService, Company } from '../../requests/company.requests';
 import { vehicleService, Vehicle } from '../../requests/vehicle.requests';
@@ -645,7 +646,7 @@ function CurrentTab({
               )}
               <Box sx={{ flexGrow: 1 }} />
               <Typography variant="body2" color="text.secondary">
-                Opened {new Date(ro.openedAt).toLocaleDateString()}
+                Opened {formatBusinessDate(ro.openedAt)}
               </Typography>
             </Box>
           </Paper>
@@ -1770,7 +1771,7 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {new Date(r.openedAt).toLocaleDateString()}
+                        {formatBusinessDate(r.openedAt)}
                       </Typography>
                     </TableCell>
                     <TableCell>

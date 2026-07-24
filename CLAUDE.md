@@ -172,6 +172,18 @@ git push origin main
 
 ## 🔄 Recent Updates
 
+### July 24, 2026 - Invoice/RO After-5-PM-PST Date Fix ✅
+
+- ✅ **Root Cause**: Invoices and repair orders created after 5 PM PST were recorded/counted on the next day because calendar dates were stored/filtered in raw UTC (production server runs UTC)
+- ✅ **Invoice date**: `invoiceDate` fallback used `new Date()` (a real UTC instant); the frontend formats `invoiceDate` in UTC, so after-5-PM invoices displayed the next day. Now normalized to a midnight-UTC business calendar date on create + update via new `toBusinessCalendarDate()`
+- ✅ **Day summary / dashboard**: `getDailyCashReport` and dashboard `getStats` filtered `createdAt` with server-local `setHours()` ranges — replaced with business-day UTC bounds
+- ✅ **Repair orders**: `findAll` date filter used `new Date('YYYY-MM-DD')` (midnight UTC) on `openedAt`; now uses business-day UTC bounds. RO list/detail display `openedAt` via new `formatBusinessDate()` (America/Vancouver) so it shows the shop's day on any device
+- ✅ **New timezone helpers** (`server/src/config/timezone.config.ts`): `toBusinessCalendarDate()`, `businessDayUtcRange()`, `shiftBusinessDate()` — plus `formatBusinessDate()` in `apps/webApp/src/app/utils/dateUtils.ts`
+- ✅ **Tests**: Added `server/src/config/timezone.config.spec.ts` (9 tests, PST + PDT boundaries, after-5-PM instants)
+- ✅ **Note**: The DaySummary page itself was already timezone-safe (groups on `paidAt`/`paymentDate` via `AT TIME ZONE`); this fixed the remaining `createdAt`/`invoiceDate`/`openedAt` paths
+- 🔧 **Files Changed**: `timezone.config.ts`, `invoices.service.ts`, `invoice.repository.ts`, `dashboard.service.ts`, `repair-orders.service.ts`, `dateUtils.ts`, `ROList.tsx`, `RODetail.tsx`
+- 📝 **Docs**: Added Rule #8 (filtering timestamp columns by business day) to `.claude/docs/timezone-best-practices.md`
+
 ### January 19, 2026 - Home Page Redesign & Role Fixes ✅
 
 - ✅ **TireBrandsSection Redesign**: Prominently showcases tire sales as main business
