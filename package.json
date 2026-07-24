@@ -148,6 +148,8 @@
     "@tanstack/react-query-devtools": "^5.85.3",
     "@types/bcryptjs": "^3.0.0",
     "@types/pdfkit": "^0.17.3",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.6.0",
     "bcryptjs": "^3.0.2",

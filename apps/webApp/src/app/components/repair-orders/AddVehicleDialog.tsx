@@ -22,16 +22,11 @@ import {
 } from '../../requests/vehicle.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { NumberInput } from '../common';
+import { VinScanButton } from '../vehicles/VinScanButton';
+import { VIN_PATTERN, normalizeVin } from '../../utils/vin.util';
 
 const CURRENT_YEAR = new Date().getFullYear() + 1;
 const YEARS = Array.from({ length: 60 }, (_, i) => CURRENT_YEAR - i);
-
-const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/;
-const normalizeVin = (value: string) =>
-  value
-    .toUpperCase()
-    .replace(/[^A-HJ-NPR-Z0-9]/g, '')
-    .slice(0, 17);
 
 interface AddVehicleDialogProps {
   open: boolean;
@@ -130,8 +125,8 @@ export function AddVehicleDialog({
     onClose();
   };
 
-  const handleDecodeVin = async () => {
-    const normalized = normalizeVin(vin);
+  const handleDecodeVin = async (vinValue?: string) => {
+    const normalized = normalizeVin(vinValue ?? vin);
     if (!VIN_PATTERN.test(normalized)) {
       showValidationError(
         'Enter a 17-character VIN. VINs cannot contain I, O, or Q.'
@@ -150,6 +145,16 @@ export function AddVehicleDialog({
       showApiError(error, 'Failed to decode VIN.');
     } finally {
       setDecoding(false);
+    }
+  };
+
+  // A camera scan already produced a validated 17-character VIN, so set the
+  // field and immediately run the NHTSA decode to autofill make/model/year.
+  const handleScannedVin = (scanned: string) => {
+    const normalized = normalizeVin(scanned);
+    setVin(normalized);
+    if (VIN_PATTERN.test(normalized)) {
+      handleDecodeVin(normalized);
     }
   };
 
@@ -245,9 +250,10 @@ export function AddVehicleDialog({
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
+                  <VinScanButton onScanned={handleScannedVin} />
                   <Button
                     size="small"
-                    onClick={handleDecodeVin}
+                    onClick={() => handleDecodeVin()}
                     disabled={decoding || !vin}
                     startIcon={
                       decoding ? (
