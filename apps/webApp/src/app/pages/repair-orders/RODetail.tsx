@@ -66,10 +66,7 @@ import { formatBusinessDate } from '../../utils/dateUtils';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { companyService, Company } from '../../requests/company.requests';
 import { vehicleService, Vehicle } from '../../requests/vehicle.requests';
-import {
-  inspectionService,
-  InspectionFeeItem,
-} from '../../requests/inspection.requests';
+import { inspectionService } from '../../requests/inspection.requests';
 import { invoiceService } from '../../requests/invoice.requests';
 import {
   PAYMENT_METHOD_SELECT_OPTIONS,
@@ -144,7 +141,7 @@ function CurrentTab({
   baseRoute: string;
 }) {
   const navigate = useNavigate();
-  const { showApiError, showValidationError } = useErrorHelpers();
+  const { showApiError } = useErrorHelpers();
   const { confirm } = useConfirmationHelpers();
   const [serviceDrawerOpen, setServiceDrawerOpen] = useState(false);
   const [editingConcern, setEditingConcern] = useState(false);
@@ -160,8 +157,6 @@ function CurrentTab({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
-  const [feeItems, setFeeItems] = useState<InspectionFeeItem[]>([]);
-  const [selectedFeeItemId, setSelectedFeeItemId] = useState('');
   // Optional payment method tagged onto the generated invoice. The invoice is
   // saved as PENDING (not marked paid) — payment is recorded later through the
   // invoice flow. CASH_NO_TAX drops GST/PST from the invoice total.
@@ -254,7 +249,6 @@ function CurrentTab({
     (i) =>
       (i.status === 'COMPLETED' || i.status === 'FINALIZED') && !i.invoiceId
   );
-  const selectedFeeItem = feeItems.find((f) => f.id === selectedFeeItemId);
   const hasInvoiceableWork =
     billableServices.length > 0 || Boolean(invoiceableInspection);
 
@@ -278,7 +272,9 @@ function CurrentTab({
   const inspectionDisabledReason = vehicleResolved
     ? ''
     : 'Add a vehicle to this repair order, or mark it as no-vehicle';
-  // The running estimate excludes customer-declined items.
+  // The running estimate excludes customer-declined items. The inspection fee is
+  // included here automatically because it lives on ro.services (a real service
+  // line added when the inspection is completed).
   const estimatedTotal =
     ro.services
       ?.filter((s) => s.customerApproval !== 'DECLINED')
@@ -378,24 +374,10 @@ function CurrentTab({
     setCloseDialogOpen(true);
     setCompaniesLoading(true);
     try {
-      const requests: [Promise<Company[]>, Promise<InspectionFeeItem[]>] = [
-        companyService.getCompanies(),
-        invoiceableInspection
-          ? inspectionService.getFeeItems()
-          : Promise.resolve([] as InspectionFeeItem[]),
-      ];
-      const [list, fees] = await Promise.all(requests);
+      const list = await companyService.getCompanies();
       setCompanies(list);
       const preset = list.find((c) => c.isDefault) ?? list[0];
       if (preset) setSelectedCompanyId(preset.id);
-
-      if (invoiceableInspection) {
-        const activeFees = fees.filter((f) => f.isActive);
-        setFeeItems(activeFees);
-        const inspType = invoiceableInspection.template?.type;
-        const match = activeFees.find((f) => f.type && f.type === inspType);
-        setSelectedFeeItemId(match?.id ?? activeFees[0]?.id ?? '');
-      }
     } catch (error) {
       showApiError(error, 'Failed to load companies.');
     } finally {
@@ -405,10 +387,6 @@ function CurrentTab({
 
   const handleConfirmClose = async () => {
     if (!selectedCompanyId) return;
-    if (invoiceableInspection && !selectedFeeItemId) {
-      showValidationError('Select an inspection fee to invoice.');
-      return;
-    }
     // Captured before the refresh clears the "invoiceable" inspection.
     const inspectionToPrint = invoiceableInspection?.id ?? null;
     setClosing(true);
@@ -416,7 +394,9 @@ function CurrentTab({
       await repairOrderRequests.close(
         ro.id,
         selectedCompanyId,
-        invoiceableInspection ? selectedFeeItemId : undefined,
+        // Inspection fees are already real service lines on the RO, so no fee
+        // item is selected at close time.
+        undefined,
         // A Square Terminal choice resolves to its real Credit/Debit method —
         // the RO close only tags the invoice, it doesn't run a card-reader charge.
         selectedPaymentMethod
@@ -441,7 +421,6 @@ function CurrentTab({
     setCreatedInvoiceId(null);
     setCreatedInvoiceNumber('');
     setInvoicedInspectionId(null);
-    setSelectedFeeItemId('');
   };
 
   const handlePrintCreatedInvoice = async () => {
@@ -1361,13 +1340,7 @@ function CurrentTab({
             <DialogTitle>Close & Invoice {ro.roNumber}</DialogTitle>
             <DialogContent>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {invoiceableInspection
-                  ? `A draft invoice will be created from the inspection fee${
-                      billableServices.length > 0
-                        ? ` plus ${billableServices.length} completed item(s)`
-                        : ''
-                    }. Select the inspection fee and company to invoice under.`
-                  : `A draft invoice will be created from the ${billableServices.length} completed item(s). Select the company to invoice under.`}
+                {`A draft invoice will be created from the ${billableServices.length} completed item(s). Select the company to invoice under.`}
               </Typography>
               {companiesLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
@@ -1375,28 +1348,6 @@ function CurrentTab({
                 </Box>
               ) : (
                 <Stack spacing={2}>
-                  {invoiceableInspection && (
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Inspection Fee</InputLabel>
-                      <Select
-                        value={selectedFeeItemId}
-                        label="Inspection Fee"
-                        onChange={(e) => setSelectedFeeItemId(e.target.value)}
-                      >
-                        {feeItems.length === 0 && (
-                          <MenuItem value="" disabled>
-                            No active inspection fee items — add them under
-                            Inspection Items &amp; Pricing
-                          </MenuItem>
-                        )}
-                        {feeItems.map((f) => (
-                          <MenuItem key={f.id} value={f.id}>
-                            {f.name} — ${Number(f.price).toFixed(2)}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
                   <FormControl fullWidth size="small">
                     <InputLabel>Company</InputLabel>
                     <Select
@@ -1430,17 +1381,12 @@ function CurrentTab({
                 </Stack>
               )}
               {(() => {
-                const feePrice = selectedFeeItem
-                  ? Number(selectedFeeItem.price)
-                  : 0;
-                const rawBase = completedSubtotal + feePrice;
-                // The inspection fee bills as a SERVICE, so it's part of the base
+                const rawBase = completedSubtotal;
+                // Service items (incl. the inspection fee line) form the base that
                 // shop supplies / fleet discount are computed from.
-                const completedServiceBase =
-                  billableServices
-                    .filter((s) => s.type !== 'PART')
-                    .reduce((sum, s) => sum + Number(s.total ?? 0), 0) +
-                  feePrice;
+                const completedServiceBase = billableServices
+                  .filter((s) => s.type !== 'PART')
+                  .reduce((sum, s) => sum + Number(s.total ?? 0), 0);
                 const previewShop =
                   completedServiceBase > 0
                     ? round2(completedServiceBase * SHOP_SUPPLIES_RATE)
@@ -1558,11 +1504,7 @@ function CurrentTab({
                   )
                 }
                 onClick={handleConfirmClose}
-                disabled={
-                  closing ||
-                  !selectedCompanyId ||
-                  (Boolean(invoiceableInspection) && !selectedFeeItemId)
-                }
+                disabled={closing || !selectedCompanyId}
               >
                 Create Invoice
               </Button>
