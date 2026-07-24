@@ -29,6 +29,7 @@ import {
 } from '../../requests/repair-order.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
+import { formatBusinessDate } from '../../utils/dateUtils';
 
 const STATUS_META: Record<
   ROStatus,
@@ -286,7 +287,7 @@ export function ROList() {
                         sx={{ display: { xs: 'none', md: 'table-cell' } }}
                       >
                         <Typography variant="body2" color="text.secondary">
-                          {new Date(ro.openedAt).toLocaleDateString()}
+                          {formatBusinessDate(ro.openedAt)}
                         </Typography>
                       </TableCell>
                       <TableCell

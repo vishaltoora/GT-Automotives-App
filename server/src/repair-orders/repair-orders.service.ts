@@ -22,6 +22,7 @@ import {
   CreateServiceCatalogItemDto,
   UpdateServiceCatalogItemDto,
 } from '@gt-automotive/data';
+import { businessDayUtcRange } from '../config/timezone.config';
 
 @Injectable()
 export class RepairOrdersService {
@@ -199,12 +200,15 @@ export class RepairOrdersService {
     }
 
     if (query.startDate || query.endDate) {
+      // Bucket openedAt by the business (Vancouver) day. new Date('YYYY-MM-DD')
+      // is midnight UTC, so an RO opened after 5 PM PST (already next-day UTC)
+      // was landing in the following day's date range.
       where.openedAt = {};
-      if (query.startDate) where.openedAt.gte = new Date(query.startDate);
+      if (query.startDate) {
+        where.openedAt.gte = businessDayUtcRange(query.startDate).start;
+      }
       if (query.endDate) {
-        const end = new Date(query.endDate);
-        end.setDate(end.getDate() + 1);
-        where.openedAt.lt = end;
+        where.openedAt.lt = businessDayUtcRange(query.endDate).end;
       }
     }
 

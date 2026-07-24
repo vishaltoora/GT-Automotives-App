@@ -67,7 +67,10 @@ export function parseDateString(dateStr: string): Date {
  * @param format - "long" (default) or "short"
  * @returns Formatted date string
  */
-export function formatDisplayDate(dateStr: string, format: 'long' | 'short' = 'long'): string {
+export function formatDisplayDate(
+  dateStr: string,
+  format: 'long' | 'short' = 'long'
+): string {
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year, month - 1, day);
 
@@ -75,7 +78,7 @@ export function formatDisplayDate(dateStr: string, format: 'long' | 'short' = 'l
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -83,7 +86,7 @@ export function formatDisplayDate(dateStr: string, format: 'long' | 'short' = 'l
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
 }
 
@@ -216,7 +219,10 @@ export function getDayOfWeek(dateStr: string): string {
  * @returns Formatted date range string
  */
 export function formatDateRange(startDate: string, endDate: string): string {
-  return `${formatDisplayDate(startDate, 'short')} - ${formatDisplayDate(endDate, 'short')}`;
+  return `${formatDisplayDate(startDate, 'short')} - ${formatDisplayDate(
+    endDate,
+    'short'
+  )}`;
 }
 
 /**
@@ -239,7 +245,36 @@ export function isValidDateString(dateStr: string): boolean {
   const date = new Date(year, month - 1, day);
 
   // Check if the date components match (catches invalid dates like 2025-02-30)
-  return date.getFullYear() === year
-    && date.getMonth() === month - 1
-    && date.getDate() === day;
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
+/**
+ * Business timezone for GT Automotives (Prince George, BC).
+ */
+export const BUSINESS_TIMEZONE = 'America/Vancouver';
+
+/**
+ * Format an instant (ISO timestamp or Date) as its calendar date in the business
+ * timezone (America/Vancouver), e.g. "7/23/2026".
+ *
+ * USE THIS for real timestamp columns like RepairOrder.openedAt — values that
+ * represent an exact moment, not a pre-normalized calendar date. It ensures the
+ * shown day matches the shop's day regardless of the viewer's device timezone,
+ * so a record created at 6 PM PST does not display as the next day.
+ *
+ * Do NOT use this for midnight-UTC calendar dates (e.g. invoiceDate) — those are
+ * already normalized and should be formatted in UTC, not converted again.
+ *
+ * @param value - ISO timestamp string or Date object
+ * @returns Localized date string in the business timezone, or "" if empty
+ */
+export function formatBusinessDate(value: Date | string): string {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { timeZone: BUSINESS_TIMEZONE });
 }

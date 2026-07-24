@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
+import {
+  getCurrentBusinessDate,
+  businessDayUtcRange,
+  shiftBusinessDate,
+} from '../config/timezone.config';
 
 @Injectable()
 export class DashboardService {
@@ -38,9 +43,10 @@ export class DashboardService {
     // Calculate revenue change
     const currentRevenue = Number(revenueResult._sum.total || 0);
     const lastMonthRevenue = Number(lastMonthRevenueResult._sum.total || 0);
-    const revenueChange = lastMonthRevenue > 0
-      ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
-      : 0;
+    const revenueChange =
+      lastMonthRevenue > 0
+        ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        : 0;
 
     // Get total customers
     const totalCustomers = await this.prisma.customer.count();
@@ -54,9 +60,10 @@ export class DashboardService {
       },
     });
 
-    const customerChange = lastMonthCustomers > 0
-      ? ((totalCustomers - lastMonthCustomers) / lastMonthCustomers) * 100
-      : 0;
+    const customerChange =
+      lastMonthCustomers > 0
+        ? ((totalCustomers - lastMonthCustomers) / lastMonthCustomers) * 100
+        : 0;
 
     // Get total vehicles
     const totalVehicles = await this.prisma.vehicle.count();
@@ -70,41 +77,42 @@ export class DashboardService {
       },
     });
 
-    const vehicleChange = lastMonthVehicles > 0
-      ? ((totalVehicles - lastMonthVehicles) / lastMonthVehicles) * 100
-      : 0;
+    const vehicleChange =
+      lastMonthVehicles > 0
+        ? ((totalVehicles - lastMonthVehicles) / lastMonthVehicles) * 100
+        : 0;
 
     // Get today's appointments (if appointments table exists, otherwise use invoices)
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    // Bucket by the business (Vancouver) day so invoices created after 5 PM PST
+    // aren't miscounted on the next day. Server-local Date ranges did exactly that.
+    const todayStr = getCurrentBusinessDate();
+    const yesterdayStr = shiftBusinessDate(todayStr, -1);
+    const today = businessDayUtcRange(todayStr);
+    const yesterday = businessDayUtcRange(yesterdayStr);
 
     // For now, use invoices created today as proxy for appointments
     const todayInvoices = await this.prisma.invoice.count({
       where: {
         createdAt: {
-          gte: todayStart,
-          lte: todayEnd,
+          gte: today.start,
+          lt: today.end,
         },
       },
     });
-
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-    const yesterdayEnd = new Date(todayEnd);
-    yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
 
     const yesterdayInvoices = await this.prisma.invoice.count({
       where: {
         createdAt: {
-          gte: yesterdayStart,
-          lte: yesterdayEnd,
+          gte: yesterday.start,
+          lt: yesterday.end,
         },
       },
     });
 
-    const appointmentChange = yesterdayInvoices > 0
-      ? ((todayInvoices - yesterdayInvoices) / yesterdayInvoices) * 100
-      : 0;
+    const appointmentChange =
+      yesterdayInvoices > 0
+        ? ((todayInvoices - yesterdayInvoices) / yesterdayInvoices) * 100
+        : 0;
 
     // Get total inventory items
     const totalInventory = await this.prisma.tire.aggregate({
@@ -121,7 +129,9 @@ export class DashboardService {
       },
     });
 
-    const lowStockItems = allTires.filter(tire => tire.quantity <= tire.minStock).length;
+    const lowStockItems = allTires.filter(
+      (tire) => tire.quantity <= tire.minStock
+    ).length;
 
     return {
       revenue: {
