@@ -7,7 +7,6 @@ import {
 import { PrismaService } from '@gt-automotive/database';
 import { AzureBlobService } from '../common/services/azure-blob.service';
 import { ROStatus } from '@prisma/client';
-import { InspectionsService } from '../inspections/inspections.service';
 import { QuotationsService } from '../quotations/quotations.service';
 import { PdfService } from '../pdf/pdf.service';
 import { EmailService } from '../email/email.service';
@@ -79,7 +78,6 @@ export class RepairOrdersService {
   constructor(
     private prisma: PrismaService,
     private azureBlob: AzureBlobService,
-    private inspectionsService: InspectionsService,
     private quotationsService: QuotationsService,
     private pdfService: PdfService,
     private emailService: EmailService
@@ -867,41 +865,16 @@ export class RepairOrdersService {
       );
     }
 
-    // If the existing invoice was generated from an inspection, its fee item is
-    // not stored on the RO services, so we can't safely rebuild it here. Block the
-    // re-sync and tell the user to edit the invoice directly.
-    if (
-      existingInvoice &&
-      ro.inspections.some((i: any) => i.invoiceId === existingInvoice.id)
-    ) {
-      throw new BadRequestException(
-        "This repair order's invoice was generated from an inspection. Edit the invoice directly to change it."
-      );
-    }
-
-    // When a completed, not-yet-invoiced inspection is linked, the inspection
-    // drives the invoice: its fee becomes a line item alongside any completed RO
-    // services/parts. Delegate so tax rules, the PST-exempt gate, numbering, and
-    // the inspection<->invoice<->RO linkage all stay consistent in one place.
-    // (Only for the initial close — a re-sync with an existing invoice is handled
-    // by the guard above.)
-    const linkedInspection = ro.inspections.find(
-      (i: any) =>
-        !i.invoiceId && (i.status === 'COMPLETED' || i.status === 'FINALIZED')
-    );
-    if (!existingInvoice && linkedInspection) {
-      if (!feeItemId) {
-        throw new BadRequestException(
-          'Select an inspection fee to invoice this repair order'
-        );
-      }
-      return this.inspectionsService.generateInvoice(
-        linkedInspection.id,
-        { feeItemId, companyId },
-        userId,
-        roleName
-      );
-    }
+    // The inspection fee is now a normal completed service line on the RO (added
+    // when the inspection is completed), so every RO invoices the same way. Any
+    // completed, not-yet-invoiced inspection is linked to the invoice below so it
+    // is marked as billed (its fee is already in the RO services).
+    const inspectionIdsToLink: string[] = ro.inspections
+      .filter(
+        (i: any) =>
+          !i.invoiceId && (i.status === 'COMPLETED' || i.status === 'FINALIZED')
+      )
+      .map((i: any) => i.id);
 
     const noTax = paymentMethod === 'CASH_NO_TAX';
     const { items, subtotal, gstRate, pstRate, gstAmount, pstAmount, total } =
@@ -938,6 +911,16 @@ export class RepairOrdersService {
             items: { create: items as any },
           },
         });
+        if (inspectionIdsToLink.length) {
+          await tx.inspection.updateMany({
+            where: { id: { in: inspectionIdsToLink } },
+            data: {
+              invoiceId: existingInvoice.id,
+              status: 'FINALIZED',
+              finalizedAt: new Date(),
+            },
+          });
+        }
         await tx.repairOrder.update({
           where: { id },
           data: { status: ROStatus.INVOICED, closedAt: new Date() },
@@ -975,6 +958,17 @@ export class RepairOrdersService {
         },
       },
     });
+
+    if (inspectionIdsToLink.length) {
+      await this.prisma.inspection.updateMany({
+        where: { id: { in: inspectionIdsToLink } },
+        data: {
+          invoiceId: invoice.id,
+          status: 'FINALIZED',
+          finalizedAt: new Date(),
+        },
+      });
+    }
 
     await this.prisma.repairOrder.update({
       where: { id },

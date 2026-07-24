@@ -1600,6 +1600,9 @@ model ROService {
   customerApproval ROServiceApproval @default(PENDING)
   // When true, this item should be quoted (via a quotation) rather than billed on the RO invoice
   isQuotation     Boolean         @default(false)
+  // Set when this line is the fee auto-added from a completed inspection, so it
+  // can be kept in sync (and not duplicated) with that inspection.
+  inspectionId    String?
   completedById   String?
   completedAt     DateTime?
   createdAt       DateTime        @default(now())
@@ -1611,6 +1614,7 @@ model ROService {
 
   @@index([repairOrderId])
   @@index([status])
+  @@index([inspectionId])
   @@map("ro_services")
 }
 

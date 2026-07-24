@@ -298,7 +298,67 @@ export class InspectionsService {
       },
     });
 
+    // When the inspection belongs to a repair order, add its fee as a real
+    // service line so it shows in the RO's Services & Parts, feeds the estimate,
+    // and flows onto the invoice through the normal close path (billed once — the
+    // RO close no longer injects a separate inspection-fee line).
+    if (inspection.repairOrderId) {
+      await this.syncInspectionFeeService(
+        inspection.repairOrderId,
+        inspection.id,
+        inspection.template.type,
+        userId
+      );
+    }
+
     return this.findOne(id, userRole);
+  }
+
+  /** The active inspection fee item best matching a template type (else any). */
+  private async resolveInspectionFeeItem(type?: InspectionType | null) {
+    const active = await this.prisma.inspectionFeeItem.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (active.length === 0) return null;
+    return active.find((f) => f.type && f.type === type) ?? active[0];
+  }
+
+  /**
+   * Ensure a completed RO-linked inspection has exactly one fee service line on
+   * the repair order. Creates it once; leaves an existing (possibly user-edited)
+   * line untouched so we never duplicate or clobber a manual price change.
+   */
+  private async syncInspectionFeeService(
+    repairOrderId: string,
+    inspectionId: string,
+    type: InspectionType | null | undefined,
+    userId: string
+  ): Promise<void> {
+    const existing = await this.prisma.rOService.findFirst({
+      where: { repairOrderId, inspectionId },
+    });
+    if (existing) return;
+
+    const feeItem = await this.resolveInspectionFeeItem(type);
+    if (!feeItem) return; // No fee configured — nothing to bill.
+
+    await this.prisma.rOService.create({
+      data: {
+        repairOrderId,
+        inspectionId,
+        description: feeItem.name,
+        type: 'OTHER',
+        quantity: 1,
+        unitPrice: feeItem.price,
+        total: feeItem.price,
+        status: 'COMPLETED',
+        customerApproval: 'APPROVED',
+        isQuotation: false,
+        completedById: userId,
+        completedAt: new Date(),
+      },
+    });
   }
 
   async remove(id: string, userId: string, userRole: string): Promise<void> {
@@ -307,6 +367,10 @@ export class InspectionsService {
     }
 
     const inspection = await this.ensureInspection(id);
+
+    // Remove the auto-added fee service line so a deleted inspection doesn't
+    // leave a dangling charge on the repair order.
+    await this.prisma.rOService.deleteMany({ where: { inspectionId: id } });
 
     // Results and media cascade on delete via the schema relations.
     await this.prisma.inspection.delete({ where: { id } });

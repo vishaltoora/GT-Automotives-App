@@ -49,6 +49,14 @@ describe('InspectionsService', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
       },
+      inspectionFeeItem: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      rOService: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
       customer: { findUnique: jest.fn() },
       vehicle: { findUnique: jest.fn() },
     };
@@ -274,6 +282,69 @@ describe('InspectionsService', () => {
       );
       expect(updateArgs.data.finalizedById).toBe('u-1');
       expect(updateArgs.data.completedAt).toBeInstanceOf(Date);
+    });
+
+    it('adds the inspection fee as a repair-order service line when RO-linked', async () => {
+      prisma.inspection.findUnique.mockResolvedValue({
+        id: 'i-1',
+        repairOrderId: 'ro-1',
+        results: [],
+        template: { type: 'PEACE_OF_MIND', sections: [] },
+      });
+      prisma.inspection.update.mockResolvedValue({});
+      prisma.rOService.findFirst.mockResolvedValue(null);
+      prisma.inspectionFeeItem.findMany.mockResolvedValue([
+        {
+          id: 'fee-1',
+          name: 'Inspection Fee',
+          type: 'PEACE_OF_MIND',
+          price: 89,
+        },
+      ]);
+
+      await service.complete('i-1', 'u-1', 'STAFF');
+
+      expect(prisma.rOService.create).toHaveBeenCalledTimes(1);
+      const createArgs = prisma.rOService.create.mock.calls[0][0];
+      expect(createArgs.data).toMatchObject({
+        repairOrderId: 'ro-1',
+        inspectionId: 'i-1',
+        description: 'Inspection Fee',
+        unitPrice: 89,
+        total: 89,
+        status: 'COMPLETED',
+        customerApproval: 'APPROVED',
+        isQuotation: false,
+      });
+    });
+
+    it('does not add a fee line when the inspection is not RO-linked', async () => {
+      prisma.inspection.findUnique.mockResolvedValue({
+        id: 'i-1',
+        repairOrderId: null,
+        results: [],
+        template: { type: 'PEACE_OF_MIND', sections: [] },
+      });
+      prisma.inspection.update.mockResolvedValue({});
+
+      await service.complete('i-1', 'u-1', 'STAFF');
+
+      expect(prisma.rOService.create).not.toHaveBeenCalled();
+    });
+
+    it('does not duplicate the fee line if one already exists', async () => {
+      prisma.inspection.findUnique.mockResolvedValue({
+        id: 'i-1',
+        repairOrderId: 'ro-1',
+        results: [],
+        template: { type: 'PEACE_OF_MIND', sections: [] },
+      });
+      prisma.inspection.update.mockResolvedValue({});
+      prisma.rOService.findFirst.mockResolvedValue({ id: 'existing-fee' });
+
+      await service.complete('i-1', 'u-1', 'STAFF');
+
+      expect(prisma.rOService.create).not.toHaveBeenCalled();
     });
 
     it('sets ATTENTION_SOON when FAIR but no POOR, and GOOD otherwise', async () => {
