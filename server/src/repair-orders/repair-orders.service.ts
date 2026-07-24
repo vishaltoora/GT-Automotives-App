@@ -21,7 +21,10 @@ import {
   CreateServiceCatalogItemDto,
   UpdateServiceCatalogItemDto,
 } from '@gt-automotive/data';
-import { businessDayUtcRange } from '../config/timezone.config';
+import {
+  businessDayUtcRange,
+  toBusinessCalendarDate,
+} from '../config/timezone.config';
 
 @Injectable()
 export class RepairOrdersService {
@@ -908,6 +911,9 @@ export class RepairOrdersService {
             status: 'PENDING',
             paymentMethod: (paymentMethod as any) ?? null,
             notes: invoiceNotes,
+            // Normalize the invoice date to the business day (midnight UTC) so an
+            // RO re-closed after 5 PM PST isn't dated to the next (UTC) day.
+            invoiceDate: toBusinessCalendarDate(),
             items: { create: items as any },
           },
         });
@@ -953,6 +959,10 @@ export class RepairOrdersService {
         paymentMethod: (paymentMethod as any) ?? undefined,
         notes: invoiceNotes,
         createdBy: 'system',
+        // invoiceDate is a business calendar date (midnight UTC), not a raw
+        // instant — otherwise an RO closed after 5 PM PST is dated to the next
+        // (UTC) day. Matches invoicesService.create().
+        invoiceDate: toBusinessCalendarDate(),
         items: {
           create: items as any,
         },
