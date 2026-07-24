@@ -218,7 +218,7 @@ export function ServiceCatalogPicker({
       PaperProps={{ sx: { height: '80vh' } }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', pb: 1 }}>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Typography variant="h6" component="span" sx={{ flexGrow: 1 }}>
           Choose a Service
         </Typography>
         <IconButton onClick={handleClose} size="small">
