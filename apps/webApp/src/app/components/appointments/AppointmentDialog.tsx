@@ -79,6 +79,11 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  // Set when the customer dialog is opened to edit an existing customer from
+  // the picker; null means it is open to create a new one.
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(
+    null
+  );
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -578,7 +583,18 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 customers={customers}
                 selectedCustomer={selectedCustomer}
                 onCustomerChange={handleCustomerChange}
-                onAddCustomer={() => setCustomerDialogOpen(true)}
+                onAddCustomer={() => {
+                  setEditingCustomerId(null);
+                  setCustomerDialogOpen(true);
+                }}
+                onEditCustomer={
+                  appointment
+                    ? undefined
+                    : (customer) => {
+                        setEditingCustomerId(customer.id);
+                        setCustomerDialogOpen(true);
+                      }
+                }
                 loading={customersLoading}
                 disabled={!!appointment}
                 showAddButton={!appointment}
@@ -667,13 +683,24 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* Customer Dialog for Adding New Customers */}
+      {/* Customer Dialog — adds a new customer, or edits one from the picker */}
       <CustomerDialog
+        key={editingCustomerId ?? 'new'}
         open={customerDialogOpen}
-        onClose={() => setCustomerDialogOpen(false)}
+        customerId={editingCustomerId ?? undefined}
+        onClose={() => {
+          setCustomerDialogOpen(false);
+          setEditingCustomerId(null);
+        }}
         onSuccess={async () => {
           setCustomerDialogOpen(false);
           await loadCustomers();
+          // An edit can change the name shown in the field, so refresh the
+          // selected record too.
+          if (editingCustomerId && selectedCustomer?.id === editingCustomerId) {
+            await loadCustomerDetails(editingCustomerId);
+          }
+          setEditingCustomerId(null);
         }}
       />
 

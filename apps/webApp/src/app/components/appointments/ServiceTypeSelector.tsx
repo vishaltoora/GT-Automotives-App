@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Divider,
-  ListItemIcon,
-  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -15,16 +8,9 @@ import {
   Button,
   Stack,
   TextField,
-  Box,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
-import {
-  AddCircleOutline as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
 import { NumberInput } from '../common';
+import { CrudAutocomplete } from '../common/CrudAutocomplete';
 import { serviceTypeService } from '../../requests/service-type.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useError } from '../../contexts/ErrorContext';
@@ -51,9 +37,6 @@ export const SERVICE_TYPES: ServiceTypeOption[] = [
   { value: 'OTHER', label: 'Other Service', duration: 60 },
 ];
 
-// Sentinel value used by the inline "Add new service type" menu entry.
-const ADD_NEW = '__ADD_NEW_SERVICE_TYPE__';
-
 interface ServiceTypeSelectorProps {
   serviceType: string;
   duration: number;
@@ -73,7 +56,6 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
   const canManage = isAdmin || isSupervisor;
 
   const [options, setOptions] = useState<ServiceTypeOption[]>(SERVICE_TYPES);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Create/edit dialog state. `editingId` null => creating.
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -120,11 +102,10 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
         ]
       : options;
 
+  const selectedOption =
+    displayOptions.find((o) => o.value === serviceType) ?? null;
+
   const handleSelectChange = (newServiceType: string) => {
-    if (newServiceType === ADD_NEW) {
-      openCreate();
-      return;
-    }
     const service = displayOptions.find((s) => s.value === newServiceType);
     onServiceTypeChange(newServiceType);
     if (service) {
@@ -133,7 +114,6 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
   };
 
   const openCreate = () => {
-    setMenuOpen(false);
     setEditingId(null);
     setFormName('');
     setFormDuration(60);
@@ -142,7 +122,6 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
 
   const openEdit = (option: ServiceTypeOption) => {
     if (!option.id) return;
-    setMenuOpen(false);
     setEditingId(option.id);
     setFormName(option.label);
     setFormDuration(option.duration);
@@ -187,7 +166,6 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
 
   const handleDelete = async (option: ServiceTypeOption) => {
     if (!option.id) return;
-    setMenuOpen(false);
     const confirmed = await confirm({
       title: 'Delete Service Type',
       message: `Delete "${option.label}"? Existing appointments keep their record, but this type will no longer be selectable.`,
@@ -215,70 +193,24 @@ export const ServiceTypeSelector: React.FC<ServiceTypeSelectorProps> = ({
     <>
       {/* Service Type */}
       <Grid size={{ xs: 12, sm: 6 }}>
-        <FormControl fullWidth required>
-          <InputLabel>Service Type</InputLabel>
-          <Select
-            value={serviceType}
-            open={menuOpen}
-            onOpen={() => setMenuOpen(true)}
-            onClose={() => setMenuOpen(false)}
-            onChange={(e) => handleSelectChange(e.target.value)}
-            label="Service Type"
-            renderValue={(value) => {
-              const opt = displayOptions.find((o) => o.value === value);
-              return opt ? `${opt.label} (${opt.duration} min)` : '';
-            }}
-          >
-            {displayOptions.map((service) => (
-              <MenuItem key={service.value} value={service.value}>
-                <ListItemText
-                  primary={`${service.label} (${service.duration} min)`}
-                />
-                {canManage && service.id && (
-                  <Box
-                    sx={{ display: 'flex', gap: 0.5, ml: 1 }}
-                    // Prevent selecting the row when tapping the icons.
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEdit(service);
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(service);
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                )}
-              </MenuItem>
-            ))}
-            {canManage && <Divider />}
-            {canManage && (
-              <MenuItem value={ADD_NEW}>
-                <ListItemIcon>
-                  <AddIcon fontSize="small" color="primary" />
-                </ListItemIcon>
-                <ListItemText primary="Add new service type…" />
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
+        <CrudAutocomplete<ServiceTypeOption>
+          label="Service Type"
+          entityLabel="service type"
+          required
+          options={displayOptions}
+          value={selectedOption}
+          onChange={(option) => handleSelectChange(option?.value ?? '')}
+          getOptionId={(option) => option.value}
+          getOptionLabel={(option) =>
+            `${option.label} (${option.duration} min)`
+          }
+          // Only types loaded from the API have an id; the hardcoded fallbacks
+          // and a retired type kept for an existing appointment cannot be edited.
+          isOptionManageable={(option) => Boolean(option.id)}
+          onAdd={canManage ? openCreate : undefined}
+          onEdit={canManage ? openEdit : undefined}
+          onDelete={canManage ? handleDelete : undefined}
+        />
       </Grid>
 
       {/* Duration */}
