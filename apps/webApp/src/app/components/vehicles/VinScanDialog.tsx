@@ -59,9 +59,15 @@ export default function VinScanDialog({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   // Guards against the continuous decode callback firing again after we've
   // already captured a valid VIN.
   const capturedRef = useRef(false);
+  // Identifies the current camera session. StrictMode (and rapid re-opens) can
+  // start a second session while the first is still awaiting getUserMedia; any
+  // session whose id no longer matches must release its stream instead of
+  // attaching it.
+  const runIdRef = useRef(0);
 
   const [status, setStatus] = useState<ScanStatus>('starting');
   const [errorMsg, setErrorMsg] = useState('');
@@ -70,19 +76,43 @@ export default function VinScanDialog({
   const [torchSupported, setTorchSupported] = useState(false);
 
   const stopCamera = useCallback(() => {
+    // Invalidate any camera session still in flight so it releases its stream
+    // instead of attaching it after we've torn down.
+    runIdRef.current += 1;
     try {
       controlsRef.current?.stop();
     } catch {
       /* no-op */
     }
     controlsRef.current = null;
+    // controls.stop() disposes the stream it was given, but a session that
+    // never reached that point still holds live tracks — stop them explicitly
+    // so the camera indicator always goes out.
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   }, []);
 
   const startScanning = useCallback(async () => {
+    const video = videoRef.current;
+    // The <video> is mounted inside a MUI portal, so it does not exist on the
+    // dialog's first commit. startScanning is driven by the video's ref
+    // callback (below), which fires the moment the element is really in the
+    // DOM — never start without it, or ZXing quietly decodes into a detached
+    // element it creates itself and the preview stays black.
+    if (!video) return;
+
+    stopCamera();
+    const runId = ++runIdRef.current;
+    const isStale = () => runId !== runIdRef.current;
+
     capturedRef.current = false;
     setCandidate(null);
     setErrorMsg('');
     setTorchOn(false);
+    setTorchSupported(false);
     setStatus('starting');
 
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -99,17 +129,25 @@ export default function VinScanDialog({
     const reader = new BrowserMultiFormatReader(hints);
 
     try {
-      const controls = await reader.decodeFromConstraints(
-        {
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
-        videoRef.current as HTMLVideoElement,
+      });
+
+      if (isStale()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      streamRef.current = stream;
+
+      const controls = await reader.decodeFromStream(
+        stream,
+        video,
         (result, err) => {
-          if (capturedRef.current) return;
+          if (capturedRef.current || isStale()) return;
           if (result) {
             const found = extractVinFromScan(result.getText());
             if (found) {
@@ -128,6 +166,11 @@ export default function VinScanDialog({
           }
         }
       );
+
+      if (isStale()) {
+        controls.stop();
+        return;
+      }
       controlsRef.current = controls;
       setStatus('scanning');
 
@@ -135,6 +178,8 @@ export default function VinScanDialog({
       // control is present, and hide it later if actually switching it rejects.
       setTorchSupported(typeof controls.switchTorch === 'function');
     } catch (err) {
+      if (isStale()) return;
+      stopCamera();
       const name = (err as Error)?.name;
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
         setErrorMsg(
@@ -151,13 +196,49 @@ export default function VinScanDialog({
     }
   }, [stopCamera]);
 
-  // Start the camera when the dialog opens; always release it when it closes.
+  // The video element only exists while we're starting/scanning, so its ref
+  // callback is the reliable signal for "the preview is in the DOM now" —
+  // including after Scan again / Try again remounts it.
+  const attachVideo = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node;
+      if (node) {
+        startScanning();
+      } else {
+        stopCamera();
+      }
+    },
+    [startScanning, stopCamera]
+  );
+
   useEffect(() => {
-    if (open) {
+    // If the preview is already mounted when effects run — which is what
+    // happens when StrictMode tears the session down and re-runs them — make
+    // sure a session is live again. Redundant calls are safe: startScanning
+    // invalidates and releases whatever came before it.
+    if (videoRef.current) {
       startScanning();
     }
-    return () => stopCamera();
-  }, [open, startScanning, stopCamera]);
+    // Belt-and-braces: always release the camera when the dialog unmounts.
+    return stopCamera;
+  }, [startScanning, stopCamera]);
+
+  // A stream can attach and still never deliver frames (camera held by another
+  // app, some virtual-camera drivers). Surface that instead of leaving the user
+  // staring at a black rectangle with no explanation.
+  useEffect(() => {
+    if (status !== 'scanning') return;
+    const timer = setTimeout(() => {
+      if (!videoRef.current || videoRef.current.videoWidth === 0) {
+        stopCamera();
+        setErrorMsg(
+          'The camera started but is not sending any video. Close any other app that may be using the camera, then try again — or enter the VIN manually.'
+        );
+        setStatus('error');
+      }
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [status, stopCamera]);
 
   const handleToggleTorch = async () => {
     const controls = controlsRef.current;
@@ -172,7 +253,10 @@ export default function VinScanDialog({
   };
 
   const handleRescan = () => {
-    startScanning();
+    // Remounts the preview; its ref callback restarts the camera.
+    setCandidate(null);
+    setErrorMsg('');
+    setStatus('starting');
   };
 
   const handleAccept = () => {
@@ -257,7 +341,8 @@ export default function VinScanDialog({
               }}
             >
               <video
-                ref={videoRef}
+                ref={attachVideo}
+                autoPlay
                 muted
                 playsInline
                 style={{
