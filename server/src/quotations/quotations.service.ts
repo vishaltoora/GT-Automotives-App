@@ -166,9 +166,6 @@ export class QuotationsService {
 
     // If items are being updated, recalculate totals
     if (items) {
-      // Delete existing items
-      await this.quotationRepository.deleteItems(id);
-
       // Calculate new totals
       let subtotal = 0;
       const processedItems = items.map((item) => {
@@ -186,21 +183,23 @@ export class QuotationsService {
       const taxAmount = gstAmount + pstAmount;
       const total = subtotal + taxAmount;
 
-      // Create new items
-      await this.quotationRepository.createItems(processedItems);
-
-      // Update quotation with new totals
-      return this.quotationRepository.update(id, {
-        ...quoteData,
-        subtotal,
-        gstRate,
-        gstAmount,
-        pstRate,
-        pstAmount,
-        taxRate,
-        taxAmount,
-        total,
-      });
+      // Replace the items and write the new totals in one transaction, so a
+      // failure can't leave the quotation with its items deleted.
+      return this.quotationRepository.replaceItemsAndUpdate(
+        id,
+        processedItems,
+        {
+          ...quoteData,
+          subtotal,
+          gstRate,
+          gstAmount,
+          pstRate,
+          pstAmount,
+          taxRate,
+          taxAmount,
+          total,
+        }
+      );
     }
 
     // If no items update, just update the quotation data
