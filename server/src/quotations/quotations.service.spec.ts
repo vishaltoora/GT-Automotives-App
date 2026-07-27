@@ -25,6 +25,13 @@ describe('QuotationsService', () => {
       delete: jest.fn(),
       deleteItems: jest.fn(),
       createItems: jest.fn(),
+      replaceItemsAndUpdate: jest.fn(
+        async (id: string, items: any, data: any) => ({
+          id,
+          ...data,
+          items,
+        })
+      ),
       search: jest.fn(),
       convertToInvoice: jest.fn(),
     };
@@ -124,13 +131,17 @@ describe('QuotationsService', () => {
         items: [{ quantity: 3, unitPrice: 100, itemType: 'TIRE' }],
       } as any);
 
-      expect(quotationRepository.deleteItems).toHaveBeenCalledWith('q1');
-      expect(quotationRepository.createItems).toHaveBeenCalled();
-      const itemsArg = quotationRepository.createItems.mock.calls[0][0];
+      // Items and totals are swapped in one transactional call so a failure
+      // can't leave the quote with its items deleted.
+      expect(quotationRepository.replaceItemsAndUpdate).toHaveBeenCalledTimes(
+        1
+      );
+      const [idArg, itemsArg, updateArg] =
+        quotationRepository.replaceItemsAndUpdate.mock.calls[0];
+      expect(idArg).toBe('q1');
       expect(itemsArg[0].total).toBe(300);
       expect(itemsArg[0].quotationId).toBe('q1');
 
-      const updateArg = quotationRepository.update.mock.calls[0][1];
       expect(updateArg.subtotal).toBe(300);
       expect(updateArg.taxAmount).toBeCloseTo(36); // 300*0.12
       expect(updateArg.total).toBeCloseTo(336);
@@ -145,7 +156,8 @@ describe('QuotationsService', () => {
       await service.update('q1', {
         items: [{ quantity: 1, unitPrice: 200 }],
       } as any);
-      const updateArg = quotationRepository.update.mock.calls[0][1];
+      const updateArg =
+        quotationRepository.replaceItemsAndUpdate.mock.calls[0][2];
       expect(updateArg.gstAmount).toBeCloseTo(20);
       expect(updateArg.pstAmount).toBeCloseTo(10);
       expect(updateArg.total).toBeCloseTo(230);
@@ -303,5 +315,177 @@ describe('QuotationsService', () => {
         service.sendQuotationEmail('q1', 'u1')
       ).rejects.toBeInstanceOf(BadRequestException);
     });
+  });
+});
+
+describe('QuotationsService — item payload sanitising', () => {
+  let service: QuotationsService;
+  let quotationRepository: any;
+
+  beforeEach(() => {
+    quotationRepository = {
+      create: jest.fn(async (data: any) => ({ id: 'quote-1', ...data })),
+      findOne: jest.fn(async () => ({
+        id: 'q1',
+        gstRate: 0.05,
+        pstRate: 0.07,
+        items: [],
+      })),
+      update: jest.fn(async (id: string, data: any) => ({ id, ...data })),
+      deleteItems: jest.fn(),
+      createItems: jest.fn(),
+      replaceItemsAndUpdate: jest.fn(
+        async (id: string, items: any, data: any) => ({
+          id,
+          ...data,
+          items,
+        })
+      ),
+    };
+    service = new QuotationsService(
+      quotationRepository as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+  });
+
+  // Exactly what the edit form sends back: GET /quotations/:id includes each
+  // item's `tire` relation, so a saved item round-trips carrying `tire`, `id`
+  // and `serviceId`. Prisma rejected those with "Unknown argument `tire`".
+  const roundTrippedItem = {
+    id: 'item-1',
+    tireId: null,
+    tireName: null,
+    tire: null,
+    serviceId: 'svc-9',
+    itemType: 'SERVICE',
+    description: 'Breakes replacement',
+    quantity: 1,
+    unitPrice: 100,
+    total: 100,
+    createdAt: '2026-07-27T00:00:00.000Z',
+    updatedAt: '2026-07-27T00:00:00.000Z',
+  };
+
+  it('strips non-column fields before recreating items on update', async () => {
+    await service.update('q1', {
+      items: [
+        roundTrippedItem,
+        {
+          itemType: 'OTHER',
+          description: 'dasdads',
+          quantity: 1,
+          unitPrice: 220,
+        },
+      ],
+    } as any);
+
+    const written = quotationRepository.replaceItemsAndUpdate.mock.calls[0][1];
+    written.forEach((item: any) => {
+      expect(item).not.toHaveProperty('tire');
+      expect(item).not.toHaveProperty('serviceId');
+      expect(item).not.toHaveProperty('id');
+      expect(item).not.toHaveProperty('createdAt');
+      expect(item).not.toHaveProperty('updatedAt');
+    });
+    expect(Object.keys(written[0]).sort()).toEqual([
+      'description',
+      'itemType',
+      'quantity',
+      'quotationId',
+      'tireId',
+      'tireName',
+      'total',
+      'unitPrice',
+    ]);
+    expect(written[0].quotationId).toBe('q1');
+  });
+
+  it('strips non-column fields on create too', async () => {
+    await service.create(
+      { customerName: 'Bob', items: [roundTrippedItem] } as any,
+      'u1'
+    );
+
+    const item = quotationRepository.create.mock.calls[0][0].items.create[0];
+    expect(item).not.toHaveProperty('tire');
+    expect(item).not.toHaveProperty('serviceId');
+    expect(item.description).toBe('Breakes replacement');
+  });
+
+  it('normalises an empty tireId to null so the FK is not violated', async () => {
+    await service.update('q1', {
+      items: [{ ...roundTrippedItem, tireId: '', tireName: '' }],
+    } as any);
+
+    const written = quotationRepository.replaceItemsAndUpdate.mock.calls[0][1];
+    expect(written[0].tireId).toBeNull();
+    expect(written[0].tireName).toBeNull();
+  });
+
+  it('still recalculates totals from the sanitised items', async () => {
+    await service.update('q1', {
+      items: [
+        { ...roundTrippedItem, quantity: 2, unitPrice: 170 },
+        { itemType: 'OTHER', description: 'x', quantity: 1, unitPrice: 100 },
+      ],
+    } as any);
+
+    const written = quotationRepository.replaceItemsAndUpdate.mock.calls[0][1];
+    expect(written[0].total).toBe(340);
+    expect(written[1].total).toBe(100);
+    expect(
+      quotationRepository.replaceItemsAndUpdate.mock.calls[0][2].subtotal
+    ).toBe(440);
+  });
+});
+
+describe('QuotationsService — item replacement is atomic', () => {
+  let service: QuotationsService;
+  let quotationRepository: any;
+
+  beforeEach(() => {
+    quotationRepository = {
+      findOne: jest.fn(async () => ({
+        id: 'q1',
+        gstRate: 0.05,
+        pstRate: 0.07,
+        items: [],
+      })),
+      update: jest.fn(),
+      deleteItems: jest.fn(),
+      createItems: jest.fn(),
+      replaceItemsAndUpdate: jest.fn(async () => ({ id: 'q1' })),
+    };
+    service = new QuotationsService(
+      quotationRepository as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+  });
+
+  // A failing save previously deleted the items and then threw before
+  // recreating them, leaving a live quote with zero items and stale totals.
+  // Everything must now go through the single transactional call.
+  it('never deletes items outside the transaction', async () => {
+    await service.update('q1', {
+      items: [
+        { itemType: 'OTHER', description: 'x', quantity: 1, unitPrice: 10 },
+      ],
+    } as any);
+
+    expect(quotationRepository.deleteItems).not.toHaveBeenCalled();
+    expect(quotationRepository.createItems).not.toHaveBeenCalled();
+    expect(quotationRepository.replaceItemsAndUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves items untouched when the payload has none', async () => {
+    await service.update('q1', { notes: 'just a note' } as any);
+
+    expect(quotationRepository.deleteItems).not.toHaveBeenCalled();
+    expect(quotationRepository.replaceItemsAndUpdate).not.toHaveBeenCalled();
+    expect(quotationRepository.update).toHaveBeenCalledTimes(1);
   });
 });

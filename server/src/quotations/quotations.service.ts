@@ -17,6 +17,27 @@ type QuotationWithItems = Quotation & {
   })[];
 };
 
+/**
+ * Reduce an incoming item to the columns QuotationItem actually has.
+ *
+ * GET /quotations/:id returns each item with its `tire` relation loaded, and
+ * the edit form sends those items straight back — so the payload arrives
+ * carrying `tire` (plus `id` and `serviceId`, which are not writable columns
+ * either). Spreading the DTO into Prisma made createMany fail with
+ * "Unknown argument `tire`", so saving an edit to any quotation that already
+ * had items returned a 500.
+ */
+const toQuotationItemData = (item: any, total: number) => ({
+  // An empty string would be treated as a real id and break the FK.
+  tireId: item.tireId || null,
+  tireName: item.tireName || null,
+  itemType: item.itemType,
+  description: item.description,
+  quantity: item.quantity,
+  unitPrice: item.unitPrice,
+  total,
+});
+
 @Injectable()
 export class QuotationsService {
   constructor(
@@ -53,10 +74,7 @@ export class QuotationsService {
       const processedItems = items.map((item) => {
         const total = Number(item.quantity) * item.unitPrice;
         subtotal += total;
-        return {
-          ...item,
-          total,
-        };
+        return toQuotationItemData(item, total);
       });
       console.log('Service: Processed items count:', processedItems.length);
 
@@ -148,19 +166,12 @@ export class QuotationsService {
 
     // If items are being updated, recalculate totals
     if (items) {
-      // Delete existing items
-      await this.quotationRepository.deleteItems(id);
-
       // Calculate new totals
       let subtotal = 0;
       const processedItems = items.map((item) => {
         const total = Number(item.quantity) * item.unitPrice;
         subtotal += total;
-        return {
-          ...item,
-          quotationId: id,
-          total,
-        };
+        return { ...toQuotationItemData(item, total), quotationId: id };
       });
 
       // Calculate taxes
@@ -172,21 +183,23 @@ export class QuotationsService {
       const taxAmount = gstAmount + pstAmount;
       const total = subtotal + taxAmount;
 
-      // Create new items
-      await this.quotationRepository.createItems(processedItems);
-
-      // Update quotation with new totals
-      return this.quotationRepository.update(id, {
-        ...quoteData,
-        subtotal,
-        gstRate,
-        gstAmount,
-        pstRate,
-        pstAmount,
-        taxRate,
-        taxAmount,
-        total,
-      });
+      // Replace the items and write the new totals in one transaction, so a
+      // failure can't leave the quotation with its items deleted.
+      return this.quotationRepository.replaceItemsAndUpdate(
+        id,
+        processedItems,
+        {
+          ...quoteData,
+          subtotal,
+          gstRate,
+          gstAmount,
+          pstRate,
+          pstAmount,
+          taxRate,
+          taxAmount,
+          total,
+        }
+      );
     }
 
     // If no items update, just update the quotation data

@@ -89,9 +89,45 @@ export class QuotationRepository {
     });
   }
 
-  async createItems(items: Prisma.QuotationItemCreateManyInput[]): Promise<void> {
+  async createItems(
+    items: Prisma.QuotationItemCreateManyInput[]
+  ): Promise<void> {
     await this.prisma.quotationItem.createMany({
       data: items,
+    });
+  }
+
+  /**
+   * Swap a quotation's items and update the quotation itself, atomically.
+   *
+   * Editing a quote replaces its whole item set. Doing that as separate
+   * delete/create calls means a failure in the create leaves the quotation
+   * with no items at all — a Prisma validation error wiped the line items off
+   * a real quote exactly this way, leaving stale totals and nothing to show.
+   * Running all three statements in one transaction means a failed save now
+   * changes nothing.
+   */
+  async replaceItemsAndUpdate(
+    id: string,
+    items: Prisma.QuotationItemCreateManyInput[],
+    data: Prisma.QuotationUpdateInput
+  ): Promise<Quotation> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.quotationItem.deleteMany({ where: { quotationId: id } });
+      if (items.length > 0) {
+        await tx.quotationItem.createMany({ data: items });
+      }
+      return tx.quotation.update({
+        where: { id },
+        data,
+        include: {
+          items: {
+            include: {
+              tire: true,
+            },
+          },
+        },
+      });
     });
   }
 
@@ -157,7 +193,10 @@ export class QuotationRepository {
     });
   }
 
-  async convertToInvoice(quotationId: string, invoiceId: string): Promise<Quotation> {
+  async convertToInvoice(
+    quotationId: string,
+    invoiceId: string
+  ): Promise<Quotation> {
     return this.prisma.quotation.update({
       where: { id: quotationId },
       data: {
