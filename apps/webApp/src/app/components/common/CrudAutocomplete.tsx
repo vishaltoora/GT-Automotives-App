@@ -158,6 +158,11 @@ export function CrudAutocomplete<T>({
       // leaves an empty indicator button behind.
       forcePopupIcon={false}
       openOnFocus
+      // MUI keys rows by their label unless told otherwise, so two options that
+      // read the same — a shop with two "John Smith"s — collide. React then
+      // reuses the wrong rows when the filter narrows and stale entries survive
+      // typing, which reads as the list not filtering at all.
+      getOptionKey={getOptionId}
       renderOption={(props, option) => {
         // MUI supplies `key` inside props; React 19 warns if it is spread.
         const { key, ...liProps } = props as typeof props & { key: string };
