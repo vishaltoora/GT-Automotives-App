@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -9,13 +8,17 @@ import {
   Button,
   Alert,
   Box,
-  Tooltip,
   CircularProgress,
-  Autocomplete,
 } from '@mui/material';
-import { AddIcon, EditIcon, DeleteIcon } from '../../icons/standard.icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TireBrandService, TireBrand, CreateTireBrandDto, UpdateTireBrandDto } from '../../requests/tire-brand.requests';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CrudAutocomplete } from '../common/CrudAutocomplete';
+import { useCatalogSelect } from '../../hooks/useCatalogSelect';
+import {
+  TireBrandService,
+  TireBrand,
+  CreateTireBrandDto,
+  UpdateTireBrandDto,
+} from '../../requests/tire-brand.requests';
 
 interface BrandSelectProps {
   value?: string;
@@ -29,7 +32,7 @@ interface BrandDialogProps {
   open: boolean;
   onClose: () => void;
   brand?: TireBrand | null;
-  onSuccess: () => void;
+  onSuccess: (saved: TireBrand) => void;
 }
 
 function BrandDialog({ open, onClose, brand, onSuccess }: BrandDialogProps) {
@@ -39,7 +42,9 @@ function BrandDialog({ open, onClose, brand, onSuccess }: BrandDialogProps) {
     name: '',
     imageUrl: '',
   });
-  const [errors, setErrors] = useState<{ name?: string; imageUrl?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; imageUrl?: string }>(
+    {}
+  );
 
   useEffect(() => {
     if (open) {
@@ -59,59 +64,36 @@ function BrandDialog({ open, onClose, brand, onSuccess }: BrandDialogProps) {
   }, [brand, open]);
 
   const createMutation = useMutation({
-    mutationFn: async (data: CreateTireBrandDto) => {
-      // Ensure we have a valid token before making the request
-      await ensureValidToken();
-      return TireBrandService.create(data);
-    },
-    onSuccess: () => {
+    mutationFn: (data: CreateTireBrandDto) => TireBrandService.create(data),
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['tire-brands'] });
-      onSuccess();
+      onSuccess(saved);
       onClose();
     },
     onError: (error: any) => {
       if (process.env.NODE_ENV !== 'production') {
-        console.error('Create brand failed:', error?.response?.data?.message || error.message);
+        console.error(
+          'Create brand failed:',
+          error?.response?.data?.message || error.message
+        );
       }
     },
   });
 
-  // Function to ensure we have a valid auth token
-  const ensureValidToken = async () => {
-    let token = localStorage.getItem('authToken');
-
-    if (!token && window.Clerk?.session) {
-      try {
-        token = await window.Clerk.session.getToken();
-        if (token) {
-          localStorage.setItem('authToken', token);
-        }
-      } catch (error) {
-        throw new Error('Authentication required');
-      }
-    }
-
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
-
-    return token;
-  };
-
   const updateMutation = useMutation({
-    mutationFn: async (data: UpdateTireBrandDto) => {
-      // Ensure we have a valid token before making the request
-      await ensureValidToken();
-      return TireBrandService.update(brand!.id, data);
-    },
-    onSuccess: () => {
+    mutationFn: (data: UpdateTireBrandDto) =>
+      TireBrandService.update(brand!.id, data),
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['tire-brands'] });
-      onSuccess();
+      onSuccess(saved);
       onClose();
     },
     onError: (error: any) => {
       if (process.env.NODE_ENV !== 'production') {
-        console.error('Update brand failed:', error?.response?.data?.message || error.message);
+        console.error(
+          'Update brand failed:',
+          error?.response?.data?.message || error.message
+        );
       }
     },
   });
@@ -163,17 +145,14 @@ function BrandDialog({ open, onClose, brand, onSuccess }: BrandDialogProps) {
             fullWidth
             value={formData.name}
             onChange={(e) => {
-              setFormData(prev => ({ ...prev, name: e.target.value }));
-              if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
+              setFormData((prev) => ({ ...prev, name: e.target.value }));
+              if (errors.name)
+                setErrors((prev) => ({ ...prev, name: undefined }));
             }}
             error={!!errors.name}
-            helperText={errors.name || (isEditMode ? "Brand name cannot be changed" : undefined)}
+            helperText={errors.name}
             margin="normal"
             required
-            disabled={isEditMode}
-            InputProps={{
-              readOnly: isEditMode,
-            }}
           />
 
           <TextField
@@ -181,8 +160,9 @@ function BrandDialog({ open, onClose, brand, onSuccess }: BrandDialogProps) {
             fullWidth
             value={formData.imageUrl}
             onChange={(e) => {
-              setFormData(prev => ({ ...prev, imageUrl: e.target.value }));
-              if (errors.imageUrl) setErrors(prev => ({ ...prev, imageUrl: undefined }));
+              setFormData((prev) => ({ ...prev, imageUrl: e.target.value }));
+              if (errors.imageUrl)
+                setErrors((prev) => ({ ...prev, imageUrl: undefined }));
             }}
             error={!!errors.imageUrl}
             helperText={errors.imageUrl}
@@ -208,174 +188,79 @@ function BrandDialog({ open, onClose, brand, onSuccess }: BrandDialogProps) {
   );
 }
 
-export function BrandSelect({ value, onChange, error, helperText, disabled }: BrandSelectProps) {
-  const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<TireBrand | null>(null);
-  const [, setIsAuthenticated] = useState(true);
-
-  // Check if we have a token which indicates authentication capability
-  const hasAuthToken = !!localStorage.getItem('authToken') || !!window.Clerk?.session;
-
-  // Try to load full brand objects for authenticated users with CRUD, fallback to simple names
-  const { data: brands = [], isLoading } = useQuery({
+export function BrandSelect({
+  value,
+  onChange,
+  error,
+  helperText,
+  disabled,
+}: BrandSelectProps) {
+  const {
+    items: brands,
+    isLoading,
+    canManage,
+    canDelete,
+    dialogOpen,
+    editingItem,
+    openAdd,
+    openEdit,
+    closeDialog,
+    requestDelete,
+    pendingDeleteId,
+  } = useCatalogSelect<TireBrand>({
     queryKey: ['tire-brands'],
-    queryFn: async () => {
-      try {
-        // Try authenticated endpoint first for full CRUD functionality
-        return await TireBrandService.getAll();
-      } catch (error: any) {
-        // If auth fails (401), fallback to public endpoint and create mock brand objects
-        if (error?.response?.status === 401) {
-          setIsAuthenticated(false);
-          const brandNames = await TireBrandService.getBrands();
-          return brandNames.map(name => ({
-            id: name, // Use name as ID for fallback
-            name,
-            imageUrl: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }));
-        }
-        throw error;
-      }
+    entityLabel: 'brand',
+    fetchAll: () => TireBrandService.getAll(),
+    fetchNames: () => TireBrandService.getBrands(),
+    toFallbackItem: (name) =>
+      ({
+        id: name,
+        name,
+        imageUrl: undefined,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as TireBrand),
+    remove: (id) => TireBrandService.delete(id),
+    getId: (brand) => brand.id,
+    getLabel: (brand) => brand.name,
+    onDeleted: (brand) => {
+      // The field holds the brand *name*; clear it when that brand is gone.
+      if (brand.name === value) onChange('', '');
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => TireBrandService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tire-brands'] });
-      // If the deleted brand was selected, clear the selection
-      if (value && brands.find(b => b.id === value && !brands.find(b2 => b2.id === value))) {
-        onChange('', '');
-      }
-    },
-  });
-
-  const handleAddNew = () => {
-    setEditingBrand(null);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (brand: TireBrand) => {
-    setEditingBrand(brand);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (brand: TireBrand) => {
-    if (window.confirm(`Are you sure you want to delete "${brand.name}"? This action cannot be undone.`)) {
-      deleteMutation.mutate(brand.id);
-    }
-  };
-
-  const handleChange = (brandId: string) => {
-    const brand = brands.find(b => b.id === brandId);
-    onChange(brandId, brand?.name || '');
-  };
-
-  const selectedBrand = brands.find(b => b.name === value);
+  const selectedBrand = brands.find((b) => b.name === value) ?? null;
 
   return (
     <>
-      <Box sx={{ position: 'relative' }}>
-        <Autocomplete
-          options={brands}
-          getOptionLabel={(option) => option.name}
-          value={selectedBrand || null}
-          onChange={(event, newValue) => {
-            if (newValue) {
-              handleChange(newValue.id);
-            } else {
-              onChange('', '');
-            }
-          }}
-          loading={isLoading}
-          disabled={disabled}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Brand"
-              error={error}
-              helperText={helperText}
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {isLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-            />
-          )}
-          filterOptions={(options, { inputValue }) => {
-            return options.filter((option) =>
-              option.name.toLowerCase().includes(inputValue.toLowerCase())
-            );
-          }}
-        />
-        {hasAuthToken && (
-          <Box sx={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            zIndex: 1
-          }}>
-            <Tooltip title="Add new brand">
-              <IconButton
-                size="small"
-                onClick={handleAddNew}
-                disabled={disabled}
-                sx={{ p: 0.5 }}
-              >
-                <AddIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            {selectedBrand && (
-              <>
-                <Tooltip title="Edit brand">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEdit(selectedBrand)}
-                    disabled={disabled}
-                    sx={{ p: 0.5 }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete brand">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(selectedBrand)}
-                    disabled={disabled || deleteMutation.isPending}
-                    sx={{ p: 0.5 }}
-                  >
-                    {deleteMutation.isPending ? (
-                      <CircularProgress size={16} />
-                    ) : (
-                      <DeleteIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </Tooltip>
-              </>
-            )}
-          </Box>
-        )}
-      </Box>
+      <CrudAutocomplete<TireBrand>
+        label="Brand"
+        entityLabel="brand"
+        options={brands}
+        value={selectedBrand}
+        onChange={(brand) => onChange(brand?.id ?? '', brand?.name ?? '')}
+        getOptionId={(brand) => brand.id}
+        getOptionLabel={(brand) => brand.name}
+        loading={isLoading}
+        disabled={disabled}
+        error={error}
+        helperText={helperText}
+        onAdd={canManage ? openAdd : undefined}
+        onEdit={canManage ? openEdit : undefined}
+        onDelete={canDelete ? requestDelete : undefined}
+        pendingDeleteId={pendingDeleteId}
+      />
 
-      {hasAuthToken && (
+      {canManage && (
         <BrandDialog
           open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          brand={editingBrand}
-          onSuccess={() => {
-            // If we just added a new brand, auto-select it
-            if (!editingBrand) {
-              queryClient.invalidateQueries({ queryKey: ['tire-brands'] });
+          onClose={closeDialog}
+          brand={editingItem}
+          onSuccess={(saved) => {
+            // Select what was just created, and follow a rename through to the
+            // field — it stores the name, so a rename would otherwise blank it.
+            if (!editingItem || editingItem.name === value) {
+              onChange(saved.id, saved.name);
             }
           }}
         />

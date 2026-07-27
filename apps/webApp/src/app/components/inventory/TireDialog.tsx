@@ -227,8 +227,12 @@ export function TireDialog({
   const handleBrandChange = (brandId: string, brandName: string) => {
     handleChange('brand', brandName);
 
-    // Find the brand object to get its image URL
-    const brands = queryClient.getQueryData(['tire-brands']) as any[];
+    // Find the brand object to get its image URL. useCatalogSelect caches
+    // { items, isFallback } under this key.
+    const cached = queryClient.getQueryData(['tire-brands']) as
+      | { items?: any[] }
+      | undefined;
+    const brands = cached?.items;
     if (brands) {
       const selectedBrand = brands.find((b) => b.id === brandId);
       if (selectedBrand?.imageUrl) {

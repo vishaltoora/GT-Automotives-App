@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -9,13 +8,17 @@ import {
   Button,
   Alert,
   Box,
-  Tooltip,
   CircularProgress,
-  Autocomplete,
 } from '@mui/material';
-import { AddIcon, DeleteIcon } from '../../icons/standard.icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TireSizeService, TireSize, CreateTireSizeDto, UpdateTireSizeDto } from '../../requests/tire-size.requests';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CrudAutocomplete } from '../common/CrudAutocomplete';
+import { useCatalogSelect } from '../../hooks/useCatalogSelect';
+import {
+  TireSizeService,
+  TireSize,
+  CreateTireSizeDto,
+  UpdateTireSizeDto,
+} from '../../requests/tire-size.requests';
 
 interface SizeSelectProps {
   value?: string;
@@ -29,7 +32,7 @@ interface SizeDialogProps {
   open: boolean;
   onClose: () => void;
   size?: TireSize | null;
-  onSuccess: () => void;
+  onSuccess: (saved: TireSize) => void;
 }
 
 function SizeDialog({ open, onClose, size, onSuccess }: SizeDialogProps) {
@@ -55,18 +58,19 @@ function SizeDialog({ open, onClose, size, onSuccess }: SizeDialogProps) {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateTireSizeDto) => TireSizeService.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['tire-sizes'] });
-      onSuccess();
+      onSuccess(saved);
       onClose();
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: UpdateTireSizeDto) => TireSizeService.update(size!.id, data),
-    onSuccess: () => {
+    mutationFn: (data: UpdateTireSizeDto) =>
+      TireSizeService.update(size!.id, data),
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['tire-sizes'] });
-      onSuccess();
+      onSuccess(saved);
       onClose();
     },
   });
@@ -113,18 +117,15 @@ function SizeDialog({ open, onClose, size, onSuccess }: SizeDialogProps) {
             fullWidth
             value={formData.size}
             onChange={(e) => {
-              setFormData(prev => ({ ...prev, size: e.target.value }));
-              if (errors.size) setErrors(prev => ({ ...prev, size: undefined }));
+              setFormData((prev) => ({ ...prev, size: e.target.value }));
+              if (errors.size)
+                setErrors((prev) => ({ ...prev, size: undefined }));
             }}
             error={!!errors.size}
-            helperText={errors.size || (isEditMode ? "Tire size cannot be changed" : undefined)}
+            helperText={errors.size}
             margin="normal"
-            placeholder={isEditMode ? undefined : "e.g., 225/65R17, 265/70R16"}
+            placeholder="e.g., 225/65R17, 265/70R16"
             required
-            disabled={isEditMode}
-            InputProps={{
-              readOnly: isEditMode,
-            }}
           />
         </Box>
       </DialogContent>
@@ -145,156 +146,77 @@ function SizeDialog({ open, onClose, size, onSuccess }: SizeDialogProps) {
   );
 }
 
-export function SizeSelect({ value, onChange, error, helperText, disabled }: SizeSelectProps) {
-  const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingSize, setEditingSize] = useState<TireSize | null>(null);
-  const [, setIsAuthenticated] = useState(true);
-
-  // Check if we have a token which indicates authentication capability
-  const hasAuthToken = !!localStorage.getItem('authToken') || !!window.Clerk?.session;
-
-  // Try to load full size objects for authenticated users with CRUD, fallback to simple names
-  const { data: sizes = [], isLoading } = useQuery({
+export function SizeSelect({
+  value,
+  onChange,
+  error,
+  helperText,
+  disabled,
+}: SizeSelectProps) {
+  const {
+    items: sizes,
+    isLoading,
+    canManage,
+    canDelete,
+    dialogOpen,
+    editingItem,
+    openAdd,
+    openEdit,
+    closeDialog,
+    requestDelete,
+    pendingDeleteId,
+  } = useCatalogSelect<TireSize>({
     queryKey: ['tire-sizes'],
-    queryFn: async () => {
-      try {
-        // Try authenticated endpoint first for full CRUD functionality
-        return await TireSizeService.getAll();
-      } catch (error: any) {
-        // If auth fails (401), fallback to public endpoint and create mock size objects
-        if (error?.response?.status === 401) {
-          setIsAuthenticated(false);
-          const sizeNames = await TireSizeService.getSizes();
-          return sizeNames.map(size => ({
-            id: size, // Use size as ID for fallback
-            size,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }));
-        }
-        throw error;
-      }
+    entityLabel: 'size',
+    fetchAll: () => TireSizeService.getAll(),
+    fetchNames: () => TireSizeService.getSizes(),
+    toFallbackItem: (size) =>
+      ({
+        id: size,
+        size,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as TireSize),
+    remove: (id) => TireSizeService.delete(id),
+    getId: (size) => size.id,
+    getLabel: (size) => size.size,
+    onDeleted: (size) => {
+      if (size.size === value) onChange('', '');
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => TireSizeService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tire-sizes'] });
-      // If the deleted size was selected, clear the selection
-      if (value && sizes.find(s => s.id === value && !sizes.find(s2 => s2.id === value))) {
-        onChange('', '');
-      }
-    },
-  });
-
-  const handleAddNew = () => {
-    setEditingSize(null);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (size: TireSize) => {
-    if (window.confirm(`Are you sure you want to delete size "${size.size}"? This action cannot be undone.`)) {
-      deleteMutation.mutate(size.id);
-    }
-  };
-
-  const handleChange = (sizeId: string) => {
-    const size = sizes.find(s => s.id === sizeId);
-    onChange(sizeId, size?.size || '');
-  };
-
-  const selectedSize = sizes.find(s => s.size === value);
+  const selectedSize = sizes.find((s) => s.size === value) ?? null;
 
   return (
     <>
-      <Box sx={{ position: 'relative' }}>
-        <Autocomplete
-          options={sizes}
-          getOptionLabel={(option) => option.size}
-          value={selectedSize || null}
-          onChange={(event, newValue) => {
-            if (newValue) {
-              handleChange(newValue.id);
-            } else {
-              onChange('', '');
-            }
-          }}
-          loading={isLoading}
-          disabled={disabled}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Size"
-              error={error}
-              helperText={helperText}
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {isLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-            />
-          )}
-          filterOptions={(options, { inputValue }) => {
-            return options.filter((option) =>
-              option.size.toLowerCase().includes(inputValue.toLowerCase())
-            );
-          }}
-        />
-        {hasAuthToken && (
-          <Box sx={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            zIndex: 1
-          }}>
-            <Tooltip title="Add new size">
-              <IconButton
-                size="small"
-                onClick={handleAddNew}
-                disabled={disabled}
-                sx={{ p: 0.5 }}
-              >
-                <AddIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            {selectedSize && (
-              <Tooltip title="Delete size">
-                <IconButton
-                  size="small"
-                  onClick={() => handleDelete(selectedSize)}
-                  disabled={disabled || deleteMutation.isPending}
-                  sx={{ p: 0.5 }}
-                >
-                  {deleteMutation.isPending ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <DeleteIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        )}
-      </Box>
+      <CrudAutocomplete<TireSize>
+        label="Size"
+        entityLabel="size"
+        options={sizes}
+        value={selectedSize}
+        onChange={(size) => onChange(size?.id ?? '', size?.size ?? '')}
+        getOptionId={(size) => size.id}
+        getOptionLabel={(size) => size.size}
+        loading={isLoading}
+        disabled={disabled}
+        error={error}
+        helperText={helperText}
+        onAdd={canManage ? openAdd : undefined}
+        onEdit={canManage ? openEdit : undefined}
+        onDelete={canDelete ? requestDelete : undefined}
+        pendingDeleteId={pendingDeleteId}
+      />
 
-      {hasAuthToken && (
+      {canManage && (
         <SizeDialog
           open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          size={editingSize}
-          onSuccess={() => {
-            // If we just added a new size, auto-select it
-            if (!editingSize) {
-              queryClient.invalidateQueries({ queryKey: ['tire-sizes'] });
+          onClose={closeDialog}
+          size={editingItem}
+          onSuccess={(saved) => {
+            // Select what was just created, and follow a rename through to the
+            // field — it stores the size, so a rename would otherwise blank it.
+            if (!editingItem || editingItem.size === value) {
+              onChange(saved.id, saved.size);
             }
           }}
         />
