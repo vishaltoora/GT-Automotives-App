@@ -17,6 +17,27 @@ type QuotationWithItems = Quotation & {
   })[];
 };
 
+/**
+ * Reduce an incoming item to the columns QuotationItem actually has.
+ *
+ * GET /quotations/:id returns each item with its `tire` relation loaded, and
+ * the edit form sends those items straight back — so the payload arrives
+ * carrying `tire` (plus `id` and `serviceId`, which are not writable columns
+ * either). Spreading the DTO into Prisma made createMany fail with
+ * "Unknown argument `tire`", so saving an edit to any quotation that already
+ * had items returned a 500.
+ */
+const toQuotationItemData = (item: any, total: number) => ({
+  // An empty string would be treated as a real id and break the FK.
+  tireId: item.tireId || null,
+  tireName: item.tireName || null,
+  itemType: item.itemType,
+  description: item.description,
+  quantity: item.quantity,
+  unitPrice: item.unitPrice,
+  total,
+});
+
 @Injectable()
 export class QuotationsService {
   constructor(
@@ -53,10 +74,7 @@ export class QuotationsService {
       const processedItems = items.map((item) => {
         const total = Number(item.quantity) * item.unitPrice;
         subtotal += total;
-        return {
-          ...item,
-          total,
-        };
+        return toQuotationItemData(item, total);
       });
       console.log('Service: Processed items count:', processedItems.length);
 
@@ -156,11 +174,7 @@ export class QuotationsService {
       const processedItems = items.map((item) => {
         const total = Number(item.quantity) * item.unitPrice;
         subtotal += total;
-        return {
-          ...item,
-          quotationId: id,
-          total,
-        };
+        return { ...toQuotationItemData(item, total), quotationId: id };
       });
 
       // Calculate taxes
