@@ -6,6 +6,11 @@ import { PaymentEntryDto as PaymentEntry } from '@gt-automotive/data';
 
 interface Appointment {
   id: string;
+  customer?: {
+    firstName?: string;
+    lastName?: string;
+    businessName?: string;
+  };
   duration: number;
   status: string;
   serviceType: string;
@@ -56,13 +61,15 @@ export const calculatePaymentsByMethod = (
       // Manual payment with breakdown (multiple payment methods)
       breakdown.forEach((payment: PaymentEntry) => {
         const method = payment.method || 'CASH';
-        paymentsByMethod[method] = (paymentsByMethod[method] || 0) + (payment.amount || 0);
+        paymentsByMethod[method] =
+          (paymentsByMethod[method] || 0) + (payment.amount || 0);
       });
     } else if (apt.paymentAmount) {
       // Check if appointment has an invoice (Square payment creates invoice automatically)
       const invoice = apt.invoice || null;
       const method = invoice?.paymentMethod || 'CASH'; // Use invoice payment method or default to CASH
-      paymentsByMethod[method] = (paymentsByMethod[method] || 0) + apt.paymentAmount;
+      paymentsByMethod[method] =
+        (paymentsByMethod[method] || 0) + apt.paymentAmount;
     }
   });
 
@@ -77,7 +84,10 @@ export const calculatePaymentStats = (
   paymentsProcessed: Appointment[]
 ) => {
   // Scheduled appointments stats
-  const totalDuration = scheduledAppointments.reduce((sum, apt) => sum + apt.duration, 0);
+  const totalDuration = scheduledAppointments.reduce(
+    (sum, apt) => sum + apt.duration,
+    0
+  );
   const statusCounts = scheduledAppointments.reduce((acc, apt) => {
     acc[apt.status] = (acc[apt.status] || 0) + 1;
     return acc;
@@ -92,7 +102,10 @@ export const calculatePaymentStats = (
   );
 
   // Payment statistics - based on payments PROCESSED today
-  const totalPayments = paymentsProcessed.reduce((sum, apt) => sum + (apt.paymentAmount || 0), 0);
+  const totalPayments = paymentsProcessed.reduce(
+    (sum, apt) => sum + (apt.paymentAmount || 0),
+    0
+  );
   const totalExpected = paymentsProcessed.reduce(
     (sum, apt) => sum + (apt.expectedAmount || apt.paymentAmount || 0),
     0
@@ -125,7 +138,9 @@ export const calculatePaymentStats = (
     (sum, apt) => sum + (apt.paymentAmount || 0),
     0
   );
-  const mobileServicePaymentsByMethod = calculatePaymentsByMethod(mobileServicePayments);
+  const mobileServicePaymentsByMethod = calculatePaymentsByMethod(
+    mobileServicePayments
+  );
 
   return {
     // Scheduled appointments info
@@ -151,4 +166,129 @@ export const calculatePaymentStats = (
     completedMobileService: mobileServicePayments.length,
     mobileServicePaymentsByMethod,
   };
+};
+
+// --- Day Summary line items -------------------------------------------------
+
+/**
+ * All cash variants (CASH, CASH_NO_TAX, …) are physical cash — the Day Summary
+ * reports them as one bucket.
+ */
+export const isCashMethod = (method: string) =>
+  method.toUpperCase().includes('CASH');
+
+/** The bucket key a raw payment method is reported under. */
+export const methodBucket = (method: string) =>
+  isCashMethod(method) ? 'CASH' : method;
+
+/** One payment making up a method total, shown beneath it for reconciling. */
+export interface PaymentLineItem {
+  key: string;
+  invoiceNumber: string | null;
+  customerName: string;
+  amount: number;
+}
+
+/** An invoice payment as returned by GET /api/invoices/day-summary. */
+export interface InvoiceDayPayment {
+  id: string;
+  amount: number | string;
+  paymentMethod?: string;
+  invoiceNumber?: string | null;
+  customerName?: string;
+  appointmentType?: string | null;
+}
+
+export interface PaymentLineItemsByLocation {
+  atGarage: Record<string, PaymentLineItem[]>;
+  mobileService: Record<string, PaymentLineItem[]>;
+}
+
+const customerNameOf = (apt: Appointment) =>
+  apt.customer?.businessName ||
+  [apt.customer?.firstName, apt.customer?.lastName].filter(Boolean).join(' ') ||
+  '';
+
+/**
+ * Break each payment-method total down into the individual payments behind it,
+ * split by location.
+ *
+ * Draws on the same two sources the totals do — money recorded against the
+ * appointment, and invoice payments collected today — and buckets methods
+ * identically, so every list sums to the method total displayed above it.
+ * Appointment money raised without an invoice has no invoice number, so those
+ * rows fall back to the customer name.
+ */
+export const buildPaymentLineItems = (
+  atGarageAppointments: Appointment[],
+  mobileServiceAppointments: Appointment[],
+  invoicePayments: InvoiceDayPayment[] = []
+): PaymentLineItemsByLocation => {
+  const atGarage: Record<string, PaymentLineItem[]> = {};
+  const mobileService: Record<string, PaymentLineItem[]> = {};
+
+  const push = (
+    bucket: Record<string, PaymentLineItem[]>,
+    method: string,
+    item: PaymentLineItem
+  ) => {
+    if (!item.amount) return;
+    const key = methodBucket(method);
+    (bucket[key] = bucket[key] || []).push(item);
+  };
+
+  const addAppointments = (
+    appointments: Appointment[],
+    bucket: Record<string, PaymentLineItem[]>
+  ) => {
+    appointments.forEach((apt) => {
+      const breakdown = parsePaymentBreakdown(apt.paymentBreakdown);
+      const invoiceNumber = apt.invoice?.invoiceNumber || null;
+      const customerName = customerNameOf(apt);
+
+      if (breakdown && Array.isArray(breakdown)) {
+        breakdown.forEach((entry, index) => {
+          push(bucket, entry.method || 'CASH', {
+            key: `apt-${apt.id}-${index}`,
+            invoiceNumber,
+            customerName,
+            amount: entry.amount || 0,
+          });
+        });
+      } else if (apt.paymentAmount) {
+        push(bucket, apt.invoice?.paymentMethod || 'CASH', {
+          key: `apt-${apt.id}`,
+          invoiceNumber,
+          customerName,
+          amount: apt.paymentAmount,
+        });
+      }
+    });
+  };
+
+  addAppointments(atGarageAppointments, atGarage);
+  addAppointments(mobileServiceAppointments, mobileService);
+
+  // Invoice payments already carry their location from the API. Anything that
+  // is not explicitly mobile counts as shop, matching how the API buckets its
+  // atGarage/mobileService totals.
+  invoicePayments.forEach((payment) => {
+    const bucket =
+      payment.appointmentType === 'MOBILE_SERVICE' ? mobileService : atGarage;
+    push(bucket, payment.paymentMethod || 'CASH', {
+      key: `inv-${payment.id}`,
+      invoiceNumber: payment.invoiceNumber || null,
+      customerName: payment.customerName || '',
+      amount: Number(payment.amount) || 0,
+    });
+  });
+
+  // Largest first — the entries worth checking sit at the top.
+  [atGarage, mobileService].forEach((bucket) =>
+    Object.values(bucket).forEach((items) =>
+      items.sort((a, b) => b.amount - a.amount)
+    )
+  );
+
+  return { atGarage, mobileService };
 };

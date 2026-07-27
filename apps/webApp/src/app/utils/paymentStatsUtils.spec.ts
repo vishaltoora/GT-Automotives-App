@@ -2,6 +2,8 @@ import {
   parsePaymentBreakdown,
   calculatePaymentsByMethod,
   calculatePaymentStats,
+  buildPaymentLineItems,
+  isCashMethod,
 } from './paymentStatsUtils';
 
 // Minimal appointment factory matching the internal Appointment shape used by the util.
@@ -187,5 +189,162 @@ describe('paymentStatsUtils', () => {
       expect(stats.totalExpected).toBe(40);
       expect(stats.totalOwed).toBe(0); // no expectedAmount -> expected treated as 0
     });
+  });
+});
+
+describe('buildPaymentLineItems', () => {
+  const combineCashMethods = (map: Record<string, number>) => {
+    const result: Record<string, number> = {};
+    let cash = 0;
+    for (const [method, amount] of Object.entries(map)) {
+      if (isCashMethod(method)) cash += amount;
+      else result[method] = amount;
+    }
+    if (cash > 0) result['CASH'] = cash;
+    return result;
+  };
+
+  const shopApts = [
+    makeApt({
+      id: 'a1',
+      appointmentType: 'AT_GARAGE',
+      paymentAmount: 150,
+      paymentBreakdown: [
+        { method: 'CASH', amount: 100 },
+        { method: 'E_TRANSFER', amount: 50 },
+      ],
+      customer: { firstName: 'Ann', lastName: 'Lee' },
+      invoice: { id: 'i1', invoiceNumber: 'INV-001', status: 'PAID' },
+    }),
+    // No breakdown, no invoice — falls back to CASH and the customer name.
+    makeApt({
+      id: 'a2',
+      appointmentType: 'AT_GARAGE',
+      paymentAmount: 40,
+      customer: { businessName: 'Ray Haulage' },
+    }),
+  ];
+  const mobileApts = [
+    makeApt({
+      id: 'a3',
+      appointmentType: 'MOBILE_SERVICE',
+      paymentAmount: 200,
+      paymentBreakdown: [{ method: 'CASH_NO_TAX', amount: 200 }],
+      customer: { firstName: 'Cid', lastName: 'Vos' },
+    }),
+  ];
+  const invoicePayments = [
+    {
+      id: 'p1',
+      amount: 75,
+      paymentMethod: 'CREDIT_CARD',
+      invoiceNumber: 'INV-010',
+      customerName: 'Dee Fox',
+      appointmentType: 'AT_GARAGE',
+    },
+    {
+      id: 'p2',
+      amount: 25,
+      paymentMethod: 'CASH',
+      invoiceNumber: 'INV-011',
+      customerName: 'Eli Gray',
+      appointmentType: 'MOBILE_SERVICE',
+    },
+    // No linked appointment — the API counts these as shop.
+    {
+      id: 'p3',
+      amount: 10,
+      paymentMethod: 'CASH',
+      invoiceNumber: 'INV-012',
+      customerName: 'Fay Hill',
+      appointmentType: null,
+    },
+  ];
+
+  it('groups shop payments by method with invoice number and amount', () => {
+    const { atGarage } = buildPaymentLineItems(
+      shopApts,
+      mobileApts,
+      invoicePayments
+    );
+
+    expect(Object.keys(atGarage).sort()).toEqual([
+      'CASH',
+      'CREDIT_CARD',
+      'E_TRANSFER',
+    ]);
+    expect(atGarage['CREDIT_CARD']).toEqual([
+      {
+        key: 'inv-p1',
+        invoiceNumber: 'INV-010',
+        customerName: 'Dee Fox',
+        amount: 75,
+      },
+    ]);
+    // Sorted largest first.
+    expect(atGarage['CASH'].map((i) => i.amount)).toEqual([100, 40, 10]);
+  });
+
+  it('falls back to the customer name when there is no invoice', () => {
+    const { atGarage } = buildPaymentLineItems(shopApts, [], []);
+    const noInvoice = atGarage['CASH'].find((i) => i.key === 'apt-a2');
+    expect(noInvoice).toEqual({
+      key: 'apt-a2',
+      invoiceNumber: null,
+      customerName: 'Ray Haulage',
+      amount: 40,
+    });
+  });
+
+  it('buckets cash variants together, matching the displayed totals', () => {
+    const { mobileService } = buildPaymentLineItems(
+      [],
+      mobileApts,
+      invoicePayments
+    );
+    // CASH_NO_TAX (200) and CASH (25) report under one CASH heading.
+    expect(mobileService['CASH'].map((i) => i.amount)).toEqual([200, 25]);
+  });
+
+  it('line items reconcile to the method totals shown above them', () => {
+    const { atGarage, mobileService } = buildPaymentLineItems(
+      shopApts,
+      mobileApts,
+      invoicePayments
+    );
+
+    // Rebuild the totals exactly as DaySummary does: appointment money by
+    // method, plus the API's per-location invoice totals, then cash-combined.
+    const shopTotals = calculatePaymentsByMethod(shopApts);
+    shopTotals['CREDIT_CARD'] = (shopTotals['CREDIT_CARD'] || 0) + 75;
+    shopTotals['CASH'] = (shopTotals['CASH'] || 0) + 10;
+
+    const mobileTotals = calculatePaymentsByMethod(mobileApts);
+    mobileTotals['CASH'] = (mobileTotals['CASH'] || 0) + 25;
+
+    const sumOf = (items: { amount: number }[]) =>
+      items.reduce((s, i) => s + i.amount, 0);
+
+    Object.entries(combineCashMethods(shopTotals)).forEach(([m, total]) => {
+      expect(sumOf(atGarage[m] || [])).toBeCloseTo(total, 2);
+    });
+    Object.entries(combineCashMethods(mobileTotals)).forEach(([m, total]) => {
+      expect(sumOf(mobileService[m] || [])).toBeCloseTo(total, 2);
+    });
+  });
+
+  it('ignores zero-amount entries', () => {
+    const { atGarage } = buildPaymentLineItems(
+      [
+        makeApt({
+          id: 'z1',
+          paymentAmount: 0,
+          paymentBreakdown: [{ method: 'CASH', amount: 0 }],
+        }),
+      ],
+      [],
+      []
+    );
+    expect(atGarage).toEqual({});
   });
 });
