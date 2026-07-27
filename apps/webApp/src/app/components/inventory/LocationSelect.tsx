@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -9,13 +8,17 @@ import {
   Button,
   Alert,
   Box,
-  Tooltip,
   CircularProgress,
-  Autocomplete,
 } from '@mui/material';
-import { AddIcon, DeleteIcon } from '../../icons/standard.icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { LocationService, Location, CreateLocationDto } from '../../requests/location.requests';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CrudAutocomplete } from '../common/CrudAutocomplete';
+import { useCatalogSelect } from '../../hooks/useCatalogSelect';
+import {
+  LocationService,
+  Location,
+  CreateLocationDto,
+  UpdateLocationDto,
+} from '../../requests/location.requests';
 
 interface LocationSelectProps {
   value?: string;
@@ -28,11 +31,18 @@ interface LocationSelectProps {
 interface LocationDialogProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  location?: Location | null;
+  onSuccess: (saved: Location) => void;
 }
 
-function LocationDialog({ open, onClose, onSuccess }: LocationDialogProps) {
+function LocationDialog({
+  open,
+  onClose,
+  location,
+  onSuccess,
+}: LocationDialogProps) {
   const queryClient = useQueryClient();
+  const isEditMode = !!location;
   const [formData, setFormData] = useState({
     name: '',
   });
@@ -41,17 +51,27 @@ function LocationDialog({ open, onClose, onSuccess }: LocationDialogProps) {
   useEffect(() => {
     if (open) {
       setFormData({
-        name: '',
+        name: location?.name ?? '',
       });
       setErrors({});
     }
-  }, [open]);
+  }, [open, location]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateLocationDto) => LocationService.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['locations'] });
-      onSuccess();
+      onSuccess(saved);
+      onClose();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: UpdateLocationDto) =>
+      LocationService.update(location!.id, data),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+      onSuccess(saved);
       onClose();
     },
   });
@@ -72,15 +92,21 @@ function LocationDialog({ open, onClose, onSuccess }: LocationDialogProps) {
       name: formData.name.trim(),
     };
 
-    createMutation.mutate(data);
+    if (isEditMode) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
-  const isLoading = createMutation.isPending;
-  const error = createMutation.error;
+  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const error = createMutation.error || updateMutation.error;
 
   return (
     <Dialog open={open} disableEscapeKeyDown maxWidth="sm" fullWidth>
-      <DialogTitle>Add New Location</DialogTitle>
+      <DialogTitle>
+        {isEditMode ? 'Edit Location' : 'Add New Location'}
+      </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 1 }}>
           {error && (
@@ -94,8 +120,9 @@ function LocationDialog({ open, onClose, onSuccess }: LocationDialogProps) {
             fullWidth
             value={formData.name}
             onChange={(e) => {
-              setFormData(prev => ({ ...prev, name: e.target.value }));
-              if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
+              setFormData((prev) => ({ ...prev, name: e.target.value }));
+              if (errors.name)
+                setErrors((prev) => ({ ...prev, name: undefined }));
             }}
             error={!!errors.name}
             helperText={errors.name}
@@ -115,159 +142,87 @@ function LocationDialog({ open, onClose, onSuccess }: LocationDialogProps) {
           disabled={isLoading}
           startIcon={isLoading ? <CircularProgress size={16} /> : null}
         >
-          Add Location
+          {isEditMode ? 'Update' : 'Add'} Location
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
 
-export function LocationSelect({ value, onChange, error, helperText, disabled }: LocationSelectProps) {
-  const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [, setIsAuthenticated] = useState(true);
-
-  // Check if we have a token which indicates authentication capability
-  const hasAuthToken = !!localStorage.getItem('authToken') || !!window.Clerk?.session;
-
-  // Try to load full location objects for authenticated users with CRUD, fallback to simple names
-  const { data: locations = [], isLoading } = useQuery({
+export function LocationSelect({
+  value,
+  onChange,
+  error,
+  helperText,
+  disabled,
+}: LocationSelectProps) {
+  const {
+    items: locations,
+    isLoading,
+    canManage,
+    canDelete,
+    dialogOpen,
+    editingItem,
+    openAdd,
+    openEdit,
+    closeDialog,
+    requestDelete,
+    pendingDeleteId,
+  } = useCatalogSelect<Location>({
     queryKey: ['locations'],
-    queryFn: async () => {
-      try {
-        // Try authenticated endpoint first for full CRUD functionality
-        return await LocationService.getAll();
-      } catch (error: any) {
-        // If auth fails (401), fallback to public endpoint and create mock location objects
-        if (error?.response?.status === 401) {
-          setIsAuthenticated(false);
-          const locationNames = await LocationService.getLocations();
-          return locationNames.map(name => ({
-            id: name, // Use name as ID for fallback
-            name,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }));
-        }
-        throw error;
-      }
+    entityLabel: 'location',
+    fetchAll: () => LocationService.getAll(),
+    fetchNames: () => LocationService.getLocations(),
+    toFallbackItem: (name) =>
+      ({
+        id: name,
+        name,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Location),
+    remove: (id) => LocationService.delete(id),
+    getId: (location) => location.id,
+    getLabel: (location) => location.name,
+    onDeleted: (location) => {
+      if (location.name === value) onChange('', '');
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => LocationService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['locations'] });
-      // If the deleted location was selected, clear the selection
-      if (value && locations.find(l => l.id === value && !locations.find(l2 => l2.id === value))) {
-        onChange('', '');
-      }
-    },
-  });
-
-  const handleAddNew = () => {
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (location: Location) => {
-    if (window.confirm(`Are you sure you want to delete "${location.name}"? This action cannot be undone.`)) {
-      deleteMutation.mutate(location.id);
-    }
-  };
-
-  const handleChange = (locationId: string) => {
-    const location = locations.find(l => l.id === locationId);
-    onChange(locationId, location?.name || '');
-  };
-
-  const selectedLocation = locations.find(l => l.name === value);
+  const selectedLocation = locations.find((l) => l.name === value) ?? null;
 
   return (
     <>
-      <Box sx={{ position: 'relative' }}>
-        <Autocomplete
-          options={locations}
-          getOptionLabel={(option) => option.name}
-          value={selectedLocation || null}
-          onChange={(event, newValue) => {
-            if (newValue) {
-              handleChange(newValue.id);
-            } else {
-              onChange('', '');
-            }
-          }}
-          loading={isLoading}
-          disabled={disabled}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Location"
-              error={error}
-              helperText={helperText}
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {isLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-            />
-          )}
-          filterOptions={(options, { inputValue }) => {
-            return options.filter((option) =>
-              option.name.toLowerCase().includes(inputValue.toLowerCase())
-            );
-          }}
-        />
-        {hasAuthToken && (
-          <Box sx={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            zIndex: 1
-          }}>
-            <Tooltip title="Add new location">
-              <IconButton
-                size="small"
-                onClick={handleAddNew}
-                disabled={disabled}
-                sx={{ p: 0.5 }}
-              >
-                <AddIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            {selectedLocation && (
-              <Tooltip title="Delete location">
-                <IconButton
-                  size="small"
-                  onClick={() => handleDelete(selectedLocation)}
-                  disabled={disabled || deleteMutation.isPending}
-                  sx={{ p: 0.5 }}
-                >
-                  {deleteMutation.isPending ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <DeleteIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        )}
-      </Box>
+      <CrudAutocomplete<Location>
+        label="Location"
+        entityLabel="location"
+        options={locations}
+        value={selectedLocation}
+        onChange={(location) =>
+          onChange(location?.id ?? '', location?.name ?? '')
+        }
+        getOptionId={(location) => location.id}
+        getOptionLabel={(location) => location.name}
+        loading={isLoading}
+        disabled={disabled}
+        error={error}
+        helperText={helperText}
+        onAdd={canManage ? openAdd : undefined}
+        onEdit={canManage ? openEdit : undefined}
+        onDelete={canDelete ? requestDelete : undefined}
+        pendingDeleteId={pendingDeleteId}
+      />
 
-      {hasAuthToken && (
+      {canManage && (
         <LocationDialog
           open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          onSuccess={() => {
-            // Auto-select the newly added location if possible
-            queryClient.invalidateQueries({ queryKey: ['locations'] });
+          onClose={closeDialog}
+          location={editingItem}
+          onSuccess={(saved) => {
+            // Select what was just created, and follow a rename through to the
+            // field — it stores the name, so a rename would otherwise blank it.
+            if (!editingItem || editingItem.name === value) {
+              onChange(saved.id, saved.name);
+            }
           }}
         />
       )}

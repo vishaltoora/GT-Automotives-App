@@ -1,37 +1,24 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Autocomplete,
-  TextField,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
+import { Box, Typography } from '@mui/material';
 import { ServiceDto } from '@gt-automotive/data';
 import { serviceService } from '../../requests/service.requests';
 import ServiceDialog from './ServiceDialog';
 import { useError } from '../../contexts/ErrorContext';
+import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
+import { CrudAutocomplete } from '../common/CrudAutocomplete';
 
 interface ServiceSelectProps {
   services: ServiceDto[];
+  /** Selected service id. */
   value?: string;
   onChange: (serviceId: string, serviceName: string, unitPrice: number) => void;
   onServicesChange: () => void;
   disabled?: boolean;
   size?: 'small' | 'medium';
 }
+
+const priceOf = (service: ServiceDto) =>
+  parseFloat(service.unitPrice.toString()) || 0;
 
 export const ServiceSelect: React.FC<ServiceSelectProps> = ({
   services,
@@ -42,164 +29,120 @@ export const ServiceSelect: React.FC<ServiceSelectProps> = ({
   size = 'medium',
 }) => {
   const { showError } = useError();
+  const { confirmDelete } = useConfirmationHelpers();
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<ServiceDto | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState<ServiceDto | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  const selectedService = services.find(s => s.id === value);
-
-  const handleServiceSelect = (serviceId: string) => {
-    const service = services.find(s => s.id === serviceId);
-    if (service) {
-      onChange(service.id, service.name, parseFloat(service.unitPrice.toString()));
-    }
-  };
+  const selectedService = services.find((s) => s.id === value) || null;
 
   const handleAddNew = () => {
     setEditingService(null);
     setServiceDialogOpen(true);
   };
 
-  const handleEdit = () => {
-    if (selectedService) {
-      setEditingService(selectedService);
-      setServiceDialogOpen(true);
-    }
+  const handleEdit = (service: ServiceDto) => {
+    setEditingService(service);
+    setServiceDialogOpen(true);
   };
 
-  const handleDeleteClick = () => {
-    if (selectedService) {
-      setServiceToDelete(selectedService);
-      setDeleteDialogOpen(true);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!serviceToDelete) return;
+  const handleDelete = async (service: ServiceDto) => {
+    const confirmed = await confirmDelete(`the service "${service.name}"`);
+    if (!confirmed) return;
 
     try {
-      setDeleting(true);
-      await serviceService.delete(serviceToDelete.id);
-      // Clear selection if deleted service was selected
-      onChange('', '', 0);
-      await onServicesChange();
-      setDeleteDialogOpen(false);
-      setServiceToDelete(null);
-    } catch (error) {
-      showError('Failed to delete service');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setServiceToDelete(null);
-  };
-
-  const handleServiceSave = async (serviceData: { name: string; description?: string; unitPrice: number }) => {
-    try {
-      if (editingService) {
-        // Update existing service
-        await serviceService.update(editingService.id, serviceData);
-      } else {
-        // Create new service
-        await serviceService.create(serviceData);
+      setPendingDeleteId(service.id);
+      await serviceService.delete(service.id);
+      // Only drop the line's selection if it was this service.
+      if (service.id === value) {
+        onChange('', '', 0);
       }
       await onServicesChange();
+    } catch (error: any) {
+      showError({
+        title: 'Could not delete service',
+        message:
+          error?.response?.data?.message ||
+          'Something went wrong deleting this service. Please try again.',
+      });
+    } finally {
+      setPendingDeleteId(null);
+    }
+  };
+
+  const handleServiceSave = async (serviceData: {
+    name: string;
+    description?: string;
+    unitPrice: number;
+  }) => {
+    try {
+      if (editingService) {
+        const updated = await serviceService.update(
+          editingService.id,
+          serviceData
+        );
+        await onServicesChange();
+        // Keep the line in step with a rename or a price change.
+        if (editingService.id === value) {
+          onChange(updated.id, updated.name, priceOf(updated));
+        }
+      } else {
+        const created = await serviceService.create(serviceData);
+        await onServicesChange();
+        onChange(created.id, created.name, priceOf(created));
+      }
       setServiceDialogOpen(false);
       setEditingService(null);
-    } catch (error) {
-      showError(editingService ? 'Failed to update service' : 'Failed to create service');
-      console.error('Service save error:', error);
+    } catch (error: any) {
+      showError({
+        title: editingService
+          ? 'Could not update service'
+          : 'Could not create service',
+        message:
+          error?.response?.data?.message ||
+          'Something went wrong saving this service. Please try again.',
+      });
     }
   };
 
   return (
     <>
-      <Box sx={{ position: 'relative' }}>
-        <Autocomplete
-          options={services}
-          value={selectedService || null}
-          onChange={(event, newValue) => {
-            if (newValue) {
-              handleServiceSelect(newValue.id);
-            }
-          }}
-          getOptionLabel={(service) => service.name}
-          renderOption={(props, service) => {
-            const { key, ...otherProps } = props;
-            return (
-              <Box component="li" key={key} {...otherProps}>
-                {service.name}
-              </Box>
-            );
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Select Service"
-              placeholder="Type to search..."
-              size={size}
-            />
-          )}
-          size={size}
-          fullWidth
-          disabled={disabled}
-        />
-
-        <Box sx={{
-          position: 'absolute',
-          right: 40,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          zIndex: 1,
-        }}>
-          <Tooltip title="Add new service">
-            <IconButton
-              size="small"
-              onClick={handleAddNew}
-              disabled={disabled}
-              sx={{ p: 0.5 }}
-            >
-              <AddIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          {selectedService && (
-            <>
-              <Tooltip title="Edit service">
-                <IconButton
-                  size="small"
-                  onClick={handleEdit}
-                  disabled={disabled}
-                  sx={{ p: 0.5 }}
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete service">
-                <IconButton
-                  size="small"
-                  onClick={handleDeleteClick}
-                  disabled={disabled || deleting}
-                  sx={{ p: 0.5 }}
-                >
-                  {deleting ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <DeleteIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-        </Box>
-      </Box>
+      <CrudAutocomplete<ServiceDto>
+        label="Select Service"
+        entityLabel="service"
+        placeholder="Type to search..."
+        options={services}
+        value={selectedService}
+        onChange={(service) =>
+          service
+            ? onChange(service.id, service.name, priceOf(service))
+            : onChange('', '', 0)
+        }
+        getOptionId={(service) => service.id}
+        getOptionLabel={(service) => service.name}
+        getOptionSearchText={(service) => service.description || ''}
+        renderOptionContent={(service) => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: 1,
+            }}
+          >
+            <span>{service.name}</span>
+            <Typography variant="caption" color="text.secondary">
+              ${priceOf(service).toFixed(2)}
+            </Typography>
+          </Box>
+        )}
+        size={size}
+        disabled={disabled}
+        onAdd={handleAddNew}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        pendingDeleteId={pendingDeleteId}
+      />
 
       <ServiceDialog
         open={serviceDialogOpen}
@@ -210,41 +153,6 @@ export const ServiceSelect: React.FC<ServiceSelectProps> = ({
         onSave={handleServiceSave}
         service={editingService}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleCancelDelete}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <WarningIcon color="error" />
-          Delete Service
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete <strong>"{serviceToDelete?.name}"</strong>?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete} disabled={deleting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-            disabled={deleting}
-            startIcon={deleting ? <CircularProgress size={16} /> : <DeleteIcon />}
-          >
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 };

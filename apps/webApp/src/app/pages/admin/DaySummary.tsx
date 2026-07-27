@@ -54,13 +54,14 @@ import { paymentService } from '../../requests/payment.requests';
 import { invoiceService } from '../../requests/invoice.requests';
 import { PaymentResponseDto } from '@gt-automotive/data';
 import { PaymentDialog } from '../../components/appointments/PaymentDialog';
+import {
+  buildPaymentLineItems,
+  isCashMethod,
+  type PaymentLineItem,
+} from '../../utils/paymentStatsUtils';
 
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-// All cash variants (CASH, CASH_NO_TAX, cash-with-tax, etc.) are physical cash —
-// treat them as one for the day summary breakdown.
-const isCashMethod = (method: string) => method.toUpperCase().includes('CASH');
 
 /** Collapse every cash-like method into a single 'CASH' bucket. */
 const combineCashMethods = (
@@ -75,6 +76,107 @@ const combineCashMethods = (
   if (cash > 0) result['CASH'] = cash;
   return result;
 };
+
+// The DB enum is CHECK; older records and some UI used CHEQUE. Map both so a
+// cheque payment never renders with a blank label.
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  CASH: '💵 Cash',
+  E_TRANSFER: '📱 E-Transfer',
+  CREDIT_CARD: '💳 Credit',
+  DEBIT_CARD: '💳 Debit',
+  CHECK: '📝 Cheque',
+  CHEQUE: '📝 Cheque',
+  FINANCING: '🏦 Financing',
+  BANK_DEPOSIT: '🏦 Bank Deposit',
+};
+
+const methodLabel = (method: string) =>
+  PAYMENT_METHOD_LABELS[method] || method.replace(/_/g, ' ');
+
+/**
+ * A payment method's total with the individual payments that make it up.
+ *
+ * The line items come from the same two sources the totals do — money recorded
+ * on the appointment and invoice payments collected today — so they add up to
+ * the method total shown above them.
+ */
+function MethodBreakdownList({
+  byMethod,
+  itemsByMethod,
+}: {
+  byMethod: Record<string, number>;
+  itemsByMethod: Record<string, PaymentLineItem[]>;
+}) {
+  return (
+    <Stack spacing={1.5}>
+      {Object.entries(byMethod).map(([method, amount]) => {
+        const items = itemsByMethod[method] || [];
+        return (
+          <Box key={method}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: 1,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {methodLabel(method)}
+              </Typography>
+              <Typography variant="h6" fontWeight="bold">
+                ${amount.toFixed(2)}
+              </Typography>
+            </Box>
+
+            {items.length > 0 && (
+              <Stack
+                spacing={0.25}
+                sx={{ mt: 0.5, pl: 1.5, borderLeft: 2, borderColor: 'divider' }}
+              >
+                {items.map((item) => (
+                  <Box
+                    key={item.key}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {item.invoiceNumber ? (
+                        <>
+                          {item.invoiceNumber}
+                          {item.customerName && ` · ${item.customerName}`}
+                        </>
+                      ) : (
+                        // Appointment money with no invoice raised — the
+                        // customer is the only thing to identify it by.
+                        <em>{item.customerName || 'No invoice'}</em>
+                      )}
+                    </Typography>
+                    <Typography variant="caption" fontWeight="medium">
+                      ${item.amount.toFixed(2)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+}
 
 export function DaySummary() {
   const { getToken } = useAuth(); // Still needed for EOD email endpoint
@@ -185,6 +287,17 @@ export function DaySummary() {
       (apt) => apt.appointmentType === 'MOBILE_SERVICE'
     );
   }, [sortedPayments]);
+
+  // Individual payments behind each method total, split by location.
+  const lineItemsByLocation = useMemo(
+    () =>
+      buildPaymentLineItems(
+        atGaragePayments as any,
+        mobileServicePayments as any,
+        invoiceDay?.payments || []
+      ),
+    [atGaragePayments, mobileServicePayments, invoiceDay]
+  );
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -1045,7 +1158,7 @@ export function DaySummary() {
                   Total payments collected
                 </Typography>
 
-                {/* Payment Method Breakdown */}
+                {/* Payment methods, each with the payments behind it */}
                 {Object.keys(stats.atGaragePaymentsByMethod).length > 0 && (
                   <Box
                     sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}
@@ -1059,29 +1172,10 @@ export function DaySummary() {
                     >
                       Payment Methods:
                     </Typography>
-                    <Grid container spacing={2}>
-                      {Object.entries(stats.atGaragePaymentsByMethod).map(
-                        ([method, amount]) => (
-                          <Grid size={{ xs: 6, sm: 4 }} key={method}>
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {method === 'CASH' && '💵 Cash'}
-                                {method === 'E_TRANSFER' && '📱 E-Transfer'}
-                                {method === 'CREDIT_CARD' && '💳 Credit'}
-                                {method === 'DEBIT_CARD' && '💳 Debit'}
-                                {method === 'CHEQUE' && '📝 Cheque'}
-                              </Typography>
-                              <Typography variant="h6" fontWeight="bold">
-                                ${amount.toFixed(2)}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        )
-                      )}
-                    </Grid>
+                    <MethodBreakdownList
+                      byMethod={stats.atGaragePaymentsByMethod}
+                      itemsByMethod={lineItemsByLocation.atGarage}
+                    />
                   </Box>
                 )}
               </Paper>
@@ -1152,7 +1246,7 @@ export function DaySummary() {
                   Total payments collected
                 </Typography>
 
-                {/* Payment Method Breakdown */}
+                {/* Payment methods, each with the payments behind it */}
                 {Object.keys(stats.mobileServicePaymentsByMethod).length >
                   0 && (
                   <Box
@@ -1167,29 +1261,10 @@ export function DaySummary() {
                     >
                       Payment Methods:
                     </Typography>
-                    <Grid container spacing={2}>
-                      {Object.entries(stats.mobileServicePaymentsByMethod).map(
-                        ([method, amount]) => (
-                          <Grid size={{ xs: 6, sm: 4 }} key={method}>
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {method === 'CASH' && '💵 Cash'}
-                                {method === 'E_TRANSFER' && '📱 E-Transfer'}
-                                {method === 'CREDIT_CARD' && '💳 Credit'}
-                                {method === 'DEBIT_CARD' && '💳 Debit'}
-                                {method === 'CHEQUE' && '📝 Cheque'}
-                              </Typography>
-                              <Typography variant="h6" fontWeight="bold">
-                                ${amount.toFixed(2)}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        )
-                      )}
-                    </Grid>
+                    <MethodBreakdownList
+                      byMethod={stats.mobileServicePaymentsByMethod}
+                      itemsByMethod={lineItemsByLocation.mobileService}
+                    />
                   </Box>
                 )}
               </Paper>

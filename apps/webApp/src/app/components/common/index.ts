@@ -7,3 +7,5 @@ export type { AnalyticsCardData } from './AnalyticsCards';
 export { default as NumberInput } from './NumberInput';
 export type { NumberInputProps } from './NumberInput';
 export { PhoneInput } from './PhoneInput';
+export { CrudAutocomplete } from './CrudAutocomplete';
+export type { CrudAutocompleteProps } from './CrudAutocomplete';
