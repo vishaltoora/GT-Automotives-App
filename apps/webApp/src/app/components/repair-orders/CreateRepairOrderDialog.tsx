@@ -49,6 +49,7 @@ export function CreateRepairOrderDialog({
   const { showApiError, showValidationError } = useErrorHelpers();
   const [vin, setVin] = useState('');
   const [engineType, setEngineType] = useState('');
+  const [mileage, setMileage] = useState('');
   const [decoding, setDecoding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [employees, setEmployees] = useState<User[]>([]);
@@ -65,8 +66,11 @@ export function CreateRepairOrderDialog({
     if (open) {
       setVin(vehicle?.vin ? normalizeVin(vehicle.vin) : '');
       setEngineType(vehicle?.engineType ?? '');
+      // Pre-fill the odometer with the vehicle's last known reading so staff
+      // only have to adjust it rather than type it from scratch.
+      setMileage(vehicle?.mileage != null ? String(vehicle.mileage) : '');
     }
-  }, [open, vehicle?.vin, vehicle?.engineType]);
+  }, [open, vehicle?.vin, vehicle?.engineType, vehicle?.mileage]);
 
   // Load assignable employees and pre-select the ones already on the
   // appointment so the user can confirm or change the RO's crew on creation.
@@ -141,6 +145,20 @@ export function CreateRepairOrderDialog({
     }
   };
 
+  // Mileage is optional — blank is a valid answer for counter service and for
+  // any vehicle whose odometer nobody read.
+  const mileageValue = mileage.trim() ? Number(mileage) : null;
+  const mileageInvalid =
+    mileageValue != null &&
+    (!Number.isFinite(mileageValue) || mileageValue < 0);
+  // A reading below the vehicle's last known one is almost always a typo. Warn
+  // rather than block: an odometer swap or correction is a real, if rare, case.
+  const mileageBelowKnown =
+    mileageValue != null &&
+    !mileageInvalid &&
+    vehicle?.mileage != null &&
+    mileageValue < vehicle.mileage;
+
   const handleCreate = async () => {
     // A VIN is only required when the appointment already has a vehicle linked.
     // With no vehicle (e.g. loose tires) the RO is created vehicle-less and a
@@ -173,6 +191,7 @@ export function CreateRepairOrderDialog({
         vehicleId: vehicle ? vehicle.id : undefined,
         customerConcern: appointment.notes || undefined,
         employeeIds: employeeIds.length > 0 ? employeeIds : undefined,
+        mileageIn: mileageValue ?? undefined,
       });
       onCreated(ro.id);
     } catch (error) {
@@ -182,7 +201,8 @@ export function CreateRepairOrderDialog({
     }
   };
 
-  const createDisabled = saving || (!!vehicle && !VIN_PATTERN.test(vin));
+  const createDisabled =
+    saving || (!!vehicle && !VIN_PATTERN.test(vin)) || mileageInvalid;
 
   return (
     <Dialog
@@ -273,6 +293,36 @@ export function CreateRepairOrderDialog({
               value={engineType}
               onChange={(e) => setEngineType(e.target.value)}
               placeholder="Auto-filled from VIN decode"
+            />
+
+            <TextField
+              label="Current Mileage (optional)"
+              size="small"
+              fullWidth
+              type="number"
+              value={mileage}
+              onChange={(e) => setMileage(e.target.value)}
+              placeholder="Odometer reading on arrival"
+              error={mileageInvalid}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">km</InputAdornment>
+                ),
+              }}
+              helperText={
+                mileageInvalid
+                  ? 'Enter a positive number.'
+                  : mileageBelowKnown
+                  ? `Lower than the last recorded ${vehicle.mileage.toLocaleString()} km — check the reading.`
+                  : vehicle.mileage != null
+                  ? `Last recorded: ${vehicle.mileage.toLocaleString()} km`
+                  : ' '
+              }
+              FormHelperTextProps={
+                mileageBelowKnown
+                  ? { sx: { color: 'warning.main' } }
+                  : undefined
+              }
             />
           </Stack>
         )}

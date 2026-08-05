@@ -138,6 +138,31 @@ export class RepairOrdersService {
     return ro;
   }
 
+  /**
+   * Carry an odometer reading recorded on an RO back onto the vehicle, so a
+   * returning customer's vehicle shows its latest known mileage instead of
+   * whatever it was the day the vehicle was created.
+   *
+   * Forward-only: a reading at or below the stored one is ignored. Odometers do
+   * not run backwards, so a lower number is a typo (or an earlier RO being
+   * edited after a later one), and letting it through would corrupt the
+   * vehicle's mileage and, downstream, what CARFAX is told.
+   */
+  private async syncVehicleMileage(
+    tx: any,
+    vehicleId: string | null | undefined,
+    mileage: number | null | undefined
+  ): Promise<void> {
+    if (!vehicleId || mileage == null) return;
+    await tx.vehicle.updateMany({
+      where: {
+        id: vehicleId,
+        OR: [{ mileage: null }, { mileage: { lt: mileage } }],
+      },
+      data: { mileage },
+    });
+  }
+
   async create(dto: CreateRepairOrderDto): Promise<any> {
     const roNumber = await this.generateRoNumber();
 
@@ -160,6 +185,10 @@ export class RepairOrdersService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Sync before the create so the RO we return already carries the
+      // vehicle's updated mileage.
+      await this.syncVehicleMileage(tx, dto.vehicleId, dto.mileageIn);
+
       const ro = await tx.repairOrder.create({
         data,
         include: this.roInclude,
@@ -374,6 +403,20 @@ export class RepairOrdersService {
             skipDuplicates: true,
           });
         }
+      }
+
+      // Mileage out is the reading when the vehicle leaves, so it wins over
+      // mileage in when both are being set.
+      if (dto.mileageOut != null || dto.mileageIn != null) {
+        const current = await tx.repairOrder.findUnique({
+          where: { id },
+          select: { vehicleId: true },
+        });
+        await this.syncVehicleMileage(
+          tx,
+          dto.vehicleId ?? current?.vehicleId,
+          dto.mileageOut ?? dto.mileageIn
+        );
       }
 
       return tx.repairOrder.update({

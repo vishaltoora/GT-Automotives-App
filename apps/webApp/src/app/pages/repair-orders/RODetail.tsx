@@ -148,6 +148,14 @@ function CurrentTab({
   const [concern, setConcern] = useState(ro.customerConcern ?? '');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(ro.technicianNotes ?? '');
+  const [editingMileage, setEditingMileage] = useState(false);
+  const [mileageIn, setMileageIn] = useState(
+    ro.mileageIn != null ? String(ro.mileageIn) : ''
+  );
+  const [mileageOut, setMileageOut] = useState(
+    ro.mileageOut != null ? String(ro.mileageOut) : ''
+  );
+  const [savingMileage, setSavingMileage] = useState(false);
   const [savingConcern, setSavingConcern] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
@@ -182,6 +190,11 @@ function CurrentTab({
     null
   );
   const [estimateEmailOpen, setEstimateEmailOpen] = useState(false);
+  // Which inspection's report is being emailed. An RO can hold more than one,
+  // so this is an id rather than a boolean.
+  const [reportEmailInspectionId, setReportEmailInspectionId] = useState<
+    string | null
+  >(null);
 
   // Re-fetch the RO after item-level mutations so the detail view stays in sync.
   const refetchRO = async () => {
@@ -205,6 +218,48 @@ function CurrentTab({
       });
     } catch (error) {
       showApiError(error, 'Failed to send the estimate email.');
+      throw error;
+    }
+  };
+
+  // Only a finished inspection has a report worth sending. Matches the rule the
+  // Inspections list uses for its own email action.
+  const emailableInspections = (ro.inspections ?? []).filter(
+    (i) => i.status === 'COMPLETED' || i.status === 'FINALIZED'
+  );
+  // The API returns inspections unordered, so pick the newest explicitly rather
+  // than trusting index 0 — sending last month's report would be worse than
+  // sending none.
+  const latestEmailableInspection = [...emailableInspections].sort(
+    (a, b) =>
+      new Date(b.completedAt ?? b.createdAt).getTime() -
+      new Date(a.completedAt ?? a.createdAt).getTime()
+  )[0];
+
+  // Emails the inspection report PDF. Re-throws on failure so EmailPromptDialog
+  // stays open for a retry.
+  const handleSendInspectionReport = async (
+    emails: string[],
+    saveToCustomer: boolean
+  ) => {
+    if (!reportEmailInspectionId) return;
+    try {
+      const result = await inspectionService.sendInspectionReportEmail(
+        reportEmailInspectionId,
+        emails,
+        saveToCustomer
+      );
+      setReportEmailInspectionId(null);
+      await confirm({
+        title: 'Inspection Report Sent',
+        message: `The inspection report was emailed to ${
+          result.emailUsed || emails.join(', ')
+        }.`,
+        confirmText: 'OK',
+        showCancelButton: false,
+      });
+    } catch (error) {
+      showApiError(error, 'Failed to send the inspection report email.');
       throw error;
     }
   };
@@ -354,6 +409,41 @@ function CurrentTab({
       setEditingConcern(false);
     } finally {
       setSavingConcern(false);
+    }
+  };
+
+  // Blank means "not recorded" and is valid; anything entered must be a
+  // non-negative number.
+  const isBadMileage = (value: string) => {
+    if (!value.trim()) return false;
+    const parsed = Number(value);
+    return !Number.isFinite(parsed) || parsed < 0;
+  };
+  const mileageInInvalid = isBadMileage(mileageIn);
+  const mileageOutInvalid = isBadMileage(mileageOut);
+  const mileageEntryInvalid = mileageInInvalid || mileageOutInvalid;
+  // Warn, don't block — an odometer swap or a correction is rare but real.
+  const mileageBelowKnown =
+    !mileageInInvalid &&
+    !!mileageIn.trim() &&
+    ro.vehicle?.mileage != null &&
+    Number(mileageIn) < ro.vehicle.mileage;
+
+  const handleSaveMileage = async () => {
+    setSavingMileage(true);
+    try {
+      const updated = await repairOrderRequests.update(ro.id, {
+        // Blank clears nothing — it just means "not recorded", so only send
+        // values the user actually entered.
+        ...(mileageIn.trim() ? { mileageIn: Number(mileageIn) } : {}),
+        ...(mileageOut.trim() ? { mileageOut: Number(mileageOut) } : {}),
+      });
+      onROChange({ ...ro, ...updated });
+      setEditingMileage(false);
+    } catch (error) {
+      showApiError(error, 'Failed to save mileage.');
+    } finally {
+      setSavingMileage(false);
     }
   };
 
@@ -686,17 +776,109 @@ function CurrentTab({
                   VIN: {ro.vehicle.vin}
                 </Typography>
               )}
-              {ro.mileageIn != null && (
-                <Typography variant="body2" color="text.secondary">
-                  Mileage in: {ro.mileageIn.toLocaleString()} km
-                </Typography>
-              )}
-              {ro.mileageOut != null && (
-                <Typography variant="body2" color="text.secondary">
-                  Mileage out: {ro.mileageOut.toLocaleString()} km
-                </Typography>
-              )}
             </Stack>
+
+            {/* Odometer readings. Always shown (not hidden when unset) so it is
+                obvious mileage can be recorded on an RO created without it. */}
+            {editingMileage ? (
+              <Box sx={{ mt: 1 }}>
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <TextField
+                    label="Mileage in"
+                    size="small"
+                    type="number"
+                    value={mileageIn}
+                    onChange={(e) => setMileageIn(e.target.value)}
+                    error={mileageInInvalid}
+                    helperText={
+                      mileageInInvalid
+                        ? 'Enter a positive number.'
+                        : mileageBelowKnown
+                        ? `Below the vehicle's last recorded ${ro.vehicle.mileage?.toLocaleString()} km.`
+                        : ' '
+                    }
+                    FormHelperTextProps={
+                      mileageBelowKnown
+                        ? { sx: { color: 'warning.main' } }
+                        : undefined
+                    }
+                    sx={{ maxWidth: 170 }}
+                  />
+                  <TextField
+                    label="Mileage out"
+                    size="small"
+                    type="number"
+                    value={mileageOut}
+                    onChange={(e) => setMileageOut(e.target.value)}
+                    error={mileageOutInvalid}
+                    helperText={
+                      mileageOutInvalid ? 'Enter a positive number.' : ' '
+                    }
+                    sx={{ maxWidth: 170 }}
+                  />
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={handleSaveMileage}
+                    disabled={savingMileage || mileageEntryInvalid}
+                  >
+                    {savingMileage ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <Save fontSize="small" />
+                    )}
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setEditingMileage(false);
+                      setMileageIn(
+                        ro.mileageIn != null ? String(ro.mileageIn) : ''
+                      );
+                      setMileageOut(
+                        ro.mileageOut != null ? String(ro.mileageOut) : ''
+                      );
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              </Box>
+            ) : (
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ mt: 0.5 }}
+                alignItems="center"
+                flexWrap="wrap"
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Mileage in:{' '}
+                  {ro.mileageIn != null
+                    ? `${ro.mileageIn.toLocaleString()} km`
+                    : '—'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Mileage out:{' '}
+                  {ro.mileageOut != null
+                    ? `${ro.mileageOut.toLocaleString()} km`
+                    : '—'}
+                </Typography>
+                {canEdit && (
+                  <Button
+                    size="small"
+                    startIcon={<Edit fontSize="small" />}
+                    onClick={() => setEditingMileage(true)}
+                  >
+                    {ro.mileageIn == null && ro.mileageOut == null
+                      ? 'Add mileage'
+                      : 'Edit'}
+                  </Button>
+                )}
+              </Stack>
+            )}
           </>
         )}
 
@@ -958,6 +1140,22 @@ function CurrentTab({
               </Button>
             </span>
           </Tooltip>
+        )}
+
+        {/* Email the inspection report without leaving the RO. Only offered once
+            an inspection is finished — there is nothing to send before that. */}
+        {latestEmailableInspection && (
+          <Button
+            variant="outlined"
+            startIcon={<EmailIcon />}
+            onClick={() =>
+              setReportEmailInspectionId(latestEmailableInspection.id)
+            }
+          >
+            {emailableInspections.length > 1
+              ? 'Email Latest Inspection Report'
+              : 'Email Inspection Report'}
+          </Button>
         )}
 
         <Tooltip
@@ -1612,6 +1810,22 @@ function CurrentTab({
         customerId={ro.customerId}
         documentType="quotation"
         documentNumber={ro.quotation?.quotationNumber || ro.roNumber}
+      />
+
+      <EmailPromptDialog
+        open={Boolean(reportEmailInspectionId)}
+        onClose={() => setReportEmailInspectionId(null)}
+        multiple
+        onSubmit={async () => undefined}
+        onSubmitMultiple={handleSendInspectionReport}
+        availableEmails={[
+          ...(ro.customer?.email ? [ro.customer.email] : []),
+          ...((ro.customer as any)?.additionalEmails ?? []),
+        ]}
+        customerName={customerFullName(ro)}
+        customerId={ro.customerId}
+        documentType="inspection"
+        documentNumber={ro.roNumber}
       />
     </Box>
   );

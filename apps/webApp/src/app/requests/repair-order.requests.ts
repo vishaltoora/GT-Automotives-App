@@ -184,6 +184,7 @@ export const repairOrderRequests = {
     vehicleId?: string;
     customerConcern?: string;
     employeeIds?: string[];
+    mileageIn?: number;
   }) => apiClient.post<RepairOrder>('/repair-orders', data).then((r) => r.data),
 
   update: (
