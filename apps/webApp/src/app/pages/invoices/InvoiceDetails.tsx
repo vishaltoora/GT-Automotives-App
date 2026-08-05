@@ -36,6 +36,11 @@ import {
 import { invoiceService, Invoice } from '../../requests/invoice.requests';
 import { quotationService } from '../../requests/quotation.requests';
 import { useAuth } from '../../hooks/useAuth';
+import {
+  getInvoiceBalanceDue,
+  isInvoicePartiallyPaid,
+} from '@gt-automotive/data';
+import { colors } from '../../theme/colors';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import InvoiceDialog from '../../components/invoices/InvoiceDialog';
@@ -918,6 +923,36 @@ const InvoiceDetails: React.FC = () => {
                         {formatCurrency(invoice.total)}
                       </Typography>
                     </Grid>
+                    {/* Only on a genuinely part-paid invoice — an unpaid or
+                        settled one shows no empty "Balance Due: $0.00" row. */}
+                    {isInvoicePartiallyPaid(invoice) && (
+                      <>
+                        <Grid size={6}>
+                          <Typography variant="body1">Amount Paid:</Typography>
+                        </Grid>
+                        <Grid size={6}>
+                          <Typography variant="body1">
+                            {formatCurrency(invoice.amountPaid ?? 0)}
+                          </Typography>
+                        </Grid>
+                        <Grid size={6}>
+                          <Typography
+                            variant="h6"
+                            sx={{ color: colors.semantic.error }}
+                          >
+                            Balance Due:
+                          </Typography>
+                        </Grid>
+                        <Grid size={6}>
+                          <Typography
+                            variant="h6"
+                            sx={{ color: colors.semantic.error }}
+                          >
+                            {formatCurrency(getInvoiceBalanceDue(invoice))}
+                          </Typography>
+                        </Grid>
+                      </>
+                    )}
                   </Grid>
                 </Box>
               </CardContent>

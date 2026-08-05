@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import { BaseRepository } from '../../common/repositories/base.repository';
 import { Customer, Prisma } from '@prisma/client';
+import {
+  OUTSTANDING_INVOICE_SQL_FILTER,
+  invoiceBalanceDue,
+  outstandingInvoiceWhere,
+  roundToCents,
+} from '../../invoices/invoice-outstanding';
 
 @Injectable()
 export class CustomerRepository extends BaseRepository<
@@ -120,7 +126,15 @@ export class CustomerRepository extends BaseRepository<
   }
 
   async getCustomerStats(customerId: string) {
-    const [totalSpent, invoiceOutstanding, vehicleCount, appointmentCount, upcomingAppointments, lastVisit, unpaidAppointments] = await Promise.all([
+    const [
+      totalSpent,
+      invoiceOutstanding,
+      vehicleCount,
+      appointmentCount,
+      upcomingAppointments,
+      lastVisit,
+      unpaidAppointments,
+    ] = await Promise.all([
       // Total amount spent (PAID invoices)
       this.prisma.invoice.aggregate({
         where: {
@@ -131,15 +145,18 @@ export class CustomerRepository extends BaseRepository<
           total: true,
         },
       }),
-      // Outstanding balance from invoices (PENDING and DRAFT invoices)
-      this.prisma.invoice.aggregate({
-        where: {
-          customerId,
-          status: { in: ['PENDING', 'DRAFT'] },
-        },
-        _sum: {
-          total: true,
-        },
+      // Outstanding balance from invoices: sum of (total - amountPaid) over
+      // PENDING + PARTIALLY_PAID (see invoice-outstanding.ts). Summing `total`
+      // overstated anyone who had part-paid, and filtering PENDING/DRAFT dropped
+      // part-paid invoices out of the balance entirely.
+      //
+      // Rows are fetched rather than aggregated because the balance must be
+      // clamped at zero PER INVOICE — an aggregate of SUM(total) - SUM(amountPaid)
+      // would let one overpaid invoice cancel out another's debt, and would then
+      // disagree with the raw-SQL path, which clamps with GREATEST(...,0).
+      this.prisma.invoice.findMany({
+        where: outstandingInvoiceWhere(customerId),
+        select: { total: true, amountPaid: true },
       }),
       // Number of vehicles
       this.prisma.vehicle.count({
@@ -186,8 +203,15 @@ export class CustomerRepository extends BaseRepository<
     }, 0);
 
     // Total outstanding = invoices + appointments
-    const invoiceOutstandingAmount = Number(invoiceOutstanding._sum.total) || 0;
-    const totalOutstanding = invoiceOutstandingAmount + appointmentOutstanding;
+    const invoiceOutstandingAmount = roundToCents(
+      invoiceOutstanding.reduce(
+        (sum, invoice) => sum + invoiceBalanceDue(invoice),
+        0
+      )
+    );
+    const totalOutstanding = roundToCents(
+      invoiceOutstandingAmount + appointmentOutstanding
+    );
 
     return {
       totalSpent: totalSpent._sum.total || 0,
@@ -209,25 +233,32 @@ export class CustomerRepository extends BaseRepository<
    * Get stats for ALL customers in a SINGLE optimized SQL query
    * This eliminates the N+1 problem completely with one database round-trip
    */
-  async getAllCustomerStats(): Promise<Map<string, {
-    totalSpent: number;
-    outstandingBalance: number;
-    vehicleCount: number;
-    appointmentCount: number;
-    upcomingAppointments: number;
-    lastVisitDate: Date | null;
-  }>> {
+  async getAllCustomerStats(): Promise<
+    Map<
+      string,
+      {
+        totalSpent: number;
+        outstandingBalance: number;
+        vehicleCount: number;
+        appointmentCount: number;
+        upcomingAppointments: number;
+        lastVisitDate: Date | null;
+      }
+    >
+  > {
     // Single raw SQL query that calculates all stats for all customers
-    const results = await this.prisma.$queryRaw<Array<{
-      customerId: string;
-      totalSpent: number | null;
-      invoiceOutstanding: number | null;
-      appointmentOutstanding: number | null;
-      vehicleCount: bigint;
-      appointmentCount: bigint;
-      upcomingAppointments: bigint;
-      lastVisitDate: Date | null;
-    }>>`
+    const results = await this.prisma.$queryRaw<
+      Array<{
+        customerId: string;
+        totalSpent: number | null;
+        invoiceOutstanding: number | null;
+        appointmentOutstanding: number | null;
+        vehicleCount: bigint;
+        appointmentCount: bigint;
+        upcomingAppointments: bigint;
+        lastVisitDate: Date | null;
+      }>
+    >`
       SELECT
         c.id as "customerId",
         -- Total spent (PAID invoices)
@@ -236,11 +267,17 @@ export class CustomerRepository extends BaseRepository<
           FROM "Invoice" i
           WHERE i."customerId" = c.id AND i.status = 'PAID'
         ), 0) as "totalSpent",
-        -- Invoice outstanding (PENDING + DRAFT)
+        -- Invoice outstanding. Must agree with the Prisma aggregate above and
+        -- with getPendingInvoiceOutstanding(): sum what is still owing, not the
+        -- invoice total, over PENDING + PARTIALLY_PAID only, and skip
+        -- consolidated children so a combined invoice is not counted twice.
+        -- GREATEST(...,0) stops an overpaid invoice reducing the total.
         COALESCE((
-          SELECT SUM(i.total)
+          SELECT SUM(GREATEST(i.total - COALESCE(i."amountPaid", 0), 0))
           FROM "Invoice" i
-          WHERE i."customerId" = c.id AND i.status IN ('PENDING', 'DRAFT')
+          WHERE i."customerId" = c.id AND ${Prisma.raw(
+            OUTSTANDING_INVOICE_SQL_FILTER
+          )}
         ), 0) as "invoiceOutstanding",
         -- Appointment outstanding (completed with unpaid balance)
         COALESCE((
@@ -270,14 +307,17 @@ export class CustomerRepository extends BaseRepository<
     `;
 
     // Build the stats map from query results
-    const statsMap = new Map<string, {
-      totalSpent: number;
-      outstandingBalance: number;
-      vehicleCount: number;
-      appointmentCount: number;
-      upcomingAppointments: number;
-      lastVisitDate: Date | null;
-    }>();
+    const statsMap = new Map<
+      string,
+      {
+        totalSpent: number;
+        outstandingBalance: number;
+        vehicleCount: number;
+        appointmentCount: number;
+        upcomingAppointments: number;
+        lastVisitDate: Date | null;
+      }
+    >();
 
     for (const row of results) {
       const invoiceOutstanding = Number(row.invoiceOutstanding) || 0;
@@ -285,7 +325,9 @@ export class CustomerRepository extends BaseRepository<
 
       statsMap.set(row.customerId, {
         totalSpent: Number(row.totalSpent) || 0,
-        outstandingBalance: invoiceOutstanding + appointmentOutstanding,
+        outstandingBalance: roundToCents(
+          invoiceOutstanding + appointmentOutstanding
+        ),
         vehicleCount: Number(row.vehicleCount),
         appointmentCount: Number(row.appointmentCount),
         upcomingAppointments: Number(row.upcomingAppointments),

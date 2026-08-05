@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   hasPrintableDeclinedItems,
+  renderPaymentSummaryRowsHtml,
   renderDeclinedItemsHtml,
   renderSignatureHtml,
   renderTermsAndConditionsHtml,
@@ -349,6 +350,7 @@ ${
                   invoice.total
                 )}</td>
               </tr>
+              ${renderPaymentSummaryRowsHtml(invoice)}
             </table>
           </div>
 

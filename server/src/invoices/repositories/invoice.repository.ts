@@ -8,6 +8,10 @@ import {
   businessDayUtcRange,
   POSTGRES_TIMEZONE,
 } from '../../config/timezone.config';
+import {
+  invoiceBalanceDue,
+  outstandingInvoiceWhere,
+} from '../invoice-outstanding';
 
 /**
  * Everything the invoice detail view, the emailed PDF and the browser print
@@ -27,6 +31,11 @@ const INVOICE_DETAIL_INCLUDE = {
   },
   declinedItems: {
     orderBy: { sortOrder: 'asc' },
+  },
+  // The payment ledger is printed on a part-paid invoice so the customer can
+  // see what was credited and when.
+  payments: {
+    orderBy: { paidAt: 'asc' },
   },
 } as const satisfies Prisma.InvoiceInclude;
 
@@ -552,10 +561,9 @@ export class InvoiceRepository extends BaseRepository<
   async getPendingInvoiceOutstanding(date: string): Promise<any> {
     const dateOnly = extractBusinessDate(date);
     const invoices = await this.prisma.invoice.findMany({
-      where: {
-        status: { in: ['PENDING', 'PARTIALLY_PAID'] },
-        combinedInvoiceId: null,
-      },
+      // Shared with the customer-stats paths so all three agree (see
+      // invoice-outstanding.ts).
+      where: outstandingInvoiceWhere(),
       include: {
         customer: true,
         _count: { select: { consolidatedInvoices: true } },
@@ -571,7 +579,7 @@ export class InvoiceRepository extends BaseRepository<
     const todayByCustomerMap = new Map<string, any>();
 
     for (const inv of invoices) {
-      const remaining = Number(inv.total) - Number(inv.amountPaid ?? 0);
+      const remaining = invoiceBalanceDue(inv);
       if (remaining <= 0.005) continue;
 
       cumulativeTotal += remaining;
