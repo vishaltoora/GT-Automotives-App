@@ -22,28 +22,50 @@ import {
   FormControl,
   InputLabel,
 } from '@mui/material';
-import { Receipt, AttachMoney, Assessment } from '@mui/icons-material';
+import { Receipt, AttachMoney, Assessment, ListAlt } from '@mui/icons-material';
 import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
+import { InvoiceStatus } from '@gt-automotive/data';
+import { formatDisplayDate } from '../../utils/dateUtils';
+import { useAuth as useAppAuth } from '../../hooks/useAuth';
 
-type ReportType = 'purchase' | 'expense' | 'tax-collection' | 'gst-paid';
+type ReportType =
+  | 'purchase'
+  | 'expense'
+  | 'tax-collection'
+  | 'gst-paid'
+  | 'sales';
+
+// Sentinel for "don't filter by status" — MUI Select can't hold undefined.
+const ALL_STATUSES = 'ALL';
 
 export function Reports() {
   const [reportType, setReportType] = useState<ReportType>('purchase');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [salesStatus, setSalesStatus] = useState<string>(ALL_STATUSES);
   const [reportData, setReportData] = useState<any>(null);
   const [taxReportData, setTaxReportData] = useState<any>(null);
   const [gstPaidReportData, setGstPaidReportData] = useState<any>(null);
+  const [salesReportData, setSalesReportData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { getToken } = useAuth();
+  const { role } = useAppAuth();
+  // This page is also routed for supervisors and foremen, but the sales report
+  // endpoint is admin/accountant-only — don't offer a report they'd get a 403 on.
+  const canRunSalesReport = role === 'admin' || role === 'accountant';
 
-  const handleReportTypeChange = (newType: ReportType) => {
-    setReportType(newType);
+  const clearReports = () => {
     setReportData(null);
     setTaxReportData(null);
     setGstPaidReportData(null);
+    setSalesReportData(null);
+  };
+
+  const handleReportTypeChange = (newType: ReportType) => {
+    setReportType(newType);
+    clearReports();
     setError(null);
   };
 
@@ -54,6 +76,8 @@ export function Reports() {
       await loadTaxReport();
     } else if (reportType === 'gst-paid') {
       await loadGstPaidReport();
+    } else if (reportType === 'sales') {
+      await loadSalesReport();
     }
   };
 
@@ -145,9 +169,52 @@ export function Reports() {
       setGstPaidReportData(response.data);
       setReportData(null);
       setTaxReportData(null);
+      setSalesReportData(null);
     } catch (err: any) {
       console.error('Error loading GST paid report:', err);
       setError(err.response?.data?.message || 'Failed to load GST paid report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSalesReport = async () => {
+    // Unlike the other reports, the sales report is scoped to an explicit range
+    // rather than defaulting to all time — an unbounded invoice list is never
+    // what the user wants here.
+    if (!startDate || !endDate) {
+      setError('Select both a start date and an end date.');
+      return;
+    }
+    if (endDate < startDate) {
+      setError('The end date cannot be before the start date.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = await getToken();
+      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+      const params: any = { startDate, endDate };
+      if (salesStatus !== ALL_STATUSES) params.status = salesStatus;
+
+      const response = await axios.get(`${baseURL}/api/reports/sales-report`, {
+        params,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setSalesReportData(response.data);
+      setReportData(null);
+      setTaxReportData(null);
+      setGstPaidReportData(null);
+    } catch (err: any) {
+      console.error('Error loading sales report:', err);
+      setError(err.response?.data?.message || 'Failed to load sales report');
     } finally {
       setLoading(false);
     }
@@ -158,6 +225,103 @@ export function Reports() {
       style: 'currency',
       currency: 'CAD',
     }).format(amount);
+  };
+
+  // Enum values are SCREAMING_SNAKE_CASE; show them as words.
+  const humanize = (value?: string | null) =>
+    value ? value.replace(/_/g, ' ') : '';
+
+  const renderSalesReport = () => {
+    if (!salesReportData) return null;
+
+    const { rows, totals, invoiceCount } = salesReportData;
+
+    if (!rows?.length) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
+          <ListAlt sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
+          <Typography variant="h6" gutterBottom fontWeight="500">
+            No invoices found
+          </Typography>
+          <Typography variant="body2">
+            No invoices match{' '}
+            {formatDisplayDate(salesReportData.startDate, 'short')}
+            {' – '}
+            {formatDisplayDate(salesReportData.endDate, 'short')}
+            {salesStatus !== ALL_STATUSES &&
+              ` with status ${humanize(salesStatus)}`}
+            .
+          </Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Invoices — {formatDisplayDate(salesReportData.startDate, 'short')} to{' '}
+          {formatDisplayDate(salesReportData.endDate, 'short')} ({invoiceCount})
+        </Typography>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell align="right">Sub Total</TableCell>
+                <TableCell align="right">GST</TableCell>
+                <TableCell align="right">PST</TableCell>
+                <TableCell align="right">Net Total</TableCell>
+                <TableCell>Mode of Payment</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row: any) => (
+                <TableRow key={row.invoiceId} hover>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                    {formatDisplayDate(row.date, 'short')}
+                  </TableCell>
+                  <TableCell>{row.description}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(row.subtotal)}
+                  </TableCell>
+                  <TableCell align="right">{formatCurrency(row.gst)}</TableCell>
+                  <TableCell align="right">{formatCurrency(row.pst)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                    {formatCurrency(row.netTotal)}
+                  </TableCell>
+                  <TableCell>
+                    {row.paymentMethod ? (
+                      <Chip label={humanize(row.paymentMethod)} size="small" />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Unpaid
+                      </Typography>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow sx={{ '& td': { borderTop: 2, fontWeight: 'bold' } }}>
+                <TableCell colSpan={2}>Total</TableCell>
+                <TableCell align="right">
+                  {formatCurrency(totals.subtotal)}
+                </TableCell>
+                <TableCell align="right">
+                  {formatCurrency(totals.gst)}
+                </TableCell>
+                <TableCell align="right">
+                  {formatCurrency(totals.pst)}
+                </TableCell>
+                <TableCell align="right">
+                  {formatCurrency(totals.netTotal)}
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    );
   };
 
   const renderSummaryCards = () => {
@@ -404,9 +568,37 @@ export function Reports() {
                     <span>GST Paid on Purchase & Expense</span>
                   </Box>
                 </MenuItem>
+                {canRunSalesReport && (
+                  <MenuItem value="sales">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ListAlt fontSize="small" />
+                      <span>Invoice Sales</span>
+                    </Box>
+                  </MenuItem>
+                )}
               </Select>
             </FormControl>
           </Grid>
+
+          {reportType === 'sales' && (
+            <Grid size={{ xs: 12, md: 3 }}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={salesStatus}
+                  label="Status"
+                  onChange={(e) => setSalesStatus(e.target.value)}
+                >
+                  <MenuItem value={ALL_STATUSES}>All Statuses</MenuItem>
+                  {Object.values(InvoiceStatus).map((status) => (
+                    <MenuItem key={status} value={status}>
+                      {humanize(status)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
 
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <TextField
@@ -465,6 +657,12 @@ export function Reports() {
             <CircularProgress size={60} />
           </Box>
         )}
+
+        {/* Invoice Sales Report Results */}
+        {!loading &&
+          reportType === 'sales' &&
+          salesReportData &&
+          renderSalesReport()}
 
         {/* Purchase & Expense Report Results */}
         {!loading &&
@@ -808,6 +1006,7 @@ export function Reports() {
           !reportData &&
           !taxReportData &&
           !gstPaidReportData &&
+          !salesReportData &&
           !error && (
             <Box
               sx={{
@@ -816,7 +1015,18 @@ export function Reports() {
                 color: 'text.secondary',
               }}
             >
-              {reportType === 'purchase' ? (
+              {reportType === 'sales' ? (
+                <>
+                  <ListAlt sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
+                  <Typography variant="h6" gutterBottom fontWeight="500">
+                    No Invoice Sales Report Generated
+                  </Typography>
+                  <Typography variant="body2">
+                    Select a date range and status, then click "Generate Report"
+                    to list invoices with sub total, GST, PST and net total
+                  </Typography>
+                </>
+              ) : reportType === 'purchase' ? (
                 <>
                   <Receipt sx={{ fontSize: 80, mb: 2, opacity: 0.2 }} />
                   <Typography variant="h6" gutterBottom fontWeight="500">

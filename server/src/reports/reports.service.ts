@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaClient, RecurringPeriod } from '@prisma/client';
 import {
   ExpenseReportFilterDto,
@@ -15,6 +15,16 @@ import {
   GstPaidReportResponseDto,
   MonthlyGstPaidBreakdownDto,
 } from '@gt-automotive/data';
+import {
+  SalesReportFilterDto,
+  SalesReportResponseDto,
+  SalesReportRowDto,
+} from '@gt-automotive/data';
+import {
+  extractBusinessDate,
+  shiftBusinessDate,
+  toBusinessCalendarDate,
+} from '../config/timezone.config';
 
 @Injectable()
 export class ReportsService {
@@ -692,6 +702,103 @@ export class ReportsService {
         },
       },
     };
+  }
+
+  /**
+   * Sales report: one row per customer invoice in the range, plus column totals.
+   *
+   * Dates: `invoiceDate` holds a business calendar date pinned to midnight UTC
+   * (see toBusinessCalendarDate), so the range is bounded by the same
+   * representation rather than by businessDayUtcRange() — the latter bounds real
+   * timestamp columns (createdAt/paidAt) and would exclude midnight-UTC dates.
+   * The upper bound is the day *after* endDate, exclusive, which keeps the whole
+   * end day in range for older rows that still carry a real timestamp.
+   */
+  async getSalesReport(
+    filterDto: SalesReportFilterDto
+  ): Promise<SalesReportResponseDto> {
+    const startDate = extractBusinessDate(filterDto.startDate);
+    const endDate = extractBusinessDate(filterDto.endDate);
+
+    if (endDate < startDate) {
+      throw new BadRequestException('endDate cannot be before startDate');
+    }
+
+    const where: any = {
+      invoiceDate: {
+        gte: toBusinessCalendarDate(startDate),
+        lt: toBusinessCalendarDate(shiftBusinessDate(endDate, 1)),
+      },
+    };
+    if (filterDto.status) {
+      where.status = filterDto.status;
+    }
+
+    const invoices = await this.prisma.invoice.findMany({
+      where,
+      select: {
+        id: true,
+        invoiceNumber: true,
+        invoiceDate: true,
+        subtotal: true,
+        gstAmount: true,
+        pstAmount: true,
+        total: true,
+        paymentMethod: true,
+        status: true,
+        notes: true,
+        items: { select: { description: true } },
+      },
+      orderBy: [{ invoiceDate: 'asc' }, { invoiceNumber: 'asc' }],
+    });
+
+    const rows: SalesReportRowDto[] = invoices.map((invoice) => ({
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      date: extractBusinessDate(invoice.invoiceDate),
+      description: this.buildSalesRowDescription(invoice.items, invoice.notes),
+      subtotal: Number(invoice.subtotal),
+      // gstAmount/pstAmount are null on invoices created through the legacy
+      // combined-taxRate path; those carry their tax in taxAmount only, so the
+      // tax columns read 0 for them. Matches getTaxReport's existing treatment.
+      gst: Number(invoice.gstAmount || 0),
+      pst: Number(invoice.pstAmount || 0),
+      netTotal: Number(invoice.total),
+      paymentMethod: invoice.paymentMethod,
+      status: invoice.status,
+    }));
+
+    const sum = (pick: (row: SalesReportRowDto) => number) =>
+      this.roundMoney(rows.reduce((acc, row) => acc + pick(row), 0));
+
+    return {
+      startDate,
+      endDate,
+      invoiceCount: rows.length,
+      rows,
+      totals: {
+        subtotal: sum((row) => row.subtotal),
+        gst: sum((row) => row.gst),
+        pst: sum((row) => row.pst),
+        netTotal: sum((row) => row.netTotal),
+      },
+    };
+  }
+
+  private buildSalesRowDescription(
+    items: { description: string }[],
+    notes: string | null
+  ): string {
+    const fromItems = items
+      .map((item) => item.description?.trim())
+      .filter((description): description is string => !!description)
+      .join(', ');
+    return fromItems || notes?.trim() || 'No description';
+  }
+
+  /** Decimal(10,2) columns are exact, but summing them as floats is not. */
+  private roundMoney(amount: number): number {
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
   }
 
   async getTaxReport(
