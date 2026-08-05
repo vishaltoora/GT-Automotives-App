@@ -724,16 +724,29 @@ export class RepairOrdersService {
    * technician notes followed by a list of any customer-declined items (which
    * are not billed, so they only appear here for the customer's record).
    */
-  private async buildRoInvoiceNotes(
-    roId: string,
+  private buildRoInvoiceNotes(
     technicianNotes?: string | null
-  ): Promise<string | undefined> {
-    const parts: string[] = [];
-
-    if (technicianNotes && technicianNotes.trim()) {
-      parts.push(`Technician Notes:\n${technicianNotes.trim()}`);
+  ): string | undefined {
+    if (!technicianNotes?.trim()) {
+      return undefined;
     }
+    return `Technician Notes:\n${technicianNotes.trim()}`;
+  }
 
+  /**
+   * Declined services/parts for an RO, as structured invoice rows.
+   *
+   * These used to be appended as text into the invoice's `notes` field, which
+   * meant they could not be styled or separated from whatever else was typed
+   * into notes. They are now real rows on the invoice so the templates can print
+   * them as their own clearly-headed section. Description only — a declined item
+   * must never read like a charge.
+   */
+  private async buildRoDeclinedItems(
+    roId: string
+  ): Promise<
+    { description: string; roServiceId: string; sortOrder: number }[]
+  > {
     const declined = await this.prisma.rOService.findMany({
       where: {
         repairOrderId: roId,
@@ -742,13 +755,12 @@ export class RepairOrdersService {
       },
       orderBy: { createdAt: 'asc' },
     });
-    if (declined.length > 0) {
-      // List declined items by name only (no quantity/price).
-      const lines = declined.map((s: any) => `• ${s.description}`).join('\n');
-      parts.push(`Customer Declined Items:\n${lines}`);
-    }
 
-    return parts.length > 0 ? parts.join('\n\n') : undefined;
+    return declined.map((service: any, index: number) => ({
+      description: service.description,
+      roServiceId: service.id,
+      sortOrder: index,
+    }));
   }
 
   private buildRoInvoiceTotals(
@@ -885,8 +897,10 @@ export class RepairOrdersService {
 
     // Carry the RO's technician notes and any customer-declined items onto the
     // invoice so they print/email with it. Declined items aren't billed (they're
-    // not in `items`), so they're listed here for the customer's record.
-    const invoiceNotes = await this.buildRoInvoiceNotes(id, ro.technicianNotes);
+    // not in `items`) and are stored as their own rows, so the invoice can print
+    // them as a distinct section below the technician notes.
+    const invoiceNotes = this.buildRoInvoiceNotes(ro.technicianNotes);
+    const declinedItems = await this.buildRoDeclinedItems(id);
 
     // Re-sync path: reopened RO with an existing unpaid invoice. Rebuild its line
     // items and totals in place, keeping the same invoice id/number and PENDING
@@ -896,6 +910,14 @@ export class RepairOrdersService {
       return this.prisma.$transaction(async (tx) => {
         await tx.invoiceItem.deleteMany({
           where: { invoiceId: existingInvoice.id },
+        });
+        // Rebuild only the rows derived from this RO. Declined items added by
+        // hand on the invoice (roServiceId null) survive a re-sync.
+        await tx.invoiceDeclinedItem.deleteMany({
+          where: {
+            invoiceId: existingInvoice.id,
+            roServiceId: { not: null },
+          },
         });
         const invoice = await tx.invoice.update({
           where: { id: existingInvoice.id },
@@ -915,6 +937,9 @@ export class RepairOrdersService {
             // RO re-closed after 5 PM PST isn't dated to the next (UTC) day.
             invoiceDate: toBusinessCalendarDate(),
             items: { create: items as any },
+            ...(declinedItems.length
+              ? { declinedItems: { create: declinedItems } }
+              : {}),
           },
         });
         if (inspectionIdsToLink.length) {
@@ -966,6 +991,9 @@ export class RepairOrdersService {
         items: {
           create: items as any,
         },
+        ...(declinedItems.length
+          ? { declinedItems: { create: declinedItems } }
+          : {}),
       },
     });
 

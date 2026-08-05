@@ -29,6 +29,7 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  Stack,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -81,6 +82,9 @@ interface InvoiceFormContentProps {
     notes: string;
     status: string;
     invoiceDate: string;
+    // Work the customer was offered and declined. Never billed and never part of
+    // any total — kept as plain descriptions so it can't read like a charge.
+    declinedItems: string[];
   };
   setFormData: (data: any) => void;
   items: InvoiceItem[];
@@ -747,6 +751,84 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       },
                     }}
                   />
+
+                  {/* Declined work. Available on every invoice, not just those
+                      generated from a repair order — a walk-in who turns down a
+                      recommendation should be recorded the same way. */}
+                  <Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Typography variant="subtitle2">
+                        Declined Services &amp; Parts (Optional)
+                      </Typography>
+                      <Button
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            declinedItems: [...formData.declinedItems, ''],
+                          })
+                        }
+                      >
+                        Add
+                      </Button>
+                    </Box>
+
+                    {formData.declinedItems.length === 0 ? (
+                      <Typography variant="caption" color="text.secondary">
+                        Anything the customer was offered and turned down.
+                        Printed on the invoice, never charged.
+                      </Typography>
+                    ) : (
+                      <Stack spacing={1}>
+                        {formData.declinedItems.map((description, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: 'flex',
+                              gap: 1,
+                              alignItems: 'center',
+                            }}
+                          >
+                            <TextField
+                              fullWidth
+                              size="small"
+                              value={description}
+                              placeholder="e.g. Rear brake pads"
+                              onChange={(e) => {
+                                const next = [...formData.declinedItems];
+                                next[index] = e.target.value;
+                                setFormData({
+                                  ...formData,
+                                  declinedItems: next,
+                                });
+                              }}
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  declinedItems: formData.declinedItems.filter(
+                                    (_, i) => i !== index
+                                  ),
+                                })
+                              }
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
 
                   {formData.paymentMethod && (
                     <Alert severity="info" sx={{ mt: 'auto' }}>

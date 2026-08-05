@@ -310,6 +310,64 @@ export class AzureBlobService {
   }
 
   /**
+   * Upload a customer signature image (PNG off the signature pad canvas).
+   *
+   * Same private-container rule as RO media: the storage account has "Allow Blob
+   * public access" disabled, so the container is created private and the image
+   * is served through a short-lived SAS URL on read.
+   */
+  async uploadInvoiceSignature(
+    buffer: Buffer,
+    invoiceId: string
+  ): Promise<UploadResult> {
+    if (!this.isConfigured) {
+      // Dev fallback: return the signature inline so the feature is testable
+      // locally without an Azure account.
+      this.logger.warn(
+        '⚠️ Azure Storage not configured - returning inline data URL for signature'
+      );
+      return {
+        blobUrl: `data:image/png;base64,${buffer.toString('base64')}`,
+        blobName: `mock-signature-${invoiceId}`,
+        containerName: 'invoice-signatures',
+        size: buffer.length,
+      };
+    }
+
+    try {
+      const containerName = 'invoice-signatures';
+      const containerClient =
+        this.blobServiceClient!.getContainerClient(containerName);
+      await containerClient.createIfNotExists();
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const safeInvoiceId = invoiceId.replace(/[^a-zA-Z0-9-]/g, '');
+      const blobName = `${year}/${month}/signature-${safeInvoiceId}-${Date.now()}.png`;
+
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      await blockBlobClient.upload(buffer, buffer.length, {
+        blobHTTPHeaders: { blobContentType: 'image/png' },
+      });
+
+      this.logger.log(`Uploaded invoice signature: ${blobName}`);
+      return {
+        blobName,
+        blobUrl: blockBlobClient.url,
+        containerName,
+        size: buffer.length,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Error uploading invoice signature to Azure Blob Storage',
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Delete invoice image from Azure Blob Storage
    */
   async deleteInvoiceImage(

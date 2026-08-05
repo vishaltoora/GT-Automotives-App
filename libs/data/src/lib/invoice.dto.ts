@@ -67,6 +67,24 @@ export class InvoiceItemDto {
   total?: number;
 }
 
+/**
+ * A service or part the customer was offered and declined. Deliberately not an
+ * InvoiceItem: declined work is never billed and never enters any total, so it
+ * carries a description only — no quantity or price that could read as a charge.
+ */
+export class InvoiceDeclinedItemDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @IsString()
+  description!: string;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
 export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
@@ -125,6 +143,12 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InvoiceDeclinedItemDto)
+  declinedItems?: InvoiceDeclinedItemDto[];
 
   @IsOptional()
   @IsString()
@@ -186,6 +210,16 @@ export class UpdateInvoiceDto {
   @IsString()
   notes?: string;
 
+  /**
+   * When present, replaces the invoice's declined-item list wholesale. Omit the
+   * field to leave the existing list untouched; pass [] to clear it.
+   */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InvoiceDeclinedItemDto)
+  declinedItems?: InvoiceDeclinedItemDto[];
+
   @IsOptional()
   @IsString()
   paidAt?: string;
@@ -199,6 +233,20 @@ export class UpdateInvoiceDto {
   companyId?: string;
 }
 
+/**
+ * Payload for capturing a customer signature on an invoice. The image arrives as
+ * a PNG data URL straight off the signature pad canvas; the server strips the
+ * prefix and stores the bytes in Azure Blob.
+ */
+export class CaptureInvoiceSignatureDto {
+  @IsString()
+  imageDataUrl!: string;
+
+  @IsOptional()
+  @IsString()
+  signedByName?: string;
+}
+
 export interface InvoiceCompanyDto {
   id: string;
   name: string;
@@ -208,6 +256,8 @@ export interface InvoiceCompanyDto {
   phone?: string;
   email?: string;
   isDefault: boolean;
+  /** Business-authored terms & conditions printed at the foot of the invoice. */
+  termsAndConditions?: string | null;
 }
 
 export interface InvoiceCustomerDto {
@@ -314,6 +364,29 @@ export class InvoiceResponseDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InvoiceDeclinedItemDto)
+  declinedItems?: InvoiceDeclinedItemDto[];
+
+  /**
+   * Signature fields are null when the invoice is unsigned — the templates then
+   * print a blank ruled line. `signatureUrl` is re-signed as a short-lived Azure
+   * SAS URL on read, because the storage account forbids public blob access.
+   */
+  @IsOptional()
+  @IsString()
+  signatureUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  signatureSignedByName?: string | null;
+
+  @IsOptional()
+  @IsString()
+  signatureSignedAt?: string | null;
 
   @IsString()
   createdBy!: string;

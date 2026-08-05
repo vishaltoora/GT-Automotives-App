@@ -9,6 +9,7 @@ import { PrismaService } from '@gt-automotive/database';
 import { PdfModule } from '../pdf/pdf.module';
 import { EmailModule } from '../email/email.module';
 import { CarfaxModule } from '../carfax/carfax.module';
+import { AzureBlobService } from '../common/services/azure-blob.service';
 
 @Module({
   imports: [PdfModule, EmailModule, CarfaxModule],
@@ -20,6 +21,7 @@ import { CarfaxModule } from '../carfax/carfax.module';
     CustomerRepository,
     ServiceRepository,
     PrismaService,
+    AzureBlobService,
   ],
   exports: [InvoicesService, InvoiceRepository],
 })

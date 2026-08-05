@@ -9,6 +9,48 @@ import {
   POSTGRES_TIMEZONE,
 } from '../../config/timezone.config';
 
+/**
+ * Everything the invoice detail view, the emailed PDF and the browser print
+ * template need. Kept in one place because it is used by every method that
+ * returns a fully-formed invoice — declined items in particular must ride along
+ * on all of them, or the "declined" section silently disappears on whichever
+ * path was missed.
+ */
+const INVOICE_DETAIL_INCLUDE = {
+  customer: true,
+  vehicle: true,
+  company: true,
+  items: {
+    include: {
+      tire: true,
+    },
+  },
+  declinedItems: {
+    orderBy: { sortOrder: 'asc' },
+  },
+} as const satisfies Prisma.InvoiceInclude;
+
+export interface DeclinedItemInput {
+  description: string;
+  roServiceId?: string | null;
+  sortOrder?: number;
+}
+
+/**
+ * Normalize declined rows for insert: blank descriptions are dropped (an empty
+ * bullet on a printed invoice looks like a mistake) and order is made explicit
+ * so the printed list matches what the user arranged on screen.
+ */
+function toDeclinedItemRows(items: DeclinedItemInput[]) {
+  return items
+    .filter((item) => item.description?.trim())
+    .map((item, index) => ({
+      description: item.description.trim(),
+      roServiceId: item.roServiceId ?? null,
+      sortOrder: item.sortOrder ?? index,
+    }));
+}
+
 @Injectable()
 export class InvoiceRepository extends BaseRepository<
   Invoice,
@@ -56,16 +98,9 @@ export class InvoiceRepository extends BaseRepository<
     return this.prisma.invoice.findUnique({
       where: { id },
       include: {
-        customer: true,
-        vehicle: true,
-        company: true,
+        ...INVOICE_DETAIL_INCLUDE,
         repairOrder: {
           select: { id: true, roNumber: true, status: true },
-        },
-        items: {
-          include: {
-            tire: true,
-          },
         },
       },
     });
@@ -81,7 +116,8 @@ export class InvoiceRepository extends BaseRepository<
       paymentMethod: PaymentMethod;
       paidAt: Date;
       createdBy: string;
-    }
+    },
+    declinedItems?: DeclinedItemInput[]
   ): Promise<Invoice> {
     return this.prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.create({
@@ -90,16 +126,12 @@ export class InvoiceRepository extends BaseRepository<
           items: {
             create: items,
           },
+          ...(declinedItems?.length
+            ? { declinedItems: { create: toDeclinedItemRows(declinedItems) } }
+            : {}),
         },
         include: {
-          customer: true,
-          vehicle: true,
-          company: true,
-          items: {
-            include: {
-              tire: true,
-            },
-          },
+          ...INVOICE_DETAIL_INCLUDE,
         },
       });
 
@@ -145,14 +177,7 @@ export class InvoiceRepository extends BaseRepository<
         paidAt: status === 'PAID' ? paidAt || new Date() : undefined,
       },
       include: {
-        customer: true,
-        vehicle: true,
-        company: true,
-        items: {
-          include: {
-            tire: true,
-          },
-        },
+        ...INVOICE_DETAIL_INCLUDE,
       },
     });
   }
@@ -160,9 +185,16 @@ export class InvoiceRepository extends BaseRepository<
   async updateWithItems(
     id: string,
     invoiceData: Prisma.InvoiceUpdateInput,
-    items?: Prisma.InvoiceItemCreateWithoutInvoiceInput[]
+    items?: Prisma.InvoiceItemCreateWithoutInvoiceInput[],
+    // Undefined leaves the existing declined list alone; an array (including an
+    // empty one) replaces it wholesale.
+    declinedItems?: DeclinedItemInput[]
   ): Promise<Invoice> {
     return this.prisma.$transaction(async (tx) => {
+      if (declinedItems) {
+        await tx.invoiceDeclinedItem.deleteMany({ where: { invoiceId: id } });
+      }
+
       // If items are provided, delete old items and create new ones
       if (items) {
         // Get existing items to restore tire inventory
@@ -203,16 +235,12 @@ export class InvoiceRepository extends BaseRepository<
               create: items,
             },
           }),
+          ...(declinedItems?.length
+            ? { declinedItems: { create: toDeclinedItemRows(declinedItems) } }
+            : {}),
         },
         include: {
-          customer: true,
-          vehicle: true,
-          company: true,
-          items: {
-            include: {
-              tire: true,
-            },
-          },
+          ...INVOICE_DETAIL_INCLUDE,
         },
       });
 
@@ -233,6 +261,54 @@ export class InvoiceRepository extends BaseRepository<
       }
 
       return invoice;
+    });
+  }
+
+  // ---- Customer signature -------------------------------------------------
+
+  /**
+   * Attach a captured signature to an invoice. Only blob coordinates are stored;
+   * the image itself is served later through a short-lived SAS URL because the
+   * storage account forbids public blob access.
+   */
+  async setSignature(
+    id: string,
+    signature: {
+      blobName: string;
+      containerName: string;
+      url: string;
+      signedByName?: string | null;
+      capturedBy: string;
+      signedAt?: Date;
+    }
+  ): Promise<Invoice> {
+    return this.prisma.invoice.update({
+      where: { id },
+      data: {
+        signatureBlobName: signature.blobName,
+        signatureContainerName: signature.containerName,
+        signatureUrl: signature.url,
+        signatureSignedByName: signature.signedByName ?? null,
+        signatureCapturedBy: signature.capturedBy,
+        signatureSignedAt: signature.signedAt ?? new Date(),
+      },
+      include: { ...INVOICE_DETAIL_INCLUDE },
+    });
+  }
+
+  /** Clear a signature, returning the invoice to its unsigned (blank line) state. */
+  async clearSignature(id: string): Promise<Invoice> {
+    return this.prisma.invoice.update({
+      where: { id },
+      data: {
+        signatureBlobName: null,
+        signatureContainerName: null,
+        signatureUrl: null,
+        signatureSignedByName: null,
+        signatureCapturedBy: null,
+        signatureSignedAt: null,
+      },
+      include: { ...INVOICE_DETAIL_INCLUDE },
     });
   }
 
@@ -301,10 +377,7 @@ export class InvoiceRepository extends BaseRepository<
         where: { id: invoiceId },
         data: invoiceUpdate,
         include: {
-          customer: true,
-          vehicle: true,
-          company: true,
-          items: { include: { tire: true } },
+          ...INVOICE_DETAIL_INCLUDE,
         },
       });
     });
