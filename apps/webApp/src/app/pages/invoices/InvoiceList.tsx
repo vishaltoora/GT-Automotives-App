@@ -47,6 +47,11 @@ import { ActionsMenu, ActionItem } from '../../components/common';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { PaymentMethod } from '../../../enums';
+import {
+  getInvoiceBalanceDue,
+  isInvoicePartiallyPaid,
+} from '@gt-automotive/data';
+import { colors } from '../../theme/colors';
 
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
@@ -781,6 +786,33 @@ const InvoiceList: React.FC = () => {
                       {formatCurrency(invoice.total)}
                     </Typography>
                   </Box>
+                  {isInvoicePartiallyPaid(invoice) && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.7rem' }}
+                      >
+                        Balance ({formatCurrency(invoice.amountPaid ?? 0)} paid)
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 700,
+                          color: colors.semantic.error,
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        {formatCurrency(getInvoiceBalanceDue(invoice))}
+                      </Typography>
+                    </Box>
+                  )}
                   {invoice.paymentMethod && (
                     <Box
                       sx={{
@@ -817,6 +849,7 @@ const InvoiceList: React.FC = () => {
                 <TableCell>Customer</TableCell>
                 <TableCell>Vehicle</TableCell>
                 <TableCell>Total</TableCell>
+                <TableCell>Balance</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Payment</TableCell>
                 <TableCell align="center">Actions</TableCell>
@@ -907,6 +940,31 @@ const InvoiceList: React.FC = () => {
                   </TableCell>
                   <TableCell>{formatCurrency(invoice.total)}</TableCell>
                   <TableCell>
+                    {/* A part-paid invoice is otherwise indistinguishable from
+                        an unpaid one at a glance. */}
+                    {isInvoicePartiallyPaid(invoice) ? (
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, color: colors.semantic.error }}
+                        >
+                          {formatCurrency(getInvoiceBalanceDue(invoice))}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ whiteSpace: 'nowrap' }}
+                        >
+                          {formatCurrency(invoice.amountPaid ?? 0)} paid
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        {formatCurrency(getInvoiceBalanceDue(invoice))}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <Chip
                       label={invoice.status}
                       color={getStatusColor(invoice.status)}
@@ -929,7 +987,7 @@ const InvoiceList: React.FC = () => {
               ))}
               {paginatedInvoices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">
+                  <TableCell colSpan={9} align="center">
                     {loading ? 'Loading...' : 'No invoices found'}
                   </TableCell>
                 </TableRow>

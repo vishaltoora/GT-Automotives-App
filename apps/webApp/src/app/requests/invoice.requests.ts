@@ -9,6 +9,7 @@ import type {
 // cannot drift apart (see libs/data/src/lib/utils/invoice-print-sections.ts).
 import {
   hasPrintableDeclinedItems,
+  renderPaymentSummaryRowsHtml,
   renderDeclinedItemsHtml,
   renderSignatureHtml,
   renderTermsAndConditionsHtml,
@@ -567,6 +568,7 @@ ${
               <td>Total:</td>
               <td>${formatCurrency(invoice.total)}</td>
             </tr>
+            ${renderPaymentSummaryRowsHtml(invoice)}
           </table>
         </div>
 
@@ -863,6 +865,7 @@ ${
                 invoice.total
               )}</td>
             </tr>
+            ${renderPaymentSummaryRowsHtml(invoice)}
           </table>
         </div>
 

@@ -18,6 +18,12 @@ export interface PrintableDeclinedItem {
   description: string;
 }
 
+export interface PrintablePayment {
+  paidAt?: string | Date | null;
+  paymentMethod?: string | null;
+  amount?: unknown;
+}
+
 export interface PrintableSignature {
   url?: string | null;
   signedByName?: string | null;
@@ -190,4 +196,98 @@ export function renderSignatureHtml(
       </table>
     </div>
   `;
+}
+
+/**
+ * Rounded to whole cents. `total` and `amountPaid` are Decimal(10,2) in the
+ * database but arrive as JS numbers, so 105.10 - 80.00 would otherwise print as
+ * 25.099999999999994.
+ */
+function roundToCents(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function formatMoney(value: unknown): string {
+  return `$${roundToCents(Number(value) || 0).toFixed(2)}`;
+}
+
+function formatPaymentDate(value?: string | Date | null): string {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-CA', {
+    timeZone: 'America/Vancouver',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Amount-paid / balance-due rows appended to the invoice totals table, plus the
+ * individual payments that make up the amount paid.
+ *
+ * Only rendered when the invoice is genuinely part-paid. A wholly-unpaid or
+ * fully-paid invoice returns '' and prints exactly as it did before — no empty
+ * "Balance Due: $0.00" row.
+ *
+ * Returns `<tr>` rows, so it must be interpolated INSIDE the existing totals
+ * table, directly after the Total row. Cell padding is inlined because the three
+ * templates style that table differently.
+ */
+export function renderPaymentSummaryRowsHtml(
+  invoice?: {
+    total?: unknown;
+    amountPaid?: unknown;
+    payments?: PrintablePayment[] | null;
+  } | null
+): string {
+  const total = Number(invoice?.total) || 0;
+  const paid = Number(invoice?.amountPaid ?? 0) || 0;
+  const balance = roundToCents(total - paid);
+
+  // Nothing paid, or settled in full — leave the invoice as it was.
+  if (paid <= 0.005 || balance <= 0.005) return '';
+
+  const payments = (invoice?.payments ?? []).filter(
+    (payment) => Number(payment?.amount) > 0
+  );
+
+  const paymentRows = payments
+    .map((payment) => {
+      const when = formatPaymentDate(payment.paidAt);
+      const method = (payment.paymentMethod ?? '').replace(/_/g, ' ');
+      const label = [when, method].filter(Boolean).join(' — ');
+      return `
+              <tr>
+                <td style="padding: 1px 5px; font-size: 11px; color: #666;">${escapeInvoiceHtml(
+                  label
+                )}</td>
+                <td style="padding: 1px 5px; font-size: 11px; color: #666;">${formatMoney(
+                  payment.amount
+                )}</td>
+              </tr>`;
+    })
+    .join('');
+
+  const paymentsHeading = paymentRows
+    ? `
+              <tr>
+                <td colspan="2" style="padding: 6px 5px 1px 5px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; color: #666;">Payments Received</td>
+              </tr>${paymentRows}`
+    : '';
+
+  return `${paymentsHeading}
+              <tr>
+                <td style="padding: 3px 5px; border-top: 1px solid #ddd;">Amount Paid:</td>
+                <td style="padding: 3px 5px; border-top: 1px solid #ddd;">${formatMoney(
+                  paid
+                )}</td>
+              </tr>
+              <tr style="font-weight: bold; font-size: 1.1em;">
+                <td style="padding: 3px 5px; color: #b00020;">Balance Due:</td>
+                <td style="padding: 3px 5px; color: #b00020;">${formatMoney(
+                  balance
+                )}</td>
+              </tr>`;
 }

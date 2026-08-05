@@ -247,6 +247,16 @@ export class CaptureInvoiceSignatureDto {
   signedByName?: string;
 }
 
+/** One row of the invoice payment ledger (supports partial and split payments). */
+export interface InvoicePaymentDto {
+  id: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paidAt: string;
+  notes?: string | null;
+  reference?: string | null;
+}
+
 export interface InvoiceCompanyDto {
   id: string;
   name: string;
@@ -353,6 +363,14 @@ export class InvoiceResponseDto {
   @IsOptional()
   @IsNumber()
   amountPaid?: number;
+
+  /**
+   * Payment ledger, oldest first. Present on the invoice detail/print paths so a
+   * part-paid invoice can show what was credited and when.
+   */
+  @IsOptional()
+  @IsArray()
+  payments?: InvoicePaymentDto[];
 
   @IsEnum(InvoiceStatus)
   status!: InvoiceStatus;

@@ -2,6 +2,7 @@ import {
   escapeInvoiceHtml,
   hasPrintableDeclinedItems,
   renderDeclinedItemsHtml,
+  renderPaymentSummaryRowsHtml,
   renderSignatureHtml,
   renderTermsAndConditionsHtml,
 } from './invoice-print-sections';
@@ -187,5 +188,81 @@ describe('invoice print sections', () => {
       expect(escapeInvoiceHtml(null)).toBe('');
       expect(escapeInvoiceHtml(undefined)).toBe('');
     });
+  });
+});
+
+describe('renderPaymentSummaryRowsHtml', () => {
+  it('renders nothing for a wholly unpaid invoice', () => {
+    // Must stay byte-identical to how it printed before partial payments existed.
+    expect(renderPaymentSummaryRowsHtml({ total: 100 })).toBe('');
+    expect(renderPaymentSummaryRowsHtml({ total: 100, amountPaid: 0 })).toBe(
+      ''
+    );
+  });
+
+  it('renders nothing for a fully paid invoice', () => {
+    expect(renderPaymentSummaryRowsHtml({ total: 100, amountPaid: 100 })).toBe(
+      ''
+    );
+  });
+
+  it('renders nothing when the invoice is missing', () => {
+    expect(renderPaymentSummaryRowsHtml(null)).toBe('');
+    expect(renderPaymentSummaryRowsHtml(undefined)).toBe('');
+  });
+
+  it('shows amount paid and balance due when part-paid', () => {
+    const html = renderPaymentSummaryRowsHtml({ total: 100, amountPaid: 80 });
+    expect(html).toContain('Amount Paid:');
+    expect(html).toContain('$80.00');
+    expect(html).toContain('Balance Due:');
+    expect(html).toContain('$20.00');
+  });
+
+  it('is exact to the cent', () => {
+    const html = renderPaymentSummaryRowsHtml({
+      total: 105.1,
+      amountPaid: 80,
+    });
+    expect(html).toContain('$25.10');
+    expect(html).not.toContain('25.099');
+  });
+
+  it('lists each payment with its date and method', () => {
+    const html = renderPaymentSummaryRowsHtml({
+      total: 100,
+      amountPaid: 80,
+      payments: [
+        {
+          paidAt: '2026-08-03T18:00:00.000Z',
+          paymentMethod: 'CASH',
+          amount: 50,
+        },
+        {
+          paidAt: '2026-08-04T18:00:00.000Z',
+          paymentMethod: 'E_TRANSFER',
+          amount: 30,
+        },
+      ],
+    });
+
+    expect(html).toContain('Payments Received');
+    expect(html).toContain('Aug 3, 2026');
+    expect(html).toContain('$50.00');
+    // Enum underscores are humanised for the customer's copy.
+    expect(html).toContain('E TRANSFER');
+    expect(html).toContain('$30.00');
+  });
+
+  it('omits the payments list when there are no ledger rows', () => {
+    const html = renderPaymentSummaryRowsHtml({ total: 100, amountPaid: 80 });
+    expect(html).not.toContain('Payments Received');
+    expect(html).toContain('Balance Due:');
+  });
+
+  it('returns table rows so it can sit inside the totals table', () => {
+    const html = renderPaymentSummaryRowsHtml({ total: 100, amountPaid: 80 });
+    expect(html.trim().startsWith('<tr')).toBe(true);
+    expect(html).not.toContain('<table');
   });
 });

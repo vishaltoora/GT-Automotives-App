@@ -47,6 +47,10 @@ import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { SquarePaymentForm } from '../payments/SquarePaymentForm';
 import { SignatureDialog } from './SignatureDialog';
 import { colors } from '../../theme/colors';
+import {
+  getInvoiceBalanceDue,
+  isInvoicePartiallyPaid,
+} from '@gt-automotive/data';
 import { formatBusinessDate } from '../../utils/dateUtils';
 
 const Transition = React.forwardRef(function Transition(
@@ -838,6 +842,40 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                               {formatCurrency(invoice.total)}
                             </Typography>
                           </Grid>
+                          {/* Only on a genuinely part-paid invoice — an unpaid
+                              or settled one shows no empty balance row. */}
+                          {isInvoicePartiallyPaid(invoice) && (
+                            <>
+                              <Grid size={6}>
+                                <Typography variant="body1">
+                                  Amount Paid:
+                                </Typography>
+                              </Grid>
+                              <Grid size={6}>
+                                <Typography variant="body1">
+                                  {formatCurrency(invoice.amountPaid ?? 0)}
+                                </Typography>
+                              </Grid>
+                              <Grid size={6}>
+                                <Typography
+                                  variant="h6"
+                                  sx={{ color: colors.semantic.error }}
+                                >
+                                  Balance Due:
+                                </Typography>
+                              </Grid>
+                              <Grid size={6}>
+                                <Typography
+                                  variant="h6"
+                                  sx={{ color: colors.semantic.error }}
+                                >
+                                  {formatCurrency(
+                                    getInvoiceBalanceDue(invoice)
+                                  )}
+                                </Typography>
+                              </Grid>
+                            </>
+                          )}
                         </Grid>
                       </Box>
                     </CardContent>
