@@ -2,6 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  hasPrintableDeclinedItems,
+  renderDeclinedItemsHtml,
+  renderSignatureHtml,
+  renderTermsAndConditionsHtml,
+} from '@gt-automotive/data';
 
 @Injectable()
 export class PdfService {
@@ -62,6 +68,25 @@ export class PdfService {
    * Generate invoice HTML from invoice data
    */
   generateInvoiceHtml(invoice: any): string {
+    // The signature prints inside the declined-services box when work was
+    // declined (so it acknowledges that list), and on its own at the foot of the
+    // invoice otherwise. Either way there is exactly one signature line.
+    const signature = {
+      url: invoice.signatureUrl,
+      signedByName: invoice.signatureSignedByName,
+      signedAt: invoice.signatureSignedAt,
+    };
+    const signatureCustomerName =
+      [invoice.customer?.firstName, invoice.customer?.lastName]
+        .filter(Boolean)
+        .join(' ') ||
+      invoice.customer?.name ||
+      invoice.customer?.businessName ||
+      '';
+    const signatureInDeclinedBox = hasPrintableDeclinedItems(
+      invoice.declinedItems
+    );
+
     const formatCurrency = (amount: number | string) => {
       const numAmount =
         typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -338,6 +363,12 @@ ${
               : ''
           }
 
+          ${renderDeclinedItemsHtml(
+            invoice.declinedItems,
+            signature,
+            signatureCustomerName
+          )}
+
           ${
             invoice.customer?.pstExempt
               ? `
@@ -370,6 +401,14 @@ ${
             </div>
           `
               : ''
+          }
+
+          ${renderTermsAndConditionsHtml(invoice.company?.termsAndConditions)}
+
+          ${
+            signatureInDeclinedBox
+              ? ''
+              : renderSignatureHtml(signature, signatureCustomerName)
           }
 
           <div style="margin-top: 25px; text-align: center; color: #666; font-size: 0.85em;">

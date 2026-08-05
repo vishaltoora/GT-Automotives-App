@@ -5,6 +5,14 @@ import type {
   InvoiceResponseDto,
   UpdateInvoiceDto,
 } from '@gt-automotive/data';
+// Shared with the server-side PDF template so the emailed and printed invoices
+// cannot drift apart (see libs/data/src/lib/utils/invoice-print-sections.ts).
+import {
+  hasPrintableDeclinedItems,
+  renderDeclinedItemsHtml,
+  renderSignatureHtml,
+  renderTermsAndConditionsHtml,
+} from '@gt-automotive/data';
 import gtLogoImage from '../images-and-logos/logo.png';
 import { formatPhoneForDisplay } from '../utils/phone';
 
@@ -221,6 +229,29 @@ class InvoiceService {
       {
         headers: await this.getHeaders(),
       }
+    );
+    return response.data;
+  }
+
+  /** Store a customer signature (PNG data URL straight off the signature pad). */
+  async captureSignature(
+    id: string,
+    imageDataUrl: string,
+    signedByName?: string
+  ): Promise<Invoice> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/${id}/signature`,
+      { imageDataUrl, signedByName },
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
+  /** Remove a captured signature so it can be re-taken. */
+  async clearSignature(id: string): Promise<Invoice> {
+    const response = await axios.delete(
+      `${API_URL}/api/invoices/${id}/signature`,
+      { headers: await this.getHeaders() }
     );
     return response.data;
   }
@@ -550,6 +581,16 @@ ${
             : ''
         }
 
+        ${renderDeclinedItemsHtml(
+          invoice.declinedItems,
+          {
+            url: invoice.signatureUrl,
+            signedByName: invoice.signatureSignedByName,
+            signedAt: invoice.signatureSignedAt,
+          },
+          this.getCustomerName(invoice)
+        )}
+
         ${
           invoice.customer?.pstExempt
             ? `
@@ -582,6 +623,21 @@ ${
           </div>
         `
             : ''
+        }
+
+        ${renderTermsAndConditionsHtml(invoice.company?.termsAndConditions)}
+
+        ${
+          hasPrintableDeclinedItems(invoice.declinedItems)
+            ? ''
+            : renderSignatureHtml(
+                {
+                  url: invoice.signatureUrl,
+                  signedByName: invoice.signatureSignedByName,
+                  signedAt: invoice.signatureSignedAt,
+                },
+                this.getCustomerName(invoice)
+              )
         }
 
         <div class="footer">
@@ -821,6 +877,16 @@ ${
             : ''
         }
 
+        ${renderDeclinedItemsHtml(
+          invoice.declinedItems,
+          {
+            url: invoice.signatureUrl,
+            signedByName: invoice.signatureSignedByName,
+            signedAt: invoice.signatureSignedAt,
+          },
+          this.getCustomerName(invoice)
+        )}
+
         ${
           invoice.customer?.pstExempt
             ? `
@@ -853,6 +919,21 @@ ${
           </div>
         `
             : ''
+        }
+
+        ${renderTermsAndConditionsHtml(invoice.company?.termsAndConditions)}
+
+        ${
+          hasPrintableDeclinedItems(invoice.declinedItems)
+            ? ''
+            : renderSignatureHtml(
+                {
+                  url: invoice.signatureUrl,
+                  signedByName: invoice.signatureSignedByName,
+                  signedAt: invoice.signatureSignedAt,
+                },
+                this.getCustomerName(invoice)
+              )
         }
 
         <div style="margin-top: 25px; text-align: center; color: #666; font-size: 0.85em;">

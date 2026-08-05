@@ -38,13 +38,16 @@ import {
   Cancel as CancelIcon,
   MoreVert as MoreVertIcon,
   Receipt as ReceiptIcon,
+  Draw as DrawIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { invoiceService, Invoice } from '../../requests/invoice.requests';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { SquarePaymentForm } from '../payments/SquarePaymentForm';
+import { SignatureDialog } from './SignatureDialog';
 import { colors } from '../../theme/colors';
+import { formatBusinessDate } from '../../utils/dateUtils';
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -91,7 +94,11 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  // Customers view their own invoices here too — they must not be able to
+  // capture or replace the signature on their own record.
+  const canManageSignature = isStaff || isAdmin;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -217,6 +224,56 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
   };
 
   const canManageInvoice = isStaff || isAdmin;
+
+  const hasDeclinedItems = !!invoice?.declinedItems?.length;
+
+  // Rendered either inside the declined-services card or on its own, mirroring
+  // where the signature prints on the invoice itself.
+  const signatureSection = invoice ? (
+    <>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 1,
+        }}
+      >
+        <Typography variant={hasDeclinedItems ? 'subtitle1' : 'h6'}>
+          Customer Signature
+        </Typography>
+        {canManageSignature && (
+          <Button
+            size="small"
+            startIcon={<DrawIcon />}
+            onClick={() => setSignatureDialogOpen(true)}
+          >
+            {invoice.signatureUrl ? 'Replace' : 'Capture'}
+          </Button>
+        )}
+      </Box>
+      {invoice.signatureUrl ? (
+        <>
+          <Box
+            component="img"
+            src={invoice.signatureUrl}
+            alt="Customer signature"
+            sx={{ display: 'block', maxHeight: 70, maxWidth: '100%' }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {invoice.signatureSignedByName || getCustomerName(invoice)}
+            {invoice.signatureSignedAt
+              ? ` — ${formatBusinessDate(invoice.signatureSignedAt)}`
+              : ''}
+          </Typography>
+        </>
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          Not signed. The printed invoice shows a blank signature line.
+        </Typography>
+      )}
+    </>
+  ) : null;
 
   return (
     <>
@@ -664,6 +721,53 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* Declined work sits directly below the notes, matching the
+                      printed invoice, and is styled so it can't be mistaken for
+                      billed line items. The signature lives inside this box when
+                      work was declined, so it reads as acknowledgement of that
+                      list — same arrangement as the printed copy. */}
+                  {hasDeclinedItems ? (
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        mt: invoice.notes ? 2 : 0,
+                        borderColor: colors.semantic.warning,
+                        backgroundColor: `${colors.semantic.warning}0d`,
+                      }}
+                    >
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          Declined Services &amp; Parts
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mb: 1 }}
+                        >
+                          Recommended and declined by the customer. Not
+                          performed and not included in the total.
+                        </Typography>
+                        <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+                          {invoice.declinedItems?.map((item, index) => (
+                            <Typography
+                              component="li"
+                              variant="body2"
+                              key={item.id ?? index}
+                            >
+                              {item.description}
+                            </Typography>
+                          ))}
+                        </Box>
+                        <Divider sx={{ my: 1.5 }} />
+                        {signatureSection}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card variant="outlined" sx={{ mt: invoice.notes ? 2 : 0 }}>
+                      <CardContent>{signatureSection}</CardContent>
+                    </Card>
+                  )}
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -761,6 +865,18 @@ export const InvoiceDetailsDialog: React.FC<InvoiceDetailsDialogProps> = ({
           )}
         </DialogActions>
       </Dialog>
+
+      {invoice && canManageSignature && (
+        <SignatureDialog
+          open={signatureDialogOpen}
+          onClose={() => setSignatureDialogOpen(false)}
+          invoice={invoice}
+          onSaved={(updated) => {
+            setInvoice(updated);
+            onInvoiceUpdate?.();
+          }}
+        />
+      )}
 
       {/* Square Online Payment Form */}
       {invoice && (

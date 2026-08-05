@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InvoiceRepository } from './repositories/invoice.repository';
 import {
+  CaptureInvoiceSignatureDto,
   CreateInvoiceDto,
   CreateServiceDto,
   UpdateInvoiceDto,
@@ -28,6 +29,39 @@ import { EmailService } from '../email/email.service';
 import { CarfaxService } from '../carfax/carfax.service';
 import { buildAdjustmentItems } from './invoice-adjustments';
 import { toBusinessCalendarDate } from '../config/timezone.config';
+import { AzureBlobService } from '../common/services/azure-blob.service';
+
+/** Largest signature image accepted, decoded. A pad drawing is a few tens of KB. */
+const MAX_SIGNATURE_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Decode the `data:image/png;base64,...` payload produced by the signature pad
+ * canvas. Rejects anything that is not a PNG data URL so the endpoint cannot be
+ * used to push arbitrary files into blob storage.
+ */
+function decodePngDataUrl(dataUrl: string): Buffer {
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(
+    (dataUrl || '').trim()
+  );
+  if (!match) {
+    throw new BadRequestException(
+      'Signature must be a base64-encoded PNG data URL'
+    );
+  }
+
+  const buffer = Buffer.from(match[1], 'base64');
+  if (buffer.length === 0) {
+    throw new BadRequestException('Signature image is empty');
+  }
+  if (buffer.length > MAX_SIGNATURE_BYTES) {
+    throw new BadRequestException('Signature image is too large');
+  }
+  // PNG magic number — guards against a base64 body that decodes to something else.
+  if (!buffer.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) {
+    throw new BadRequestException('Signature image is not a valid PNG');
+  }
+  return buffer;
+}
 
 @Injectable()
 export class InvoicesService {
@@ -38,7 +72,8 @@ export class InvoicesService {
     private readonly serviceRepository: ServiceRepository,
     private readonly pdfService: PdfService,
     private readonly emailService: EmailService,
-    private readonly carfaxService: CarfaxService
+    private readonly carfaxService: CarfaxService,
+    private readonly azureBlob: AzureBlobService
   ) {}
 
   async create(
@@ -229,7 +264,8 @@ export class InvoicesService {
             paidAt: new Date(),
             createdBy: userId,
           }
-        : undefined
+        : undefined,
+      createInvoiceDto.declinedItems
     );
 
     // Log the creation
@@ -287,7 +323,9 @@ export class InvoicesService {
       throw new ForbiddenException('You can only view your own invoices');
     }
 
-    return invoice;
+    // The signature blob is private; hand back a short-lived SAS URL so the
+    // detail view and the browser print template can render it.
+    return this.withSignatureUrl(invoice);
   }
 
   async update(
@@ -472,10 +510,19 @@ export class InvoicesService {
       updateData.paidAt = null;
     }
 
-    // Use updateWithItems if items are provided, otherwise use regular update
-    const updated = items
-      ? await this.invoiceRepository.updateWithItems(id, updateData, items)
-      : await this.invoiceRepository.update(id, updateData);
+    // Use updateWithItems if items or declined items are provided, otherwise use
+    // regular update. Declined items are replaced wholesale, so an explicit []
+    // clears them while omitting the field leaves them alone.
+    const declinedItems = updateInvoiceDto.declinedItems;
+    const updated =
+      items || declinedItems
+        ? await this.invoiceRepository.updateWithItems(
+            id,
+            updateData,
+            items,
+            declinedItems
+          )
+        : await this.invoiceRepository.update(id, updateData);
 
     if (revertToUnpaid) {
       await this.invoiceRepository.clearPayments(id);
@@ -505,6 +552,103 @@ export class InvoicesService {
     });
 
     return updated;
+  }
+
+  /**
+   * Store a customer signature captured on the signature pad. Signing is always
+   * optional — nothing here gates payment; an unsigned invoice simply prints a
+   * blank signature line.
+   */
+  async captureSignature(
+    id: string,
+    dto: CaptureInvoiceSignatureDto,
+    userId: string
+  ): Promise<Invoice> {
+    const invoice = await this.invoiceRepository.findById(id);
+    if (!invoice) {
+      throw new NotFoundException(`Invoice with ID ${id} not found`);
+    }
+
+    const buffer = decodePngDataUrl(dto.imageDataUrl);
+
+    const upload = await this.azureBlob.uploadInvoiceSignature(buffer, id);
+
+    const updated = await this.invoiceRepository.setSignature(id, {
+      blobName: upload.blobName,
+      containerName: upload.containerName,
+      url: upload.blobUrl,
+      signedByName: dto.signedByName?.trim() || null,
+      capturedBy: userId,
+    });
+
+    await this.auditRepository.create({
+      userId,
+      action: 'CAPTURE_INVOICE_SIGNATURE',
+      entityType: 'invoice',
+      entityId: id,
+      details: {
+        signedByName: dto.signedByName ?? null,
+        blobName: upload.blobName,
+      } as any,
+    });
+
+    return this.withSignatureUrl(updated);
+  }
+
+  /** Remove a captured signature so it can be re-taken. */
+  async clearSignature(id: string, userId: string): Promise<Invoice> {
+    const invoice = await this.invoiceRepository.findById(id);
+    if (!invoice) {
+      throw new NotFoundException(`Invoice with ID ${id} not found`);
+    }
+
+    // Best-effort blob cleanup — a leftover blob must never block clearing the
+    // signature on the invoice itself.
+    if (invoice.signatureContainerName && invoice.signatureBlobName) {
+      await this.azureBlob
+        .deleteInvoiceImage(
+          invoice.signatureContainerName,
+          invoice.signatureBlobName
+        )
+        .catch(() => undefined);
+    }
+
+    const updated = await this.invoiceRepository.clearSignature(id);
+
+    await this.auditRepository.create({
+      userId,
+      action: 'CLEAR_INVOICE_SIGNATURE',
+      entityType: 'invoice',
+      entityId: id,
+      details: { previousBlobName: invoice.signatureBlobName } as any,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Swap the stored (private) signature URL for a short-lived SAS URL so the
+   * browser and the PDF renderer can actually load the image. Data URLs from the
+   * development fallback are passed through untouched.
+   */
+  private async withSignatureUrl<T extends Invoice>(invoice: T): Promise<T> {
+    if (!invoice?.signatureBlobName || !invoice.signatureContainerName) {
+      return invoice;
+    }
+    if (invoice.signatureUrl?.startsWith('data:')) {
+      return invoice;
+    }
+    try {
+      const signatureUrl = await this.azureBlob.generateSasUrl(
+        invoice.signatureContainerName,
+        invoice.signatureBlobName,
+        120
+      );
+      return { ...invoice, signatureUrl };
+    } catch {
+      // Fall back to the stored URL rather than failing the whole request.
+      return invoice;
+    }
   }
 
   async remove(id: string, userId: string): Promise<void> {
@@ -1074,7 +1218,11 @@ export class InvoicesService {
 
     try {
       // Generate PDF
-      const pdfBase64 = await this.pdfService.generateInvoicePdf(invoice);
+      // Puppeteer fetches the signature over the network, so it needs a SAS URL —
+      // the raw blob URL is private and would render as a broken image.
+      const pdfBase64 = await this.pdfService.generateInvoicePdf(
+        await this.withSignatureUrl(invoice)
+      );
 
       // Send email to all recipients
       const emailResult = await this.emailService.sendInvoiceEmail(

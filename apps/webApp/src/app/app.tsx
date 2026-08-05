@@ -84,6 +84,7 @@ import { BookingRequests } from './pages/admin/BookingRequests';
 
 // SMS Pages
 import { SmsHistory } from './pages/admin/sms/SmsHistory';
+import AdminSettings from './pages/admin/Settings';
 
 // Email Pages
 import EmployeeSchedule from './pages/admin/EmployeeSchedule';
@@ -326,7 +327,7 @@ export function App() {
               />
               <Route path="analytics" element={<div>Analytics</div>} />
               <Route path="security" element={<div>Security Settings</div>} />
-              <Route path="settings" element={<div>System Settings</div>} />
+              <Route path="settings" element={<AdminSettings />} />
               <Route
                 path="tire-commissions"
                 element={<CommissionManagement />}

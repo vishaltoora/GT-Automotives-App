@@ -89,6 +89,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     notes: '',
     status: 'PENDING',
     invoiceDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+    declinedItems: [] as string[],
   });
 
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -204,6 +205,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       notes: '',
       status: 'PENDING',
       invoiceDate: new Date().toISOString().split('T')[0],
+      declinedItems: [],
     });
     setItems([]);
     setNewItem({
@@ -246,6 +248,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       invoiceDate: invoiceData.invoiceDate
         ? new Date(invoiceData.invoiceDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
+      declinedItems: (invoiceData.declinedItems ?? []).map(
+        (item: any) => item.description
+      ),
     });
 
     // Populate items
@@ -453,6 +458,15 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       }
       if (formData.status) {
         invoiceData.status = formData.status;
+      }
+      // Always sent (even empty) in edit mode so removing the last declined item
+      // actually clears it — the backend treats an omitted field as "leave alone".
+      const declinedItems = formData.declinedItems
+        .map((description) => description.trim())
+        .filter(Boolean)
+        .map((description, index) => ({ description, sortOrder: index }));
+      if (isEditMode || declinedItems.length > 0) {
+        invoiceData.declinedItems = declinedItems;
       }
       if (formData.invoiceDate) {
         invoiceData.invoiceDate = formData.invoiceDate;

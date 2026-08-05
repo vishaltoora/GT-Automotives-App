@@ -32,6 +32,8 @@ describe('InvoicesService.create — totals calculation', () => {
     const serviceRepository = {};
     const pdfService = {};
     const emailService = {};
+    const carfaxService = { reportInvoice: jest.fn().mockResolvedValue({}) };
+    const azureBlob = {};
 
     service = new InvoicesService(
       invoiceRepository as any,
@@ -39,7 +41,9 @@ describe('InvoicesService.create — totals calculation', () => {
       customerRepository as any,
       serviceRepository as any,
       pdfService as any,
-      emailService as any
+      emailService as any,
+      carfaxService as any,
+      azureBlob as any
     );
   });
 

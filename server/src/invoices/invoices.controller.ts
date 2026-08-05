@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import {
+  CaptureInvoiceSignatureDto,
   CreateInvoiceDto,
   CreateServiceDto,
   UpdateInvoiceDto,
@@ -121,6 +122,24 @@ export class InvoicesController {
     @CurrentUser() user: any
   ) {
     return this.invoicesService.update(id, updateInvoiceDto, user.id);
+  }
+
+  @Post(':id/signature')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  captureSignature(
+    @Param('id') id: string,
+    @Body() dto: CaptureInvoiceSignatureDto,
+    @CurrentUser() user: any
+  ) {
+    return this.invoicesService.captureSignature(id, dto, user.id);
+  }
+
+  @Delete(':id/signature')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  clearSignature(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.invoicesService.clearSignature(id, user.id);
   }
 
   @Post(':id/pay')

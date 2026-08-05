@@ -226,6 +226,11 @@ model Company {
   phone              String?
   email              String?
   isDefault          Boolean   @default(false)
+  // Free-text terms & conditions printed at the bottom of this company's
+  // invoices, above the signature block. Business-authored (it is a liability
+  // statement), editable from admin settings so the wording can change without
+  // a deploy. Null/blank means no T&C block is rendered.
+  termsAndConditions String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   invoices           Invoice[]
@@ -255,6 +260,19 @@ model Invoice {
   gstRate        Decimal?        @db.Decimal(5, 4)
   pstAmount      Decimal?        @db.Decimal(10, 2)
   pstRate        Decimal?        @db.Decimal(5, 4)
+  // Customer signature captured at handover. Always optional — an unsigned
+  // invoice prints a blank signature line for a wet signature. The image lives
+  // in Azure Blob; that account forbids public blob access, so it is served via
+  // a short-lived SAS URL generated on read (mirrors ROMedia).
+  signatureBlobName      String?
+  signatureContainerName String?
+  // Resolved URL as returned by the uploader. In production this is the private
+  // blob URL (re-signed as a SAS URL on read); in development, where Azure is
+  // not configured, it is an inline data URL so the pad still works locally.
+  signatureUrl           String?
+  signatureSignedByName  String?   // Printed name, shown under the signature
+  signatureSignedAt      DateTime?
+  signatureCapturedBy    String?   // User id of the staff member who witnessed it
   // Combined-invoice consolidation: a parent invoice rolls up several pending children
   combinedInvoiceId String?
   customer       Customer        @relation(fields: [customerId], references: [id])
@@ -262,6 +280,7 @@ model Invoice {
   company        Company         @relation(fields: [companyId], references: [id])
   appointment    Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   items          InvoiceItem[]
+  declinedItems  InvoiceDeclinedItem[] // Work the customer declined; never billed
   payments       InvoicePayment[] // Payment ledger (supports partial/split payments)
   inspections    Inspection[]
   squarePayments SquarePayment[] // Square payments for this invoice
@@ -311,6 +330,25 @@ model InvoiceItem {
   updatedAt   DateTime        @updatedAt
   invoice     Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   tire        Tire?           @relation(fields: [tireId], references: [id])
+}
+
+/// Services or parts the customer was offered and declined. Recorded so the
+/// invoice can show what was NOT done, which protects the shop if a declined
+/// item later fails. These rows are never billed and never enter any total —
+/// they are deliberately separate from InvoiceItem for exactly that reason.
+model InvoiceDeclinedItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  description String
+  // Set when this row was derived from a repair order line, so re-closing an RO
+  // can rebuild the derived rows without discarding manually added ones.
+  roServiceId String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
 }
 
 model SquarePayment {

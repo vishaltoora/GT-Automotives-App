@@ -19,6 +19,8 @@ export interface Company {
   phone?: string;
   email?: string;
   isDefault: boolean;
+  /** Business-authored terms printed at the foot of this company's invoices. */
+  termsAndConditions?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,7 +28,7 @@ export interface Company {
 class CompanyService {
   // Cache for companies data - companies rarely change so we cache them
   private companiesCache: Company[] | null = null;
-  private cacheTimestamp: number = 0;
+  private cacheTimestamp = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
   private fetchPromise: Promise<Company[]> | null = null; // Prevent duplicate requests
 
@@ -59,7 +61,11 @@ class CompanyService {
     const now = Date.now();
 
     // Return cached data if valid and not forcing refresh
-    if (!forceRefresh && this.companiesCache && (now - this.cacheTimestamp) < this.CACHE_DURATION) {
+    if (
+      !forceRefresh &&
+      this.companiesCache &&
+      now - this.cacheTimestamp < this.CACHE_DURATION
+    ) {
       return this.companiesCache;
     }
 
@@ -96,6 +102,20 @@ class CompanyService {
     this.getCompanies().catch(() => {
       // Silently fail prefetch - will retry on actual use
     });
+  }
+
+  /** Admin-only. Invalidates the cache so invoices pick up the new wording. */
+  async updateTermsAndConditions(
+    id: string,
+    termsAndConditions: string
+  ): Promise<Company> {
+    const response = await axios.patch(
+      `${API_URL}/api/companies/${id}/terms`,
+      { termsAndConditions },
+      { headers: await this.getHeaders() }
+    );
+    this.clearCache();
+    return response.data;
   }
 
   async getDefaultCompany(): Promise<Company> {
