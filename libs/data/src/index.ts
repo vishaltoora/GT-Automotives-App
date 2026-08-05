@@ -25,6 +25,7 @@ export * from './lib/payout-rule.dto';
 export * from './lib/purchase-expense-invoice.dto';
 export * from './lib/square-payment.dto';
 export * from './lib/square-terminal.dto';
+export * from './lib/sales-report.dto';
 export * from './lib/tax-report.dto';
 export * from './lib/tire-sale.dto';
 export * from './lib/repair-order.dto';

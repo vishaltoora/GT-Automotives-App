@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaClient, RecurringPeriod } from '@prisma/client';
 import {
   ExpenseReportFilterDto,
@@ -15,13 +15,27 @@ import {
   GstPaidReportResponseDto,
   MonthlyGstPaidBreakdownDto,
 } from '@gt-automotive/data';
+import {
+  SalesReportFilterDto,
+  SalesReportResponseDto,
+  SalesReportRowDto,
+} from '@gt-automotive/data';
+import {
+  extractBusinessDate,
+  shiftBusinessDate,
+  toBusinessCalendarDate,
+} from '../config/timezone.config';
 
 @Injectable()
 export class ReportsService {
   private prisma = new PrismaClient();
 
-  async getExpenseReport(filterDto: ExpenseReportFilterDto): Promise<ExpenseReportResponseDto> {
-    const startDate = filterDto.startDate ? new Date(filterDto.startDate) : undefined;
+  async getExpenseReport(
+    filterDto: ExpenseReportFilterDto
+  ): Promise<ExpenseReportResponseDto> {
+    const startDate = filterDto.startDate
+      ? new Date(filterDto.startDate)
+      : undefined;
     const endDate = filterDto.endDate ? new Date(filterDto.endDate) : undefined;
 
     // Build filter conditions for legacy tables
@@ -31,12 +45,24 @@ export class ReportsService {
     const unifiedWhere: any = {};
 
     if (startDate) {
-      purchaseWhere.invoiceDate = { ...purchaseWhere.invoiceDate, gte: startDate };
-      expenseWhere.invoiceDate = { ...expenseWhere.invoiceDate, gte: startDate };
-      unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, gte: startDate };
+      purchaseWhere.invoiceDate = {
+        ...purchaseWhere.invoiceDate,
+        gte: startDate,
+      };
+      expenseWhere.invoiceDate = {
+        ...expenseWhere.invoiceDate,
+        gte: startDate,
+      };
+      unifiedWhere.invoiceDate = {
+        ...unifiedWhere.invoiceDate,
+        gte: startDate,
+      };
     }
     if (endDate) {
-      purchaseWhere.invoiceDate = { ...purchaseWhere.invoiceDate, lte: endDate };
+      purchaseWhere.invoiceDate = {
+        ...purchaseWhere.invoiceDate,
+        lte: endDate,
+      };
       expenseWhere.invoiceDate = { ...expenseWhere.invoiceDate, lte: endDate };
       unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, lte: endDate };
     }
@@ -69,43 +95,90 @@ export class ReportsService {
     ]);
 
     // Split unified invoices by type
-    const unifiedPurchases = unifiedInvoices.filter(inv => inv.type === 'PURCHASE');
-    const unifiedExpenses = unifiedInvoices.filter(inv => inv.type === 'EXPENSE');
+    const unifiedPurchases = unifiedInvoices.filter(
+      (inv) => inv.type === 'PURCHASE'
+    );
+    const unifiedExpenses = unifiedInvoices.filter(
+      (inv) => inv.type === 'EXPENSE'
+    );
 
     // Combine legacy and unified invoices
     const purchaseInvoices = [...legacyPurchaseInvoices, ...unifiedPurchases];
     const expenseInvoices = [...legacyExpenseInvoices, ...unifiedExpenses];
 
     // Calculate summary statistics
-    const totalPurchaseAmount = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-    const totalExpenseAmount = expenseInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+    const totalPurchaseAmount = purchaseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount),
+      0
+    );
+    const totalExpenseAmount = expenseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount),
+      0
+    );
 
     // For legacy tables, filter by status; unified table doesn't have status
-    const paidLegacyPurchases = legacyPurchaseInvoices.filter(inv => inv.status === 'PAID');
-    const paidLegacyExpenses = legacyExpenseInvoices.filter(inv => inv.status === 'PAID');
+    const paidLegacyPurchases = legacyPurchaseInvoices.filter(
+      (inv) => inv.status === 'PAID'
+    );
+    const paidLegacyExpenses = legacyExpenseInvoices.filter(
+      (inv) => inv.status === 'PAID'
+    );
     // Unified invoices are considered "paid" since there's no status field
     const paidTotal =
-      paidLegacyPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
-      paidLegacyExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
+      paidLegacyPurchases.reduce(
+        (sum, inv) => sum + Number(inv.totalAmount),
+        0
+      ) +
+      paidLegacyExpenses.reduce(
+        (sum, inv) => sum + Number(inv.totalAmount),
+        0
+      ) +
       unifiedInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-    const pendingLegacyPurchases = legacyPurchaseInvoices.filter(inv => inv.status === 'PENDING');
-    const pendingLegacyExpenses = legacyExpenseInvoices.filter(inv => inv.status === 'PENDING');
+    const pendingLegacyPurchases = legacyPurchaseInvoices.filter(
+      (inv) => inv.status === 'PENDING'
+    );
+    const pendingLegacyExpenses = legacyExpenseInvoices.filter(
+      (inv) => inv.status === 'PENDING'
+    );
     const pendingTotal =
-      pendingLegacyPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
-      pendingLegacyExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+      pendingLegacyPurchases.reduce(
+        (sum, inv) => sum + Number(inv.totalAmount),
+        0
+      ) +
+      pendingLegacyExpenses.reduce(
+        (sum, inv) => sum + Number(inv.totalAmount),
+        0
+      );
 
-    const overdueLegacyPurchases = legacyPurchaseInvoices.filter(inv => inv.status === 'OVERDUE');
-    const overdueLegacyExpenses = legacyExpenseInvoices.filter(inv => inv.status === 'OVERDUE');
+    const overdueLegacyPurchases = legacyPurchaseInvoices.filter(
+      (inv) => inv.status === 'OVERDUE'
+    );
+    const overdueLegacyExpenses = legacyExpenseInvoices.filter(
+      (inv) => inv.status === 'OVERDUE'
+    );
     const overdueTotal =
-      overdueLegacyPurchases.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) +
-      overdueLegacyExpenses.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+      overdueLegacyPurchases.reduce(
+        (sum, inv) => sum + Number(inv.totalAmount),
+        0
+      ) +
+      overdueLegacyExpenses.reduce(
+        (sum, inv) => sum + Number(inv.totalAmount),
+        0
+      );
 
     // Get vendor analysis (includes unified table)
-    const topVendorsBySpending = await this.getTopVendorsBySpending(purchaseWhere, expenseWhere, unifiedWhere);
+    const topVendorsBySpending = await this.getTopVendorsBySpending(
+      purchaseWhere,
+      expenseWhere,
+      unifiedWhere
+    );
 
     // Get monthly trends (includes unified table)
-    const monthlyTrends = this.calculateMonthlyTrends(purchaseInvoices, expenseInvoices);
+    const monthlyTrends = this.calculateMonthlyTrends(
+      purchaseInvoices,
+      expenseInvoices
+    );
 
     return {
       totalPurchases: purchaseInvoices.length,
@@ -124,7 +197,10 @@ export class ReportsService {
     };
   }
 
-  private async getPurchasesByCategory(legacyWhere: any, unifiedWhere: any): Promise<CategorySummaryDto[]> {
+  private async getPurchasesByCategory(
+    legacyWhere: any,
+    unifiedWhere: any
+  ): Promise<CategorySummaryDto[]> {
     // Get legacy purchase invoices grouped by category
     const legacyGroupedData = await this.prisma.purchaseInvoice.groupBy({
       by: ['category'],
@@ -134,12 +210,14 @@ export class ReportsService {
     });
 
     // Get unified purchase invoices grouped by category
-    const unifiedGroupedData = await this.prisma.purchaseExpenseInvoice.groupBy({
-      by: ['category'],
-      where: { ...unifiedWhere, type: 'PURCHASE' },
-      _count: { id: true },
-      _sum: { totalAmount: true },
-    });
+    const unifiedGroupedData = await this.prisma.purchaseExpenseInvoice.groupBy(
+      {
+        by: ['category'],
+        where: { ...unifiedWhere, type: 'PURCHASE' },
+        _count: { id: true },
+        _sum: { totalAmount: true },
+      }
+    );
 
     // Merge categories from both sources
     const categoryMap = new Map<string, CategorySummaryDto>();
@@ -151,15 +229,15 @@ export class ReportsService {
       });
 
       const paidAmount = categoryInvoices
-        .filter(inv => inv.status === 'PAID')
+        .filter((inv) => inv.status === 'PAID')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
       const pendingAmount = categoryInvoices
-        .filter(inv => inv.status === 'PENDING')
+        .filter((inv) => inv.status === 'PENDING')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
       const overdueAmount = categoryInvoices
-        .filter(inv => inv.status === 'OVERDUE')
+        .filter((inv) => inv.status === 'OVERDUE')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
       categoryMap.set(group.category, {
@@ -196,7 +274,10 @@ export class ReportsService {
     return Array.from(categoryMap.values());
   }
 
-  private async getExpensesByCategory(legacyWhere: any, unifiedWhere: any): Promise<CategorySummaryDto[]> {
+  private async getExpensesByCategory(
+    legacyWhere: any,
+    unifiedWhere: any
+  ): Promise<CategorySummaryDto[]> {
     // Get legacy expense invoices grouped by category
     const legacyGroupedData = await this.prisma.expenseInvoice.groupBy({
       by: ['category'],
@@ -206,12 +287,14 @@ export class ReportsService {
     });
 
     // Get unified expense invoices grouped by category
-    const unifiedGroupedData = await this.prisma.purchaseExpenseInvoice.groupBy({
-      by: ['category'],
-      where: { ...unifiedWhere, type: 'EXPENSE' },
-      _count: { id: true },
-      _sum: { totalAmount: true },
-    });
+    const unifiedGroupedData = await this.prisma.purchaseExpenseInvoice.groupBy(
+      {
+        by: ['category'],
+        where: { ...unifiedWhere, type: 'EXPENSE' },
+        _count: { id: true },
+        _sum: { totalAmount: true },
+      }
+    );
 
     // Merge categories from both sources
     const categoryMap = new Map<string, CategorySummaryDto>();
@@ -223,15 +306,15 @@ export class ReportsService {
       });
 
       const paidAmount = categoryInvoices
-        .filter(inv => inv.status === 'PAID')
+        .filter((inv) => inv.status === 'PAID')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
       const pendingAmount = categoryInvoices
-        .filter(inv => inv.status === 'PENDING')
+        .filter((inv) => inv.status === 'PENDING')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
       const overdueAmount = categoryInvoices
-        .filter(inv => inv.status === 'OVERDUE')
+        .filter((inv) => inv.status === 'OVERDUE')
         .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
       categoryMap.set(group.category, {
@@ -271,7 +354,7 @@ export class ReportsService {
   private async getTopVendorsBySpending(
     purchaseWhere: any,
     expenseWhere: any,
-    unifiedWhere: any,
+    unifiedWhere: any
   ): Promise<VendorSummaryDto[]> {
     const vendorMap = new Map<string, VendorSummaryDto>();
 
@@ -360,7 +443,7 @@ export class ReportsService {
 
   private calculateMonthlyTrends(
     purchaseInvoices: any[],
-    expenseInvoices: any[],
+    expenseInvoices: any[]
   ): MonthlyTrendDto[] {
     const monthMap = new Map<string, MonthlyTrendDto>();
 
@@ -403,10 +486,14 @@ export class ReportsService {
     }
 
     // Sort by month (most recent first)
-    return Array.from(monthMap.values()).sort((a, b) => b.month.localeCompare(a.month));
+    return Array.from(monthMap.values()).sort((a, b) =>
+      b.month.localeCompare(a.month)
+    );
   }
 
-  private async getRecurringExpenses(where: any): Promise<RecurringExpenseSummaryDto[]> {
+  private async getRecurringExpenses(
+    where: any
+  ): Promise<RecurringExpenseSummaryDto[]> {
     const recurring = await this.prisma.expenseInvoice.findMany({
       where: {
         ...where,
@@ -415,15 +502,19 @@ export class ReportsService {
       orderBy: { invoiceDate: 'desc' },
     });
 
-    return recurring.map(expense => ({
+    return recurring.map((expense) => ({
       id: expense.id,
       vendorName: expense.vendorName,
       description: expense.description,
       category: expense.category,
       amount: Number(expense.totalAmount),
-      recurringPeriod: (expense.recurringPeriod as RecurringPeriod) || 'MONTHLY',
+      recurringPeriod:
+        (expense.recurringPeriod as RecurringPeriod) || 'MONTHLY',
       lastPaymentDate: expense.paymentDate,
-      nextDueDate: this.calculateNextDueDate(expense.invoiceDate, expense.recurringPeriod || undefined),
+      nextDueDate: this.calculateNextDueDate(
+        expense.invoiceDate,
+        expense.recurringPeriod || undefined
+      ),
       status: expense.status,
     })) as RecurringExpenseSummaryDto[];
   }
@@ -551,15 +642,27 @@ export class ReportsService {
     ]);
 
     // Combine legacy and unified counts/totals
-    const mtdPurchasesCount = mtdLegacyPurchases._count.id + mtdUnifiedPurchases._count.id;
-    const mtdPurchasesTotal = Number(mtdLegacyPurchases._sum.totalAmount || 0) + Number(mtdUnifiedPurchases._sum.totalAmount || 0);
-    const mtdExpensesCount = mtdLegacyExpenses._count.id + mtdUnifiedExpenses._count.id;
-    const mtdExpensesTotal = Number(mtdLegacyExpenses._sum.totalAmount || 0) + Number(mtdUnifiedExpenses._sum.totalAmount || 0);
+    const mtdPurchasesCount =
+      mtdLegacyPurchases._count.id + mtdUnifiedPurchases._count.id;
+    const mtdPurchasesTotal =
+      Number(mtdLegacyPurchases._sum.totalAmount || 0) +
+      Number(mtdUnifiedPurchases._sum.totalAmount || 0);
+    const mtdExpensesCount =
+      mtdLegacyExpenses._count.id + mtdUnifiedExpenses._count.id;
+    const mtdExpensesTotal =
+      Number(mtdLegacyExpenses._sum.totalAmount || 0) +
+      Number(mtdUnifiedExpenses._sum.totalAmount || 0);
 
-    const ytdPurchasesCount = ytdLegacyPurchases._count.id + ytdUnifiedPurchases._count.id;
-    const ytdPurchasesTotal = Number(ytdLegacyPurchases._sum.totalAmount || 0) + Number(ytdUnifiedPurchases._sum.totalAmount || 0);
-    const ytdExpensesCount = ytdLegacyExpenses._count.id + ytdUnifiedExpenses._count.id;
-    const ytdExpensesTotal = Number(ytdLegacyExpenses._sum.totalAmount || 0) + Number(ytdUnifiedExpenses._sum.totalAmount || 0);
+    const ytdPurchasesCount =
+      ytdLegacyPurchases._count.id + ytdUnifiedPurchases._count.id;
+    const ytdPurchasesTotal =
+      Number(ytdLegacyPurchases._sum.totalAmount || 0) +
+      Number(ytdUnifiedPurchases._sum.totalAmount || 0);
+    const ytdExpensesCount =
+      ytdLegacyExpenses._count.id + ytdUnifiedExpenses._count.id;
+    const ytdExpensesTotal =
+      Number(ytdLegacyExpenses._sum.totalAmount || 0) +
+      Number(ytdUnifiedExpenses._sum.totalAmount || 0);
 
     return {
       mtd: {
@@ -601,8 +704,109 @@ export class ReportsService {
     };
   }
 
-  async getTaxReport(filterDto: TaxReportFilterDto): Promise<TaxReportResponseDto> {
-    const startDate = filterDto.startDate ? new Date(filterDto.startDate) : undefined;
+  /**
+   * Sales report: one row per customer invoice in the range, plus column totals.
+   *
+   * Dates: `invoiceDate` holds a business calendar date pinned to midnight UTC
+   * (see toBusinessCalendarDate), so the range is bounded by the same
+   * representation rather than by businessDayUtcRange() — the latter bounds real
+   * timestamp columns (createdAt/paidAt) and would exclude midnight-UTC dates.
+   * The upper bound is the day *after* endDate, exclusive, which keeps the whole
+   * end day in range for older rows that still carry a real timestamp.
+   */
+  async getSalesReport(
+    filterDto: SalesReportFilterDto
+  ): Promise<SalesReportResponseDto> {
+    const startDate = extractBusinessDate(filterDto.startDate);
+    const endDate = extractBusinessDate(filterDto.endDate);
+
+    if (endDate < startDate) {
+      throw new BadRequestException('endDate cannot be before startDate');
+    }
+
+    const where: any = {
+      invoiceDate: {
+        gte: toBusinessCalendarDate(startDate),
+        lt: toBusinessCalendarDate(shiftBusinessDate(endDate, 1)),
+      },
+    };
+    if (filterDto.status) {
+      where.status = filterDto.status;
+    }
+
+    const invoices = await this.prisma.invoice.findMany({
+      where,
+      select: {
+        id: true,
+        invoiceNumber: true,
+        invoiceDate: true,
+        subtotal: true,
+        gstAmount: true,
+        pstAmount: true,
+        total: true,
+        paymentMethod: true,
+        status: true,
+        notes: true,
+        items: { select: { description: true } },
+      },
+      orderBy: [{ invoiceDate: 'asc' }, { invoiceNumber: 'asc' }],
+    });
+
+    const rows: SalesReportRowDto[] = invoices.map((invoice) => ({
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      date: extractBusinessDate(invoice.invoiceDate),
+      description: this.buildSalesRowDescription(invoice.items, invoice.notes),
+      subtotal: Number(invoice.subtotal),
+      // gstAmount/pstAmount are null on invoices created through the legacy
+      // combined-taxRate path; those carry their tax in taxAmount only, so the
+      // tax columns read 0 for them. Matches getTaxReport's existing treatment.
+      gst: Number(invoice.gstAmount || 0),
+      pst: Number(invoice.pstAmount || 0),
+      netTotal: Number(invoice.total),
+      paymentMethod: invoice.paymentMethod,
+      status: invoice.status,
+    }));
+
+    const sum = (pick: (row: SalesReportRowDto) => number) =>
+      this.roundMoney(rows.reduce((acc, row) => acc + pick(row), 0));
+
+    return {
+      startDate,
+      endDate,
+      invoiceCount: rows.length,
+      rows,
+      totals: {
+        subtotal: sum((row) => row.subtotal),
+        gst: sum((row) => row.gst),
+        pst: sum((row) => row.pst),
+        netTotal: sum((row) => row.netTotal),
+      },
+    };
+  }
+
+  private buildSalesRowDescription(
+    items: { description: string }[],
+    notes: string | null
+  ): string {
+    const fromItems = items
+      .map((item) => item.description?.trim())
+      .filter((description): description is string => !!description)
+      .join(', ');
+    return fromItems || notes?.trim() || 'No description';
+  }
+
+  /** Decimal(10,2) columns are exact, but summing them as floats is not. */
+  private roundMoney(amount: number): number {
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
+  }
+
+  async getTaxReport(
+    filterDto: TaxReportFilterDto
+  ): Promise<TaxReportResponseDto> {
+    const startDate = filterDto.startDate
+      ? new Date(filterDto.startDate)
+      : undefined;
     const endDate = filterDto.endDate ? new Date(filterDto.endDate) : undefined;
 
     // Build filter conditions - ONLY PAID invoices
@@ -628,8 +832,14 @@ export class ReportsService {
     });
 
     // Calculate total tax collected (from PAID invoices only)
-    const totalGstCollected = invoices.reduce((sum, inv) => sum + Number(inv.gstAmount || 0), 0);
-    const totalPstCollected = invoices.reduce((sum, inv) => sum + Number(inv.pstAmount || 0), 0);
+    const totalGstCollected = invoices.reduce(
+      (sum, inv) => sum + Number(inv.gstAmount || 0),
+      0
+    );
+    const totalPstCollected = invoices.reduce(
+      (sum, inv) => sum + Number(inv.pstAmount || 0),
+      0
+    );
     const totalTaxCollected = totalGstCollected + totalPstCollected;
 
     // Calculate monthly breakdown
@@ -644,7 +854,9 @@ export class ReportsService {
     };
   }
 
-  private calculateMonthlyTaxBreakdown(invoices: any[]): MonthlyTaxBreakdownDto[] {
+  private calculateMonthlyTaxBreakdown(
+    invoices: any[]
+  ): MonthlyTaxBreakdownDto[] {
     const monthMap = new Map<string, MonthlyTaxBreakdownDto>();
 
     for (const invoice of invoices) {
@@ -660,17 +872,24 @@ export class ReportsService {
       existing.invoiceCount++;
       existing.gstCollected += Number(invoice.gstAmount || 0);
       existing.pstCollected += Number(invoice.pstAmount || 0);
-      existing.totalTaxCollected = existing.gstCollected + existing.pstCollected;
+      existing.totalTaxCollected =
+        existing.gstCollected + existing.pstCollected;
 
       monthMap.set(month, existing);
     }
 
     // Sort by month (most recent first)
-    return Array.from(monthMap.values()).sort((a, b) => b.month.localeCompare(a.month));
+    return Array.from(monthMap.values()).sort((a, b) =>
+      b.month.localeCompare(a.month)
+    );
   }
 
-  async getGstPaidReport(filterDto: TaxReportFilterDto): Promise<GstPaidReportResponseDto> {
-    const startDate = filterDto.startDate ? new Date(filterDto.startDate) : undefined;
+  async getGstPaidReport(
+    filterDto: TaxReportFilterDto
+  ): Promise<GstPaidReportResponseDto> {
+    const startDate = filterDto.startDate
+      ? new Date(filterDto.startDate)
+      : undefined;
     const endDate = filterDto.endDate ? new Date(filterDto.endDate) : undefined;
 
     // Build filter conditions for legacy tables (PAID invoices only)
@@ -687,7 +906,10 @@ export class ReportsService {
     // Build filter conditions for unified table (all invoices - no status field)
     const unifiedWhere: any = {};
     if (startDate) {
-      unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, gte: startDate };
+      unifiedWhere.invoiceDate = {
+        ...unifiedWhere.invoiceDate,
+        gte: startDate,
+      };
     }
     if (endDate) {
       unifiedWhere.invoiceDate = { ...unifiedWhere.invoiceDate, lte: endDate };
@@ -731,22 +953,50 @@ export class ReportsService {
     });
 
     // Split unified invoices by type
-    const unifiedPurchaseInvoices = unifiedInvoices.filter(inv => inv.type === 'PURCHASE');
-    const unifiedExpenseInvoices = unifiedInvoices.filter(inv => inv.type === 'EXPENSE');
+    const unifiedPurchaseInvoices = unifiedInvoices.filter(
+      (inv) => inv.type === 'PURCHASE'
+    );
+    const unifiedExpenseInvoices = unifiedInvoices.filter(
+      (inv) => inv.type === 'EXPENSE'
+    );
 
     // Combine legacy and unified invoices
-    const purchaseInvoices = [...legacyPurchaseInvoices, ...unifiedPurchaseInvoices];
-    const expenseInvoices = [...legacyExpenseInvoices, ...unifiedExpenseInvoices];
+    const purchaseInvoices = [
+      ...legacyPurchaseInvoices,
+      ...unifiedPurchaseInvoices,
+    ];
+    const expenseInvoices = [
+      ...legacyExpenseInvoices,
+      ...unifiedExpenseInvoices,
+    ];
 
     // Calculate tax paid from purchase invoices
-    const purchaseGstPaid = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.gstAmount || 0), 0);
-    const purchasePstPaid = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.pstAmount || 0), 0);
-    const purchaseHstPaid = purchaseInvoices.reduce((sum, inv) => sum + Number(inv.hstAmount || 0), 0);
+    const purchaseGstPaid = purchaseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.gstAmount || 0),
+      0
+    );
+    const purchasePstPaid = purchaseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.pstAmount || 0),
+      0
+    );
+    const purchaseHstPaid = purchaseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.hstAmount || 0),
+      0
+    );
 
     // Calculate tax paid from expense invoices
-    const expenseGstPaid = expenseInvoices.reduce((sum, inv) => sum + Number(inv.gstAmount || 0), 0);
-    const expensePstPaid = expenseInvoices.reduce((sum, inv) => sum + Number(inv.pstAmount || 0), 0);
-    const expenseHstPaid = expenseInvoices.reduce((sum, inv) => sum + Number(inv.hstAmount || 0), 0);
+    const expenseGstPaid = expenseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.gstAmount || 0),
+      0
+    );
+    const expensePstPaid = expenseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.pstAmount || 0),
+      0
+    );
+    const expenseHstPaid = expenseInvoices.reduce(
+      (sum, inv) => sum + Number(inv.hstAmount || 0),
+      0
+    );
 
     // Calculate totals
     const totalGstPaid = purchaseGstPaid + expenseGstPaid;
@@ -755,7 +1005,10 @@ export class ReportsService {
     const totalTaxPaid = totalGstPaid + totalPstPaid + totalHstPaid;
 
     // Calculate monthly breakdown
-    const monthlyBreakdown = this.calculateMonthlyGstPaidBreakdown(purchaseInvoices, expenseInvoices);
+    const monthlyBreakdown = this.calculateMonthlyGstPaidBreakdown(
+      purchaseInvoices,
+      expenseInvoices
+    );
 
     return {
       totalPurchaseInvoices: purchaseInvoices.length,
@@ -777,7 +1030,7 @@ export class ReportsService {
 
   private calculateMonthlyGstPaidBreakdown(
     purchaseInvoices: any[],
-    expenseInvoices: any[],
+    expenseInvoices: any[]
   ): MonthlyGstPaidBreakdownDto[] {
     const monthMap = new Map<string, MonthlyGstPaidBreakdownDto>();
 
@@ -840,10 +1093,13 @@ export class ReportsService {
       data.totalGstPaid = data.purchaseGstPaid + data.expenseGstPaid;
       data.totalPstPaid = data.purchasePstPaid + data.expensePstPaid;
       data.totalHstPaid = data.purchaseHstPaid + data.expenseHstPaid;
-      data.totalTaxPaid = data.totalGstPaid + data.totalPstPaid + data.totalHstPaid;
+      data.totalTaxPaid =
+        data.totalGstPaid + data.totalPstPaid + data.totalHstPaid;
     }
 
     // Sort by month (most recent first)
-    return Array.from(monthMap.values()).sort((a, b) => b.month.localeCompare(a.month));
+    return Array.from(monthMap.values()).sort((a, b) =>
+      b.month.localeCompare(a.month)
+    );
   }
 }

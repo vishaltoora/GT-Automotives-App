@@ -15,6 +15,10 @@ import {
   TaxReportResponseDto,
   GstPaidReportResponseDto,
 } from '@gt-automotive/data';
+import {
+  SalesReportFilterDto,
+  SalesReportResponseDto,
+} from '@gt-automotive/data';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -53,6 +57,14 @@ export class ReportsController {
     @Query(ValidationPipe) filterDto: TaxReportFilterDto
   ): Promise<TaxReportResponseDto> {
     return this.reportsService.getTaxReport(filterDto);
+  }
+
+  @Get('sales-report')
+  @Roles('ADMIN', 'ACCOUNTANT')
+  async getSalesReport(
+    @Query(ValidationPipe) filterDto: SalesReportFilterDto
+  ): Promise<SalesReportResponseDto> {
+    return this.reportsService.getSalesReport(filterDto);
   }
 
   @Get('gst-paid-report')
