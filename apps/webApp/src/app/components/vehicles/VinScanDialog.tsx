@@ -41,12 +41,14 @@ interface VinScanDialogProps {
 type ScanStatus = 'starting' | 'scanning' | 'result' | 'error';
 
 // VIN barcodes are almost always Code 39; newer vehicles occasionally use Code
-// 128 or Data Matrix. Restricting the format set makes decoding faster and less
-// prone to false positives.
+// 128 or Data Matrix, and some recent models print a QR code on the door-jamb
+// label instead of a linear barcode. Restricting the format set makes decoding
+// faster and less prone to false positives.
 const VIN_FORMATS = [
   BarcodeFormat.CODE_39,
   BarcodeFormat.CODE_128,
   BarcodeFormat.DATA_MATRIX,
+  BarcodeFormat.QR_CODE,
 ];
 
 export default function VinScanDialog({
@@ -384,8 +386,8 @@ export default function VinScanDialog({
               color="text.secondary"
               sx={{ mt: 1.5, textAlign: 'center' }}
             >
-              Point the camera at the VIN barcode — usually on the driver&apos;s
-              door jamb or the bottom of the windshield.
+              Point the camera at the VIN barcode or QR code — usually on the
+              driver&apos;s door jamb or the bottom of the windshield.
             </Typography>
           </Box>
         )}
