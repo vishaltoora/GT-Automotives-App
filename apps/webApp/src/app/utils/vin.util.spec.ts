@@ -87,5 +87,53 @@ describe('vin.util', () => {
     it('returns null when no 17-character VIN is present', () => {
       expect(extractVinFromScan('SHORT123')).toBeNull();
     });
+
+    // QR labels on newer vehicles carry several fields rather than a bare VIN.
+    describe('QR payloads', () => {
+      it('extracts the VIN from a delimited key/value payload', () => {
+        const result = extractVinFromScan(
+          'VIN:1HGCM82633A004352;MODEL:ACCORD;YEAR:2003'
+        );
+        expect(result).toEqual({
+          vin: '1HGCM82633A004352',
+          checkDigitValid: true,
+        });
+      });
+
+      it('extracts the VIN from a multi-line payload', () => {
+        const result = extractVinFromScan(
+          'MFR=HONDA\nVIN=1HGCM82633A004352\nPLANT=MARYSVILLE'
+        );
+        expect(result?.vin).toBe('1HGCM82633A004352');
+      });
+
+      it('extracts the VIN embedded in a URL', () => {
+        const result = extractVinFromScan(
+          'https://vehicle.example.com/lookup/1HGCM82633A004352?src=qr'
+        );
+        expect(result?.vin).toBe('1HGCM82633A004352');
+      });
+
+      it('never fabricates a VIN by joining two adjacent fields', () => {
+        // Descriptive fields only. Concatenating the payload before scanning
+        // would produce a >17-character run and yield a bogus "VIN".
+        expect(
+          extractVinFromScan('MODEL:F150XLT;COLOR:BLUE;TRIM:LARIAT4X4')
+        ).toBeNull();
+      });
+
+      it('prefers a standalone VIN field over a lucky window in a longer field', () => {
+        // A run of 1s is longer than a VIN and every window inside it happens
+        // to satisfy the check digit — the real VIN field must still win, even
+        // though its own check digit does not validate.
+        const result = extractVinFromScan(
+          '1111111111111111111;1HGCM82653A004352'
+        );
+        expect(result).toEqual({
+          vin: '1HGCM82653A004352',
+          checkDigitValid: false,
+        });
+      });
+    });
   });
 });

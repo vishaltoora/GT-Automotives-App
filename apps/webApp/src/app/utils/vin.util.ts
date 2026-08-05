@@ -87,35 +87,69 @@ export const isValidVinCheckDigit = (vin: string): boolean => {
 };
 
 export interface VinScanCandidate {
-  /** The 17-character VIN extracted from the scanned barcode payload. */
+  /** The 17-character VIN extracted from the scanned barcode/QR payload. */
   vin: string;
   /** Whether the ISO 3779 check digit validated (confidence signal). */
   checkDigitValid: boolean;
 }
 
+// Confidence tiers for an extracted candidate, best first.
+//
+// A field that is *exactly* a VIN outranks one carved out of a longer run of
+// characters: the check digit validates by chance for roughly 1 in 11 random
+// 17-character windows, so a long descriptor field (common in QR payloads)
+// offers enough windows that a bogus one will regularly pass.
+const SCORE_FIELD_CHECK_DIGIT = 4;
+const SCORE_FIELD = 3;
+const SCORE_WINDOW_CHECK_DIGIT = 2;
+const SCORE_WINDOW = 1;
+
 /**
- * Extract a VIN from a raw barcode payload.
+ * Extract a VIN from a raw barcode or QR payload.
  *
  * Door-jamb / windshield Code 39 barcodes sometimes wrap the VIN with delimiter
- * characters (e.g. a leading "I" or a trailing "*"), so the payload can be
- * longer than 17 chars. We scan every 17-character window and prefer the one
- * whose check digit validates; otherwise we fall back to the first structurally
- * valid window. Returns null when no 17-character VIN can be found.
+ * characters (e.g. a leading "I" or a trailing "*"). QR labels go further and
+ * carry several fields — "VIN:xxx;MODEL:yyy", or a URL with the VIN in the path
+ * — so the VIN is one field among many.
+ *
+ * We split the payload on every character that can never appear in a VIN, which
+ * both trims those delimiters and keeps fields apart, then look for a VIN inside
+ * each field. Splitting matters: concatenating the whole payload first lets a
+ * 17-character "VIN" be fabricated from the tail of one field and the head of
+ * the next. Candidates are ranked by `SCORE_*` above. Returns null when no
+ * 17-character VIN can be found.
  */
 export const extractVinFromScan = (raw: string): VinScanCandidate | null => {
-  const cleaned = raw.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
-  if (cleaned.length < 17) return null;
+  const fields = raw
+    .toUpperCase()
+    .split(/[^A-HJ-NPR-Z0-9]+/)
+    .filter((field) => field.length >= 17);
 
-  let firstValid: VinScanCandidate | null = null;
-  for (let start = 0; start + 17 <= cleaned.length; start++) {
-    const candidate = cleaned.slice(start, start + 17);
-    if (!VIN_PATTERN.test(candidate)) continue;
-    if (isValidVinCheckDigit(candidate)) {
-      return { vin: candidate, checkDigitValid: true };
-    }
-    if (!firstValid) {
-      firstValid = { vin: candidate, checkDigitValid: false };
+  let best: VinScanCandidate | null = null;
+  let bestScore = 0;
+
+  for (const field of fields) {
+    const isWholeField = field.length === 17;
+    for (let start = 0; start + 17 <= field.length; start++) {
+      const candidate = field.slice(start, start + 17);
+      if (!VIN_PATTERN.test(candidate)) continue;
+      const checkDigitValid = isValidVinCheckDigit(candidate);
+      const score = isWholeField
+        ? checkDigitValid
+          ? SCORE_FIELD_CHECK_DIGIT
+          : SCORE_FIELD
+        : checkDigitValid
+        ? SCORE_WINDOW_CHECK_DIGIT
+        : SCORE_WINDOW;
+
+      if (score > bestScore) {
+        best = { vin: candidate, checkDigitValid };
+        bestScore = score;
+        // Nothing can beat a standalone field with a valid check digit.
+        if (score === SCORE_FIELD_CHECK_DIGIT) return best;
+      }
     }
   }
-  return firstValid;
+
+  return best;
 };
