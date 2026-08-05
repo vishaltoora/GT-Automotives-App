@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import {
+  Edit as EditIcon,
   Gavel as GavelIcon,
   Save as SaveIcon,
   Settings as SettingsIcon,
@@ -34,6 +35,10 @@ export function Settings() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  // The terms are read-only until Edit is pressed. They print on every invoice
+  // and are a liability statement, so they should not be a field you can change
+  // by clicking into it by accident.
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     void load();
@@ -57,6 +62,26 @@ export function Settings() {
     }
   };
 
+  const handleEdit = (company: Company) => {
+    setError(null);
+    setSavedId(null);
+    setDrafts((prev) => ({
+      ...prev,
+      [company.id]: company.termsAndConditions ?? '',
+    }));
+    setEditingId(company.id);
+  };
+
+  /** Discard the draft and drop back to read-only. */
+  const handleCancel = (company: Company) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [company.id]: company.termsAndConditions ?? '',
+    }));
+    setEditingId(null);
+    setError(null);
+  };
+
   const handleSave = async (company: Company) => {
     setSavingId(company.id);
     setError(null);
@@ -70,6 +95,7 @@ export function Settings() {
         prev.map((c) => (c.id === updated.id ? updated : c))
       );
       setSavedId(company.id);
+      setEditingId(null);
     } catch (err: any) {
       setError(
         err?.response?.data?.message || 'Failed to save terms and conditions'
@@ -111,68 +137,119 @@ export function Settings() {
       )}
 
       <Stack spacing={3}>
-        {companies.map((company) => (
-          <Card key={company.id} variant="outlined">
-            <CardContent>
-              <Typography variant="h6">{company.name}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {company.registrationNumber}
-                {company.isDefault ? ' — default company' : ''}
-              </Typography>
+        {companies.map((company) => {
+          const isEditing = editingId === company.id;
+          const isSaving = savingId === company.id;
+          const draft = drafts[company.id] ?? '';
+          const saved = company.termsAndConditions ?? '';
 
-              <Divider sx={{ my: 2 }} />
+          return (
+            <Card key={company.id} variant="outlined">
+              <CardContent>
+                <Typography variant="h6">{company.name}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {company.registrationNumber}
+                  {company.isDefault ? ' — default company' : ''}
+                </Typography>
 
-              <TextField
-                fullWidth
-                multiline
-                minRows={6}
-                label="Terms & Conditions"
-                value={drafts[company.id] ?? ''}
-                onChange={(e) =>
-                  setDrafts((prev) => ({
-                    ...prev,
-                    [company.id]: e.target.value,
-                  }))
-                }
-                helperText={`${
-                  (drafts[company.id] ?? '').length
-                } / 4000 characters`}
-                slotProps={{ htmlInput: { maxLength: 4000 } }}
-              />
+                <Divider sx={{ my: 2 }} />
 
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  gap: 2,
-                  mt: 2,
-                }}
-              >
-                {savedId === company.id && (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: colors.semantic.success }}
+                {isEditing ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={6}
+                    autoFocus
+                    label="Terms & Conditions"
+                    value={draft}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [company.id]: e.target.value,
+                      }))
+                    }
+                    helperText={`${draft.length} / 4000 characters`}
+                    slotProps={{ htmlInput: { maxLength: 4000 } }}
+                    disabled={isSaving}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      p: 2,
+                      minHeight: 120,
+                      border: `1px solid ${colors.neutral[200]}`,
+                      borderRadius: 1,
+                      backgroundColor: colors.neutral[50],
+                    }}
                   >
-                    Saved
-                  </Typography>
+                    {saved ? (
+                      <Typography
+                        variant="body2"
+                        sx={{ whiteSpace: 'pre-wrap' }}
+                      >
+                        {saved}
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No terms set — nothing will print on this company's
+                        invoices.
+                      </Typography>
+                    )}
+                  </Box>
                 )}
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => handleSave(company)}
-                  disabled={
-                    savingId === company.id ||
-                    (drafts[company.id] ?? '') ===
-                      (company.termsAndConditions ?? '')
-                  }
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: 2,
+                    mt: 2,
+                  }}
                 >
-                  {savingId === company.id ? 'Saving…' : 'Save'}
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
+                  {savedId === company.id && !isEditing && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: colors.semantic.success }}
+                    >
+                      Saved
+                    </Typography>
+                  )}
+
+                  {isEditing ? (
+                    <>
+                      <Button
+                        onClick={() => handleCancel(company)}
+                        disabled={isSaving}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="contained"
+                        startIcon={<SaveIcon />}
+                        onClick={() => handleSave(company)}
+                        disabled={isSaving || draft === saved}
+                      >
+                        {isSaving ? 'Saving…' : 'Save'}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      startIcon={<EditIcon />}
+                      onClick={() => handleEdit(company)}
+                      // Editing one company at a time keeps "unsaved changes"
+                      // unambiguous.
+                      disabled={!!editingId}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          );
+        })}
       </Stack>
     </Box>
   );
