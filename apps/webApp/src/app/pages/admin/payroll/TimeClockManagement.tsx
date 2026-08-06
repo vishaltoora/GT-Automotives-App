@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  Divider,
   Chip,
   CircularProgress,
   Dialog,
@@ -147,6 +148,9 @@ export function TimeClockManagement() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [payType, setPayType] = useState<PayType>(PayType.HOURLY);
   const [hourlyRate, setHourlyRate] = useState('');
+  // Job title for this employee's pay stubs. Kept with pay because it is set
+  // by the same person at the same moment, and it is what a stub prints.
+  const [position, setPosition] = useState('');
   const [annualSalary, setAnnualSalary] = useState('');
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusReason, setBonusReason] = useState('');
@@ -242,6 +246,7 @@ export function TimeClockManagement() {
         );
         if (compensation) {
           setPayType(compensation.payType);
+          setPosition(compensation.position || '');
           setHourlyRate(compensation.hourlyRate?.toString() || '');
           setAnnualSalary(compensation.annualSalary?.toString() || '');
         } else {
@@ -376,6 +381,7 @@ export function TimeClockManagement() {
     if (!selectedEmployeeId) return;
     const payload: UpsertEmployeeCompensationDto = {
       payType,
+      position: position.trim() || undefined,
       hourlyRate: payType === PayType.HOURLY ? Number(hourlyRate) : undefined,
       annualSalary:
         payType === PayType.SALARIED ? Number(annualSalary) : undefined,
@@ -1453,8 +1459,14 @@ export function TimeClockManagement() {
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
               Compensation & Bonus
             </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 4 }}>
+            {/* Two jobs share this card and one employee selector: setting how
+                someone is paid from now on, and paying a one-off bonus now.
+                They are kept as labelled groups so the standing arrangement is
+                not confused with a single payment. Rows add to 12 columns, and
+                the buttons match the 56px input height so each group reads as
+                one control strip. */}
+            <Grid container spacing={2} alignItems="flex-start">
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   select
                   fullWidth
@@ -1463,6 +1475,7 @@ export function TimeClockManagement() {
                   onChange={(event) =>
                     setSelectedEmployeeId(event.target.value)
                   }
+                  helperText="Applies to both compensation and bonus below"
                 >
                   {users.map((user) => (
                     <MenuItem key={user.id} value={user.id}>
@@ -1471,6 +1484,15 @@ export function TimeClockManagement() {
                   ))}
                 </TextField>
               </Grid>
+
+              <Grid size={12}>
+                <Divider textAlign="left">
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    HOW THIS EMPLOYEE IS PAID
+                  </Typography>
+                </Divider>
+              </Grid>
+
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
                   select
@@ -1502,6 +1524,16 @@ export function TimeClockManagement() {
                   }}
                 />
               </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  fullWidth
+                  label="Position"
+                  value={position}
+                  onChange={(event) => setPosition(event.target.value)}
+                  placeholder="e.g. Tire Technician"
+                  helperText="Optional — printed on this employee's pay stubs"
+                />
+              </Grid>
               <Grid size={{ xs: 12, md: 2 }}>
                 <Button
                   fullWidth
@@ -1509,10 +1541,20 @@ export function TimeClockManagement() {
                   startIcon={<Save />}
                   onClick={saveCompensation}
                   disabled={saving || !selectedEmployeeId}
+                  sx={{ height: 56 }}
                 >
                   Save
                 </Button>
               </Grid>
+
+              <Grid size={12}>
+                <Divider textAlign="left" sx={{ mt: 1 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    ONE-OFF BONUS
+                  </Typography>
+                </Divider>
+              </Grid>
+
               <Grid size={{ xs: 12, md: 3 }}>
                 <NumberInput
                   fullWidth
@@ -1545,8 +1587,9 @@ export function TimeClockManagement() {
                     !bonusAmount ||
                     !bonusReason
                   }
+                  sx={{ height: 56 }}
                 >
-                  Bonus
+                  Add Bonus
                 </Button>
               </Grid>
             </Grid>

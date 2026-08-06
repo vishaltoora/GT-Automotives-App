@@ -5,7 +5,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
-import { CreatePayStubDto, PayStubDto, PayType } from '@gt-automotive/data';
+import {
+  CreatePayStubDto,
+  PayStubDeductionEstimateDto,
+  PayStubDeductionEstimateRequestDto,
+  PayStubDto,
+  PayType,
+  UpdatePayStubDto,
+} from '@gt-automotive/data';
+import {
+  calculateDeductions,
+  getPayrollRates,
+  payPeriodLabel,
+  SupportedProvince,
+} from './canadian-payroll';
 import { PdfService } from '../pdf/pdf.service';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import {
@@ -15,6 +28,9 @@ import {
 
 /** Roles allowed to raise and read every employee's pay stubs. */
 const PAYROLL_ADMIN_ROLES = ['ADMIN', 'ACCOUNTANT'];
+
+/** The shop's province of employment, which fixes the provincial tax table. */
+const PROVINCE_OF_EMPLOYMENT: SupportedProvince = 'BC';
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 const num = (value: unknown) => Number(value ?? 0);
@@ -103,10 +119,19 @@ export class PayStubsService {
         payDate,
         companyName: company.name,
         companyAddress: company.address,
+        companyBusinessType: company.businessType,
+        companyRegistrationNumber: company.registrationNumber,
+        companyPhone: company.phone,
+        companyEmail: company.email,
         employeeName:
           [employee.firstName, employee.lastName].filter(Boolean).join(' ') ||
           employee.email,
-        position: dto.position,
+        // The job title lives on the compensation record, which is where it is
+        // maintained; the stub freezes a copy so a later change of title does
+        // not rewrite documents already issued. An explicit value from the
+        // form still wins — a stub can be raised for a role someone held only
+        // for that period.
+        position: dto.position ?? compensation?.position ?? undefined,
         payRate: dto.payRate ?? null,
         payType: compensation?.payType ?? PayType.HOURLY,
         regularHours,
@@ -155,6 +180,294 @@ export class PayStubsService {
     });
 
     return this.toDto(payStub);
+  }
+
+  /**
+   * Correct a stub that has already been issued.
+   *
+   * Pay stubs are issued documents, so this is a deliberate amendment, not a
+   * casual edit: the change is audited with both the old and new figures, and
+   * the derived totals are recomputed here rather than accepted from the
+   * client, exactly as on create.
+   *
+   * The awkward part is year-to-date. Those columns are frozen snapshots, so
+   * changing an earlier stub leaves every later one carrying a running total
+   * that no longer reconciles. Rather than leave the record internally
+   * inconsistent — which would surface at T4 time, long after anyone could
+   * explain it — the whole calendar year for that employee is rewritten in pay
+   * date order. Moving a stub across new year's rewrites both years.
+   */
+  async update(
+    id: string,
+    dto: UpdatePayStubDto,
+    userId: string
+  ): Promise<PayStubDto> {
+    const existing = await this.prisma.payStub.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Pay stub not found');
+    }
+
+    const periodStart = dto.periodStart
+      ? toBusinessCalendarDate(dto.periodStart)
+      : existing.periodStart;
+    const periodEnd = dto.periodEnd
+      ? toBusinessCalendarDate(dto.periodEnd)
+      : existing.periodEnd;
+    const payDate = dto.payDate
+      ? toBusinessCalendarDate(dto.payDate)
+      : existing.payDate;
+
+    if (periodEnd < periodStart) {
+      throw new BadRequestException(
+        'Pay period end cannot be before the pay period start'
+      );
+    }
+
+    const pick = (next: number | undefined, current: unknown) =>
+      round2(next ?? num(current));
+
+    const regularHours = pick(dto.regularHours, existing.regularHours);
+    const regularAmount = pick(dto.regularAmount, existing.regularAmount);
+    const grossPay = regularAmount;
+    const eiAmount = pick(dto.eiAmount, existing.eiAmount);
+    const cppAmount = pick(dto.cppAmount, existing.cppAmount);
+    const incomeTaxAmount = pick(dto.incomeTaxAmount, existing.incomeTaxAmount);
+    const otherDeductions = pick(dto.otherDeductions, existing.otherDeductions);
+    const totalWithholding = round2(
+      eiAmount + cppAmount + incomeTaxAmount + otherDeductions
+    );
+    const netPay = round2(grossPay - totalWithholding);
+
+    if (netPay < 0) {
+      throw new BadRequestException(
+        'Withholdings exceed gross pay — net pay would be negative'
+      );
+    }
+
+    await this.prisma.payStub.update({
+      where: { id },
+      data: {
+        periodStart,
+        periodEnd,
+        payDate,
+        position: dto.position === undefined ? undefined : dto.position,
+        payRate: dto.payRate === undefined ? undefined : dto.payRate,
+        regularHours,
+        regularAmount,
+        grossPay,
+        eiAmount,
+        cppAmount,
+        incomeTaxAmount,
+        otherDeductions,
+        otherDeductionsLabel:
+          dto.otherDeductionsLabel === undefined
+            ? undefined
+            : dto.otherDeductionsLabel,
+        totalWithholding,
+        netPay,
+        notes: dto.notes === undefined ? undefined : dto.notes,
+      },
+    });
+
+    // Both years, in case the pay date moved across a year boundary — the old
+    // year's chain has lost a stub and the new year's has gained one.
+    const years = new Set([
+      existing.payDate.getUTCFullYear(),
+      payDate.getUTCFullYear(),
+    ]);
+    for (const year of years) {
+      await this.recomputeYearToDate(existing.employeeId, year);
+    }
+
+    await this.auditRepository.create({
+      userId,
+      action: 'UPDATE_PAY_STUB',
+      resource: 'PayStub',
+      resourceId: id,
+      oldValue: {
+        periodStart: extractBusinessDate(existing.periodStart),
+        periodEnd: extractBusinessDate(existing.periodEnd),
+        payDate: extractBusinessDate(existing.payDate),
+        grossPay: num(existing.grossPay),
+        totalWithholding: num(existing.totalWithholding),
+        netPay: num(existing.netPay),
+      },
+      newValue: {
+        periodStart: extractBusinessDate(periodStart),
+        periodEnd: extractBusinessDate(periodEnd),
+        payDate: extractBusinessDate(payDate),
+        grossPay,
+        totalWithholding,
+        netPay,
+      },
+    });
+
+    // Re-read: the year-to-date rewrite above changed this row after the update.
+    const updated = await this.prisma.payStub.findUnique({
+      where: { id },
+      include: { employee: { include: { role: true } } },
+    });
+
+    return this.toDto(updated);
+  }
+
+  /**
+   * Rewrite one employee's year-to-date columns for a calendar year, walking
+   * their stubs in pay date order and accumulating.
+   *
+   * Ordering is by pay date, then by creation, so two stubs paid the same day
+   * accumulate in the order they were raised.
+   */
+  private async recomputeYearToDate(employeeId: string, year: number) {
+    const stubs = await this.prisma.payStub.findMany({
+      where: {
+        employeeId,
+        payDate: {
+          gte: new Date(Date.UTC(year, 0, 1)),
+          lt: new Date(Date.UTC(year + 1, 0, 1)),
+        },
+      },
+      orderBy: [{ payDate: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    const running = {
+      hours: 0,
+      regularAmount: 0,
+      grossPay: 0,
+      eiAmount: 0,
+      cppAmount: 0,
+      incomeTaxAmount: 0,
+      otherDeductions: 0,
+      totalWithholding: 0,
+      netPay: 0,
+    };
+
+    for (const stub of stubs) {
+      running.hours += num(stub.regularHours);
+      running.regularAmount += num(stub.regularAmount);
+      running.grossPay += num(stub.grossPay);
+      running.eiAmount += num(stub.eiAmount);
+      running.cppAmount += num(stub.cppAmount);
+      running.incomeTaxAmount += num(stub.incomeTaxAmount);
+      running.otherDeductions += num(stub.otherDeductions);
+      running.totalWithholding += num(stub.totalWithholding);
+      running.netPay += num(stub.netPay);
+
+      await this.prisma.payStub.update({
+        where: { id: stub.id },
+        data: {
+          ytdHours: round2(running.hours),
+          ytdRegularAmount: round2(running.regularAmount),
+          ytdGrossPay: round2(running.grossPay),
+          ytdEiAmount: round2(running.eiAmount),
+          ytdCppAmount: round2(running.cppAmount),
+          ytdIncomeTaxAmount: round2(running.incomeTaxAmount),
+          ytdOtherDeductions: round2(running.otherDeductions),
+          ytdWithholding: round2(running.totalWithholding),
+          ytdNetPay: round2(running.netPay),
+        },
+      });
+    }
+  }
+
+  /**
+   * What CPP, EI and income tax the CRA formulas say should come off a given
+   * gross — a suggestion for the accountant, never applied on its own.
+   *
+   * Year-to-date CPP and EI come from this employee's earlier stubs in the same
+   * calendar year, because both stop at an annual maximum: the same $2,000 of
+   * pay attracts different contributions in January and in November. That makes
+   * the estimate only as good as the stubs already in the system — pay run
+   * outside it, and the maximums will be reached late.
+   *
+   * Returns `supported: false` rather than a figure when the pay date falls in
+   * a year with no rate table. A number computed from the wrong year's rates
+   * would look exactly as trustworthy as a right one.
+   */
+  async estimateDeductions(
+    dto: PayStubDeductionEstimateRequestDto
+  ): Promise<PayStubDeductionEstimateDto> {
+    const employee = await this.prisma.user.findUnique({
+      where: { id: dto.employeeId },
+    });
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const payDate = toBusinessCalendarDate(dto.payDate);
+    const taxYear = payDate.getUTCFullYear();
+    const priorTotals = await this.sumPriorStubsInYear(dto.employeeId, payDate);
+
+    const empty = {
+      taxYear,
+      province: PROVINCE_OF_EMPLOYMENT,
+      payPeriodsPerYear: dto.payPeriodsPerYear,
+      ytdGrossPay: round2(priorTotals.grossPay),
+      ytdCpp: round2(priorTotals.cppAmount),
+      ytdEi: round2(priorTotals.eiAmount),
+    };
+
+    const rates = getPayrollRates(PROVINCE_OF_EMPLOYMENT, taxYear);
+    if (!rates) {
+      return {
+        ...empty,
+        supported: false,
+        ei: 0,
+        cpp: 0,
+        cpp2: 0,
+        incomeTax: 0,
+        federalTax: 0,
+        provincialTax: 0,
+        annualTaxableIncome: 0,
+        cppMaxedOut: false,
+        eiMaxedOut: false,
+        assumptions: [
+          `No CRA rate table is held for ${taxYear}. Enter the deductions manually, or add the ${taxYear} rates from the CRA's T4127 guide.`,
+        ],
+      };
+    }
+
+    const estimate = calculateDeductions({
+      grossPay: dto.grossPay,
+      payPeriodsPerYear: dto.payPeriodsPerYear,
+      ytdCpp: priorTotals.cppAmount,
+      ytdEi: priorTotals.eiAmount,
+      ytdGrossPay: priorTotals.grossPay,
+      province: PROVINCE_OF_EMPLOYMENT,
+      taxYear,
+    });
+
+    // getPayrollRates just confirmed the year is supported, so this holds.
+    if (!estimate) {
+      throw new BadRequestException(
+        `Could not calculate deductions for ${taxYear}`
+      );
+    }
+
+    const assumptions = [
+      `${taxYear} CRA rates, ${PROVINCE_OF_EMPLOYMENT} — ${payPeriodLabel(
+        dto.payPeriodsPerYear
+      ).toLowerCase()} (${dto.payPeriodsPerYear} pay periods).`,
+      'Basic personal amounts only (TD1 claim code 1) — an employee claiming more will be over-deducted.',
+      'No RRSP, pension, union dues or other tax-deductible amounts.',
+    ];
+    if (estimate.cppMaxedOut) {
+      assumptions.push(
+        'CPP has reached the annual maximum, so this period takes only the remainder.'
+      );
+    }
+    if (estimate.eiMaxedOut) {
+      assumptions.push(
+        'EI has reached the annual maximum, so this period takes only the remainder.'
+      );
+    }
+    if (priorTotals.grossPay === 0) {
+      assumptions.push(
+        'No earlier stub this year, so the annual maximums are treated as untouched.'
+      );
+    }
+
+    return { ...empty, supported: true, ...estimate, assumptions };
   }
 
   /**
@@ -309,6 +622,10 @@ export class PayStubsService {
       payDate: extractBusinessDate(stub.payDate),
       companyName: stub.companyName,
       companyAddress: stub.companyAddress || undefined,
+      companyBusinessType: stub.companyBusinessType || undefined,
+      companyRegistrationNumber: stub.companyRegistrationNumber || undefined,
+      companyPhone: stub.companyPhone || undefined,
+      companyEmail: stub.companyEmail || undefined,
       employeeName: stub.employeeName,
       position: stub.position || undefined,
       payRate: stub.payRate == null ? undefined : num(stub.payRate),

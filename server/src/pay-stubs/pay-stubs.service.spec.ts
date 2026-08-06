@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PayStubsService } from './pay-stubs.service';
 
 /**
@@ -49,9 +53,11 @@ describe('PayStubsService', () => {
         }),
       },
       employeeCompensation: {
-        findFirst: jest
-          .fn()
-          .mockResolvedValue({ payType: 'HOURLY', hourlyRate: 24 }),
+        findFirst: jest.fn().mockResolvedValue({
+          payType: 'HOURLY',
+          hourlyRate: 24,
+          position: 'Tire Technician',
+        }),
       },
       payStub: {
         create: jest.fn((args: any) => ({
@@ -89,6 +95,27 @@ describe('PayStubsService', () => {
       expect(result.companyAddress).toBe('2983 Nicole Ave, Prince George, BC');
       expect(result.employeeName).toBe('Rohit Toora');
       expect(result.position).toBe('Business Manager');
+    });
+
+    it('takes the job title from the compensation record when none is sent', async () => {
+      const { position, ...withoutPosition } = baseDto;
+
+      const result = await service.create(
+        withoutPosition as any,
+        accountant.id
+      );
+
+      expect(result.position).toBe('Tire Technician');
+    });
+
+    it('prefers an explicit job title over the compensation record', async () => {
+      // A stub can be raised for a role someone held only for that period.
+      const result = await service.create(
+        { ...baseDto, position: 'Shop Foreman' } as any,
+        accountant.id
+      );
+
+      expect(result.position).toBe('Shop Foreman');
     });
 
     it('accumulates year-to-date across earlier stubs in the same year', async () => {
@@ -229,6 +256,176 @@ describe('PayStubsService', () => {
         service.generatePdf('stub-1', { id: 'emp-1', role: { name: 'STAFF' } })
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(pdfService.generatePdfFromHtml).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    /** A stub as stored: Decimal-ish numbers and real Dates, like Prisma returns. */
+    const storedStub = (overrides: any = {}) => ({
+      id: 'stub-1',
+      employeeId: 'emp-1',
+      periodStart: new Date(Date.UTC(2026, 0, 5)),
+      periodEnd: new Date(Date.UTC(2026, 0, 31)),
+      payDate: new Date(Date.UTC(2026, 0, 31)),
+      createdAt: new Date(Date.UTC(2026, 0, 31)),
+      companyName: 'GT Automotive',
+      employeeName: 'Rohit Toora',
+      position: 'Business Manager',
+      payRate: 24,
+      payType: 'HOURLY',
+      regularHours: 128,
+      regularAmount: 3072,
+      grossPay: 3072,
+      eiAmount: 50.08,
+      cppAmount: 166.96,
+      incomeTaxAmount: 0,
+      otherDeductions: 0,
+      totalWithholding: 217.04,
+      netPay: 2854.96,
+      ytdHours: 128,
+      ytdRegularAmount: 3072,
+      ytdGrossPay: 3072,
+      ytdEiAmount: 50.08,
+      ytdCppAmount: 166.96,
+      ytdIncomeTaxAmount: 0,
+      ytdOtherDeductions: 0,
+      ytdWithholding: 217.04,
+      ytdNetPay: 2854.96,
+      employee,
+      ...overrides,
+    });
+
+    beforeEach(() => {
+      prisma.payStub.update = jest.fn(({ where, data }: any) => ({
+        ...storedStub(),
+        id: where.id,
+        ...data,
+      }));
+    });
+
+    it('recomputes the totals rather than trusting the client', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+      prisma.payStub.findMany.mockResolvedValue([]);
+
+      await service.update('stub-1', { regularAmount: 3500 } as any, 'acc-1');
+
+      const [[{ data }]] = prisma.payStub.update.mock.calls;
+      expect(data.grossPay).toBe(3500);
+      expect(data.totalWithholding).toBe(217.04);
+      expect(data.netPay).toBe(3282.96);
+    });
+
+    it('leaves untouched fields as they were', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+      prisma.payStub.findMany.mockResolvedValue([]);
+
+      await service.update('stub-1', { eiAmount: 60 } as any, 'acc-1');
+
+      const [[{ data }]] = prisma.payStub.update.mock.calls;
+      expect(data.regularAmount).toBe(3072);
+      expect(data.cppAmount).toBe(166.96);
+      // The one changed figure flows through to the derived totals.
+      expect(data.totalWithholding).toBe(226.96);
+      expect(data.netPay).toBe(2845.04);
+    });
+
+    it('rewrites the year-to-date chain so later stubs still reconcile', async () => {
+      // February's stub carries January's running total. Correcting January
+      // must push the correction through February as well.
+      const january = storedStub({ id: 'stub-1' });
+      const february = storedStub({
+        id: 'stub-2',
+        payDate: new Date(Date.UTC(2026, 1, 28)),
+        createdAt: new Date(Date.UTC(2026, 1, 28)),
+      });
+
+      prisma.payStub.findUnique.mockResolvedValue(january);
+      prisma.payStub.findMany.mockResolvedValue([
+        { ...january, grossPay: 4000, regularAmount: 4000, netPay: 3782.96 },
+        february,
+      ]);
+
+      await service.update('stub-1', { regularAmount: 4000 } as any, 'acc-1');
+
+      const ytdWrites = prisma.payStub.update.mock.calls
+        .map(([args]: any) => args)
+        .filter((args: any) => args.data.ytdGrossPay !== undefined);
+
+      expect(ytdWrites).toHaveLength(2);
+      expect(ytdWrites[0].where.id).toBe('stub-1');
+      expect(ytdWrites[0].data.ytdGrossPay).toBe(4000);
+      // February's YTD now includes the corrected January figure.
+      expect(ytdWrites[1].where.id).toBe('stub-2');
+      expect(ytdWrites[1].data.ytdGrossPay).toBe(7072);
+      expect(ytdWrites[1].data.ytdNetPay).toBe(6637.92);
+    });
+
+    it('walks the year in pay date order, not insertion order', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+      prisma.payStub.findMany.mockResolvedValue([]);
+
+      await service.update('stub-1', { regularAmount: 3072 } as any, 'acc-1');
+
+      expect(prisma.payStub.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ payDate: 'asc' }, { createdAt: 'asc' }],
+        })
+      );
+    });
+
+    it('rewrites both years when a stub moves across new year', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+      prisma.payStub.findMany.mockResolvedValue([]);
+
+      await service.update('stub-1', { payDate: '2025-12-31' } as any, 'acc-1');
+
+      const years = prisma.payStub.findMany.mock.calls.map(([args]: any) =>
+        args.where.payDate.gte.getUTCFullYear()
+      );
+      expect(new Set(years)).toEqual(new Set([2025, 2026]));
+    });
+
+    it('refuses an amendment that would make net pay negative', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+
+      await expect(
+        service.update('stub-1', { eiAmount: 4000 } as any, 'acc-1')
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payStub.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses a period that would end before it starts', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+
+      await expect(
+        service.update('stub-1', { periodEnd: '2026-01-01' } as any, 'acc-1')
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payStub.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses to amend a stub that does not exist', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.update('nope', { eiAmount: 1 } as any, 'acc-1')
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('audits the amendment with the figures before and after', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+      prisma.payStub.findMany.mockResolvedValue([]);
+
+      await service.update('stub-1', { regularAmount: 3500 } as any, 'acc-1');
+
+      expect(auditRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'UPDATE_PAY_STUB',
+          resource: 'PayStub',
+          resourceId: 'stub-1',
+          oldValue: expect.objectContaining({ grossPay: 3072 }),
+          newValue: expect.objectContaining({ grossPay: 3500 }),
+        })
+      );
     });
   });
 });

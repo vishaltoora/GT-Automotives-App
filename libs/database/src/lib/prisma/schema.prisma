@@ -773,8 +773,12 @@ model Payment {
 }
 
 model EmployeeCompensation {
-  id                  String    @id @default(cuid())
-  employeeId          String
+  id         String @id @default(cuid())
+  employeeId String
+  // Job title as it should read on a pay stub ("Tire Technician"), which the
+  // permission role (STAFF, ACCOUNTANT) does not capture. Optional: an employee
+  // can be paid without one, and the stub simply omits the line.
+  position            String?
   payType             PayType
   hourlyRate          Decimal?  @db.Decimal(10, 2)
   annualSalary        Decimal?  @db.Decimal(10, 2)
@@ -895,10 +899,20 @@ model PayStub {
   periodEnd   DateTime
   payDate     DateTime
 
-  // Header and identity, as printed.
-  companyName    String
-  companyAddress String?
-  employeeName   String
+  // Header and identity, as printed. The company details are copied from the
+  // Company record when the stub is raised rather than joined at render time,
+  // for the same reason the figures are: reprinting a stub years later must
+  // reproduce the document as issued, even if the business has since changed
+  // its address, phone or registered name. Nullable because stubs raised
+  // before these columns existed have no value to show, and inventing one on
+  // an old wage statement would be worse than omitting the line.
+  companyName               String
+  companyAddress            String?
+  companyBusinessType       String?
+  companyRegistrationNumber String?
+  companyPhone              String?
+  companyEmail              String?
+  employeeName              String
   position       String?
   payRate        Decimal? @db.Decimal(10, 2)
   payType        PayType  @default(HOURLY)

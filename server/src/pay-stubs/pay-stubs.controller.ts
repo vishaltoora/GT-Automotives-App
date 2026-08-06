@@ -3,13 +3,18 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { CreatePayStubDto } from '@gt-automotive/data';
+import {
+  CreatePayStubDto,
+  PayStubDeductionEstimateRequestDto,
+  UpdatePayStubDto,
+} from '@gt-automotive/data';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -25,6 +30,33 @@ export class PayStubsController {
   @Roles('ADMIN', 'ACCOUNTANT')
   create(@Body() dto: CreatePayStubDto, @CurrentUser() user: any) {
     return this.payStubsService.create(dto, user.id);
+  }
+
+  /**
+   * Correct an issued stub. Accountants and admins only — the same people who
+   * raise them. The amendment is audited with the figures before and after.
+   */
+  @Patch(':id')
+  @Roles('ADMIN', 'ACCOUNTANT')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePayStubDto,
+    @CurrentUser() user: any
+  ) {
+    return this.payStubsService.update(id, dto, user.id);
+  }
+
+  /**
+   * Suggested CPP, EI and income tax for a gross the accountant is about to
+   * enter. Read-only: nothing is stored, and the caller is free to ignore it.
+   *
+   * A POST because it needs a body and depends on the employee's year-to-date
+   * withholding, which is not something to put in a cacheable URL.
+   */
+  @Post('deduction-estimate')
+  @Roles('ADMIN', 'ACCOUNTANT')
+  estimateDeductions(@Body() dto: PayStubDeductionEstimateRequestDto) {
+    return this.payStubsService.estimateDeductions(dto);
   }
 
   /** Every pay stub, optionally filtered to one employee. Payroll roles only. */

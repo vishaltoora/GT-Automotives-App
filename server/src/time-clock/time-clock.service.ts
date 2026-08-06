@@ -56,6 +56,7 @@ export class TimeClockService {
       return tx.employeeCompensation.create({
         data: {
           employeeId,
+          position: dto.position?.trim() || null,
           payType: dto.payType as any,
           hourlyRate: dto.hourlyRate,
           annualSalary: dto.annualSalary,
@@ -636,6 +637,9 @@ export class TimeClockService {
       hours,
       payType: compensation?.payType,
       hasCompensation: Boolean(compensation),
+      // Carried so the pay stub form can pre-fill the job title without a
+      // second round trip for the compensation record.
+      position: compensation?.position || undefined,
       hourlyRate,
       salaryPay,
       grossPay,
@@ -1020,6 +1024,7 @@ export class TimeClockService {
     return {
       id: compensation.id,
       employeeId: compensation.employeeId,
+      position: compensation.position || undefined,
       payType: compensation.payType,
       hourlyRate:
         compensation.hourlyRate === null

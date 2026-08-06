@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -9,15 +9,20 @@ import {
   DialogTitle,
   Divider,
   Grid,
+  IconButton,
   InputAdornment,
   MenuItem,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import { Calculate as CalculateIcon } from '@mui/icons-material';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import {
   CreatePayStubDto,
+  PayPeriodsPerYear,
   PayrollHoursDto,
+  PayStubDeductionEstimateDto,
   PayStubDto,
   PayType,
 } from '@gt-automotive/data';
@@ -34,10 +39,32 @@ interface PayStubDialogProps {
   initialEmployeeId?: string;
   initialPeriodStart?: string;
   initialPeriodEnd?: string;
+  /**
+   * An issued stub to correct. Passing one switches the dialog to amending
+   * that stub instead of raising a new one.
+   */
+  payStub?: PayStubDto | null;
 }
 
 const today = () => format(new Date(), 'yyyy-MM-dd');
 const toNumber = (value: string) => (value.trim() === '' ? 0 : Number(value));
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
+/**
+ * Pay frequency drives every statutory figure, because the CRA formulas work by
+ * annualizing the period's pay. The shop pays semi-monthly, so that is the
+ * default, but it is an explicit field rather than something inferred from the
+ * dates — a wrong guess here would quietly skew the tax on every stub.
+ */
+const PAY_FREQUENCIES: { value: PayPeriodsPerYear; label: string }[] = [
+  { value: 24, label: 'Semi-monthly (24)' },
+  { value: 26, label: 'Biweekly (26)' },
+  { value: 52, label: 'Weekly (52)' },
+  { value: 12, label: 'Monthly (12)' },
+];
+
+/** Withholding fields the calculator fills in and the accountant may override. */
+type CalculatedField = 'eiAmount' | 'cppAmount' | 'incomeTaxAmount';
 
 const emptyForm = {
   employeeId: '',
@@ -48,12 +75,19 @@ const emptyForm = {
   payRate: '',
   regularHours: '',
   regularAmount: '',
+  payPeriodsPerYear: 24 as PayPeriodsPerYear,
   eiAmount: '',
   cppAmount: '',
   incomeTaxAmount: '',
   otherDeductions: '',
   otherDeductionsLabel: '',
   notes: '',
+};
+
+const noOverrides: Record<CalculatedField, boolean> = {
+  eiAmount: false,
+  cppAmount: false,
+  incomeTaxAmount: false,
 };
 
 /**
@@ -64,9 +98,12 @@ const emptyForm = {
  * from process-payroll — opening this form must not mark anyone's time entries
  * as processed as a side effect of looking at the numbers.
  *
- * Statutory deductions are typed by the accountant. The system deliberately
- * does not calculate EI or CPP: the rates change yearly and a wrong guess is
- * worse than an honest blank.
+ * EI, CPP and income tax are then calculated from the gross using the CRA's
+ * withholding formulas for the pay date's year, and remain fully editable: the
+ * moment the accountant types in one of those boxes it stops being recalculated
+ * and their figure is what gets saved. The calculator assumes basic TD1 claim
+ * amounts and no other deductible amounts, which is why overriding has to stay
+ * easy rather than being treated as an error.
  */
 export function PayStubDialog({
   open,
@@ -76,30 +113,137 @@ export function PayStubDialog({
   initialEmployeeId,
   initialPeriodStart,
   initialPeriodEnd,
+  payStub = null,
 }: PayStubDialogProps) {
+  const isEditing = Boolean(payStub);
   const [form, setForm] = useState({ ...emptyForm });
   const [hours, setHours] = useState<PayrollHoursDto | null>(null);
   const [loadingHours, setLoadingHours] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [estimate, setEstimate] = useState<PayStubDeductionEstimateDto | null>(
+    null
+  );
+  const [estimating, setEstimating] = useState(false);
+  // Which withholdings the accountant has typed over. An overridden field is
+  // never rewritten by a later calculation — silently replacing a figure
+  // someone deliberately entered is how wrong pay gets issued.
+  const [overrides, setOverrides] =
+    useState<Record<CalculatedField, boolean>>(noOverrides);
+  // Mirrored in a ref so the estimate effect can respect overrides without
+  // listing them as a dependency — claiming a field is not a reason to go and
+  // ask the server for the same numbers again.
+  const overridesRef = useRef(overrides);
+  overridesRef.current = overrides;
+  // Gross is derived from rate × hours until the accountant types one in.
+  const [grossOverridden, setGrossOverridden] = useState(false);
+  const grossOverriddenRef = useRef(grossOverridden);
+  grossOverriddenRef.current = grossOverridden;
+  // Position comes from the employee's compensation record until typed over.
+  const [positionOverridden, setPositionOverridden] = useState(false);
+  const [carriedPosition, setCarriedPosition] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setForm({
-      ...emptyForm,
-      employeeId: initialEmployeeId || '',
-      periodStart: initialPeriodStart || emptyForm.periodStart,
-      periodEnd: initialPeriodEnd || emptyForm.periodEnd,
-    });
+
+    if (payStub) {
+      // Amending: load the stub as issued. Everything is treated as entered by
+      // hand, because it was — the figures on an issued stub are what was
+      // actually withheld, and reopening the form must not quietly recalculate
+      // them out from under the accountant.
+      setForm({
+        ...emptyForm,
+        employeeId: payStub.employeeId,
+        periodStart: payStub.periodStart,
+        periodEnd: payStub.periodEnd,
+        payDate: payStub.payDate,
+        position: payStub.position || '',
+        payRate: payStub.payRate != null ? String(payStub.payRate) : '',
+        regularHours: String(payStub.regularHours),
+        regularAmount: String(payStub.regularAmount),
+        eiAmount: String(payStub.eiAmount),
+        cppAmount: String(payStub.cppAmount),
+        incomeTaxAmount: String(payStub.incomeTaxAmount),
+        otherDeductions: String(payStub.otherDeductions),
+        otherDeductionsLabel: payStub.otherDeductionsLabel || '',
+        notes: payStub.notes || '',
+      });
+      setOverrides({
+        eiAmount: true,
+        cppAmount: true,
+        incomeTaxAmount: true,
+      });
+      setGrossOverridden(true);
+      setPositionOverridden(true);
+    } else {
+      setForm({
+        ...emptyForm,
+        employeeId: initialEmployeeId || '',
+        periodStart: initialPeriodStart || emptyForm.periodStart,
+        periodEnd: initialPeriodEnd || emptyForm.periodEnd,
+      });
+      setOverrides(noOverrides);
+      setGrossOverridden(false);
+      setPositionOverridden(false);
+    }
+
     setHours(null);
     setError(null);
-  }, [open, initialEmployeeId, initialPeriodStart, initialPeriodEnd]);
+    setEstimate(null);
+    setCarriedPosition(false);
+  }, [open, payStub, initialEmployeeId, initialPeriodStart, initialPeriodEnd]);
 
   const setField = (field: keyof typeof emptyForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  /** Typing in a calculated field claims it: hands off from here on. */
+  const setWithholding = (field: CalculatedField, value: string) => {
+    setOverrides((prev) => ({ ...prev, [field]: true }));
+    setField(field, value);
+  };
+
+  /**
+   * Rate and hours drive gross, so editing either recalculates it — the three
+   * printed on the stub should always multiply out.
+   *
+   * Only while gross is still derived, though. Gross is the figure that
+   * actually gets paid and it is not always a product: a salaried employee has
+   * no meaningful hourly rate, and hourly pay can carry an agreed adjustment.
+   * Once the accountant types a gross, rate and hours become the descriptive
+   * detail they are on the printed stub and stop overwriting it.
+   */
+  const setEarnings = (field: 'payRate' | 'regularHours', value: string) => {
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (grossOverriddenRef.current) return next;
+
+      const rate = toNumber(next.payRate);
+      const hours = toNumber(next.regularHours);
+      // An empty rate or hours means "not known yet", not "zero" — blanking the
+      // gross the moment someone clears a box to retype it would be hostile.
+      if (next.payRate.trim() === '' || next.regularHours.trim() === '') {
+        return next;
+      }
+      return { ...next, regularAmount: String(round2(rate * hours)) };
+    });
+  };
+
+  const derivedGross =
+    form.payRate.trim() !== '' && form.regularHours.trim() !== ''
+      ? round2(toNumber(form.payRate) * toNumber(form.regularHours))
+      : null;
+
+  /** Go back to rate × hours after a manual gross. */
+  const restoreDerivedGross = () => {
+    if (derivedGross === null) return;
+    setGrossOverridden(false);
+    setField('regularAmount', String(derivedGross));
+  };
+
   const loadHours = useCallback(async () => {
-    if (!form.employeeId || !form.periodStart || !form.periodEnd) {
+    // Amending an issued stub never re-derives from approved time: the stub
+    // records what was paid, not what the time entries say today.
+    if (isEditing || !form.employeeId || !form.periodStart || !form.periodEnd) {
       setHours(null);
       return;
     }
@@ -125,20 +269,101 @@ export function PayStubDialog({
               ? String(result.hourlyRate)
               : prev.payRate,
           regularAmount: result.grossPay ? String(result.grossPay) : '',
+          // The job title comes from the employee's compensation record, set
+          // alongside their pay rate. Left alone once typed over.
+          position:
+            result.position && !positionOverridden
+              ? result.position
+              : prev.position,
         }));
+        setCarriedPosition(Boolean(result.position) && !positionOverridden);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load approved hours');
     } finally {
       setLoadingHours(false);
     }
-  }, [form.employeeId, form.periodStart, form.periodEnd]);
+  }, [
+    isEditing,
+    positionOverridden,
+    form.employeeId,
+    form.periodStart,
+    form.periodEnd,
+  ]);
 
   useEffect(() => {
     loadHours();
   }, [loadHours]);
 
   const grossPay = toNumber(form.regularAmount);
+
+  /**
+   * Recalculate the statutory deductions whenever the inputs they depend on
+   * change. Debounced so typing a gross does not fire a request per keystroke,
+   * and the response is discarded if the inputs moved on while it was in
+   * flight — a stale estimate landing in the fields would be worse than none.
+   */
+  useEffect(() => {
+    if (!open) return;
+    if (!form.employeeId || !form.payDate || !(grossPay > 0)) {
+      setEstimate(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        setEstimating(true);
+        const result = await payStubService.estimateDeductions({
+          employeeId: form.employeeId,
+          payDate: form.payDate,
+          grossPay,
+          payPeriodsPerYear: form.payPeriodsPerYear,
+        });
+        if (cancelled) return;
+        setEstimate(result);
+        if (result.supported) {
+          const claimed = overridesRef.current;
+          setForm((prev) => ({
+            ...prev,
+            eiAmount: claimed.eiAmount ? prev.eiAmount : String(result.ei),
+            cppAmount: claimed.cppAmount ? prev.cppAmount : String(result.cpp),
+            incomeTaxAmount: claimed.incomeTaxAmount
+              ? prev.incomeTaxAmount
+              : String(result.incomeTax),
+          }));
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          // A failed estimate must not block the stub: the accountant can still
+          // type the figures in, which is exactly what they did before.
+          setEstimate(null);
+        }
+      } finally {
+        if (!cancelled) setEstimating(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, form.employeeId, form.payDate, form.payPeriodsPerYear, grossPay]);
+
+  /** Put every calculated figure back, discarding the accountant's edits. */
+  const restoreCalculated = () => {
+    if (!estimate?.supported) return;
+    setOverrides(noOverrides);
+    setForm((prev) => ({
+      ...prev,
+      eiAmount: String(estimate.ei),
+      cppAmount: String(estimate.cpp),
+      incomeTaxAmount: String(estimate.incomeTax),
+    }));
+  };
+
+  const hasOverride = Object.values(overrides).some(Boolean);
+
   const totalWithholding =
     toNumber(form.eiAmount) +
     toNumber(form.cppAmount) +
@@ -175,11 +400,20 @@ export function PayStubDialog({
         otherDeductionsLabel: form.otherDeductionsLabel || undefined,
         notes: form.notes || undefined,
       };
-      const created = await payStubService.create(dto);
-      onCreated(created);
+      // Amending sends the same fields minus the employee, which a stub can
+      // never change: it belongs to one person's year-to-date record.
+      const saved = payStub
+        ? await payStubService.update(payStub.id, {
+            ...dto,
+            employeeId: undefined,
+          } as any)
+        : await payStubService.create(dto);
+      onCreated(saved);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to create the pay stub');
+      setError(
+        err.message || `Failed to ${payStub ? 'update' : 'create'} the pay stub`
+      );
     } finally {
       setSaving(false);
     }
@@ -191,13 +425,31 @@ export function PayStubDialog({
       currency: 'CAD',
     }).format(amount);
 
+  // The options come from employees with payroll hours, so an employee who has
+  // since left — or simply logged no time this period — would not be in the
+  // list. On an amendment their name still has to show, not an empty box.
+  const employeeOptions =
+    payStub && !employees.some((option) => option.id === payStub.employeeId)
+      ? [...employees, { id: payStub.employeeId, name: payStub.employeeName }]
+      : employees;
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Create Pay Stub</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>
+        {isEditing ? 'Edit Pay Stub' : 'Create Pay Stub'}
+      </DialogTitle>
       <DialogContent dividers>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+
+        {isEditing && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Correcting an issued pay stub. Saving recomputes this employee's
+            year-to-date totals on this and every later stub in the year, and
+            the change is recorded in the audit log.
           </Alert>
         )}
 
@@ -210,8 +462,14 @@ export function PayStubDialog({
               label="Employee"
               value={form.employeeId}
               onChange={(event) => setField('employeeId', event.target.value)}
+              // A stub belongs to one person's year-to-date record; moving it
+              // would corrupt both. Re-raise it against the right employee.
+              disabled={isEditing}
+              helperText={
+                isEditing ? 'Cannot be changed on an issued stub' : undefined
+              }
             >
-              {employees.map((employee) => (
+              {employeeOptions.map((employee) => (
                 <MenuItem key={employee.id} value={employee.id}>
                   {employee.name}
                 </MenuItem>
@@ -224,8 +482,15 @@ export function PayStubDialog({
               size="small"
               label="Position"
               value={form.position}
-              onChange={(event) => setField('position', event.target.value)}
+              onChange={(event) => {
+                setPositionOverridden(true);
+                setCarriedPosition(false);
+                setField('position', event.target.value);
+              }}
               placeholder="e.g. Business Manager"
+              helperText={
+                carriedPosition ? 'From the compensation record' : ' '
+              }
             />
           </Grid>
 
@@ -312,7 +577,7 @@ export function PayStubDialog({
               type="number"
               label="Pay Rate"
               value={form.payRate}
-              onChange={(event) => setField('payRate', event.target.value)}
+              onChange={(event) => setEarnings('payRate', event.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">$</InputAdornment>
@@ -327,7 +592,9 @@ export function PayStubDialog({
               type="number"
               label="Regular Hours"
               value={form.regularHours}
-              onChange={(event) => setField('regularHours', event.target.value)}
+              onChange={(event) =>
+                setEarnings('regularHours', event.target.value)
+              }
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -338,13 +605,37 @@ export function PayStubDialog({
               type="number"
               label="Gross Pay"
               value={form.regularAmount}
-              onChange={(event) =>
-                setField('regularAmount', event.target.value)
+              onChange={(event) => {
+                setGrossOverridden(true);
+                setField('regularAmount', event.target.value);
+              }}
+              helperText={
+                grossOverridden
+                  ? derivedGross !== null
+                    ? `Entered by hand — rate × hours is ${money(derivedGross)}`
+                    : 'Entered by hand'
+                  : derivedGross !== null
+                  ? 'Rate × hours'
+                  : ' '
               }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">$</InputAdornment>
                 ),
+                endAdornment:
+                  grossOverridden && derivedGross !== null ? (
+                    <InputAdornment position="end">
+                      <Tooltip title="Use rate × hours">
+                        <IconButton
+                          size="small"
+                          edge="end"
+                          onClick={restoreDerivedGross}
+                        >
+                          <CalculateIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </InputAdornment>
+                  ) : undefined,
               }}
             />
           </Grid>
@@ -357,6 +648,68 @@ export function PayStubDialog({
             </Divider>
           </Grid>
 
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Pay Frequency"
+              value={form.payPeriodsPerYear}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  payPeriodsPerYear: Number(
+                    event.target.value
+                  ) as PayPeriodsPerYear,
+                }))
+              }
+              helperText="Sets how the CRA formulas annualize this pay"
+            >
+              {PAY_FREQUENCIES.map((frequency) => (
+                <MenuItem key={frequency.value} value={frequency.value}>
+                  {frequency.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 8 }}>
+            {estimating ? (
+              <Alert severity="info">Calculating deductions…</Alert>
+            ) : estimate && !estimate.supported ? (
+              <Alert severity="warning">{estimate.assumptions[0]}</Alert>
+            ) : estimate?.supported ? (
+              <Alert
+                severity={hasOverride ? 'warning' : 'success'}
+                action={
+                  hasOverride ? (
+                    <Button
+                      size="small"
+                      color="inherit"
+                      onClick={restoreCalculated}
+                    >
+                      Use calculated
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <Typography variant="body2">
+                  {hasOverride
+                    ? 'Some withholdings were entered by hand and are no longer being recalculated.'
+                    : `Calculated from gross using ${estimate.taxYear} CRA rates.`}{' '}
+                  Federal {money(estimate.federalTax)} + BC{' '}
+                  {money(estimate.provincialTax)} income tax
+                  {estimate.cpp2 > 0
+                    ? `, including ${money(estimate.cpp2)} CPP2`
+                    : ''}
+                  .
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {estimate.assumptions.join(' ')}
+                </Typography>
+              </Alert>
+            ) : null}
+          </Grid>
+
           <Grid size={{ xs: 12, sm: 3 }}>
             <TextField
               fullWidth
@@ -364,7 +717,18 @@ export function PayStubDialog({
               type="number"
               label="Employee EI"
               value={form.eiAmount}
-              onChange={(event) => setField('eiAmount', event.target.value)}
+              onChange={(event) =>
+                setWithholding('eiAmount', event.target.value)
+              }
+              helperText={
+                overrides.eiAmount
+                  ? 'Entered by hand'
+                  : estimate?.supported
+                  ? estimate.eiMaxedOut
+                    ? 'Annual maximum reached'
+                    : 'Calculated'
+                  : ' '
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">$</InputAdornment>
@@ -379,7 +743,18 @@ export function PayStubDialog({
               type="number"
               label="Employee CPP/QPP"
               value={form.cppAmount}
-              onChange={(event) => setField('cppAmount', event.target.value)}
+              onChange={(event) =>
+                setWithholding('cppAmount', event.target.value)
+              }
+              helperText={
+                overrides.cppAmount
+                  ? 'Entered by hand'
+                  : estimate?.supported
+                  ? estimate.cppMaxedOut
+                    ? 'Annual maximum reached'
+                    : 'Calculated'
+                  : ' '
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">$</InputAdornment>
@@ -395,9 +770,15 @@ export function PayStubDialog({
               label="Income Tax"
               value={form.incomeTaxAmount}
               onChange={(event) =>
-                setField('incomeTaxAmount', event.target.value)
+                setWithholding('incomeTaxAmount', event.target.value)
               }
-              helperText="Omitted from the stub when zero"
+              helperText={
+                overrides.incomeTaxAmount
+                  ? 'Entered by hand'
+                  : estimate?.supported
+                  ? 'Federal + BC, claim code 1'
+                  : 'Omitted from the stub when zero'
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">$</InputAdornment>
@@ -504,7 +885,13 @@ export function PayStubDialog({
           Cancel
         </Button>
         <Button variant="contained" onClick={handleSave} disabled={!canSave}>
-          {saving ? 'Creating…' : 'Create Pay Stub'}
+          {saving
+            ? isEditing
+              ? 'Saving…'
+              : 'Creating…'
+            : isEditing
+            ? 'Save Changes'
+            : 'Create Pay Stub'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,4 +1,10 @@
-import { CreatePayStubDto, PayStubDto } from '@gt-automotive/data';
+import {
+  CreatePayStubDto,
+  PayStubDeductionEstimateDto,
+  PayStubDeductionEstimateRequestDto,
+  PayStubDto,
+  UpdatePayStubDto,
+} from '@gt-automotive/data';
 
 // @ts-ignore - TypeScript doesn't recognize import.meta.env properly in some contexts
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -48,6 +54,30 @@ class PayStubService {
 
     const text = await response.text();
     return text ? JSON.parse(text) : (null as T);
+  }
+
+  /**
+   * What the CRA formulas say should be withheld for a given gross. Only ever
+   * a suggestion — the accountant confirms or overrides it before saving.
+   */
+  estimateDeductions(
+    dto: PayStubDeductionEstimateRequestDto
+  ): Promise<PayStubDeductionEstimateDto> {
+    return this.makeRequest<PayStubDeductionEstimateDto>(
+      `${this.baseUrl}/deduction-estimate`,
+      { method: 'POST', body: JSON.stringify(dto) }
+    );
+  }
+
+  /**
+   * Correct an issued stub. Send only the fields that are wrong; the server
+   * recomputes the totals and rewrites the year-to-date chain.
+   */
+  update(id: string, dto: UpdatePayStubDto): Promise<PayStubDto> {
+    return this.makeRequest<PayStubDto>(`${this.baseUrl}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
   }
 
   create(dto: CreatePayStubDto): Promise<PayStubDto> {

@@ -1310,10 +1310,12 @@ ${
    * Every value comes from the stored PayStub row, never from a live join, so
    * reprinting an old stub reproduces exactly the figures it was issued with.
    *
-   * Layout follows the business's existing stub: company header block with the
-   * PAY STUB title, a pay-cycle/employee detail block, a five-column earnings
-   * and withholdings table carrying both current-period and year-to-date
-   * figures, and employer/employee signature lines.
+   * The layout leads with what the employee came for — net pay, gross and
+   * total deductions as summary figures, then a proportional bar showing how
+   * the gross was split — before the earnings and deductions detail, each
+   * carrying current-period and year-to-date columns. It is also a legal wage
+   * statement: BC's Employment Standards Act s.27 fixes what it must contain,
+   * and `pay-stub-template.spec.ts` guards those items.
    */
   generatePayStubHtml(stub: PayStubDocument): string {
     const escapeHtml = (value: unknown): string =>
@@ -1333,10 +1335,8 @@ ${
 
     // Dates arrive as YYYY-MM-DD calendar dates. Format them in UTC so the
     // printed day matches the business day they were stored as, on any server.
-    const shortDate = (value: string) => {
-      const [year, month, day] = value.split('-');
-      return `${day}/${month}/${year}`;
-    };
+    // One format throughout: a numeric date is ambiguous between day/month and
+    // month/day orders, which is not a thing to leave open on a pay record.
     const longDate = (value: string) => {
       const [year, month, day] = value.split('-').map(Number);
       return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
@@ -1347,69 +1347,127 @@ ${
 
     const logoBase64 = this.loadGtLogoBase64('pay stub');
 
-    // Amount-only rows (withholdings) leave the hours columns blank rather than
-    // printing 0.00, which would read as "zero hours worked" against a
-    // deduction line.
-    const earningRow = (
-      label: string,
-      currentHours: number,
-      currentAmount: number,
-      ytdHours: number,
-      ytdAmount: number,
-      strong = false
-    ) => `
-      <tr class="${strong ? 'total-row' : ''}">
-        <td>${escapeHtml(label)}</td>
-        <td class="num">${hours(currentHours)}</td>
-        <td class="num">${money(currentAmount)}</td>
-        <td class="num">${hours(ytdHours)}</td>
-        <td class="num">${money(ytdAmount)}</td>
-      </tr>`;
+    /**
+     * Deductions, each with the purpose named — BC's Employment Standards Act
+     * s.27(g) requires the amount *and* purpose of every deduction, so these
+     * labels are not decorative.
+     *
+     * EI and CPP always print, matching the business's existing stub. Income
+     * tax and any other deduction only appear when they carry a value, so a
+     * stub that withholds neither is not padded with empty $0.00 lines.
+     */
+    const deductions = [
+      {
+        label: 'Employment Insurance (EI)',
+        current: stub.eiAmount,
+        ytd: stub.ytdEiAmount,
+        colour: '#7d93ad',
+        always: true,
+      },
+      {
+        label: 'Canada Pension Plan (CPP)',
+        current: stub.cppAmount,
+        ytd: stub.ytdCppAmount,
+        colour: '#3a5270',
+        always: true,
+      },
+      {
+        label: 'Income Tax',
+        current: stub.incomeTaxAmount,
+        ytd: stub.ytdIncomeTaxAmount,
+        colour: '#ff6b35',
+        always: false,
+      },
+      {
+        label: stub.otherDeductionsLabel || 'Other Deductions',
+        current: stub.otherDeductions,
+        ytd: stub.ytdOtherDeductions,
+        colour: '#b9c4d0',
+        always: false,
+      },
+    ].filter((row) => row.always || row.current > 0 || row.ytd > 0);
 
-    const amountRow = (
-      label: string,
-      currentAmount: number,
-      ytdAmount: number,
-      strong = false
-    ) => `
-      <tr class="${strong ? 'total-row' : ''}">
-        <td>${escapeHtml(label)}</td>
-        <td class="num">&mdash;</td>
-        <td class="num">${money(currentAmount)}</td>
-        <td class="num">&mdash;</td>
-        <td class="num">${money(ytdAmount)}</td>
-      </tr>`;
-
-    // EI and CPP always print, matching the business's existing stub. Income
-    // tax and any other deduction only appear when they carry a value, so a
-    // stub that withholds neither is not padded with empty $0.00 lines.
-    const withholdingRows = [
-      amountRow('Federal Employee EI', stub.eiAmount, stub.ytdEiAmount),
-      amountRow('Federal Employee CPP/QPP', stub.cppAmount, stub.ytdCppAmount),
-      stub.incomeTaxAmount > 0 || stub.ytdIncomeTaxAmount > 0
-        ? amountRow(
-            'Federal Income Tax',
-            stub.incomeTaxAmount,
-            stub.ytdIncomeTaxAmount
-          )
-        : '',
-      stub.otherDeductions > 0 || stub.ytdOtherDeductions > 0
-        ? amountRow(
-            stub.otherDeductionsLabel || 'Other Deductions',
-            stub.otherDeductions,
-            stub.ytdOtherDeductions
-          )
-        : '',
-    ]
-      .filter(Boolean)
+    const deductionRows = deductions
+      .map(
+        (row) => `
+      <tr>
+        <td><span class="swatch" style="background:${
+          row.colour
+        }"></span>${escapeHtml(row.label)}</td>
+        <td class="num">${money(row.current)}</td>
+        <td class="num muted">${money(row.ytd)}</td>
+      </tr>`
+      )
       .join('');
 
-    const payRateLine =
-      stub.payRate != null && stub.payRate > 0
-        ? `<div class="detail"><span>Pay Rate:</span> $${money(stub.payRate)}${
-            stub.payType === 'SALARIED' ? '/Yr' : '/Hr'
-          }</div>`
+    /**
+     * Where the gross went, as one bar.
+     *
+     * This is the part of a pay stub people actually want answered — how much
+     * of what I earned reached me — and a proportional bar answers it at a
+     * glance in a way a column of figures never does. Widths are percentages of
+     * gross computed here; the document carries no scripts, so nothing is
+     * measured or drawn at render time.
+     */
+    const gross = Number(stub.grossPay || 0);
+    const share = (amount: number) => (gross > 0 ? (amount / gross) * 100 : 0);
+    const barSegments = [
+      {
+        label: 'Take-home',
+        amount: Number(stub.netPay || 0),
+        colour: '#243c55',
+      },
+      ...deductions
+        .filter((row) => row.current > 0)
+        .map((row) => ({
+          label: row.label,
+          amount: row.current,
+          colour: row.colour,
+        })),
+    ].filter((segment) => segment.amount > 0);
+
+    const distribution =
+      gross > 0 && barSegments.length > 0
+        ? `
+      <div class="distribution">
+        <div class="bar">
+          ${barSegments
+            .map(
+              (segment) =>
+                `<div class="bar-part" style="width:${share(
+                  segment.amount
+                ).toFixed(4)}%;background:${segment.colour}"></div>`
+            )
+            .join('')}
+        </div>
+        <div class="legend">
+          ${barSegments
+            .map(
+              (segment) => `
+            <span class="legend-item">
+              <span class="swatch" style="background:${segment.colour}"></span>
+              ${escapeHtml(segment.label)}
+              <strong>${share(segment.amount).toFixed(1)}%</strong>
+            </span>`
+            )
+            .join('')}
+        </div>
+      </div>`
         : '';
+
+    const payRateValue =
+      stub.payRate != null && stub.payRate > 0
+        ? `$${money(stub.payRate)}${
+            stub.payType === 'SALARIED' ? ' / year' : ' / hour'
+          }`
+        : '&mdash;';
+
+    const detail = (label: string, value: string, sub?: string) => `
+      <div class="detail">
+        <div class="detail-label">${escapeHtml(label)}</div>
+        <div class="detail-value">${value}</div>
+        ${sub ? `<div class="detail-sub">${sub}</div>` : ''}
+      </div>`;
 
     return `<!DOCTYPE html>
 <html>
@@ -1418,83 +1476,248 @@ ${
   <title>Pay Stub — ${escapeHtml(stub.employeeName)}</title>
   <style>
     * { box-sizing: border-box; }
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      color: #1a1a1a;
-      margin: 0;
-      padding: 24px;
-      font-size: 12px;
+
+    /* Backgrounds carry meaning here — the net-pay card and the distribution
+       bar are not decoration — so they must survive the print pipeline. The
+       colour scheme is pinned too: a wage statement must look the same
+       everywhere, and a renderer in dark mode would otherwise invert it. */
+    html {
+      color-scheme: only light;
     }
+    html, body {
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+      color: #1f2933;
+      margin: 0;
+      padding: 0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    /* Figures line up column-wise only with tabular figures; proportional
+       digits make a column of money look ragged. */
+    .num, .amount, .stat-value, .summary-value {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum' 1;
+    }
+
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      border-bottom: 2px solid #243c55;
       padding-bottom: 12px;
-      margin-bottom: 16px;
+      border-bottom: 3px solid #243c55;
     }
     .company { display: flex; gap: 12px; align-items: flex-start; }
-    .company img { height: 54px; width: auto; }
-    .company-name { font-size: 18px; font-weight: 700; color: #243c55; }
-    .company-address { color: #555; line-height: 1.5; }
+    .company img { height: 52px; width: auto; }
+    .company-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #243c55;
+      letter-spacing: -0.2px;
+    }
+    /* The incorporated name is what legally identifies the employer on a wage
+       statement, so it reads at nearly the weight of the trading name rather
+       than as fine print. */
+    .company-registration {
+      color: #243c55;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .company-address { color: #66727f; line-height: 1.45; margin-top: 4px; }
+    .doc-meta { text-align: right; }
     .doc-title {
-      font-size: 22px;
+      font-size: 13px;
       font-weight: 700;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
       color: #243c55;
-    }
-    .details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px 24px;
-      margin-bottom: 18px;
-    }
-    .detail span { font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 7px 8px; border-bottom: 1px solid #e0e0e0; }
-    th {
-      background: #f2f5f8;
-      text-align: left;
-      font-size: 10px;
-      letter-spacing: 0.4px;
       text-transform: uppercase;
-      color: #243c55;
-      border-bottom: 2px solid #243c55;
     }
-    th.num, td.num { text-align: right; }
-    .total-row td { font-weight: 700; background: #fafbfc; }
-    .net-row td {
-      font-weight: 700;
-      font-size: 14px;
-      background: #243c55;
-      color: #fff;
-      border-bottom: none;
-    }
-    .section-label td {
-      padding-top: 14px;
-      font-weight: 700;
-      color: #243c55;
-      border-bottom: none;
-    }
-    .notes { margin-top: 18px; color: #555; }
-    .signatures {
+    /* Label and value are set apart rather than run together, so the dates read
+       as values instead of as the tail of a sentence. */
+    .doc-sub {
       display: flex;
-      justify-content: space-between;
-      gap: 48px;
-      margin-top: 56px;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 3px;
+    }
+    .doc-sub-label { color: #7b8794; }
+    .doc-sub strong { color: #1f2933; font-weight: 600; }
+
+    /* Summary cards — the three figures an employee looks for first. */
+    .summary {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
       page-break-inside: avoid;
     }
-    .signature { flex: 1; }
-    .signature-line {
-      border-top: 1px solid #333;
-      padding-top: 6px;
-      font-size: 11px;
-      color: #555;
+    .stat {
+      flex: 1;
+      border: 1px solid #dfe4ea;
+      border-radius: 6px;
+      padding: 10px 12px;
     }
-    @media print {
-      body { padding: 0; }
-      @page { size: letter; margin: 12mm; }
+    .stat-label {
+      font-size: 9px;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+      color: #7b8794;
+      font-weight: 700;
     }
+    .stat-value {
+      font-size: 19px;
+      font-weight: 700;
+      color: #1f2933;
+      margin-top: 2px;
+      letter-spacing: -0.4px;
+    }
+    .stat-ytd { color: #7b8794; font-size: 10px; }
+    /* Net pay is the headline figure, but it earns that with weight and a
+       heavier rule rather than a block of ink — a filled panel dominates the
+       page and costs toner on every stub printed. */
+    .stat.net {
+      border: 2px solid #243c55;
+      flex: 1.35;
+    }
+    .stat.net .stat-label { color: #243c55; }
+    .stat.net .stat-value { color: #243c55; font-size: 25px; }
+    .stat.deductions .stat-value { color: #c2410c; }
+
+    /* Where the gross went. */
+    .distribution { margin-top: 12px; page-break-inside: avoid; }
+    .bar {
+      display: flex;
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #eef1f5;
+    }
+    .bar-part { height: 100%; }
+    .legend {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 16px;
+      color: #66727f;
+      font-size: 10px;
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+    .legend-item strong { color: #1f2933; }
+    .swatch {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      margin-right: 6px;
+      vertical-align: baseline;
+    }
+    .legend-item .swatch { margin-right: 0; }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px 16px;
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: #f7f9fb;
+      border-radius: 6px;
+      page-break-inside: avoid;
+    }
+    .detail-label {
+      font-size: 9px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #7b8794;
+      font-weight: 700;
+    }
+    .detail-value { color: #1f2933; font-weight: 600; }
+    .detail-sub { color: #7b8794; font-size: 10px; }
+
+    .columns {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      page-break-inside: avoid;
+    }
+    .column { flex: 1; }
+    .column-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #243c55;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #243c55;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 6px 2px; border-bottom: 1px solid #eceff3; }
+    th {
+      text-align: left;
+      font-size: 9px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #7b8794;
+      font-weight: 700;
+    }
+    th.num, td.num { text-align: right; }
+    td.muted { color: #7b8794; }
+    .total-row td {
+      font-weight: 700;
+      border-top: 1px solid #cbd2d9;
+      border-bottom: none;
+      padding-top: 7px;
+    }
+
+    /* The arithmetic of the stub, spelled out: gross − deductions = net. */
+    .summary-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+      padding: 12px 14px;
+      border: 1px solid #dfe4ea;
+      border-left: 4px solid #243c55;
+      border-radius: 6px;
+      page-break-inside: avoid;
+    }
+    .summary-cell { flex: 1; }
+    .summary-label {
+      font-size: 9px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #7b8794;
+      font-weight: 700;
+    }
+    .summary-value { font-size: 14px; font-weight: 700; }
+    .summary-op { font-size: 16px; color: #9aa5b1; font-weight: 700; }
+    .summary-cell.net .summary-value { color: #243c55; font-size: 17px; }
+    .summary-ytd { color: #7b8794; font-size: 10px; }
+
+    .notes {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: #f7f9fb;
+      border-radius: 6px;
+      color: #52606d;
+    }
+    .notes strong { color: #1f2933; }
+
+    .footer {
+      margin-top: 28px;
+      padding-top: 10px;
+      border-top: 1px solid #eceff3;
+      color: #9aa5b1;
+      font-size: 9px;
+      text-align: center;
+    }
+
+    @page { size: letter; margin: 12mm; }
   </style>
 </head>
 <body>
@@ -1503,74 +1726,138 @@ ${
       ${logoBase64 ? `<img src="${logoBase64}" alt="" />` : ''}
       <div>
         <div class="company-name">${escapeHtml(stub.companyName)}</div>
-        <div class="company-address">${escapeHtml(
-          stub.companyAddress || ''
-        ).replace(/,\s*/g, ',<br />')}</div>
+        ${
+          stub.companyRegistrationNumber
+            ? `<div class="company-registration">${escapeHtml(
+                stub.companyRegistrationNumber
+              )} Canada INC.</div>`
+            : ''
+        }
+        ${
+          stub.companyAddress
+            ? `<div class="company-address">${escapeHtml(
+                stub.companyAddress
+              )}</div>`
+            : ''
+        }
       </div>
     </div>
-    <div class="doc-title">PAY STUB</div>
+    <div class="doc-meta">
+      <div class="doc-title">Pay Statement</div>
+      <div class="doc-sub">
+        <span class="doc-sub-label">Pay date</span>
+        <strong>${longDate(stub.payDate)}</strong>
+      </div>
+      <div class="doc-sub">
+        <span class="doc-sub-label">Pay period</span>
+        <strong>${longDate(stub.periodStart)} &ndash; ${longDate(
+      stub.periodEnd
+    )}</strong>
+      </div>
+    </div>
   </div>
+
+  <div class="summary">
+    <div class="stat net">
+      <div class="stat-label">Net Pay &middot; This Period</div>
+      <div class="stat-value">$${money(stub.netPay)}</div>
+      <div class="stat-ytd">$${money(stub.ytdNetPay)} year to date</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Gross Pay</div>
+      <div class="stat-value">$${money(stub.grossPay)}</div>
+      <div class="stat-ytd">$${money(stub.ytdGrossPay)} YTD</div>
+    </div>
+    <div class="stat deductions">
+      <div class="stat-label">Deductions</div>
+      <div class="stat-value">$${money(stub.totalWithholding)}</div>
+      <div class="stat-ytd">$${money(stub.ytdWithholding)} YTD</div>
+    </div>
+  </div>
+
+  ${distribution}
 
   <div class="details">
-    <div class="detail"><span>Pay Cycle:</span> ${shortDate(
-      stub.periodStart
-    )} - ${shortDate(stub.periodEnd)}</div>
-    <div class="detail"><span>Pay Date:</span> ${longDate(stub.payDate)}</div>
-    <div class="detail"><span>Employee name:</span> ${escapeHtml(
-      stub.employeeName
-    )}</div>
-    ${
-      stub.position
-        ? `<div class="detail"><span>Position:</span> ${escapeHtml(
-            stub.position
-          )}</div>`
-        : ''
-    }
-    ${payRateLine}
+    ${detail('Employee', escapeHtml(stub.employeeName))}
+    ${detail('Position', escapeHtml(stub.position || '—'))}
+    ${detail('Pay Rate', payRateValue)}
+    ${detail(
+      'Hours',
+      hours(stub.regularHours),
+      `${hours(stub.ytdHours)} year to date`
+    )}
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Descriptions</th>
-        <th class="num">Current Hours</th>
-        <th class="num">Current Amounts</th>
-        <th class="num">Year-to-Date Hours</th>
-        <th class="num">Year-to-Date Amounts</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${earningRow(
-        'Regular Pay',
-        stub.regularHours,
-        stub.regularAmount,
-        stub.ytdHours,
-        stub.ytdRegularAmount
-      )}
-      ${earningRow(
-        'Earnings Totals',
-        stub.regularHours,
-        stub.grossPay,
-        stub.ytdHours,
-        stub.ytdGrossPay,
-        true
-      )}
-      ${withholdingRows}
-      ${amountRow(
-        'Withholding Totals',
-        stub.totalWithholding,
-        stub.ytdWithholding,
-        true
-      )}
-      <tr class="net-row">
-        <td>NET PAY</td>
-        <td class="num">&mdash;</td>
-        <td class="num">${money(stub.netPay)}</td>
-        <td class="num">&mdash;</td>
-        <td class="num">${money(stub.ytdNetPay)}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="columns">
+    <div class="column">
+      <div class="column-title">Earnings</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th class="num">Hours</th>
+            <th class="num">Current</th>
+            <th class="num">Year to Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Regular Pay</td>
+            <td class="num">${hours(stub.regularHours)}</td>
+            <td class="num">${money(stub.regularAmount)}</td>
+            <td class="num muted">${money(stub.ytdRegularAmount)}</td>
+          </tr>
+          <tr class="total-row">
+            <td>Gross Pay</td>
+            <td class="num">${hours(stub.regularHours)}</td>
+            <td class="num">${money(stub.grossPay)}</td>
+            <td class="num">${money(stub.ytdGrossPay)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="column">
+      <div class="column-title">Deductions</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th class="num">Current</th>
+            <th class="num">Year to Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${deductionRows}
+          <tr class="total-row">
+            <td>Total Deductions</td>
+            <td class="num">${money(stub.totalWithholding)}</td>
+            <td class="num">${money(stub.ytdWithholding)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-cell">
+      <div class="summary-label">Gross Pay</div>
+      <div class="summary-value">$${money(stub.grossPay)}</div>
+      <div class="summary-ytd">$${money(stub.ytdGrossPay)} YTD</div>
+    </div>
+    <div class="summary-op">&minus;</div>
+    <div class="summary-cell">
+      <div class="summary-label">Deductions</div>
+      <div class="summary-value">$${money(stub.totalWithholding)}</div>
+      <div class="summary-ytd">$${money(stub.ytdWithholding)} YTD</div>
+    </div>
+    <div class="summary-op">=</div>
+    <div class="summary-cell net">
+      <div class="summary-label">Net Pay</div>
+      <div class="summary-value">$${money(stub.netPay)}</div>
+      <div class="summary-ytd">$${money(stub.ytdNetPay)} YTD</div>
+    </div>
+  </div>
 
   ${
     stub.notes
@@ -1580,13 +1867,12 @@ ${
       : ''
   }
 
-  <div class="signatures">
-    <div class="signature">
-      <div class="signature-line">Employer Signature</div>
-    </div>
-    <div class="signature">
-      <div class="signature-line">Employee Signature</div>
-    </div>
+  <div class="footer">
+    ${escapeHtml(stub.companyName)} &middot; Pay statement for ${longDate(
+      stub.periodStart
+    )} &ndash; ${longDate(
+      stub.periodEnd
+    )} &middot; Retain this statement for your records
   </div>
 </body>
 </html>`;

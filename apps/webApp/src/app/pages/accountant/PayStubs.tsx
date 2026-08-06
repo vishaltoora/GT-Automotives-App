@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Add, Visibility } from '@mui/icons-material';
+import { Add, Edit, Visibility } from '@mui/icons-material';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { PayrollHoursDto, PayStubDto } from '@gt-automotive/data';
 import { payStubService } from '../../requests/pay-stub.requests';
@@ -51,6 +51,8 @@ export function PayStubs() {
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewing, setViewing] = useState<PayStubDto | null>(null);
+  // The stub being corrected, or null when the dialog is raising a new one.
+  const [editing, setEditing] = useState<PayStubDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,6 +99,7 @@ export function PayStubs() {
 
   const closeDialog = () => {
     setDialogOpen(false);
+    setEditing(null);
     // Drop the deep-link params so reopening the page does not immediately
     // reopen the dialog.
     if (prefillEmployeeId || prefillStart || prefillEnd) {
@@ -219,6 +222,16 @@ export function PayStubs() {
                     >
                       View
                     </Button>
+                    <Button
+                      size="small"
+                      startIcon={<Edit />}
+                      onClick={() => {
+                        setEditing(stub);
+                        setDialogOpen(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -230,9 +243,16 @@ export function PayStubs() {
       <PayStubDialog
         open={dialogOpen}
         onClose={closeDialog}
-        onCreated={(created) => {
-          setPayStubs((prev) => [created, ...prev]);
-          setViewing(created);
+        payStub={editing}
+        onCreated={(saved) => {
+          // An amendment rewrites year-to-date on later stubs too, so the list
+          // is reloaded rather than patched in place.
+          if (editing) {
+            loadData();
+          } else {
+            setPayStubs((prev) => [saved, ...prev]);
+          }
+          setViewing(saved);
         }}
         employees={employeeOptions}
         initialEmployeeId={prefillEmployeeId}

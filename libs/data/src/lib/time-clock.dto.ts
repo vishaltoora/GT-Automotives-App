@@ -27,6 +27,14 @@ export class UpsertEmployeeCompensationDto {
   @IsEnum(PayType)
   payType!: PayType;
 
+  /**
+   * Job title as it should read on this employee's pay stubs. Optional — the
+   * stub omits the line when there is none.
+   */
+  @IsOptional()
+  @IsString()
+  position?: string;
+
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
@@ -163,6 +171,8 @@ export interface EmployeeSummaryDto {
 export interface EmployeeCompensationDto {
   id: string;
   employeeId: string;
+  /** Job title for pay stubs, e.g. "Tire Technician". */
+  position?: string;
   payType: PayType;
   hourlyRate?: number;
   annualSalary?: number;
@@ -271,6 +281,8 @@ export interface PayrollHoursDto {
   /** Absent when the employee has no active compensation record. */
   payType?: PayType;
   hasCompensation: boolean;
+  /** Job title from the compensation record, for the pay stub. */
+  position?: string;
   /** Zero for salaried employees — read `salaryPay` instead. */
   hourlyRate: number;
   /** Annual salary prorated across the period; zero for hourly employees. */
