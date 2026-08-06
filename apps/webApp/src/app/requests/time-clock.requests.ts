@@ -267,9 +267,15 @@ class TimeClockService {
     startDate: string;
     endDate: string;
     employeeId?: string;
+    /** Exclude hours a pay stub has already paid. */
+    unprocessedOnly?: boolean;
   }): Promise<PayrollHoursDto[]> {
+    const { unprocessedOnly, ...rest } = filters;
     return this.makeRequest<PayrollHoursDto[]>(
-      `${this.baseUrl}/payroll-hours${this.toQuery(filters)}`
+      `${this.baseUrl}/payroll-hours${this.toQuery({
+        ...rest,
+        unprocessedOnly: unprocessedOnly ? 'true' : undefined,
+      })}`
     );
   }
 

@@ -17,6 +17,7 @@ describe('PayStubsService', () => {
   let prisma: any;
   let pdfService: any;
   let auditRepository: any;
+  let timeClockService: any;
 
   const employee = {
     id: 'emp-1',
@@ -76,7 +77,19 @@ describe('PayStubsService', () => {
     };
     auditRepository = { create: jest.fn() };
 
-    service = new PayStubsService(prisma, pdfService, auditRepository);
+    timeClockService = {
+      isPayrollRole: jest.fn((role: string) =>
+        ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(role)
+      ),
+      processPayroll: jest.fn().mockResolvedValue({ processedEntries: 0 }),
+    };
+
+    service = new PayStubsService(
+      prisma,
+      pdfService,
+      auditRepository,
+      timeClockService
+    );
   });
 
   describe('create', () => {
@@ -205,6 +218,82 @@ describe('PayStubsService', () => {
     });
   });
 
+  /**
+   * Raising the stub is the payment, so the hours behind it stop being
+   * available to any other stub at that moment.
+   */
+  describe('create processes the hours it pays for', () => {
+    it('processes the covered period for the employee', async () => {
+      await service.create(baseDto as any, accountant.id);
+
+      expect(timeClockService.processPayroll).toHaveBeenCalledWith(
+        expect.objectContaining({ employeeId: 'emp-1' }),
+        accountant.id
+      );
+    });
+
+    it('covers the whole of the last day of the period', async () => {
+      await service.create(baseDto as any, accountant.id);
+
+      const [{ startDate, endDate }] =
+        timeClockService.processPayroll.mock.calls[0];
+
+      // The period ends on Jan 31. A shift worked at 9am that day is a later
+      // instant than the calendar date naming it, so an end bound of "Jan 31
+      // midnight" would leave the last day's work unpaid and re-offer it to the
+      // next stub.
+      expect(new Date(startDate).getTime()).toBeLessThan(
+        new Date('2026-01-05T23:00:00.000Z').getTime()
+      );
+      expect(new Date(endDate).getTime()).toBeGreaterThan(
+        new Date('2026-02-01T00:00:00.000Z').getTime()
+      );
+    });
+
+    it('lets the accountant process by raising a stub', async () => {
+      // Processing from the time clock is admin-only, but issuing pay is the
+      // accountant's job and the stub is the instrument that does it.
+      await service.create(baseDto as any, accountant.id);
+
+      expect(timeClockService.processPayroll).toHaveBeenCalled();
+    });
+
+    it('processes after the stub row exists', async () => {
+      const order: string[] = [];
+      prisma.payStub.create.mockImplementation((args: any) => {
+        order.push('stub');
+        return {
+          id: 'stub-1',
+          createdAt: new Date('2026-01-31T00:00:00.000Z'),
+          employee,
+          ...args.data,
+        };
+      });
+      timeClockService.processPayroll.mockImplementation(async () => {
+        order.push('process');
+      });
+
+      await service.create(baseDto as any, accountant.id);
+
+      // Hours stamped as paid with no stub paying them is the worse failure of
+      // the two, so the stub is written first.
+      expect(order).toEqual(['stub', 'process']);
+    });
+
+    it('leaves someone outside payroll time tracking alone', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        ...employee,
+        role: { name: 'ACCOUNTANT' },
+      });
+
+      await service.create(baseDto as any, accountant.id);
+
+      // They have no time entries; processPayroll would refuse the role and
+      // take the whole stub down with it.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+    });
+  });
+
   describe('access control', () => {
     it('lets an employee read their own stubs', async () => {
       await expect(
@@ -301,6 +390,21 @@ describe('PayStubsService', () => {
         id: where.id,
         ...data,
       }));
+    });
+
+    it('does not re-process the time entries', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+      prisma.payStub.findMany.mockResolvedValue([]);
+
+      await service.update(
+        'stub-1',
+        { regularHours: 130 } as any,
+        accountant.id
+      );
+
+      // The entries were processed when the stub was raised and are terminal
+      // now; an amendment corrects the document, not the time record.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
     });
 
     it('recomputes the totals rather than trusting the client', async () => {

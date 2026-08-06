@@ -104,8 +104,10 @@ export class TimeClockController {
     return this.timeClockService.getCurrentEntries();
   }
 
-  // ACCOUNTANT is read-only across time clock: they need hours to raise pay
-  // stubs, but approving, adjusting and processing stay with ADMIN/FOREMAN.
+  // ACCOUNTANT is read-only on these routes: they need hours to raise pay
+  // stubs, but approving and adjusting stay with ADMIN/FOREMAN. Processing is
+  // the exception — raising a stub pays the hours it covers, and the accountant
+  // raises stubs, so that path processes on their behalf (see PayStubsService).
   @Get('entries')
   @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'ACCOUNTANT')
   getEntries(
@@ -247,18 +249,25 @@ export class TimeClockController {
    * Approved hours and gross pay per employee over a period. Read-only — this
    * is what the accountant's hours view and the pay stub form pre-fill read,
    * and it must never stamp entries the way POST process-payroll does.
+   *
+   * `unprocessedOnly=true` excludes hours a pay stub has already paid, which is
+   * what the stub form asks for so the same shift cannot be paid twice.
    */
   @Get('payroll-hours')
   @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'ACCOUNTANT')
   getPayrollHours(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('employeeId') employeeId?: string
+    @Query('employeeId') employeeId?: string,
+    @Query('unprocessedOnly') unprocessedOnly?: string
   ) {
     return this.timeClockService.getPayrollHours(
       startDate,
       endDate,
-      employeeId
+      employeeId,
+      {
+        unprocessedOnly: unprocessedOnly === 'true',
+      }
     );
   }
 }

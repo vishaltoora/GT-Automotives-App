@@ -20,8 +20,10 @@ import {
   SupportedProvince,
 } from './canadian-payroll';
 import { PdfService } from '../pdf/pdf.service';
+import { TimeClockService } from '../time-clock/time-clock.service';
 import { AuditRepository } from '../audit/repositories/audit.repository';
 import {
+  businessDayUtcRange,
   extractBusinessDate,
   toBusinessCalendarDate,
 } from '../config/timezone.config';
@@ -40,7 +42,8 @@ export class PayStubsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
-    private readonly auditRepository: AuditRepository
+    private readonly auditRepository: AuditRepository,
+    private readonly timeClockService: TimeClockService
   ) {}
 
   /**
@@ -51,6 +54,9 @@ export class PayStubsService {
    * and the year-to-date columns. Nothing is joined live at render time, so a
    * later change to a compensation record, a time entry or the company name
    * cannot alter a stub that has already been issued.
+   *
+   * Raising the stub is also what pays the hours behind it, so the approved
+   * entries it covers are processed here — see processHoursCovered().
    */
   async create(dto: CreatePayStubDto, userId: string): Promise<PayStubDto> {
     const employee = await this.prisma.user.findUnique({
@@ -179,7 +185,52 @@ export class PayStubsService {
       },
     });
 
+    await this.processHoursCovered(employee, periodStart, periodEnd, userId);
+
     return this.toDto(payStub);
+  }
+
+  /**
+   * Mark the approved hours this stub pays for as processed.
+   *
+   * Raising the stub *is* the payment, so the entries behind it become terminal
+   * at that moment: they stop being offered to the next stub, and they can no
+   * longer be edited, unapproved or deleted. Without this the same shift could
+   * be paid on two stubs with nothing in the record to show it.
+   *
+   * Deliberately after the stub row exists. If this fails the stub is still
+   * there with its hours unprocessed — visible, and correctable by processing
+   * them from the time clock. The reverse, hours stamped as paid with no stub
+   * paying them, leaves the employee's record claiming money nobody issued.
+   *
+   * A stub can be raised for someone outside payroll time tracking, such as an
+   * accountant. They have no time entries to process, so nothing is attempted.
+   */
+  private async processHoursCovered(
+    employee: { id: string; role?: { name: string } | null },
+    periodStart: Date,
+    periodEnd: Date,
+    userId: string
+  ) {
+    if (!this.timeClockService.isPayrollRole(employee.role?.name)) return;
+
+    // periodStart/periodEnd are calendar dates at midnight UTC. A shift worked
+    // at 9am on the last day of the period is a later instant than that, so the
+    // range has to cover the business days themselves, not the two instants
+    // that name them.
+    const { start } = businessDayUtcRange(extractBusinessDate(periodStart));
+    const { end } = businessDayUtcRange(extractBusinessDate(periodEnd));
+
+    await this.timeClockService.processPayroll(
+      {
+        employeeId: employee.id,
+        startDate: start.toISOString(),
+        // `end` is the first instant of the next business day and the filter is
+        // inclusive, so step back to stay inside the period.
+        endDate: new Date(end.getTime() - 1).toISOString(),
+      },
+      userId
+    );
   }
 
   /**

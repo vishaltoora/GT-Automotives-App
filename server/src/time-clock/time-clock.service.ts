@@ -613,10 +613,13 @@ export class TimeClockService {
    *
    * `unprocessedOnly` is the only behavioural difference between the callers:
    *  - true  — approved entries not yet stamped for payroll. What
-   *            processPayroll() must use, so hours are never paid twice.
-   *  - false — every approved entry in the period, stamped or not. What a pay
-   *            stub needs: the stub describes a period, and must not collapse
-   *            to zero just because payroll was processed before it was issued.
+   *            processPayroll() must use, so hours are never paid twice, and
+   *            what the pay stub form pre-fills from: raising a stub is what
+   *            pays those hours, so hours another stub already paid must not
+   *            be offered again.
+   *  - false — every approved entry in the period, stamped or not. What a
+   *            review of the period needs — the accountant's hours view shows
+   *            the whole period and calls out the processed part separately.
    *
    * Unapproved entries never count, under either flag. An employee should not
    * be paid from a time entry nobody has approved.
@@ -695,6 +698,10 @@ export class TimeClockService {
    * `employeeId` is given. Each row is produced by calculatePayrollHours(), so
    * the totals an accountant reviews and the figures a stub is pre-filled with
    * are the same calculation rather than two that can drift apart.
+   *
+   * `unprocessedOnly` picks which of the two the caller wants — see
+   * calculatePayrollHours(). The pay stub form passes true so a stub is never
+   * pre-filled with hours another stub has already paid.
    */
   /**
    * One row per employee for a pay period: hours already approved, and hours
@@ -792,7 +799,8 @@ export class TimeClockService {
   async getPayrollHours(
     startDate: string,
     endDate: string,
-    employeeId?: string
+    employeeId?: string,
+    options: { unprocessedOnly?: boolean } = {}
   ) {
     if (employeeId) {
       await this.assertPayrollEmployee(employeeId);
@@ -818,7 +826,7 @@ export class TimeClockService {
           employee.id,
           startDate,
           endDate,
-          { unprocessedOnly: false }
+          { unprocessedOnly: Boolean(options.unprocessedOnly) }
         );
         return {
           ...summary,
@@ -1024,6 +1032,18 @@ export class TimeClockService {
     );
 
     return { startDate, endDate, employees, totals };
+  }
+
+  /**
+   * Whether this role uses payroll time tracking at all.
+   *
+   * Public because raising a pay stub processes the hours it pays for, and a
+   * stub can be raised for someone outside payroll time tracking — an
+   * accountant, say. Asking first is clearer than letting processPayroll()
+   * throw and swallowing it.
+   */
+  isPayrollRole(roleName?: string) {
+    return STAFF_PAYROLL_ROLES.includes(roleName as any);
   }
 
   private async assertPayrollEmployee(employeeId: string) {
