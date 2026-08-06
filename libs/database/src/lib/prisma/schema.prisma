@@ -969,6 +969,10 @@ enum TimeEntryStatus {
   APPROVED
   ADJUSTED
   VOIDED
+  // Paid out through a payroll run. Terminal: a processed entry is the
+  // evidence behind money that has already left the business, so it is never
+  // edited, voided, deleted or unapproved afterwards.
+  PROCESSED
 }
 
 enum TimeEntrySource {

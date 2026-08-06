@@ -26,6 +26,15 @@ const ACTIVE_TIME_ENTRY_STATUSES = [
   TimeEntryStatus.OPEN,
   TimeEntryStatus.ON_BREAK,
 ];
+/**
+ * Work the business has agreed to pay for: approved, and approved-then-paid.
+ * Processing moves an entry from one to the other, so anything counting payable
+ * hours must accept both or the totals collapse the moment payroll is run.
+ */
+const PAYABLE_TIME_ENTRY_STATUSES = [
+  TimeEntryStatus.APPROVED,
+  TimeEntryStatus.PROCESSED,
+];
 const STAFF_PAYROLL_ROLES = ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'];
 
 @Injectable()
@@ -303,6 +312,23 @@ export class TimeClockService {
     return this.toTimeEntryDto(entry);
   }
 
+  /**
+   * A processed entry is the evidence behind money that has already left the
+   * business. Changing it after the fact would leave the pay that was issued
+   * unsupported by the record it was calculated from, so every mutation stops
+   * here rather than each one remembering to check.
+   */
+  private assertNotProcessed(
+    entry: { payrollProcessedAt?: Date | null },
+    action: string
+  ) {
+    if (entry.payrollProcessedAt) {
+      throw new BadRequestException(
+        `Cannot ${action} an entry that has already been processed for payroll`
+      );
+    }
+  }
+
   async updateEntry(id: string, dto: UpdateTimeEntryDto, userId: string) {
     const existing = await this.prisma.timeEntry.findUnique({
       where: { id },
@@ -312,6 +338,8 @@ export class TimeClockService {
     if (!existing) {
       throw new NotFoundException('Time entry not found');
     }
+
+    this.assertNotProcessed(existing, 'edit');
 
     if (existing.status === TimeEntryStatus.APPROVED) {
       throw new BadRequestException(
@@ -399,6 +427,7 @@ export class TimeClockService {
     if (!existing.clockOutAt) {
       throw new BadRequestException('Cannot approve an open time entry');
     }
+    this.assertNotProcessed(existing, 'approve');
 
     const updated = await this.prisma.timeEntry.update({
       where: { id },
@@ -427,13 +456,12 @@ export class TimeClockService {
     if (!existing) {
       throw new NotFoundException('Time entry not found');
     }
+    // Processed first: it is the stronger rule, and a processed entry is no
+    // longer APPROVED, so the status check alone would refuse it for the wrong
+    // reason and tell the user something unhelpful.
+    this.assertNotProcessed(existing, 'unapprove');
     if (existing.status !== TimeEntryStatus.APPROVED) {
       throw new BadRequestException('Only approved entries can be unapproved');
-    }
-    if (existing.payrollProcessedAt) {
-      throw new BadRequestException(
-        'Cannot unapprove an entry that has already been processed for payroll'
-      );
     }
 
     const updated = await this.prisma.timeEntry.update({
@@ -466,11 +494,7 @@ export class TimeClockService {
     if (!existing) {
       throw new NotFoundException('Time entry not found');
     }
-    if (existing.payrollProcessedAt) {
-      throw new BadRequestException(
-        'Cannot delete an entry that has already been processed for payroll'
-      );
-    }
+    this.assertNotProcessed(existing, 'delete');
 
     await this.prisma.timeEntry.delete({ where: { id } });
 
@@ -490,6 +514,7 @@ export class TimeClockService {
     if (!existing) {
       throw new NotFoundException('Time entry not found');
     }
+    this.assertNotProcessed(existing, 'void');
 
     const updated = await this.prisma.timeEntry.update({
       where: { id },
@@ -593,7 +618,9 @@ export class TimeClockService {
     const entries = await this.prisma.timeEntry.findMany({
       where: {
         employeeId,
-        status: TimeEntryStatus.APPROVED as any,
+        status: options.unprocessedOnly
+          ? (TimeEntryStatus.APPROVED as any)
+          : ({ in: PAYABLE_TIME_ENTRY_STATUSES as any[] } as any),
         ...(options.unprocessedOnly ? { payrollProcessedAt: null } : {}),
         clockInAt: this.dateRangeFilter(startDate, endDate),
       },
@@ -725,6 +752,9 @@ export class TimeClockService {
       await this.prisma.timeEntry.updateMany({
         where: { id: { in: entries.map((entry) => entry.id) } },
         data: {
+          // The status carries the outcome, not just the timestamp: an entry
+          // that has been paid should not still read as merely "approved".
+          status: TimeEntryStatus.PROCESSED as any,
           payrollProcessedAt: processedAt,
           payrollProcessedBy: userId,
         },
@@ -767,7 +797,7 @@ export class TimeClockService {
           employeeId,
           status: {
             in: [
-              TimeEntryStatus.APPROVED,
+              ...PAYABLE_TIME_ENTRY_STATUSES,
               TimeEntryStatus.CLOCKED_OUT,
               TimeEntryStatus.ADJUSTED,
             ] as any[],
@@ -818,7 +848,7 @@ export class TimeClockService {
     for (const entry of entries) {
       const bucket = getBucket(entry.employee);
       const hours = this.calculateMinutes(entry).paidMinutes / 60;
-      if (entry.status === TimeEntryStatus.APPROVED) {
+      if (PAYABLE_TIME_ENTRY_STATUSES.includes(entry.status as any)) {
         bucket.approvedHours += hours;
         if (entry.payrollProcessedAt) {
           bucket.processedHours += hours;

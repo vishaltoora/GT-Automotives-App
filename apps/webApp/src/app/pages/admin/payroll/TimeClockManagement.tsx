@@ -54,9 +54,11 @@ import {
 } from '@mui/icons-material';
 import {
   addMonths,
+  endOfDay,
   endOfMonth,
   format,
   isSameMonth,
+  startOfDay,
   startOfMonth,
   subMonths,
 } from 'date-fns';
@@ -87,6 +89,7 @@ const formatCurrency = (amount: number) =>
     currency: 'CAD',
   }).format(amount);
 const formatStatus = (status: TimeEntryStatus) => {
+  if (status === TimeEntryStatus.PROCESSED) return 'Paid';
   if (status === TimeEntryStatus.OPEN) return 'Clocked In';
   if (status === TimeEntryStatus.ON_BREAK) return 'On Break';
   if (status === TimeEntryStatus.CLOCKED_OUT) return 'Clocked Out';
@@ -102,6 +105,7 @@ const getStatusColor = (
   | 'warning'
   | 'info'
   | 'error' => {
+  if (status === TimeEntryStatus.PROCESSED) return 'primary'; // paid out — final
   if (status === TimeEntryStatus.APPROVED) return 'success'; // green
   if (status === TimeEntryStatus.OPEN) return 'info'; // blue - actively clocked in
   if (status === TimeEntryStatus.ON_BREAK) return 'warning'; // amber
@@ -186,10 +190,58 @@ export function TimeClockManagement() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const monthStart = startOfMonth(viewMonth).toISOString();
-  const monthEnd = endOfMonth(viewMonth).toISOString();
   const monthLabel = format(viewMonth, 'MMMM yyyy');
   const isCurrentMonth = isSameMonth(viewMonth, new Date());
+
+  /**
+   * A From/To date is a request for that data, not merely a refinement of what
+   * is already on screen — so the fetch follows the dates rather than staying
+   * pinned to the month being browsed. Without this the pickers could only ever
+   * narrow within the current month, which read as them being disabled for
+   * every earlier one.
+   *
+   * Half-typed dates are ignored: a `type="date"` input reports 0002-01-01
+   * while the year is still being keyed, and that would ask the server for two
+   * millennia of time entries.
+   */
+  const parseFilterDate = (value: string) => {
+    if (!value) return undefined;
+    const parsed = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsed.getTime()) || parsed.getFullYear() < 2000) {
+      return undefined;
+    }
+    return parsed;
+  };
+
+  const filterStart = parseFilterDate(filterStartDate);
+  const filterEnd = parseFilterDate(filterEndDate);
+
+  // One date on its own still has to produce a range that contains it, so the
+  // open end stretches to cover both it and the month being browsed. Setting
+  // only a From never yields an empty window, and neither does only a To.
+  const rangeStart = filterStart
+    ? startOfDay(filterStart)
+    : filterEnd && filterEnd < viewMonth
+    ? startOfMonth(filterEnd)
+    : startOfMonth(viewMonth);
+  const rangeEnd = filterEnd
+    ? endOfDay(filterEnd)
+    : filterStart && filterStart > endOfMonth(viewMonth)
+    ? endOfMonth(filterStart)
+    : endOfMonth(viewMonth);
+
+  const monthStart = rangeStart.toISOString();
+  const monthEnd = rangeEnd.toISOString();
+
+  // The heading tracks what is actually loaded, so a range reaching outside the
+  // browsed month is not shown under that month's name.
+  const rangeLabel =
+    filterStart || filterEnd
+      ? `${format(rangeStart, 'MMM d, yyyy')} – ${format(
+          rangeEnd,
+          'MMM d, yyyy'
+        )}`
+      : monthLabel;
 
   const loadData = async (options?: { silent?: boolean }) => {
     try {
@@ -226,7 +278,7 @@ export function TimeClockManagement() {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMonth]);
+  }, [viewMonth, monthStart, monthEnd]);
 
   // A From/To filter left over from the previous month would exclude every
   // entry in the newly loaded one, so reset the date refinement on month change.
@@ -1019,7 +1071,7 @@ export function TimeClockManagement() {
                   variant="h6"
                   sx={{ fontWeight: 700, minWidth: 190, textAlign: 'center' }}
                 >
-                  Time Entries · {monthLabel}
+                  Time Entries · {rangeLabel}
                 </Typography>
                 <IconButton
                   size="small"
@@ -1100,11 +1152,7 @@ export function TimeClockManagement() {
               value={filterStartDate}
               onChange={(event) => setFilterStartDate(event.target.value)}
               InputLabelProps={{ shrink: true }}
-              inputProps={{
-                min: format(startOfMonth(viewMonth), 'yyyy-MM-dd'),
-                max:
-                  filterEndDate || format(endOfMonth(viewMonth), 'yyyy-MM-dd'),
-              }}
+              inputProps={{ max: filterEndDate || undefined }}
               sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
             />
             <TextField
@@ -1114,12 +1162,7 @@ export function TimeClockManagement() {
               value={filterEndDate}
               onChange={(event) => setFilterEndDate(event.target.value)}
               InputLabelProps={{ shrink: true }}
-              inputProps={{
-                min:
-                  filterStartDate ||
-                  format(startOfMonth(viewMonth), 'yyyy-MM-dd'),
-                max: format(endOfMonth(viewMonth), 'yyyy-MM-dd'),
-              }}
+              inputProps={{ min: filterStartDate || undefined }}
               sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
             />
             {hasEntryFilters && (
@@ -1232,7 +1275,9 @@ export function TimeClockManagement() {
                     startIcon={<Edit />}
                     onClick={() => openEditEntry(entry)}
                     disabled={
-                      saving || entry.status === TimeEntryStatus.APPROVED
+                      saving ||
+                      entry.status === TimeEntryStatus.APPROVED ||
+                      Boolean(entry.payrollProcessedAt)
                     }
                   >
                     Edit
@@ -1248,7 +1293,8 @@ export function TimeClockManagement() {
                     Delete
                   </Button>
                   {entry.clockOutAt &&
-                    entry.status !== TimeEntryStatus.APPROVED && (
+                    entry.status !== TimeEntryStatus.APPROVED &&
+                    !entry.payrollProcessedAt && (
                       <Button
                         size="small"
                         variant="contained"

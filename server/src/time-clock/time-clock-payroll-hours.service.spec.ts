@@ -38,7 +38,7 @@ describe('TimeClockService payroll hours', () => {
       employeeId: 'emp-1',
       clockInAt: new Date('2026-01-06T17:00:00.000Z'),
       clockOutAt: new Date('2026-01-07T01:00:00.000Z'),
-      status: 'APPROVED',
+      status: 'PROCESSED',
       payrollProcessedAt: new Date('2026-01-08T00:00:00.000Z'),
       breaks: [],
       employee,
@@ -60,6 +60,9 @@ describe('TimeClockService payroll hours', () => {
           )
         ),
         updateMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn((args: any) => ({ ...entries[0], ...args.data })),
+        delete: jest.fn(),
       },
       employeeCompensation: {
         findFirst: jest
@@ -162,6 +165,76 @@ describe('TimeClockService payroll hours', () => {
       expect(auditRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'PROCESS_PAYROLL_HOURS' })
       );
+    });
+
+    it('moves processed entries onto the terminal status', async () => {
+      await service.processPayroll(
+        {
+          employeeId: 'emp-1',
+          startDate: '2026-01-01T00:00:00.000Z',
+          endDate: '2026-01-31T23:59:59.000Z',
+        } as any,
+        'admin-1'
+      );
+
+      // A paid entry should not still read as merely approved.
+      const [[{ data }]] = prisma.timeEntry.updateMany.mock.calls;
+      expect(data.status).toBe('PROCESSED');
+      expect(data.payrollProcessedAt).toBeInstanceOf(Date);
+      expect(data.payrollProcessedBy).toBe('admin-1');
+    });
+  });
+
+  describe('a processed entry is final', () => {
+    // The record behind money that has already left the business.
+    const processed = {
+      id: 'te-2',
+      employeeId: 'emp-1',
+      clockInAt: new Date('2026-01-06T17:00:00.000Z'),
+      clockOutAt: new Date('2026-01-07T01:00:00.000Z'),
+      status: 'PROCESSED',
+      payrollProcessedAt: new Date('2026-01-08T00:00:00.000Z'),
+      breaks: [],
+      employee,
+    };
+
+    beforeEach(() => {
+      prisma.timeEntry.findUnique.mockResolvedValue(processed);
+    });
+
+    const rejected = async (run: () => Promise<unknown>) => {
+      await expect(run()).rejects.toThrow(/already been processed for payroll/);
+      expect(prisma.timeEntry.update).not.toHaveBeenCalled();
+      expect(prisma.timeEntry.delete).not.toHaveBeenCalled();
+    };
+
+    it('cannot be edited', async () => {
+      await rejected(() =>
+        service.updateEntry(
+          'te-2',
+          {
+            clockOutAt: '2026-01-07T02:00:00.000Z',
+            adjustmentReason: 'fix',
+          } as any,
+          'admin-1'
+        )
+      );
+    });
+
+    it('cannot be voided', async () => {
+      await rejected(() => service.voidEntry('te-2', 'admin-1', 'mistake'));
+    });
+
+    it('cannot be deleted', async () => {
+      await rejected(() => service.deleteEntry('te-2', 'admin-1'));
+    });
+
+    it('cannot be unapproved', async () => {
+      await rejected(() => service.unapproveEntry('te-2', 'admin-1'));
+    });
+
+    it('cannot be re-approved', async () => {
+      await rejected(() => service.approveEntry('te-2', 'admin-1'));
     });
   });
 });

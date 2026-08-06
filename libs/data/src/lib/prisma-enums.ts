@@ -17,6 +17,7 @@ export const TimeEntryStatus = {
   APPROVED: 'APPROVED',
   ADJUSTED: 'ADJUSTED',
   VOIDED: 'VOIDED',
+  PROCESSED: 'PROCESSED',
 } as const;
 export type TimeEntryStatus = (typeof TimeEntryStatus)[keyof typeof TimeEntryStatus];
 
