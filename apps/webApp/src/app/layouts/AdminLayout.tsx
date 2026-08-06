@@ -196,6 +196,12 @@ export function AdminLayout() {
           path: '/admin/tire-commissions',
         },
         { text: 'Payroll', icon: <AttachMoney />, path: '/admin/payroll' },
+        {
+          text: 'Employee Hours',
+          icon: <AccessTime />,
+          path: '/admin/employee-hours',
+        },
+        { text: 'Pay Stubs', icon: <Receipt />, path: '/admin/pay-stubs' },
         { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
         {
           text: 'Payout Rules',

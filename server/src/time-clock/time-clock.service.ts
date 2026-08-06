@@ -209,8 +209,21 @@ export class TimeClockService {
     },
     currentUser: any
   ) {
+    // STAFF only ever see their own entries. Every other role that reaches this
+    // endpoint — ADMIN, FOREMAN, SUPERVISOR and ACCOUNTANT — is trusted with
+    // the whole team, so the employee filter is theirs to choose. Stated as an
+    // explicit list rather than "not STAFF" so adding a role to the guard is a
+    // deliberate decision here too, not an accident of the default branch.
     const role = currentUser?.role?.name;
-    const employeeId = role === 'STAFF' ? currentUser.id : filters.employeeId;
+    const canViewAllEmployees = [
+      'ADMIN',
+      'FOREMAN',
+      'SUPERVISOR',
+      'ACCOUNTANT',
+    ].includes(role);
+    const employeeId = canViewAllEmployees
+      ? filters.employeeId
+      : currentUser.id;
 
     const entries = await this.prisma.timeEntry.findMany({
       where: {
@@ -551,20 +564,42 @@ export class TimeClockService {
     return adjustments.map((adjustment) => this.toAdjustmentDto(adjustment));
   }
 
-  async processPayroll(dto: ProcessPayrollDto, userId: string) {
-    await this.assertPayrollEmployee(dto.employeeId);
-
+  /**
+   * Hours and gross pay for one employee over a date range. Pure read — this
+   * method never writes, so it is safe to call from anything that only wants
+   * the numbers (the pay stub form pre-fill, the accountant's hours view).
+   *
+   * It is the single source of truth for "what is this employee paid for this
+   * period": processPayroll() below consumes it too, so the figure a stub shows
+   * and the figure payroll processes can never be computed two different ways.
+   *
+   * `unprocessedOnly` is the only behavioural difference between the callers:
+   *  - true  — approved entries not yet stamped for payroll. What
+   *            processPayroll() must use, so hours are never paid twice.
+   *  - false — every approved entry in the period, stamped or not. What a pay
+   *            stub needs: the stub describes a period, and must not collapse
+   *            to zero just because payroll was processed before it was issued.
+   *
+   * Unapproved entries never count, under either flag. An employee should not
+   * be paid from a time entry nobody has approved.
+   */
+  async calculatePayrollHours(
+    employeeId: string,
+    startDate: string,
+    endDate: string,
+    options: { unprocessedOnly: boolean }
+  ) {
     const entries = await this.prisma.timeEntry.findMany({
       where: {
-        employeeId: dto.employeeId,
+        employeeId,
         status: TimeEntryStatus.APPROVED as any,
-        payrollProcessedAt: null,
-        clockInAt: this.dateRangeFilter(dto.startDate, dto.endDate),
+        ...(options.unprocessedOnly ? { payrollProcessedAt: null } : {}),
+        clockInAt: this.dateRangeFilter(startDate, endDate),
       },
       include: this.timeEntryInclude(),
     });
 
-    const processedHours = this.round2(
+    const hours = this.round2(
       entries.reduce(
         (sum, entry) => sum + this.calculateMinutes(entry).paidMinutes / 60,
         0
@@ -572,15 +607,114 @@ export class TimeClockService {
     );
 
     const compensation = await this.prisma.employeeCompensation.findFirst({
-      where: { employeeId: dto.employeeId, isActive: true },
+      where: { employeeId, isActive: true },
       orderBy: { effectiveFrom: 'desc' },
     });
 
-    const hourlyRate =
-      compensation?.payType === PayType.HOURLY
-        ? Number(compensation.hourlyRate || 0)
+    // A salaried employee has no hourly rate to multiply by, so hours × rate
+    // would report $0 gross and quietly understate their pay. Prorate the
+    // annual salary over the period instead, and tell the caller which basis
+    // was used so it can label the figure honestly.
+    const isHourly = compensation?.payType === PayType.HOURLY;
+    const hourlyRate = isHourly ? Number(compensation?.hourlyRate || 0) : 0;
+    const salaryPay =
+      compensation?.payType === PayType.SALARIED
+        ? this.calculateSalaryForPeriod(
+            Number(compensation.annualSalary || 0),
+            startDate,
+            endDate
+          )
         : 0;
-    const grossPay = this.round2(processedHours * hourlyRate);
+    const grossPay = this.round2(hours * hourlyRate + salaryPay);
+
+    return {
+      employeeId,
+      startDate,
+      endDate,
+      entries,
+      entryCount: entries.length,
+      hours,
+      payType: compensation?.payType,
+      hasCompensation: Boolean(compensation),
+      hourlyRate,
+      salaryPay,
+      grossPay,
+    };
+  }
+
+  /**
+   * Read-only wrapper for callers outside payroll processing — the accountant's
+   * hours view and the pay stub form pre-fill. Deliberately a separate entry
+   * point from processPayroll() so that reading the numbers can never stamp
+   * entries as processed.
+   *
+   * Returns one row per payroll-eligible employee, or a single row when
+   * `employeeId` is given. Each row is produced by calculatePayrollHours(), so
+   * the totals an accountant reviews and the figures a stub is pre-filled with
+   * are the same calculation rather than two that can drift apart.
+   */
+  async getPayrollHours(
+    startDate: string,
+    endDate: string,
+    employeeId?: string
+  ) {
+    if (employeeId) {
+      await this.assertPayrollEmployee(employeeId);
+    }
+
+    // The employee summary rides along on each row so the accountant's view can
+    // show names without also being granted GET /api/users, which would expose
+    // far more than the payroll roster.
+    const employees = await this.prisma.user.findMany({
+      where: employeeId
+        ? { id: employeeId }
+        : { role: { name: { in: STAFF_PAYROLL_ROLES as any[] } } },
+      include: { role: true },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+
+    // One calculation per employee rather than a single grouped query: the team
+    // is small, and sharing calculatePayrollHours() with processPayroll()
+    // matters more here than saving a few round trips.
+    return Promise.all(
+      employees.map(async (employee) => {
+        const { entries, ...summary } = await this.calculatePayrollHours(
+          employee.id,
+          startDate,
+          endDate,
+          { unprocessedOnly: false }
+        );
+        return {
+          ...summary,
+          employee: this.toEmployeeDto(employee),
+          processedHours: this.round2(
+            entries
+              .filter((entry) => entry.payrollProcessedAt)
+              .reduce(
+                (sum, entry) =>
+                  sum + this.calculateMinutes(entry).paidMinutes / 60,
+                0
+              )
+          ),
+        };
+      })
+    );
+  }
+
+  async processPayroll(dto: ProcessPayrollDto, userId: string) {
+    await this.assertPayrollEmployee(dto.employeeId);
+
+    const {
+      entries,
+      hours: processedHours,
+      grossPay,
+    } = await this.calculatePayrollHours(
+      dto.employeeId,
+      dto.startDate,
+      dto.endDate,
+      { unprocessedOnly: true }
+    );
+
     const processedAt = new Date();
 
     if (entries.length > 0) {

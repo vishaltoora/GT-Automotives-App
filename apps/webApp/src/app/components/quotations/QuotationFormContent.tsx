@@ -28,6 +28,7 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
   Person as PersonIcon,
   ShoppingCart as ShoppingCartIcon,
   AttachMoney as AttachMoneyIcon,
@@ -71,6 +72,11 @@ interface QuotationFormContentProps {
   setNewItem: (item: QuotationItem) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
+  /** Load an existing line item back into the entry row for editing. */
+  onEditItem: (index: number) => void;
+  onCancelEditItem: () => void;
+  /** Index of the item being edited, or null when adding a new one. */
+  editingItemIndex: number | null;
   onTireSelect: (tireId: string) => void;
   onServicesChange: () => void;
 }
@@ -88,6 +94,9 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   setNewItem,
   onAddItem,
   onRemoveItem,
+  onEditItem,
+  onCancelEditItem,
+  editingItemIndex,
   onTireSelect,
   onServicesChange,
 }) => {
@@ -421,12 +430,17 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
               />
             </Grid>
 
+            {/* The same entry row both adds and updates: an item being edited
+                is loaded back into these fields, so the tire and service
+                pickers work on edit exactly as they do on add. */}
             <Grid size={{ xs: 12, md: 2 }}>
               <Button
                 variant="contained"
                 fullWidth
                 onClick={onAddItem}
-                startIcon={<AddIcon />}
+                startIcon={
+                  editingItemIndex !== null ? <EditIcon /> : <AddIcon />
+                }
                 disabled={
                   !newItem.description ||
                   !newItem.quantity ||
@@ -443,8 +457,13 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   },
                 }}
               >
-                Add Item
+                {editingItemIndex !== null ? 'Update Item' : 'Add Item'}
               </Button>
+              {editingItemIndex !== null && (
+                <Button fullWidth size="small" onClick={onCancelEditItem}>
+                  Cancel Edit
+                </Button>
+              )}
             </Grid>
           </Grid>
 
@@ -500,7 +519,15 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                           Number(item.quantity) * Number(item.unitPrice)
                         ).toFixed(2)}
                       </TableCell>
-                      <TableCell align="center">
+                      <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
+                        <Tooltip title="Edit Item">
+                          <IconButton
+                            size="small"
+                            onClick={() => onEditItem(index)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Remove Item">
                           <IconButton
                             size="small"

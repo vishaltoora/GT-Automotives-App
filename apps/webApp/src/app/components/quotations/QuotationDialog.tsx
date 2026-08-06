@@ -64,6 +64,9 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   });
 
   const [items, setItems] = useState<QuoteItem[]>([]);
+  // Index of the item currently loaded into the entry row for editing, or null
+  // when the entry row is adding a new item.
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [newItem, setNewItem] = useState<QuoteItem>({
     itemType: 'TIRE',
     description: '',
@@ -172,21 +175,56 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
     }
   };
 
+  const blankItem = () => ({
+    itemType: 'TIRE' as const,
+    description: '',
+    quantity: 1,
+    unitPrice: '' as unknown as number,
+    tireId: undefined,
+  });
+
+  /**
+   * Commit the entry row — appending a new item, or replacing the one being
+   * edited. Line and quote totals are derived from the items array on render,
+   * so replacing a row is enough to keep them in step.
+   */
   const handleAddItem = () => {
-    if (newItem.description && newItem.quantity && newItem.unitPrice) {
+    if (!(newItem.description && newItem.quantity && newItem.unitPrice)) return;
+
+    if (editingItemIndex !== null) {
+      setItems(
+        items.map((item, index) =>
+          index === editingItemIndex ? { ...newItem } : item
+        )
+      );
+      setEditingItemIndex(null);
+    } else {
       setItems([...items, { ...newItem }]);
-      setNewItem({
-        itemType: 'TIRE',
-        description: '',
-        quantity: 1,
-        unitPrice: '' as unknown as number,
-        tireId: undefined,
-      });
     }
+
+    setNewItem(blankItem());
+  };
+
+  /** Load an existing row back into the entry form for editing. */
+  const handleEditItem = (index: number) => {
+    const item = items[index];
+    if (!item) return;
+    setEditingItemIndex(index);
+    setNewItem({ ...item });
+  };
+
+  const handleCancelEditItem = () => {
+    setEditingItemIndex(null);
+    setNewItem(blankItem());
   };
 
   const handleRemoveItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
+    // Removing a row shifts every later index, so an in-progress edit would
+    // silently start pointing at the wrong item. Drop it.
+    if (editingItemIndex !== null) {
+      handleCancelEditItem();
+    }
   };
 
   const handleSave = async (shouldPrint = false) => {
@@ -357,6 +395,9 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
             setNewItem={setNewItem}
             onAddItem={handleAddItem}
             onRemoveItem={handleRemoveItem}
+            onEditItem={handleEditItem}
+            onCancelEditItem={handleCancelEditItem}
+            editingItemIndex={editingItemIndex}
             onTireSelect={handleTireSelect}
             onServicesChange={handleServicesChange}
           />

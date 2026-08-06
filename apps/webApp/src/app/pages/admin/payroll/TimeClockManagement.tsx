@@ -33,6 +33,8 @@ import {
   AccessTime,
   Add,
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
   Coffee,
   Delete,
   Edit,
@@ -49,7 +51,14 @@ import {
   Undo,
   WorkspacePremium,
 } from '@mui/icons-material';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import {
+  addMonths,
+  endOfMonth,
+  format,
+  isSameMonth,
+  startOfMonth,
+  subMonths,
+} from 'date-fns';
 import {
   CreateTimeEntryDto,
   PayType,
@@ -164,10 +173,19 @@ export function TimeClockManagement() {
   );
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  // The month whose entries are loaded. Entries are fetched per month, so
+  // changing this refetches — the From/To filters below only refine what has
+  // already been loaded and cannot reach outside the viewed month.
+  const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const monthStart = startOfMonth(viewMonth).toISOString();
+  const monthEnd = endOfMonth(viewMonth).toISOString();
+  const monthLabel = format(viewMonth, 'MMMM yyyy');
+  const isCurrentMonth = isSameMonth(viewMonth, new Date());
 
   const loadData = async (options?: { silent?: boolean }) => {
     try {
@@ -177,8 +195,8 @@ export function TimeClockManagement() {
         userService.getUsers(),
         timeClockService.getCurrentEntries(),
         timeClockService.getEntries({
-          startDate: startOfMonth(new Date()).toISOString(),
-          endDate: endOfMonth(new Date()).toISOString(),
+          startDate: monthStart,
+          endDate: monthEnd,
         }),
       ]);
       const myCurrent = await timeClockService.getMyCurrent();
@@ -203,7 +221,16 @@ export function TimeClockManagement() {
 
   useEffect(() => {
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMonth]);
+
+  // A From/To filter left over from the previous month would exclude every
+  // entry in the newly loaded one, so reset the date refinement on month change.
+  const goToMonth = (month: Date) => {
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setViewMonth(startOfMonth(month));
+  };
 
   useEffect(() => {
     if (!selectedEmployeeId) return;
@@ -234,9 +261,6 @@ export function TimeClockManagement() {
   const currentEntryByEmployeeId = new Map(
     currentEntries.map((entry) => [entry.employeeId, entry])
   );
-  const monthStart = startOfMonth(new Date()).toISOString();
-  const monthEnd = endOfMonth(new Date()).toISOString();
-  const monthLabel = format(new Date(), 'MMMM yyyy');
   const selectedReadyEntries = entries.filter(
     (entry) =>
       entry.employeeId === selectedEmployeeId &&
@@ -261,7 +285,7 @@ export function TimeClockManagement() {
       ? selectedReadyHours * Number(hourlyRate || 0)
       : 0;
 
-  // Dashboard aggregate stats across all employees for the current month
+  // Dashboard aggregate stats across all employees for the viewed month
   const totalReadyHours = useMemo(
     () =>
       entries
@@ -311,7 +335,9 @@ export function TimeClockManagement() {
       color: colors.semantic.info,
     },
     {
-      label: 'Processed This Month',
+      label: isCurrentMonth
+        ? 'Processed This Month'
+        : `Processed · ${monthLabel}`,
       value: `${totalProcessedHours.toFixed(1)} hrs`,
       icon: <CheckCircle />,
       color: colors.semantic.success,
@@ -662,11 +688,7 @@ export function TimeClockManagement() {
           }}
         >
           <Tab icon={<AccessTime />} iconPosition="start" label="Dashboard" />
-          <Tab
-            icon={<Payment />}
-            iconPosition="start"
-            label="This Month's Entries"
-          />
+          <Tab icon={<Payment />} iconPosition="start" label="Time Entries" />
           {/* Compensation & Bonus is hidden for foreman. */}
           {user?.role?.name !== 'FOREMAN' && (
             <Tab
@@ -957,7 +979,7 @@ export function TimeClockManagement() {
         </Card>
       </TabPanel>
 
-      {/* This Month's Entries tab */}
+      {/* Time Entries tab — scoped to the month selected above the table. */}
       <TabPanel value={activeTab} index={1}>
         <Box
           sx={{
@@ -978,9 +1000,39 @@ export function TimeClockManagement() {
             }}
           >
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Time Entries · {monthLabel}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  aria-label="Previous month"
+                  onClick={() => goToMonth(subMonths(viewMonth, 1))}
+                  disabled={loading}
+                >
+                  <ChevronLeft fontSize="small" />
+                </IconButton>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, minWidth: 190, textAlign: 'center' }}
+                >
+                  Time Entries · {monthLabel}
+                </Typography>
+                <IconButton
+                  size="small"
+                  aria-label="Next month"
+                  onClick={() => goToMonth(addMonths(viewMonth, 1))}
+                  disabled={loading || isCurrentMonth}
+                >
+                  <ChevronRight fontSize="small" />
+                </IconButton>
+                {!isCurrentMonth && (
+                  <Button
+                    size="small"
+                    onClick={() => goToMonth(new Date())}
+                    disabled={loading}
+                  >
+                    This Month
+                  </Button>
+                )}
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Showing {filteredEntries.length} of {entries.length} entries
               </Typography>
@@ -1043,9 +1095,9 @@ export function TimeClockManagement() {
               onChange={(event) => setFilterStartDate(event.target.value)}
               InputLabelProps={{ shrink: true }}
               inputProps={{
-                min: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                min: format(startOfMonth(viewMonth), 'yyyy-MM-dd'),
                 max:
-                  filterEndDate || format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+                  filterEndDate || format(endOfMonth(viewMonth), 'yyyy-MM-dd'),
               }}
               sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
             />
@@ -1059,8 +1111,8 @@ export function TimeClockManagement() {
               inputProps={{
                 min:
                   filterStartDate ||
-                  format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-                max: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+                  format(startOfMonth(viewMonth), 'yyyy-MM-dd'),
+                max: format(endOfMonth(viewMonth), 'yyyy-MM-dd'),
               }}
               sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
             />
@@ -1377,7 +1429,15 @@ export function TimeClockManagement() {
               <ListItemIcon>
                 <Delete fontSize="small" color="error" />
               </ListItemIcon>
-              <ListItemText>Delete</ListItemText>
+              <ListItemText
+                secondary={
+                  actionEntry.payrollProcessedAt
+                    ? 'Already processed for payroll'
+                    : undefined
+                }
+              >
+                Delete
+              </ListItemText>
             </MenuItem>,
           ]}
         </Menu>
@@ -1533,7 +1593,7 @@ export function TimeClockManagement() {
                       color="text.secondary"
                       sx={{ display: 'block' }}
                     >
-                      Processed This Month
+                      Processed · {monthLabel}
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
                       {selectedProcessedHours.toFixed(2)} hrs

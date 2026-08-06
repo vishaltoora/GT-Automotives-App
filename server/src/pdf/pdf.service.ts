@@ -8,7 +8,14 @@ import {
   renderDeclinedItemsHtml,
   renderSignatureHtml,
   renderTermsAndConditionsHtml,
+  PayStubDto,
 } from '@gt-automotive/data';
+
+/**
+ * The fields the pay stub template renders. A structural type rather than the
+ * full DTO so the template documents exactly what it depends on.
+ */
+type PayStubDocument = PayStubDto;
 
 @Injectable()
 export class PdfService {
@@ -1290,5 +1297,302 @@ ${
     const html = this.generatePreInspectionHtml(data);
     const pdfBuffer = await this.generatePdfFromHtml(html);
     return pdfBuffer.toString('base64');
+  }
+
+  /**
+   * Pay stub HTML.
+   *
+   * This is the *only* pay stub template. The on-screen view, the print action
+   * and any future emailed copy all render this same document, so unlike the
+   * invoice — which grew three templates that had to be reconciled by
+   * `invoice-print-sections.ts` — there is nothing here that can drift.
+   *
+   * Every value comes from the stored PayStub row, never from a live join, so
+   * reprinting an old stub reproduces exactly the figures it was issued with.
+   *
+   * Layout follows the business's existing stub: company header block with the
+   * PAY STUB title, a pay-cycle/employee detail block, a five-column earnings
+   * and withholdings table carrying both current-period and year-to-date
+   * figures, and employer/employee signature lines.
+   */
+  generatePayStubHtml(stub: PayStubDocument): string {
+    const escapeHtml = (value: unknown): string =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const money = (amount: number) =>
+      new Intl.NumberFormat('en-CA', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(amount || 0));
+
+    const hours = (value: number) => Number(value || 0).toFixed(2);
+
+    // Dates arrive as YYYY-MM-DD calendar dates. Format them in UTC so the
+    // printed day matches the business day they were stored as, on any server.
+    const shortDate = (value: string) => {
+      const [year, month, day] = value.split('-');
+      return `${day}/${month}/${year}`;
+    };
+    const longDate = (value: string) => {
+      const [year, month, day] = value.split('-').map(Number);
+      return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
+        'en-CA',
+        { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
+      );
+    };
+
+    const logoBase64 = this.loadGtLogoBase64('pay stub');
+
+    // Amount-only rows (withholdings) leave the hours columns blank rather than
+    // printing 0.00, which would read as "zero hours worked" against a
+    // deduction line.
+    const earningRow = (
+      label: string,
+      currentHours: number,
+      currentAmount: number,
+      ytdHours: number,
+      ytdAmount: number,
+      strong = false
+    ) => `
+      <tr class="${strong ? 'total-row' : ''}">
+        <td>${escapeHtml(label)}</td>
+        <td class="num">${hours(currentHours)}</td>
+        <td class="num">${money(currentAmount)}</td>
+        <td class="num">${hours(ytdHours)}</td>
+        <td class="num">${money(ytdAmount)}</td>
+      </tr>`;
+
+    const amountRow = (
+      label: string,
+      currentAmount: number,
+      ytdAmount: number,
+      strong = false
+    ) => `
+      <tr class="${strong ? 'total-row' : ''}">
+        <td>${escapeHtml(label)}</td>
+        <td class="num">&mdash;</td>
+        <td class="num">${money(currentAmount)}</td>
+        <td class="num">&mdash;</td>
+        <td class="num">${money(ytdAmount)}</td>
+      </tr>`;
+
+    // EI and CPP always print, matching the business's existing stub. Income
+    // tax and any other deduction only appear when they carry a value, so a
+    // stub that withholds neither is not padded with empty $0.00 lines.
+    const withholdingRows = [
+      amountRow('Federal Employee EI', stub.eiAmount, stub.ytdEiAmount),
+      amountRow('Federal Employee CPP/QPP', stub.cppAmount, stub.ytdCppAmount),
+      stub.incomeTaxAmount > 0 || stub.ytdIncomeTaxAmount > 0
+        ? amountRow(
+            'Federal Income Tax',
+            stub.incomeTaxAmount,
+            stub.ytdIncomeTaxAmount
+          )
+        : '',
+      stub.otherDeductions > 0 || stub.ytdOtherDeductions > 0
+        ? amountRow(
+            stub.otherDeductionsLabel || 'Other Deductions',
+            stub.otherDeductions,
+            stub.ytdOtherDeductions
+          )
+        : '',
+    ]
+      .filter(Boolean)
+      .join('');
+
+    const payRateLine =
+      stub.payRate != null && stub.payRate > 0
+        ? `<div class="detail"><span>Pay Rate:</span> $${money(stub.payRate)}${
+            stub.payType === 'SALARIED' ? '/Yr' : '/Hr'
+          }</div>`
+        : '';
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pay Stub — ${escapeHtml(stub.employeeName)}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 24px;
+      font-size: 12px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #243c55;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .company { display: flex; gap: 12px; align-items: flex-start; }
+    .company img { height: 54px; width: auto; }
+    .company-name { font-size: 18px; font-weight: 700; color: #243c55; }
+    .company-address { color: #555; line-height: 1.5; }
+    .doc-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #243c55;
+    }
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 24px;
+      margin-bottom: 18px;
+    }
+    .detail span { font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 7px 8px; border-bottom: 1px solid #e0e0e0; }
+    th {
+      background: #f2f5f8;
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: #243c55;
+      border-bottom: 2px solid #243c55;
+    }
+    th.num, td.num { text-align: right; }
+    .total-row td { font-weight: 700; background: #fafbfc; }
+    .net-row td {
+      font-weight: 700;
+      font-size: 14px;
+      background: #243c55;
+      color: #fff;
+      border-bottom: none;
+    }
+    .section-label td {
+      padding-top: 14px;
+      font-weight: 700;
+      color: #243c55;
+      border-bottom: none;
+    }
+    .notes { margin-top: 18px; color: #555; }
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      gap: 48px;
+      margin-top: 56px;
+      page-break-inside: avoid;
+    }
+    .signature { flex: 1; }
+    .signature-line {
+      border-top: 1px solid #333;
+      padding-top: 6px;
+      font-size: 11px;
+      color: #555;
+    }
+    @media print {
+      body { padding: 0; }
+      @page { size: letter; margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="company">
+      ${logoBase64 ? `<img src="${logoBase64}" alt="" />` : ''}
+      <div>
+        <div class="company-name">${escapeHtml(stub.companyName)}</div>
+        <div class="company-address">${escapeHtml(
+          stub.companyAddress || ''
+        ).replace(/,\s*/g, ',<br />')}</div>
+      </div>
+    </div>
+    <div class="doc-title">PAY STUB</div>
+  </div>
+
+  <div class="details">
+    <div class="detail"><span>Pay Cycle:</span> ${shortDate(
+      stub.periodStart
+    )} - ${shortDate(stub.periodEnd)}</div>
+    <div class="detail"><span>Pay Date:</span> ${longDate(stub.payDate)}</div>
+    <div class="detail"><span>Employee name:</span> ${escapeHtml(
+      stub.employeeName
+    )}</div>
+    ${
+      stub.position
+        ? `<div class="detail"><span>Position:</span> ${escapeHtml(
+            stub.position
+          )}</div>`
+        : ''
+    }
+    ${payRateLine}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Descriptions</th>
+        <th class="num">Current Hours</th>
+        <th class="num">Current Amounts</th>
+        <th class="num">Year-to-Date Hours</th>
+        <th class="num">Year-to-Date Amounts</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${earningRow(
+        'Regular Pay',
+        stub.regularHours,
+        stub.regularAmount,
+        stub.ytdHours,
+        stub.ytdRegularAmount
+      )}
+      ${earningRow(
+        'Earnings Totals',
+        stub.regularHours,
+        stub.grossPay,
+        stub.ytdHours,
+        stub.ytdGrossPay,
+        true
+      )}
+      ${withholdingRows}
+      ${amountRow(
+        'Withholding Totals',
+        stub.totalWithholding,
+        stub.ytdWithholding,
+        true
+      )}
+      <tr class="net-row">
+        <td>NET PAY</td>
+        <td class="num">&mdash;</td>
+        <td class="num">${money(stub.netPay)}</td>
+        <td class="num">&mdash;</td>
+        <td class="num">${money(stub.ytdNetPay)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  ${
+    stub.notes
+      ? `<div class="notes"><strong>Notes:</strong> ${escapeHtml(
+          stub.notes
+        )}</div>`
+      : ''
+  }
+
+  <div class="signatures">
+    <div class="signature">
+      <div class="signature-line">Employer Signature</div>
+    </div>
+    <div class="signature">
+      <div class="signature-line">Employee Signature</div>
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+
+  async generatePayStubPdf(stub: PayStubDocument): Promise<Buffer> {
+    return this.generatePdfFromHtml(this.generatePayStubHtml(stub));
   }
 }

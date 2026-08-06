@@ -30,6 +30,7 @@ import { BookingRequestsModule } from '../booking-requests/booking-requests.modu
 import { TireSalesModule } from '../tire-sales/tire-sales.module';
 import { PayoutRulesModule } from '../payout-rules/payout-rules.module';
 import { TimeClockModule } from '../time-clock/time-clock.module';
+import { PayStubsModule } from '../pay-stubs/pay-stubs.module';
 import { InspectionsModule } from '../inspections/inspections.module';
 import { RepairOrdersModule } from '../repair-orders/repair-orders.module';
 import { CarfaxModule } from '../carfax/carfax.module';
@@ -69,6 +70,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     TireSalesModule,
     PayoutRulesModule,
     TimeClockModule,
+    PayStubsModule,
     InspectionsModule,
     RepairOrdersModule,
     CarfaxModule,

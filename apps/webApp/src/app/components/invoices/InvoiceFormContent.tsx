@@ -34,6 +34,7 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
   Person as PersonIcon,
   DirectionsCar as CarIcon,
   ShoppingCart as ShoppingCartIcon,
@@ -94,6 +95,11 @@ interface InvoiceFormContentProps {
   onCustomerSelect: (customer: any) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
+  /**
+   * Apply an in-row edit. Only the changed fields are passed; the caller
+   * re-derives totals and discount fields from the merged item.
+   */
+  onUpdateItem: (index: number, changes: Partial<InvoiceItem>) => void;
   onTireSelect: (tireId: string) => void;
   onServicesChange: () => void;
   isEditMode?: boolean;
@@ -117,6 +123,9 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   onCustomerSelect,
   onAddItem,
   onRemoveItem,
+  onEditItem,
+  onCancelEditItem,
+  editingItemIndex,
   onTireSelect,
   onServicesChange,
   isEditMode = false,
@@ -152,6 +161,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
       handleMenuClose();
     }
   };
+
+  const handleMenuEdit = () => {
+    if (menuItemIndex !== null) {
+      onEditItem(menuItemIndex);
+      handleMenuClose();
+    }
+  };
+
+  const isEditingItem = editingItemIndex !== null;
 
   const handleServiceChange = (
     serviceId: string,
@@ -1202,11 +1220,15 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                   />
                 </Grid>
 
+                {/* The same entry row both adds and updates: an item being
+                    edited is loaded back into these fields, so every
+                    type-specific control (tire picker, service picker, discount
+                    rules) works on edit exactly as it does on add. */}
                 <Grid size={{ xs: 12, md: 2 }}>
                   <Button
                     fullWidth
                     variant="contained"
-                    startIcon={<AddIcon />}
+                    startIcon={isEditingItem ? <EditIcon /> : <AddIcon />}
                     onClick={onAddItem}
                     disabled={
                       !newItem.description ||
@@ -1228,8 +1250,18 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       },
                     }}
                   >
-                    Add Item
+                    {isEditingItem ? 'Update Item' : 'Add Item'}
                   </Button>
+                  {isEditingItem && (
+                    <Button
+                      fullWidth
+                      size="small"
+                      onClick={onCancelEditItem}
+                      sx={{ mt: 0.5 }}
+                    >
+                      Cancel Edit
+                    </Button>
+                  )}
                 </Grid>
               </Grid>
             </Box>
@@ -1487,7 +1519,19 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                           >
                             {formatCurrency(getLineTotal(item))}
                           </TableCell>
-                          <TableCell align="center">
+                          <TableCell
+                            align="center"
+                            sx={{ whiteSpace: 'nowrap' }}
+                          >
+                            <Tooltip title="Edit item">
+                              <IconButton
+                                size="small"
+                                onClick={() => onEditItem(index)}
+                                sx={{ color: colors.primary.main }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="Remove item">
                               <IconButton
                                 size="small"
@@ -1682,6 +1726,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
           horizontal: 'right',
         }}
       >
+        <MenuItem onClick={handleMenuEdit}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit Item</ListItemText>
+        </MenuItem>
         <MenuItem onClick={handleMenuDelete}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />

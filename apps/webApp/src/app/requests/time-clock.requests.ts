@@ -5,6 +5,7 @@ import {
   CreateTimeEntryDto,
   EmployeeCompensationDto,
   PayrollAdjustmentDto,
+  PayrollHoursDto,
   ProcessPayrollDto,
   PayrollSummaryDto,
   StartBreakDto,
@@ -237,9 +238,25 @@ class TimeClockService {
     );
   }
 
-  processPayroll(
-    dto: ProcessPayrollDto
-  ): Promise<{
+  /**
+   * Approved hours and gross pay per employee over a period. Read-only —
+   * unlike processPayroll() below, calling this never stamps time entries, so
+   * it is safe to call whenever a form needs the numbers.
+   *
+   * Returns one row per payroll employee, or a single row when `employeeId` is
+   * supplied.
+   */
+  getPayrollHours(filters: {
+    startDate: string;
+    endDate: string;
+    employeeId?: string;
+  }): Promise<PayrollHoursDto[]> {
+    return this.makeRequest<PayrollHoursDto[]>(
+      `${this.baseUrl}/payroll-hours${this.toQuery(filters)}`
+    );
+  }
+
+  processPayroll(dto: ProcessPayrollDto): Promise<{
     employeeId: string;
     processedEntries: number;
     processedHours: number;

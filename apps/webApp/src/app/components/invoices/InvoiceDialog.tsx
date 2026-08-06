@@ -93,6 +93,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   });
 
   const [items, setItems] = useState<InvoiceItem[]>([]);
+  // Index of the item currently loaded into the entry row for editing, or null
+  // when the entry row is adding a new item.
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [newItem, setNewItem] = useState<InvoiceItem>({
     itemType: InvoiceItemType.SERVICE,
     description: '',
@@ -570,47 +573,86 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     }
   };
 
-  const handleAddItem = () => {
-    if (
-      newItem.description &&
-      (newItem.itemType === InvoiceItemType.DISCOUNT
-        ? newItem.unitPrice < 0
-        : newItem.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE
-        ? newItem.unitPrice > 0 && newItem.unitPrice <= 100
-        : newItem.unitPrice > 0)
-    ) {
-      const calculation = calculateItemTotal(newItem);
-      const itemWithCalculations = {
-        ...newItem,
-        discountAmount: calculation.discountAmount,
-        total: calculation.total,
-      };
-      console.log('Adding item to invoice:', itemWithCalculations);
+  /**
+   * Is this entry complete enough to go on the invoice?
+   *
+   * The rules differ by type — a fixed discount must be negative, a percentage
+   * discount must be a sensible percentage, everything else must cost
+   * something. Shared by add and edit so a row cannot be edited into a state
+   * that would have been rejected when it was added.
+   */
+  const isItemValid = (item: InvoiceItem) =>
+    Boolean(item.description) &&
+    (item.itemType === InvoiceItemType.DISCOUNT
+      ? item.unitPrice < 0
+      : item.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE
+      ? item.unitPrice > 0 && item.unitPrice <= 100
+      : item.unitPrice > 0);
 
-      // For DISCOUNT items, set the correct properties
-      if (newItem.itemType === InvoiceItemType.DISCOUNT) {
-        itemWithCalculations.discountType = 'amount';
-        itemWithCalculations.discountValue = Math.abs(newItem.unitPrice); // Store positive value
-        itemWithCalculations.discountAmount = Math.abs(newItem.unitPrice); // Store positive value for display
-      }
+  /**
+   * Turn a form entry into a stored line item.
+   *
+   * An item on the invoice is not simply what was typed: `total` and the
+   * discount fields are derived from the type and the rest of the invoice.
+   * Editing a row therefore has to re-run this, not patch quantity or price in
+   * place — otherwise the derived fields go stale and the rows stop agreeing
+   * with the totals.
+   */
+  const deriveItem = (item: InvoiceItem): InvoiceItem => {
+    const calculation = calculateItemTotal(item);
+    const derived: InvoiceItem = {
+      ...item,
+      discountAmount: calculation.discountAmount,
+      total: calculation.total,
+    };
 
-      // For DISCOUNT_PERCENTAGE items, store the percentage value for calculation
-      if (newItem.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE) {
-        itemWithCalculations.discountValue = newItem.unitPrice; // Store percentage value
-        itemWithCalculations.discountAmount = Math.abs(calculation.total); // Store positive value for display
-        itemWithCalculations.discountType = 'percentage';
-      }
-      setItems([...items, itemWithCalculations]);
-      setNewItem({
-        itemType: InvoiceItemType.SERVICE,
-        description: '',
-        quantity: 1,
-        unitPrice: '' as unknown as number,
-        discountType: 'amount',
-        discountValue: 0,
-        discountAmount: 0,
-      });
+    if (item.itemType === InvoiceItemType.DISCOUNT) {
+      derived.discountType = 'amount';
+      derived.discountValue = Math.abs(item.unitPrice); // Store positive value
+      derived.discountAmount = Math.abs(item.unitPrice); // Store positive value for display
     }
+
+    if (item.itemType === InvoiceItemType.DISCOUNT_PERCENTAGE) {
+      derived.discountValue = item.unitPrice; // Store percentage value
+      derived.discountAmount = Math.abs(calculation.total); // Store positive value for display
+      derived.discountType = 'percentage';
+    }
+
+    return derived;
+  };
+
+  const blankItem = (): InvoiceItem => ({
+    itemType: InvoiceItemType.SERVICE,
+    description: '',
+    quantity: 1,
+    unitPrice: '' as unknown as number,
+    discountType: 'amount',
+    discountValue: 0,
+    discountAmount: 0,
+  });
+
+  const handleAddItem = () => {
+    if (!isItemValid(newItem)) return;
+
+    setItems([...items, deriveItem(newItem)]);
+    setNewItem(blankItem());
+  };
+
+  /**
+   * Apply an in-row edit to a line item.
+   *
+   * Only the edited fields arrive here; everything derived (`total`, the
+   * discount fields) is recomputed from the merged item, so a row can never
+   * drift out of agreement with the totals. Percentage discounts read the rest
+   * of the list, but they are re-derived on render, so replacing this one row
+   * is enough.
+   */
+  const handleUpdateItem = (index: number, changes: Partial<InvoiceItem>) => {
+    setItems(
+      items.map((item, i) =>
+        i === index ? deriveItem({ ...item, ...changes }) : item
+      )
+    );
   };
 
   const handleRemoveItem = (index: number) => {
@@ -736,6 +778,9 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           onCustomerSelect={handleCustomerSelect}
           onAddItem={handleAddItem}
           onRemoveItem={handleRemoveItem}
+          onEditItem={handleEditItem}
+          onCancelEditItem={handleCancelEditItem}
+          editingItemIndex={editingItemIndex}
           onTireSelect={handleTireSelect}
           onServicesChange={() => loadData()}
           isEditMode={isEditMode}

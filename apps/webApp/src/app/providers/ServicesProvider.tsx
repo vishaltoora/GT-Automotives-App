@@ -10,13 +10,16 @@ import { setClerkTokenGetter as setPaymentTokenGetter } from '../requests/paymen
 import { setClerkTokenGetter as setTireSaleTokenGetter } from '../requests/tire-sale.requests';
 import { setClerkTokenGetter as setTireTokenGetter } from '../requests/tire.requests';
 import { setClerkTokenGetter as setTimeClockTokenGetter } from '../requests/time-clock.requests';
+import { setClerkTokenGetter as setPayStubTokenGetter } from '../requests/pay-stub.requests';
 
 // Check if Clerk is configured - use direct import.meta.env access for consistency
 // @ts-ignore
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 const useAuth = publishableKey ? useClerkAuth : useMockAuth;
 
-export const ServicesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ServicesProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { getToken } = useAuth();
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export const ServicesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setTireSaleTokenGetter(getToken);
       setTireTokenGetter(getToken);
       setTimeClockTokenGetter(getToken);
+      setPayStubTokenGetter(getToken);
     }
   }, [getToken]);
 
