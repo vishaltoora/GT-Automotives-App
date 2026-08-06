@@ -28,6 +28,7 @@ import {
   Stack,
   Divider,
   Collapse,
+  Link,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -44,6 +45,7 @@ import {
 } from '@mui/icons-material';
 import { quotationService, Quote } from '../../requests/quotation.requests';
 import QuoteDialog from '../../components/quotations/QuotationDialog';
+import QuotationPrintDialog from '../../components/quotations/QuotationPrintDialog';
 import EmailPromptDialog from '../../components/common/EmailPromptDialog';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
@@ -73,6 +75,10 @@ const QuoteList: React.FC = () => {
   const [quotationForEmail, setQuotationForEmail] = useState<Quote | null>(
     null
   );
+  // Quotation shown in the print preview, opened by clicking its number. The
+  // list rows carry no line items, so the full quote is fetched first.
+  const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadQuotations();
@@ -131,6 +137,20 @@ const QuoteList: React.FC = () => {
       } catch (error) {
         showApiError(error, 'Failed to delete quotation');
       }
+    }
+  };
+
+  /** Open the printable quotation in a dialog, without leaving the list. */
+  const handleOpenPreview = async (quotation: Quote) => {
+    if (previewLoadingId) return;
+    try {
+      setPreviewLoadingId(quotation.id);
+      const fullQuotation = await quotationService.getQuote(quotation.id);
+      setPreviewQuote(fullQuotation);
+    } catch (error) {
+      showApiError(error, 'Failed to open quotation');
+    } finally {
+      setPreviewLoadingId(null);
     }
   };
 
@@ -431,13 +451,23 @@ const QuoteList: React.FC = () => {
                         }}
                       >
                         <Box sx={{ flex: 1 }}>
-                          <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            gutterBottom
+                          <Link
+                            component="button"
+                            type="button"
+                            onClick={() => handleOpenPreview(quotation)}
+                            underline="hover"
+                            sx={{
+                              display: 'block',
+                              textAlign: 'left',
+                              mb: 0.5,
+                              fontFamily: 'inherit',
+                              fontSize: '1.25rem',
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                            }}
                           >
                             {quotation.quotationNumber}
-                          </Typography>
+                          </Link>
                           <Chip
                             label={getStatusLabel(quotation.status)}
                             color={getStatusColor(quotation.status)}
@@ -584,7 +614,22 @@ const QuoteList: React.FC = () => {
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((quotation) => (
                     <TableRow key={quotation.id} hover>
-                      <TableCell>{quotation.quotationNumber}</TableCell>
+                      <TableCell>
+                        <Link
+                          component="button"
+                          type="button"
+                          onClick={() => handleOpenPreview(quotation)}
+                          underline="hover"
+                          sx={{
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {quotation.quotationNumber}
+                        </Link>
+                      </TableCell>
                       <TableCell>{formatDate(quotation.createdAt)}</TableCell>
                       <TableCell>
                         {quotation.businessName && (
@@ -646,6 +691,12 @@ const QuoteList: React.FC = () => {
         }}
         onSuccess={loadQuotations}
         quoteId={editingQuotationId}
+      />
+
+      <QuotationPrintDialog
+        quote={previewQuote}
+        open={Boolean(previewQuote)}
+        onClose={() => setPreviewQuote(null)}
       />
 
       <Menu

@@ -93,9 +93,6 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   });
 
   const [items, setItems] = useState<InvoiceItem[]>([]);
-  // Index of the item currently loaded into the entry row for editing, or null
-  // when the entry row is adding a new item.
-  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [newItem, setNewItem] = useState<InvoiceItem>({
     itemType: InvoiceItemType.SERVICE,
     description: '',
@@ -578,8 +575,8 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
    *
    * The rules differ by type — a fixed discount must be negative, a percentage
    * discount must be a sensible percentage, everything else must cost
-   * something. Shared by add and edit so a row cannot be edited into a state
-   * that would have been rejected when it was added.
+   * something. The in-row editor enforces the same rules, so a row cannot be
+   * edited into a state that would have been rejected when it was added.
    */
   const isItemValid = (item: InvoiceItem) =>
     Boolean(item.description) &&
@@ -778,9 +775,7 @@ export const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
           onCustomerSelect={handleCustomerSelect}
           onAddItem={handleAddItem}
           onRemoveItem={handleRemoveItem}
-          onEditItem={handleEditItem}
-          onCancelEditItem={handleCancelEditItem}
-          editingItemIndex={editingItemIndex}
+          onUpdateItem={handleUpdateItem}
           onTireSelect={handleTireSelect}
           onServicesChange={() => loadData()}
           isEditMode={isEditMode}
