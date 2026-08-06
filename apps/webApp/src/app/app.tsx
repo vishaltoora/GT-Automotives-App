@@ -43,6 +43,7 @@ import { DaySummary } from './pages/admin/DaySummary';
 // Accountant Pages
 import { AccountantDashboard } from './pages/accountant/AccountantDashboard';
 import { EmployeeHours } from './pages/accountant/EmployeeHours';
+import { AccountantTimeEntries } from './pages/accountant/TimeEntries';
 import { PayStubs } from './pages/accountant/PayStubs';
 import UserManagement from '../pages/admin/UserManagement';
 
@@ -261,6 +262,7 @@ export function App() {
                 element={<PurchaseExpenseInvoiceManagement />}
               />
               <Route path="employee-hours" element={<EmployeeHours />} />
+              <Route path="time-entries" element={<AccountantTimeEntries />} />
               <Route path="pay-stubs" element={<PayStubs />} />
               <Route path="reports" element={<Reports />} />
               <Route path="analytics" element={<div>Analytics</div>} />

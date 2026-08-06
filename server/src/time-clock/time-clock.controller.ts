@@ -226,6 +226,24 @@ export class TimeClockController {
   }
 
   /**
+   * Approved and unapproved hours per employee for a pay period — the figures
+   * behind the time clock's employee cards.
+   *
+   * Open to every payroll role, including STAFF: the service narrows anyone not
+   * trusted with the team down to their own row, which is what lets an employee
+   * see their own card in the same design.
+   */
+  @Get('pay-period-hours')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'ACCOUNTANT', 'STAFF')
+  getPayPeriodHours(
+    @CurrentUser() user: any,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    return this.timeClockService.getPayPeriodHours(startDate, endDate, user);
+  }
+
+  /**
    * Approved hours and gross pay per employee over a period. Read-only — this
    * is what the accountant's hours view and the pay stub form pre-fill read,
    * and it must never stamp entries the way POST process-payroll does.

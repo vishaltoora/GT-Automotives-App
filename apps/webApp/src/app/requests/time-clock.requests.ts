@@ -4,6 +4,7 @@ import {
   CreatePayrollAdjustmentDto,
   CreateTimeEntryDto,
   EmployeeCompensationDto,
+  PayPeriodHoursDto,
   PayrollAdjustmentDto,
   PayrollHoursDto,
   ProcessPayrollDto,
@@ -235,6 +236,22 @@ class TimeClockService {
   }): Promise<PayrollSummaryDto> {
     return this.makeRequest<PayrollSummaryDto>(
       `${this.baseUrl}/payroll-summary${this.toQuery(filters)}`
+    );
+  }
+
+  /**
+   * Approved and unapproved hours per employee for a pay period — what the
+   * time clock's employee cards show.
+   *
+   * The server decides whose rows come back: a role trusted with the team gets
+   * every active employee, anyone else gets only their own.
+   */
+  getPayPeriodHours(filters: {
+    startDate: string;
+    endDate: string;
+  }): Promise<PayPeriodHoursDto[]> {
+    return this.makeRequest<PayPeriodHoursDto[]>(
+      `${this.baseUrl}/pay-period-hours${this.toQuery(filters)}`
     );
   }
 

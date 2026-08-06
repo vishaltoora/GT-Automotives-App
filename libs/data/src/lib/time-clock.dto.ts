@@ -270,6 +270,31 @@ export interface PayrollSummaryDto {
  * reports the period correctly. `processedHours` is the subset already stamped,
  * exposed so the UI can say so rather than silently conflating the two.
  */
+/**
+ * One employee's hours for a pay period, as shown on a time clock card.
+ *
+ * Approved and unapproved are separate figures rather than a total and a
+ * remainder: only approved hours are payable, and the gap between the two is
+ * what has to be chased before payroll runs.
+ */
+export interface PayPeriodHoursDto {
+  employeeId: string;
+  employee: EmployeeSummaryDto;
+  /** The employee's role, for labelling the card. */
+  role?: string;
+  startDate: string;
+  endDate: string;
+  /** Payable hours, including hours already paid out. */
+  approvedHours: number;
+  /** The part of `approvedHours` that payroll has already paid. */
+  processedHours: number;
+  /** Finished shifts nobody has approved yet. */
+  unapprovedHours: number;
+  entryCount: number;
+  /** Shifts still running, whose hours are in neither total yet. */
+  openEntryCount: number;
+}
+
 export interface PayrollHoursDto {
   employeeId: string;
   employee: EmployeeSummaryDto;

@@ -35,7 +35,28 @@ const PAYABLE_TIME_ENTRY_STATUSES = [
   TimeEntryStatus.APPROVED,
   TimeEntryStatus.PROCESSED,
 ];
+/**
+ * Finished work nobody has approved yet — the gap an admin chases before
+ * payroll runs. An open or on-break shift is deliberately excluded: it has no
+ * settled total to approve, so counting it would present a number that changes
+ * every time the page is refreshed.
+ */
+const UNAPPROVED_TIME_ENTRY_STATUSES = [
+  TimeEntryStatus.CLOCKED_OUT,
+  TimeEntryStatus.ADJUSTED,
+];
 const STAFF_PAYROLL_ROLES = ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'];
+/**
+ * Roles trusted with the whole team's hours. Stated as an explicit list rather
+ * than "not STAFF" so adding a role is a deliberate decision here, not an
+ * accident of the default branch.
+ */
+const TEAM_WIDE_TIME_CLOCK_ROLES = [
+  'ADMIN',
+  'FOREMAN',
+  'SUPERVISOR',
+  'ACCOUNTANT',
+];
 
 @Injectable()
 export class TimeClockService {
@@ -220,18 +241,9 @@ export class TimeClockService {
     currentUser: any
   ) {
     // STAFF only ever see their own entries. Every other role that reaches this
-    // endpoint — ADMIN, FOREMAN, SUPERVISOR and ACCOUNTANT — is trusted with
-    // the whole team, so the employee filter is theirs to choose. Stated as an
-    // explicit list rather than "not STAFF" so adding a role to the guard is a
-    // deliberate decision here too, not an accident of the default branch.
-    const role = currentUser?.role?.name;
-    const canViewAllEmployees = [
-      'ADMIN',
-      'FOREMAN',
-      'SUPERVISOR',
-      'ACCOUNTANT',
-    ].includes(role);
-    const employeeId = canViewAllEmployees
+    // endpoint is trusted with the whole team, so the employee filter is theirs
+    // to choose.
+    const employeeId = this.canViewWholeTeam(currentUser)
       ? filters.employeeId
       : currentUser.id;
 
@@ -684,6 +696,99 @@ export class TimeClockService {
    * the totals an accountant reviews and the figures a stub is pre-filled with
    * are the same calculation rather than two that can drift apart.
    */
+  /**
+   * One row per employee for a pay period: hours already approved, and hours
+   * still waiting on someone.
+   *
+   * This is what the time clock's employee cards read. The two figures are
+   * counted separately on purpose — only approved hours are payable, and the
+   * gap between them is exactly what has to be chased before payroll runs.
+   * Processed entries stay on the approved side rather than reappearing as
+   * outstanding: the money for them has already gone out.
+   *
+   * Deliberately cheaper than getPayrollHours(): no compensation lookup and no
+   * per-employee query, because the cards show hours rather than pay and are
+   * loaded for the whole team on every period change.
+   *
+   * Scoped by role — anyone not trusted with the team gets their own row only,
+   * so the same endpoint serves an employee looking at their own hours.
+   */
+  async getPayPeriodHours(
+    startDate: string,
+    endDate: string,
+    currentUser: any
+  ) {
+    // Deactivated staff would otherwise clutter the current period with cards
+    // that can never change again.
+    const employees = await this.prisma.user.findMany({
+      where: this.canViewWholeTeam(currentUser)
+        ? {
+            isActive: true,
+            role: { name: { in: STAFF_PAYROLL_ROLES as any[] } },
+          }
+        : { id: currentUser.id },
+      include: { role: true },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+
+    if (employees.length === 0) return [];
+
+    const entries = await this.prisma.timeEntry.findMany({
+      where: {
+        employeeId: { in: employees.map((employee) => employee.id) },
+        // A voided entry is a withdrawn claim on the business. It is neither
+        // payable nor outstanding, so it belongs in neither total.
+        status: { not: TimeEntryStatus.VOIDED as any },
+        clockInAt: this.dateRangeFilter(startDate, endDate),
+      },
+      include: this.timeEntryInclude(),
+    });
+
+    const rows = new Map(
+      employees.map((employee) => [
+        employee.id,
+        {
+          employeeId: employee.id,
+          employee: this.toEmployeeDto(employee),
+          role: employee.role?.name,
+          startDate,
+          endDate,
+          approvedHours: 0,
+          processedHours: 0,
+          unapprovedHours: 0,
+          entryCount: 0,
+          // Surfaced separately so a card can say a shift is still running
+          // rather than silently omitting its hours from both totals.
+          openEntryCount: 0,
+        },
+      ])
+    );
+
+    for (const entry of entries) {
+      const row = rows.get(entry.employeeId);
+      if (!row) continue;
+      row.entryCount += 1;
+      const hours = this.calculateMinutes(entry).paidMinutes / 60;
+      if (PAYABLE_TIME_ENTRY_STATUSES.includes(entry.status as any)) {
+        row.approvedHours += hours;
+        if (entry.status === (TimeEntryStatus.PROCESSED as any)) {
+          row.processedHours += hours;
+        }
+      } else if (UNAPPROVED_TIME_ENTRY_STATUSES.includes(entry.status as any)) {
+        row.unapprovedHours += hours;
+      } else {
+        row.openEntryCount += 1;
+      }
+    }
+
+    return [...rows.values()].map((row) => ({
+      ...row,
+      approvedHours: this.round2(row.approvedHours),
+      processedHours: this.round2(row.processedHours),
+      unapprovedHours: this.round2(row.unapprovedHours),
+    }));
+  }
+
   async getPayrollHours(
     startDate: string,
     endDate: string,
@@ -1075,6 +1180,16 @@ export class TimeClockService {
       createdAt: compensation.createdAt.toISOString(),
       updatedAt: compensation.updatedAt.toISOString(),
     };
+  }
+
+  /**
+   * Whether this user may see hours other than their own. STAFF may not, so a
+   * request of theirs is always narrowed to themselves regardless of what they
+   * asked for — the guard on the route decides who may call, this decides what
+   * they get back.
+   */
+  private canViewWholeTeam(currentUser: any) {
+    return TEAM_WIDE_TIME_CLOCK_ROLES.includes(currentUser?.role?.name);
   }
 
   private toEmployeeDto(employee: any) {
