@@ -36,10 +36,10 @@ model User {
   tireSales            TireSale[]             @relation("TireSales") // Tire sales made by this user (for commission tracking)
   inspectionsCreated   Inspection[]           @relation("InspectionCreatedBy")
   inspectionsFinalized Inspection[]           @relation("InspectionFinalizedBy")
-  roEmployees          ROEmployee[]           // Repair orders assigned to this employee
+  roEmployees          ROEmployee[] // Repair orders assigned to this employee
   roServices           ROService[]            @relation("ROServiceCompletedBy") // Service items completed by this user
-  roMedia              ROMedia[]              // Photos uploaded by this user
-  payStubs             PayStub[]              // Pay stubs issued to this employee
+  roMedia              ROMedia[] // Photos uploaded by this user
+  payStubs             PayStub[] // Pay stubs issued to this employee
 }
 
 model Role {
@@ -75,29 +75,29 @@ model RolePermission {
 }
 
 model Customer {
-  id              String           @id @default(cuid())
-  firstName       String
-  lastName        String
-  email           String?
-  additionalEmails String[]        @default([]) // Extra emails (e.g. spouse, business) for invoice sending
-  pstExempt       Boolean          @default(false) // When true, invoices for this customer are charged 0% PST
-  pstNumber       String?          // PST exemption / registration number, printed on invoices when pstExempt
-  fleetDiscount   Boolean          @default(false) // When true, a 10% discount on SERVICE items is auto-added to invoices
-  phone           String?
-  address         String?
-  businessName    String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  appointments    Appointment[]
-  invoices        Invoice[]
-  inspections     Inspection[]
-  vehicles        Vehicle[]
-  repairOrders    RepairOrder[]
-  smsMessages     SmsMessage[]
-  smsPreference   SmsPreference?
-  emailLogs       EmailLog[] // Email logs related to this customer
-  bookingRequests BookingRequest[] // Booking requests converted to this customer
-  tireSales       TireSale[] // Tire sales to this customer
+  id               String           @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String?
+  additionalEmails String[]         @default([]) // Extra emails (e.g. spouse, business) for invoice sending
+  pstExempt        Boolean          @default(false) // When true, invoices for this customer are charged 0% PST
+  pstNumber        String? // PST exemption / registration number, printed on invoices when pstExempt
+  fleetDiscount    Boolean          @default(false) // When true, a 10% discount on SERVICE items is auto-added to invoices
+  phone            String?
+  address          String?
+  businessName     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  appointments     Appointment[]
+  invoices         Invoice[]
+  inspections      Inspection[]
+  vehicles         Vehicle[]
+  repairOrders     RepairOrder[]
+  smsMessages      SmsMessage[]
+  smsPreference    SmsPreference?
+  emailLogs        EmailLog[] // Email logs related to this customer
+  bookingRequests  BookingRequest[] // Booking requests converted to this customer
+  tireSales        TireSale[] // Tire sales to this customer
 }
 
 model Vehicle {
@@ -219,48 +219,59 @@ model ServiceCatalogItem {
 }
 
 model Company {
-  id                 String    @id @default(cuid())
-  name               String
-  registrationNumber String    @unique
-  businessType       String?
-  address            String?
-  phone              String?
-  email              String?
-  isDefault          Boolean   @default(false)
+  id                     String    @id @default(cuid())
+  name                   String
+  registrationNumber     String    @unique
+  businessType           String?
+  address                String?
+  phone                  String?
+  email                  String?
+  isDefault              Boolean   @default(false)
   // Free-text terms & conditions printed at the bottom of this company's
   // invoices, above the signature block. Business-authored (it is a liability
   // statement), editable from admin settings so the wording can change without
   // a deploy. Null/blank means no T&C block is rendered.
-  termsAndConditions String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  invoices           Invoice[]
+  termsAndConditions     String?
+  // Shop hours the employee time clock is open for, as HH:mm in the business
+  // timezone (see BUSINESS_TIMEZONE). Employees cannot clock in outside the
+  // window, and anything still running at closing time is clocked out
+  // automatically so a forgotten clock-out cannot accrue overnight. Admins are
+  // never restricted — genuine overtime is recorded by editing the entry.
+  //
+  // Held here rather than in code because the shop's hours change seasonally,
+  // and that should not need a deploy.
+  timeClockOpensAt       String    @default("08:00")
+  timeClockClosesAt      String    @default("20:00")
+  timeClockWindowEnabled Boolean   @default(true)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  invoices               Invoice[]
 }
 
 model Invoice {
-  id             String          @id @default(cuid())
-  invoiceNumber  String          @unique @default(cuid())
-  customerId     String
-  vehicleId      String?
-  companyId      String
-  appointmentId  String?         @unique // Link back to appointment if auto-generated
-  subtotal       Decimal         @db.Decimal(10, 2)
-  taxRate        Decimal         @db.Decimal(5, 4)
-  taxAmount      Decimal         @db.Decimal(10, 2)
-  total          Decimal         @db.Decimal(10, 2)
-  status         InvoiceStatus
-  paymentMethod  PaymentMethod?
-  amountPaid     Decimal         @default(0) @db.Decimal(10, 2) // Cached sum of InvoicePayment rows
-  notes          String?
-  invoiceDate    DateTime        @default(now())
-  createdBy      String
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  paidAt         DateTime?
-  gstAmount      Decimal?        @db.Decimal(10, 2)
-  gstRate        Decimal?        @db.Decimal(5, 4)
-  pstAmount      Decimal?        @db.Decimal(10, 2)
-  pstRate        Decimal?        @db.Decimal(5, 4)
+  id                     String                @id @default(cuid())
+  invoiceNumber          String                @unique @default(cuid())
+  customerId             String
+  vehicleId              String?
+  companyId              String
+  appointmentId          String?               @unique // Link back to appointment if auto-generated
+  subtotal               Decimal               @db.Decimal(10, 2)
+  taxRate                Decimal               @db.Decimal(5, 4)
+  taxAmount              Decimal               @db.Decimal(10, 2)
+  total                  Decimal               @db.Decimal(10, 2)
+  status                 InvoiceStatus
+  paymentMethod          PaymentMethod?
+  amountPaid             Decimal               @default(0) @db.Decimal(10, 2) // Cached sum of InvoicePayment rows
+  notes                  String?
+  invoiceDate            DateTime              @default(now())
+  createdBy              String
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  paidAt                 DateTime?
+  gstAmount              Decimal?              @db.Decimal(10, 2)
+  gstRate                Decimal?              @db.Decimal(5, 4)
+  pstAmount              Decimal?              @db.Decimal(10, 2)
+  pstRate                Decimal?              @db.Decimal(5, 4)
   // Customer signature captured at handover. Always optional — an unsigned
   // invoice prints a blank signature line for a wet signature. The image lives
   // in Azure Blob; that account forbids public blob access, so it is served via
@@ -271,27 +282,27 @@ model Invoice {
   // blob URL (re-signed as a SAS URL on read); in development, where Azure is
   // not configured, it is an inline data URL so the pad still works locally.
   signatureUrl           String?
-  signatureSignedByName  String?   // Printed name, shown under the signature
+  signatureSignedByName  String? // Printed name, shown under the signature
   signatureSignedAt      DateTime?
-  signatureCapturedBy    String?   // User id of the staff member who witnessed it
+  signatureCapturedBy    String? // User id of the staff member who witnessed it
   // Combined-invoice consolidation: a parent invoice rolls up several pending children
-  combinedInvoiceId String?
-  customer       Customer        @relation(fields: [customerId], references: [id])
-  vehicle        Vehicle?        @relation(fields: [vehicleId], references: [id])
-  company        Company         @relation(fields: [companyId], references: [id])
-  appointment    Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  items          InvoiceItem[]
-  declinedItems  InvoiceDeclinedItem[] // Work the customer declined; never billed
-  payments       InvoicePayment[] // Payment ledger (supports partial/split payments)
-  inspections    Inspection[]
-  squarePayments SquarePayment[] // Square payments for this invoice
-  emailLogs      EmailLog[] // Email logs related to this invoice
-  tireSale       TireSale?     // Tire sale that generated this invoice (one-to-one)
-  repairOrder    RepairOrder?  @relation(fields: [repairOrderId], references: [id], onDelete: SetNull)
-  repairOrderId  String?       @unique // Link to repair order that generated this invoice
-  carfaxSync     CarfaxSync?   // CARFAX Service Data Transfer record for this invoice
-  combinedInvoice      Invoice?  @relation("CombinedInvoice", fields: [combinedInvoiceId], references: [id], onDelete: SetNull)
-  consolidatedInvoices Invoice[] @relation("CombinedInvoice")
+  combinedInvoiceId      String?
+  customer               Customer              @relation(fields: [customerId], references: [id])
+  vehicle                Vehicle?              @relation(fields: [vehicleId], references: [id])
+  company                Company               @relation(fields: [companyId], references: [id])
+  appointment            Appointment?          @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  items                  InvoiceItem[]
+  declinedItems          InvoiceDeclinedItem[] // Work the customer declined; never billed
+  payments               InvoicePayment[] // Payment ledger (supports partial/split payments)
+  inspections            Inspection[]
+  squarePayments         SquarePayment[] // Square payments for this invoice
+  emailLogs              EmailLog[] // Email logs related to this invoice
+  tireSale               TireSale? // Tire sale that generated this invoice (one-to-one)
+  repairOrder            RepairOrder?          @relation(fields: [repairOrderId], references: [id], onDelete: SetNull)
+  repairOrderId          String?               @unique // Link to repair order that generated this invoice
+  carfaxSync             CarfaxSync? // CARFAX Service Data Transfer record for this invoice
+  combinedInvoice        Invoice?              @relation("CombinedInvoice", fields: [combinedInvoiceId], references: [id], onDelete: SetNull)
+  consolidatedInvoices   Invoice[]             @relation("CombinedInvoice")
 
   @@index([customerId])
   @@index([status])
@@ -773,8 +784,8 @@ model Payment {
 }
 
 model EmployeeCompensation {
-  id         String @id @default(cuid())
-  employeeId String
+  id                  String    @id @default(cuid())
+  employeeId          String
   // Job title as it should read on a pay stub ("Tire Technician"), which the
   // permission role (STAFF, ACCOUNTANT) does not capture. Optional: an employee
   // can be paid without one, and the stub simply omits the line.
@@ -805,6 +816,10 @@ model TimeEntry {
   status             TimeEntryStatus @default(OPEN)
   source             TimeEntrySource @default(EMPLOYEE)
   notes              String?
+  // Set when the closing-time job ended this shift because nobody clocked out.
+  // A flag rather than string-matching the reason text: the UI badges these for
+  // review, and an auto-closed time is a guess about when someone left.
+  autoClockedOut     Boolean         @default(false)
   adjustedBy         String?
   adjustmentReason   String?
   approvedBy         String?
@@ -913,9 +928,9 @@ model PayStub {
   companyPhone              String?
   companyEmail              String?
   employeeName              String
-  position       String?
-  payRate        Decimal? @db.Decimal(10, 2)
-  payType        PayType  @default(HOURLY)
+  position                  String?
+  payRate                   Decimal? @db.Decimal(10, 2)
+  payType                   PayType  @default(HOURLY)
 
   // Current-period earnings.
   regularHours  Decimal @default(0) @db.Decimal(10, 2)
@@ -1665,33 +1680,33 @@ enum CommissionStatus {
 // ============================================
 
 model RepairOrder {
-  id              String      @id @default(cuid())
-  roNumber        String      @unique // e.g. RO-202606-0001
-  appointmentId   String      @unique // 1:1 with Appointment
+  id              String    @id @default(cuid())
+  roNumber        String    @unique // e.g. RO-202606-0001
+  appointmentId   String    @unique // 1:1 with Appointment
   customerId      String
   vehicleId       String?
-  quotationId     String?     @unique // Quotation generated from this RO's quotation-flagged items (1:1)
-  noVehicle       Boolean     @default(false) // Intentionally no vehicle (loose tires, battery, or other counter service)
-  status          ROStatus    @default(OPEN)
-  customerConcern String?     // What the customer reported
-  technicianNotes String?     // Overall technician notes
-  mileageIn       Int?        // Odometer on arrival
-  mileageOut      Int?        // Odometer on departure
-  estimatedCost   Decimal?    @db.Decimal(10, 2)
-  openedAt        DateTime    @default(now())
+  quotationId     String?   @unique // Quotation generated from this RO's quotation-flagged items (1:1)
+  noVehicle       Boolean   @default(false) // Intentionally no vehicle (loose tires, battery, or other counter service)
+  status          ROStatus  @default(OPEN)
+  customerConcern String? // What the customer reported
+  technicianNotes String? // Overall technician notes
+  mileageIn       Int? // Odometer on arrival
+  mileageOut      Int? // Odometer on departure
+  estimatedCost   Decimal?  @db.Decimal(10, 2)
+  openedAt        DateTime  @default(now())
   closedAt        DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  appointment  Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  customer     Customer      @relation(fields: [customerId], references: [id])
-  vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id])
-  quotation    Quotation?    @relation(fields: [quotationId], references: [id])
-  employees    ROEmployee[]
-  services     ROService[]
-  inspections  Inspection[]
-  media        ROMedia[]
-  invoice      Invoice?
+  appointment Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  vehicle     Vehicle?     @relation(fields: [vehicleId], references: [id])
+  quotation   Quotation?   @relation(fields: [quotationId], references: [id])
+  employees   ROEmployee[]
+  services    ROService[]
+  inspections Inspection[]
+  media       ROMedia[]
+  invoice     Invoice?
 
   @@index([customerId])
   @@index([vehicleId])
@@ -1701,11 +1716,11 @@ model RepairOrder {
 }
 
 model ROEmployee {
-  id            String      @id @default(cuid())
+  id            String   @id @default(cuid())
   repairOrderId String
   userId        String
-  role          String?     // "Lead", "Assistant"
-  assignedAt    DateTime    @default(now())
+  role          String? // "Lead", "Assistant"
+  assignedAt    DateTime @default(now())
 
   repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1717,26 +1732,26 @@ model ROEmployee {
 }
 
 model ROService {
-  id              String          @id @default(cuid())
-  repairOrderId   String
-  description     String
-  type            ROServiceType   @default(LABOR)
-  quantity        Decimal         @default(1) @db.Decimal(10, 2)
-  unitPrice       Decimal         @default(0) @db.Decimal(10, 2)
-  total           Decimal         @default(0) @db.Decimal(10, 2)
-  technicianNotes String?
-  status          ROServiceStatus @default(PENDING)
+  id               String            @id @default(cuid())
+  repairOrderId    String
+  description      String
+  type             ROServiceType     @default(LABOR)
+  quantity         Decimal           @default(1) @db.Decimal(10, 2)
+  unitPrice        Decimal           @default(0) @db.Decimal(10, 2)
+  total            Decimal           @default(0) @db.Decimal(10, 2)
+  technicianNotes  String?
+  status           ROServiceStatus   @default(PENDING)
   // Customer's approve/decline decision for this line item (independent of work completion)
   customerApproval ROServiceApproval @default(PENDING)
   // When true, this item should be quoted (via a quotation) rather than billed on the RO invoice
-  isQuotation     Boolean         @default(false)
+  isQuotation      Boolean           @default(false)
   // Set when this line is the fee auto-added from a completed inspection, so it
   // can be kept in sync (and not duplicated) with that inspection.
-  inspectionId    String?
-  completedById   String?
-  completedAt     DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  inspectionId     String?
+  completedById    String?
+  completedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
   completedBy User?       @relation("ROServiceCompletedBy", fields: [completedById], references: [id])
@@ -1819,9 +1834,9 @@ enum ROMediaType {
 // See .claude/docs/carfax-integration.md
 // ============================================================================
 model CarfaxSync {
-  id        String           @id @default(cuid())
-  invoiceId String           @unique
-  invoice   Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  invoiceId String  @unique
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   // Snapshot of what was/should be reported (anonymous - no customer PII)
   vin         String?
@@ -1835,8 +1850,8 @@ model CarfaxSync {
   lastError  String?
 
   sentAt    DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([status])
   @@index([createdAt])

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
@@ -21,6 +22,15 @@ import {
   UpsertEmployeeCompensationDto,
 } from '@gt-automotive/data';
 import { AuditRepository } from '../audit/repositories/audit.repository';
+import { BUSINESS_TIMEZONE } from '../config/timezone.config';
+import {
+  closingInstantFor,
+  formatTimeOfDay,
+  isWithinShopHours,
+  resolveShopHours,
+  ShopHours,
+  shopHoursRefusal,
+} from './shop-hours';
 
 const ACTIVE_TIME_ENTRY_STATUSES = [
   TimeEntryStatus.OPEN,
@@ -60,6 +70,8 @@ const TEAM_WIDE_TIME_CLOCK_ROLES = [
 
 @Injectable()
 export class TimeClockService {
+  private readonly logger = new Logger(TimeClockService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditRepository: AuditRepository
@@ -118,8 +130,24 @@ export class TimeClockService {
     return compensation ? this.toCompensationDto(compensation) : null;
   }
 
-  async clockIn(employeeId: string, dto: ClockInDto) {
+  /**
+   * Clock an employee in.
+   *
+   * @param enforceShopHours whether the shop-hours window applies. True for an
+   * employee clocking themselves in; false when an admin does it on their
+   * behalf, which is the escape hatch for a shift that genuinely ran outside
+   * the window.
+   */
+  async clockIn(employeeId: string, dto: ClockInDto, enforceShopHours = true) {
     await this.assertPayrollEmployee(employeeId);
+
+    if (enforceShopHours) {
+      const hours = await this.getShopHours();
+      if (!isWithinShopHours(hours)) {
+        throw new BadRequestException(shopHoursRefusal(hours));
+      }
+    }
+
     const current = await this.findCurrentEntry(employeeId);
 
     if (current) {
@@ -214,6 +242,117 @@ export class TimeClockService {
     });
 
     return this.toTimeEntryDto(updated);
+  }
+
+  /**
+   * The shop's configured clock window, read from the default company.
+   *
+   * Falls back to the defaults when no company is configured — a missing
+   * settings row is not a reason to refuse everyone a clock-in.
+   */
+  async getShopHours(): Promise<ShopHours> {
+    const company = await this.prisma.company.findFirst({
+      where: { isDefault: true },
+    });
+    return resolveShopHours(company);
+  }
+
+  /** Shop hours plus whether the clock is open right now, for the UI. */
+  async getShopHoursStatus() {
+    const hours = await this.getShopHours();
+    return {
+      ...hours,
+      timezone: BUSINESS_TIMEZONE,
+      isOpen: isWithinShopHours(hours),
+      /** Why the clock is shut, so the button can explain itself. */
+      closedReason: isWithinShopHours(hours)
+        ? undefined
+        : shopHoursRefusal(hours),
+    };
+  }
+
+  /**
+   * Close every shift still running past its day's closing time.
+   *
+   * Run on a schedule rather than trusted to the employee: a forgotten
+   * clock-out otherwise accrues overnight, and by the time anyone notices the
+   * shift has to be reconstructed from memory — or worse, gets paid.
+   *
+   * What it does *not* do is approve them. An 8 PM clock-out is a guess about
+   * when someone actually left, so the entry stays unapproved and flagged, and
+   * lands in the admin's review queue rather than flowing into payroll. Entries
+   * already approved, voided or paid are terminal and never touched.
+   *
+   * Idempotent: an entry closed at its day's closing time is no longer open, so
+   * a second run finds nothing to do.
+   */
+  async autoClockOutStaleEntries(): Promise<number> {
+    const hours = await this.getShopHours();
+    if (!hours.enabled) return 0;
+
+    const now = new Date();
+    const openEntries = await this.prisma.timeEntry.findMany({
+      where: { status: { in: ACTIVE_TIME_ENTRY_STATUSES as any[] } },
+    });
+
+    let closed = 0;
+
+    for (const entry of openEntries) {
+      const closingAt = closingInstantFor(entry.clockInAt, hours);
+      if (closingAt > now) continue;
+
+      await this.prisma.$transaction(async (tx) => {
+        // An open break has to end at the same instant, or the break minutes
+        // would run past the shift that contains them.
+        await tx.breakEntry.updateMany({
+          where: { timeEntryId: entry.id, endAt: null },
+          data: {
+            endAt: closingAt,
+            notes: 'Auto-ended at closing time',
+          },
+        });
+
+        await tx.timeEntry.update({
+          where: { id: entry.id },
+          data: {
+            clockOutAt: closingAt,
+            status: TimeEntryStatus.CLOCKED_OUT as any,
+            source: TimeEntrySource.SYSTEM as any,
+            autoClockedOut: true,
+            adjustmentReason: `Automatically clocked out at ${formatTimeOfDay(
+              hours.closesAt
+            )} — the employee did not clock out.`,
+          },
+        });
+      });
+
+      await this.auditRepository.create({
+        userId: 'system',
+        action: 'AUTO_CLOCK_OUT',
+        resource: 'TimeEntry',
+        resourceId: entry.id,
+        oldValue: {
+          employeeId: entry.employeeId,
+          clockInAt: entry.clockInAt.toISOString(),
+          status: entry.status,
+        },
+        newValue: {
+          clockOutAt: closingAt.toISOString(),
+          status: TimeEntryStatus.CLOCKED_OUT,
+          reason: `Shift left open past ${hours.closesAt}`,
+        },
+      });
+
+      closed += 1;
+    }
+
+    if (closed > 0) {
+      this.logger.log(
+        `Auto-clocked out ${closed} shift(s) left open past ${hours.closesAt}`
+      );
+    }
+
+    return closed;
   }
 
   async getCurrentForEmployee(employeeId: string) {
@@ -1125,6 +1264,7 @@ export class TimeClockService {
       status: entry.status,
       source: entry.source,
       notes: entry.notes || undefined,
+      autoClockedOut: entry.autoClockedOut ?? false,
       adjustedBy: entry.adjustedBy || undefined,
       adjustmentReason: entry.adjustmentReason || undefined,
       approvedBy: entry.approvedBy || undefined,

@@ -18,9 +18,17 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import { CheckCircle, Delete, Edit, MoreVert, Undo } from '@mui/icons-material';
+import {
+  CheckCircle,
+  Delete,
+  Edit,
+  MoreVert,
+  TimerOff as AutoCloseIcon,
+  Undo,
+} from '@mui/icons-material';
 import { format } from 'date-fns';
 import { TimeEntryDto, TimeEntryStatus } from '@gt-automotive/data';
 import { colors } from '../../theme/colors';
@@ -74,6 +82,28 @@ export interface TimeEntryActions {
   onApprove: (entry: TimeEntryDto) => void;
   onUnapprove: (entry: TimeEntryDto) => void;
   onDelete: (entry: TimeEntryDto) => void;
+}
+
+/**
+ * Marks a shift the closing-time job ended because nobody clocked out.
+ *
+ * A badge rather than a note buried in the reason text: the clock-out time on
+ * these is a guess about when the employee actually left, and it has to be
+ * obvious at a glance which rows need checking before payroll runs.
+ */
+function AutoClockedOutChip({ entry }: { entry: TimeEntryDto }) {
+  if (!entry.autoClockedOut) return null;
+  return (
+    <Tooltip title={entry.adjustmentReason || 'Automatically clocked out'}>
+      <Chip
+        size="small"
+        variant="outlined"
+        color="warning"
+        icon={<AutoCloseIcon />}
+        label="Auto clock-out"
+      />
+    </Tooltip>
+  );
 }
 
 interface TimeEntriesTableProps {
@@ -160,12 +190,22 @@ export function TimeEntriesTable({
                     {format(new Date(entry.clockInAt), 'MMM d, yyyy')}
                   </Typography>
                 </Box>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  color={getStatusColor(entry.status)}
-                  label={formatStatus(entry.status)}
-                />
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 0.5,
+                    flexWrap: 'wrap',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <AutoClockedOutChip entry={entry} />
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    color={getStatusColor(entry.status)}
+                    label={formatStatus(entry.status)}
+                  />
+                </Box>
               </Box>
 
               <Grid container spacing={1.5} sx={{ mb: actions ? 1.5 : 0 }}>
@@ -297,12 +337,15 @@ export function TimeEntriesTable({
                   {formatBreak(entry.unpaidBreakMinutes)}
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    color={getStatusColor(entry.status)}
-                    label={formatStatus(entry.status)}
-                  />
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      color={getStatusColor(entry.status)}
+                      label={formatStatus(entry.status)}
+                    />
+                    <AutoClockedOutChip entry={entry} />
+                  </Box>
                 </TableCell>
                 <TableCell align="right">
                   <Chip

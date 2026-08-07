@@ -21,6 +21,10 @@ export interface Company {
   isDefault: boolean;
   /** Business-authored terms printed at the foot of this company's invoices. */
   termsAndConditions?: string | null;
+  /** Shop hours the employee time clock is open for, as HH:mm local time. */
+  timeClockOpensAt?: string;
+  timeClockClosesAt?: string;
+  timeClockWindowEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -112,6 +116,24 @@ class CompanyService {
     const response = await axios.patch(
       `${API_URL}/api/companies/${id}/terms`,
       { termsAndConditions },
+      { headers: await this.getHeaders() }
+    );
+    this.clearCache();
+    return response.data;
+  }
+
+  /** Admin-only. Sets the window the employee time clock is open for. */
+  async updateTimeClockHours(
+    id: string,
+    hours: {
+      timeClockWindowEnabled?: boolean;
+      timeClockOpensAt?: string;
+      timeClockClosesAt?: string;
+    }
+  ): Promise<Company> {
+    const response = await axios.patch(
+      `${API_URL}/api/companies/${id}/time-clock-hours`,
+      hours,
       { headers: await this.getHeaders() }
     );
     this.clearCache();

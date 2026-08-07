@@ -22,7 +22,10 @@ import {
   PayPeriodNavigator,
   TimeEntriesTable,
 } from '../../components/time-clock';
-import { timeClockService } from '../../requests/time-clock.requests';
+import {
+  timeClockService,
+  ShopHoursStatus,
+} from '../../requests/time-clock.requests';
 import { colors } from '../../theme/colors';
 import {
   PayPeriod,
@@ -43,6 +46,9 @@ export function TimeClock() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The shop-hours window, so the clock-in button can disable itself and say
+  // why rather than letting someone press it and take an error back.
+  const [shopHours, setShopHours] = useState<ShopHoursStatus | null>(null);
 
   const periodStart = period.start.toISOString();
   const periodEnd = period.end.toISOString();
@@ -51,7 +57,7 @@ export function TimeClock() {
     try {
       setLoading(true);
       setError(null);
-      const [current, history, hours] = await Promise.all([
+      const [current, history, hours, hoursWindow] = await Promise.all([
         timeClockService.getMyCurrent(),
         timeClockService.getMyEntries({
           startDate: periodStart,
@@ -61,7 +67,11 @@ export function TimeClock() {
           startDate: periodStart,
           endDate: periodEnd,
         }),
+        // A failure here must not take the whole screen down — worst case the
+        // button stays enabled and the server refuses, which is where we were.
+        timeClockService.getShopHours().catch(() => null),
       ]);
+      setShopHours(hoursWindow);
       setCurrentEntry(current);
       setEntries(history);
       // The server has already narrowed this to the caller, so the first row
@@ -101,6 +111,9 @@ export function TimeClock() {
 
   const isClockedIn = Boolean(currentEntry);
   const isOnBreak = currentEntry?.status === TimeEntryStatus.ON_BREAK;
+  // Only clocking *in* is restricted. Someone already on the clock must always
+  // be able to clock out, whatever the hour.
+  const clockInClosed = shopHours ? !shopHours.isOpen : false;
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
@@ -143,6 +156,12 @@ export function TimeClock() {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
+        </Alert>
+      )}
+
+      {clockInClosed && !isClockedIn && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          {shopHours?.closedReason}
         </Alert>
       )}
 
@@ -211,7 +230,7 @@ export function TimeClock() {
                     variant="contained"
                     size="large"
                     startIcon={<Login />}
-                    disabled={submitting}
+                    disabled={submitting || clockInClosed}
                     onClick={() => runAction(() => timeClockService.clockIn())}
                     sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
