@@ -27,6 +27,14 @@ export class UpsertEmployeeCompensationDto {
   @IsEnum(PayType)
   payType!: PayType;
 
+  /**
+   * Job title as it should read on this employee's pay stubs. Optional — the
+   * stub omits the line when there is none.
+   */
+  @IsOptional()
+  @IsString()
+  position?: string;
+
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
@@ -163,6 +171,8 @@ export interface EmployeeSummaryDto {
 export interface EmployeeCompensationDto {
   id: string;
   employeeId: string;
+  /** Job title for pay stubs, e.g. "Tire Technician". */
+  position?: string;
   payType: PayType;
   hourlyRate?: number;
   annualSalary?: number;
@@ -248,4 +258,34 @@ export interface PayrollSummaryDto {
     bonusPay: number;
     grossPay: number;
   };
+}
+
+/**
+ * Approved hours and gross pay for one employee over a period, as returned by
+ * the read-only `GET /api/time-clock/payroll-hours` endpoint. This is what the
+ * pay stub form pre-fills from — reading it never marks entries as processed.
+ *
+ * `hours` counts every approved entry in the period, whether or not payroll has
+ * already been processed for it, so a stub raised after payroll runs still
+ * reports the period correctly. `processedHours` is the subset already stamped,
+ * exposed so the UI can say so rather than silently conflating the two.
+ */
+export interface PayrollHoursDto {
+  employeeId: string;
+  employee: EmployeeSummaryDto;
+  startDate: string;
+  endDate: string;
+  entryCount: number;
+  hours: number;
+  processedHours: number;
+  /** Absent when the employee has no active compensation record. */
+  payType?: PayType;
+  hasCompensation: boolean;
+  /** Job title from the compensation record, for the pay stub. */
+  position?: string;
+  /** Zero for salaried employees — read `salaryPay` instead. */
+  hourlyRate: number;
+  /** Annual salary prorated across the period; zero for hourly employees. */
+  salaryPay: number;
+  grossPay: number;
 }

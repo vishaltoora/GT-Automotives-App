@@ -17,11 +17,16 @@ import {
   Close as CloseIcon,
   RequestQuote as QuoteIcon,
 } from '@mui/icons-material';
-import { quotationService, QuoteItem } from '../../requests/quotation.requests';
+import {
+  quotationService,
+  Quote,
+  QuoteItem,
+} from '../../requests/quotation.requests';
 import { TireService } from '../../requests/tire.requests';
 import { serviceService } from '../../requests/service.requests';
 import { ServiceDto } from '@gt-automotive/data';
 import QuotationFormContent from './QuotationFormContent';
+import QuotationPrintDialog from './QuotationPrintDialog';
 import { useError } from '../../contexts/ErrorContext';
 import { colors } from '../../theme/colors';
 
@@ -45,6 +50,9 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
   const [saving, setSaving] = useState(false);
   const [tires, setTires] = useState<any[]>([]);
   const [services, setServices] = useState<ServiceDto[]>([]);
+  // The just-saved quote, shown in the print preview dialog. Held here rather
+  // than in the caller so the preview outlives this form closing.
+  const [savedQuote, setSavedQuote] = useState<Quote | null>(null);
 
   const [quoteForm, setQuoteForm] = useState({
     customerName: '',
@@ -172,17 +180,30 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
     }
   };
 
+  const blankItem = () => ({
+    itemType: 'TIRE' as const,
+    description: '',
+    quantity: 1,
+    unitPrice: '' as unknown as number,
+    tireId: undefined,
+  });
+
   const handleAddItem = () => {
-    if (newItem.description && newItem.quantity && newItem.unitPrice) {
-      setItems([...items, { ...newItem }]);
-      setNewItem({
-        itemType: 'TIRE',
-        description: '',
-        quantity: 1,
-        unitPrice: '' as unknown as number,
-        tireId: undefined,
-      });
-    }
+    if (!(newItem.description && newItem.quantity && newItem.unitPrice)) return;
+
+    setItems([...items, { ...newItem }]);
+    setNewItem(blankItem());
+  };
+
+  /**
+   * Apply an in-row edit. Only the edited fields arrive here; line and quote
+   * totals are derived from the items array on render, so replacing the row is
+   * enough to keep them in step.
+   */
+  const handleUpdateItem = (index: number, changes: Partial<QuoteItem>) => {
+    setItems(
+      items.map((item, i) => (i === index ? { ...item, ...changes } : item))
+    );
   };
 
   const handleRemoveItem = (index: number) => {
@@ -229,20 +250,11 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
         });
       }
 
-      // Print the quotation if requested, but don't let print failures affect the save operation
+      // Show the saved quotation in a preview dialog rather than a new browser
+      // tab, so the user stays on the page they were working on and can print
+      // from there if they want to.
       if (shouldPrint) {
-        try {
-          quotationService.printQuote(savedQuotation);
-        } catch (printError) {
-          console.warn(
-            'Print failed, but quotation was saved successfully:',
-            printError
-          );
-          // Show a warning but don't fail the entire operation
-          showError(
-            'Quotation saved successfully, but printing failed. You can print it later from the quotations list.'
-          );
-        }
+        setSavedQuote(savedQuotation);
       }
 
       if (onSuccess) {
@@ -256,168 +268,183 @@ const QuoteDialog: React.FC<QuoteDialogProps> = ({
     }
   };
 
-  const handleSaveAndPrint = async () => {
+  const handleSaveAndPreview = async () => {
     await handleSave(true);
   };
 
   return (
-    <Dialog
-      open={open}
-      disableEscapeKeyDown
-      maxWidth="xl"
-      fullWidth
-      fullScreen={isMobile}
-      PaperProps={{
-        sx: {
-          borderRadius: isMobile ? 0 : 3,
-          ...(isMobile && {
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100vh',
-          }),
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          background: colors.gradients.primary,
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          py: { xs: 1.5, sm: 2 },
-          px: { xs: 2, sm: 3 },
-          ...(isMobile && {
-            flexShrink: 0,
-          }),
+    <>
+      <Dialog
+        open={open}
+        disableEscapeKeyDown
+        maxWidth="xl"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            borderRadius: isMobile ? 0 : 3,
+            ...(isMobile && {
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100vh',
+            }),
+          },
         }}
       >
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}
-        >
-          <QuoteIcon
-            sx={{
-              fontSize: { xs: 24, sm: 28 },
-              display: { xs: 'none', sm: 'block' },
-            }}
-          />
-          <Box>
-            <Typography
-              variant={isMobile ? 'h6' : 'h5'}
-              sx={{ fontWeight: 600 }}
-            >
-              {quoteId ? 'Edit Quote' : 'Create Quote'}
-            </Typography>
-            {!isMobile && (
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {quoteId
-                  ? 'Modify existing quotation details'
-                  : 'Generate professional quotations for your customers'}
-              </Typography>
-            )}
-          </Box>
-        </Box>
-        <IconButton
-          onClick={onClose}
-          size={isMobile ? 'small' : 'medium'}
+        <DialogTitle
           sx={{
+            background: colors.gradients.primary,
             color: 'white',
-            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            py: { xs: 1.5, sm: 2 },
+            px: { xs: 2, sm: 3 },
+            ...(isMobile && {
+              flexShrink: 0,
+            }),
           }}
         >
-          <CloseIcon fontSize={isMobile ? 'small' : 'medium'} />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent
-        sx={{
-          ...(isMobile && {
-            flex: '1 1 auto',
-            overflowY: 'auto',
-            minHeight: 0,
-            p: 0,
-          }),
-        }}
-      >
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 1, sm: 2 },
+            }}
+          >
+            <QuoteIcon
+              sx={{
+                fontSize: { xs: 24, sm: 28 },
+                display: { xs: 'none', sm: 'block' },
+              }}
+            />
+            <Box>
+              <Typography
+                variant={isMobile ? 'h6' : 'h5'}
+                sx={{ fontWeight: 600 }}
+              >
+                {quoteId ? 'Edit Quote' : 'Create Quote'}
+              </Typography>
+              {!isMobile && (
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {quoteId
+                    ? 'Modify existing quotation details'
+                    : 'Generate professional quotations for your customers'}
+                </Typography>
+              )}
+            </Box>
           </Box>
-        ) : (
-          <QuotationFormContent
-            tires={tires}
-            services={services}
-            quotationForm={quoteForm}
-            setQuotationForm={setQuoteForm}
-            formData={formData}
-            setFormData={setFormData}
-            items={items}
-            setItems={setItems}
-            newItem={newItem}
-            setNewItem={setNewItem}
-            onAddItem={handleAddItem}
-            onRemoveItem={handleRemoveItem}
-            onTireSelect={handleTireSelect}
-            onServicesChange={handleServicesChange}
-          />
-        )}
-      </DialogContent>
+          <IconButton
+            onClick={onClose}
+            size={isMobile ? 'small' : 'medium'}
+            sx={{
+              color: 'white',
+              '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+            }}
+          >
+            <CloseIcon fontSize={isMobile ? 'small' : 'medium'} />
+          </IconButton>
+        </DialogTitle>
 
-      <DialogActions
-        sx={{
-          p: { xs: 2, sm: 3 },
-          background: colors.background.light,
-          borderTop: `1px solid ${colors.neutral[200]}`,
-          gap: 2,
-          ...(isMobile && {
-            flexShrink: 0,
-            backgroundColor: 'white',
-          }),
-        }}
-      >
-        <Button
-          onClick={onClose}
-          startIcon={<CloseIcon />}
-          variant="outlined"
-          fullWidth={isMobile}
+        <DialogContent
           sx={{
-            borderColor: colors.neutral[400],
-            color: colors.text.secondary,
-            '&:hover': {
-              borderColor: colors.neutral[600],
-              background: colors.neutral[50],
-            },
+            ...(isMobile && {
+              flex: '1 1 auto',
+              overflowY: 'auto',
+              minHeight: 0,
+              p: 0,
+            }),
           }}
         >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleSaveAndPrint}
-          disabled={loading || saving}
-          fullWidth={isMobile}
-          startIcon={saving ? <CircularProgress size={20} /> : <PrintIcon />}
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <QuotationFormContent
+              tires={tires}
+              services={services}
+              quotationForm={quoteForm}
+              setQuotationForm={setQuoteForm}
+              formData={formData}
+              setFormData={setFormData}
+              items={items}
+              setItems={setItems}
+              newItem={newItem}
+              setNewItem={setNewItem}
+              onAddItem={handleAddItem}
+              onRemoveItem={handleRemoveItem}
+              onUpdateItem={handleUpdateItem}
+              onTireSelect={handleTireSelect}
+              onServicesChange={handleServicesChange}
+            />
+          )}
+        </DialogContent>
+
+        <DialogActions
           sx={{
-            background: colors.primary.main,
-            '&:hover': {
-              background: colors.primary.dark,
-            },
+            p: { xs: 2, sm: 3 },
+            background: colors.background.light,
+            borderTop: `1px solid ${colors.neutral[200]}`,
+            gap: 2,
+            ...(isMobile && {
+              flexShrink: 0,
+              backgroundColor: 'white',
+            }),
           }}
         >
-          {saving
-            ? quoteId
-              ? 'Updating...'
-              : 'Creating...'
-            : quoteId
-            ? isMobile
-              ? 'Update'
-              : 'Update Quote'
-            : isMobile
-            ? 'Create'
-            : 'Create Quote'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Button
+            onClick={onClose}
+            startIcon={<CloseIcon />}
+            variant="outlined"
+            fullWidth={isMobile}
+            sx={{
+              borderColor: colors.neutral[400],
+              color: colors.text.secondary,
+              '&:hover': {
+                borderColor: colors.neutral[600],
+                background: colors.neutral[50],
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveAndPreview}
+            disabled={loading || saving}
+            fullWidth={isMobile}
+            startIcon={saving ? <CircularProgress size={20} /> : <PrintIcon />}
+            sx={{
+              background: colors.primary.main,
+              '&:hover': {
+                background: colors.primary.dark,
+              },
+            }}
+          >
+            {saving
+              ? quoteId
+                ? 'Updating...'
+                : 'Creating...'
+              : quoteId
+              ? isMobile
+                ? 'Update'
+                : 'Update Quote'
+              : isMobile
+              ? 'Create'
+              : 'Create Quote'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Rendered outside the form dialog so it survives the form closing after
+        a successful save. */}
+      <QuotationPrintDialog
+        quote={savedQuote}
+        open={Boolean(savedQuote)}
+        onClose={() => setSavedQuote(null)}
+      />
+    </>
   );
 };
 

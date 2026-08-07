@@ -104,8 +104,10 @@ export class TimeClockController {
     return this.timeClockService.getCurrentEntries();
   }
 
+  // ACCOUNTANT is read-only across time clock: they need hours to raise pay
+  // stubs, but approving, adjusting and processing stay with ADMIN/FOREMAN.
   @Get('entries')
-  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'ACCOUNTANT')
   getEntries(
     @CurrentUser() user: any,
     @Query('employeeId') employeeId?: string,
@@ -164,7 +166,7 @@ export class TimeClockController {
   }
 
   @Get('employees/:employeeId/compensation')
-  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'ACCOUNTANT')
   getCompensation(@Param('employeeId') employeeId: string) {
     return this.timeClockService.getCompensation(employeeId);
   }
@@ -210,13 +212,32 @@ export class TimeClockController {
   }
 
   @Get('payroll-summary')
-  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'ACCOUNTANT')
   getPayrollSummary(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @Query('employeeId') employeeId?: string
   ) {
     return this.timeClockService.getPayrollSummary(
+      startDate,
+      endDate,
+      employeeId
+    );
+  }
+
+  /**
+   * Approved hours and gross pay per employee over a period. Read-only — this
+   * is what the accountant's hours view and the pay stub form pre-fill read,
+   * and it must never stamp entries the way POST process-payroll does.
+   */
+  @Get('payroll-hours')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'ACCOUNTANT')
+  getPayrollHours(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('employeeId') employeeId?: string
+  ) {
+    return this.timeClockService.getPayrollHours(
       startDate,
       endDate,
       employeeId

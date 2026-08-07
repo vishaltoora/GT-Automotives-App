@@ -34,6 +34,9 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
   Person as PersonIcon,
   DirectionsCar as CarIcon,
   ShoppingCart as ShoppingCartIcon,
@@ -55,6 +58,70 @@ import { colors } from '../../theme/colors';
 import ServiceSelect from '../services/ServiceSelect';
 import { PhoneInput } from '../common/PhoneInput';
 import { NumberInput } from '../common';
+
+/** The item type as it is stored on a line item. */
+type ItemTypeValue = InvoiceItem['itemType'];
+
+/**
+ * The line item types offered in the pickers, in the order they appear. Shared
+ * by the entry row and the in-row editor so both offer exactly the same set.
+ */
+const ITEM_TYPE_OPTIONS: {
+  value: ItemTypeValue;
+  label: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: 'TIRE',
+    label: 'Tire',
+    icon: <span style={{ fontSize: '18px' }}>🛞</span>,
+  },
+  {
+    value: 'SERVICE',
+    label: 'Service',
+    icon: <BuildIcon fontSize="small" />,
+  },
+  {
+    value: 'PART',
+    label: 'Part',
+    icon: <ExtensionIcon fontSize="small" />,
+  },
+  {
+    value: 'OTHER',
+    label: 'Other',
+    icon: <CategoryIcon fontSize="small" />,
+  },
+  {
+    value: 'LEVY',
+    label: 'Levy',
+    icon: <AccountBalanceIcon fontSize="small" />,
+  },
+  {
+    value: 'DISCOUNT',
+    label: '$ Discount',
+    icon: <AttachMoneyIcon fontSize="small" sx={{ color: 'red' }} />,
+  },
+  {
+    value: 'DISCOUNT_PERCENTAGE',
+    label: '% Discount',
+    icon: <AttachMoneyIcon fontSize="small" sx={{ color: 'red' }} />,
+  },
+  {
+    value: 'TIPS',
+    label: 'Tips',
+    icon: <TipsIcon fontSize="small" sx={{ color: 'green' }} />,
+  },
+];
+
+const renderItemTypeOptions = () =>
+  ITEM_TYPE_OPTIONS.map((option) => (
+    <MenuItem key={option.value} value={option.value}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {option.icon}
+        {option.label}
+      </Box>
+    </MenuItem>
+  ));
 
 interface InvoiceFormContentProps {
   customers: any[];
@@ -94,6 +161,11 @@ interface InvoiceFormContentProps {
   onCustomerSelect: (customer: any) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
+  /**
+   * Apply an in-row edit. Only the changed fields are passed; the caller
+   * re-derives totals and discount fields from the merged item.
+   */
+  onUpdateItem: (index: number, changes: Partial<InvoiceItem>) => void;
   onTireSelect: (tireId: string) => void;
   onServicesChange: () => void;
   isEditMode?: boolean;
@@ -117,6 +189,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   onCustomerSelect,
   onAddItem,
   onRemoveItem,
+  onUpdateItem,
   onTireSelect,
   onServicesChange,
   isEditMode = false,
@@ -125,6 +198,18 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [menuItemIndex, setMenuItemIndex] = useState<number | null>(null);
+
+  // In-row editing: the row at `inlineEditIndex` swaps its description, qty and
+  // price cells for inputs backed by `inlineDraft`. The draft is kept separate
+  // from the item so a half-typed value never reaches the totals — nothing is
+  // committed until Save.
+  const [inlineEditIndex, setInlineEditIndex] = useState<number | null>(null);
+  const [inlineDraft, setInlineDraft] = useState<{
+    itemType: ItemTypeValue;
+    description: string;
+    quantity: number | '';
+    unitPrice: number | '';
+  } | null>(null);
 
   const formatTireType = (type: string) => {
     return type
@@ -146,11 +231,129 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
     setMenuItemIndex(null);
   };
 
+  const cancelInlineEdit = () => {
+    setInlineEditIndex(null);
+    setInlineDraft(null);
+  };
+
+  /**
+   * A fixed discount is stored negative but is far easier to edit as a positive
+   * amount, so the draft always holds the magnitude and the sign is restored on
+   * save.
+   */
+  const startInlineEdit = (index: number) => {
+    const item = items[index];
+    if (!item) return;
+    setInlineEditIndex(index);
+    setInlineDraft({
+      itemType: item.itemType,
+      description: item.description ?? '',
+      quantity: item.quantity ?? 1,
+      unitPrice:
+        item.itemType === 'DISCOUNT'
+          ? Math.abs(item.unitPrice)
+          : item.unitPrice,
+    });
+  };
+
+  /**
+   * Switching type in the editor keeps what has already been typed — the point
+   * of an in-row type change is to re-file a line, not to retype it. Only the
+   * values the new type cannot carry are adjusted: TIPS is always a single
+   * unit.
+   */
+  const changeInlineType = (itemType: ItemTypeValue) => {
+    if (!inlineDraft) return;
+    setInlineDraft({
+      ...inlineDraft,
+      itemType,
+      quantity: itemType === 'TIPS' ? 1 : inlineDraft.quantity,
+    });
+  };
+
+  /** Same rules the entry row enforces, so a row cannot be edited into a state
+   *  that would have been rejected when it was added. */
+  const isInlineDraftValid = () => {
+    if (!inlineDraft) return false;
+    const price = Number(inlineDraft.unitPrice);
+    const quantity = Number(inlineDraft.quantity);
+
+    if (!inlineDraft.description.trim()) return false;
+    if (inlineDraft.unitPrice === '' || Number.isNaN(price)) return false;
+    if (inlineDraft.itemType !== 'TIPS' && quantity <= 0) return false;
+
+    if (inlineDraft.itemType === 'DISCOUNT_PERCENTAGE') {
+      return price > 0 && price <= 100;
+    }
+    return price > 0;
+  };
+
+  const saveInlineEdit = () => {
+    if (inlineEditIndex === null || !inlineDraft) return;
+    const item = items[inlineEditIndex];
+    if (!item || !isInlineDraftValid()) return;
+
+    const price = Number(inlineDraft.unitPrice);
+    const typeChanged = inlineDraft.itemType !== item.itemType;
+
+    onUpdateItem(inlineEditIndex, {
+      itemType: inlineDraft.itemType,
+      description: inlineDraft.description.trim(),
+      quantity: Number(inlineDraft.quantity) || 1,
+      unitPrice: inlineDraft.itemType === 'DISCOUNT' ? -Math.abs(price) : price,
+      // A line that is no longer a tire (or no longer that service) must not
+      // keep pointing at one — the link drives inventory and reporting, and a
+      // stale one would bill against the wrong record.
+      ...(typeChanged
+        ? { tireId: undefined, tireName: undefined, serviceId: undefined }
+        : {}),
+    });
+    cancelInlineEdit();
+  };
+
+  const handleInlineKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveInlineEdit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelInlineEdit();
+    }
+  };
+
+  /**
+   * Removing a row shifts every later index, so an in-progress edit would
+   * silently start pointing at a different item. Drop it.
+   */
+  const handleRemoveItem = (index: number) => {
+    cancelInlineEdit();
+    onRemoveItem(index);
+  };
+
   const handleMenuDelete = () => {
     if (menuItemIndex !== null) {
-      onRemoveItem(menuItemIndex);
+      handleRemoveItem(menuItemIndex);
       handleMenuClose();
     }
+  };
+
+  const handleMenuEdit = () => {
+    if (menuItemIndex !== null) {
+      startInlineEdit(menuItemIndex);
+      handleMenuClose();
+    }
+  };
+
+  /** The line total a row would have if the in-progress edit were saved. */
+  const getDraftLineTotal = (item: InvoiceItem): number => {
+    if (!inlineDraft) return getLineTotal(item);
+    const price = Number(inlineDraft.unitPrice) || 0;
+    return getLineTotal({
+      ...item,
+      itemType: inlineDraft.itemType,
+      quantity: Number(inlineDraft.quantity) || 0,
+      unitPrice: inlineDraft.itemType === 'DISCOUNT' ? -Math.abs(price) : price,
+    });
   };
 
   const handleServiceChange = (
@@ -928,76 +1131,7 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       }}
                       label="Type"
                     >
-                      <MenuItem value="TIRE">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <span style={{ fontSize: '18px' }}>🛞</span>
-                          Tire
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="SERVICE">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <BuildIcon fontSize="small" />
-                          Service
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="PART">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <ExtensionIcon fontSize="small" />
-                          Part
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="OTHER">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <CategoryIcon fontSize="small" />
-                          Other
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="LEVY">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <AccountBalanceIcon fontSize="small" />
-                          Levy
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="DISCOUNT">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <AttachMoneyIcon
-                            fontSize="small"
-                            sx={{ color: 'red' }}
-                          />
-                          $ Discount
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="DISCOUNT_PERCENTAGE">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <AttachMoneyIcon
-                            fontSize="small"
-                            sx={{ color: 'red' }}
-                          />
-                          % Discount
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="TIPS">
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <TipsIcon fontSize="small" sx={{ color: 'green' }} />
-                          Tips
-                        </Box>
-                      </MenuItem>
+                      {renderItemTypeOptions()}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1241,159 +1375,307 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                 <Box
                   sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
                 >
-                  {items.map((item, index) => (
-                    <Card
-                      key={index}
-                      sx={{ border: `1px solid ${colors.neutral[200]}` }}
-                    >
-                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                        {/* Header Row: Type + Description + Action */}
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 1,
-                            mb: 1,
-                          }}
+                  {items.map((item, index) => {
+                    const isRowEditing = inlineEditIndex === index;
+                    const canSaveRow = isRowEditing && isInlineDraftValid();
+                    // While a row is being edited its appearance follows the
+                    // draft's type, so switching type re-labels the row and
+                    // switches the price field's adornments immediately.
+                    const rowType =
+                      isRowEditing && inlineDraft
+                        ? inlineDraft.itemType
+                        : item.itemType;
+
+                    return (
+                      <Card
+                        key={index}
+                        sx={{
+                          border: `1px solid ${
+                            isRowEditing
+                              ? colors.primary.main
+                              : colors.neutral[200]
+                          }`,
+                        }}
+                      >
+                        <CardContent
+                          sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}
                         >
-                          <Chip
-                            label={item.itemType}
-                            size="small"
+                          {/* Header Row: Type + Description + Action. Editing
+                            stacks the controls so the type picker and
+                            description each get the full card width. */}
+                          <Box
                             sx={{
-                              height: 20,
-                              fontSize: '0.688rem',
-                              background:
-                                item.itemType === 'TIRE'
-                                  ? colors.tire?.new || colors.primary.main
-                                  : item.itemType === 'DISCOUNT' ||
-                                    item.itemType === 'DISCOUNT_PERCENTAGE'
-                                  ? '#f44336'
-                                  : colors.service?.maintenance ||
-                                    colors.secondary.main,
-                              color: 'white',
-                              flexShrink: 0,
+                              display: 'flex',
+                              flexDirection: isRowEditing ? 'column' : 'row',
+                              alignItems: isRowEditing
+                                ? 'stretch'
+                                : 'flex-start',
+                              gap: 1,
+                              mb: 1,
                             }}
-                          />
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            {(item as any).tireName && (
-                              <Typography
-                                variant="body2"
-                                fontWeight={600}
+                          >
+                            {isRowEditing && inlineDraft ? (
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Type</InputLabel>
+                                <Select
+                                  value={inlineDraft.itemType}
+                                  label="Type"
+                                  onChange={(e) =>
+                                    changeInlineType(
+                                      e.target.value as ItemTypeValue
+                                    )
+                                  }
+                                >
+                                  {renderItemTypeOptions()}
+                                </Select>
+                              </FormControl>
+                            ) : (
+                              <Chip
+                                label={item.itemType}
+                                size="small"
                                 sx={{
-                                  fontSize: '0.813rem',
-                                  lineHeight: 1.3,
-                                  mb: 0.25,
+                                  height: 20,
+                                  fontSize: '0.688rem',
+                                  background:
+                                    item.itemType === 'TIRE'
+                                      ? colors.tire?.new || colors.primary.main
+                                      : item.itemType === 'DISCOUNT' ||
+                                        item.itemType === 'DISCOUNT_PERCENTAGE'
+                                      ? '#f44336'
+                                      : colors.service?.maintenance ||
+                                        colors.secondary.main,
+                                  color: 'white',
+                                  flexShrink: 0,
+                                }}
+                              />
+                            )}
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              {(item as any).tireName && (
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                  sx={{
+                                    fontSize: '0.813rem',
+                                    lineHeight: 1.3,
+                                    mb: 0.25,
+                                  }}
+                                >
+                                  {(item as any).tireName}
+                                </Typography>
+                              )}
+                              {isRowEditing && inlineDraft ? (
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  autoFocus
+                                  label="Description"
+                                  value={inlineDraft.description}
+                                  onChange={(e) =>
+                                    setInlineDraft({
+                                      ...inlineDraft,
+                                      description: e.target.value,
+                                    })
+                                  }
+                                  onKeyDown={handleInlineKeyDown}
+                                />
+                              ) : (
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontSize: '0.813rem',
+                                    lineHeight: 1.3,
+                                    color: (item as any).tireName
+                                      ? 'text.secondary'
+                                      : 'text.primary',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                  }}
+                                >
+                                  {item.description}
+                                </Typography>
+                              )}
+                            </Box>
+                            {isRowEditing ? (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexShrink: 0,
+                                  alignSelf: 'flex-end',
                                 }}
                               >
-                                {(item as any).tireName}
-                              </Typography>
+                                <IconButton
+                                  size="small"
+                                  onClick={saveInlineEdit}
+                                  disabled={!canSaveRow}
+                                  sx={{ p: 0.5, color: colors.primary.main }}
+                                >
+                                  <CheckIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={cancelInlineEdit}
+                                  sx={{ p: 0.5, color: colors.neutral[600] }}
+                                >
+                                  <CloseIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            ) : (
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleMenuOpen(e, index)}
+                                sx={{ p: 0.5, flexShrink: 0 }}
+                              >
+                                <MoreVertIcon fontSize="small" />
+                              </IconButton>
                             )}
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontSize: '0.813rem',
-                                lineHeight: 1.3,
-                                color: (item as any).tireName
-                                  ? 'text.secondary'
-                                  : 'text.primary',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                              }}
-                            >
-                              {item.description}
-                            </Typography>
                           </Box>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, index)}
-                            sx={{ p: 0.5, flexShrink: 0 }}
-                          >
-                            <MoreVertIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
 
-                        {/* Compact Info Row */}
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            flexWrap: 'wrap',
-                            gap: 1,
-                          }}
-                        >
+                          {/* Compact Info Row */}
                           <Box
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 2,
+                              justifyContent: 'space-between',
+                              flexWrap: 'wrap',
+                              gap: 1,
                             }}
                           >
-                            <Box>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ fontSize: '0.688rem' }}
-                              >
-                                Qty
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                fontWeight={500}
-                                sx={{ fontSize: '0.813rem' }}
-                              >
-                                {item.quantity}
-                              </Typography>
-                            </Box>
-                            <Box>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ fontSize: '0.688rem' }}
-                              >
-                                Price
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                fontWeight={500}
-                                sx={{ fontSize: '0.813rem' }}
-                              >
-                                {item.itemType === 'DISCOUNT_PERCENTAGE'
-                                  ? `${item.unitPrice}%`
-                                  : formatCurrency(item.unitPrice)}
-                              </Typography>
-                            </Box>
-                          </Box>
-                          <Box sx={{ textAlign: 'right' }}>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ fontSize: '0.688rem' }}
-                            >
-                              Total
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              fontWeight={600}
+                            <Box
                               sx={{
-                                fontSize: '0.938rem',
-                                color:
-                                  item.itemType === 'DISCOUNT' ||
-                                  item.itemType === 'DISCOUNT_PERCENTAGE'
-                                    ? '#f44336'
-                                    : colors.primary.main,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 2,
                               }}
                             >
-                              {formatCurrency(getLineTotal(item))}
-                            </Typography>
+                              <Box>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: '0.688rem' }}
+                                >
+                                  Qty
+                                </Typography>
+                                {isRowEditing &&
+                                inlineDraft &&
+                                rowType !== 'TIPS' ? (
+                                  <NumberInput
+                                    size="small"
+                                    allowDecimals
+                                    decimalPlaces={2}
+                                    value={inlineDraft.quantity}
+                                    onChange={(v) =>
+                                      setInlineDraft({
+                                        ...inlineDraft,
+                                        quantity: v ?? '',
+                                      })
+                                    }
+                                    onKeyDown={handleInlineKeyDown}
+                                    min={0}
+                                    sx={{ width: 80 }}
+                                  />
+                                ) : (
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={500}
+                                    sx={{ fontSize: '0.813rem' }}
+                                  >
+                                    {item.quantity}
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Box>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: '0.688rem' }}
+                                >
+                                  Price
+                                </Typography>
+                                {isRowEditing && inlineDraft ? (
+                                  <NumberInput
+                                    size="small"
+                                    allowDecimals
+                                    value={inlineDraft.unitPrice}
+                                    onChange={(v) =>
+                                      setInlineDraft({
+                                        ...inlineDraft,
+                                        unitPrice: v ?? '',
+                                      })
+                                    }
+                                    onKeyDown={handleInlineKeyDown}
+                                    min={0}
+                                    max={
+                                      rowType === 'DISCOUNT_PERCENTAGE'
+                                        ? 100
+                                        : undefined
+                                    }
+                                    InputProps={{
+                                      startAdornment: (
+                                        <InputAdornment position="start">
+                                          {rowType === 'DISCOUNT'
+                                            ? '-$'
+                                            : rowType === 'DISCOUNT_PERCENTAGE'
+                                            ? ''
+                                            : '$'}
+                                        </InputAdornment>
+                                      ),
+                                      endAdornment:
+                                        rowType === 'DISCOUNT_PERCENTAGE' ? (
+                                          <InputAdornment position="end">
+                                            %
+                                          </InputAdornment>
+                                        ) : undefined,
+                                    }}
+                                    sx={{ width: 130 }}
+                                  />
+                                ) : (
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={500}
+                                    sx={{ fontSize: '0.813rem' }}
+                                  >
+                                    {item.itemType === 'DISCOUNT_PERCENTAGE'
+                                      ? `${item.unitPrice}%`
+                                      : formatCurrency(item.unitPrice)}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: '0.688rem' }}
+                              >
+                                Total
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                fontWeight={600}
+                                sx={{
+                                  fontSize: '0.938rem',
+                                  color:
+                                    rowType === 'DISCOUNT' ||
+                                    rowType === 'DISCOUNT_PERCENTAGE'
+                                      ? '#f44336'
+                                      : colors.primary.main,
+                                }}
+                              >
+                                {formatCurrency(
+                                  isRowEditing
+                                    ? getDraftLineTotal(item)
+                                    : getLineTotal(item)
+                                )}
+                              </Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </Box>
               ) : (
                 // Desktop Table View
@@ -1426,85 +1708,247 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {items.map((item, index) => (
-                        <TableRow
-                          key={index}
-                          sx={{
-                            '&:hover': { background: colors.neutral[50] },
-                            '&:last-child td': { border: 0 },
-                          }}
-                        >
-                          <TableCell>
-                            <Chip
-                              label={item.itemType}
-                              size="small"
-                              sx={{
-                                background:
-                                  item.itemType === 'TIRE'
-                                    ? colors.tire?.new || colors.primary.main
-                                    : item.itemType === 'DISCOUNT' ||
-                                      item.itemType === 'DISCOUNT_PERCENTAGE'
-                                    ? '#f44336'
-                                    : colors.service?.maintenance ||
-                                      colors.secondary.main,
-                                color: 'white',
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {(item as any).tireName && (
-                              <Typography variant="body2" fontWeight="medium">
-                                {(item as any).tireName}
-                              </Typography>
-                            )}
-                            <Typography
-                              variant="body2"
-                              color={
-                                (item as any).tireName
-                                  ? 'text.secondary'
-                                  : 'inherit'
-                              }
-                            >
-                              {item.description}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">{item.quantity}</TableCell>
-                          <TableCell align="right">
-                            {item.itemType === 'DISCOUNT_PERCENTAGE'
-                              ? `${item.unitPrice}%`
-                              : formatCurrency(item.unitPrice)}
-                          </TableCell>
-                          <TableCell
-                            align="right"
+                      {items.map((item, index) => {
+                        const isRowEditing = inlineEditIndex === index;
+                        const canSaveRow = isRowEditing && isInlineDraftValid();
+                        // While a row is being edited its appearance follows
+                        // the draft's type, so switching type immediately
+                        // re-labels the row and swaps the price adornments.
+                        const rowType =
+                          isRowEditing && inlineDraft
+                            ? inlineDraft.itemType
+                            : item.itemType;
+
+                        return (
+                          <TableRow
+                            key={index}
                             sx={{
-                              fontWeight: 600,
-                              color:
-                                item.itemType === 'DISCOUNT' ||
-                                item.itemType === 'DISCOUNT_PERCENTAGE'
-                                  ? '#f44336'
-                                  : 'inherit',
+                              '&:hover': {
+                                background: isRowEditing
+                                  ? undefined
+                                  : colors.neutral[50],
+                              },
+                              '&:last-child td': { border: 0 },
+                              ...(isRowEditing && {
+                                background: `${colors.primary.main}0d`,
+                              }),
                             }}
                           >
-                            {formatCurrency(getLineTotal(item))}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Tooltip title="Remove item">
-                              <IconButton
-                                size="small"
-                                onClick={() => onRemoveItem(index)}
-                                sx={{
-                                  color: colors.semantic?.error || 'red',
-                                  '&:hover': {
-                                    background: 'rgba(255,0,0,0.1)',
-                                  },
-                                }}
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            <TableCell>
+                              {isRowEditing && inlineDraft ? (
+                                <FormControl
+                                  size="small"
+                                  sx={{ minWidth: 150 }}
+                                >
+                                  <Select
+                                    value={inlineDraft.itemType}
+                                    onChange={(e) =>
+                                      changeInlineType(
+                                        e.target.value as ItemTypeValue
+                                      )
+                                    }
+                                  >
+                                    {renderItemTypeOptions()}
+                                  </Select>
+                                </FormControl>
+                              ) : (
+                                <Chip
+                                  label={item.itemType}
+                                  size="small"
+                                  sx={{
+                                    background:
+                                      item.itemType === 'TIRE'
+                                        ? colors.tire?.new ||
+                                          colors.primary.main
+                                        : item.itemType === 'DISCOUNT' ||
+                                          item.itemType ===
+                                            'DISCOUNT_PERCENTAGE'
+                                        ? '#f44336'
+                                        : colors.service?.maintenance ||
+                                          colors.secondary.main,
+                                    color: 'white',
+                                  }}
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {(item as any).tireName && (
+                                <Typography variant="body2" fontWeight="medium">
+                                  {(item as any).tireName}
+                                </Typography>
+                              )}
+                              {isRowEditing && inlineDraft ? (
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  autoFocus
+                                  value={inlineDraft.description}
+                                  onChange={(e) =>
+                                    setInlineDraft({
+                                      ...inlineDraft,
+                                      description: e.target.value,
+                                    })
+                                  }
+                                  onKeyDown={handleInlineKeyDown}
+                                />
+                              ) : (
+                                <Typography
+                                  variant="body2"
+                                  color={
+                                    (item as any).tireName
+                                      ? 'text.secondary'
+                                      : 'inherit'
+                                  }
+                                >
+                                  {item.description}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell align="center">
+                              {isRowEditing &&
+                              inlineDraft &&
+                              rowType !== 'TIPS' ? (
+                                <NumberInput
+                                  size="small"
+                                  allowDecimals
+                                  decimalPlaces={2}
+                                  value={inlineDraft.quantity}
+                                  onChange={(v) =>
+                                    setInlineDraft({
+                                      ...inlineDraft,
+                                      quantity: v ?? '',
+                                    })
+                                  }
+                                  onKeyDown={handleInlineKeyDown}
+                                  min={0}
+                                  sx={{ width: 90 }}
+                                />
+                              ) : (
+                                item.quantity
+                              )}
+                            </TableCell>
+                            <TableCell align="right">
+                              {isRowEditing && inlineDraft ? (
+                                <NumberInput
+                                  size="small"
+                                  allowDecimals
+                                  value={inlineDraft.unitPrice}
+                                  onChange={(v) =>
+                                    setInlineDraft({
+                                      ...inlineDraft,
+                                      unitPrice: v ?? '',
+                                    })
+                                  }
+                                  onKeyDown={handleInlineKeyDown}
+                                  min={0}
+                                  max={
+                                    rowType === 'DISCOUNT_PERCENTAGE'
+                                      ? 100
+                                      : undefined
+                                  }
+                                  InputProps={{
+                                    startAdornment: (
+                                      <InputAdornment position="start">
+                                        {rowType === 'DISCOUNT'
+                                          ? '-$'
+                                          : rowType === 'DISCOUNT_PERCENTAGE'
+                                          ? ''
+                                          : '$'}
+                                      </InputAdornment>
+                                    ),
+                                    endAdornment:
+                                      rowType === 'DISCOUNT_PERCENTAGE' ? (
+                                        <InputAdornment position="end">
+                                          %
+                                        </InputAdornment>
+                                      ) : undefined,
+                                  }}
+                                  sx={{ width: 150 }}
+                                />
+                              ) : item.itemType === 'DISCOUNT_PERCENTAGE' ? (
+                                `${item.unitPrice}%`
+                              ) : (
+                                formatCurrency(item.unitPrice)
+                              )}
+                            </TableCell>
+                            <TableCell
+                              align="right"
+                              sx={{
+                                fontWeight: 600,
+                                color:
+                                  rowType === 'DISCOUNT' ||
+                                  rowType === 'DISCOUNT_PERCENTAGE'
+                                    ? '#f44336'
+                                    : 'inherit',
+                              }}
+                            >
+                              {formatCurrency(
+                                isRowEditing
+                                  ? getDraftLineTotal(item)
+                                  : getLineTotal(item)
+                              )}
+                            </TableCell>
+                            <TableCell
+                              align="center"
+                              sx={{ whiteSpace: 'nowrap' }}
+                            >
+                              {isRowEditing ? (
+                                <>
+                                  {/* span keeps the tooltip alive while the
+                                    button is disabled */}
+                                  <Tooltip title="Save changes">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        onClick={saveInlineEdit}
+                                        disabled={!canSaveRow}
+                                        sx={{ color: colors.primary.main }}
+                                      >
+                                        <CheckIcon fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                  <Tooltip title="Cancel">
+                                    <IconButton
+                                      size="small"
+                                      onClick={cancelInlineEdit}
+                                      sx={{ color: colors.neutral[600] }}
+                                    >
+                                      <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </>
+                              ) : (
+                                <>
+                                  <Tooltip title="Edit item">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => startInlineEdit(index)}
+                                      sx={{ color: colors.primary.main }}
+                                    >
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Remove item">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleRemoveItem(index)}
+                                      sx={{
+                                        color: colors.semantic?.error || 'red',
+                                        '&:hover': {
+                                          background: 'rgba(255,0,0,0.1)',
+                                        },
+                                      }}
+                                    >
+                                      <DeleteIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                </>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -1682,6 +2126,12 @@ const InvoiceFormContent: React.FC<InvoiceFormContentProps> = ({
           horizontal: 'right',
         }}
       >
+        <MenuItem onClick={handleMenuEdit}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit Item</ListItemText>
+        </MenuItem>
         <MenuItem onClick={handleMenuDelete}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />

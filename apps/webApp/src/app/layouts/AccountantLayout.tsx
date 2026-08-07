@@ -17,11 +17,13 @@ import {
   Divider,
   Chip,
   Tooltip,
-  Collapse
+  Collapse,
 } from '@mui/material';
 import {
   Dashboard,
   Receipt,
+  ReceiptLong,
+  AccessTime,
   Assessment,
   Analytics,
   Logout,
@@ -33,7 +35,7 @@ import {
   ExpandMore,
   ExpandLess,
   BarChart,
-  AccountBalance
+  AccountBalance,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
@@ -45,7 +47,9 @@ const drawerCollapsedWidth = 72;
 export function AccountantLayout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [drawerCollapsed, setDrawerCollapsed] = React.useState(false);
-  const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({
+  const [expandedSections, setExpandedSections] = React.useState<
+    Record<string, boolean>
+  >({
     financial: true,
     reports: true,
   });
@@ -67,9 +71,9 @@ export function AccountantLayout() {
   };
 
   const handleSectionToggle = (section: string) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
   };
 
@@ -77,8 +81,12 @@ export function AccountantLayout() {
     {
       title: 'Overview',
       items: [
-        { text: 'Dashboard', icon: <Dashboard />, path: '/accountant/dashboard' },
-      ]
+        {
+          text: 'Dashboard',
+          icon: <Dashboard />,
+          path: '/accountant/dashboard',
+        },
+      ],
     },
     {
       id: 'financial',
@@ -86,35 +94,79 @@ export function AccountantLayout() {
       icon: <AccountBalance />,
       items: [
         { text: 'Invoices', icon: <Receipt />, path: '/accountant/invoices' },
-        { text: 'Cash Report', icon: <Assessment />, path: '/accountant/cash-report' },
-        { text: 'Purchase & Expense', icon: <ShoppingCart />, path: '/accountant/purchase-invoices' },
-      ]
+        {
+          text: 'Cash Report',
+          icon: <Assessment />,
+          path: '/accountant/cash-report',
+        },
+        {
+          text: 'Purchase & Expense',
+          icon: <ShoppingCart />,
+          path: '/accountant/purchase-invoices',
+        },
+      ],
+    },
+    {
+      id: 'payroll',
+      title: 'Payroll',
+      icon: <ReceiptLong />,
+      items: [
+        {
+          text: 'Employee Hours',
+          icon: <AccessTime />,
+          path: '/accountant/employee-hours',
+        },
+        {
+          text: 'Pay Stubs',
+          icon: <ReceiptLong />,
+          path: '/accountant/pay-stubs',
+        },
+      ],
     },
     {
       id: 'reports',
       title: 'Reports',
       icon: <BarChart />,
       items: [
-        { text: 'Tax Report', icon: <Analytics />, path: '/accountant/reports' },
-        { text: 'Analytics', icon: <Analytics />, path: '/accountant/analytics' },
-      ]
+        {
+          text: 'Tax Report',
+          icon: <Analytics />,
+          path: '/accountant/reports',
+        },
+        {
+          text: 'Analytics',
+          icon: <Analytics />,
+          path: '/accountant/analytics',
+        },
+      ],
     },
   ];
 
   const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    return (
+      location.pathname === path || location.pathname.startsWith(path + '/')
+    );
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
-      <Toolbar sx={{
-        py: 2,
-        px: drawerCollapsed ? 1 : 2,
-        background: colors.primary.main,
-        borderBottom: `1px solid ${colors.neutral[200]}`,
-        justifyContent: drawerCollapsed ? 'center' : 'flex-start',
-        minHeight: 80,
-      }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'white',
+      }}
+    >
+      <Toolbar
+        sx={{
+          py: 2,
+          px: drawerCollapsed ? 1 : 2,
+          background: colors.primary.main,
+          borderBottom: `1px solid ${colors.neutral[200]}`,
+          justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+          minHeight: 80,
+        }}
+      >
         <Box
           component={Link}
           to="/accountant/dashboard"
@@ -159,10 +211,25 @@ export function AccountantLayout() {
           </Box>
           {!drawerCollapsed && (
             <Box sx={{ whiteSpace: 'nowrap' }}>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, lineHeight: 1, whiteSpace: 'nowrap' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: 'white',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 GT Automotives
               </Typography>
-              <Typography variant="caption" sx={{ color: colors.neutral[100], fontWeight: 500, whiteSpace: 'nowrap' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: colors.neutral[100],
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 16472991 Canada INC.
               </Typography>
             </Box>
@@ -171,7 +238,14 @@ export function AccountantLayout() {
       </Toolbar>
 
       {/* Collapse Toggle Button - Only on Desktop */}
-      <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: drawerCollapsed ? 'center' : 'flex-end', px: 1, py: 0.5 }}>
+      <Box
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          justifyContent: drawerCollapsed ? 'center' : 'flex-end',
+          px: 1,
+          py: 0.5,
+        }}
+      >
         <IconButton
           onClick={handleDrawerCollapse}
           size="small"
@@ -187,7 +261,14 @@ export function AccountantLayout() {
         </IconButton>
       </Box>
 
-      <List sx={{ flex: 1, py: 1, px: drawerCollapsed ? 0.5 : 1, overflowY: 'auto' }}>
+      <List
+        sx={{
+          flex: 1,
+          py: 1,
+          px: drawerCollapsed ? 0.5 : 1,
+          overflowY: 'auto',
+        }}
+      >
         {menuSections.map((section, sectionIndex) => (
           <React.Fragment key={section.title}>
             {/* Section without expand (Overview) */}
@@ -204,20 +285,30 @@ export function AccountantLayout() {
                         mx: 0.5,
                         mb: 0.5,
                         transition: 'all 0.2s',
-                        backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                        borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
-                        justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                        backgroundColor: active
+                          ? colors.primary.lighter + '20'
+                          : 'transparent',
+                        borderLeft: active
+                          ? `3px solid ${colors.primary.main}`
+                          : '3px solid transparent',
+                        justifyContent: drawerCollapsed
+                          ? 'center'
+                          : 'flex-start',
                         px: drawerCollapsed ? 0 : 2,
                         '&:hover': {
                           backgroundColor: colors.neutral[100],
                         },
                       }}
                     >
-                      <ListItemIcon sx={{
-                        color: active ? colors.primary.main : colors.neutral[600],
-                        minWidth: drawerCollapsed ? 0 : 40,
-                        justifyContent: 'center',
-                      }}>
+                      <ListItemIcon
+                        sx={{
+                          color: active
+                            ? colors.primary.main
+                            : colors.neutral[600],
+                          minWidth: drawerCollapsed ? 0 : 40,
+                          justifyContent: 'center',
+                        }}
+                      >
                         {item.icon}
                       </ListItemIcon>
                       {!drawerCollapsed && (
@@ -226,7 +317,9 @@ export function AccountantLayout() {
                           primaryTypographyProps={{
                             fontSize: '0.95rem',
                             fontWeight: active ? 600 : 400,
-                            color: active ? colors.primary.main : colors.text.primary,
+                            color: active
+                              ? colors.primary.main
+                              : colors.text.primary,
                           }}
                         />
                       )}
@@ -245,7 +338,13 @@ export function AccountantLayout() {
                     </ListItem>
                   );
                 })}
-                <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+                <Divider
+                  sx={{
+                    my: 1.5,
+                    mx: drawerCollapsed ? 1 : 0,
+                    borderColor: colors.neutral[200],
+                  }}
+                />
               </>
             )}
 
@@ -268,11 +367,13 @@ export function AccountantLayout() {
                         },
                       }}
                     >
-                      <ListItemIcon sx={{
-                        color: colors.neutral[700],
-                        minWidth: 0,
-                        justifyContent: 'center',
-                      }}>
+                      <ListItemIcon
+                        sx={{
+                          color: colors.neutral[700],
+                          minWidth: 0,
+                          justifyContent: 'center',
+                        }}
+                      >
                         {section.icon}
                       </ListItemIcon>
                     </ListItemButton>
@@ -294,10 +395,12 @@ export function AccountantLayout() {
                       },
                     }}
                   >
-                    <ListItemIcon sx={{
-                      color: colors.primary.main,
-                      minWidth: 40,
-                    }}>
+                    <ListItemIcon
+                      sx={{
+                        color: colors.primary.main,
+                        minWidth: 40,
+                      }}
+                    >
                       {section.icon}
                     </ListItemIcon>
                     <ListItemText
@@ -311,15 +414,23 @@ export function AccountantLayout() {
                       }}
                     />
                     {expandedSections[section.id] ? (
-                      <ExpandLess sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                      <ExpandLess
+                        sx={{ color: colors.primary.main, fontSize: '1.2rem' }}
+                      />
                     ) : (
-                      <ExpandMore sx={{ color: colors.primary.main, fontSize: '1.2rem' }} />
+                      <ExpandMore
+                        sx={{ color: colors.primary.main, fontSize: '1.2rem' }}
+                      />
                     )}
                   </ListItemButton>
                 )}
 
                 {/* Section items - always show when collapsed, conditionally when expanded */}
-                <Collapse in={drawerCollapsed || expandedSections[section.id]} timeout="auto" unmountOnExit>
+                <Collapse
+                  in={drawerCollapsed || expandedSections[section.id]}
+                  timeout="auto"
+                  unmountOnExit
+                >
                   <List component="div" disablePadding>
                     {section.items.map((item) => {
                       const active = isActive(item.path);
@@ -333,19 +444,29 @@ export function AccountantLayout() {
                             mb: 0.5,
                             pl: drawerCollapsed ? 0 : 4,
                             transition: 'all 0.2s',
-                            backgroundColor: active ? colors.primary.lighter + '20' : 'transparent',
-                            borderLeft: active ? `3px solid ${colors.primary.main}` : '3px solid transparent',
-                            justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                            backgroundColor: active
+                              ? colors.primary.lighter + '20'
+                              : 'transparent',
+                            borderLeft: active
+                              ? `3px solid ${colors.primary.main}`
+                              : '3px solid transparent',
+                            justifyContent: drawerCollapsed
+                              ? 'center'
+                              : 'flex-start',
                             '&:hover': {
                               backgroundColor: colors.neutral[100],
                             },
                           }}
                         >
-                          <ListItemIcon sx={{
-                            color: active ? colors.primary.main : colors.neutral[600],
-                            minWidth: drawerCollapsed ? 0 : 40,
-                            justifyContent: 'center',
-                          }}>
+                          <ListItemIcon
+                            sx={{
+                              color: active
+                                ? colors.primary.main
+                                : colors.neutral[600],
+                              minWidth: drawerCollapsed ? 0 : 40,
+                              justifyContent: 'center',
+                            }}
+                          >
                             {item.icon}
                           </ListItemIcon>
                           {!drawerCollapsed && (
@@ -354,7 +475,9 @@ export function AccountantLayout() {
                               primaryTypographyProps={{
                                 fontSize: '0.9rem',
                                 fontWeight: active ? 600 : 400,
-                                color: active ? colors.primary.main : colors.text.primary,
+                                color: active
+                                  ? colors.primary.main
+                                  : colors.text.primary,
                               }}
                             />
                           )}
@@ -377,7 +500,13 @@ export function AccountantLayout() {
                 </Collapse>
 
                 {sectionIndex < menuSections.length - 1 && (
-                  <Divider sx={{ my: 1.5, mx: drawerCollapsed ? 1 : 0, borderColor: colors.neutral[200] }} />
+                  <Divider
+                    sx={{
+                      my: 1.5,
+                      mx: drawerCollapsed ? 1 : 0,
+                      borderColor: colors.neutral[200],
+                    }}
+                  />
                 )}
               </>
             )}
@@ -432,7 +561,10 @@ export function AccountantLayout() {
       <Box
         component="nav"
         sx={{
-          width: { sm: drawerCollapsed ? drawerCollapsedWidth : drawerWidth, md: drawerCollapsed ? drawerCollapsedWidth : drawerWidth },
+          width: {
+            sm: drawerCollapsed ? drawerCollapsedWidth : drawerWidth,
+            md: drawerCollapsed ? drawerCollapsedWidth : drawerWidth,
+          },
           flexShrink: { sm: 0 },
           transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
         }}
@@ -482,10 +614,15 @@ export function AccountantLayout() {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          width: { md: `calc(100% - ${drawerCollapsed ? drawerCollapsedWidth : drawerWidth}px)` },
+          width: {
+            md: `calc(100% - ${
+              drawerCollapsed ? drawerCollapsedWidth : drawerWidth
+            }px)`,
+          },
           height: '100vh',
           overflow: 'hidden',
-          transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+          transition:
+            'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
         }}
       >
         <AppBar

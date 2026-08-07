@@ -39,6 +39,7 @@ model User {
   roEmployees          ROEmployee[]           // Repair orders assigned to this employee
   roServices           ROService[]            @relation("ROServiceCompletedBy") // Service items completed by this user
   roMedia              ROMedia[]              // Photos uploaded by this user
+  payStubs             PayStub[]              // Pay stubs issued to this employee
 }
 
 model Role {
@@ -772,8 +773,12 @@ model Payment {
 }
 
 model EmployeeCompensation {
-  id                  String    @id @default(cuid())
-  employeeId          String
+  id         String @id @default(cuid())
+  employeeId String
+  // Job title as it should read on a pay stub ("Tire Technician"), which the
+  // permission role (STAFF, ACCOUNTANT) does not capture. Optional: an employee
+  // can be paid without one, and the stub simply omits the line.
+  position            String?
   payType             PayType
   hourlyRate          Decimal?  @db.Decimal(10, 2)
   annualSalary        Decimal?  @db.Decimal(10, 2)
@@ -869,6 +874,89 @@ model PayrollPeriod {
   @@index([startDate, endDate])
 }
 
+/// A pay stub issued to an employee for one pay period.
+///
+/// No PDF is stored — the document is rendered on demand from this row. That
+/// only works if the row is a complete, frozen record of what was issued, so
+/// every figure and label that appears on the printed stub is a column here:
+/// the employee's name, position, pay rate and the company header are
+/// snapshotted at generation rather than joined live. Editing a time entry,
+/// changing an hourly rate or renaming the company must never alter a stub
+/// that has already been handed to someone.
+///
+/// YTD columns are likewise frozen. They are computed once, at generation, by
+/// summing this employee's earlier stubs in the same calendar year — not
+/// recomputed at render time, which would make an old stub change whenever a
+/// later one was issued or voided.
+model PayStub {
+  id         String @id @default(cuid())
+  employeeId String
+
+  // Period this stub covers. periodStart/periodEnd are calendar dates stored at
+  // midnight UTC (see toBusinessCalendarDate) so the printed pay cycle reads the
+  // same on any device, regardless of the server's timezone.
+  periodStart DateTime
+  periodEnd   DateTime
+  payDate     DateTime
+
+  // Header and identity, as printed. The company details are copied from the
+  // Company record when the stub is raised rather than joined at render time,
+  // for the same reason the figures are: reprinting a stub years later must
+  // reproduce the document as issued, even if the business has since changed
+  // its address, phone or registered name. Nullable because stubs raised
+  // before these columns existed have no value to show, and inventing one on
+  // an old wage statement would be worse than omitting the line.
+  companyName               String
+  companyAddress            String?
+  companyBusinessType       String?
+  companyRegistrationNumber String?
+  companyPhone              String?
+  companyEmail              String?
+  employeeName              String
+  position       String?
+  payRate        Decimal? @db.Decimal(10, 2)
+  payType        PayType  @default(HOURLY)
+
+  // Current-period earnings.
+  regularHours  Decimal @default(0) @db.Decimal(10, 2)
+  regularAmount Decimal @default(0) @db.Decimal(10, 2)
+  grossPay      Decimal @default(0) @db.Decimal(10, 2)
+
+  // Current-period withholdings. Income tax and "other" default to zero and are
+  // omitted from the printed stub when zero — the business's current stubs
+  // withhold EI and CPP only, but the columns exist so adding tax later is a
+  // form change, not a migration.
+  eiAmount             Decimal @default(0) @db.Decimal(10, 2)
+  cppAmount            Decimal @default(0) @db.Decimal(10, 2)
+  incomeTaxAmount      Decimal @default(0) @db.Decimal(10, 2)
+  otherDeductions      Decimal @default(0) @db.Decimal(10, 2)
+  otherDeductionsLabel String?
+  totalWithholding     Decimal @default(0) @db.Decimal(10, 2)
+  netPay               Decimal @default(0) @db.Decimal(10, 2)
+
+  // Year-to-date totals through and including this stub.
+  ytdHours           Decimal @default(0) @db.Decimal(10, 2)
+  ytdRegularAmount   Decimal @default(0) @db.Decimal(10, 2)
+  ytdGrossPay        Decimal @default(0) @db.Decimal(10, 2)
+  ytdEiAmount        Decimal @default(0) @db.Decimal(10, 2)
+  ytdCppAmount       Decimal @default(0) @db.Decimal(10, 2)
+  ytdIncomeTaxAmount Decimal @default(0) @db.Decimal(10, 2)
+  ytdOtherDeductions Decimal @default(0) @db.Decimal(10, 2)
+  ytdWithholding     Decimal @default(0) @db.Decimal(10, 2)
+  ytdNetPay          Decimal @default(0) @db.Decimal(10, 2)
+
+  notes       String?
+  generatedBy String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee User @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([employeeId, payDate])
+  @@index([payDate])
+}
+
 enum PayType {
   HOURLY
   SALARIED
@@ -881,6 +969,10 @@ enum TimeEntryStatus {
   APPROVED
   ADJUSTED
   VOIDED
+  // Paid out through a payroll run. Terminal: a processed entry is the
+  // evidence behind money that has already left the business, so it is never
+  // edited, voided, deleted or unapproved afterwards.
+  PROCESSED
 }
 
 enum TimeEntrySource {

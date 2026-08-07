@@ -32,6 +32,7 @@ import { BookAppointment } from './pages/public/BookAppointment';
 import { StaffDashboard } from './pages/staff/Dashboard';
 import { MyJobs } from './pages/staff/MyJobs';
 import { MyEarnings } from './pages/staff/MyEarnings';
+import { MyPayStubs } from './pages/staff/MyPayStubs';
 import { MyCommission } from './pages/staff/MyCommission';
 import { TimeClock } from './pages/staff/TimeClock';
 
@@ -41,6 +42,8 @@ import { DaySummary } from './pages/admin/DaySummary';
 
 // Accountant Pages
 import { AccountantDashboard } from './pages/accountant/AccountantDashboard';
+import { EmployeeHours } from './pages/accountant/EmployeeHours';
+import { PayStubs } from './pages/accountant/PayStubs';
 import UserManagement from '../pages/admin/UserManagement';
 
 // Payroll Pages
@@ -164,6 +167,7 @@ export function App() {
               <Route path="jobs" element={<MyJobs />} />
               <Route path="time-clock" element={<TimeClock />} />
               <Route path="earnings" element={<MyEarnings />} />
+              <Route path="pay-stubs" element={<MyPayStubs />} />
               <Route path="commission" element={<MyCommission />} />
               <Route path="appointments" element={<AppointmentsManagement />} />
               <Route path="inspections" element={<InspectionList />} />
@@ -232,6 +236,7 @@ export function App() {
               <Route path="my-jobs" element={<MyJobs />} />
               <Route path="my-time-clock" element={<TimeClock />} />
               <Route path="my-earnings" element={<MyEarnings />} />
+              <Route path="my-pay-stubs" element={<MyPayStubs />} />
               <Route path="my-commission" element={<MyCommission />} />
               <Route index element={<Navigate to="dashboard" replace />} />
             </Route>
@@ -255,6 +260,8 @@ export function App() {
                 path="purchase-invoices"
                 element={<PurchaseExpenseInvoiceManagement />}
               />
+              <Route path="employee-hours" element={<EmployeeHours />} />
+              <Route path="pay-stubs" element={<PayStubs />} />
               <Route path="reports" element={<Reports />} />
               <Route path="analytics" element={<div>Analytics</div>} />
               <Route index element={<Navigate to="dashboard" replace />} />
@@ -320,6 +327,8 @@ export function App() {
               <Route path="jobs/:employeeId" element={<JobsManagement />} />
               <Route path="payments" element={<PaymentsManagement />} />
               <Route path="payout-rules" element={<PayoutRulesManagement />} />
+              <Route path="employee-hours" element={<EmployeeHours />} />
+              <Route path="pay-stubs" element={<PayStubs />} />
               <Route path="reports" element={<Reports />} />
               <Route
                 path="employee-payments-report"

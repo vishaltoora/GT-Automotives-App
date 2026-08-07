@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  Divider,
   Chip,
   CircularProgress,
   Dialog,
@@ -33,6 +34,8 @@ import {
   AccessTime,
   Add,
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
   Coffee,
   Delete,
   Edit,
@@ -49,7 +52,16 @@ import {
   Undo,
   WorkspacePremium,
 } from '@mui/icons-material';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import {
+  addMonths,
+  endOfDay,
+  endOfMonth,
+  format,
+  isSameMonth,
+  startOfDay,
+  startOfMonth,
+  subMonths,
+} from 'date-fns';
 import {
   CreateTimeEntryDto,
   PayType,
@@ -77,6 +89,7 @@ const formatCurrency = (amount: number) =>
     currency: 'CAD',
   }).format(amount);
 const formatStatus = (status: TimeEntryStatus) => {
+  if (status === TimeEntryStatus.PROCESSED) return 'Paid';
   if (status === TimeEntryStatus.OPEN) return 'Clocked In';
   if (status === TimeEntryStatus.ON_BREAK) return 'On Break';
   if (status === TimeEntryStatus.CLOCKED_OUT) return 'Clocked Out';
@@ -92,6 +105,7 @@ const getStatusColor = (
   | 'warning'
   | 'info'
   | 'error' => {
+  if (status === TimeEntryStatus.PROCESSED) return 'primary'; // paid out — final
   if (status === TimeEntryStatus.APPROVED) return 'success'; // green
   if (status === TimeEntryStatus.OPEN) return 'info'; // blue - actively clocked in
   if (status === TimeEntryStatus.ON_BREAK) return 'warning'; // amber
@@ -138,6 +152,9 @@ export function TimeClockManagement() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [payType, setPayType] = useState<PayType>(PayType.HOURLY);
   const [hourlyRate, setHourlyRate] = useState('');
+  // Job title for this employee's pay stubs. Kept with pay because it is set
+  // by the same person at the same moment, and it is what a stub prints.
+  const [position, setPosition] = useState('');
   const [annualSalary, setAnnualSalary] = useState('');
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusReason, setBonusReason] = useState('');
@@ -164,10 +181,67 @@ export function TimeClockManagement() {
   );
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  // The month whose entries are loaded. Entries are fetched per month, so
+  // changing this refetches — the From/To filters below only refine what has
+  // already been loaded and cannot reach outside the viewed month.
+  const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const monthLabel = format(viewMonth, 'MMMM yyyy');
+  const isCurrentMonth = isSameMonth(viewMonth, new Date());
+
+  /**
+   * A From/To date is a request for that data, not merely a refinement of what
+   * is already on screen — so the fetch follows the dates rather than staying
+   * pinned to the month being browsed. Without this the pickers could only ever
+   * narrow within the current month, which read as them being disabled for
+   * every earlier one.
+   *
+   * Half-typed dates are ignored: a `type="date"` input reports 0002-01-01
+   * while the year is still being keyed, and that would ask the server for two
+   * millennia of time entries.
+   */
+  const parseFilterDate = (value: string) => {
+    if (!value) return undefined;
+    const parsed = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsed.getTime()) || parsed.getFullYear() < 2000) {
+      return undefined;
+    }
+    return parsed;
+  };
+
+  const filterStart = parseFilterDate(filterStartDate);
+  const filterEnd = parseFilterDate(filterEndDate);
+
+  // One date on its own still has to produce a range that contains it, so the
+  // open end stretches to cover both it and the month being browsed. Setting
+  // only a From never yields an empty window, and neither does only a To.
+  const rangeStart = filterStart
+    ? startOfDay(filterStart)
+    : filterEnd && filterEnd < viewMonth
+    ? startOfMonth(filterEnd)
+    : startOfMonth(viewMonth);
+  const rangeEnd = filterEnd
+    ? endOfDay(filterEnd)
+    : filterStart && filterStart > endOfMonth(viewMonth)
+    ? endOfMonth(filterStart)
+    : endOfMonth(viewMonth);
+
+  const monthStart = rangeStart.toISOString();
+  const monthEnd = rangeEnd.toISOString();
+
+  // The heading tracks what is actually loaded, so a range reaching outside the
+  // browsed month is not shown under that month's name.
+  const rangeLabel =
+    filterStart || filterEnd
+      ? `${format(rangeStart, 'MMM d, yyyy')} – ${format(
+          rangeEnd,
+          'MMM d, yyyy'
+        )}`
+      : monthLabel;
 
   const loadData = async (options?: { silent?: boolean }) => {
     try {
@@ -177,8 +251,8 @@ export function TimeClockManagement() {
         userService.getUsers(),
         timeClockService.getCurrentEntries(),
         timeClockService.getEntries({
-          startDate: startOfMonth(new Date()).toISOString(),
-          endDate: endOfMonth(new Date()).toISOString(),
+          startDate: monthStart,
+          endDate: monthEnd,
         }),
       ]);
       const myCurrent = await timeClockService.getMyCurrent();
@@ -203,7 +277,16 @@ export function TimeClockManagement() {
 
   useEffect(() => {
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMonth, monthStart, monthEnd]);
+
+  // A From/To filter left over from the previous month would exclude every
+  // entry in the newly loaded one, so reset the date refinement on month change.
+  const goToMonth = (month: Date) => {
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setViewMonth(startOfMonth(month));
+  };
 
   useEffect(() => {
     if (!selectedEmployeeId) return;
@@ -215,6 +298,7 @@ export function TimeClockManagement() {
         );
         if (compensation) {
           setPayType(compensation.payType);
+          setPosition(compensation.position || '');
           setHourlyRate(compensation.hourlyRate?.toString() || '');
           setAnnualSalary(compensation.annualSalary?.toString() || '');
         } else {
@@ -234,9 +318,6 @@ export function TimeClockManagement() {
   const currentEntryByEmployeeId = new Map(
     currentEntries.map((entry) => [entry.employeeId, entry])
   );
-  const monthStart = startOfMonth(new Date()).toISOString();
-  const monthEnd = endOfMonth(new Date()).toISOString();
-  const monthLabel = format(new Date(), 'MMMM yyyy');
   const selectedReadyEntries = entries.filter(
     (entry) =>
       entry.employeeId === selectedEmployeeId &&
@@ -261,7 +342,7 @@ export function TimeClockManagement() {
       ? selectedReadyHours * Number(hourlyRate || 0)
       : 0;
 
-  // Dashboard aggregate stats across all employees for the current month
+  // Dashboard aggregate stats across all employees for the viewed month
   const totalReadyHours = useMemo(
     () =>
       entries
@@ -311,7 +392,9 @@ export function TimeClockManagement() {
       color: colors.semantic.info,
     },
     {
-      label: 'Processed This Month',
+      label: isCurrentMonth
+        ? 'Processed This Month'
+        : `Processed · ${monthLabel}`,
       value: `${totalProcessedHours.toFixed(1)} hrs`,
       icon: <CheckCircle />,
       color: colors.semantic.success,
@@ -350,6 +433,7 @@ export function TimeClockManagement() {
     if (!selectedEmployeeId) return;
     const payload: UpsertEmployeeCompensationDto = {
       payType,
+      position: position.trim() || undefined,
       hourlyRate: payType === PayType.HOURLY ? Number(hourlyRate) : undefined,
       annualSalary:
         payType === PayType.SALARIED ? Number(annualSalary) : undefined,
@@ -662,11 +746,7 @@ export function TimeClockManagement() {
           }}
         >
           <Tab icon={<AccessTime />} iconPosition="start" label="Dashboard" />
-          <Tab
-            icon={<Payment />}
-            iconPosition="start"
-            label="This Month's Entries"
-          />
+          <Tab icon={<Payment />} iconPosition="start" label="Time Entries" />
           {/* Compensation & Bonus is hidden for foreman. */}
           {user?.role?.name !== 'FOREMAN' && (
             <Tab
@@ -957,7 +1037,7 @@ export function TimeClockManagement() {
         </Card>
       </TabPanel>
 
-      {/* This Month's Entries tab */}
+      {/* Time Entries tab — scoped to the month selected above the table. */}
       <TabPanel value={activeTab} index={1}>
         <Box
           sx={{
@@ -978,9 +1058,39 @@ export function TimeClockManagement() {
             }}
           >
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Time Entries · {monthLabel}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  aria-label="Previous month"
+                  onClick={() => goToMonth(subMonths(viewMonth, 1))}
+                  disabled={loading}
+                >
+                  <ChevronLeft fontSize="small" />
+                </IconButton>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, minWidth: 190, textAlign: 'center' }}
+                >
+                  Time Entries · {rangeLabel}
+                </Typography>
+                <IconButton
+                  size="small"
+                  aria-label="Next month"
+                  onClick={() => goToMonth(addMonths(viewMonth, 1))}
+                  disabled={loading || isCurrentMonth}
+                >
+                  <ChevronRight fontSize="small" />
+                </IconButton>
+                {!isCurrentMonth && (
+                  <Button
+                    size="small"
+                    onClick={() => goToMonth(new Date())}
+                    disabled={loading}
+                  >
+                    This Month
+                  </Button>
+                )}
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Showing {filteredEntries.length} of {entries.length} entries
               </Typography>
@@ -1042,11 +1152,7 @@ export function TimeClockManagement() {
               value={filterStartDate}
               onChange={(event) => setFilterStartDate(event.target.value)}
               InputLabelProps={{ shrink: true }}
-              inputProps={{
-                min: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-                max:
-                  filterEndDate || format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-              }}
+              inputProps={{ max: filterEndDate || undefined }}
               sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
             />
             <TextField
@@ -1056,12 +1162,7 @@ export function TimeClockManagement() {
               value={filterEndDate}
               onChange={(event) => setFilterEndDate(event.target.value)}
               InputLabelProps={{ shrink: true }}
-              inputProps={{
-                min:
-                  filterStartDate ||
-                  format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-                max: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-              }}
+              inputProps={{ min: filterStartDate || undefined }}
               sx={{ minWidth: { sm: 150 }, flex: { xs: 1, sm: 'none' } }}
             />
             {hasEntryFilters && (
@@ -1174,7 +1275,9 @@ export function TimeClockManagement() {
                     startIcon={<Edit />}
                     onClick={() => openEditEntry(entry)}
                     disabled={
-                      saving || entry.status === TimeEntryStatus.APPROVED
+                      saving ||
+                      entry.status === TimeEntryStatus.APPROVED ||
+                      Boolean(entry.payrollProcessedAt)
                     }
                   >
                     Edit
@@ -1190,7 +1293,8 @@ export function TimeClockManagement() {
                     Delete
                   </Button>
                   {entry.clockOutAt &&
-                    entry.status !== TimeEntryStatus.APPROVED && (
+                    entry.status !== TimeEntryStatus.APPROVED &&
+                    !entry.payrollProcessedAt && (
                       <Button
                         size="small"
                         variant="contained"
@@ -1377,7 +1481,15 @@ export function TimeClockManagement() {
               <ListItemIcon>
                 <Delete fontSize="small" color="error" />
               </ListItemIcon>
-              <ListItemText>Delete</ListItemText>
+              <ListItemText
+                secondary={
+                  actionEntry.payrollProcessedAt
+                    ? 'Already processed for payroll'
+                    : undefined
+                }
+              >
+                Delete
+              </ListItemText>
             </MenuItem>,
           ]}
         </Menu>
@@ -1393,8 +1505,14 @@ export function TimeClockManagement() {
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
               Compensation & Bonus
             </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 4 }}>
+            {/* Two jobs share this card and one employee selector: setting how
+                someone is paid from now on, and paying a one-off bonus now.
+                They are kept as labelled groups so the standing arrangement is
+                not confused with a single payment. Rows add to 12 columns, and
+                the buttons match the 56px input height so each group reads as
+                one control strip. */}
+            <Grid container spacing={2} alignItems="flex-start">
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   select
                   fullWidth
@@ -1403,6 +1521,7 @@ export function TimeClockManagement() {
                   onChange={(event) =>
                     setSelectedEmployeeId(event.target.value)
                   }
+                  helperText="Applies to both compensation and bonus below"
                 >
                   {users.map((user) => (
                     <MenuItem key={user.id} value={user.id}>
@@ -1411,6 +1530,15 @@ export function TimeClockManagement() {
                   ))}
                 </TextField>
               </Grid>
+
+              <Grid size={12}>
+                <Divider textAlign="left">
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    HOW THIS EMPLOYEE IS PAID
+                  </Typography>
+                </Divider>
+              </Grid>
+
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
                   select
@@ -1442,6 +1570,16 @@ export function TimeClockManagement() {
                   }}
                 />
               </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  fullWidth
+                  label="Position"
+                  value={position}
+                  onChange={(event) => setPosition(event.target.value)}
+                  placeholder="e.g. Tire Technician"
+                  helperText="Optional — printed on this employee's pay stubs"
+                />
+              </Grid>
               <Grid size={{ xs: 12, md: 2 }}>
                 <Button
                   fullWidth
@@ -1449,10 +1587,20 @@ export function TimeClockManagement() {
                   startIcon={<Save />}
                   onClick={saveCompensation}
                   disabled={saving || !selectedEmployeeId}
+                  sx={{ height: 56 }}
                 >
                   Save
                 </Button>
               </Grid>
+
+              <Grid size={12}>
+                <Divider textAlign="left" sx={{ mt: 1 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    ONE-OFF BONUS
+                  </Typography>
+                </Divider>
+              </Grid>
+
               <Grid size={{ xs: 12, md: 3 }}>
                 <NumberInput
                   fullWidth
@@ -1485,8 +1633,9 @@ export function TimeClockManagement() {
                     !bonusAmount ||
                     !bonusReason
                   }
+                  sx={{ height: 56 }}
                 >
-                  Bonus
+                  Add Bonus
                 </Button>
               </Grid>
             </Grid>
@@ -1533,7 +1682,7 @@ export function TimeClockManagement() {
                       color="text.secondary"
                       sx={{ display: 'block' }}
                     >
-                      Processed This Month
+                      Processed · {monthLabel}
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
                       {selectedProcessedHours.toFixed(2)} hrs

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   TextField,
@@ -28,6 +28,9 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
   Person as PersonIcon,
   ShoppingCart as ShoppingCartIcon,
   AttachMoney as AttachMoneyIcon,
@@ -44,6 +47,43 @@ import type { QuoteItem as QuotationItem } from '../../requests/quotation.reques
 import ServiceSelect from '../services/ServiceSelect';
 import { PhoneInput } from '../common/PhoneInput';
 import { NumberInput } from '../common';
+
+/** The item type as it is stored on a quotation line item. */
+type ItemTypeValue = QuotationItem['itemType'];
+
+/**
+ * The line item types offered in the pickers, in the order they appear. Shared
+ * by the entry row and the in-row editor so both offer exactly the same set.
+ */
+const ITEM_TYPE_OPTIONS: {
+  value: ItemTypeValue;
+  label: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: 'TIRE',
+    label: 'Tire',
+    icon: <span style={{ fontSize: '18px' }}>🛞</span>,
+  },
+  { value: 'SERVICE', label: 'Service', icon: <BuildIcon fontSize="small" /> },
+  { value: 'PART', label: 'Part', icon: <ExtensionIcon fontSize="small" /> },
+  { value: 'OTHER', label: 'Other', icon: <CategoryIcon fontSize="small" /> },
+  {
+    value: 'LEVY',
+    label: 'Levy',
+    icon: <AccountBalanceIcon fontSize="small" />,
+  },
+];
+
+const renderItemTypeOptions = () =>
+  ITEM_TYPE_OPTIONS.map((option) => (
+    <MenuItem key={option.value} value={option.value}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {option.icon}
+        {option.label}
+      </Box>
+    </MenuItem>
+  ));
 
 interface QuotationFormContentProps {
   tires: any[];
@@ -71,6 +111,8 @@ interface QuotationFormContentProps {
   setNewItem: (item: QuotationItem) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
+  /** Apply an in-row edit. Only the changed fields are passed. */
+  onUpdateItem: (index: number, changes: Partial<QuotationItem>) => void;
   onTireSelect: (tireId: string) => void;
   onServicesChange: () => void;
 }
@@ -88,11 +130,90 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
   setNewItem,
   onAddItem,
   onRemoveItem,
+  onUpdateItem,
   onTireSelect,
   onServicesChange,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // In-row editing: the row at `inlineEditIndex` swaps its type, description,
+  // qty and price cells for inputs backed by `inlineDraft`. Nothing reaches the
+  // quote — or its totals — until Save.
+  const [inlineEditIndex, setInlineEditIndex] = useState<number | null>(null);
+  const [inlineDraft, setInlineDraft] = useState<{
+    itemType: ItemTypeValue;
+    description: string;
+    quantity: number | '';
+    unitPrice: number | '';
+  } | null>(null);
+
+  const cancelInlineEdit = () => {
+    setInlineEditIndex(null);
+    setInlineDraft(null);
+  };
+
+  const startInlineEdit = (index: number) => {
+    const item = items[index];
+    if (!item) return;
+    setInlineEditIndex(index);
+    setInlineDraft({
+      itemType: item.itemType,
+      description: item.description ?? '',
+      quantity: Number(item.quantity) || 1,
+      unitPrice: Number(item.unitPrice),
+    });
+  };
+
+  const isInlineDraftValid = () =>
+    Boolean(
+      inlineDraft &&
+        inlineDraft.description.trim() &&
+        Number(inlineDraft.quantity) > 0 &&
+        Number(inlineDraft.unitPrice) > 0
+    );
+
+  const saveInlineEdit = () => {
+    if (inlineEditIndex === null || !inlineDraft || !isInlineDraftValid())
+      return;
+    const item = items[inlineEditIndex];
+    if (!item) return;
+
+    const typeChanged = inlineDraft.itemType !== item.itemType;
+
+    onUpdateItem(inlineEditIndex, {
+      itemType: inlineDraft.itemType,
+      description: inlineDraft.description.trim(),
+      quantity: Number(inlineDraft.quantity),
+      unitPrice: Number(inlineDraft.unitPrice),
+      // A line that is no longer a tire (or no longer that service) must not
+      // keep pointing at one — a stale link would quote against the wrong
+      // record.
+      ...(typeChanged
+        ? { tireId: undefined, tireName: undefined, serviceId: undefined }
+        : {}),
+    } as Partial<QuotationItem>);
+    cancelInlineEdit();
+  };
+
+  const handleInlineKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveInlineEdit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelInlineEdit();
+    }
+  };
+
+  /**
+   * Removing a row shifts every later index, so an in-progress edit would
+   * silently start pointing at a different item. Drop it.
+   */
+  const handleRemoveItem = (index: number) => {
+    cancelInlineEdit();
+    onRemoveItem(index);
+  };
 
   const handleServiceChange = (
     serviceId: string,
@@ -279,36 +400,7 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   }}
                   label="Type"
                 >
-                  <MenuItem value="TIRE">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <span style={{ fontSize: '18px' }}>🛞</span>
-                      Tire
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="SERVICE">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <BuildIcon fontSize="small" />
-                      Service
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="PART">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ExtensionIcon fontSize="small" />
-                      Part
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="OTHER">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CategoryIcon fontSize="small" />
-                      Other
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="LEVY">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccountBalanceIcon fontSize="small" />
-                      Levy
-                    </Box>
-                  </MenuItem>
+                  {renderItemTypeOptions()}
                 </Select>
               </FormControl>
             </Grid>
@@ -462,57 +554,188 @@ const QuotationFormContent: React.FC<QuotationFormContentProps> = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {items.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        {item.itemType === 'TIRE' && (
-                          <InventoryIcon fontSize="small" sx={{ mr: 0.5 }} />
-                        )}
-                        {item.itemType === 'SERVICE' && (
-                          <BuildIcon fontSize="small" sx={{ mr: 0.5 }} />
-                        )}
-                        {item.itemType.replace('_', ' ')}
-                      </TableCell>
-                      <TableCell>
-                        {(item as any).tireName && (
-                          <Typography variant="body2" fontWeight="medium">
-                            {(item as any).tireName}
-                          </Typography>
-                        )}
-                        <Typography
-                          variant="body2"
-                          color={
-                            (item as any).tireName
-                              ? 'text.secondary'
-                              : 'inherit'
-                          }
-                        >
-                          {item.description}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">{item.quantity}</TableCell>
-                      <TableCell align="right">
-                        ${Number(item.unitPrice).toFixed(2)}
-                      </TableCell>
-                      <TableCell align="right">
-                        $
-                        {(
-                          Number(item.quantity) * Number(item.unitPrice)
-                        ).toFixed(2)}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="Remove Item">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => onRemoveItem(index)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {items.map((item, index) => {
+                    const isRowEditing = inlineEditIndex === index;
+                    const canSaveRow = isRowEditing && isInlineDraftValid();
+
+                    return (
+                      <TableRow
+                        key={index}
+                        sx={
+                          isRowEditing
+                            ? { background: 'rgba(0, 0, 0, 0.03)' }
+                            : undefined
+                        }
+                      >
+                        <TableCell>
+                          {isRowEditing && inlineDraft ? (
+                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                              <Select
+                                value={inlineDraft.itemType}
+                                onChange={(e) =>
+                                  setInlineDraft({
+                                    ...inlineDraft,
+                                    itemType: e.target.value as ItemTypeValue,
+                                  })
+                                }
+                              >
+                                {renderItemTypeOptions()}
+                              </Select>
+                            </FormControl>
+                          ) : (
+                            <>
+                              {item.itemType === 'TIRE' && (
+                                <InventoryIcon
+                                  fontSize="small"
+                                  sx={{ mr: 0.5 }}
+                                />
+                              )}
+                              {item.itemType === 'SERVICE' && (
+                                <BuildIcon fontSize="small" sx={{ mr: 0.5 }} />
+                              )}
+                              {item.itemType.replace('_', ' ')}
+                            </>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {(item as any).tireName && (
+                            <Typography variant="body2" fontWeight="medium">
+                              {(item as any).tireName}
+                            </Typography>
+                          )}
+                          {isRowEditing && inlineDraft ? (
+                            <TextField
+                              fullWidth
+                              size="small"
+                              autoFocus
+                              value={inlineDraft.description}
+                              onChange={(e) =>
+                                setInlineDraft({
+                                  ...inlineDraft,
+                                  description: e.target.value,
+                                })
+                              }
+                              onKeyDown={handleInlineKeyDown}
+                            />
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              color={
+                                (item as any).tireName
+                                  ? 'text.secondary'
+                                  : 'inherit'
+                              }
+                            >
+                              {item.description}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="center">
+                          {isRowEditing && inlineDraft ? (
+                            <NumberInput
+                              size="small"
+                              allowDecimals
+                              decimalPlaces={2}
+                              value={inlineDraft.quantity}
+                              onChange={(v) =>
+                                setInlineDraft({
+                                  ...inlineDraft,
+                                  quantity: v ?? '',
+                                })
+                              }
+                              onKeyDown={handleInlineKeyDown}
+                              min={0}
+                              sx={{ width: 90 }}
+                            />
+                          ) : (
+                            item.quantity
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          {isRowEditing && inlineDraft ? (
+                            <NumberInput
+                              size="small"
+                              allowDecimals
+                              value={inlineDraft.unitPrice}
+                              onChange={(v) =>
+                                setInlineDraft({
+                                  ...inlineDraft,
+                                  unitPrice: v ?? '',
+                                })
+                              }
+                              onKeyDown={handleInlineKeyDown}
+                              min={0}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    $
+                                  </InputAdornment>
+                                ),
+                              }}
+                              sx={{ width: 140 }}
+                            />
+                          ) : (
+                            `$${Number(item.unitPrice).toFixed(2)}`
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          $
+                          {(isRowEditing && inlineDraft
+                            ? Number(inlineDraft.quantity || 0) *
+                              Number(inlineDraft.unitPrice || 0)
+                            : Number(item.quantity) * Number(item.unitPrice)
+                          ).toFixed(2)}
+                        </TableCell>
+                        <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
+                          {isRowEditing ? (
+                            <>
+                              {/* span keeps the tooltip alive while the button
+                                  is disabled */}
+                              <Tooltip title="Save changes">
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={saveInlineEdit}
+                                    disabled={!canSaveRow}
+                                  >
+                                    <CheckIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                              <Tooltip title="Cancel">
+                                <IconButton
+                                  size="small"
+                                  onClick={cancelInlineEdit}
+                                >
+                                  <CloseIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          ) : (
+                            <>
+                              <Tooltip title="Edit Item">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => startInlineEdit(index)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Remove Item">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleRemoveItem(index)}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
