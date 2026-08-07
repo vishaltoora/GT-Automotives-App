@@ -261,14 +261,40 @@ export interface PayrollSummaryDto {
 }
 
 /**
- * Approved hours and gross pay for one employee over a period, as returned by
- * the read-only `GET /api/time-clock/payroll-hours` endpoint. This is what the
- * pay stub form pre-fills from — reading it never marks entries as processed.
+ * One employee's hours for a pay period, as shown on a time clock card.
  *
- * `hours` counts every approved entry in the period, whether or not payroll has
- * already been processed for it, so a stub raised after payroll runs still
- * reports the period correctly. `processedHours` is the subset already stamped,
- * exposed so the UI can say so rather than silently conflating the two.
+ * Approved and unapproved are separate figures rather than a total and a
+ * remainder: only approved hours are payable, and the gap between the two is
+ * what has to be chased before payroll runs.
+ */
+export interface PayPeriodHoursDto {
+  employeeId: string;
+  employee: EmployeeSummaryDto;
+  /** The employee's role, for labelling the card. */
+  role?: string;
+  startDate: string;
+  endDate: string;
+  /** Payable hours, including hours already paid out. */
+  approvedHours: number;
+  /** The part of `approvedHours` that payroll has already paid. */
+  processedHours: number;
+  /** Finished shifts nobody has approved yet. */
+  unapprovedHours: number;
+  entryCount: number;
+  /** Shifts still running, whose hours are in neither total yet. */
+  openEntryCount: number;
+}
+
+/**
+ * Approved hours and gross pay for one employee over a period, as returned by
+ * the read-only `GET /api/time-clock/payroll-hours` endpoint. Reading it never
+ * marks entries as processed.
+ *
+ * What `hours` counts depends on the caller's `unprocessedOnly` flag. The pay
+ * stub form sets it, so it sees only hours no stub has paid yet — raising the
+ * stub is what pays them. The accountant's hours view leaves it off and gets
+ * the whole period, with `processedHours` as the subset already paid so the UI
+ * can say so rather than conflating the two.
  */
 export interface PayrollHoursDto {
   employeeId: string;

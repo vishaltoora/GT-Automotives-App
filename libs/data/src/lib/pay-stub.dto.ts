@@ -193,6 +193,17 @@ export interface PayStubDto {
   employeeId: string;
   employee?: EmployeeSummaryDto;
 
+  /**
+   * Whether raising this stub also marked the time entries behind it as paid.
+   *
+   * Only set on the response to creating a stub. False when the hours on the
+   * stub did not match what the period held — an override, or a shift approved
+   * while the form was open — in which case the entries were deliberately left
+   * available rather than stamped for pay this stub does not cover. The
+   * accountant is told so they can settle them explicitly.
+   */
+  hoursProcessed?: boolean;
+
   periodStart: string;
   periodEnd: string;
   payDate: string;

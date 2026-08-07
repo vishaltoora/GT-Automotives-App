@@ -53,7 +53,6 @@ import {
   Event,
   BarChart,
   LocalOffer,
-  Calculate,
   AssignmentTurnedIn,
   CarRepair,
 } from '@mui/icons-material';
@@ -142,11 +141,6 @@ export function AdminLayout() {
           path: '/admin/inspections',
         },
         {
-          text: 'Inspection Items & Pricing',
-          icon: <LocalOffer />,
-          path: '/admin/inspection-items',
-        },
-        {
           text: 'Repair Orders',
           icon: <CarRepair />,
           path: '/admin/repair-orders',
@@ -203,11 +197,6 @@ export function AdminLayout() {
         },
         { text: 'Pay Stubs', icon: <Receipt />, path: '/admin/pay-stubs' },
         { text: 'Payments', icon: <Payment />, path: '/admin/payments' },
-        {
-          text: 'Payout Rules',
-          icon: <Calculate />,
-          path: '/admin/payout-rules',
-        },
       ],
     },
     {
@@ -234,6 +223,8 @@ export function AdminLayout() {
       icon: <Settings />,
       items: [
         { text: 'Security', icon: <Security />, path: '/admin/security' },
+        // Inspection pricing, payout rules and employee compensation are tabs
+        // inside Settings — configuration rather than daily work.
         { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
       ],
     },

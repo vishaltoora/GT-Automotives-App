@@ -236,7 +236,7 @@ export const PayoutRulesManagement: React.FC = () => {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Appointment Payout Rules
           </Typography>
           <Typography variant="body2" color="text.secondary">

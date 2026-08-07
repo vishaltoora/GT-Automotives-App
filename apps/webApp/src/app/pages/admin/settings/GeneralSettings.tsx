@@ -15,20 +15,19 @@ import {
   Edit as EditIcon,
   Gavel as GavelIcon,
   Save as SaveIcon,
-  Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { companyService, Company } from '../../requests/company.requests';
-import { colors } from '../../theme/colors';
+import { companyService, Company } from '../../../requests/company.requests';
+import { colors } from '../../../theme/colors';
 
 /**
- * System settings for admins.
+ * The General tab of system settings.
  *
- * Currently holds the invoice terms & conditions. Those are a liability
- * statement owned by the business, so they live on the Company record and are
- * edited here rather than being baked into the invoice templates — the wording
- * can change without a deploy.
+ * Holds the invoice terms & conditions. Those are a liability statement owned
+ * by the business, so they live on the Company record and are edited here
+ * rather than being baked into the invoice templates — the wording can change
+ * without a deploy.
  */
-export function Settings() {
+export function GeneralSettings() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -114,12 +113,7 @@ export function Settings() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <SettingsIcon color="primary" />
-        <Typography variant="h5">Settings</Typography>
-      </Box>
-
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <GavelIcon color="primary" fontSize="small" />
         <Typography variant="h6">Invoice Terms &amp; Conditions</Typography>
@@ -255,4 +249,4 @@ export function Settings() {
   );
 }
 
-export default Settings;
+export default GeneralSettings;

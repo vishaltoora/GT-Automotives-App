@@ -99,7 +99,7 @@ export function InspectionFeeItemManagement() {
   };
 
   return (
-    <Box p={{ xs: 1, md: 3 }}>
+    <Box p={{ xs: 2, sm: 3 }}>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -108,11 +108,7 @@ export function InspectionFeeItemManagement() {
         mb={3}
       >
         <Box>
-          <Typography
-            variant="h4"
-            fontWeight={700}
-            sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
-          >
+          <Typography variant="h6" fontWeight={700}>
             Inspection Items &amp; Pricing
           </Typography>
           <Typography color="text.secondary">

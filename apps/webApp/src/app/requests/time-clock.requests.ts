@@ -4,6 +4,7 @@ import {
   CreatePayrollAdjustmentDto,
   CreateTimeEntryDto,
   EmployeeCompensationDto,
+  PayPeriodHoursDto,
   PayrollAdjustmentDto,
   PayrollHoursDto,
   ProcessPayrollDto,
@@ -239,6 +240,22 @@ class TimeClockService {
   }
 
   /**
+   * Approved and unapproved hours per employee for a pay period — what the
+   * time clock's employee cards show.
+   *
+   * The server decides whose rows come back: a role trusted with the team gets
+   * every active employee, anyone else gets only their own.
+   */
+  getPayPeriodHours(filters: {
+    startDate: string;
+    endDate: string;
+  }): Promise<PayPeriodHoursDto[]> {
+    return this.makeRequest<PayPeriodHoursDto[]>(
+      `${this.baseUrl}/pay-period-hours${this.toQuery(filters)}`
+    );
+  }
+
+  /**
    * Approved hours and gross pay per employee over a period. Read-only —
    * unlike processPayroll() below, calling this never stamps time entries, so
    * it is safe to call whenever a form needs the numbers.
@@ -250,9 +267,15 @@ class TimeClockService {
     startDate: string;
     endDate: string;
     employeeId?: string;
+    /** Exclude hours a pay stub has already paid. */
+    unprocessedOnly?: boolean;
   }): Promise<PayrollHoursDto[]> {
+    const { unprocessedOnly, ...rest } = filters;
     return this.makeRequest<PayrollHoursDto[]>(
-      `${this.baseUrl}/payroll-hours${this.toQuery(filters)}`
+      `${this.baseUrl}/payroll-hours${this.toQuery({
+        ...rest,
+        unprocessedOnly: unprocessedOnly ? 'true' : undefined,
+      })}`
     );
   }
 

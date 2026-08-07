@@ -94,9 +94,11 @@ const noOverrides: Record<CalculatedField, boolean> = {
  * Raise a pay stub for an employee.
  *
  * Hours, pay rate and gross pre-fill from the employee's approved time for the
- * selected period. That comes from the read-only payroll-hours endpoint, never
- * from process-payroll — opening this form must not mark anyone's time entries
- * as processed as a side effect of looking at the numbers.
+ * selected period, excluding anything an earlier stub already paid. That comes
+ * from the read-only payroll-hours endpoint — opening this form must not mark
+ * anyone's time entries as processed as a side effect of looking at the
+ * numbers. Saving does: raising the stub is what pays those hours, and the
+ * server stamps them once the stub exists.
  *
  * EI, CPP and income tax are then calculated from the gross using the CRA's
  * withholding formulas for the pay date's year, and remain fully editable: the
@@ -255,6 +257,9 @@ export function PayStubDialog({
         employeeId: form.employeeId,
         startDate: new Date(`${form.periodStart}T00:00:00`).toISOString(),
         endDate: new Date(`${form.periodEnd}T23:59:59`).toISOString(),
+        // Hours an earlier stub already paid must not be offered again —
+        // raising this stub is what pays whatever it is filled with.
+        unprocessedOnly: true,
       });
       setHours(result || null);
 
@@ -544,19 +549,16 @@ export function PayStubDialog({
                 </Alert>
               ) : hours && hours.hours === 0 ? (
                 <Alert severity="warning">
-                  No approved hours found for this period. Enter the figures
-                  manually, or approve the time entries first.
+                  No unpaid approved hours for this period. Either the time
+                  entries still need approving, or an earlier stub has already
+                  paid them — enter the figures manually if this is deliberate.
                 </Alert>
               ) : hours ? (
                 <Alert severity="success">
                   Pre-filled from {hours.entryCount} approved{' '}
                   {hours.entryCount === 1 ? 'entry' : 'entries'} (
-                  {hours.hours.toFixed(2)} hrs).
-                  {hours.processedHours > 0
-                    ? ` ${hours.processedHours.toFixed(
-                        2
-                      )} hrs already processed for payroll.`
-                    : ''}
+                  {hours.hours.toFixed(2)} hrs). Raising this stub marks them
+                  paid, so they will not appear on another one.
                 </Alert>
               ) : null}
             </Grid>

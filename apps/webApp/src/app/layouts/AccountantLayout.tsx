@@ -24,6 +24,7 @@ import {
   Receipt,
   ReceiptLong,
   AccessTime,
+  Schedule,
   Assessment,
   Analytics,
   Logout,
@@ -115,6 +116,13 @@ export function AccountantLayout() {
           text: 'Employee Hours',
           icon: <AccessTime />,
           path: '/accountant/employee-hours',
+        },
+        // The entries behind those hours — what a stub's auto-filled total is
+        // checked against before it is issued.
+        {
+          text: 'Time Entries',
+          icon: <Schedule />,
+          path: '/accountant/time-entries',
         },
         {
           text: 'Pay Stubs',

@@ -17,6 +17,7 @@ describe('PayStubsService', () => {
   let prisma: any;
   let pdfService: any;
   let auditRepository: any;
+  let timeClockService: any;
 
   const employee = {
     id: 'emp-1',
@@ -84,7 +85,24 @@ describe('PayStubsService', () => {
     };
     auditRepository = { create: jest.fn() };
 
-    service = new PayStubsService(prisma, pdfService, auditRepository);
+    timeClockService = {
+      isPayrollRole: jest.fn((role: string) =>
+        ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(role)
+      ),
+      processPayroll: jest.fn().mockResolvedValue({ processedEntries: 1 }),
+      // What the period holds. baseDto pays for exactly this, so the default
+      // case is the matching one.
+      calculatePayrollHours: jest
+        .fn()
+        .mockResolvedValue({ hours: 128, entries: [{ id: 'te-1' }] }),
+    };
+
+    service = new PayStubsService(
+      prisma,
+      pdfService,
+      auditRepository,
+      timeClockService
+    );
   });
 
   describe('create', () => {
@@ -328,6 +346,177 @@ describe('PayStubsService', () => {
     });
   });
 
+  /**
+   * Raising the stub is the payment, so the hours behind it stop being
+   * available to any other stub at that moment.
+   */
+  describe('create processes the hours it pays for', () => {
+    it('processes the covered period for the employee', async () => {
+      await service.create(baseDto as any, accountant.id);
+
+      expect(timeClockService.processPayroll).toHaveBeenCalledWith(
+        expect.objectContaining({ employeeId: 'emp-1' }),
+        accountant.id
+      );
+    });
+
+    it('covers the whole of the last day of the period', async () => {
+      await service.create(baseDto as any, accountant.id);
+
+      const [{ startDate, endDate }] =
+        timeClockService.processPayroll.mock.calls[0];
+
+      // The period ends on Jan 31. A shift worked at 9am that day is a later
+      // instant than the calendar date naming it, so an end bound of "Jan 31
+      // midnight" would leave the last day's work unpaid and re-offer it to the
+      // next stub.
+      expect(new Date(startDate).getTime()).toBeLessThan(
+        new Date('2026-01-05T23:00:00.000Z').getTime()
+      );
+      expect(new Date(endDate).getTime()).toBeGreaterThan(
+        new Date('2026-02-01T00:00:00.000Z').getTime()
+      );
+    });
+
+    it('lets the accountant process by raising a stub', async () => {
+      // Processing from the time clock is admin-only, but issuing pay is the
+      // accountant's job and the stub is the instrument that does it.
+      await service.create(baseDto as any, accountant.id);
+
+      expect(timeClockService.processPayroll).toHaveBeenCalled();
+    });
+
+    it('processes after the stub row exists', async () => {
+      const order: string[] = [];
+      prisma.payStub.create.mockImplementation((args: any) => {
+        order.push('stub');
+        return {
+          id: 'stub-1',
+          createdAt: new Date('2026-01-31T00:00:00.000Z'),
+          employee,
+          ...args.data,
+        };
+      });
+      timeClockService.processPayroll.mockImplementation(async () => {
+        order.push('process');
+      });
+
+      await service.create(baseDto as any, accountant.id);
+
+      // Hours stamped as paid with no stub paying them is the worse failure of
+      // the two, so the stub is written first.
+      expect(order).toEqual(['stub', 'process']);
+    });
+
+    it('leaves someone outside payroll time tracking alone', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        ...employee,
+        role: { name: 'ACCOUNTANT' },
+      });
+
+      await service.create(baseDto as any, accountant.id);
+
+      // They have no time entries; processPayroll would refuse the role and
+      // take the whole stub down with it.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+    });
+
+    it('reports back that the hours were settled', async () => {
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.hoursProcessed).toBe(true);
+    });
+  });
+
+  /**
+   * A stub carries an hours *figure*, not a set of entries, and that figure is
+   * only pre-filled — the accountant may overwrite it. Processing is addressed
+   * by date range, so stamping regardless would mark hours paid that the stub
+   * does not pay, with no way back: nothing un-processes an entry.
+   */
+  describe('create refuses to stamp hours the stub does not pay', () => {
+    it('leaves the entries alone when the stub pays less than the period holds', async () => {
+      // 80 approved hours available, a 40-hour stub raised against them.
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 80,
+        entries: [{ id: 'te-1' }, { id: 'te-2' }],
+      });
+
+      const result = await service.create(
+        { ...baseDto, regularHours: 40, regularAmount: 960 } as any,
+        accountant.id
+      );
+
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+      expect(result.hoursProcessed).toBe(false);
+    });
+
+    it('still raises the stub when the figures disagree', async () => {
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 80,
+        entries: [{ id: 'te-1' }],
+      });
+
+      const result = await service.create(
+        { ...baseDto, regularHours: 40, regularAmount: 960 } as any,
+        accountant.id
+      );
+
+      // Refusing the stub would block paying an advance; the hours simply stay
+      // available, which is visible and recoverable.
+      expect(result.id).toBe('stub-1');
+      expect(result.regularHours).toBe(40);
+    });
+
+    it('catches a shift approved while the form was open', async () => {
+      // The form pre-filled 128, then a foreman approved another 8.
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 136,
+        entries: [{ id: 'te-1' }],
+      });
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      // Recomputed at save time, not trusted from what the form last saw.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+      expect(result.hoursProcessed).toBe(false);
+    });
+
+    it('processes when the figures agree to the cent', async () => {
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 128.004,
+        entries: [{ id: 'te-1' }],
+      });
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      // Both sides round to 128.00, so this is a match, not a discrepancy.
+      expect(result.hoursProcessed).toBe(true);
+    });
+
+    it('does not process a period with nothing in it', async () => {
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 0,
+        entries: [],
+      });
+
+      const result = await service.create(
+        {
+          ...baseDto,
+          regularHours: 0,
+          regularAmount: 0,
+          eiAmount: 0,
+          cppAmount: 0,
+        } as any,
+        accountant.id
+      );
+
+      // A salaried stub, or a period with no approved time. Nothing to stamp.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+      expect(result.hoursProcessed).toBe(false);
+    });
+  });
+
   describe('access control', () => {
     it('lets an employee read their own stubs', async () => {
       await expect(
@@ -424,6 +613,21 @@ describe('PayStubsService', () => {
         id: where.id,
         ...data,
       }));
+    });
+
+    it('does not re-process the time entries', async () => {
+      prisma.payStub.findUnique.mockResolvedValue(storedStub());
+      prisma.payStub.findMany.mockResolvedValue([]);
+
+      await service.update(
+        'stub-1',
+        { regularHours: 130 } as any,
+        accountant.id
+      );
+
+      // The entries were processed when the stub was raised and are terminal
+      // now; an amendment corrects the document, not the time record.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
     });
 
     it('recomputes the totals rather than trusting the client', async () => {
