@@ -379,8 +379,9 @@ export function App() {
               }
             >
               <Route path="dashboard" element={<AdminDashboard />} />
-              {/* Same time-clock & jobs access as admin (Compensation & Bonus
-                  tab is hidden for foreman inside TimeClockManagement) */}
+              {/* Same time-clock & jobs access as admin, minus paying anyone:
+                  the payroll-processing panel inside TimeClockManagement is
+                  admin-only, and pay rates live under admin Settings. */}
               <Route path="time-clock" element={<TimeClockManagement />} />
               <Route path="jobs" element={<JobsManagement />} />
               <Route path="jobs/:employeeId" element={<JobsManagement />} />

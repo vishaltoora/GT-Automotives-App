@@ -182,24 +182,40 @@ export function TimeClockManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodStart, periodEnd]);
 
+  // Paying out a period is admin-only on the server, so everyone else is spared
+  // both the button and the pay data behind it. An allowlist rather than a
+  // denylist: supervisors reach this same screen, and a role added later should
+  // start with no access rather than all of it.
+  const canProcessPayroll = user?.role?.name === 'ADMIN';
+
   useEffect(() => {
-    if (!cardEmployeeId) {
+    if (!cardEmployeeId || !canProcessPayroll) {
       setCardCompensation(null);
       return;
     }
 
+    // Cards are clicked in quick succession, so an earlier response can land
+    // after a later one. Without this, estimated pay can end up showing the
+    // previous employee's rate against this employee's hours.
+    let cancelled = false;
+
     const loadCompensation = async () => {
       try {
-        setCardCompensation(
-          await timeClockService.getCompensation(cardEmployeeId)
+        const compensation = await timeClockService.getCompensation(
+          cardEmployeeId
         );
+        if (!cancelled) setCardCompensation(compensation);
       } catch (err: any) {
-        setError(err.message || 'Failed to load compensation');
+        if (!cancelled) setError(err.message || 'Failed to load compensation');
       }
     };
 
     void loadCompensation();
-  }, [cardEmployeeId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cardEmployeeId, canProcessPayroll]);
 
   const currentEntryByEmployeeId = new Map(
     currentEntries.map((entry) => [entry.employeeId, entry])
@@ -222,12 +238,13 @@ export function TimeClockManagement() {
     (sum, entry) => sum + entry.paidMinutes / 60,
     0
   );
-  // Salaried pay is not a function of hours, so there is no meaningful estimate
-  // to show against a period's approved hours.
+  // Salaried pay is not a function of hours, so there is no estimate to show
+  // against a period's approved hours — null, so the panel can say so rather
+  // than print a confident $0.00 next to the button that pays them.
   const selectedEstimatedPay =
     cardCompensation?.payType === PayType.HOURLY
       ? selectedReadyHours * Number(cardCompensation.hourlyRate || 0)
-      : 0;
+      : null;
 
   // Dashboard aggregate stats across all employees for the viewed pay period
   const totalReadyHours = useMemo(
@@ -893,8 +910,8 @@ export function TimeClockManagement() {
 
         {/* Paying out the open card's approved hours for this period. It lives
             beside the hours it pays rather than with the pay rates, which are a
-            setting. Foreman can review hours but not pay them. */}
-        {selectedCard && user?.role?.name !== 'FOREMAN' && (
+            setting. Foreman and supervisors review hours but do not pay them. */}
+        {selectedCard && canProcessPayroll && (
           <Box
             sx={{
               mt: 2.5,
@@ -926,9 +943,17 @@ export function TimeClockManagement() {
                 </Typography>
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 700, color: colors.semantic.success }}
+                  sx={{
+                    fontWeight: 700,
+                    color:
+                      selectedEstimatedPay === null
+                        ? 'text.secondary'
+                        : colors.semantic.success,
+                  }}
                 >
-                  {formatCurrency(selectedEstimatedPay)}
+                  {selectedEstimatedPay === null
+                    ? 'Salaried'
+                    : formatCurrency(selectedEstimatedPay)}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
