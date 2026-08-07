@@ -88,7 +88,9 @@ import { BookingRequests } from './pages/admin/BookingRequests';
 
 // SMS Pages
 import { SmsHistory } from './pages/admin/sms/SmsHistory';
-import AdminSettings from './pages/admin/Settings';
+import { SettingsLayout } from './pages/admin/settings/SettingsLayout';
+import { GeneralSettings } from './pages/admin/settings/GeneralSettings';
+import { CompensationSettings } from './pages/admin/settings/CompensationSettings';
 
 // Email Pages
 import EmployeeSchedule from './pages/admin/EmployeeSchedule';
@@ -180,7 +182,7 @@ export function App() {
                 element={<EmployeeAvailabilityManagement />}
               />
               <Route path="reports" element={<div>Reports</div>} />
-              <Route path="settings" element={<div>Settings</div>} />
+              {/* System settings are admin-only — no staff settings route. */}
               <Route index element={<Navigate to="dashboard" replace />} />
             </Route>
 
@@ -310,10 +312,6 @@ export function App() {
               <Route path="appointments" element={<AppointmentsManagement />} />
               <Route path="inspections" element={<InspectionList />} />
               <Route path="inspections/:id" element={<InspectionEditor />} />
-              <Route
-                path="inspection-items"
-                element={<InspectionFeeItemManagement />}
-              />
               <Route path="repair-orders" element={<ROList />} />
               <Route path="repair-orders/:id" element={<RODetail />} />
               <Route path="booking-requests" element={<BookingRequests />} />
@@ -328,7 +326,6 @@ export function App() {
               <Route path="jobs" element={<JobsManagement />} />
               <Route path="jobs/:employeeId" element={<JobsManagement />} />
               <Route path="payments" element={<PaymentsManagement />} />
-              <Route path="payout-rules" element={<PayoutRulesManagement />} />
               <Route path="employee-hours" element={<EmployeeHours />} />
               <Route path="pay-stubs" element={<PayStubs />} />
               <Route path="reports" element={<Reports />} />
@@ -338,7 +335,30 @@ export function App() {
               />
               <Route path="analytics" element={<div>Analytics</div>} />
               <Route path="security" element={<div>Security Settings</div>} />
-              <Route path="settings" element={<AdminSettings />} />
+              <Route path="settings" element={<SettingsLayout />}>
+                <Route index element={<GeneralSettings />} />
+                <Route
+                  path="inspection-items"
+                  element={<InspectionFeeItemManagement />}
+                />
+                <Route
+                  path="payout-rules"
+                  element={<PayoutRulesManagement />}
+                />
+                <Route path="compensation" element={<CompensationSettings />} />
+              </Route>
+              {/* These three moved under Settings. Keep the old paths alive so
+                  bookmarks and any links still in the wild land on the tab. */}
+              <Route
+                path="inspection-items"
+                element={
+                  <Navigate to="/admin/settings/inspection-items" replace />
+                }
+              />
+              <Route
+                path="payout-rules"
+                element={<Navigate to="/admin/settings/payout-rules" replace />}
+              />
               <Route
                 path="tire-commissions"
                 element={<CommissionManagement />}
@@ -408,7 +428,7 @@ export function App() {
               <Route path="reports" element={<Reports />} />
               <Route path="analytics" element={<div>Analytics</div>} />
               <Route path="security" element={<div>Security Settings</div>} />
-              <Route path="settings" element={<div>System Settings</div>} />
+              {/* System settings are admin-only — no foreman settings route. */}
               <Route index element={<Navigate to="dashboard" replace />} />
             </Route>
 

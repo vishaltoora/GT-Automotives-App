@@ -27,7 +27,6 @@ import {
   ReceiptLong,
   CalendarMonth,
   Assessment,
-  Settings,
   Logout,
   Menu as MenuIcon,
   DirectionsCar,
@@ -166,12 +165,7 @@ export function StaffLayout() {
         },
       ],
     },
-    {
-      title: 'System',
-      items: [
-        { text: 'Settings', icon: <Settings />, path: '/staff/settings' },
-      ],
-    },
+    // No System section — system settings are admin-only.
     {
       title: 'Quick Links',
       items: [{ text: 'Pricing', icon: <LocalOffer />, path: '/pricing' }],

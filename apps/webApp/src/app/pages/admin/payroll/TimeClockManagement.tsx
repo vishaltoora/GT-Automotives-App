@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CardContent,
-  Divider,
   Chip,
   CircularProgress,
   Dialog,
@@ -32,17 +31,15 @@ import {
   PendingActions,
   PlayArrow,
   Refresh,
-  Save,
-  WorkspacePremium,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import {
   CreateTimeEntryDto,
+  EmployeeCompensationDto,
   PayPeriodHoursDto,
   PayType,
   TimeEntryDto,
   TimeEntryStatus,
-  UpsertEmployeeCompensationDto,
 } from '@gt-automotive/data';
 import { NumberInput } from '../../../components/common';
 import {
@@ -104,15 +101,11 @@ export function TimeClockManagement() {
   const [myCurrentEntry, setMyCurrentEntry] = useState<TimeEntryDto | null>(
     null
   );
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
-  const [payType, setPayType] = useState<PayType>(PayType.HOURLY);
-  const [hourlyRate, setHourlyRate] = useState('');
-  // Job title for this employee's pay stubs. Kept with pay because it is set
-  // by the same person at the same moment, and it is what a stub prints.
-  const [position, setPosition] = useState('');
-  const [annualSalary, setAnnualSalary] = useState('');
-  const [bonusAmount, setBonusAmount] = useState('');
-  const [bonusReason, setBonusReason] = useState('');
+  // How the open card's employee is paid. Read-only here — it is edited under
+  // Settings → Compensation & Bonus. Held so estimated pay can be shown next to
+  // the hours payroll is about to process.
+  const [cardCompensation, setCardCompensation] =
+    useState<EmployeeCompensationDto | null>(null);
   const [editingEntry, setEditingEntry] = useState<TimeEntryDto | null>(null);
   const [editClockInAt, setEditClockInAt] = useState('');
   const [editClockOutAt, setEditClockOutAt] = useState('');
@@ -177,9 +170,6 @@ export function TimeClockManagement() {
       setEntries(entryData);
       setPayPeriodRows(hoursData);
       setMyCurrentEntry(myCurrent);
-      if (!selectedEmployeeId && employees[0]) {
-        setSelectedEmployeeId(employees[0].id);
-      }
     } catch (err: any) {
       setError(err.message || 'Failed to load time clock data');
     } finally {
@@ -193,38 +183,30 @@ export function TimeClockManagement() {
   }, [periodStart, periodEnd]);
 
   useEffect(() => {
-    if (!selectedEmployeeId) return;
+    if (!cardEmployeeId) {
+      setCardCompensation(null);
+      return;
+    }
 
     const loadCompensation = async () => {
       try {
-        const compensation = await timeClockService.getCompensation(
-          selectedEmployeeId
+        setCardCompensation(
+          await timeClockService.getCompensation(cardEmployeeId)
         );
-        if (compensation) {
-          setPayType(compensation.payType);
-          setPosition(compensation.position || '');
-          setHourlyRate(compensation.hourlyRate?.toString() || '');
-          setAnnualSalary(compensation.annualSalary?.toString() || '');
-        } else {
-          setPayType(PayType.HOURLY);
-          setHourlyRate('');
-          setAnnualSalary('');
-        }
       } catch (err: any) {
         setError(err.message || 'Failed to load compensation');
       }
     };
 
-    loadCompensation();
-  }, [selectedEmployeeId]);
+    void loadCompensation();
+  }, [cardEmployeeId]);
 
-  const selectedEmployee = users.find((user) => user.id === selectedEmployeeId);
   const currentEntryByEmployeeId = new Map(
     currentEntries.map((entry) => [entry.employeeId, entry])
   );
   const selectedReadyEntries = entries.filter(
     (entry) =>
-      entry.employeeId === selectedEmployeeId &&
+      entry.employeeId === cardEmployeeId &&
       entry.status === TimeEntryStatus.APPROVED &&
       !entry.payrollProcessedAt
   );
@@ -234,16 +216,17 @@ export function TimeClockManagement() {
   );
   const selectedProcessedEntries = entries.filter(
     (entry) =>
-      entry.employeeId === selectedEmployeeId &&
-      Boolean(entry.payrollProcessedAt)
+      entry.employeeId === cardEmployeeId && Boolean(entry.payrollProcessedAt)
   );
   const selectedProcessedHours = selectedProcessedEntries.reduce(
     (sum, entry) => sum + entry.paidMinutes / 60,
     0
   );
+  // Salaried pay is not a function of hours, so there is no meaningful estimate
+  // to show against a period's approved hours.
   const selectedEstimatedPay =
-    payType === PayType.HOURLY
-      ? selectedReadyHours * Number(hourlyRate || 0)
+    cardCompensation?.payType === PayType.HOURLY
+      ? selectedReadyHours * Number(cardCompensation.hourlyRate || 0)
       : 0;
 
   // Dashboard aggregate stats across all employees for the viewed pay period
@@ -326,56 +309,13 @@ export function TimeClockManagement() {
   const toggleCard = (employeeId: string) =>
     setCardEmployeeId((current) => (current === employeeId ? '' : employeeId));
 
-  const saveCompensation = async () => {
-    if (!selectedEmployeeId) return;
-    const payload: UpsertEmployeeCompensationDto = {
-      payType,
-      position: position.trim() || undefined,
-      hourlyRate: payType === PayType.HOURLY ? Number(hourlyRate) : undefined,
-      annualSalary:
-        payType === PayType.SALARIED ? Number(annualSalary) : undefined,
-    };
-
-    try {
-      setSaving(true);
-      setError(null);
-      await timeClockService.updateCompensation(selectedEmployeeId, payload);
-      setMessage('Compensation updated');
-    } catch (err: any) {
-      setError(err.message || 'Failed to update compensation');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const addBonus = async () => {
-    if (!selectedEmployeeId) return;
-    try {
-      setSaving(true);
-      setError(null);
-      await timeClockService.createAdjustment({
-        employeeId: selectedEmployeeId,
-        amount: Number(bonusAmount),
-        reason: bonusReason,
-        effectiveDate: new Date().toISOString(),
-      });
-      setBonusAmount('');
-      setBonusReason('');
-      setMessage('Bonus added');
-    } catch (err: any) {
-      setError(err.message || 'Failed to add bonus');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const processPayroll = async () => {
-    if (!selectedEmployeeId) return;
+    if (!cardEmployeeId) return;
     try {
       setSaving(true);
       setError(null);
       const result = await timeClockService.processPayroll({
-        employeeId: selectedEmployeeId,
+        employeeId: cardEmployeeId,
         startDate: periodStart,
         endDate: periodEnd,
       });
@@ -452,9 +392,7 @@ export function TimeClockManagement() {
   const openAddEntry = () => {
     // An open card is who the admin is already looking at, so it is the
     // employee they almost certainly mean to add time for.
-    setAddEmployeeId(
-      cardEmployeeId || selectedEmployeeId || users[0]?.id || ''
-    );
+    setAddEmployeeId(cardEmployeeId || users[0]?.id || '');
     setAddClockInAt('');
     setAddClockOutAt('');
     setAddBreakMinutes('');
@@ -636,14 +574,6 @@ export function TimeClockManagement() {
         >
           <Tab icon={<AccessTime />} iconPosition="start" label="Dashboard" />
           <Tab icon={<Payment />} iconPosition="start" label="Time Entries" />
-          {/* Compensation & Bonus is hidden for foreman. */}
-          {user?.role?.name !== 'FOREMAN' && (
-            <Tab
-              icon={<WorkspacePremium />}
-              iconPosition="start"
-              label="Compensation & Bonus"
-            />
-          )}
         </Tabs>
       </Box>
 
@@ -961,6 +891,88 @@ export function TimeClockManagement() {
           onSelect={toggleCard}
         />
 
+        {/* Paying out the open card's approved hours for this period. It lives
+            beside the hours it pays rather than with the pay rates, which are a
+            setting. Foreman can review hours but not pay them. */}
+        {selectedCard && user?.role?.name !== 'FOREMAN' && (
+          <Box
+            sx={{
+              mt: 2.5,
+              p: 2,
+              border: `1px solid ${colors.neutral[200]}`,
+              borderRadius: 1,
+            }}
+          >
+            <Grid container spacing={2} alignItems="center">
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block' }}
+                >
+                  Ready for Payroll
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  {selectedReadyHours.toFixed(2)} hrs
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block' }}
+                >
+                  Estimated Pay
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: colors.semantic.success }}
+                >
+                  {formatCurrency(selectedEstimatedPay)}
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block' }}
+                >
+                  Processed · {periodLabel}
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  {selectedProcessedHours.toFixed(2)} hrs
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 2 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<Payment />}
+                  onClick={processPayroll}
+                  disabled={saving || selectedReadyEntries.length === 0}
+                >
+                  Process
+                </Button>
+              </Grid>
+            </Grid>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 1.5 }}
+            >
+              Approved hours for{' '}
+              {[
+                selectedCard.employee?.firstName,
+                selectedCard.employee?.lastName,
+              ]
+                .filter(Boolean)
+                .join(' ') || selectedCard.employee?.email}{' '}
+              stay ready until payroll is processed. Their pay rate is set under
+              Settings → Compensation &amp; Bonus.
+            </Typography>
+          </Box>
+        )}
+
         <Box
           sx={{
             display: 'flex',
@@ -1022,226 +1034,6 @@ export function TimeClockManagement() {
             onDelete: openDeleteEntry,
           }}
         />
-      </TabPanel>
-
-      {/* Compensation & Bonus tab */}
-      <TabPanel value={activeTab} index={2}>
-        <Card
-          elevation={0}
-          sx={{ mb: 4, border: `1px solid ${colors.neutral[200]}` }}
-        >
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-              Compensation & Bonus
-            </Typography>
-            {/* Two jobs share this card and one employee selector: setting how
-                someone is paid from now on, and paying a one-off bonus now.
-                They are kept as labelled groups so the standing arrangement is
-                not confused with a single payment. Rows add to 12 columns, and
-                the buttons match the 56px input height so each group reads as
-                one control strip. */}
-            <Grid container spacing={2} alignItems="flex-start">
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Employee"
-                  value={selectedEmployeeId}
-                  onChange={(event) =>
-                    setSelectedEmployeeId(event.target.value)
-                  }
-                  helperText="Applies to both compensation and bonus below"
-                >
-                  {users.map((user) => (
-                    <MenuItem key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName} ({user.role?.name})
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-
-              <Grid size={12}>
-                <Divider textAlign="left">
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    HOW THIS EMPLOYEE IS PAID
-                  </Typography>
-                </Divider>
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Pay Type"
-                  value={payType}
-                  onChange={(event) =>
-                    setPayType(event.target.value as PayType)
-                  }
-                >
-                  <MenuItem value={PayType.HOURLY}>Hourly</MenuItem>
-                  <MenuItem value={PayType.SALARIED}>Salaried</MenuItem>
-                </TextField>
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <NumberInput
-                  fullWidth
-                  allowDecimals
-                  min={0}
-                  label={
-                    payType === PayType.HOURLY ? 'Hourly Rate' : 'Annual Salary'
-                  }
-                  value={payType === PayType.HOURLY ? hourlyRate : annualSalary}
-                  onChange={(v) => {
-                    const next = v === undefined ? '' : String(v);
-                    payType === PayType.HOURLY
-                      ? setHourlyRate(next)
-                      : setAnnualSalary(next);
-                  }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Position"
-                  value={position}
-                  onChange={(event) => setPosition(event.target.value)}
-                  placeholder="e.g. Tire Technician"
-                  helperText="Optional — printed on this employee's pay stubs"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 2 }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={<Save />}
-                  onClick={saveCompensation}
-                  disabled={saving || !selectedEmployeeId}
-                  sx={{ height: 56 }}
-                >
-                  Save
-                </Button>
-              </Grid>
-
-              <Grid size={12}>
-                <Divider textAlign="left" sx={{ mt: 1 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    ONE-OFF BONUS
-                  </Typography>
-                </Divider>
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 3 }}>
-                <NumberInput
-                  fullWidth
-                  allowDecimals
-                  min={0}
-                  label="Bonus Amount"
-                  value={bonusAmount}
-                  onChange={(v) =>
-                    setBonusAmount(v === undefined ? '' : String(v))
-                  }
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 7 }}>
-                <TextField
-                  fullWidth
-                  label="Bonus Reason"
-                  value={bonusReason}
-                  onChange={(event) => setBonusReason(event.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 2 }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<WorkspacePremium />}
-                  onClick={addBonus}
-                  disabled={
-                    saving ||
-                    !selectedEmployeeId ||
-                    !bonusAmount ||
-                    !bonusReason
-                  }
-                  sx={{ height: 56 }}
-                >
-                  Add Bonus
-                </Button>
-              </Grid>
-            </Grid>
-            {selectedEmployee && (
-              <Box
-                sx={{
-                  mt: 2.5,
-                  p: 2,
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: 1,
-                }}
-              >
-                <Grid container spacing={2} alignItems="center">
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block' }}
-                    >
-                      Ready for Payroll
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {selectedReadyHours.toFixed(2)} hrs
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 3 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block' }}
-                    >
-                      Estimated Pay
-                    </Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{ fontWeight: 700, color: colors.semantic.success }}
-                    >
-                      {formatCurrency(selectedEstimatedPay)}
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 3 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block' }}
-                    >
-                      Processed · {periodLabel}
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {selectedProcessedHours.toFixed(2)} hrs
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 2 }}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<Payment />}
-                      onClick={processPayroll}
-                      disabled={saving || selectedReadyEntries.length === 0}
-                    >
-                      Process
-                    </Button>
-                  </Grid>
-                </Grid>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mt: 1.5 }}
-                >
-                  Approved hours for {selectedEmployee.firstName}{' '}
-                  {selectedEmployee.lastName} stay ready until payroll is
-                  processed.
-                </Typography>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
       </TabPanel>
 
       <Dialog

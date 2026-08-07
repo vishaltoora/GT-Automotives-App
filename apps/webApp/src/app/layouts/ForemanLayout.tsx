@@ -200,7 +200,7 @@ export function ForemanLayout() {
       icon: <Settings />,
       items: [
         { text: 'Security', icon: <Security />, path: '/foreman/security' },
-        { text: 'Settings', icon: <Settings />, path: '/foreman/settings' },
+        // No Settings entry — system settings are admin-only.
       ],
     },
     {
