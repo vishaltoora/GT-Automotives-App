@@ -185,6 +185,29 @@ export class PayStubsService {
       },
     });
 
+    // A stub raised out of pay-date order — a missed period backfilled after a
+    // later one was issued — lands in the middle of an existing chain, leaving
+    // every stub after it carrying a running total that no longer includes
+    // everything before it. Rewriting the year in pay-date order is the same
+    // reconciliation an amendment performs, and for the same reason: a year
+    // whose stubs disagree with each other surfaces at T4 time, long after
+    // anyone could explain it.
+    //
+    // Run unconditionally rather than only when a later stub exists, so there
+    // is one path to be right about instead of two.
+    await this.recomputeYearToDate(dto.employeeId, payDate.getUTCFullYear());
+
+    // Re-read: the row above holds the totals computed before the rewrite, and
+    // returning those would show the accountant a figure the database no longer
+    // agrees with.
+    const reconciled = await this.prisma.payStub.findUnique({
+      where: { id: payStub.id },
+      include: { employee: { include: { role: true } } },
+    });
+
+    // Last, because it is the only step that reaches outside the pay stub
+    // record: the document and its year are settled before the time entries
+    // behind it are.
     const hoursProcessed = await this.processHoursCovered(
       employee,
       periodStart,
@@ -193,7 +216,7 @@ export class PayStubsService {
       userId
     );
 
-    return { ...this.toDto(payStub), hoursProcessed };
+    return { ...this.toDto(reconciled ?? payStub), hoursProcessed };
   }
 
   /**
@@ -650,15 +673,26 @@ export class PayStubsService {
    * in January carries January's year-to-date regardless of which period it
    * covers.
    */
+  /**
+   * This employee's stubs in the same calendar year up to and including
+   * `payDate`.
+   *
+   * The upper bound matters. Stubs are not always raised in pay-date order — a
+   * missed period gets backfilled, and this feature exists partly to run
+   * payroll after a period has closed. Summing the whole year would count a
+   * *later* stub as prior, overstating year-to-date on the one being raised and
+   * understating the CPP and EI room left when deductions are estimated.
+   */
   private async sumPriorStubsInYear(employeeId: string, payDate: Date) {
     const year = payDate.getUTCFullYear();
     const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
 
     const priorStubs = await this.prisma.payStub.findMany({
       where: {
         employeeId,
-        payDate: { gte: yearStart, lt: yearEnd },
+        // Inclusive: a stub already issued for this same pay date is earlier in
+        // the chain, since recomputeYearToDate() breaks ties on creation order.
+        payDate: { gte: yearStart, lte: payDate },
       },
     });
 

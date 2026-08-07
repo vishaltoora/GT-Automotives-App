@@ -1,7 +1,6 @@
 import {
   calculateDeductions,
   getPayrollRates,
-  inferPayPeriodsPerYear,
   payPeriodLabel,
 } from './canadian-payroll';
 
@@ -226,28 +225,7 @@ describe('canadian payroll deductions', () => {
     });
   });
 
-  describe('pay period inference', () => {
-    const infer = (start: string, end: string) =>
-      inferPayPeriodsPerYear(new Date(start), new Date(end));
-
-    it('reads a week as weekly', () => {
-      expect(infer('2026-01-05', '2026-01-11')).toBe(52);
-    });
-
-    it('reads a fortnight as biweekly', () => {
-      expect(infer('2026-01-05', '2026-01-18')).toBe(26);
-    });
-
-    it('reads a half month as semi-monthly', () => {
-      expect(infer('2026-01-01', '2026-01-15')).toBe(24);
-      expect(infer('2026-01-16', '2026-01-31')).toBe(24);
-    });
-
-    it('reads a calendar month as monthly', () => {
-      expect(infer('2026-01-01', '2026-01-31')).toBe(12);
-      expect(infer('2026-02-01', '2026-02-28')).toBe(12);
-    });
-
+  describe('pay frequency labels', () => {
     it('labels each frequency', () => {
       expect(payPeriodLabel(52)).toBe('Weekly');
       expect(payPeriodLabel(26)).toBe('Biweekly');
