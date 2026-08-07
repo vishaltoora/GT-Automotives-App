@@ -12,7 +12,11 @@ import {
 } from '../../components/time-clock';
 import { timeClockService } from '../../requests/time-clock.requests';
 import { colors } from '../../theme/colors';
-import { PayPeriod, payPeriodFor, payPeriodLabel } from '../../utils/payPeriod';
+import {
+  PayPeriod,
+  currentPayPeriod,
+  payPeriodLabel,
+} from '../../utils/payPeriod';
 
 /**
  * The time entries behind every employee's hours, for the accountant.
@@ -24,9 +28,7 @@ import { PayPeriod, payPeriodFor, payPeriodLabel } from '../../utils/payPeriod';
  * which the API enforces regardless of what this page renders.
  */
 export function AccountantTimeEntries() {
-  const [period, setPeriod] = useState<PayPeriod>(() =>
-    payPeriodFor(new Date())
-  );
+  const [period, setPeriod] = useState<PayPeriod>(() => currentPayPeriod());
   const [rows, setRows] = useState<PayPeriodHoursDto[]>([]);
   const [entries, setEntries] = useState<TimeEntryDto[]>([]);
   const [employeeId, setEmployeeId] = useState('');

@@ -185,9 +185,15 @@ export class PayStubsService {
       },
     });
 
-    await this.processHoursCovered(employee, periodStart, periodEnd, userId);
+    const hoursProcessed = await this.processHoursCovered(
+      employee,
+      periodStart,
+      periodEnd,
+      regularHours,
+      userId
+    );
 
-    return this.toDto(payStub);
+    return { ...this.toDto(payStub), hoursProcessed };
   }
 
   /**
@@ -198,21 +204,36 @@ export class PayStubsService {
    * longer be edited, unapproved or deleted. Without this the same shift could
    * be paid on two stubs with nothing in the record to show it.
    *
-   * Deliberately after the stub row exists. If this fails the stub is still
-   * there with its hours unprocessed — visible, and correctable by processing
-   * them from the time clock. The reverse, hours stamped as paid with no stub
-   * paying them, leaves the employee's record claiming money nobody issued.
+   * The catch is that a stub carries an hours *figure*, not a set of entries,
+   * and that figure is only ever pre-filled — the accountant may overwrite it
+   * to pay an advance, split a period, or simply mistype. Processing is
+   * addressed by date range, so a stub for 40 of an available 80 hours would
+   * stamp all 80, and the unpaid 40 could never be recovered: nothing
+   * un-processes an entry, and no later stub would be offered them again.
+   *
+   * So the entries are processed only when the stub pays for exactly what the
+   * period holds. If the figures disagree — an override, or a shift approved
+   * while the form was open — the stub is still raised but the entries are left
+   * alone, and the caller is told. Hours left available are visible on the time
+   * clock and can be paid or processed deliberately; hours stamped as paid with
+   * nothing paying them are silent and permanent, which is the worse of the two.
+   *
+   * Runs after the stub row exists, for the same reason: a failure here leaves
+   * a stub with unprocessed hours, not hours with no stub.
    *
    * A stub can be raised for someone outside payroll time tracking, such as an
    * accountant. They have no time entries to process, so nothing is attempted.
+   *
+   * @returns whether the covered entries were stamped.
    */
   private async processHoursCovered(
     employee: { id: string; role?: { name: string } | null },
     periodStart: Date,
     periodEnd: Date,
+    regularHours: number,
     userId: string
-  ) {
-    if (!this.timeClockService.isPayrollRole(employee.role?.name)) return;
+  ): Promise<boolean> {
+    if (!this.timeClockService.isPayrollRole(employee.role?.name)) return false;
 
     // periodStart/periodEnd are calendar dates at midnight UTC. A shift worked
     // at 9am on the last day of the period is a later instant than that, so the
@@ -220,17 +241,28 @@ export class PayStubsService {
     // that name them.
     const { start } = businessDayUtcRange(extractBusinessDate(periodStart));
     const { end } = businessDayUtcRange(extractBusinessDate(periodEnd));
+    const startDate = start.toISOString();
+    // `end` is the first instant of the next business day and the filter is
+    // inclusive, so step back to stay inside the period.
+    const endDate = new Date(end.getTime() - 1).toISOString();
+
+    // Recomputed here rather than trusted from whatever the form last saw, so a
+    // shift approved between opening the form and saving it is caught.
+    const available = await this.timeClockService.calculatePayrollHours(
+      employee.id,
+      startDate,
+      endDate,
+      { unprocessedOnly: true }
+    );
+
+    if (available.entries.length === 0) return false;
+    if (round2(available.hours) !== round2(regularHours)) return false;
 
     await this.timeClockService.processPayroll(
-      {
-        employeeId: employee.id,
-        startDate: start.toISOString(),
-        // `end` is the first instant of the next business day and the filter is
-        // inclusive, so step back to stay inside the period.
-        endDate: new Date(end.getTime() - 1).toISOString(),
-      },
+      { employeeId: employee.id, startDate, endDate },
       userId
     );
+    return true;
   }
 
   /**

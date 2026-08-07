@@ -81,7 +81,12 @@ describe('PayStubsService', () => {
       isPayrollRole: jest.fn((role: string) =>
         ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(role)
       ),
-      processPayroll: jest.fn().mockResolvedValue({ processedEntries: 0 }),
+      processPayroll: jest.fn().mockResolvedValue({ processedEntries: 1 }),
+      // What the period holds. baseDto pays for exactly this, so the default
+      // case is the matching one.
+      calculatePayrollHours: jest
+        .fn()
+        .mockResolvedValue({ hours: 128, entries: [{ id: 'te-1' }] }),
     };
 
     service = new PayStubsService(
@@ -291,6 +296,101 @@ describe('PayStubsService', () => {
       // They have no time entries; processPayroll would refuse the role and
       // take the whole stub down with it.
       expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+    });
+
+    it('reports back that the hours were settled', async () => {
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.hoursProcessed).toBe(true);
+    });
+  });
+
+  /**
+   * A stub carries an hours *figure*, not a set of entries, and that figure is
+   * only pre-filled — the accountant may overwrite it. Processing is addressed
+   * by date range, so stamping regardless would mark hours paid that the stub
+   * does not pay, with no way back: nothing un-processes an entry.
+   */
+  describe('create refuses to stamp hours the stub does not pay', () => {
+    it('leaves the entries alone when the stub pays less than the period holds', async () => {
+      // 80 approved hours available, a 40-hour stub raised against them.
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 80,
+        entries: [{ id: 'te-1' }, { id: 'te-2' }],
+      });
+
+      const result = await service.create(
+        { ...baseDto, regularHours: 40, regularAmount: 960 } as any,
+        accountant.id
+      );
+
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+      expect(result.hoursProcessed).toBe(false);
+    });
+
+    it('still raises the stub when the figures disagree', async () => {
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 80,
+        entries: [{ id: 'te-1' }],
+      });
+
+      const result = await service.create(
+        { ...baseDto, regularHours: 40, regularAmount: 960 } as any,
+        accountant.id
+      );
+
+      // Refusing the stub would block paying an advance; the hours simply stay
+      // available, which is visible and recoverable.
+      expect(result.id).toBe('stub-1');
+      expect(result.regularHours).toBe(40);
+    });
+
+    it('catches a shift approved while the form was open', async () => {
+      // The form pre-filled 128, then a foreman approved another 8.
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 136,
+        entries: [{ id: 'te-1' }],
+      });
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      // Recomputed at save time, not trusted from what the form last saw.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+      expect(result.hoursProcessed).toBe(false);
+    });
+
+    it('processes when the figures agree to the cent', async () => {
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 128.004,
+        entries: [{ id: 'te-1' }],
+      });
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      // Both sides round to 128.00, so this is a match, not a discrepancy.
+      expect(result.hoursProcessed).toBe(true);
+    });
+
+    it('does not process a period with nothing in it', async () => {
+      timeClockService.calculatePayrollHours.mockResolvedValue({
+        hours: 0,
+        entries: [],
+      });
+
+      const result = await service.create(
+        {
+          ...baseDto,
+          regularHours: 0,
+          regularAmount: 0,
+          eiAmount: 0,
+          cppAmount: 0,
+        } as any,
+        accountant.id
+      );
+
+      // A salaried stub, or a period with no approved time. Nothing to stamp.
+      expect(timeClockService.processPayroll).not.toHaveBeenCalled();
+      expect(result.hoursProcessed).toBe(false);
     });
   });
 

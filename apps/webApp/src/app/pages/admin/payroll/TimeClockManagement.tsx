@@ -49,8 +49,8 @@ import {
   EmployeeHoursCards,
   PayPeriodNavigator,
   TimeEntriesTable,
+  formatStatus,
 } from '../../../components/time-clock';
-import { formatStatus } from '../../../components/time-clock/TimeEntriesTable';
 import { User, userService } from '../../../requests/user.requests';
 import { timeClockService } from '../../../requests/time-clock.requests';
 import { useAuth } from '../../../hooks/useAuth';
@@ -58,7 +58,7 @@ import { colors } from '../../../theme/colors';
 import {
   PayPeriod,
   isCurrentPayPeriod,
-  payPeriodFor,
+  currentPayPeriod,
   payPeriodLabel,
 } from '../../../utils/payPeriod';
 
@@ -133,11 +133,11 @@ export function TimeClockManagement() {
    * shop actually pays on — semi-monthly — so the total chased mid-period is
    * the total that ends up on a stub. Changing it refetches.
    */
-  const [period, setPeriod] = useState<PayPeriod>(() =>
-    payPeriodFor(new Date())
-  );
+  const [period, setPeriod] = useState<PayPeriod>(() => currentPayPeriod());
   // The card that has been opened, if any. Empty means the whole team's
-  // entries, which is the view an admin lands on.
+  // entries, which is the view an admin lands on. Deliberately not reset when
+  // the period changes: an admin comparing one person across periods should not
+  // have to find them again each time.
   const [cardEmployeeId, setCardEmployeeId] = useState('');
   const [payPeriodRows, setPayPeriodRows] = useState<PayPeriodHoursDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -325,10 +325,6 @@ export function TimeClockManagement() {
   // A second click on an open card closes it, back to the whole team.
   const toggleCard = (employeeId: string) =>
     setCardEmployeeId((current) => (current === employeeId ? '' : employeeId));
-
-  // Moving to another period keeps the card open — an admin comparing the same
-  // person across periods should not have to find them again each time.
-  const goToPeriod = (next: PayPeriod) => setPeriod(next);
 
   const saveCompensation = async () => {
     if (!selectedEmployeeId) return;
@@ -945,7 +941,7 @@ export function TimeClockManagement() {
         >
           <PayPeriodNavigator
             period={period}
-            onChange={goToPeriod}
+            onChange={setPeriod}
             disabled={loading}
           />
           <Button

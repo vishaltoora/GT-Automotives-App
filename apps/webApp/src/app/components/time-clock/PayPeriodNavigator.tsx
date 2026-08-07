@@ -4,7 +4,7 @@ import {
   PayPeriod,
   isCurrentPayPeriod,
   nextPayPeriod,
-  payPeriodFor,
+  currentPayPeriod,
   payPeriodLabel,
   previousPayPeriod,
 } from '../../utils/payPeriod';
@@ -58,7 +58,7 @@ export function PayPeriodNavigator({
       {!isCurrent && (
         <Button
           size="small"
-          onClick={() => onChange(payPeriodFor(new Date()))}
+          onClick={() => onChange(currentPayPeriod())}
           disabled={disabled}
         >
           This Period

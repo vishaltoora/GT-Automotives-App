@@ -24,7 +24,11 @@ import {
 } from '../../components/time-clock';
 import { timeClockService } from '../../requests/time-clock.requests';
 import { colors } from '../../theme/colors';
-import { PayPeriod, payPeriodFor, payPeriodLabel } from '../../utils/payPeriod';
+import {
+  PayPeriod,
+  currentPayPeriod,
+  payPeriodLabel,
+} from '../../utils/payPeriod';
 
 const formatHours = (minutes: number) => `${(minutes / 60).toFixed(2)} hrs`;
 
@@ -35,9 +39,7 @@ export function TimeClock() {
   // team — an employee should be able to check the figure that will be paid
   // against the same numbers their supervisor is looking at.
   const [myHours, setMyHours] = useState<PayPeriodHoursDto | null>(null);
-  const [period, setPeriod] = useState<PayPeriod>(() =>
-    payPeriodFor(new Date())
-  );
+  const [period, setPeriod] = useState<PayPeriod>(() => currentPayPeriod());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

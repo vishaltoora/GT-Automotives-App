@@ -25,10 +25,10 @@ import { format } from 'date-fns';
 import { TimeEntryDto, TimeEntryStatus } from '@gt-automotive/data';
 import { colors } from '../../theme/colors';
 
-export const formatEntryHours = (minutes: number) =>
+const formatEntryHours = (minutes: number) =>
   `${(minutes / 60).toFixed(2)} hrs`;
 
-export const formatBreak = (minutes: number) => {
+const formatBreak = (minutes: number) => {
   if (!minutes) return '—';
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
@@ -44,7 +44,7 @@ export const formatStatus = (status: TimeEntryStatus) => {
   return status.replace('_', ' ');
 };
 
-export const getStatusColor = (
+const getStatusColor = (
   status: TimeEntryStatus
 ):
   | 'default'

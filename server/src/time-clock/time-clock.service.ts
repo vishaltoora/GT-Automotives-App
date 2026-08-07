@@ -689,21 +689,6 @@ export class TimeClockService {
   }
 
   /**
-   * Read-only wrapper for callers outside payroll processing — the accountant's
-   * hours view and the pay stub form pre-fill. Deliberately a separate entry
-   * point from processPayroll() so that reading the numbers can never stamp
-   * entries as processed.
-   *
-   * Returns one row per payroll-eligible employee, or a single row when
-   * `employeeId` is given. Each row is produced by calculatePayrollHours(), so
-   * the totals an accountant reviews and the figures a stub is pre-filled with
-   * are the same calculation rather than two that can drift apart.
-   *
-   * `unprocessedOnly` picks which of the two the caller wants — see
-   * calculatePayrollHours(). The pay stub form passes true so a stub is never
-   * pre-filled with hours another stub has already paid.
-   */
-  /**
    * One row per employee for a pay period: hours already approved, and hours
    * still waiting on someone.
    *
@@ -796,6 +781,21 @@ export class TimeClockService {
     }));
   }
 
+  /**
+   * Read-only wrapper for callers outside payroll processing — the accountant's
+   * hours view and the pay stub form pre-fill. Deliberately a separate entry
+   * point from processPayroll() so that reading the numbers can never stamp
+   * entries as processed.
+   *
+   * Returns one row per payroll-eligible employee, or a single row when
+   * `employeeId` is given. Each row is produced by calculatePayrollHours(), so
+   * the totals an accountant reviews and the figures a stub is pre-filled with
+   * are the same calculation rather than two that can drift apart.
+   *
+   * `unprocessedOnly` picks which of the two the caller wants — see
+   * calculatePayrollHours(). The pay stub form passes true so a stub is never
+   * pre-filled with hours another stub has already paid.
+   */
   async getPayrollHours(
     startDate: string,
     endDate: string,
