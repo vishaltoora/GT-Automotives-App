@@ -145,13 +145,6 @@ export const getPayrollRates = (
   year: number
 ): PayrollRates | undefined => RATE_TABLES[`${province}:${year}`];
 
-/** The tax years that have a rate table, oldest first. */
-export const supportedTaxYears = (province: SupportedProvince): number[] =>
-  Object.values(RATE_TABLES)
-    .filter((rates) => RATE_TABLES[`${province}:${rates.year}`] === rates)
-    .map((rates) => rates.year)
-    .sort((a, b) => a - b);
-
 export interface DeductionInput {
   /** Gross pay for this period (factor I). */
   grossPay: number;
@@ -201,33 +194,6 @@ const bracketFor = (
     if (income >= bracket.floor) match = bracket;
   }
   return match;
-};
-
-/**
- * The pay periods per year implied by a period's length.
- *
- * The CRA formulas need the employer's actual pay frequency, which the system
- * does not record, so it is inferred from the period the accountant selected by
- * picking the frequency whose nominal length is closest. Weekly, biweekly,
- * semi-monthly and monthly are the only ones offered; anything unusual lands on
- * the nearest of those and is shown to the accountant so a wrong guess is
- * visible rather than silent.
- */
-export const inferPayPeriodsPerYear = (
-  periodStart: Date,
-  periodEnd: Date
-): number => {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const days =
-    Math.round((periodEnd.getTime() - periodStart.getTime()) / msPerDay) + 1;
-  if (!Number.isFinite(days) || days <= 0) return 26;
-
-  const candidates = [52, 26, 24, 12];
-  return candidates.reduce((best, candidate) =>
-    Math.abs(365 / candidate - days) < Math.abs(365 / best - days)
-      ? candidate
-      : best
-  );
 };
 
 /** Human label for a pay frequency, for the accountant to sanity check. */

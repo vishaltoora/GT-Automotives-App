@@ -68,6 +68,14 @@ describe('PayStubsService', () => {
         })),
         findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn(),
+        // create() rewrites the year in pay-date order once the row exists, so
+        // the mock has to accept those writes even in tests that ignore them.
+        update: jest.fn(({ where, data }: any) => ({
+          id: where.id,
+          createdAt: new Date('2026-01-31T00:00:00.000Z'),
+          employee,
+          ...data,
+        })),
       },
     };
     pdfService = {
@@ -152,17 +160,132 @@ describe('PayStubsService', () => {
       expect(result.ytdNetPay).toBe(5709.92);
     });
 
-    it('scopes the year-to-date query to the pay date calendar year', async () => {
+    it('sums only stubs up to this pay date, within its calendar year', async () => {
       await service.create(baseDto as any, accountant.id);
 
+      // Unbounded above, a stub backfilled for an earlier period would count a
+      // later one as prior — overstating its year-to-date and understating the
+      // CPP and EI room left when deductions are estimated.
       expect(prisma.payStub.findMany).toHaveBeenCalledWith({
         where: {
           employeeId: 'emp-1',
           payDate: {
             gte: new Date(Date.UTC(2026, 0, 1)),
-            lt: new Date(Date.UTC(2027, 0, 1)),
+            lte: new Date(Date.UTC(2026, 0, 31)),
           },
         },
+      });
+    });
+
+    /**
+     * Stubs are not always raised in pay-date order — a missed period gets
+     * backfilled, and running payroll after a period closes is a case this
+     * feature exists for. A stub landing mid-chain must leave the year
+     * reconciling, not just itself.
+     */
+    describe('raised out of pay-date order', () => {
+      /** A tiny in-memory payStub table, so the chain can actually be walked. */
+      const useStore = () => {
+        const rows: any[] = [];
+        let seq = 0;
+        prisma.payStub.create = jest.fn((args: any) => {
+          const row = {
+            id: `stub-${++seq}`,
+            createdAt: new Date(Date.UTC(2026, 5, seq)),
+            employee,
+            ...args.data,
+          };
+          rows.push(row);
+          return row;
+        });
+        prisma.payStub.findMany = jest.fn(({ where, orderBy }: any) => {
+          let out = rows.filter(
+            (row) =>
+              row.employeeId === where.employeeId &&
+              row.payDate >= where.payDate.gte &&
+              (where.payDate.lte
+                ? row.payDate <= where.payDate.lte
+                : row.payDate < where.payDate.lt)
+          );
+          if (orderBy) {
+            out = [...out].sort(
+              (a, b) =>
+                a.payDate.getTime() - b.payDate.getTime() ||
+                a.createdAt.getTime() - b.createdAt.getTime()
+            );
+          }
+          return out;
+        });
+        prisma.payStub.update = jest.fn(({ where, data }: any) => {
+          const row = rows.find((candidate) => candidate.id === where.id);
+          Object.assign(row, data);
+          return row;
+        });
+        prisma.payStub.findUnique = jest.fn(({ where }: any) =>
+          rows.find((row) => row.id === where.id)
+        );
+        return rows;
+      };
+
+      /** $1,000 gross, no deductions, so the running totals are easy to read. */
+      const stubFor = (payDate: string) => ({
+        ...baseDto,
+        payDate,
+        periodStart: payDate,
+        periodEnd: payDate,
+        regularHours: 40,
+        regularAmount: 1000,
+        eiAmount: 0,
+        cppAmount: 0,
+      });
+
+      it('does not count a later stub as prior to it', async () => {
+        useStore();
+        await service.create(stubFor('2026-02-28') as any, accountant.id);
+
+        const january = await service.create(
+          stubFor('2026-01-31') as any,
+          accountant.id
+        );
+
+        // January is first in the year, so its running total is its own gross —
+        // not February's added on top of it.
+        expect(january.ytdGrossPay).toBe(1000);
+      });
+
+      it('rewrites the stubs that come after it', async () => {
+        const rows = useStore();
+        await service.create(stubFor('2026-02-28') as any, accountant.id);
+        await service.create(stubFor('2026-01-31') as any, accountant.id);
+
+        // February was issued believing it was the year's first stub. Once
+        // January exists it has to carry both, or the year never reconciles.
+        const february = rows.find((row) => row.id === 'stub-1');
+        expect(Number(february.ytdGrossPay)).toBe(2000);
+      });
+
+      it('leaves the whole year summing to the stubs in it', async () => {
+        const rows = useStore();
+        await service.create(stubFor('2026-03-31') as any, accountant.id);
+        await service.create(stubFor('2026-01-31') as any, accountant.id);
+        await service.create(stubFor('2026-02-28') as any, accountant.id);
+
+        const chain = [...rows]
+          .sort((a, b) => a.payDate.getTime() - b.payDate.getTime())
+          .map((row) => Number(row.ytdGrossPay));
+        expect(chain).toEqual([1000, 2000, 3000]);
+      });
+
+      it('does not touch a neighbouring year', async () => {
+        const rows = useStore();
+        await service.create(stubFor('2025-12-31') as any, accountant.id);
+        await service.create(stubFor('2026-01-31') as any, accountant.id);
+
+        // Year-to-date restarts each calendar year; the rewrite must respect
+        // that boundary rather than running a total across it.
+        expect(rows.map((row) => Number(row.ytdGrossPay))).toEqual([
+          1000, 1000,
+        ]);
       });
     });
 
