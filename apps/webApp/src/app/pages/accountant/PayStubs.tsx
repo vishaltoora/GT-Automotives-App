@@ -19,13 +19,13 @@ import {
   Typography,
 } from '@mui/material';
 import { Add, Edit, Visibility } from '@mui/icons-material';
-import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { PayrollHoursDto, PayStubDto } from '@gt-automotive/data';
 import { payStubService } from '../../requests/pay-stub.requests';
 import { timeClockService } from '../../requests/time-clock.requests';
 import { PayStubDialog } from '../../components/pay-stubs/PayStubDialog';
 import { PayStubViewer } from '../../components/pay-stubs/PayStubViewer';
 import { colors } from '../../theme/colors';
+import { currentPayPeriod } from '../../utils/payPeriod';
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-CA', {
@@ -55,6 +55,17 @@ export function PayStubs() {
   const [editing, setEditing] = useState<PayStubDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Set when a stub was raised whose hours did not match the period, so the
+  // time entries were deliberately left available rather than stamped.
+  const [unsettledHours, setUnsettledHours] = useState(false);
+
+  // The shop pays semi-monthly, so a new stub covers the current pay period
+  // rather than the calendar month. A month-wide default would silently roll
+  // both halves into one stub and pay hours the admin reviewed as two.
+  //
+  // Held steady for the life of the page: it is a dependency of the loader, and
+  // a fresh object each render would restart the fetch forever.
+  const defaultPeriod = useMemo(() => currentPayPeriod(), []);
 
   const prefillEmployeeId = searchParams.get('employeeId') || undefined;
   const prefillStart = searchParams.get('start') || undefined;
@@ -70,8 +81,8 @@ export function PayStubs() {
       const [stubs, roster] = await Promise.all([
         payStubService.findAll(filterEmployeeId || undefined),
         timeClockService.getPayrollHours({
-          startDate: startOfMonth(new Date()).toISOString(),
-          endDate: endOfMonth(new Date()).toISOString(),
+          startDate: defaultPeriod.start.toISOString(),
+          endDate: defaultPeriod.end.toISOString(),
         }),
       ]);
       setPayStubs(stubs);
@@ -81,7 +92,7 @@ export function PayStubs() {
     } finally {
       setLoading(false);
     }
-  }, [filterEmployeeId]);
+  }, [filterEmployeeId, defaultPeriod]);
 
   useEffect(() => {
     loadData();
@@ -161,6 +172,18 @@ export function PayStubs() {
         </Box>
       </Box>
 
+      {unsettledHours && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          onClose={() => setUnsettledHours(false)}
+        >
+          The stub was raised, but its hours did not match the approved hours
+          for the period, so the time entries were left unpaid rather than
+          marked off against a figure they do not add up to. Settle them from
+          the Time Clock, or raise a stub for the remaining hours.
+        </Alert>
+      )}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
@@ -251,17 +274,20 @@ export function PayStubs() {
             loadData();
           } else {
             setPayStubs((prev) => [saved, ...prev]);
+            // The server leaves the time entries alone when the stub's hours do
+            // not match what the period held. Said out loud, because otherwise
+            // the accountant would reasonably assume raising the stub settled
+            // them and find the same hours waiting on the next one.
+            if (saved.hoursProcessed === false) {
+              setUnsettledHours(true);
+            }
           }
           setViewing(saved);
         }}
         employees={employeeOptions}
         initialEmployeeId={prefillEmployeeId}
-        initialPeriodStart={
-          prefillStart || format(startOfMonth(new Date()), 'yyyy-MM-dd')
-        }
-        initialPeriodEnd={
-          prefillEnd || format(endOfMonth(new Date()), 'yyyy-MM-dd')
-        }
+        initialPeriodStart={prefillStart || defaultPeriod.startDate}
+        initialPeriodEnd={prefillEnd || defaultPeriod.endDate}
       />
 
       <PayStubViewer
