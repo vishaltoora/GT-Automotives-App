@@ -91,6 +91,9 @@ export class TimeClockService {
           hourlyRate: dto.hourlyRate,
           annualSalary: dto.annualSalary,
           expectedWeeklyHours: dto.expectedWeeklyHours,
+          // Null rather than a default, so the stub can tell "not set" (use the
+          // statutory minimum) from a deliberate rate.
+          vacationPayRate: dto.vacationPayRate ?? null,
           effectiveFrom,
           createdBy: userId,
         },
@@ -682,6 +685,12 @@ export class TimeClockService {
       // Carried so the pay stub form can pre-fill the job title without a
       // second round trip for the compensation record.
       position: compensation?.position || undefined,
+      // Same reason as position: without it the stub form has no way to know
+      // this employee accrues at 6% and would quietly apply the minimum.
+      vacationPayRate:
+        compensation?.vacationPayRate == null
+          ? undefined
+          : Number(compensation.vacationPayRate),
       hourlyRate,
       salaryPay,
       grossPay,
@@ -1193,6 +1202,10 @@ export class TimeClockService {
         compensation.expectedWeeklyHours === null
           ? undefined
           : Number(compensation.expectedWeeklyHours),
+      vacationPayRate:
+        compensation.vacationPayRate == null
+          ? undefined
+          : Number(compensation.vacationPayRate),
       effectiveFrom: compensation.effectiveFrom.toISOString(),
       effectiveTo: compensation.effectiveTo?.toISOString(),
       isActive: compensation.isActive,

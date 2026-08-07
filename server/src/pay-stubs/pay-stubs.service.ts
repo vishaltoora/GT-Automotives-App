@@ -6,11 +6,13 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@gt-automotive/database';
 import {
+  calculateVacationPay,
   CreatePayStubDto,
   PayStubDeductionEstimateDto,
   PayStubDeductionEstimateRequestDto,
   PayStubDto,
   PayType,
+  resolveVacationPayRate,
   UpdatePayStubDto,
 } from '@gt-automotive/data';
 import {
@@ -95,13 +97,38 @@ export class PayStubsService {
     // arithmetic on the printed stub is always internally consistent.
     const regularHours = round2(dto.regularHours);
     const regularAmount = round2(dto.regularAmount);
-    const grossPay = regularAmount;
+
+    // Vacation accrues on the period's regular earnings, then is held back
+    // again, so the pair nets to zero on the cheque while recording what the
+    // employee has banked. The rate is the employee's own, or the statutory
+    // minimum; the accountant can override either figure.
+    const vacationPayRate = round2(
+      dto.vacationPayRate ??
+        resolveVacationPayRate(compensation?.vacationPayRate)
+    );
+    const vacationPayAmount = round2(
+      dto.vacationPayAmount ??
+        calculateVacationPay(regularAmount, vacationPayRate)
+    );
+    const vacationPayHeld = round2(dto.vacationPayHeld ?? vacationPayAmount);
+
+    // Holding back more vacation than the period earned is not a split, it is a
+    // typo — 1228.80 for 122.88 passes the net-pay check, short-pays the
+    // employee by a thousand dollars and inflates the vacation the business
+    // appears to owe them.
+    if (vacationPayHeld > vacationPayAmount) {
+      throw new BadRequestException(
+        'Vacation pay held cannot exceed the vacation pay earned this period'
+      );
+    }
+
+    const grossPay = round2(regularAmount + vacationPayAmount);
     const eiAmount = round2(dto.eiAmount ?? 0);
     const cppAmount = round2(dto.cppAmount ?? 0);
     const incomeTaxAmount = round2(dto.incomeTaxAmount ?? 0);
     const otherDeductions = round2(dto.otherDeductions ?? 0);
     const totalWithholding = round2(
-      eiAmount + cppAmount + incomeTaxAmount + otherDeductions
+      eiAmount + cppAmount + incomeTaxAmount + otherDeductions + vacationPayHeld
     );
     const netPay = round2(grossPay - totalWithholding);
 
@@ -143,6 +170,9 @@ export class PayStubsService {
         regularHours,
         regularAmount,
         grossPay,
+        vacationPayRate,
+        vacationPayAmount,
+        vacationPayHeld,
         eiAmount,
         cppAmount,
         incomeTaxAmount,
@@ -153,6 +183,12 @@ export class PayStubsService {
         ytdHours: round2(priorTotals.hours + regularHours),
         ytdRegularAmount: round2(priorTotals.regularAmount + regularAmount),
         ytdGrossPay: round2(priorTotals.grossPay + grossPay),
+        ytdVacationPayAmount: round2(
+          priorTotals.vacationPayAmount + vacationPayAmount
+        ),
+        ytdVacationPayHeld: round2(
+          priorTotals.vacationPayHeld + vacationPayHeld
+        ),
         ytdEiAmount: round2(priorTotals.eiAmount + eiAmount),
         ytdCppAmount: round2(priorTotals.cppAmount + cppAmount),
         ytdIncomeTaxAmount: round2(
@@ -334,13 +370,42 @@ export class PayStubsService {
 
     const regularHours = pick(dto.regularHours, existing.regularHours);
     const regularAmount = pick(dto.regularAmount, existing.regularAmount);
-    const grossPay = regularAmount;
+
+    const vacationPayRate = pick(dto.vacationPayRate, existing.vacationPayRate);
+    // Correcting the earnings re-accrues vacation on them. Leaving the old
+    // figure would quietly break the 4% the stub still claims to apply, so an
+    // accountant who means to keep it has to say so with an explicit amount.
+    const vacationPayAmount =
+      dto.vacationPayAmount !== undefined
+        ? round2(dto.vacationPayAmount)
+        : dto.regularAmount !== undefined || dto.vacationPayRate !== undefined
+        ? calculateVacationPay(regularAmount, vacationPayRate)
+        : round2(num(existing.vacationPayAmount));
+    const vacationPayHeld =
+      dto.vacationPayHeld !== undefined
+        ? round2(dto.vacationPayHeld)
+        : // The held line tracks the accrual unless it was deliberately split.
+        num(existing.vacationPayHeld) === num(existing.vacationPayAmount)
+        ? vacationPayAmount
+        : round2(num(existing.vacationPayHeld));
+
+    // Holding back more vacation than the period earned is not a split, it is a
+    // typo — 1228.80 for 122.88 passes the net-pay check, short-pays the
+    // employee by a thousand dollars and inflates the vacation the business
+    // appears to owe them.
+    if (vacationPayHeld > vacationPayAmount) {
+      throw new BadRequestException(
+        'Vacation pay held cannot exceed the vacation pay earned this period'
+      );
+    }
+
+    const grossPay = round2(regularAmount + vacationPayAmount);
     const eiAmount = pick(dto.eiAmount, existing.eiAmount);
     const cppAmount = pick(dto.cppAmount, existing.cppAmount);
     const incomeTaxAmount = pick(dto.incomeTaxAmount, existing.incomeTaxAmount);
     const otherDeductions = pick(dto.otherDeductions, existing.otherDeductions);
     const totalWithholding = round2(
-      eiAmount + cppAmount + incomeTaxAmount + otherDeductions
+      eiAmount + cppAmount + incomeTaxAmount + otherDeductions + vacationPayHeld
     );
     const netPay = round2(grossPay - totalWithholding);
 
@@ -361,6 +426,9 @@ export class PayStubsService {
         regularHours,
         regularAmount,
         grossPay,
+        vacationPayRate,
+        vacationPayAmount,
+        vacationPayHeld,
         eiAmount,
         cppAmount,
         incomeTaxAmount,
@@ -440,6 +508,8 @@ export class PayStubsService {
       hours: 0,
       regularAmount: 0,
       grossPay: 0,
+      vacationPayAmount: 0,
+      vacationPayHeld: 0,
       eiAmount: 0,
       cppAmount: 0,
       incomeTaxAmount: 0,
@@ -452,6 +522,8 @@ export class PayStubsService {
       running.hours += num(stub.regularHours);
       running.regularAmount += num(stub.regularAmount);
       running.grossPay += num(stub.grossPay);
+      running.vacationPayAmount += num(stub.vacationPayAmount);
+      running.vacationPayHeld += num(stub.vacationPayHeld);
       running.eiAmount += num(stub.eiAmount);
       running.cppAmount += num(stub.cppAmount);
       running.incomeTaxAmount += num(stub.incomeTaxAmount);
@@ -465,6 +537,8 @@ export class PayStubsService {
           ytdHours: round2(running.hours),
           ytdRegularAmount: round2(running.regularAmount),
           ytdGrossPay: round2(running.grossPay),
+          ytdVacationPayAmount: round2(running.vacationPayAmount),
+          ytdVacationPayHeld: round2(running.vacationPayHeld),
           ytdEiAmount: round2(running.eiAmount),
           ytdCppAmount: round2(running.cppAmount),
           ytdIncomeTaxAmount: round2(running.incomeTaxAmount),
@@ -701,6 +775,8 @@ export class PayStubsService {
         hours: acc.hours + num(stub.regularHours),
         regularAmount: acc.regularAmount + num(stub.regularAmount),
         grossPay: acc.grossPay + num(stub.grossPay),
+        vacationPayAmount: acc.vacationPayAmount + num(stub.vacationPayAmount),
+        vacationPayHeld: acc.vacationPayHeld + num(stub.vacationPayHeld),
         eiAmount: acc.eiAmount + num(stub.eiAmount),
         cppAmount: acc.cppAmount + num(stub.cppAmount),
         incomeTaxAmount: acc.incomeTaxAmount + num(stub.incomeTaxAmount),
@@ -712,6 +788,8 @@ export class PayStubsService {
         hours: 0,
         regularAmount: 0,
         grossPay: 0,
+        vacationPayAmount: 0,
+        vacationPayHeld: 0,
         eiAmount: 0,
         cppAmount: 0,
         incomeTaxAmount: 0,
@@ -750,6 +828,9 @@ export class PayStubsService {
       regularHours: num(stub.regularHours),
       regularAmount: num(stub.regularAmount),
       grossPay: num(stub.grossPay),
+      vacationPayRate: num(stub.vacationPayRate),
+      vacationPayAmount: num(stub.vacationPayAmount),
+      vacationPayHeld: num(stub.vacationPayHeld),
       eiAmount: num(stub.eiAmount),
       cppAmount: num(stub.cppAmount),
       incomeTaxAmount: num(stub.incomeTaxAmount),
@@ -760,6 +841,8 @@ export class PayStubsService {
       ytdHours: num(stub.ytdHours),
       ytdRegularAmount: num(stub.ytdRegularAmount),
       ytdGrossPay: num(stub.ytdGrossPay),
+      ytdVacationPayAmount: num(stub.ytdVacationPayAmount),
+      ytdVacationPayHeld: num(stub.ytdVacationPayHeld),
       ytdEiAmount: num(stub.ytdEiAmount),
       ytdCppAmount: num(stub.ytdCppAmount),
       ytdIncomeTaxAmount: num(stub.ytdIncomeTaxAmount),

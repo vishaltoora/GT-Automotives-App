@@ -1379,6 +1379,16 @@ ${
         always: false,
       },
       {
+        // Not a deduction the employee loses — it is their vacation pay, held
+        // back until they take it. Named so the stub does not read as money
+        // gone.
+        label: 'Vacation Pay Held',
+        current: stub.vacationPayHeld,
+        ytd: stub.ytdVacationPayHeld,
+        colour: '#4a7c59',
+        always: false,
+      },
+      {
         label: stub.otherDeductionsLabel || 'Other Deductions',
         current: stub.otherDeductions,
         ytd: stub.ytdOtherDeductions,
@@ -1386,6 +1396,30 @@ ${
         always: false,
       },
     ].filter((row) => row.always || row.current > 0 || row.ytd > 0);
+
+    /**
+     * Vacation earned this period, shown with the rate that produced it so the
+     * employee can check the percentage as well as the amount.
+     *
+     * Omitted entirely when there is nothing to show, so stubs raised before
+     * vacation was tracked print exactly as they always did.
+     */
+    const vacationEarningRow =
+      stub.vacationPayAmount > 0 || stub.ytdVacationPayAmount > 0
+        ? `
+          <tr>
+            <td>Vacation Pay${
+              stub.vacationPayRate > 0
+                ? // Number() rather than toFixed(), so 4 prints as "4%" and 4.5
+                  // as "4.5%" instead of a padded "4.00%".
+                  ` (${escapeHtml(String(Number(stub.vacationPayRate)))}%)`
+                : ''
+            }</td>
+            <td class="num"></td>
+            <td class="num">${money(stub.vacationPayAmount)}</td>
+            <td class="num muted">${money(stub.ytdVacationPayAmount)}</td>
+          </tr>`
+        : '';
 
     const deductionRows = deductions
       .map(
@@ -1807,6 +1841,7 @@ ${
             <td class="num">${money(stub.regularAmount)}</td>
             <td class="num muted">${money(stub.ytdRegularAmount)}</td>
           </tr>
+          ${vacationEarningRow}
           <tr class="total-row">
             <td>Gross Pay</td>
             <td class="num">${hours(stub.regularHours)}</td>

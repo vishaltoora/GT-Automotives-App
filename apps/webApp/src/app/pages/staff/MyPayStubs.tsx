@@ -100,6 +100,7 @@ export function MyPayStubs() {
                 <TableCell>Pay Date</TableCell>
                 <TableCell align="right">Hours</TableCell>
                 <TableCell align="right">Gross</TableCell>
+                <TableCell align="right">Vacation</TableCell>
                 <TableCell align="right">Withholding</TableCell>
                 <TableCell align="right">Net Pay</TableCell>
                 <TableCell align="center">Actions</TableCell>
@@ -117,6 +118,18 @@ export function MyPayStubs() {
                   </TableCell>
                   <TableCell align="right">
                     {formatCurrency(stub.grossPay)}
+                  </TableCell>
+                  <TableCell align="right">
+                    {/* Earned this period, with the running bank underneath —
+                        the figure people actually want from this column. */}
+                    {formatCurrency(stub.vacationPayAmount)}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block' }}
+                    >
+                      {formatCurrency(stub.ytdVacationPayAmount)} YTD
+                    </Typography>
                   </TableCell>
                   <TableCell align="right">
                     {formatCurrency(stub.totalWithholding)}

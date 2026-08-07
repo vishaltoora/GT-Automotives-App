@@ -216,4 +216,76 @@ describe('PdfService pay stub template', () => {
 
     expect(html).toContain('January 1, 2026');
   });
+
+  /**
+   * Vacation pay prints twice — earned in the earnings column, held back in the
+   * deductions column — so the employee can see what they banked without the
+   * cheque changing.
+   */
+  describe('vacation pay', () => {
+    const withVacation: any = {
+      ...januaryStub,
+      grossPay: 3194.88,
+      vacationPayRate: 4,
+      vacationPayAmount: 122.88,
+      vacationPayHeld: 122.88,
+      totalWithholding: 339.92,
+      ytdGrossPay: 3194.88,
+      ytdVacationPayAmount: 122.88,
+      ytdVacationPayHeld: 122.88,
+      ytdWithholding: 339.92,
+    };
+
+    it('shows what was earned, at the rate it was earned at', () => {
+      const html = service.generatePayStubHtml(withVacation);
+
+      expect(html).toContain('Vacation Pay (4%)');
+      expect(html).toContain('122.88');
+    });
+
+    it('shows the matching amount held back, named so it does not read as lost', () => {
+      const html = service.generatePayStubHtml(withVacation);
+
+      // s.27(g) requires the purpose of every deduction. This one is the
+      // employee's own money, banked until they take their vacation.
+      expect(html).toContain('Vacation Pay Held');
+    });
+
+    it('carries the year-to-date vacation figure', () => {
+      const html = service.generatePayStubHtml({
+        ...withVacation,
+        ytdVacationPayAmount: 491.52,
+        ytdVacationPayHeld: 491.52,
+      });
+
+      expect(html).toContain('491.52');
+    });
+
+    it('prints a fractional rate without trailing zeros', () => {
+      const html = service.generatePayStubHtml({
+        ...withVacation,
+        vacationPayRate: 4.5,
+      });
+
+      expect(html).toContain('Vacation Pay (4.5%)');
+    });
+
+    it('omits both lines on a stub that accrued nothing', () => {
+      // Stubs raised before vacation was tracked carry zeros, and must print
+      // exactly as they always did rather than gaining two empty rows.
+      const html = service.generatePayStubHtml(januaryStub);
+
+      expect(html).not.toContain('Vacation Pay');
+      expect(html).not.toContain('Vacation Pay Held');
+    });
+
+    it('leaves net pay out of the accrual, since it nets to zero', () => {
+      const html = service.generatePayStubHtml(withVacation);
+
+      // Gross rose and deductions rose by the same amount; take-home did not
+      // move.
+      expect(html).toContain('3,194.88');
+      expect(html).toContain('2,854.96');
+    });
+  });
 });

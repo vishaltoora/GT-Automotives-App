@@ -13,7 +13,11 @@ import {
   Typography,
 } from '@mui/material';
 import { Save, WorkspacePremium } from '@mui/icons-material';
-import { PayType, UpsertEmployeeCompensationDto } from '@gt-automotive/data';
+import {
+  DEFAULT_VACATION_PAY_RATE,
+  PayType,
+  UpsertEmployeeCompensationDto,
+} from '@gt-automotive/data';
 import { NumberInput } from '../../../components/common';
 import { User, userService } from '../../../requests/user.requests';
 import { timeClockService } from '../../../requests/time-clock.requests';
@@ -34,6 +38,9 @@ export function CompensationSettings() {
   const [payType, setPayType] = useState<PayType>(PayType.HOURLY);
   const [hourlyRate, setHourlyRate] = useState('');
   const [annualSalary, setAnnualSalary] = useState('');
+  // Blank means the statutory minimum applies — only an entitlement above it
+  // needs recording here.
+  const [vacationPayRate, setVacationPayRate] = useState('');
   // Job title for this employee's pay stubs. Kept with pay because it is set
   // by the same person at the same moment, and it is what a stub prints.
   const [position, setPosition] = useState('');
@@ -80,11 +87,13 @@ export function CompensationSettings() {
           setPosition(compensation.position || '');
           setHourlyRate(compensation.hourlyRate?.toString() || '');
           setAnnualSalary(compensation.annualSalary?.toString() || '');
+          setVacationPayRate(compensation.vacationPayRate?.toString() || '');
         } else {
           setPayType(PayType.HOURLY);
           setPosition('');
           setHourlyRate('');
           setAnnualSalary('');
+          setVacationPayRate('');
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load compensation');
@@ -102,6 +111,10 @@ export function CompensationSettings() {
       hourlyRate: payType === PayType.HOURLY ? Number(hourlyRate) : undefined,
       annualSalary:
         payType === PayType.SALARIED ? Number(annualSalary) : undefined,
+      // Left off entirely when blank, so the pay stub falls back to the
+      // statutory minimum rather than being told the rate is zero.
+      vacationPayRate:
+        vacationPayRate.trim() === '' ? undefined : Number(vacationPayRate),
     };
 
     try {
@@ -232,7 +245,7 @@ export function CompensationSettings() {
                 }}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
                 label="Position"
@@ -240,6 +253,19 @@ export function CompensationSettings() {
                 onChange={(event) => setPosition(event.target.value)}
                 placeholder="e.g. Tire Technician"
                 helperText="Optional — printed on this employee's pay stubs"
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 2 }}>
+              <NumberInput
+                fullWidth
+                allowDecimals
+                min={0}
+                label="Vacation Pay %"
+                value={vacationPayRate}
+                onChange={(v) =>
+                  setVacationPayRate(v === undefined ? '' : String(v))
+                }
+                helperText={`Blank = ${DEFAULT_VACATION_PAY_RATE}% minimum`}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 2 }}>
