@@ -1,3 +1,9 @@
+// The DTOs in @gt-automotive/data carry class-validator decorators, which need
+// Reflect.getMetadata at module-evaluation time. Vite's build supplies it; Jest
+// does not, so any test that reaches the shared library fails to even load
+// without this.
+import 'reflect-metadata';
+
 // Mock import.meta.env for Jest
 (global as any).testImportMetaEnv = {
   env: {
@@ -20,7 +26,7 @@ process.env = {
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
