@@ -23,6 +23,7 @@ import {
   Pagination,
   IconButton,
   Link,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -52,6 +53,27 @@ import {
   isInvoicePartiallyPaid,
 } from '@gt-automotive/data';
 import { colors } from '../../theme/colors';
+import { usePersistedState } from '../../hooks/usePersistedState';
+
+type InvoiceSearchParams = {
+  /** Combined search for invoice number and customer name. */
+  search: string;
+  status: string;
+  companyId: string;
+  startDate: string;
+  endDate: string;
+};
+
+const SEARCH_STORAGE_KEY = 'invoiceListSearchParams';
+const PAGE_STORAGE_KEY = 'invoiceListPage';
+
+const DEFAULT_SEARCH_PARAMS: InvoiceSearchParams = {
+  search: '',
+  status: '',
+  companyId: '',
+  startDate: '',
+  endDate: '',
+};
 
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
@@ -63,37 +85,20 @@ const InvoiceList: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  // Persist search/filters across navigation (e.g. view details -> back)
-  const SEARCH_STORAGE_KEY = 'invoiceListSearchParams';
-  type InvoiceSearchParams = {
-    search: string;
-    status: string;
-    companyId: string;
-    startDate: string;
-    endDate: string;
-  };
-  const getStoredSearchParams = (): InvoiceSearchParams => {
-    const defaults: InvoiceSearchParams = {
-      search: '', // Combined search for invoice number and customer name
-      status: '',
-      companyId: '',
-      startDate: '',
-      endDate: '',
-    };
-    try {
-      const saved = sessionStorage.getItem(SEARCH_STORAGE_KEY);
-      if (saved) return { ...defaults, ...JSON.parse(saved) };
-    } catch {
-      // ignore malformed storage
-    }
-    return defaults;
-  };
-  // Immediate input value for responsive typing (combined search)
-  const [searchInput, setSearchInput] = useState(
-    () => getStoredSearchParams().search || ''
+  // The row currently being mutated, so the user gets feedback on that row
+  // instead of the whole list going blank.
+  const [updatingInvoiceId, setUpdatingInvoiceId] = useState<string | null>(
+    null
   );
-  // Debounced search params that trigger API calls
-  const [searchParams, setSearchParams] = useState(getStoredSearchParams);
+  // Debounced search params that trigger API calls. Persisted so they survive
+  // navigating to an invoice and back.
+  const [searchParams, setSearchParams] =
+    usePersistedState<InvoiceSearchParams>(
+      SEARCH_STORAGE_KEY,
+      DEFAULT_SEARCH_PARAMS
+    );
+  // Immediate input value for responsive typing (combined search)
+  const [searchInput, setSearchInput] = useState(() => searchParams.search);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -104,8 +109,9 @@ const InvoiceList: React.FC = () => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [invoiceForEmail, setInvoiceForEmail] = useState<Invoice | null>(null);
 
-  // Pagination state
-  const [page, setPage] = useState(1);
+  // Pagination state. Persisted alongside the filters: returning from an
+  // invoice should land on the page it was opened from, not back at page 1.
+  const [page, setPage] = usePersistedState(PAGE_STORAGE_KEY, 1);
   const [rowsPerPage] = useState(isMobile ? 10 : 20);
 
   // Calculate paginated data
@@ -127,10 +133,7 @@ const InvoiceList: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput !== searchParams.search) {
-        setSearchParams((prev) => ({
-          ...prev,
-          search: searchInput,
-        }));
+        updateFilters({ search: searchInput });
       }
     }, 300);
 
@@ -142,14 +145,13 @@ const InvoiceList: React.FC = () => {
     handleSearch();
   }, [searchParams]);
 
-  // Persist search/filters so they survive navigating to details and back
+  // A restored page can outrun the result set — invoices may have been paid or
+  // deleted elsewhere since, or a narrower filter was restored with it.
   useEffect(() => {
-    try {
-      sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(searchParams));
-    } catch {
-      // ignore storage write failures
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
     }
-  }, [searchParams]);
+  }, [totalPages, page]);
 
   const loadCompanies = async () => {
     try {
@@ -157,18 +159,6 @@ const InvoiceList: React.FC = () => {
       setCompanies(data);
     } catch (error) {
       showApiError(error, 'Failed to load companies');
-    }
-  };
-
-  const loadInvoices = async () => {
-    try {
-      setLoading(true);
-      const data = await invoiceService.getInvoices();
-      setInvoices(data);
-    } catch (error) {
-      showApiError(error, 'Failed to load invoices');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -194,10 +184,41 @@ const InvoiceList: React.FC = () => {
         : await invoiceService.getInvoices();
 
       setInvoices(filtered);
-      setPage(1); // Reset to first page after search
     } catch (error) {
       showApiError(error, 'Failed to search invoices');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  /**
+   * Change a filter and return to the first page.
+   *
+   * The page reset belongs here rather than in `handleSearch`: the search runs
+   * again on mount with the restored filters, and resetting there would throw
+   * away the page the user came back to.
+   */
+  const updateFilters = (patch: Partial<InvoiceSearchParams>) => {
+    setSearchParams((prev) => ({ ...prev, ...patch }));
+    setPage(1);
+  };
+
+  /**
+   * Fold an updated invoice back into the list.
+   *
+   * Mutating one invoice must not refetch the list: a reload discards the page
+   * the user is on and costs a round trip to redisplay rows that have not
+   * changed. Merging over the existing row rather than replacing it keeps any
+   * list-only field the single-invoice response happens not to carry.
+   *
+   * A row that no longer matches the active filter — marked paid while
+   * filtering on Pending — deliberately stays put with its new status. Making
+   * it vanish mid-interaction reads as the action having failed.
+   */
+  const patchInvoiceRow = (updated: Invoice) => {
+    setInvoices((prev) =>
+      prev.map((inv) => (inv.id === updated.id ? { ...inv, ...updated } : inv))
+    );
   };
 
   const handlePageChange = (
@@ -224,10 +245,15 @@ const InvoiceList: React.FC = () => {
 
     if (confirmed) {
       try {
+        setUpdatingInvoiceId(invoice.id);
         await invoiceService.deleteInvoice(invoice.id);
-        loadInvoices();
+        // Drop the row locally. The rest of the list is unaffected, so there is
+        // nothing for a refetch to correct.
+        setInvoices((prev) => prev.filter((inv) => inv.id !== invoice.id));
       } catch (error) {
         showApiError(error, 'Failed to delete invoice');
+      } finally {
+        setUpdatingInvoiceId(null);
       }
     }
   };
@@ -248,11 +274,24 @@ const InvoiceList: React.FC = () => {
     if (!invoiceToMarkPaid) return;
 
     try {
-      await invoiceService.recordInvoicePayments(invoiceToMarkPaid.id, entries);
-      loadInvoices(); // Refresh the list
+      setUpdatingInvoiceId(invoiceToMarkPaid.id);
+      const updated = await invoiceService.recordInvoicePayments(
+        invoiceToMarkPaid.id,
+        entries
+      );
+      // Patch first, so the row the user acted on settles immediately.
+      patchInvoiceRow(updated);
       setInvoiceToMarkPaid(null);
+      // Then re-read the list. Paying a combined invoice also settles the
+      // child invoices rolled into it (settleConsolidatedChildren), and those
+      // are rows of their own — patching only the parent would leave them
+      // reading PENDING against money already collected. Re-running the search
+      // rather than reloading keeps the filters and the current page.
+      await handleSearch();
     } catch (error) {
       showApiError(error, 'Failed to record payment');
+    } finally {
+      setUpdatingInvoiceId(null);
     }
   };
 
@@ -281,9 +320,12 @@ const InvoiceList: React.FC = () => {
       setEmailDialogOpen(false);
       setInvoiceForEmail(null);
 
-      // Refresh invoices to show updated customer email if saved
+      // A saved address belongs to the customer, not to the invoice it was
+      // typed on, so every row for that customer is now stale — including the
+      // addresses the email dialog would offer next time. Re-run the search;
+      // it keeps the filters and the current page.
       if (saveToCustomer) {
-        loadInvoices();
+        await handleSearch();
       }
 
       await confirm({
@@ -305,8 +347,12 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleInvoiceSuccess = (invoice: any) => {
-    // Refresh the invoice list to show the new/updated invoice
-    loadInvoices();
+    // An edit changes one row; fold it in and leave the filters and page as
+    // they are. A new invoice needs no refresh here: the block below navigates
+    // straight to it, and the list re-runs its search when it is next mounted.
+    if (editingInvoice) {
+      patchInvoiceRow(invoice);
+    }
     // Reset editing state
     setEditingInvoice(null);
     // Optionally navigate to the invoice details (only for new invoices)
@@ -550,9 +596,7 @@ const InvoiceList: React.FC = () => {
                 select
                 label="Status"
                 value={searchParams.status}
-                onChange={(e) =>
-                  setSearchParams({ ...searchParams, status: e.target.value })
-                }
+                onChange={(e) => updateFilters({ status: e.target.value })}
                 size={isMobile ? 'small' : 'medium'}
               >
                 <MenuItem value="">All</MenuItem>
@@ -569,12 +613,7 @@ const InvoiceList: React.FC = () => {
                 select
                 label="Company"
                 value={searchParams.companyId}
-                onChange={(e) =>
-                  setSearchParams({
-                    ...searchParams,
-                    companyId: e.target.value,
-                  })
-                }
+                onChange={(e) => updateFilters({ companyId: e.target.value })}
                 size={isMobile ? 'small' : 'medium'}
               >
                 <MenuItem value="">All Companies</MenuItem>
@@ -591,12 +630,7 @@ const InvoiceList: React.FC = () => {
                 type="date"
                 label="Start Date"
                 value={searchParams.startDate}
-                onChange={(e) =>
-                  setSearchParams({
-                    ...searchParams,
-                    startDate: e.target.value,
-                  })
-                }
+                onChange={(e) => updateFilters({ startDate: e.target.value })}
                 size={isMobile ? 'small' : 'medium'}
                 InputLabelProps={{ shrink: true }}
               />
@@ -607,9 +641,7 @@ const InvoiceList: React.FC = () => {
                 type="date"
                 label="End Date"
                 value={searchParams.endDate}
-                onChange={(e) =>
-                  setSearchParams({ ...searchParams, endDate: e.target.value })
-                }
+                onChange={(e) => updateFilters({ endDate: e.target.value })}
                 size={isMobile ? 'small' : 'medium'}
                 InputLabelProps={{ shrink: true }}
               />
@@ -634,6 +666,8 @@ const InvoiceList: React.FC = () => {
                 elevation={0}
                 sx={{
                   p: 1.5,
+                  opacity: updatingInvoiceId === invoice.id ? 0.5 : 1,
+                  transition: 'opacity 150ms',
                   border: `1px solid ${theme.palette.divider}`,
                   borderLeft: `4px solid ${
                     invoice.status === 'PAID'
@@ -692,11 +726,15 @@ const InvoiceList: React.FC = () => {
                       {formatDate(invoice.invoiceDate || invoice.createdAt)}
                     </Typography>
                   </Box>
-                  <ActionsMenu
-                    actions={getInvoiceActions(invoice)}
-                    tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
-                    id={`invoice-${invoice.id}`}
-                  />
+                  {updatingInvoiceId === invoice.id ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <ActionsMenu
+                      actions={getInvoiceActions(invoice)}
+                      tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
+                      id={`invoice-${invoice.id}`}
+                    />
+                  )}
                 </Box>
 
                 <Typography
@@ -857,7 +895,15 @@ const InvoiceList: React.FC = () => {
             </TableHead>
             <TableBody>
               {paginatedInvoices.map((invoice) => (
-                <TableRow key={invoice.id}>
+                <TableRow
+                  key={invoice.id}
+                  sx={{
+                    // Feedback stays on the row being changed — the rest of
+                    // the list is still valid and still readable.
+                    opacity: updatingInvoiceId === invoice.id ? 0.5 : 1,
+                    transition: 'opacity 150ms',
+                  }}
+                >
                   <TableCell>
                     <Link
                       onClick={() => {
@@ -977,11 +1023,15 @@ const InvoiceList: React.FC = () => {
                       : '-'}
                   </TableCell>
                   <TableCell align="center">
-                    <ActionsMenu
-                      actions={getInvoiceActions(invoice)}
-                      tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
-                      id={`invoice-${invoice.id}`}
-                    />
+                    {updatingInvoiceId === invoice.id ? (
+                      <CircularProgress size={20} />
+                    ) : (
+                      <ActionsMenu
+                        actions={getInvoiceActions(invoice)}
+                        tooltip={`Actions for Invoice ${invoice.invoiceNumber}`}
+                        id={`invoice-${invoice.id}`}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
