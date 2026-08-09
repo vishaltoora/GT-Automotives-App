@@ -109,8 +109,11 @@ describe('PayStubsService', () => {
     it('derives withholding total and net pay rather than trusting the client', async () => {
       const result = await service.create(baseDto as any, accountant.id);
 
-      expect(result.grossPay).toBe(3072);
-      expect(result.totalWithholding).toBe(217.04);
+      // Gross carries the 4% vacation accrual, and withholding carries the
+      // matching held line, so net comes out exactly where it would have
+      // without either.
+      expect(result.grossPay).toBe(3194.88);
+      expect(result.totalWithholding).toBe(339.92);
       expect(result.netPay).toBe(2854.96);
     });
 
@@ -150,12 +153,14 @@ describe('PayStubsService', () => {
         {
           regularHours: 128,
           regularAmount: 3072,
-          grossPay: 3072,
+          grossPay: 3194.88,
+          vacationPayAmount: 122.88,
+          vacationPayHeld: 122.88,
           eiAmount: 50.08,
           cppAmount: 166.96,
           incomeTaxAmount: 0,
           otherDeductions: 0,
-          totalWithholding: 217.04,
+          totalWithholding: 339.92,
           netPay: 2854.96,
         },
       ]);
@@ -171,10 +176,12 @@ describe('PayStubsService', () => {
       );
 
       expect(result.ytdHours).toBe(256);
-      expect(result.ytdGrossPay).toBe(6144);
+      expect(result.ytdGrossPay).toBe(6389.76);
+      expect(result.ytdVacationPayAmount).toBe(245.76);
+      expect(result.ytdVacationPayHeld).toBe(245.76);
       expect(result.ytdEiAmount).toBe(100.16);
       expect(result.ytdCppAmount).toBe(333.92);
-      expect(result.ytdWithholding).toBe(434.08);
+      expect(result.ytdWithholding).toBe(679.84);
       expect(result.ytdNetPay).toBe(5709.92);
     });
 
@@ -245,7 +252,11 @@ describe('PayStubsService', () => {
         return rows;
       };
 
-      /** $1,000 gross, no deductions, so the running totals are easy to read. */
+      /**
+       * $1,000 gross, no deductions and no vacation accrual, so the running
+       * totals are easy to read. These tests are about the chain, not the
+       * arithmetic within a stub.
+       */
       const stubFor = (payDate: string) => ({
         ...baseDto,
         payDate,
@@ -253,6 +264,7 @@ describe('PayStubsService', () => {
         periodEnd: payDate,
         regularHours: 40,
         regularAmount: 1000,
+        vacationPayRate: 0,
         eiAmount: 0,
         cppAmount: 0,
       });
@@ -753,6 +765,261 @@ describe('PayStubsService', () => {
           newValue: expect.objectContaining({ grossPay: 3500 }),
         })
       );
+    });
+  });
+
+  /**
+   * Vacation pay is accrued and banked rather than paid out: it is added to
+   * gross as an earning and taken straight back out as a deduction, so the
+   * cheque is unchanged while the stub records what the employee has earned and
+   * what the business owes them.
+   */
+  describe('vacation pay', () => {
+    const dataOf = (mock: any) => mock.mock.calls[0][0].data;
+
+    it('accrues 4% of the period earnings and holds it back', async () => {
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.vacationPayRate).toBe(4);
+      expect(result.vacationPayAmount).toBe(122.88);
+      expect(result.vacationPayHeld).toBe(122.88);
+    });
+
+    it('leaves net pay exactly where it would be without the accrual', async () => {
+      const withVacation = await service.create(baseDto as any, accountant.id);
+      const without = await service.create(
+        { ...baseDto, vacationPayRate: 0 } as any,
+        accountant.id
+      );
+
+      expect(withVacation.netPay).toBe(without.netPay);
+    });
+
+    it('accrues on the earnings, not on the gross it produces', async () => {
+      // 4% of 3072, never 4% of 3194.88 — vacation does not compound on
+      // vacation, which it would if the base were taken after the accrual.
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.vacationPayAmount).toBe(3072 * 0.04);
+    });
+
+    it("uses the employee's own rate when one is recorded", async () => {
+      // 6% after five years of service.
+      prisma.employeeCompensation.findFirst.mockResolvedValue({
+        payType: 'HOURLY',
+        hourlyRate: 24,
+        vacationPayRate: 6,
+      });
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.vacationPayRate).toBe(6);
+      expect(result.vacationPayAmount).toBe(184.32);
+    });
+
+    it('falls back to the statutory minimum when no rate is recorded', async () => {
+      prisma.employeeCompensation.findFirst.mockResolvedValue({
+        payType: 'HOURLY',
+        hourlyRate: 24,
+        vacationPayRate: null,
+      });
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.vacationPayRate).toBe(4);
+    });
+
+    it('honours a rate of zero rather than treating it as unset', async () => {
+      // Someone paid their vacation another way still gets a stub that says so.
+      prisma.employeeCompensation.findFirst.mockResolvedValue({
+        payType: 'HOURLY',
+        hourlyRate: 24,
+        vacationPayRate: 0,
+      });
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.vacationPayAmount).toBe(0);
+      expect(result.grossPay).toBe(3072);
+    });
+
+    it('stores an amount the accountant typed over', async () => {
+      const result = await service.create(
+        { ...baseDto, vacationPayAmount: 150 } as any,
+        accountant.id
+      );
+
+      expect(result.vacationPayAmount).toBe(150);
+      expect(result.vacationPayHeld).toBe(150);
+      expect(result.grossPay).toBe(3222);
+    });
+
+    it('refuses to hold back more vacation than was earned', async () => {
+      // A typo of 1228.80 for 122.88 clears the net-pay check, short-pays the
+      // employee by a thousand dollars and inflates the vacation owed to them.
+      await expect(
+        service.create(
+          { ...baseDto, vacationPayHeld: 1228.8 } as any,
+          accountant.id
+        )
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payStub.create).not.toHaveBeenCalled();
+    });
+
+    it('pays some of the accrual out when less is held than earned', async () => {
+      const result = await service.create(
+        { ...baseDto, vacationPayHeld: 22.88 } as any,
+        accountant.id
+      );
+
+      // $100 of the accrual reaches the employee, so net is $100 higher.
+      expect(result.vacationPayAmount).toBe(122.88);
+      expect(result.vacationPayHeld).toBe(22.88);
+      expect(result.netPay).toBe(2954.96);
+    });
+
+    it('freezes the rate on the stub, so a later change cannot rewrite it', async () => {
+      await service.create(baseDto as any, accountant.id);
+
+      expect(dataOf(prisma.payStub.create).vacationPayRate).toBe(4);
+    });
+
+    describe('amendments', () => {
+      const storedStub = (overrides: any = {}) => ({
+        id: 'stub-1',
+        employeeId: 'emp-1',
+        periodStart: new Date(Date.UTC(2026, 0, 5)),
+        periodEnd: new Date(Date.UTC(2026, 0, 31)),
+        payDate: new Date(Date.UTC(2026, 0, 31)),
+        createdAt: new Date(Date.UTC(2026, 0, 31)),
+        companyName: 'GT Automotive',
+        employeeName: 'Rohit Toora',
+        payType: 'HOURLY',
+        regularHours: 128,
+        regularAmount: 3072,
+        grossPay: 3194.88,
+        vacationPayRate: 4,
+        vacationPayAmount: 122.88,
+        vacationPayHeld: 122.88,
+        eiAmount: 50.08,
+        cppAmount: 166.96,
+        incomeTaxAmount: 0,
+        otherDeductions: 0,
+        totalWithholding: 339.92,
+        netPay: 2854.96,
+        employee,
+        ...overrides,
+      });
+
+      beforeEach(() => {
+        prisma.payStub.findUnique.mockResolvedValue(storedStub());
+        prisma.payStub.findMany.mockResolvedValue([]);
+        prisma.payStub.update = jest.fn(({ where, data }: any) => ({
+          ...storedStub(),
+          id: where.id,
+          ...data,
+        }));
+      });
+
+      it('re-accrues when the earnings are corrected', async () => {
+        await service.update(
+          'stub-1',
+          { regularAmount: 4000 } as any,
+          accountant.id
+        );
+
+        // Leaving the old $122.88 would quietly break the 4% the stub still
+        // claims to apply.
+        const { data } = prisma.payStub.update.mock.calls[0][0];
+        expect(data.vacationPayAmount).toBe(160);
+        expect(data.vacationPayHeld).toBe(160);
+        expect(data.grossPay).toBe(4160);
+      });
+
+      it('re-accrues when the rate is corrected', async () => {
+        await service.update(
+          'stub-1',
+          { vacationPayRate: 6 } as any,
+          accountant.id
+        );
+
+        const { data } = prisma.payStub.update.mock.calls[0][0];
+        expect(data.vacationPayAmount).toBe(184.32);
+      });
+
+      it('refuses an amendment that holds back more than was earned', async () => {
+        await expect(
+          service.update(
+            'stub-1',
+            { vacationPayHeld: 500 } as any,
+            accountant.id
+          )
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.payStub.update).not.toHaveBeenCalled();
+      });
+
+      it('leaves the accrual alone when neither changed', async () => {
+        await service.update('stub-1', { eiAmount: 60 } as any, accountant.id);
+
+        const { data } = prisma.payStub.update.mock.calls[0][0];
+        expect(data.vacationPayAmount).toBe(122.88);
+      });
+
+      it('keeps a deliberate part-payout when the earnings change', async () => {
+        prisma.payStub.findUnique.mockResolvedValue(
+          storedStub({ vacationPayHeld: 22.88 })
+        );
+
+        await service.update(
+          'stub-1',
+          { regularAmount: 4000 } as any,
+          accountant.id
+        );
+
+        // The accrual follows the new earnings; the amount actually paid out
+        // was a decision, not a formula, so it stands until someone changes it.
+        const { data } = prisma.payStub.update.mock.calls[0][0];
+        expect(data.vacationPayAmount).toBe(160);
+        expect(data.vacationPayHeld).toBe(22.88);
+      });
+
+      it('carries the correction into the year-to-date chain', async () => {
+        prisma.payStub.findMany.mockResolvedValue([
+          storedStub({ vacationPayAmount: 160, vacationPayHeld: 160 }),
+          storedStub({
+            id: 'stub-2',
+            payDate: new Date(Date.UTC(2026, 1, 28)),
+            createdAt: new Date(Date.UTC(2026, 1, 28)),
+          }),
+        ]);
+
+        await service.update(
+          'stub-1',
+          { regularAmount: 4000 } as any,
+          accountant.id
+        );
+
+        const ytdWrites = prisma.payStub.update.mock.calls
+          .map(([args]: any) => args)
+          .filter((args: any) => args.data.ytdVacationPayAmount !== undefined);
+
+        expect(ytdWrites).toHaveLength(2);
+        expect(ytdWrites[0].data.ytdVacationPayAmount).toBe(160);
+        expect(ytdWrites[1].data.ytdVacationPayAmount).toBe(282.88);
+      });
+    });
+
+    it('leaves stubs raised before vacation was tracked showing nothing', async () => {
+      // The columns default to zero on existing rows, and zero prints no lines.
+      const legacy = await service.create(
+        { ...baseDto, vacationPayRate: 0 } as any,
+        accountant.id
+      );
+
+      expect(legacy.vacationPayAmount).toBe(0);
+      expect(legacy.ytdVacationPayAmount).toBe(0);
+      expect(legacy.grossPay).toBe(3072);
+      expect(legacy.netPay).toBe(2854.96);
     });
   });
 });

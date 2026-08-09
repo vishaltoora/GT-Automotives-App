@@ -19,7 +19,9 @@ import {
 import { Calculate as CalculateIcon } from '@mui/icons-material';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import {
+  calculateVacationPay,
   CreatePayStubDto,
+  DEFAULT_VACATION_PAY_RATE,
   PayPeriodsPerYear,
   PayrollHoursDto,
   PayStubDeductionEstimateDto,
@@ -75,6 +77,9 @@ const emptyForm = {
   payRate: '',
   regularHours: '',
   regularAmount: '',
+  vacationPayRate: String(DEFAULT_VACATION_PAY_RATE),
+  vacationPayAmount: '',
+  vacationPayHeld: '',
   payPeriodsPerYear: 24 as PayPeriodsPerYear,
   eiAmount: '',
   cppAmount: '',
@@ -141,6 +146,9 @@ export function PayStubDialog({
   const [grossOverridden, setGrossOverridden] = useState(false);
   const grossOverriddenRef = useRef(grossOverridden);
   grossOverriddenRef.current = grossOverridden;
+  // Vacation figures are derived from the rate until typed over, same as gross.
+  const [vacationOverridden, setVacationOverridden] = useState(false);
+  const [vacationHeldOverridden, setVacationHeldOverridden] = useState(false);
   // Position comes from the employee's compensation record until typed over.
   const [positionOverridden, setPositionOverridden] = useState(false);
   const [carriedPosition, setCarriedPosition] = useState(false);
@@ -163,6 +171,9 @@ export function PayStubDialog({
         payRate: payStub.payRate != null ? String(payStub.payRate) : '',
         regularHours: String(payStub.regularHours),
         regularAmount: String(payStub.regularAmount),
+        vacationPayRate: String(payStub.vacationPayRate),
+        vacationPayAmount: String(payStub.vacationPayAmount),
+        vacationPayHeld: String(payStub.vacationPayHeld),
         eiAmount: String(payStub.eiAmount),
         cppAmount: String(payStub.cppAmount),
         incomeTaxAmount: String(payStub.incomeTaxAmount),
@@ -176,6 +187,10 @@ export function PayStubDialog({
         incomeTaxAmount: true,
       });
       setGrossOverridden(true);
+      // An issued stub's figures are what was actually paid, so reopening the
+      // form must not recalculate them out from under the accountant.
+      setVacationOverridden(true);
+      setVacationHeldOverridden(true);
       setPositionOverridden(true);
     } else {
       setForm({
@@ -186,6 +201,8 @@ export function PayStubDialog({
       });
       setOverrides(noOverrides);
       setGrossOverridden(false);
+      setVacationOverridden(false);
+      setVacationHeldOverridden(false);
       setPositionOverridden(false);
     }
 
@@ -280,6 +297,13 @@ export function PayStubDialog({
             result.position && !positionOverridden
               ? result.position
               : prev.position,
+          // This employee's own entitlement — 6% after five years — rather than
+          // the statutory minimum the form defaults to. Undefined means none is
+          // recorded, so the default stands.
+          vacationPayRate:
+            result.vacationPayRate == null
+              ? prev.vacationPayRate
+              : String(result.vacationPayRate),
         }));
         setCarriedPosition(Boolean(result.position) && !positionOverridden);
       }
@@ -300,7 +324,23 @@ export function PayStubDialog({
     loadHours();
   }, [loadHours]);
 
-  const grossPay = toNumber(form.regularAmount);
+  const regularAmount = toNumber(form.regularAmount);
+
+  /**
+   * Vacation follows the earnings until the accountant types over it, the same
+   * way gross follows rate × hours. The held line follows the accrual, since
+   * banking the whole of it is the normal case.
+   */
+  const vacationPayAmount = vacationOverridden
+    ? toNumber(form.vacationPayAmount)
+    : calculateVacationPay(regularAmount, toNumber(form.vacationPayRate));
+  const vacationPayHeld = vacationHeldOverridden
+    ? toNumber(form.vacationPayHeld)
+    : vacationPayAmount;
+
+  // Vacation pay is insurable and pensionable, so the CRA estimate has to see
+  // it — deducting on the earnings alone under-withholds on every stub.
+  const grossPay = round2(regularAmount + vacationPayAmount);
 
   /**
    * Recalculate the statutory deductions whenever the inputs they depend on
@@ -369,12 +409,14 @@ export function PayStubDialog({
 
   const hasOverride = Object.values(overrides).some(Boolean);
 
-  const totalWithholding =
+  const totalWithholding = round2(
     toNumber(form.eiAmount) +
-    toNumber(form.cppAmount) +
-    toNumber(form.incomeTaxAmount) +
-    toNumber(form.otherDeductions);
-  const netPay = grossPay - totalWithholding;
+      toNumber(form.cppAmount) +
+      toNumber(form.incomeTaxAmount) +
+      toNumber(form.otherDeductions) +
+      vacationPayHeld
+  );
+  const netPay = round2(grossPay - totalWithholding);
 
   const canSave =
     Boolean(form.employeeId) &&
@@ -383,6 +425,7 @@ export function PayStubDialog({
     Boolean(form.payDate) &&
     form.regularAmount.trim() !== '' &&
     netPay >= 0 &&
+    vacationPayHeld <= vacationPayAmount &&
     !saving;
 
   const handleSave = async () => {
@@ -397,7 +440,10 @@ export function PayStubDialog({
         position: form.position || undefined,
         payRate: form.payRate ? toNumber(form.payRate) : undefined,
         regularHours: toNumber(form.regularHours),
-        regularAmount: toNumber(form.regularAmount),
+        regularAmount: regularAmount,
+        vacationPayRate: toNumber(form.vacationPayRate),
+        vacationPayAmount,
+        vacationPayHeld,
         eiAmount: toNumber(form.eiAmount),
         cppAmount: toNumber(form.cppAmount),
         incomeTaxAmount: toNumber(form.incomeTaxAmount),
@@ -605,7 +651,7 @@ export function PayStubDialog({
               required
               size="small"
               type="number"
-              label="Gross Pay"
+              label="Regular Earnings"
               value={form.regularAmount}
               onChange={(event) => {
                 setGrossOverridden(true);
@@ -640,6 +686,103 @@ export function PayStubDialog({
                   ) : undefined,
               }}
             />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              label="Vacation Pay Rate"
+              value={form.vacationPayRate}
+              onChange={(event) => {
+                // A new rate means a new accrual. Leaving a typed-over amount
+                // in place would print "Vacation Pay (6%) $122.88" against
+                // $3,072 of earnings — a rate the figure beside it contradicts.
+                setVacationOverridden(false);
+                setVacationHeldOverridden(false);
+                setForm((prev) => ({
+                  ...prev,
+                  vacationPayRate: event.target.value,
+                  vacationPayAmount: '',
+                  vacationPayHeld: '',
+                }));
+              }}
+              helperText={`${DEFAULT_VACATION_PAY_RATE}% statutory minimum, 6% after 5 years`}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+              }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              label="Vacation Pay Earned"
+              value={
+                vacationOverridden
+                  ? form.vacationPayAmount
+                  : vacationPayAmount === 0
+                  ? ''
+                  : String(vacationPayAmount)
+              }
+              onChange={(event) => {
+                setVacationOverridden(true);
+                setField('vacationPayAmount', event.target.value);
+              }}
+              helperText={
+                vacationOverridden
+                  ? 'Entered by hand'
+                  : 'Rate × regular earnings'
+              }
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
+                endAdornment: vacationOverridden ? (
+                  <InputAdornment position="end">
+                    <Tooltip title="Use the calculated accrual">
+                      <IconButton
+                        size="small"
+                        edge="end"
+                        onClick={() => {
+                          // Held follows the accrual again too. Restoring one
+                          // without the other leaves the difference silently
+                          // paid out.
+                          setVacationOverridden(false);
+                          setVacationHeldOverridden(false);
+                          setForm((prev) => ({
+                            ...prev,
+                            vacationPayAmount: '',
+                            vacationPayHeld: '',
+                          }));
+                        }}
+                      >
+                        <CalculateIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ) : undefined,
+              }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Box
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                Gross Pay
+              </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                {money(grossPay)}
+              </Typography>
+            </Box>
           </Grid>
 
           <Grid size={12}>
@@ -785,6 +928,54 @@ export function PayStubDialog({
                 startAdornment: (
                   <InputAdornment position="start">$</InputAdornment>
                 ),
+              }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              label="Vacation Pay Held"
+              value={
+                vacationHeldOverridden
+                  ? form.vacationPayHeld
+                  : vacationPayHeld === 0
+                  ? ''
+                  : String(vacationPayHeld)
+              }
+              onChange={(event) => {
+                setVacationHeldOverridden(true);
+                setField('vacationPayHeld', event.target.value);
+              }}
+              error={vacationPayHeld > vacationPayAmount}
+              helperText={
+                vacationPayHeld > vacationPayAmount
+                  ? 'Cannot hold back more vacation than was earned'
+                  : vacationHeldOverridden
+                  ? 'Entered by hand — the rest is paid out'
+                  : 'Banked, so net pay is unchanged'
+              }
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
+                endAdornment: vacationHeldOverridden ? (
+                  <InputAdornment position="end">
+                    <Tooltip title="Hold the whole accrual">
+                      <IconButton
+                        size="small"
+                        edge="end"
+                        onClick={() => {
+                          setVacationHeldOverridden(false);
+                          setField('vacationPayHeld', '');
+                        }}
+                      >
+                        <CalculateIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ) : undefined,
               }}
             />
           </Grid>

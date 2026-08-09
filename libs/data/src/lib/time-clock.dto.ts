@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -49,6 +50,17 @@ export class UpsertEmployeeCompensationDto {
   @IsNumber()
   @Type(() => Number)
   expectedWeeklyHours?: number;
+
+  /**
+   * Vacation pay percentage. Leave unset for the statutory minimum (see
+   * DEFAULT_VACATION_PAY_RATE) — this is only for an entitlement above it,
+   * such as 6% after five years' service.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  vacationPayRate?: number;
 
   @IsOptional()
   @IsDateString()
@@ -177,6 +189,8 @@ export interface EmployeeCompensationDto {
   hourlyRate?: number;
   annualSalary?: number;
   expectedWeeklyHours?: number;
+  /** Null/undefined means the statutory minimum applies. */
+  vacationPayRate?: number;
   effectiveFrom: string;
   effectiveTo?: string;
   isActive: boolean;
@@ -309,6 +323,12 @@ export interface PayrollHoursDto {
   hasCompensation: boolean;
   /** Job title from the compensation record, for the pay stub. */
   position?: string;
+  /**
+   * Vacation pay percentage from the compensation record, so the pay stub form
+   * can accrue at this employee's own rate. Undefined means none is recorded
+   * and the statutory minimum applies.
+   */
+  vacationPayRate?: number;
   /** Zero for salaried employees — read `salaryPay` instead. */
   hourlyRate: number;
   /** Annual salary prorated across the period; zero for hourly employees. */

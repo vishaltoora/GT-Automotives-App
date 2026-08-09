@@ -212,6 +212,7 @@ export function PayStubs() {
                 <TableCell>Pay Date</TableCell>
                 <TableCell align="right">Hours</TableCell>
                 <TableCell align="right">Gross</TableCell>
+                <TableCell align="right">Vacation</TableCell>
                 <TableCell align="right">Withholding</TableCell>
                 <TableCell align="right">Net Pay</TableCell>
                 <TableCell align="center">Actions</TableCell>
@@ -230,6 +231,16 @@ export function PayStubs() {
                   </TableCell>
                   <TableCell align="right">
                     {formatCurrency(stub.grossPay)}
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(stub.vacationPayAmount)}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block' }}
+                    >
+                      {formatCurrency(stub.ytdVacationPayAmount)} YTD
+                    </Typography>
                   </TableCell>
                   <TableCell align="right">
                     {formatCurrency(stub.totalWithholding)}

@@ -66,6 +66,40 @@ export class CreatePayStubDto {
   @Type(() => Number)
   regularAmount!: number;
 
+  /**
+   * Vacation pay percentage for this stub. Omit to use the employee's recorded
+   * rate, falling back to the statutory minimum.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  vacationPayRate?: number;
+
+  /**
+   * Vacation earned this period. Omit to accrue the rate on `regularAmount`.
+   *
+   * Accepted as an override for the same reason the statutory deductions are:
+   * a stub records what was actually paid and withheld, not what a formula
+   * thinks it should have been.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  vacationPayAmount?: number;
+
+  /**
+   * Vacation held back this period. Omit to hold the whole accrual, which is
+   * the normal case — the money is banked rather than paid out this cheque, so
+   * the pair nets to zero. Send a smaller figure to pay some of it out.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  vacationPayHeld?: number;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -134,6 +168,11 @@ export class PayStubDeductionEstimateRequestDto {
   @IsDateString()
   payDate!: string;
 
+  /**
+   * The period's full gross, *including* any vacation accrual. Vacation pay is
+   * insurable and pensionable, so estimating on the earnings alone
+   * under-withholds EI, CPP and tax on every stub that accrues it.
+   */
   @IsNumber()
   @Min(0)
   @Type(() => Number)
@@ -222,7 +261,15 @@ export interface PayStubDto {
 
   regularHours: number;
   regularAmount: number;
+  /** Regular earnings plus the vacation accrual. */
   grossPay: number;
+
+  /** Percentage this stub accrued vacation at, e.g. 4. */
+  vacationPayRate: number;
+  /** Vacation earned this period, included in `grossPay`. */
+  vacationPayAmount: number;
+  /** The same amount held back, included in `totalWithholding`. */
+  vacationPayHeld: number;
 
   eiAmount: number;
   cppAmount: number;
@@ -235,6 +282,9 @@ export interface PayStubDto {
   ytdHours: number;
   ytdRegularAmount: number;
   ytdGrossPay: number;
+  /** Vacation earned so far this year — what the employee has banked. */
+  ytdVacationPayAmount: number;
+  ytdVacationPayHeld: number;
   ytdEiAmount: number;
   ytdCppAmount: number;
   ytdIncomeTaxAmount: number;
