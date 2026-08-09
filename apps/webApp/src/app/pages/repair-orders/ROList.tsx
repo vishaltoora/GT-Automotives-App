@@ -30,6 +30,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import { formatBusinessDate } from '../../utils/dateUtils';
+import { usePersistedState } from '../../hooks/usePersistedState';
 
 const STATUS_META: Record<
   ROStatus,
@@ -62,6 +63,18 @@ const ALL_STATUSES: ROStatus[] = [
   'INVOICED',
 ];
 
+type ROListFilters = {
+  search: string;
+  status: ROStatus | 'ALL';
+};
+
+const FILTERS_STORAGE_KEY = 'roListFilters';
+
+const DEFAULT_FILTERS: ROListFilters = {
+  search: '',
+  status: 'ALL',
+};
+
 function customerName(ro: RepairOrder) {
   if (ro.customer.businessName) return ro.customer.businessName;
   return `${ro.customer.firstName} ${ro.customer.lastName}`.trim();
@@ -88,8 +101,16 @@ export function ROList() {
   const [ros, setRos] = useState<RepairOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ROStatus | 'ALL'>('ALL');
+  // Filters are persisted so opening an RO and pressing Back returns to the
+  // same filtered list rather than the full set with the search cleared.
+  const [filters, setFilters] = usePersistedState<ROListFilters>(
+    FILTERS_STORAGE_KEY,
+    DEFAULT_FILTERS
+  );
+  const { search, status: statusFilter } = filters;
+  // Immediate input value, so typing stays responsive while the query behind
+  // it is debounced.
+  const [searchInput, setSearchInput] = useState(() => filters.search);
 
   const baseRoute = location.pathname.startsWith('/staff')
     ? '/staff'
@@ -99,8 +120,21 @@ export function ROList() {
     ? '/foreman'
     : '/admin';
 
+  // Debounce the text input so a search costs one request rather than one per
+  // keystroke (300ms, matching the invoice list).
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        setFilters((prev) => ({ ...prev, search: searchInput }));
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const params: Record<string, string> = {};
     if (statusFilter !== 'ALL') params.status = statusFilter;
     if (search.trim()) params.search = search.trim();
@@ -131,8 +165,8 @@ export function ROList() {
         <TextField
           size="small"
           placeholder="Search RO#, customer, phone, vehicle or VIN…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -149,7 +183,10 @@ export function ROList() {
             label="Status"
             value={statusFilter}
             onChange={(e) =>
-              setStatusFilter(e.target.value as ROStatus | 'ALL')
+              setFilters((prev) => ({
+                ...prev,
+                status: e.target.value as ROStatus | 'ALL',
+              }))
             }
           >
             <MenuItem value="ALL">All Statuses</MenuItem>
