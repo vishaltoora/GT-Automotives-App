@@ -70,6 +70,7 @@ import { PaymentDialog } from '../appointments/PaymentDialog';
 import { InvoiceDetailsDialog } from '../invoices/InvoiceDetailsDialog';
 import { PaymentMethodDialog } from '../invoices/PaymentMethodDialog';
 import { BulkInvoicePaymentDialog } from '../invoices/BulkInvoicePaymentDialog';
+import { BulkInvoiceEmailDialog } from '../invoices/BulkInvoiceEmailDialog';
 import { SquarePaymentForm } from '../payments/SquarePaymentForm';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { invoiceService } from '../../requests/invoice.requests';
@@ -138,6 +139,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
   );
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [bulkPaymentOpen, setBulkPaymentOpen] = useState(false);
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState<Invoice | null>(null);
   const [squarePaymentDialogOpen, setSquarePaymentDialogOpen] = useState(false);
@@ -451,11 +453,19 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
     ) || [];
 
   // Invoices that can still take a payment (includes partially-paid) — the
-  // pool the bulk "Process Payment" flow selects from.
+  // pool the bulk "Process Payment" flow selects from. Drafts are included:
+  // someone paying in the bay may well be settling one before it is finalised.
   const payableInvoices =
     customer?.invoices?.filter((inv) =>
       ['PENDING', 'DRAFT', 'PARTIALLY_PAID'].includes(inv.status)
     ) || [];
+
+  // What a statement may ask a customer for. Drafts are deliberately excluded:
+  // a draft is not a finalised invoice, and emailing one as money owed asks for
+  // payment against figures the shop has not committed to yet.
+  const emailableInvoices = payableInvoices.filter(
+    (inv) => inv.status !== 'DRAFT'
+  );
 
   const paidInvoices =
     customer?.invoices?.filter((inv) => inv.status === 'PAID') || [];
@@ -1041,7 +1051,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                     </Card>
 
                     {/* Unpaid Invoice Cards */}
-                    {unpaidInvoices.length > 0 && (
+                    {payableInvoices.length > 0 && (
                       <Box mb={3}>
                         <Box
                           sx={{
@@ -1057,22 +1067,37 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                             color="warning.main"
                             fontWeight="bold"
                           >
-                            Unpaid Invoices ({unpaidInvoices.length})
+                            Unpaid Invoices ({payableInvoices.length})
                           </Typography>
-                          {payableInvoices.length > 0 && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="success"
-                              startIcon={<PaymentIcon />}
-                              onClick={() => setBulkPaymentOpen(true)}
-                            >
-                              Process Payment
-                            </Button>
-                          )}
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            {/* One click beats opening every invoice in turn
+                                to chase a customer with several outstanding. */}
+                            {emailableInvoices.length > 1 && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                startIcon={<EmailIcon />}
+                                onClick={() => setBulkEmailOpen(true)}
+                              >
+                                Email {emailableInvoices.length} Invoices
+                              </Button>
+                            )}
+                            {payableInvoices.length > 0 && (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                startIcon={<PaymentIcon />}
+                                onClick={() => setBulkPaymentOpen(true)}
+                              >
+                                Process Payment
+                              </Button>
+                            )}
+                          </Box>
                         </Box>
                         <Grid container spacing={2}>
-                          {unpaidInvoices.map((invoice: Invoice) => (
+                          {payableInvoices.map((invoice: Invoice) => (
                             <Grid size={{ xs: 12, sm: 6 }} key={invoice.id}>
                               <Card variant="outlined" sx={{ height: '100%' }}>
                                 <CardContent>
@@ -1456,7 +1481,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                 {customer.invoices && customer.invoices.length > 0 ? (
                   <Box>
                     {/* Unpaid Invoices Section */}
-                    {unpaidInvoices.length > 0 && (
+                    {payableInvoices.length > 0 && (
                       <Box mb={3}>
                         <Box
                           sx={{
@@ -1472,19 +1497,34 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                             color="warning.main"
                             fontWeight="bold"
                           >
-                            Unpaid Invoices ({unpaidInvoices.length})
+                            Unpaid Invoices ({payableInvoices.length})
                           </Typography>
-                          {payableInvoices.length > 0 && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="success"
-                              startIcon={<PaymentIcon />}
-                              onClick={() => setBulkPaymentOpen(true)}
-                            >
-                              Process Payment
-                            </Button>
-                          )}
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            {/* One click beats opening every invoice in turn
+                                to chase a customer with several outstanding. */}
+                            {emailableInvoices.length > 1 && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                startIcon={<EmailIcon />}
+                                onClick={() => setBulkEmailOpen(true)}
+                              >
+                                Email {emailableInvoices.length} Invoices
+                              </Button>
+                            )}
+                            {payableInvoices.length > 0 && (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                startIcon={<PaymentIcon />}
+                                onClick={() => setBulkPaymentOpen(true)}
+                              >
+                                Process Payment
+                              </Button>
+                            )}
+                          </Box>
                         </Box>
                         <TableContainer component={Paper} variant="outlined">
                           <Table size="small">
@@ -1498,7 +1538,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {unpaidInvoices.map((invoice: Invoice) => (
+                              {payableInvoices.map((invoice: Invoice) => (
                                 <TableRow key={invoice.id} hover>
                                   <TableCell>
                                     <Link
@@ -1800,6 +1840,24 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
           loadCustomer();
           onPaymentSuccess?.();
         }}
+      />
+
+      {/* Email every outstanding invoice in one pass */}
+      <BulkInvoiceEmailDialog
+        open={bulkEmailOpen}
+        onClose={() => setBulkEmailOpen(false)}
+        customerName={
+          customer?.businessName ||
+          `${customer?.firstName ?? ''} ${customer?.lastName ?? ''}`.trim()
+        }
+        customerId={customer?.id}
+        invoices={emailableInvoices}
+        availableEmails={[
+          ...(customer?.email ? [customer.email] : []),
+          ...(customer?.additionalEmails ?? []),
+        ]}
+        // Saving new addresses updates the customer, so re-read it.
+        onSent={loadCustomer}
       />
 
       {/* Appointment Payment Dialog */}

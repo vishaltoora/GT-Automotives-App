@@ -1563,6 +1563,247 @@ export class EmailService {
   }
 
   /**
+   * One statement email covering everything a customer currently owes.
+   *
+   * Chasing a fleet customer used to mean one email per invoice, so seven
+   * outstanding invoices arrived as seven separate messages with no total
+   * anywhere — leaving the customer to add them up and us to look disorganised.
+   * This sends a single message: every invoice listed with its balance, the
+   * total owing stated once, and each invoice still attached as its own PDF so
+   * nothing is lost against the per-invoice email it replaces.
+   */
+  async sendInvoiceStatementEmail(
+    recipients: string[],
+    statement: {
+      customerName: string;
+      invoices: Array<{
+        invoiceNumber: string;
+        invoiceDate?: string;
+        total: number;
+        amountPaid: number;
+        balanceDue: number;
+      }>;
+      totalOwing: number;
+      attachments: Array<{ name: string; content: string }>;
+    }
+  ): Promise<{ success: boolean; messageId?: string }> {
+    if (!this.enabled) {
+      this.logger.warn(
+        '[EMAIL] Email service disabled - skipping invoice statement email'
+      );
+      return { success: false };
+    }
+
+    const to = Array.from(
+      new Set(recipients.map((e) => e.trim()).filter((e) => e !== ''))
+    );
+
+    if (to.length === 0) {
+      this.logger.warn('[EMAIL] No valid recipients for invoice statement');
+      return { success: false };
+    }
+
+    const escapeHtml = (value: unknown): string =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const money = (amount: number) =>
+      new Intl.NumberFormat('en-CA', {
+        style: 'currency',
+        currency: 'CAD',
+      }).format(Number(amount) || 0);
+
+    // Invoice dates are stored as midnight-UTC calendar dates, so read them
+    // back in UTC or an evening invoice reads as the day before.
+    const invoiceDate = (value?: string) => {
+      if (!value) return '';
+      return new Date(value).toLocaleDateString('en-CA', {
+        timeZone: 'UTC',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    };
+
+    const subject =
+      statement.invoices.length === 1
+        ? `Invoice ${statement.invoices[0].invoiceNumber} - GT Automotives`
+        : `Statement of Account (${statement.invoices.length} invoices) - GT Automotives`;
+
+    try {
+      this.logger.log(
+        `[EMAIL] Sending statement of ${
+          statement.invoices.length
+        } invoice(s) to ${to.join(', ')}`
+      );
+
+      const logoImg = this.logoBase64
+        ? `<img src="${this.logoBase64}" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`
+        : `<img src="https://gt-automotives.com/logo.png" alt="GT Automotives" style="width: 80px; height: 80px; object-fit: contain;" />`;
+
+      const rows = statement.invoices
+        .map(
+          (invoice) => `
+            <tr>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #333333;">
+                ${escapeHtml(invoice.invoiceNumber)}
+              </td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #666666;">
+                ${escapeHtml(invoiceDate(invoice.invoiceDate))}
+              </td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #666666; text-align: right;">
+                ${money(invoice.total)}
+              </td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #666666; text-align: right;">
+                ${
+                  invoice.amountPaid > 0 ? money(invoice.amountPaid) : '&mdash;'
+                }
+              </td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #333333; text-align: right; font-weight: 600;">
+                ${money(invoice.balanceDue)}
+              </td>
+            </tr>`
+        )
+        .join('');
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 40px 20px; text-align: center;">
+                <table role="presentation" style="max-width: 640px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); border-radius: 8px 8px 0 0;">
+                      ${logoImg}
+                      <h1 style="margin: 20px 0 0; color: #ffffff; font-size: 28px; font-weight: 600;">Statement of Account</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px 40px 20px; text-align: left;">
+                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        Hello ${escapeHtml(statement.customerName)},
+                      </p>
+                      <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #333333;">
+                        Thank you for your business. Here is a summary of the
+                        ${
+                          statement.invoices.length === 1
+                            ? 'invoice'
+                            : `${statement.invoices.length} invoices`
+                        }
+                        currently outstanding on your account. Each one is attached to this email as a PDF.
+                      </p>
+
+                      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                        <thead>
+                          <tr>
+                            <th style="padding: 10px 8px; border-bottom: 2px solid #1976d2; font-size: 13px; color: #1976d2; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Invoice</th>
+                            <th style="padding: 10px 8px; border-bottom: 2px solid #1976d2; font-size: 13px; color: #1976d2; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
+                            <th style="padding: 10px 8px; border-bottom: 2px solid #1976d2; font-size: 13px; color: #1976d2; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Amount</th>
+                            <th style="padding: 10px 8px; border-bottom: 2px solid #1976d2; font-size: 13px; color: #1976d2; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Paid</th>
+                            <th style="padding: 10px 8px; border-bottom: 2px solid #1976d2; font-size: 13px; color: #1976d2; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${rows}
+                        </tbody>
+                      </table>
+
+                      <!-- Total owing -->
+                      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f1f7fd; border-radius: 6px;">
+                        <tr>
+                          <td style="padding: 18px 20px; font-size: 16px; color: #333333; font-weight: 600;">
+                            Total owing to GT Automotives
+                          </td>
+                          <td style="padding: 18px 20px; font-size: 22px; color: #1565c0; font-weight: 700; text-align: right; white-space: nowrap;">
+                            ${money(statement.totalOwing)}
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="margin: 24px 0 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                        If you have any questions about this statement, please let us know &mdash; we are happy to help.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                      <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
+                        <strong style="color: #1976d2;">GT Automotives</strong><br>
+                        473 3rd Ave<br>
+                        Prince George, BC V2L 3C1<br>
+                        Phone: 250-570-2333 / 250-986-9191<br>
+                        Email: gt-automotives@outlook.com
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const sendSmtpEmail: SendSmtpEmail = {
+        sender: { name: this.senderName, email: this.senderEmail },
+        to: to.map((email) => ({ email })),
+        subject,
+        htmlContent,
+        attachment: statement.attachments,
+      };
+
+      const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      const messageId = (response as any)?.messageId || 'unknown';
+
+      this.logger.log(
+        `[EMAIL] Invoice statement sent successfully. Message ID: ${messageId}`
+      );
+
+      try {
+        await this.prisma.emailLog.create({
+          data: {
+            type: EmailType.INVOICE_DELIVERY,
+            to: to.join(', '),
+            from: this.senderEmail,
+            subject,
+            status: EmailStatus.SENT,
+            sentAt: new Date(),
+          },
+        });
+      } catch (dbError) {
+        this.logger.error(
+          '[EMAIL] Failed to log invoice statement to database:',
+          dbError
+        );
+      }
+
+      return { success: true, messageId };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `[EMAIL] Failed to send invoice statement: ${errorMessage}`,
+        error
+      );
+      return { success: false };
+    }
+  }
+
+  /**
    * Send quotation email with PDF attachment
    */
   /**

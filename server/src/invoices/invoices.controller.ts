@@ -223,6 +223,33 @@ export class InvoicesController {
     );
   }
 
+  /**
+   * One statement email for everything a customer owes, rather than one email
+   * per invoice. Body carries the invoice ids so the user can drop any before
+   * sending; the service checks every one belongs to this customer.
+   */
+  @Post('send-statement')
+  @UseGuards(RoleGuard)
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  sendStatementEmail(
+    @Body()
+    body: {
+      customerId: string;
+      invoiceIds: string[];
+      emails?: string[];
+      saveToCustomer?: boolean;
+    },
+    @CurrentUser() user: any
+  ) {
+    return this.invoicesService.sendInvoiceStatementEmail(
+      body.customerId,
+      body.invoiceIds,
+      user.id,
+      body.emails,
+      body.saveToCustomer
+    );
+  }
+
   @Delete(':id')
   @UseGuards(RoleGuard)
   @Roles('ADMIN')
