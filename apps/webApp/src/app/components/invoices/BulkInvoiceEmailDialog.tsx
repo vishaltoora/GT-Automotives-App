@@ -26,7 +26,6 @@ import {
   Close as CloseIcon,
   Delete as DeleteIcon,
   Email as EmailIcon,
-  ErrorOutline as FailureIcon,
 } from '@mui/icons-material';
 import { getInvoiceBalanceDue } from '@gt-automotive/data';
 import { invoiceService } from '../../requests/invoice.requests';
@@ -45,12 +44,11 @@ export interface BulkEmailableInvoice {
   createdAt?: string;
 }
 
-/** What became of one invoice's send, so partial failure can be reported exactly. */
-interface SendOutcome {
-  id: string;
-  invoiceNumber: string;
-  ok: boolean;
-  error?: string;
+/** What the server reported back about the statement it sent. */
+interface SendResult {
+  invoiceCount: number;
+  totalOwing: number;
+  emailUsed: string;
 }
 
 interface BulkInvoiceEmailDialogProps {
@@ -126,8 +124,8 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
   const [error, setError] = useState('');
 
   const [sending, setSending] = useState(false);
-  const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const [outcomes, setOutcomes] = useState<SendOutcome[] | null>(null);
+  const [sent, setSent] = useState<SendResult | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   // Everything selected each time the dialog opens — the common case is
   // sending the lot.
@@ -140,8 +138,8 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
     setSaveToCustomer(true);
     setError('');
     setSending(false);
-    setProgress({ done: 0, total: 0 });
-    setOutcomes(null);
+    setSent(null);
+    setSendError(null);
     // Keyed on `open` alone, and deliberately so. The parent passes `invoices`
     // and `availableEmails` as fresh array literals, so both change identity on
     // every one of its renders — and a successful send triggers exactly that,
@@ -165,9 +163,6 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
 
   const allSelected =
     invoices.length > 0 && selectedIds.size === invoices.length;
-
-  const failed = outcomes?.filter((o) => !o.ok) ?? [];
-  const succeeded = outcomes?.filter((o) => o.ok) ?? [];
 
   const toggleInvoice = (id: string) =>
     setSelectedIds((prev) => {
@@ -214,65 +209,47 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
   };
 
   /**
-   * Send the given invoices one at a time, recording what happened to each.
+   * Send one statement covering every selected invoice.
    *
-   * A failure part-way through leaves the invoices already sent alone: they
-   * have genuinely been emailed, and re-sending them to "clean up" would put a
-   * duplicate in the customer's inbox.
+   * One message, not one per invoice: seven separate emails leave the customer
+   * adding the balances up themselves, and make the shop look disorganised. The
+   * statement lists each invoice with its balance, states the total owing once,
+   * and carries every invoice as its own PDF attachment.
    */
-  const sendInvoices = async (targets: BulkEmailableInvoice[]) => {
-    if (targets.length === 0 || selectedEmails.length === 0) return;
+  const sendStatement = async () => {
+    if (selectedInvoices.length === 0 || selectedEmails.length === 0) return;
+    if (!customerId) {
+      setSendError(
+        'This customer record is missing an id — reopen the customer and try again.'
+      );
+      return;
+    }
 
     setSending(true);
     setError('');
-    setProgress({ done: 0, total: targets.length });
+    setSendError(null);
 
-    const results: SendOutcome[] = [];
-    // New addresses only need persisting once, and only if a send actually
-    // succeeds — saving them off the back of a failed request would record
-    // addresses that were never reached.
-    let emailsSaved = false;
-
-    for (const [index, invoice] of targets.entries()) {
-      try {
-        await invoiceService.sendInvoiceEmail(
-          invoice.id,
-          selectedEmails,
-          saveToCustomer && !!customerId && !emailsSaved
-        );
-        emailsSaved = emailsSaved || (saveToCustomer && !!customerId);
-        results.push({
-          id: invoice.id,
-          invoiceNumber: invoice.invoiceNumber,
-          ok: true,
-        });
-      } catch (err) {
-        results.push({
-          id: invoice.id,
-          invoiceNumber: invoice.invoiceNumber,
-          ok: false,
-          error: errorMessage(err),
-        });
-      }
-      setProgress({ done: index + 1, total: targets.length });
+    try {
+      const result = await invoiceService.sendInvoiceStatement(
+        customerId,
+        selectedInvoices.map((invoice) => invoice.id),
+        selectedEmails,
+        saveToCustomer
+      );
+      setSent({
+        invoiceCount: result.invoiceCount ?? selectedInvoices.length,
+        totalOwing: result.totalOwing ?? outstandingTotal,
+        emailUsed: result.emailUsed ?? selectedEmails.join(', '),
+      });
+      onSent?.();
+    } catch (err) {
+      // Nothing partial to report: the statement is one email, so it either
+      // went or it did not, and pressing Send again is a safe retry.
+      setSendError(errorMessage(err));
+    } finally {
+      setSending(false);
     }
-
-    // A retry reports the whole run, not just the invoices it re-sent.
-    setOutcomes((prev) => {
-      if (!prev) return results;
-      const byId = new Map(prev.map((o) => [o.id, o]));
-      results.forEach((o) => byId.set(o.id, o));
-      return Array.from(byId.values());
-    });
-    setSending(false);
-
-    if (results.some((o) => o.ok)) onSent?.();
   };
-
-  const handleSend = () => sendInvoices(selectedInvoices);
-
-  const handleRetryFailed = () =>
-    sendInvoices(invoices.filter((inv) => failed.some((f) => f.id === inv.id)));
 
   const handleClose = () => {
     if (sending) return;
@@ -307,48 +284,36 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
       </DialogTitle>
 
       <DialogContent dividers>
-        {outcomes ? (
+        {sent ? (
           <Box sx={{ pt: 1 }}>
-            {failed.length === 0 ? (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {`${
-                  succeeded.length === 1
-                    ? '1 invoice was'
-                    : `All ${succeeded.length} invoices were`
-                } emailed to ${selectedEmails.join(', ')}.`}
-              </Alert>
-            ) : (
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                {`${succeeded.length} of ${outcomes.length} invoices were emailed. The rest are listed below and can be retried \u2014 the ones that went out will not be sent again.`}
-              </Alert>
-            )}
-
-            <List dense disablePadding>
-              {outcomes.map((outcome) => (
-                <ListItem key={outcome.id} disableGutters>
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    {outcome.ok ? (
-                      <SuccessIcon color="success" fontSize="small" />
-                    ) : (
-                      <FailureIcon color="error" fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`#${outcome.invoiceNumber}`}
-                    secondary={outcome.ok ? 'Sent' : outcome.error}
-                    secondaryTypographyProps={{
-                      color: outcome.ok ? 'text.secondary' : 'error',
-                    }}
-                  />
-                </ListItem>
-              ))}
-            </List>
+            <Alert severity="success" icon={<SuccessIcon />} sx={{ mb: 2 }}>
+              {`${
+                sent.invoiceCount === 1
+                  ? '1 invoice'
+                  : `A statement for ${sent.invoiceCount} invoices`
+              } was emailed to ${sent.emailUsed}.`}
+            </Alert>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                px: 1,
+              }}
+            >
+              <Typography variant="subtitle2">Total owing</Typography>
+              <Typography variant="h6" fontWeight={700}>
+                {formatCurrency(sent.totalOwing)}
+              </Typography>
+            </Box>
           </Box>
         ) : (
           <Box sx={{ pt: 1 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Select the invoices to email to <strong>{customerName}</strong>.
-              Each one is sent as its own email with its own PDF attached.
+              Select the invoices to include in the statement for{' '}
+              <strong>{customerName}</strong>. They go out as one email listing
+              each invoice and the total owing, with every invoice attached as a
+              PDF.
             </Typography>
 
             <FormControlLabel
@@ -521,6 +486,12 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
               </Button>
             </Box>
 
+            {sendError && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {`The statement was not sent: ${sendError}`}
+              </Alert>
+            )}
+
             {customerId && (
               <FormControlLabel
                 control={
@@ -544,19 +515,15 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
 
         {sending && (
           <Box sx={{ mt: 2 }}>
-            <LinearProgress
-              variant="determinate"
-              value={
-                progress.total ? (progress.done / progress.total) * 100 : 0
-              }
-            />
+            <LinearProgress />
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mt: 1, textAlign: 'center' }}
             >
-              Sending {Math.min(progress.done + 1, progress.total)} of{' '}
-              {progress.total}…
+              {selectedInvoices.length === 1
+                ? 'Preparing the invoice and sending…'
+                : `Preparing ${selectedInvoices.length} invoices and sending…`}
             </Typography>
           </Box>
         )}
@@ -564,33 +531,20 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={handleClose} color="inherit" disabled={sending}>
-          {outcomes ? 'Close' : 'Cancel'}
+          {sent ? 'Close' : 'Cancel'}
         </Button>
-        {outcomes
-          ? failed.length > 0 && (
-              <Button
-                onClick={handleRetryFailed}
-                variant="contained"
-                startIcon={<EmailIcon />}
-                disabled={sending}
-              >
-                {failed.length === 1
-                  ? 'Retry 1 failed'
-                  : `Retry ${failed.length} failed`}
-              </Button>
-            )
-          : !sending && (
-              <Button
-                onClick={handleSend}
-                variant="contained"
-                startIcon={<EmailIcon />}
-                disabled={!canSend}
-              >
-                {selectedInvoices.length === 1
-                  ? 'Send 1 invoice'
-                  : `Send ${selectedInvoices.length} invoices`}
-              </Button>
-            )}
+        {!sent && !sending && (
+          <Button
+            onClick={sendStatement}
+            variant="contained"
+            startIcon={<EmailIcon />}
+            disabled={!canSend}
+          >
+            {selectedInvoices.length === 1
+              ? 'Send 1 invoice'
+              : `Send statement (${selectedInvoices.length} invoices)`}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

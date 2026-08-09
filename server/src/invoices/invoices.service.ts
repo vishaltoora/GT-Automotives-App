@@ -1147,6 +1147,196 @@ export class InvoicesService {
     return this.serviceRepository.delete(id);
   }
 
+  /**
+   * Fold recipients the user typed into the customer's address book.
+   *
+   * A customer with no address on file takes the first one as primary; the rest
+   * become additional addresses. Shared by the per-invoice send and the
+   * statement send so the two cannot drift on what "save to customer" means.
+   */
+  private async saveRecipientsToCustomer(
+    customer: {
+      id: string;
+      email?: string | null;
+      additionalEmails?: string[];
+    },
+    recipients: string[]
+  ) {
+    const knownEmails = [
+      customer.email,
+      ...(customer.additionalEmails ?? []),
+    ].filter((e): e is string => !!e);
+    let primary = customer.email ?? undefined;
+    const additional = [...(customer.additionalEmails ?? [])];
+
+    for (const email of recipients) {
+      if (knownEmails.includes(email)) continue;
+      if (!primary) {
+        primary = email;
+      } else {
+        additional.push(email);
+      }
+      knownEmails.push(email);
+    }
+
+    const dedupedAdditional = Array.from(new Set(additional)).filter(
+      (e) => e !== primary
+    );
+
+    if (
+      primary !== (customer.email ?? undefined) ||
+      dedupedAdditional.length !== (customer.additionalEmails ?? []).length
+    ) {
+      await this.customerRepository.update(customer.id, {
+        email: primary,
+        additionalEmails: dedupedAdditional,
+      });
+    }
+  }
+
+  /**
+   * Email one statement covering everything a customer owes.
+   *
+   * Sending a customer with seven outstanding invoices seven separate emails
+   * makes them add the balances up themselves and makes us look disorganised,
+   * so this is one message: every invoice listed with its balance, the total
+   * owing stated once, and each invoice attached as its own PDF.
+   *
+   * The PDFs are rendered one at a time. Each goes through Puppeteer, and
+   * firing seven Chromium renders at once at a 1.75GB app service is how a slow
+   * send becomes a failed one.
+   */
+  async sendInvoiceStatementEmail(
+    customerId: string,
+    invoiceIds: string[],
+    userId: string,
+    emails?: string[],
+    saveToCustomer?: boolean
+  ) {
+    if (!invoiceIds || invoiceIds.length === 0) {
+      throw new BadRequestException('No invoices selected');
+    }
+
+    const customer = await this.customerRepository.findById(customerId);
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID "${customerId}" not found`);
+    }
+
+    // Loaded individually so each carries the relations the PDF template needs.
+    const invoices = [];
+    for (const invoiceId of invoiceIds) {
+      const invoice = await this.invoiceRepository.findWithDetails(invoiceId);
+      if (!invoice) {
+        throw new NotFoundException(`Invoice with ID "${invoiceId}" not found`);
+      }
+      // A statement is addressed to one customer; sending it invoices that
+      // belong to someone else would disclose another customer's business.
+      if (invoice.customerId !== customerId) {
+        throw new BadRequestException(
+          `Invoice ${invoice.invoiceNumber} does not belong to this customer`
+        );
+      }
+      invoices.push(invoice);
+    }
+
+    const providedEmails = Array.from(
+      new Set((emails ?? []).map((e) => e.trim()).filter((e) => e !== ''))
+    );
+    const recipients =
+      providedEmails.length > 0
+        ? providedEmails
+        : customer.email
+        ? [customer.email]
+        : [];
+
+    if (recipients.length === 0) {
+      throw new BadRequestException(
+        'No email address provided and customer does not have an email address'
+      );
+    }
+
+    if (saveToCustomer) {
+      await this.saveRecipientsToCustomer(customer, recipients);
+    }
+
+    try {
+      const rows = [];
+      const attachments = [];
+
+      for (const invoice of invoices) {
+        // Puppeteer fetches the signature over the network, so it needs a SAS
+        // URL — the raw blob URL is private and renders as a broken image.
+        const pdfBase64 = await this.pdfService.generateInvoicePdf(
+          await this.withSignatureUrl(invoice)
+        );
+        attachments.push({
+          name: `Invoice-${invoice.invoiceNumber}.pdf`,
+          content: pdfBase64,
+        });
+
+        const total = Number(invoice.total) || 0;
+        const amountPaid = Number((invoice as any).amountPaid ?? 0) || 0;
+        rows.push({
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceDate: (
+            invoice.invoiceDate ?? invoice.createdAt
+          )?.toISOString(),
+          total,
+          amountPaid,
+          // Never negative: an overpaid invoice reads as nothing owing rather
+          // than as a credit subsidising the rest of the statement.
+          balanceDue: Math.max(0, Math.round((total - amountPaid) * 100) / 100),
+        });
+      }
+
+      const totalOwing =
+        Math.round(rows.reduce((sum, row) => sum + row.balanceDue, 0) * 100) /
+        100;
+
+      const customerName =
+        customer.businessName ||
+        [customer.firstName, customer.lastName].filter(Boolean).join(' ') ||
+        'there';
+
+      const emailResult = await this.emailService.sendInvoiceStatementEmail(
+        recipients,
+        { customerName, invoices: rows, totalOwing, attachments }
+      );
+
+      if (!emailResult.success) {
+        throw new Error('Email service returned failure status');
+      }
+
+      await this.auditRepository.create({
+        userId,
+        action: 'SEND_INVOICE_STATEMENT_EMAIL',
+        entityType: 'Customer',
+        entityId: customerId,
+        details: {
+          emails: recipients,
+          invoiceNumbers: invoices.map((invoice) => invoice.invoiceNumber),
+          totalOwing,
+          messageId: emailResult.messageId,
+          emailsSavedToCustomer: !!saveToCustomer,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Statement email sent successfully',
+        emailUsed: recipients.join(', '),
+        invoiceCount: invoices.length,
+        totalOwing,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to send statement email: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+    }
+  }
+
   async sendInvoiceEmail(
     invoiceId: string,
     userId: string,
@@ -1182,38 +1372,8 @@ export class InvoicesService {
       );
     }
 
-    // If saveToCustomer is true and customer exists, persist any new emails back to the customer
     if (saveToCustomer && customer) {
-      const knownEmails = [
-        customer.email,
-        ...(customer.additionalEmails ?? []),
-      ].filter((e): e is string => !!e);
-      let primary = customer.email ?? undefined;
-      const additional = [...(customer.additionalEmails ?? [])];
-
-      for (const email of recipients) {
-        if (knownEmails.includes(email)) continue;
-        if (!primary) {
-          primary = email;
-        } else {
-          additional.push(email);
-        }
-        knownEmails.push(email);
-      }
-
-      const dedupedAdditional = Array.from(new Set(additional)).filter(
-        (e) => e !== primary
-      );
-
-      if (
-        primary !== (customer.email ?? undefined) ||
-        dedupedAdditional.length !== (customer.additionalEmails ?? []).length
-      ) {
-        await this.customerRepository.update(customer.id, {
-          email: primary,
-          additionalEmails: dedupedAdditional,
-        });
-      }
+      await this.saveRecipientsToCustomer(customer, recipients);
     }
 
     try {

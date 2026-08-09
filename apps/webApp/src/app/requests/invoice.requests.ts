@@ -257,6 +257,30 @@ class InvoiceService {
     return response.data;
   }
 
+  /**
+   * Email one statement covering several invoices, with each attached as a PDF
+   * and the total owing stated once — rather than one email per invoice.
+   */
+  async sendInvoiceStatement(
+    customerId: string,
+    invoiceIds: string[],
+    emails?: string[],
+    saveToCustomer?: boolean
+  ): Promise<{
+    success: boolean;
+    message: string;
+    emailUsed?: string;
+    invoiceCount?: number;
+    totalOwing?: number;
+  }> {
+    const response = await axios.post(
+      `${API_URL}/api/invoices/send-statement`,
+      { customerId, invoiceIds, emails, saveToCustomer },
+      { headers: await this.getHeaders() }
+    );
+    return response.data;
+  }
+
   async deleteInvoice(id: string): Promise<void> {
     await axios.delete(`${API_URL}/api/invoices/${id}`, {
       headers: await this.getHeaders(),

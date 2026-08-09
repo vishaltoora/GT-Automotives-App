@@ -5,11 +5,12 @@ import {
   BulkEmailableInvoice,
 } from './BulkInvoiceEmailDialog';
 
-const mockSendInvoiceEmail = jest.fn();
+const mockSendInvoiceStatement = jest.fn();
 
 jest.mock('../../requests/invoice.requests', () => ({
   invoiceService: {
-    sendInvoiceEmail: (...args: unknown[]) => mockSendInvoiceEmail(...args),
+    sendInvoiceStatement: (...args: unknown[]) =>
+      mockSendInvoiceStatement(...args),
   },
 }));
 
@@ -52,30 +53,40 @@ const setup = (props: Partial<Parameters<typeof BulkInvoiceEmailDialog>[0]>) =>
   );
 
 const clickSend = () =>
-  fireEvent.click(screen.getByRole('button', { name: /^Send \d+ invoices?$/ }));
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: /^Send (statement \(\d+ invoices\)|1 invoice)$/,
+    })
+  );
 
 describe('BulkInvoiceEmailDialog', () => {
   beforeEach(() => {
-    mockSendInvoiceEmail.mockReset();
-    mockSendInvoiceEmail.mockResolvedValue({ success: true });
+    mockSendInvoiceStatement.mockReset();
+    mockSendInvoiceStatement.mockResolvedValue({
+      success: true,
+      message: 'Statement email sent successfully',
+      emailUsed: 'fleet@northern.ca',
+      invoiceCount: 3,
+      totalOwing: 375,
+    });
   });
 
-  it('sends every invoice by default, each to the selected recipients', async () => {
-    const onSent = jest.fn();
-    setup({ onSent });
+  // The whole point of the rework: a customer with seven outstanding invoices
+  // gets one message, not seven.
+  it('sends a single statement covering every selected invoice', async () => {
+    setup({});
 
     clickSend();
 
-    await waitFor(() => expect(mockSendInvoiceEmail).toHaveBeenCalledTimes(3));
-    expect(mockSendInvoiceEmail.mock.calls.map((c) => c[0])).toEqual([
-      'inv-1',
-      'inv-2',
-      'inv-3',
-    ]);
-    mockSendInvoiceEmail.mock.calls.forEach((call) => {
-      expect(call[1]).toEqual(['fleet@northern.ca']);
-    });
-    await waitFor(() => expect(onSent).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockSendInvoiceStatement).toHaveBeenCalledTimes(1)
+    );
+    const [customerId, invoiceIds, emails, saveToCustomer] =
+      mockSendInvoiceStatement.mock.calls[0];
+    expect(customerId).toBe('cust-1');
+    expect(invoiceIds).toEqual(['inv-1', 'inv-2', 'inv-3']);
+    expect(emails).toEqual(['fleet@northern.ca']);
+    expect(saveToCustomer).toBe(true);
   });
 
   it('totals the balance due, not the invoice totals', () => {
@@ -85,70 +96,56 @@ describe('BulkInvoiceEmailDialog', () => {
     expect(screen.getByText('$375.00')).toBeTruthy();
   });
 
-  it('skips invoices the user unticks', async () => {
+  it('leaves out invoices the user unticks', async () => {
     setup({});
 
     fireEvent.click(screen.getByText('#1002'));
     clickSend();
 
-    await waitFor(() => expect(mockSendInvoiceEmail).toHaveBeenCalledTimes(2));
-    expect(mockSendInvoiceEmail.mock.calls.map((c) => c[0])).toEqual([
+    await waitFor(() =>
+      expect(mockSendInvoiceStatement).toHaveBeenCalledTimes(1)
+    );
+    expect(mockSendInvoiceStatement.mock.calls[0][1]).toEqual([
       'inv-1',
       'inv-3',
     ]);
   });
 
-  // Saving the address list on every send would rewrite the same list N times.
-  it('asks to save new addresses only once', async () => {
+  it('confirms what was sent, and the total owing', async () => {
     setup({});
 
     clickSend();
 
-    await waitFor(() => expect(mockSendInvoiceEmail).toHaveBeenCalledTimes(3));
-    expect(mockSendInvoiceEmail.mock.calls.map((c) => c[2])).toEqual([
-      true,
-      false,
-      false,
-    ]);
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          /A statement for 3 invoices was emailed to fleet@northern.ca/
+        )
+      ).toBeTruthy()
+    );
+    expect(screen.getByText('Total owing')).toBeTruthy();
   });
 
-  it('names the invoice that failed and leaves the others sent', async () => {
-    mockSendInvoiceEmail
-      .mockResolvedValueOnce({ success: true })
-      .mockRejectedValueOnce({
-        response: { data: { message: 'Mailbox unavailable' } },
-      })
-      .mockResolvedValueOnce({ success: true });
+  it('reports a failure without claiming anything was sent', async () => {
+    mockSendInvoiceStatement.mockRejectedValue({
+      response: { data: { message: 'Mailbox unavailable' } },
+    });
 
     setup({});
     clickSend();
 
     await waitFor(() =>
-      expect(screen.getByText(/2 of 3 invoices were emailed/)).toBeTruthy()
+      expect(
+        screen.getByText(/The statement was not sent: Mailbox unavailable/)
+      ).toBeTruthy()
     );
-    expect(screen.getByText('Mailbox unavailable')).toBeTruthy();
-    expect(screen.getAllByText('Sent')).toHaveLength(2);
-  });
-
-  it('retries only the failed invoice', async () => {
-    mockSendInvoiceEmail
-      .mockResolvedValueOnce({ success: true })
-      .mockRejectedValueOnce(new Error('SMTP timeout'))
-      .mockResolvedValueOnce({ success: true });
-
-    setup({});
-    clickSend();
-
-    const retry = await screen.findByRole('button', { name: /Retry 1 failed/ });
-    mockSendInvoiceEmail.mockClear();
-    mockSendInvoiceEmail.mockResolvedValue({ success: true });
-
-    fireEvent.click(retry);
-
-    await waitFor(() => expect(mockSendInvoiceEmail).toHaveBeenCalledTimes(1));
-    expect(mockSendInvoiceEmail.mock.calls[0][0]).toBe('inv-2');
-    // The retry reports the whole run, not just what it re-sent.
-    await waitFor(() => expect(screen.getAllByText('Sent')).toHaveLength(3));
+    // Send stays available, because one email either went or it did not —
+    // pressing it again is a safe retry rather than a duplicate.
+    expect(
+      screen.getByRole('button', {
+        name: /^Send statement \(3 invoices\)$/,
+      })
+    ).toBeTruthy();
   });
 
   it('cannot send with no recipient selected', () => {
@@ -159,7 +156,7 @@ describe('BulkInvoiceEmailDialog', () => {
     ).toBeTruthy();
     expect(
       screen.getByRole<HTMLButtonElement>('button', {
-        name: /^Send \d+ invoices?$/,
+        name: /^Send statement \(3 invoices\)$/,
       }).disabled
     ).toBe(true);
   });
@@ -169,9 +166,9 @@ describe('BulkInvoiceEmailDialog', () => {
    *
    * CustomerDetailsDialog passes `invoices` and `availableEmails` as fresh
    * array literals and reloads the customer from `onSent`, so a reset effect
-   * keyed on either prop fires the moment a send completes — wiping the result
-   * summary and re-ticking every invoice. A bare jest.fn() for `onSent` cannot
-   * catch that, because nothing re-renders.
+   * keyed on either prop fires the moment a send completes — wiping the
+   * confirmation and re-arming Send. A bare jest.fn() for `onSent` cannot catch
+   * that, because nothing re-renders.
    */
   describe('when the parent re-renders after sending', () => {
     function ParentLikeCustomerDialog() {
@@ -191,46 +188,37 @@ describe('BulkInvoiceEmailDialog', () => {
       );
     }
 
-    it('keeps the result summary on screen', async () => {
-      mockSendInvoiceEmail
-        .mockResolvedValueOnce({ success: true })
-        .mockRejectedValueOnce({
-          response: { data: { message: 'Mailbox unavailable' } },
-        })
-        .mockResolvedValueOnce({ success: true });
-
+    it('keeps the confirmation on screen', async () => {
       render(<ParentLikeCustomerDialog />);
       clickSend();
 
       await waitFor(() =>
-        expect(screen.getByText(/2 of 3 invoices were emailed/)).toBeTruthy()
+        expect(
+          screen.getByText(/was emailed to fleet@northern.ca/)
+        ).toBeTruthy()
       );
 
       // Give the parent's re-render a chance to clobber it.
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      expect(screen.getByText(/2 of 3 invoices were emailed/)).toBeTruthy();
-      expect(screen.getByText('Mailbox unavailable')).toBeTruthy();
-      expect(
-        screen.getByRole('button', { name: /Retry 1 failed/ })
-      ).toBeTruthy();
+      expect(screen.getByText(/was emailed to fleet@northern.ca/)).toBeTruthy();
     });
 
-    it('does not re-arm Send with every invoice re-ticked', async () => {
+    it('does not re-arm Send, which would send the statement twice', async () => {
       render(<ParentLikeCustomerDialog />);
       clickSend();
 
       await waitFor(() =>
-        expect(screen.getByText(/emailed to fleet@northern.ca/)).toBeTruthy()
+        expect(
+          screen.getByText(/was emailed to fleet@northern.ca/)
+        ).toBeTruthy()
       );
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      // Re-pressing a re-armed Send is how the customer gets the same three
-      // invoices twice.
       expect(
-        screen.queryByRole('button', { name: /^Send \d+ invoices?$/ })
+        screen.queryByRole('button', { name: /^Send statement/ })
       ).toBeNull();
-      expect(mockSendInvoiceEmail).toHaveBeenCalledTimes(3);
+      expect(mockSendInvoiceStatement).toHaveBeenCalledTimes(1);
     });
   });
 });
