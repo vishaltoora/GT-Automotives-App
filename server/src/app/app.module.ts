@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -43,6 +44,10 @@ import { RoleGuard } from '../auth/guards/role.guard';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+    // Registered once at the root. The explorer scans every provider in the
+    // app for @Cron, so feature modules declare scheduled work without each
+    // having to call forRoot() and risk registering the same job twice.
+    ScheduleModule.forRoot(),
     CommonModule,
     AuthModule,
     UsersModule,

@@ -25,6 +25,18 @@ export function setClerkTokenGetter(getter: () => Promise<string | null>) {
   clerkTokenGetter = getter;
 }
 
+/** The shop-hours window, as the clock UI needs to see it. */
+export interface ShopHoursStatus {
+  enabled: boolean;
+  /** HH:mm in the business timezone. */
+  opensAt: string;
+  closesAt: string;
+  timezone: string;
+  isOpen: boolean;
+  /** Present only when the clock is shut — why, and what to do instead. */
+  closedReason?: string;
+}
+
 class TimeClockService {
   private baseUrl = `${API_BASE_URL}/api/time-clock`;
 
@@ -190,6 +202,14 @@ class TimeClockService {
         body: JSON.stringify({ reason }),
       }
     );
+  }
+
+  /**
+   * The shop-hours window and whether the clock is open right now, so the
+   * clock-in button can disable itself and say why.
+   */
+  getShopHours(): Promise<ShopHoursStatus> {
+    return this.makeRequest<ShopHoursStatus>(`${this.baseUrl}/shop-hours`);
   }
 
   getCompensation(employeeId: string): Promise<EmployeeCompensationDto | null> {

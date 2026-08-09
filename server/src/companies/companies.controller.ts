@@ -1,7 +1,10 @@
 import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UpdateCompanyTermsDto } from '@gt-automotive/data';
+import {
+  UpdateCompanyTermsDto,
+  UpdateCompanyTimeClockHoursDto,
+} from '@gt-automotive/data';
 
 @Controller('companies')
 export class CompaniesController {
@@ -28,5 +31,16 @@ export class CompaniesController {
       id,
       dto.termsAndConditions ?? null
     );
+  }
+
+  // Admin-only: these hours decide when staff can clock in and when a
+  // forgotten shift is closed automatically.
+  @Patch(':id/time-clock-hours')
+  @Roles('ADMIN')
+  updateTimeClockHours(
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyTimeClockHoursDto
+  ) {
+    return this.companiesService.updateTimeClockHours(id, dto);
   }
 }

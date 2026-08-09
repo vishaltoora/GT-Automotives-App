@@ -218,6 +218,8 @@ export interface TimeEntryDto {
   status: TimeEntryStatus;
   source: TimeEntrySource;
   notes?: string;
+  /** The closing-time job ended this shift because nobody clocked out. */
+  autoClockedOut: boolean;
   adjustedBy?: string;
   adjustmentReason?: string;
   approvedBy?: string;

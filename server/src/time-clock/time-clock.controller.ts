@@ -36,13 +36,28 @@ export class TimeClockController {
     return this.timeClockService.clockIn(user.id, dto);
   }
 
+  /**
+   * Clock someone in on their behalf. Deliberately exempt from the shop-hours
+   * window: this is how a shift that genuinely ran outside it gets recorded.
+   */
   @Post('employees/:employeeId/clock-in')
   @Roles('ADMIN', 'FOREMAN')
   adminClockIn(
     @Param('employeeId') employeeId: string,
     @Body() dto: ClockInDto
   ) {
-    return this.timeClockService.clockIn(employeeId, dto);
+    return this.timeClockService.clockIn(employeeId, dto, false);
+  }
+
+  /**
+   * The shop-hours window and whether the clock is open right now, so the
+   * clock-in button can disable itself and say why rather than letting someone
+   * press it and take an error.
+   */
+  @Get('shop-hours')
+  @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF', 'ACCOUNTANT')
+  getShopHours() {
+    return this.timeClockService.getShopHoursStatus();
   }
 
   @Post('employees/:employeeId/clock-out')

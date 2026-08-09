@@ -189,6 +189,50 @@ export function businessDayUtcRange(dateStr: string): {
 }
 
 /**
+ * The wall-clock time an instant falls on in the business timezone, as HH:mm.
+ *
+ * Use this instead of `new Date().getHours()` for anything the shop's day
+ * governs. Production runs UTC, so the server's own clock reads 8 PM Pacific as
+ * 4 AM the next morning.
+ */
+export function businessTimeOfDay(instant: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIMEZONE,
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(instant);
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  // Midnight comes back as hour 24 in some environments.
+  const hour = get('hour') % 24;
+  return `${String(hour).padStart(2, '0')}:${String(get('minute')).padStart(
+    2,
+    '0'
+  )}`;
+}
+
+/**
+ * The UTC instant of a wall-clock time on a business calendar day — e.g. 8 PM
+ * on 2026-08-07 in Vancouver.
+ *
+ * DST-correct: the day's offset is sampled at noon UTC, which is after the 2 AM
+ * local changeover, so both the spring-forward and fall-back days resolve to the
+ * offset actually in force during shop hours.
+ *
+ * @param dateStr business date in YYYY-MM-DD format
+ * @param timeOfDay wall-clock time as HH:mm
+ */
+export function businessDayInstantAt(dateStr: string, timeOfDay: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeOfDay.split(':').map(Number);
+  const offsetMinutes = businessTimezoneOffsetMinutes(year, month, day);
+  return new Date(
+    Date.UTC(year, month - 1, day, hour, minute, 0, 0) - offsetMinutes * 60000
+  );
+}
+
+/**
  * Format PostgreSQL AT TIME ZONE clause for date comparison
  * Use this in raw SQL queries to ensure dates are compared in business timezone
  *

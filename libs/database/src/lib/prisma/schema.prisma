@@ -219,22 +219,33 @@ model ServiceCatalogItem {
 }
 
 model Company {
-  id                 String    @id @default(cuid())
-  name               String
-  registrationNumber String    @unique
-  businessType       String?
-  address            String?
-  phone              String?
-  email              String?
-  isDefault          Boolean   @default(false)
+  id                     String    @id @default(cuid())
+  name                   String
+  registrationNumber     String    @unique
+  businessType           String?
+  address                String?
+  phone                  String?
+  email                  String?
+  isDefault              Boolean   @default(false)
   // Free-text terms & conditions printed at the bottom of this company's
   // invoices, above the signature block. Business-authored (it is a liability
   // statement), editable from admin settings so the wording can change without
   // a deploy. Null/blank means no T&C block is rendered.
-  termsAndConditions String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  invoices           Invoice[]
+  termsAndConditions     String?
+  // Shop hours the employee time clock is open for, as HH:mm in the business
+  // timezone (see BUSINESS_TIMEZONE). Employees cannot clock in outside the
+  // window, and anything still running at closing time is clocked out
+  // automatically so a forgotten clock-out cannot accrue overnight. Admins are
+  // never restricted — genuine overtime is recorded by editing the entry.
+  //
+  // Held here rather than in code because the shop's hours change seasonally,
+  // and that should not need a deploy.
+  timeClockOpensAt       String    @default("08:00")
+  timeClockClosesAt      String    @default("20:00")
+  timeClockWindowEnabled Boolean   @default(true)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  invoices               Invoice[]
 }
 
 model Invoice {
@@ -809,6 +820,10 @@ model TimeEntry {
   status             TimeEntryStatus @default(OPEN)
   source             TimeEntrySource @default(EMPLOYEE)
   notes              String?
+  // Set when the closing-time job ended this shift because nobody clocked out.
+  // A flag rather than string-matching the reason text: the UI badges these for
+  // review, and an auto-closed time is a guess about when someone left.
+  autoClockedOut     Boolean         @default(false)
   adjustedBy         String?
   adjustmentReason   String?
   approvedBy         String?
