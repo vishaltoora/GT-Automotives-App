@@ -56,6 +56,11 @@ describe('InvoicesService — statement email', () => {
       invoiceNumber: '9999',
       customerId: 'cust-2',
     }),
+    'inv-draft': invoice({
+      id: 'inv-draft',
+      invoiceNumber: '1004',
+      status: 'DRAFT',
+    }),
   };
 
   beforeEach(() => {
@@ -151,6 +156,15 @@ describe('InvoicesService — statement email', () => {
   // disclose their business to the wrong person.
   it('refuses an invoice belonging to another customer', async () => {
     await expect(send(['inv-1', 'inv-other'])).rejects.toBeInstanceOf(
+      BadRequestException
+    );
+    expect(sendInvoiceStatementEmail).not.toHaveBeenCalled();
+  });
+
+  // A statement asks for money. A draft is not a finalised invoice, so it would
+  // be asking against figures the shop has not committed to.
+  it('refuses a draft invoice', async () => {
+    await expect(send(['inv-1', 'inv-draft'])).rejects.toBeInstanceOf(
       BadRequestException
     );
     expect(sendInvoiceStatementEmail).not.toHaveBeenCalled();

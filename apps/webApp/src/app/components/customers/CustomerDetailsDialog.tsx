@@ -453,11 +453,19 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
     ) || [];
 
   // Invoices that can still take a payment (includes partially-paid) — the
-  // pool the bulk "Process Payment" flow selects from.
+  // pool the bulk "Process Payment" flow selects from. Drafts are included:
+  // someone paying in the bay may well be settling one before it is finalised.
   const payableInvoices =
     customer?.invoices?.filter((inv) =>
       ['PENDING', 'DRAFT', 'PARTIALLY_PAID'].includes(inv.status)
     ) || [];
+
+  // What a statement may ask a customer for. Drafts are deliberately excluded:
+  // a draft is not a finalised invoice, and emailing one as money owed asks for
+  // payment against figures the shop has not committed to yet.
+  const emailableInvoices = payableInvoices.filter(
+    (inv) => inv.status !== 'DRAFT'
+  );
 
   const paidInvoices =
     customer?.invoices?.filter((inv) => inv.status === 'PAID') || [];
@@ -1064,7 +1072,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                           <Box sx={{ display: 'flex', gap: 1 }}>
                             {/* One click beats opening every invoice in turn
                                 to chase a customer with several outstanding. */}
-                            {payableInvoices.length > 1 && (
+                            {emailableInvoices.length > 1 && (
                               <Button
                                 size="small"
                                 variant="outlined"
@@ -1072,7 +1080,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                 startIcon={<EmailIcon />}
                                 onClick={() => setBulkEmailOpen(true)}
                               >
-                                Email {payableInvoices.length} Invoices
+                                Email {emailableInvoices.length} Invoices
                               </Button>
                             )}
                             {payableInvoices.length > 0 && (
@@ -1494,7 +1502,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                           <Box sx={{ display: 'flex', gap: 1 }}>
                             {/* One click beats opening every invoice in turn
                                 to chase a customer with several outstanding. */}
-                            {payableInvoices.length > 1 && (
+                            {emailableInvoices.length > 1 && (
                               <Button
                                 size="small"
                                 variant="outlined"
@@ -1502,7 +1510,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
                                 startIcon={<EmailIcon />}
                                 onClick={() => setBulkEmailOpen(true)}
                               >
-                                Email {payableInvoices.length} Invoices
+                                Email {emailableInvoices.length} Invoices
                               </Button>
                             )}
                             {payableInvoices.length > 0 && (
@@ -1843,7 +1851,7 @@ export const CustomerDetailsDialog: React.FC<CustomerDetailsDialogProps> = ({
           `${customer?.firstName ?? ''} ${customer?.lastName ?? ''}`.trim()
         }
         customerId={customer?.id}
-        invoices={payableInvoices}
+        invoices={emailableInvoices}
         availableEmails={[
           ...(customer?.email ? [customer.email] : []),
           ...(customer?.additionalEmails ?? []),

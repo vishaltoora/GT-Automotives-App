@@ -1236,6 +1236,15 @@ export class InvoicesService {
           `Invoice ${invoice.invoiceNumber} does not belong to this customer`
         );
       }
+      // A statement asks the customer for money. A draft is not a finalised
+      // invoice, so asking for it would be asking against figures the shop has
+      // not committed to. Enforced here and not only in the UI, because the
+      // endpoint takes invoice ids straight from the caller.
+      if (invoice.status === 'DRAFT') {
+        throw new BadRequestException(
+          `Invoice ${invoice.invoiceNumber} is still a draft and cannot be sent on a statement`
+        );
+      }
       invoices.push(invoice);
     }
 
