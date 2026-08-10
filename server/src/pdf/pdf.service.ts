@@ -22,6 +22,71 @@ export class PdfService {
   private readonly logger = new Logger(PdfService.name);
 
   /**
+   * Render several documents in one Chromium.
+   *
+   * `generatePdfFromHtml` launches and tears down a browser per call, which is
+   * fine for one document and ruinous for a batch: a statement covering five
+   * invoices paid five Chromium cold starts, and on a 1.75GB app service that
+   * ran past the reverse proxy's 30s ceiling and came back to the browser as a
+   * 502. One launch, one page reused across the documents, one teardown.
+   *
+   * Sequential on purpose. Rendering concurrently would mean several pages
+   * fetching remote images at once on a container sized for one, trading a
+   * timeout for an out-of-memory kill.
+   */
+  async generatePdfsFromHtml(
+    htmls: string[],
+    options?: {
+      format?: 'A4' | 'Letter';
+      printBackground?: boolean;
+    }
+  ): Promise<Buffer[]> {
+    if (htmls.length === 0) return [];
+
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+
+    this.logger.log(
+      `[PDF] Rendering ${htmls.length} document(s) in a single browser`
+    );
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+    });
+
+    try {
+      const page = await browser.newPage();
+      const buffers: Buffer[] = [];
+
+      for (const [index, html] of htmls.entries()) {
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        const pdfBuffer = await page.pdf({
+          format: options?.format || 'Letter',
+          printBackground: options?.printBackground !== false,
+          margin: {
+            top: '10mm',
+            right: '10mm',
+            bottom: '10mm',
+            left: '10mm',
+          },
+        });
+        buffers.push(Buffer.from(pdfBuffer));
+        this.logger.log(`[PDF] Rendered ${index + 1}/${htmls.length}`);
+      }
+
+      return buffers;
+    } finally {
+      await browser.close();
+    }
+  }
+
+  /**
    * Generate PDF from HTML content
    */
   async generatePdfFromHtml(
@@ -442,6 +507,17 @@ ${
     const html = this.generateInvoiceHtml(invoice);
     const pdfBuffer = await this.generatePdfFromHtml(html);
     return pdfBuffer.toString('base64');
+  }
+
+  /**
+   * Render several invoices as PDFs, sharing one browser. Same output as
+   * calling generateInvoicePdf per invoice, without paying a Chromium launch
+   * for each one.
+   */
+  async generateInvoicePdfs(invoices: any[]): Promise<string[]> {
+    const htmls = invoices.map((invoice) => this.generateInvoiceHtml(invoice));
+    const buffers = await this.generatePdfsFromHtml(htmls);
+    return buffers.map((buffer) => buffer.toString('base64'));
   }
 
   /**

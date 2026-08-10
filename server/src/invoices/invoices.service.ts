@@ -63,6 +63,16 @@ function decodePngDataUrl(dataUrl: string): Buffer {
   return buffer;
 }
 
+/**
+ * Ceiling on invoices in one statement email.
+ *
+ * Each one is a PDF render and an attachment on a synchronous request. Twelve
+ * renders in a shared browser sit comfortably inside the reverse proxy's 30s
+ * window on the production app service; well beyond that they would not, and a
+ * timeout surfaces to the user as an unexplained 502.
+ */
+const MAX_STATEMENT_INVOICES = 12;
+
 @Injectable()
 export class InvoicesService {
   constructor(
@@ -1217,6 +1227,17 @@ export class InvoicesService {
       throw new BadRequestException('No invoices selected');
     }
 
+    // Every invoice on a statement is a PDF render and an email attachment, and
+    // the request is synchronous. Past a point it will exceed the reverse
+    // proxy's timeout and come back as a bare 502 with nothing to act on, so
+    // refuse it here with something the user can actually read.
+    if (invoiceIds.length > MAX_STATEMENT_INVOICES) {
+      throw new BadRequestException(
+        `A statement can cover at most ${MAX_STATEMENT_INVOICES} invoices at once — ` +
+          `${invoiceIds.length} were selected. Send them in smaller batches.`
+      );
+    }
+
     const customer = await this.customerRepository.findById(customerId);
     if (!customer) {
       throw new NotFoundException(`Customer with ID "${customerId}" not found`);
@@ -1269,18 +1290,25 @@ export class InvoicesService {
     }
 
     try {
+      // Puppeteer fetches the signature over the network, so it needs a SAS
+      // URL — the raw blob URL is private and renders as a broken image.
+      const renderable = [];
+      for (const invoice of invoices) {
+        renderable.push(await this.withSignatureUrl(invoice));
+      }
+
+      // One browser for the whole statement. Rendering these one at a time
+      // through generateInvoicePdf paid a Chromium cold start per invoice,
+      // which is what pushed a five-invoice statement past the proxy timeout.
+      const pdfs = await this.pdfService.generateInvoicePdfs(renderable);
+
       const rows = [];
       const attachments = [];
 
-      for (const invoice of invoices) {
-        // Puppeteer fetches the signature over the network, so it needs a SAS
-        // URL — the raw blob URL is private and renders as a broken image.
-        const pdfBase64 = await this.pdfService.generateInvoicePdf(
-          await this.withSignatureUrl(invoice)
-        );
+      for (const [index, invoice] of invoices.entries()) {
         attachments.push({
           name: `Invoice-${invoice.invoiceNumber}.pdf`,
-          content: pdfBase64,
+          content: pdfs[index],
         });
 
         const total = Number(invoice.total) || 0;

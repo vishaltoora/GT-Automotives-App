@@ -15,7 +15,7 @@ describe('InvoicesService — statement email', () => {
   let findWithDetails: jest.Mock;
   let findCustomerById: jest.Mock;
   let updateCustomer: jest.Mock;
-  let generateInvoicePdf: jest.Mock;
+  let generateInvoicePdfs: jest.Mock;
   let sendInvoiceStatementEmail: jest.Mock;
   let auditCreate: jest.Mock;
 
@@ -67,7 +67,13 @@ describe('InvoicesService — statement email', () => {
     findWithDetails = jest.fn(async (id: string) => invoicesById[id] ?? null);
     findCustomerById = jest.fn().mockResolvedValue(customer);
     updateCustomer = jest.fn().mockResolvedValue(customer);
-    generateInvoicePdf = jest.fn().mockResolvedValue('cGRm');
+    // One call rendering every invoice in a shared browser, rather than one
+    // Chromium launch per invoice — which is what timed out in production.
+    generateInvoicePdfs = jest
+      .fn()
+      .mockImplementation(async (invoices: any[]) =>
+        invoices.map(() => 'cGRm')
+      );
     sendInvoiceStatementEmail = jest
       .fn()
       .mockResolvedValue({ success: true, messageId: 'msg-1' });
@@ -78,7 +84,7 @@ describe('InvoicesService — statement email', () => {
       { create: auditCreate } as any,
       { findById: findCustomerById, update: updateCustomer } as any,
       {} as any,
-      { generateInvoicePdf } as any,
+      { generateInvoicePdfs } as any,
       { sendInvoiceStatementEmail } as any,
       {} as any,
       {} as any
@@ -142,7 +148,23 @@ describe('InvoicesService — statement email', () => {
       'Invoice-1002.pdf',
       'Invoice-1003.pdf',
     ]);
-    expect(generateInvoicePdf).toHaveBeenCalledTimes(3);
+  });
+
+  // Three invoices used to mean three Chromium cold starts, which pushed the
+  // request past the reverse proxy's 30s ceiling and surfaced as a 502.
+  it('renders every PDF in one batch, not one browser per invoice', async () => {
+    await send();
+
+    expect(generateInvoicePdfs).toHaveBeenCalledTimes(1);
+    expect(generateInvoicePdfs.mock.calls[0][0]).toHaveLength(3);
+  });
+
+  it('refuses a statement too large to render inside the request', async () => {
+    // Better a message the user can act on than an unexplained gateway error.
+    const tooMany = Array.from({ length: 13 }, (_, i) => `inv-${i}`);
+
+    await expect(send(tooMany)).rejects.toBeInstanceOf(BadRequestException);
+    expect(generateInvoicePdfs).not.toHaveBeenCalled();
   });
 
   it('addresses the statement to the business name when there is one', async () => {
