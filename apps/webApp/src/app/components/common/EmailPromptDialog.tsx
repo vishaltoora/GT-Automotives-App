@@ -16,6 +16,7 @@ import {
   Divider,
   useTheme,
 } from '@mui/material';
+import { containsEmail, dedupeEmails } from '@gt-automotive/data';
 import {
   Close as CloseIcon,
   Email as EmailIcon,
@@ -66,8 +67,10 @@ export const EmailPromptDialog: React.FC<EmailPromptDialogProps> = ({
   const [email, setEmail] = useState('');
 
   // Multi-email mode state
+  // Case-insensitive: a profile holding both jason@ and Jason@ is one inbox,
+  // and showing it twice invites sending the same document to it twice.
   const knownEmails = useMemo(
-    () => Array.from(new Set((availableEmails ?? []).filter((e) => !!e))),
+    () => dedupeEmails(availableEmails ?? []),
     [availableEmails]
   );
   const [selected, setSelected] = useState<string[]>([]);
@@ -105,7 +108,7 @@ export const EmailPromptDialog: React.FC<EmailPromptDialogProps> = ({
       setError('Please enter a valid email address');
       return;
     }
-    if ([...knownEmails, ...extraEmails].includes(trimmed)) {
+    if (containsEmail([...knownEmails, ...extraEmails], trimmed)) {
       setError('That email is already in the list');
       return;
     }
