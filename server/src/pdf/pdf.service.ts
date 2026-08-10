@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import puppeteer from 'puppeteer';
+import puppeteer, { Page } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -16,6 +16,14 @@ import {
  * full DTO so the template documents exactly what it depends on.
  */
 type PayStubDocument = PayStubDto;
+
+/**
+ * How long to let a document's assets settle before rendering regardless.
+ *
+ * Long enough for a signature to come back from blob storage on a slow day,
+ * short enough that a hung fetch cannot outlast the request it belongs to.
+ */
+const CONTENT_LOAD_TIMEOUT_MS = 15000;
 
 @Injectable()
 export class PdfService {
@@ -61,28 +69,67 @@ export class PdfService {
     });
 
     try {
-      const page = await browser.newPage();
       const buffers: Buffer[] = [];
 
       for (const [index, html] of htmls.entries()) {
-        await page.setContent(html, { waitUntil: 'networkidle0' });
-        const pdfBuffer = await page.pdf({
-          format: options?.format || 'Letter',
-          printBackground: options?.printBackground !== false,
-          margin: {
-            top: '10mm',
-            right: '10mm',
-            bottom: '10mm',
-            left: '10mm',
-          },
-        });
-        buffers.push(Buffer.from(pdfBuffer));
-        this.logger.log(`[PDF] Rendered ${index + 1}/${htmls.length}`);
+        // A page each, rather than one reused across the batch. Sharing a page
+        // let whatever the previous document left behind — a pending request,
+        // a stuck load — decide how the next one behaved.
+        const page = await browser.newPage();
+        try {
+          await this.loadContent(page, html);
+          const pdfBuffer = await page.pdf({
+            format: options?.format || 'Letter',
+            printBackground: options?.printBackground !== false,
+            margin: {
+              top: '10mm',
+              right: '10mm',
+              bottom: '10mm',
+              left: '10mm',
+            },
+          });
+          buffers.push(Buffer.from(pdfBuffer));
+          this.logger.log(`[PDF] Rendered ${index + 1}/${htmls.length}`);
+        } finally {
+          await page.close();
+        }
       }
 
       return buffers;
     } finally {
       await browser.close();
+    }
+  }
+
+  /**
+   * Put HTML on a page, without letting a slow asset hang the render forever.
+   *
+   * Invoices reference their signature image over an Azure SAS URL, so
+   * `networkidle0` is waiting on the network — and with no timeout it waits
+   * indefinitely. A single hanging fetch wedged an entire statement: production
+   * logged "Rendered 1/7" and then nothing, the request never returned, and no
+   * email was ever sent.
+   *
+   * So the wait is bounded, and expiring it is not fatal. The markup and its
+   * inline styles are already in place by then; what may be missing is a remote
+   * image. An invoice that prints without its signature is worth far more than
+   * a statement that never arrives.
+   */
+  private async loadContent(page: Page, html: string): Promise<void> {
+    try {
+      await page.setContent(html, {
+        waitUntil: 'networkidle0',
+        timeout: CONTENT_LOAD_TIMEOUT_MS,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `[PDF] Content did not settle within ${CONTENT_LOAD_TIMEOUT_MS}ms — ` +
+          `rendering anyway, remote images may be missing: ${
+            error instanceof Error ? error.message : error
+          }`
+      );
+      // setContent having timed out does not mean the DOM is absent; it means
+      // the network never went quiet. Render what is there.
     }
   }
 
@@ -118,7 +165,7 @@ export class PdfService {
 
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await this.loadContent(page, html);
 
       const pdfBuffer = await page.pdf({
         format: options?.format || 'Letter',
