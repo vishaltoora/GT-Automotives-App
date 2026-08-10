@@ -78,6 +78,20 @@ describe('PdfService batch rendering', () => {
   });
 
   /**
+   * Invoice documents inline everything they need, so there is no network to
+   * go quiet. networkidle0 waits for an idle window regardless — measured at
+   * 2,112ms against 124ms for 'load' on an identical document, which across a
+   * statement is the difference between a minute and a second.
+   */
+  it('waits for load rather than an idle network window', async () => {
+    await service.generatePdfsFromHtml(['<p>a</p>']);
+
+    const [, options] = pages[0].setContent.mock.calls[0];
+    expect(options.waitUntil).toBe('load');
+    expect(options.waitUntil).not.toBe('networkidle0');
+  });
+
+  /**
    * The production failure, in one test: a document whose assets never settle
    * must not stop the ones after it.
    */
