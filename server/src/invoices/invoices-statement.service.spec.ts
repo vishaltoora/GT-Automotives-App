@@ -161,7 +161,7 @@ describe('InvoicesService — statement email', () => {
 
   it('refuses a statement too large to render inside the request', async () => {
     // Better a message the user can act on than an unexplained gateway error.
-    const tooMany = Array.from({ length: 13 }, (_, i) => `inv-${i}`);
+    const tooMany = Array.from({ length: 31 }, (_, i) => `inv-${i}`);
 
     await expect(send(tooMany)).rejects.toBeInstanceOf(BadRequestException);
     expect(generateInvoicePdfs).not.toHaveBeenCalled();
@@ -226,6 +226,52 @@ describe('InvoicesService — statement email', () => {
     expect(updateCustomer).toHaveBeenCalledWith('cust-1', {
       email: 'fleet@northern.ca',
       additionalEmails: ['accounts@northern.ca'],
+    });
+  });
+
+  /**
+   * A profile was found in production holding jason@ and Jason@ as separate
+   * addresses — one inbox listed twice on every email dialog, growing by one
+   * each time somebody capitalised differently.
+   */
+  describe('saving addresses to the customer', () => {
+    it('does not re-add an address already on file in another case', async () => {
+      await send(['inv-1'], {
+        emails: ['FLEET@Northern.CA'],
+        saveToCustomer: true,
+      });
+
+      expect(updateCustomer).not.toHaveBeenCalled();
+    });
+
+    it('keeps the spelling already stored rather than rewriting it', async () => {
+      await send(['inv-1'], {
+        emails: ['FLEET@Northern.CA', 'accounts@northern.ca'],
+        saveToCustomer: true,
+      });
+
+      expect(updateCustomer).toHaveBeenCalledWith('cust-1', {
+        email: 'fleet@northern.ca',
+        additionalEmails: ['accounts@northern.ca'],
+      });
+    });
+
+    // Profiles that already carry duplicates tidy themselves up next save.
+    it('collapses duplicates already on the record', async () => {
+      findCustomerById.mockResolvedValue({
+        ...customer,
+        additionalEmails: ['Fleet@northern.ca', 'accounts@northern.ca'],
+      });
+
+      await send(['inv-1'], {
+        emails: ['parts@northern.ca'],
+        saveToCustomer: true,
+      });
+
+      expect(updateCustomer).toHaveBeenCalledWith('cust-1', {
+        email: 'fleet@northern.ca',
+        additionalEmails: ['accounts@northern.ca', 'parts@northern.ca'],
+      });
     });
   });
 

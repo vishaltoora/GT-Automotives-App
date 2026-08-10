@@ -5,3 +5,4 @@ export * from './mapped-types';
 export * from './invoice-print-sections';
 export * from './invoice-balance';
 export * from './vacation-pay';
+export * from './email-address';

@@ -6,6 +6,37 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { extractBusinessDate } from '../config/timezone.config';
 
+/**
+ * Build a Brevo payload the SDK can actually serialise.
+ *
+ * `SendSmtpEmail` is a class, and the SDK serialises by walking the
+ * `attributeTypeMap` on its prototype. An object literal merely *typed* as
+ * `SendSmtpEmail` satisfies TypeScript but has no prototype, so the payload
+ * that reaches Brevo is not the one the code appears to send — the request is
+ * accepted, the response carries no message id, and nothing is delivered.
+ *
+ * That is exactly how invoice, quotation, estimate and statement emails came to
+ * report success while never arriving, while the EOD summary — the one path
+ * that instantiated the class — worked throughout.
+ */
+function buildSmtpEmail(fields: Partial<SendSmtpEmail>): SendSmtpEmail {
+  return Object.assign(new SendSmtpEmail(), fields);
+}
+
+/**
+ * Pull Brevo's message id out of an SDK response.
+ *
+ * The SDK returns the payload under `body`, so reading only the top level made
+ * every send log "unknown" — and a missing email with no message id cannot be
+ * traced in Brevo's dashboard at all, which is precisely when you need it.
+ */
+function extractMessageId(response: unknown): string {
+  const payload = response as
+    | { messageId?: string; body?: { messageId?: string } }
+    | undefined;
+  return payload?.body?.messageId || payload?.messageId || 'unknown';
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -1000,7 +1031,7 @@ export class EmailService {
         </html>
       `;
 
-      const sendSmtpEmail: SendSmtpEmail = {
+      const sendSmtpEmail = buildSmtpEmail({
         sender: {
           email: this.senderEmail,
           name: this.senderName,
@@ -1013,7 +1044,7 @@ export class EmailService {
         ],
         subject: `Your Schedule for ${formattedDate}`,
         htmlContent,
-      };
+      });
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       const messageId = response.body?.messageId || 'unknown';
@@ -1363,7 +1394,7 @@ export class EmailService {
         </html>
       `;
 
-      const sendSmtpEmail: SendSmtpEmail = {
+      const sendSmtpEmail = buildSmtpEmail({
         sender: {
           email: this.senderEmail,
           name: this.senderName,
@@ -1378,7 +1409,7 @@ export class EmailService {
           isMobile ? 'Mobile Service' : 'Shop'
         } Appointment - ${data.customerName} (${formattedDate})`,
         htmlContent,
-      };
+      });
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       const messageId = response.body?.messageId || 'unknown';
@@ -1511,7 +1542,7 @@ export class EmailService {
         </html>
       `;
 
-      const sendSmtpEmail: SendSmtpEmail = {
+      const sendSmtpEmail = buildSmtpEmail({
         sender: { name: this.senderName, email: this.senderEmail },
         to: recipients.map((email) => ({ email })),
         subject: `Invoice ${invoiceNumber} - GT Automotives`,
@@ -1522,10 +1553,10 @@ export class EmailService {
             content: pdfBase64,
           },
         ],
-      };
+      });
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Invoice email sent successfully. Message ID: ${messageId}`
@@ -1758,16 +1789,16 @@ export class EmailService {
         </html>
       `;
 
-      const sendSmtpEmail: SendSmtpEmail = {
+      const sendSmtpEmail = buildSmtpEmail({
         sender: { name: this.senderName, email: this.senderEmail },
         to: to.map((email) => ({ email })),
         subject,
         htmlContent,
         attachment: statement.attachments,
-      };
+      });
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Invoice statement sent successfully. Message ID: ${messageId}`
@@ -1906,16 +1937,16 @@ export class EmailService {
         });
       }
 
-      const sendSmtpEmail: SendSmtpEmail = {
+      const sendSmtpEmail = buildSmtpEmail({
         sender: { name: this.senderName, email: this.senderEmail },
         to: cleanRecipients.map((email) => ({ email })),
         subject,
         htmlContent,
         attachment,
-      };
+      });
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
       this.logger.log(
         `[EMAIL] Estimate email sent successfully. Message ID: ${messageId}`
       );
@@ -2028,7 +2059,7 @@ export class EmailService {
         </html>
       `;
 
-      const sendSmtpEmail: SendSmtpEmail = {
+      const sendSmtpEmail = buildSmtpEmail({
         sender: { name: this.senderName, email: this.senderEmail },
         to: [{ email: customerEmail }],
         subject: `Quotation ${quotationNumber} - GT Automotives`,
@@ -2039,10 +2070,10 @@ export class EmailService {
             content: pdfBase64,
           },
         ],
-      };
+      });
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Quotation email sent successfully. Message ID: ${messageId}`
@@ -2177,7 +2208,7 @@ export class EmailService {
 
       const subject = `Vehicle Inspection Report ${inspectionRef} - GT Automotives`;
 
-      const sendSmtpEmail: SendSmtpEmail = {
+      const sendSmtpEmail = buildSmtpEmail({
         sender: { name: this.senderName, email: this.senderEmail },
         to: cleanRecipients.map((email) => ({ email })),
         subject,
@@ -2188,10 +2219,10 @@ export class EmailService {
             content: pdfBase64,
           },
         ],
-      };
+      });
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Inspection report email sent successfully. Message ID: ${messageId}`

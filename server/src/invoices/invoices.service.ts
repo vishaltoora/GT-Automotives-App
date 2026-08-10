@@ -8,8 +8,10 @@ import {
 import { InvoiceRepository } from './repositories/invoice.repository';
 import {
   CaptureInvoiceSignatureDto,
+  containsEmail,
   CreateInvoiceDto,
   CreateServiceDto,
+  dedupeEmails,
   UpdateInvoiceDto,
   UpdateServiceDto,
   StringUtils,
@@ -66,12 +68,12 @@ function decodePngDataUrl(dataUrl: string): Buffer {
 /**
  * Ceiling on invoices in one statement email.
  *
- * Each one is a PDF render and an attachment on a synchronous request. Twelve
- * renders in a shared browser sit comfortably inside the reverse proxy's 30s
- * window on the production app service; well beyond that they would not, and a
- * timeout surfaces to the user as an unexplained 502.
+ * Each one is a PDF render and an attachment on a synchronous request, so the
+ * binding constraints are the proxy's window (now 180s) and the email
+ * provider's total attachment size. Thirty fits both with room to spare —
+ * production has rendered fifteen inside the old 30s window.
  */
-const MAX_STATEMENT_INVOICES = 12;
+const MAX_STATEMENT_INVOICES = 30;
 
 @Injectable()
 export class InvoicesService {
@@ -1180,7 +1182,10 @@ export class InvoicesService {
     const additional = [...(customer.additionalEmails ?? [])];
 
     for (const email of recipients) {
-      if (knownEmails.includes(email)) continue;
+      // Case-insensitively, because jason@ and Jason@ are one inbox. Comparing
+      // exactly is what let a profile accumulate the same address several times
+      // over, once for every way someone capitalised it.
+      if (containsEmail(knownEmails, email)) continue;
       if (!primary) {
         primary = email;
       } else {
@@ -1189,14 +1194,20 @@ export class InvoicesService {
       knownEmails.push(email);
     }
 
-    const dedupedAdditional = Array.from(new Set(additional)).filter(
-      (e) => e !== primary
-    );
+    // Passing the primary first means it wins if the additional list holds a
+    // differently-cased copy of it. This also collapses duplicates already on
+    // the record, so a profile cleans itself up the next time it is saved.
+    const [, ...dedupedAdditional] = dedupeEmails([primary, ...additional]);
 
-    if (
+    const existingAdditional = customer.additionalEmails ?? [];
+    const changed =
       primary !== (customer.email ?? undefined) ||
-      dedupedAdditional.length !== (customer.additionalEmails ?? []).length
-    ) {
+      dedupedAdditional.length !== existingAdditional.length ||
+      dedupedAdditional.some(
+        (email, index) => email !== existingAdditional[index]
+      );
+
+    if (changed) {
       await this.customerRepository.update(customer.id, {
         email: primary,
         additionalEmails: dedupedAdditional,
