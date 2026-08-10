@@ -6,6 +6,20 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { extractBusinessDate } from '../config/timezone.config';
 
+/**
+ * Pull Brevo's message id out of an SDK response.
+ *
+ * The SDK returns the payload under `body`, so reading only the top level made
+ * every send log "unknown" — and a missing email with no message id cannot be
+ * traced in Brevo's dashboard at all, which is precisely when you need it.
+ */
+function extractMessageId(response: unknown): string {
+  const payload = response as
+    | { messageId?: string; body?: { messageId?: string } }
+    | undefined;
+  return payload?.body?.messageId || payload?.messageId || 'unknown';
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -1525,7 +1539,7 @@ export class EmailService {
       };
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Invoice email sent successfully. Message ID: ${messageId}`
@@ -1767,7 +1781,7 @@ export class EmailService {
       };
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Invoice statement sent successfully. Message ID: ${messageId}`
@@ -1915,7 +1929,7 @@ export class EmailService {
       };
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
       this.logger.log(
         `[EMAIL] Estimate email sent successfully. Message ID: ${messageId}`
       );
@@ -2042,7 +2056,7 @@ export class EmailService {
       };
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Quotation email sent successfully. Message ID: ${messageId}`
@@ -2191,7 +2205,7 @@ export class EmailService {
       };
 
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      const messageId = (response as any)?.messageId || 'unknown';
+      const messageId = extractMessageId(response);
 
       this.logger.log(
         `[EMAIL] Inspection report email sent successfully. Message ID: ${messageId}`

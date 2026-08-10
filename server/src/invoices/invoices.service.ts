@@ -68,12 +68,12 @@ function decodePngDataUrl(dataUrl: string): Buffer {
 /**
  * Ceiling on invoices in one statement email.
  *
- * Each one is a PDF render and an attachment on a synchronous request. Twelve
- * renders in a shared browser sit comfortably inside the reverse proxy's 30s
- * window on the production app service; well beyond that they would not, and a
- * timeout surfaces to the user as an unexplained 502.
+ * Each one is a PDF render and an attachment on a synchronous request, so the
+ * binding constraints are the proxy's window (now 180s) and the email
+ * provider's total attachment size. Thirty fits both with room to spare —
+ * production has rendered fifteen inside the old 30s window.
  */
-const MAX_STATEMENT_INVOICES = 12;
+const MAX_STATEMENT_INVOICES = 30;
 
 @Injectable()
 export class InvoicesService {

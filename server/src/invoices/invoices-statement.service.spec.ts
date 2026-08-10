@@ -161,7 +161,7 @@ describe('InvoicesService — statement email', () => {
 
   it('refuses a statement too large to render inside the request', async () => {
     // Better a message the user can act on than an unexplained gateway error.
-    const tooMany = Array.from({ length: 13 }, (_, i) => `inv-${i}`);
+    const tooMany = Array.from({ length: 31 }, (_, i) => `inv-${i}`);
 
     await expect(send(tooMany)).rejects.toBeInstanceOf(BadRequestException);
     expect(generateInvoicePdfs).not.toHaveBeenCalled();
