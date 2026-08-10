@@ -27,7 +27,11 @@ import {
   Delete as DeleteIcon,
   Email as EmailIcon,
 } from '@mui/icons-material';
-import { getInvoiceBalanceDue } from '@gt-automotive/data';
+import {
+  containsEmail,
+  dedupeEmails,
+  getInvoiceBalanceDue,
+} from '@gt-automotive/data';
 import { invoiceService } from '../../requests/invoice.requests';
 
 /**
@@ -111,8 +115,10 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
   availableEmails,
   onSent,
 }) => {
+  // Deduped case-insensitively: a profile holding both jason@ and Jason@ is one
+  // inbox, and listing it twice invites sending the same statement to it twice.
   const knownEmails = useMemo(
-    () => Array.from(new Set((availableEmails ?? []).filter(Boolean))),
+    () => dedupeEmails(availableEmails ?? []),
     [availableEmails]
   );
 
@@ -193,7 +199,7 @@ export const BulkInvoiceEmailDialog: React.FC<BulkInvoiceEmailDialogProps> = ({
       setError('Please enter a valid email address');
       return;
     }
-    if ([...knownEmails, ...extraEmails].includes(trimmed)) {
+    if (containsEmail([...knownEmails, ...extraEmails], trimmed)) {
       setError('That email is already in the list');
       return;
     }

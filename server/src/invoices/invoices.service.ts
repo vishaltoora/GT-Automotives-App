@@ -8,8 +8,10 @@ import {
 import { InvoiceRepository } from './repositories/invoice.repository';
 import {
   CaptureInvoiceSignatureDto,
+  containsEmail,
   CreateInvoiceDto,
   CreateServiceDto,
+  dedupeEmails,
   UpdateInvoiceDto,
   UpdateServiceDto,
   StringUtils,
@@ -1180,7 +1182,10 @@ export class InvoicesService {
     const additional = [...(customer.additionalEmails ?? [])];
 
     for (const email of recipients) {
-      if (knownEmails.includes(email)) continue;
+      // Case-insensitively, because jason@ and Jason@ are one inbox. Comparing
+      // exactly is what let a profile accumulate the same address several times
+      // over, once for every way someone capitalised it.
+      if (containsEmail(knownEmails, email)) continue;
       if (!primary) {
         primary = email;
       } else {
@@ -1189,14 +1194,20 @@ export class InvoicesService {
       knownEmails.push(email);
     }
 
-    const dedupedAdditional = Array.from(new Set(additional)).filter(
-      (e) => e !== primary
-    );
+    // Passing the primary first means it wins if the additional list holds a
+    // differently-cased copy of it. This also collapses duplicates already on
+    // the record, so a profile cleans itself up the next time it is saved.
+    const [, ...dedupedAdditional] = dedupeEmails([primary, ...additional]);
 
-    if (
+    const existingAdditional = customer.additionalEmails ?? [];
+    const changed =
       primary !== (customer.email ?? undefined) ||
-      dedupedAdditional.length !== (customer.additionalEmails ?? []).length
-    ) {
+      dedupedAdditional.length !== existingAdditional.length ||
+      dedupedAdditional.some(
+        (email, index) => email !== existingAdditional[index]
+      );
+
+    if (changed) {
       await this.customerRepository.update(customer.id, {
         email: primary,
         additionalEmails: dedupedAdditional,
