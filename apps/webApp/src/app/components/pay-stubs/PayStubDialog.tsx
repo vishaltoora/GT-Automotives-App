@@ -80,6 +80,7 @@ const emptyForm = {
   vacationPayRate: String(DEFAULT_VACATION_PAY_RATE),
   vacationPayAmount: '',
   vacationPayHeld: '',
+  vacationPayPaidOut: '',
   payPeriodsPerYear: 24 as PayPeriodsPerYear,
   eiAmount: '',
   cppAmount: '',
@@ -146,6 +147,9 @@ export function PayStubDialog({
   const [grossOverridden, setGrossOverridden] = useState(false);
   const grossOverriddenRef = useRef(grossOverridden);
   grossOverriddenRef.current = grossOverridden;
+  // What the employee has banked, so a payout can be checked before saving
+  // rather than being refused by the server.
+  const [vacationBalance, setVacationBalance] = useState<number | null>(null);
   // Vacation figures are derived from the rate until typed over, same as gross.
   const [vacationOverridden, setVacationOverridden] = useState(false);
   const [vacationHeldOverridden, setVacationHeldOverridden] = useState(false);
@@ -174,6 +178,9 @@ export function PayStubDialog({
         vacationPayRate: String(payStub.vacationPayRate),
         vacationPayAmount: String(payStub.vacationPayAmount),
         vacationPayHeld: String(payStub.vacationPayHeld),
+        vacationPayPaidOut: payStub.vacationPayPaidOut
+          ? String(payStub.vacationPayPaidOut)
+          : '',
         eiAmount: String(payStub.eiAmount),
         cppAmount: String(payStub.cppAmount),
         incomeTaxAmount: String(payStub.incomeTaxAmount),
@@ -324,6 +331,27 @@ export function PayStubDialog({
     loadHours();
   }, [loadHours]);
 
+  useEffect(() => {
+    if (!open || !form.employeeId) {
+      setVacationBalance(null);
+      return;
+    }
+    let cancelled = false;
+    payStubService
+      .getVacationBalance(form.employeeId)
+      .then((result) => {
+        if (!cancelled) setVacationBalance(result.balance);
+      })
+      // A balance we cannot read must not block raising a stub; the server
+      // still refuses a payout that exceeds it.
+      .catch(() => {
+        if (!cancelled) setVacationBalance(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, form.employeeId]);
+
   const regularAmount = toNumber(form.regularAmount);
 
   /**
@@ -416,7 +444,15 @@ export function PayStubDialog({
       toNumber(form.otherDeductions) +
       vacationPayHeld
   );
-  const netPay = round2(grossPay - totalWithholding);
+  // Vacation taken from the bank. Added after withholding rather than into
+  // gross: it was taxed in the period it was earned, so taxing it again would
+  // take the same money off the employee twice.
+  const vacationPayPaidOut = toNumber(form.vacationPayPaidOut);
+  const netPay = round2(grossPay - totalWithholding + vacationPayPaidOut);
+  // Only claimed when the balance is known — an unreadable balance should not
+  // stop a stub being raised.
+  const payoutExceedsBank =
+    vacationBalance !== null && vacationPayPaidOut > vacationBalance;
 
   const canSave =
     Boolean(form.employeeId) &&
@@ -426,6 +462,7 @@ export function PayStubDialog({
     form.regularAmount.trim() !== '' &&
     netPay >= 0 &&
     vacationPayHeld <= vacationPayAmount &&
+    !payoutExceedsBank &&
     !saving;
 
   const handleSave = async () => {
@@ -444,6 +481,7 @@ export function PayStubDialog({
         vacationPayRate: toNumber(form.vacationPayRate),
         vacationPayAmount,
         vacationPayHeld,
+        vacationPayPaidOut,
         eiAmount: toNumber(form.eiAmount),
         cppAmount: toNumber(form.cppAmount),
         incomeTaxAmount: toNumber(form.incomeTaxAmount),
@@ -783,6 +821,32 @@ export function PayStubDialog({
                 {money(grossPay)}
               </Typography>
             </Box>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              label="Vacation Paid Out"
+              value={form.vacationPayPaidOut}
+              onChange={(event) =>
+                setField('vacationPayPaidOut', event.target.value)
+              }
+              error={payoutExceedsBank}
+              helperText={
+                payoutExceedsBank
+                  ? `Only ${money(vacationBalance ?? 0)} is banked`
+                  : vacationBalance === null
+                  ? 'Paid from banked vacation — not taxed again'
+                  : `${money(vacationBalance)} available, already taxed`
+              }
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
+              }}
+            />
           </Grid>
 
           <Grid size={12}>

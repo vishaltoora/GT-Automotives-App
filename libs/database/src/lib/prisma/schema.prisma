@@ -957,6 +957,22 @@ model PayStub {
   vacationPayAmount Decimal @default(0) @db.Decimal(10, 2)
   vacationPayHeld   Decimal @default(0) @db.Decimal(10, 2)
 
+  // Vacation taken out of the bank on this cheque.
+  //
+  // Deliberately not part of grossPay: this money was already counted as gross
+  // and already taxed in the period it was earned. Adding it again would
+  // inflate the year's earnings and tax the same dollars twice. It reaches the
+  // employee after withholding instead — see netPay.
+  vacationPayPaidOut Decimal @default(0) @db.Decimal(10, 2)
+
+  // What the employee still has banked once this stub is accounted for:
+  // everything held to date, less everything paid out to date.
+  //
+  // Unlike the ytd* columns this does NOT reset in January. Vacation earned in
+  // December is usually taken the following spring, so the balance is a running
+  // total over the whole employment, not the calendar year.
+  vacationPayBalance Decimal @default(0) @db.Decimal(10, 2)
+
   // Current-period withholdings. Income tax and "other" default to zero and are
   // omitted from the printed stub when zero — the business's current stubs
   // withhold EI and CPP only, but the columns exist so adding tax later is a

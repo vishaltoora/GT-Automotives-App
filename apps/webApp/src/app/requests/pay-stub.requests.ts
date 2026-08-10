@@ -60,6 +60,15 @@ class PayStubService {
    * What the CRA formulas say should be withheld for a given gross. Only ever
    * a suggestion — the accountant confirms or overrides it before saving.
    */
+  /** What an employee currently has banked in vacation. */
+  getVacationBalance(
+    employeeId: string
+  ): Promise<{ employeeId: string; balance: number }> {
+    return this.makeRequest<{ employeeId: string; balance: number }>(
+      `${this.baseUrl}/employees/${employeeId}/vacation-balance`
+    );
+  }
+
   estimateDeductions(
     dto: PayStubDeductionEstimateRequestDto
   ): Promise<PayStubDeductionEstimateDto> {

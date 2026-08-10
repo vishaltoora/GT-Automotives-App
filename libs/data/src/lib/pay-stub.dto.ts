@@ -100,6 +100,19 @@ export class CreatePayStubDto {
   @Type(() => Number)
   vacationPayHeld?: number;
 
+  /**
+   * Vacation taken out of the bank on this cheque.
+   *
+   * Cannot exceed what the employee has banked — the server checks it against
+   * the running balance and refuses the stub otherwise, since paying out
+   * vacation nobody earned is not a rounding problem.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  vacationPayPaidOut?: number;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -270,6 +283,17 @@ export interface PayStubDto {
   vacationPayAmount: number;
   /** The same amount held back, included in `totalWithholding`. */
   vacationPayHeld: number;
+  /**
+   * Vacation drawn from the bank on this cheque. Outside `grossPay` on purpose:
+   * it was taxed when earned, so it reaches the employee after withholding.
+   */
+  vacationPayPaidOut: number;
+  /**
+   * Vacation still banked once this stub is accounted for. Runs across years —
+   * vacation earned in December is usually taken the following spring — so
+   * unlike the ytd figures it does not reset in January.
+   */
+  vacationPayBalance: number;
 
   eiAmount: number;
   cppAmount: number;

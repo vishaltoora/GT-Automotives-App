@@ -224,13 +224,23 @@ describe('PayStubsService', () => {
           return row;
         });
         prisma.payStub.findMany = jest.fn(({ where, orderBy }: any) => {
+          // The service queries this table three different ways: a calendar
+          // year for the ytd chain, everything before a date for the vacation
+          // balance, and the whole record for the balance rewrite. Each clause
+          // is optional so one mock serves all three.
+          const inRange = (row: any) => {
+            const range = where.payDate;
+            if (!range) return true;
+            if (range.gte && row.payDate < range.gte) return false;
+            if (range.lte && row.payDate > range.lte) return false;
+            if (range.lt && row.payDate >= range.lt) return false;
+            return true;
+          };
           let out = rows.filter(
             (row) =>
               row.employeeId === where.employeeId &&
-              row.payDate >= where.payDate.gte &&
-              (where.payDate.lte
-                ? row.payDate <= where.payDate.lte
-                : row.payDate < where.payDate.lt)
+              (where.id?.not ? row.id !== where.id.not : true) &&
+              inRange(row)
           );
           if (orderBy) {
             out = [...out].sort(
@@ -718,9 +728,12 @@ describe('PayStubsService', () => {
 
       await service.update('stub-1', { payDate: '2025-12-31' } as any, 'acc-1');
 
-      const years = prisma.payStub.findMany.mock.calls.map(([args]: any) =>
-        args.where.payDate.gte.getUTCFullYear()
-      );
+      // Only the year-scoped reads. The vacation balance queries the same
+      // table without a year bound, deliberately — it runs across years.
+      const years = prisma.payStub.findMany.mock.calls
+        .map(([args]: any) => args.where?.payDate?.gte)
+        .filter(Boolean)
+        .map((gte: Date) => gte.getUTCFullYear());
       expect(new Set(years)).toEqual(new Set([2025, 2026]));
     });
 
@@ -1020,6 +1033,213 @@ describe('PayStubsService', () => {
       expect(legacy.ytdVacationPayAmount).toBe(0);
       expect(legacy.grossPay).toBe(3072);
       expect(legacy.netPay).toBe(2854.96);
+    });
+  });
+  /**
+   * Paying banked vacation out (GA-64).
+   *
+   * The bank was write-only before this: every stub added to what the business
+   * owed and nothing ever subtracted, so the moment an employee actually took
+   * paid vacation the figure started drifting from the truth.
+   */
+  describe('paying vacation out', () => {
+    /** The employee already has vacation banked from earlier stubs. */
+    const withBank = (banked: number) => {
+      prisma.payStub.findMany.mockImplementation(({ select }: any) =>
+        select?.vacationPayHeld
+          ? [{ vacationPayHeld: banked, vacationPayPaidOut: 0 }]
+          : []
+      );
+    };
+
+    const dataOf = () => prisma.payStub.create.mock.calls[0][0].data;
+
+    it('hands the money over without taxing it again', async () => {
+      withBank(500);
+
+      const result = await service.create(
+        { ...baseDto, vacationPayPaidOut: 200 } as any,
+        accountant.id
+      );
+
+      // Vacation was taxed when earned. Net rises by the full payout, and the
+      // statutory deductions do not move.
+      expect(result.netPay).toBe(3054.96);
+      expect(result.totalWithholding).toBe(339.92);
+    });
+
+    it('keeps the payout out of gross, so the year is not counted twice', async () => {
+      withBank(500);
+
+      const result = await service.create(
+        { ...baseDto, vacationPayPaidOut: 200 } as any,
+        accountant.id
+      );
+
+      // Gross is earnings plus this period's accrual — the payout was already
+      // counted as gross in the period it was earned.
+      expect(result.grossPay).toBe(3194.88);
+    });
+
+    it('does not accrue vacation on a vacation payout', async () => {
+      withBank(500);
+
+      const result = await service.create(
+        { ...baseDto, vacationPayPaidOut: 200 } as any,
+        accountant.id
+      );
+
+      // 4% of the regular earnings only. Accruing on the payout would pay
+      // vacation on vacation.
+      expect(result.vacationPayAmount).toBe(122.88);
+    });
+
+    it('draws the balance down by what was paid', async () => {
+      withBank(500);
+
+      await service.create(
+        { ...baseDto, vacationPayPaidOut: 200 } as any,
+        accountant.id
+      );
+
+      // 500 banked + 122.88 accrued this period - 200 paid out.
+      expect(Number(dataOf().vacationPayBalance)).toBe(422.88);
+    });
+
+    it('banks the accrual when nothing is paid out', async () => {
+      withBank(500);
+
+      await service.create(baseDto as any, accountant.id);
+
+      expect(Number(dataOf().vacationPayBalance)).toBe(622.88);
+    });
+
+    // Paying out vacation nobody earned is not a rounding problem.
+    it('refuses a payout larger than the bank', async () => {
+      withBank(100);
+
+      await expect(
+        service.create(
+          { ...baseDto, vacationPayPaidOut: 250 } as any,
+          accountant.id
+        )
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payStub.create).not.toHaveBeenCalled();
+    });
+
+    it('allows paying the bank down to exactly nothing', async () => {
+      withBank(200);
+
+      await service.create(
+        { ...baseDto, vacationPayPaidOut: 200 } as any,
+        accountant.id
+      );
+
+      expect(Number(dataOf().vacationPayBalance)).toBe(122.88);
+    });
+
+    /**
+     * The main design decision in GA-64.
+     *
+     * Year-to-date figures reset every January because that is how earnings
+     * are reported. A vacation bank does not: vacation earned in December is
+     * usually taken the following spring. Resetting it would either erase the
+     * liability or pay it out twice.
+     */
+    describe('across the year boundary', () => {
+      const useStore = () => {
+        const rows: any[] = [];
+        let seq = 0;
+        prisma.payStub.create = jest.fn((args: any) => {
+          const row = {
+            id: `stub-${++seq}`,
+            createdAt: new Date(Date.UTC(2026, 5, seq)),
+            employee,
+            ...args.data,
+          };
+          rows.push(row);
+          return row;
+        });
+        prisma.payStub.findMany = jest.fn(({ where }: any) =>
+          rows.filter((row) => {
+            if (row.employeeId !== where.employeeId) return false;
+            const range = where.payDate;
+            if (!range) return true;
+            if (range.gte && row.payDate < range.gte) return false;
+            if (range.lte && row.payDate > range.lte) return false;
+            if (range.lt && row.payDate >= range.lt) return false;
+            return true;
+          })
+        );
+        prisma.payStub.update = jest.fn(({ where, data }: any) => {
+          const row = rows.find((r) => r.id === where.id);
+          Object.assign(row, data);
+          return row;
+        });
+        prisma.payStub.findUnique = jest.fn(({ where }: any) =>
+          rows.find((row) => row.id === where.id)
+        );
+        return rows;
+      };
+
+      const stubOn = (payDate: string, extra: any = {}) => ({
+        ...baseDto,
+        payDate,
+        periodStart: payDate,
+        periodEnd: payDate,
+        regularAmount: 1000,
+        eiAmount: 0,
+        cppAmount: 0,
+        ...extra,
+      });
+
+      it('carries December vacation into a February payout', async () => {
+        const rows = useStore();
+
+        // Earned in December, banked: 4% of 1000.
+        await service.create(stubOn('2025-12-31') as any, accountant.id);
+        // Taken the following February, out of last year's bank.
+        await service.create(
+          stubOn('2026-02-15', { vacationPayPaidOut: 40 }) as any,
+          accountant.id
+        );
+
+        const february = rows.find((row) => row.id === 'stub-2');
+        // 40 banked in December + 40 accrued in February - 40 paid out.
+        expect(Number(february.vacationPayBalance)).toBe(40);
+      });
+
+      it('refuses to pay out more than last year left behind', async () => {
+        useStore();
+        await service.create(stubOn('2025-12-31') as any, accountant.id);
+
+        await expect(
+          service.create(
+            stubOn('2026-02-15', { vacationPayPaidOut: 100 }) as any,
+            accountant.id
+          )
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('keeps the year-to-date column resetting even though the bank does not', async () => {
+        const rows = useStore();
+        await service.create(stubOn('2025-12-31') as any, accountant.id);
+        await service.create(stubOn('2026-02-15') as any, accountant.id);
+
+        const february = rows.find((row) => row.id === 'stub-2');
+        // YTD restarts in January; the bank carries on.
+        expect(Number(february.ytdVacationPayAmount)).toBe(40);
+        expect(Number(february.vacationPayBalance)).toBe(80);
+      });
+    });
+
+    it('leaves stubs with no payout completely unchanged', async () => {
+      withBank(0);
+
+      const result = await service.create(baseDto as any, accountant.id);
+
+      expect(result.vacationPayPaidOut).toBe(0);
+      expect(result.netPay).toBe(2854.96);
     });
   });
 });

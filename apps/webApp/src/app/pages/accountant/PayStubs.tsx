@@ -233,14 +233,26 @@ export function PayStubs() {
                     {formatCurrency(stub.grossPay)}
                   </TableCell>
                   <TableCell align="right">
+                    {/* Earned this period, with what is still banked
+                        underneath — the figure people actually want from this
+                        column. The bank runs across years, unlike YTD. */}
                     {formatCurrency(stub.vacationPayAmount)}
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{ display: 'block' }}
                     >
-                      {formatCurrency(stub.ytdVacationPayAmount)} YTD
+                      {formatCurrency(stub.vacationPayBalance)} banked
                     </Typography>
+                    {stub.vacationPayPaidOut > 0 && (
+                      <Typography
+                        variant="caption"
+                        color="success.main"
+                        sx={{ display: 'block' }}
+                      >
+                        {formatCurrency(stub.vacationPayPaidOut)} paid out
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell align="right">
                     {formatCurrency(stub.totalWithholding)}
