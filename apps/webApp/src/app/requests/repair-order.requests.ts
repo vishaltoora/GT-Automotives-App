@@ -224,6 +224,17 @@ export const repairOrderRequests = {
       .post<RepairOrder>(`/repair-orders/${id}/reopen`)
       .then((r) => r.data),
 
+  // Admin-only, and only for an RO raised by mistake — one with no vehicle and
+  // no services on it. deleteAppointment removes the booking it was opened
+  // against; left off, the appointment survives and returns to SCHEDULED.
+  remove: (
+    id: string,
+    deleteAppointment = false
+  ): Promise<{ deleted: true; appointmentDeleted: boolean }> =>
+    apiClient
+      .delete(`/repair-orders/${id}`, { params: { deleteAppointment } })
+      .then((r) => r.data),
+
   // Create a quotation from the RO items flagged as quotation
   createQuotation: (id: string) =>
     apiClient.post(`/repair-orders/${id}/create-quotation`).then((r) => r.data),

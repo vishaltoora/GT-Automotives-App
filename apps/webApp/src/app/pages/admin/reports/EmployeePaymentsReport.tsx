@@ -67,7 +67,9 @@ export function EmployeePaymentsReport() {
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [reportData, setReportData] = useState<EmployeePayrollData[] | null>(null);
+  const [reportData, setReportData] = useState<EmployeePayrollData[] | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,9 +90,12 @@ export function EmployeePaymentsReport() {
       try {
         setLoadingEmployees(true);
         const users = await userService.getUsers();
-        // Filter to only show staff and admin users (employees)
+        // Filter to only show active employees (staff, admin, supervisor, foreman)
         const staffUsers = users.filter(
-          (u) => u.role?.name === 'STAFF' || u.role?.name === 'ADMIN' || u.role?.name === 'SUPERVISOR'
+          (u) =>
+            ['STAFF', 'ADMIN', 'SUPERVISOR', 'FOREMAN'].includes(
+              u.role?.name || ''
+            ) && u.isActive
         );
         setEmployees(staffUsers);
       } catch (err: unknown) {
@@ -143,20 +148,28 @@ export function EmployeePaymentsReport() {
   };
 
   // Calculate totals
-  const totalPayments = reportData?.reduce((sum, emp) => sum + emp.payments.length, 0) || 0;
-  const totalAmount = reportData?.reduce((sum, emp) => sum + emp.totalAmount, 0) || 0;
+  const totalPayments =
+    reportData?.reduce((sum, emp) => sum + emp.payments.length, 0) || 0;
+  const totalAmount =
+    reportData?.reduce((sum, emp) => sum + emp.totalAmount, 0) || 0;
 
   // Calculate daily summaries - group all payments by date
   const getDailySummaries = (): DailySummary[] => {
     if (!reportData) return [];
 
-    const dailyMap = new Map<string, { payments: number; totalAmount: number }>();
+    const dailyMap = new Map<
+      string,
+      { payments: number; totalAmount: number }
+    >();
 
     reportData.forEach((empData) => {
       empData.payments.forEach((payment) => {
         if (payment.paidAt) {
           const dateKey = new Date(payment.paidAt).toISOString().split('T')[0];
-          const existing = dailyMap.get(dateKey) || { payments: 0, totalAmount: 0 };
+          const existing = dailyMap.get(dateKey) || {
+            payments: 0,
+            totalAmount: 0,
+          };
           dailyMap.set(dateKey, {
             payments: existing.payments + 1,
             totalAmount: existing.totalAmount + Number(payment.amount),
@@ -246,7 +259,13 @@ export function EmployeePaymentsReport() {
               fullWidth
               variant="contained"
               size="large"
-              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Assessment />}
+              startIcon={
+                loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <Assessment />
+                )
+              }
               onClick={handleGenerateReport}
               disabled={loading}
               sx={{ height: 56 }}
@@ -276,13 +295,22 @@ export function EmployeePaymentsReport() {
             {/* Summary Cards */}
             <Grid container spacing={2} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card sx={{
-                  height: '100%',
-                  background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
-                  color: 'white'
-                }}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    background: `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.dark} 100%)`,
+                    color: 'white',
+                  }}
+                >
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
                       <Person />
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
                         Employees
@@ -296,13 +324,22 @@ export function EmployeePaymentsReport() {
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card sx={{
-                  height: '100%',
-                  background: `linear-gradient(135deg, ${colors.semantic.success} 0%, ${colors.semantic.successDark} 100%)`,
-                  color: 'white'
-                }}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    background: `linear-gradient(135deg, ${colors.semantic.success} 0%, ${colors.semantic.successDark} 100%)`,
+                    color: 'white',
+                  }}
+                >
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
                       <AttachMoney />
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
                         Total Paid
@@ -316,13 +353,22 @@ export function EmployeePaymentsReport() {
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card sx={{
-                  height: '100%',
-                  background: `linear-gradient(135deg, ${colors.semantic.info} 0%, ${colors.semantic.infoDark} 100%)`,
-                  color: 'white'
-                }}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    background: `linear-gradient(135deg, ${colors.semantic.info} 0%, ${colors.semantic.infoDark} 100%)`,
+                    color: 'white',
+                  }}
+                >
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
                       <Work />
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
                         Total Payments
@@ -336,13 +382,22 @@ export function EmployeePaymentsReport() {
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card sx={{
-                  height: '100%',
-                  background: `linear-gradient(135deg, ${colors.semantic.warning} 0%, ${colors.semantic.warningDark} 100%)`,
-                  color: 'white'
-                }}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    background: `linear-gradient(135deg, ${colors.semantic.warning} 0%, ${colors.semantic.warningDark} 100%)`,
+                    color: 'white',
+                  }}
+                >
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
                       <CalendarToday />
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
                         Date Range
@@ -366,7 +421,9 @@ export function EmployeePaymentsReport() {
                         <Typography fontWeight="bold">Date</Typography>
                       </TableCell>
                       <TableCell align="center">
-                        <Typography fontWeight="bold">Number of Payments</Typography>
+                        <Typography fontWeight="bold">
+                          Number of Payments
+                        </Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Typography fontWeight="bold">Total Amount</Typography>
@@ -377,7 +434,13 @@ export function EmployeePaymentsReport() {
                     {dailySummaries.map((summary) => (
                       <TableRow key={summary.date} hover>
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                            }}
+                          >
                             <CalendarToday fontSize="small" color="action" />
                             <Typography fontWeight="500">
                               {formatDate(summary.date)}
@@ -386,14 +449,20 @@ export function EmployeePaymentsReport() {
                         </TableCell>
                         <TableCell align="center">
                           <Chip
-                            label={`${summary.payments} payment${summary.payments !== 1 ? 's' : ''}`}
+                            label={`${summary.payments} payment${
+                              summary.payments !== 1 ? 's' : ''
+                            }`}
                             size="small"
                             color="primary"
                             variant="outlined"
                           />
                         </TableCell>
                         <TableCell align="right">
-                          <Typography variant="h6" fontWeight="bold" color="success.main">
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            color="success.main"
+                          >
                             {formatCurrency(summary.totalAmount)}
                           </Typography>
                         </TableCell>
@@ -422,7 +491,8 @@ export function EmployeePaymentsReport() {
               No Report Generated
             </Typography>
             <Typography variant="body2">
-              Select an employee (or all employees) and date range, then click "Generate Report"
+              Select an employee (or all employees) and date range, then click
+              "Generate Report"
             </Typography>
           </Box>
         )}

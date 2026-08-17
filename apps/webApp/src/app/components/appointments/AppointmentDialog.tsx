@@ -51,6 +51,13 @@ interface AppointmentDialogProps {
    * calendar). A past date is clamped up to today; the past is never bookable.
    */
   initialDate?: Date;
+  /**
+   * Proposed new slot for an appointment being moved — work carried over to
+   * another day. Overrides the date, time and crew of the appointment being
+   * edited; everything else stays as it was booked. Pass a stable reference:
+   * it drives the prefill effect.
+   */
+  rescheduleTo?: { date: Date; time: string; employeeIds: string[] };
 }
 
 /** Local midnight of today — the earliest date an appointment can be booked. */
@@ -70,6 +77,7 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   preselectedAppointmentType,
   preselectedServiceAddress,
   initialDate,
+  rescheduleTo,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,9 +135,11 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           customerId: appointment.customerId,
           vehicleId: appointment.vehicleId || '',
           employeeId: appointment.employeeId || '',
-          employeeIds: employeeIds,
-          scheduledDate: localDate,
-          scheduledTime: appointment.scheduledTime,
+          // A move proposes its own slot and crew; the rest of the booking is
+          // carried over untouched.
+          employeeIds: rescheduleTo?.employeeIds ?? employeeIds,
+          scheduledDate: rescheduleTo?.date ?? localDate,
+          scheduledTime: rescheduleTo?.time ?? appointment.scheduledTime,
           duration: appointment.duration,
           serviceType: appointment.serviceType,
           appointmentType: appointment.appointmentType || 'AT_GARAGE',
@@ -200,7 +210,17 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     preselectedAppointmentType,
     preselectedServiceAddress,
     initialDate,
+    rescheduleTo,
   ]);
+
+  // A move carries the crew over as ids, so the chips can only be filled in
+  // once the assignable employee list has loaded.
+  useEffect(() => {
+    if (!open || !rescheduleTo || employees.length === 0) return;
+    setSelectedEmployees(
+      employees.filter((e) => rescheduleTo.employeeIds.includes(e.id))
+    );
+  }, [open, rescheduleTo, employees]);
 
   // Auto-adjust time if date changes to today and selected time is in the past
   useEffect(() => {
@@ -376,6 +396,10 @@ export const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
       if (appointment) {
         await appointmentService.updateAppointment(appointment.id, {
+          // Moving unfinished work to another day is an internal scheduling
+          // change — the customer keeps their slot in the shop's queue and
+          // should not be texted about it.
+          ...(rescheduleTo ? { notifyCustomer: false } : {}),
           // Send '' to clear the vehicle, or the selected id to link/change it.
           vehicleId: formData.vehicleId || '',
           employeeIds:

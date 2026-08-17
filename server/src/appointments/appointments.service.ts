@@ -680,6 +680,8 @@ export class AppointmentsService {
     delete updateData.employeeIds;
     // Remove completionEmployeeIds — handled separately to auto-create payroll jobs
     delete updateData.completionEmployeeIds;
+    // notifyCustomer only decides whether we text; it is not a column
+    delete updateData.notifyCustomer;
 
     // Update appointment and employees if provided
     if (employeeIds && employeeIds.length > 0) {
@@ -711,7 +713,11 @@ export class AppointmentsService {
     const timeChanged =
       dto.scheduledTime && dto.scheduledTime !== appointment.scheduledTime;
 
-    if (dateChanged || timeChanged) {
+    // Callers moving an appointment for internal reasons — unfinished work
+    // carried over to another day — opt out of the customer text.
+    const notifyCustomer = dto.notifyCustomer !== false;
+
+    if ((dateChanged || timeChanged) && notifyCustomer) {
       console.log(
         `[SMS] Date/time changed - sending update SMS. Date: ${originalDateStr} -> ${newDateStr}, Time: ${appointment.scheduledTime} -> ${dto.scheduledTime}`
       );
@@ -720,6 +726,8 @@ export class AppointmentsService {
           `[SMS] Failed to send appointment update SMS: ${err.message}`
         );
       });
+    } else if (!notifyCustomer) {
+      console.log(`[SMS] Caller opted out of notifying the customer`);
     } else {
       console.log(`[SMS] No date/time change detected - skipping SMS`);
     }

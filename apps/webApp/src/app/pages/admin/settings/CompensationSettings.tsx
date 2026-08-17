@@ -57,10 +57,11 @@ export function CompensationSettings() {
         setLoading(true);
         setError(null);
         const userData = await userService.getUsers();
-        const employees = userData.filter((user) =>
-          ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(
-            user.role?.name || ''
-          )
+        const employees = userData.filter(
+          (user) =>
+            ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(
+              user.role?.name || ''
+            ) && user.isActive
         );
         setUsers(employees);
         if (employees[0]) setSelectedEmployeeId(employees[0].id);

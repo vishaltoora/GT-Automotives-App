@@ -188,9 +188,9 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         const staff = users.filter(
           (u) =>
             u.isActive &&
-            (u.role?.name === 'STAFF' ||
-              u.role?.name === 'ADMIN' ||
-              u.role?.name === 'SUPERVISOR')
+            ['STAFF', 'ADMIN', 'SUPERVISOR', 'FOREMAN'].includes(
+              u.role?.name || ''
+            )
         );
         const unique = staff.filter(
           (u, i, arr) => i === arr.findIndex((x) => x.id === u.id)

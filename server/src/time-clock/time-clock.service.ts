@@ -957,10 +957,17 @@ export class TimeClockService {
     // The employee summary rides along on each row so the accountant's view can
     // show names without also being granted GET /api/users, which would expose
     // far more than the payroll roster.
+    // The roster is who payroll can be raised for now, so it lists active
+    // employees only. Asking for one employee by id still resolves whatever
+    // their state — hours already worked by someone since deactivated must
+    // stay reachable so their final stub can be paid.
     const employees = await this.prisma.user.findMany({
       where: employeeId
         ? { id: employeeId }
-        : { role: { name: { in: STAFF_PAYROLL_ROLES as any[] } } },
+        : {
+            role: { name: { in: STAFF_PAYROLL_ROLES as any[] } },
+            isActive: true,
+          },
       include: { role: true },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });

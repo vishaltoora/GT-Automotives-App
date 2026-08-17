@@ -5,6 +5,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -13,6 +14,7 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  FormControlLabel,
   Grid,
   IconButton,
   InputLabel,
@@ -37,6 +39,8 @@ import {
   Assignment as InspectIcon,
   Build as ServicesIcon,
   Chat as ChatIcon,
+  Delete as DeleteIcon,
+  EventRepeat as EventRepeatIcon,
   DirectionsCar,
   Edit,
   Email as EmailIcon,
@@ -59,6 +63,11 @@ import { ROPhotoSection } from '../../components/repair-orders/ROPhotoSection';
 import { PreInspectionSection } from '../../components/repair-orders/PreInspectionSection';
 import EmailPromptDialog from '../../components/common/EmailPromptDialog';
 import { AssignEmployeesDialog } from '../../components/repair-orders/AssignEmployeesDialog';
+import { AppointmentDialog } from '../../components/appointments/AppointmentDialog';
+import {
+  appointmentService,
+  Appointment,
+} from '../../requests/appointment.requests';
 import { ROItemsList } from '../../components/repair-orders/ROItemsList';
 import { useAuth } from '../../hooks/useAuth';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
@@ -159,6 +168,16 @@ function CurrentTab({
   const [savingConcern, setSavingConcern] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
+  // Moving the appointment to another day: the full appointment (the RO only
+  // carries a summary of it) and the slot proposed for it.
+  const [movingAppointment, setMovingAppointment] =
+    useState<Appointment | null>(null);
+  const [moveTo, setMoveTo] = useState<{
+    date: Date;
+    time: string;
+    employeeIds: string[];
+  } | null>(null);
+  const [loadingMove, setLoadingMove] = useState(false);
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -396,6 +415,42 @@ function CurrentTab({
       showApiError(error, 'Failed to reopen repair order.');
     } finally {
       setReopening(false);
+    }
+  };
+
+  /**
+   * Carry unfinished work over to another day: open the appointment dialog on
+   * the RO's own appointment, proposing the day after it at 9 AM with the
+   * crew currently on the RO. Nothing is saved until the dialog is submitted,
+   * so the proposal is only a starting point.
+   */
+  const handleMoveAppointment = async () => {
+    if (!ro.appointment) return;
+    setLoadingMove(true);
+    try {
+      const full = await appointmentService.getAppointment(ro.appointment.id);
+
+      // The day after the one it is booked for, but never a day that has
+      // already passed — an RO left open for a week still moves to tomorrow.
+      const booked = new Date(
+        `${ro.appointment.scheduledDate.split('T')[0]}T00:00:00`
+      );
+      const next = new Date(booked);
+      next.setDate(next.getDate() + 1);
+      const tomorrow = new Date();
+      tomorrow.setHours(0, 0, 0, 0);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      setMoveTo({
+        date: next > tomorrow ? next : tomorrow,
+        time: '09:00',
+        employeeIds: ro.employees.map((e) => e.userId),
+      });
+      setMovingAppointment(full);
+    } catch (error) {
+      showApiError(error, 'Failed to load the appointment.');
+    } finally {
+      setLoadingMove(false);
     }
   };
 
@@ -1000,11 +1055,31 @@ function CurrentTab({
         {ro.appointment && (
           <>
             <Divider sx={{ my: 1.5 }} />
-            <Typography variant="body2" color="text.secondary">
-              Appointment:{' '}
-              {new Date(ro.appointment.scheduledDate).toLocaleDateString()} @{' '}
-              {ro.appointment.scheduledTime} · {ro.appointment.serviceType}
-            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Appointment:{' '}
+                {new Date(ro.appointment.scheduledDate).toLocaleDateString()} @{' '}
+                {ro.appointment.scheduledTime} · {ro.appointment.serviceType}
+              </Typography>
+              {canEdit && (
+                <Button
+                  size="small"
+                  startIcon={<EventRepeatIcon />}
+                  onClick={handleMoveAppointment}
+                  disabled={loadingMove}
+                  sx={{ ml: 'auto' }}
+                >
+                  {loadingMove ? 'Opening…' : 'Move to Next Day'}
+                </Button>
+              )}
+            </Box>
           </>
         )}
       </Paper>
@@ -1752,6 +1827,32 @@ function CurrentTab({
         onSaved={(updated) => onROChange({ ...ro, ...updated })}
       />
 
+      {movingAppointment && moveTo && (
+        <AppointmentDialog
+          open
+          appointment={movingAppointment}
+          rescheduleTo={moveTo}
+          onClose={() => {
+            setMovingAppointment(null);
+            setMoveTo(null);
+          }}
+          onSuccess={async () => {
+            setMovingAppointment(null);
+            setMoveTo(null);
+            // The RO carries a copy of the appointment's date and time, so it
+            // has to come back from the server to show the new slot.
+            try {
+              onROChange(await repairOrderRequests.getById(ro.id));
+            } catch (error) {
+              showApiError(
+                error,
+                'Appointment moved, but the repair order could not be reloaded.'
+              );
+            }
+          }}
+        />
+      )}
+
       {/* Quotation created success dialog */}
       <Dialog
         open={Boolean(createdQuotationId)}
@@ -1991,11 +2092,15 @@ export function RODetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin, isSupervisor, isStaff, isForeman } = useAuth();
+  const { showApiError } = useErrorHelpers();
 
   const [ro, setRo] = useState<RepairOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState(0);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteAppointment, setDeleteAppointment] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const baseRoute = location.pathname.startsWith('/staff')
     ? '/staff'
@@ -2034,6 +2139,35 @@ export function RODetail() {
     );
   }
 
+  // An RO is only deletable while it carries nothing — the accident case the
+  // backend also enforces. Anything recorded against it makes it real work,
+  // including photos (whose blobs would be orphaned) and the noVehicle flag,
+  // which marks a counter-service RO as deliberately vehicle-less rather than
+  // unfinished.
+  const isEmptyRO =
+    !ro.vehicle &&
+    !ro.noVehicle &&
+    ro.services.length === 0 &&
+    ro.inspections.length === 0 &&
+    ro.media.length === 0 &&
+    !ro.invoice &&
+    !ro.quotation;
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await repairOrderRequests.remove(ro.id, deleteAppointment);
+      navigate(`${baseRoute}/repair-orders`);
+    } catch (error) {
+      // Not setError: that channel is the page-load failure, and rendering it
+      // replaces the whole repair order with a bare alert.
+      showApiError(error, 'Failed to delete this repair order.');
+      setDeleteOpen(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, width: '100%' }}>
       {/* Back + header */}
@@ -2057,7 +2191,59 @@ export function RODetail() {
             {ro.vehicle ? ` · ${vehicleLabel(ro)}` : ''}
           </Typography>
         </Box>
+        {isAdmin && isEmptyRO && (
+          <Button
+            size="small"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={() => {
+              setDeleteAppointment(false);
+              setDeleteOpen(true);
+            }}
+            sx={{ ml: 'auto' }}
+          >
+            Delete RO
+          </Button>
+        )}
       </Box>
+
+      <Dialog
+        open={deleteOpen}
+        onClose={() => !deleting && setDeleteOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete {ro.roNumber}?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            This repair order has no vehicle and no services on it. Deleting it
+            cannot be undone.
+          </Typography>
+          <FormControlLabel
+            sx={{ mt: 2 }}
+            control={
+              <Checkbox
+                checked={deleteAppointment}
+                onChange={(e) => setDeleteAppointment(e.target.checked)}
+              />
+            }
+            label="Also delete the appointment it was created from"
+          />
+          <Typography variant="caption" color="text.secondary" display="block">
+            {deleteAppointment
+              ? "The customer's booking will be deleted too. A booking that has been paid, completed, invoiced or paid out to staff cannot be deleted — delete the repair order on its own instead."
+              : 'The appointment stays and goes back to Scheduled.'}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button color="error" onClick={handleDelete} disabled={deleting}>
+            {deleting ? 'Deleting…' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Tabs */}
       <Tabs

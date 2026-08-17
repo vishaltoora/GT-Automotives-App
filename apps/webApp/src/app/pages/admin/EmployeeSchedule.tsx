@@ -26,6 +26,7 @@ interface User {
   firstName: string;
   lastName: string;
   email: string;
+  isActive: boolean;
   role: {
     name: string;
   };
@@ -56,7 +57,10 @@ export default function EmployeeSchedule() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -70,9 +74,13 @@ export default function EmployeeSchedule() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Filter only STAFF, ADMIN, and SUPERVISOR users
+      // Filter only active STAFF, ADMIN, and SUPERVISOR users
       const staffAndAdmin = response.data.filter(
-        (user: User) => user.role.name === 'STAFF' || user.role.name === 'ADMIN' || user.role.name === 'SUPERVISOR'
+        (user: User) =>
+          (user.role.name === 'STAFF' ||
+            user.role.name === 'ADMIN' ||
+            user.role.name === 'SUPERVISOR') &&
+          user.isActive
       );
       setEmployees(staffAndAdmin);
     } catch (error) {
@@ -105,7 +113,7 @@ export default function EmployeeSchedule() {
       setMessage(null);
 
       const token = await window.Clerk?.session?.getToken();
-      const employee = employees.find(e => e.id === selectedEmployee);
+      const employee = employees.find((e) => e.id === selectedEmployee);
 
       if (!employee) {
         throw new Error('Employee not found');
@@ -119,14 +127,17 @@ export default function EmployeeSchedule() {
       const day = String(selectedDate.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      const appointmentsResponse = await axios.get(`${API_URL}/api/appointments`, {
-        params: {
-          startDate: dateStr,
-          endDate: dateStr,
-          employeeId: selectedEmployee,
-        },
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const appointmentsResponse = await axios.get(
+        `${API_URL}/api/appointments`,
+        {
+          params: {
+            startDate: dateStr,
+            endDate: dateStr,
+            employeeId: selectedEmployee,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const appointments: Appointment[] = appointmentsResponse.data;
 
@@ -136,14 +147,15 @@ export default function EmployeeSchedule() {
       });
 
       // Format appointments for email
-      const formattedAppointments = appointments.map(apt => ({
+      const formattedAppointments = appointments.map((apt) => ({
         time: formatTime(apt.scheduledTime),
         customerName: `${apt.customer.firstName} ${apt.customer.lastName}`,
         serviceType: apt.serviceType,
         vehicleInfo: apt.vehicle
           ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}`
           : 'No vehicle specified',
-        location: apt.appointmentType === 'AT_GARAGE' ? 'At Shop' : 'Mobile Service',
+        location:
+          apt.appointmentType === 'AT_GARAGE' ? 'At Shop' : 'Mobile Service',
         duration: apt.duration,
         notes: apt.notes,
       }));
@@ -164,7 +176,11 @@ export default function EmployeeSchedule() {
 
       setMessage({
         type: 'success',
-        text: `Schedule email sent successfully to ${employee.firstName} ${employee.lastName} (${appointments.length} appointment${appointments.length !== 1 ? 's' : ''})`,
+        text: `Schedule email sent successfully to ${employee.firstName} ${
+          employee.lastName
+        } (${appointments.length} appointment${
+          appointments.length !== 1 ? 's' : ''
+        })`,
       });
     } catch (error: any) {
       console.error('Failed to send schedule:', error);
@@ -179,7 +195,11 @@ export default function EmployeeSchedule() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+      >
         <EmailIcon /> Employee Day Schedule
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -200,7 +220,8 @@ export default function EmployeeSchedule() {
                 >
                   {employees.map((employee) => (
                     <MenuItem key={employee.id} value={employee.id}>
-                      {employee.firstName} {employee.lastName} ({employee.role.name})
+                      {employee.firstName} {employee.lastName} (
+                      {employee.role.name})
                     </MenuItem>
                   ))}
                 </Select>
@@ -232,9 +253,17 @@ export default function EmployeeSchedule() {
 
             <Grid size={{ xs: 12 }}>
               <Button
-                variant={!selectedEmployee || sending ? 'outlined' : 'contained'}
+                variant={
+                  !selectedEmployee || sending ? 'outlined' : 'contained'
+                }
                 size="large"
-                startIcon={sending ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
+                startIcon={
+                  sending ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <SendIcon />
+                  )
+                }
                 onClick={sendEmployeeSchedule}
                 disabled={!selectedEmployee || sending}
                 fullWidth
@@ -254,8 +283,13 @@ export default function EmployeeSchedule() {
           <ol>
             <li>Select an employee from the dropdown</li>
             <li>Choose the date for the schedule</li>
-            <li>Click "Send Schedule Email" to email their daily appointments</li>
-            <li>The email will include appointment times, customer names, services, and vehicle details</li>
+            <li>
+              Click "Send Schedule Email" to email their daily appointments
+            </li>
+            <li>
+              The email will include appointment times, customer names,
+              services, and vehicle details
+            </li>
           </ol>
         </Typography>
       </Box>

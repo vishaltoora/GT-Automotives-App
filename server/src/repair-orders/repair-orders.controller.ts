@@ -102,6 +102,20 @@ export class RepairOrdersController {
     return this.roService.update(id, dto, user.role.name);
   }
 
+  /**
+   * Delete a repair order raised by mistake. Admin only, and only while the RO
+   * carries nothing — see the service for what disqualifies one. Pass
+   * deleteAppointment=true to remove the appointment it was opened against.
+   */
+  @Delete(':id')
+  @Roles('ADMIN')
+  remove(
+    @Param('id') id: string,
+    @Query('deleteAppointment') deleteAppointment?: string
+  ) {
+    return this.roService.remove(id, deleteAppointment === 'true');
+  }
+
   @Post(':id/close')
   @Roles('ADMIN', 'FOREMAN', 'SUPERVISOR')
   closeAndConvert(

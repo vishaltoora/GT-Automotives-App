@@ -262,6 +262,16 @@ export class UpdateAppointmentDto {
   @IsOptional()
   @IsString()
   endTime?: string;
+
+  /**
+   * Set false to move an appointment without texting the customer — carrying
+   * unfinished work over to another day is an internal scheduling change, not
+   * news for them. Defaults to notifying, so every existing caller is
+   * unaffected.
+   */
+  @IsOptional()
+  @IsBoolean()
+  notifyCustomer?: boolean;
 }
 
 // Response DTO
