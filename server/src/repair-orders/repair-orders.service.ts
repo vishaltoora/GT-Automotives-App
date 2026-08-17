@@ -222,10 +222,10 @@ export class RepairOrdersService {
     if (query.customerId) where.customerId = query.customerId;
     if (query.vehicleId) where.vehicleId = query.vehicleId;
 
-    // Staff only see their assigned ROs unless explicitly querying all
-    if (roleName === 'STAFF' && !query.employeeId) {
-      where.employees = { some: { userId } };
-    } else if (query.employeeId) {
+    // Every role sees the full RO list; narrowing to one employee is now an
+    // explicit filter rather than something forced on staff. See findOne for
+    // why the staff-only-their-own rule was dropped.
+    if (query.employeeId) {
       where.employees = { some: { userId: query.employeeId } };
     }
 
@@ -313,13 +313,11 @@ export class RepairOrdersService {
 
     if (!ro) throw new NotFoundException(`Repair order ${id} not found`);
 
-    if (
-      roleName === 'STAFF' &&
-      !ro.employees.some((e: any) => e.userId === userId)
-    ) {
-      throw new ForbiddenException('You are not assigned to this repair order');
-    }
-
+    // Staff can read any RO. The previous rule — staff only see ROs they are
+    // assigned to — locked a staff member out of the RO they had just created,
+    // because create() assigns only the crew carried over from the appointment
+    // and most appointments have no crew assigned. Revisit when per-RO access
+    // is designed properly; until then visibility is shop-wide.
     return this.applyMediaSasUrls(ro);
   }
 
