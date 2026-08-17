@@ -22,7 +22,7 @@ export class JobsService {
 
   async create(createJobDto: CreateJobDto, userId: string): Promise<Job> {
     try {
-      // Validate that the employee exists and has STAFF, ADMIN, or SUPERVISOR role
+      // Validate that the employee exists and has a job-eligible role
       const employee = await this.jobRepository['prisma'].user.findUnique({
         where: { id: createJobDto.employeeId },
         include: { role: true },
@@ -39,7 +39,7 @@ export class JobsService {
         employee.role.name !== 'FOREMAN'
       ) {
         throw new BadRequestException(
-          'Jobs can only be assigned to staff, admin, or supervisor users'
+          'Jobs can only be assigned to staff, admin, supervisor, or foreman users'
         );
       }
 

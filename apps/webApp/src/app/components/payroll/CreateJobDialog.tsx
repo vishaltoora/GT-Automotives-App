@@ -103,12 +103,13 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
   const fetchEmployees = async () => {
     try {
       const users = await userService.getUsers();
-      // Include STAFF, ADMIN, and SUPERVISOR users in the dropdown
+      // Include active STAFF, ADMIN, SUPERVISOR and FOREMAN users in the
+      // dropdown — a foreman is paid for jobs like anyone else.
       const staffAndAdmins = users.filter(
         (u) =>
-          u.role?.name === 'STAFF' ||
-          u.role?.name === 'ADMIN' ||
-          u.role?.name === 'SUPERVISOR'
+          ['STAFF', 'ADMIN', 'SUPERVISOR', 'FOREMAN'].includes(
+            u.role?.name || ''
+          ) && u.isActive
       );
       setEmployees(staffAndAdmins);
     } catch (err) {

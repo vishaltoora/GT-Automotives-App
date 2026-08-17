@@ -201,7 +201,17 @@ export function JobsManagement() {
         })
       );
 
-      setEmployeeSummaries(summaries);
+      // Show active employees, and keep a deactivated one only while jobs of
+      // theirs are still pending or awaiting payment — the summaries have to
+      // be fetched first to know that.
+      setEmployeeSummaries(
+        summaries.filter(
+          (employee) =>
+            employee.isActive ||
+            employee.pendingJobs > 0 ||
+            employee.readyJobs > 0
+        )
+      );
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch employee data');

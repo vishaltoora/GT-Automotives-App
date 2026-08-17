@@ -160,10 +160,11 @@ export function TimeClockManagement() {
         }),
       ]);
       const myCurrent = await timeClockService.getMyCurrent();
-      const employees = userData.filter((user) =>
-        ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(
-          user.role?.name || ''
-        )
+      const employees = userData.filter(
+        (user) =>
+          ['ADMIN', 'FOREMAN', 'SUPERVISOR', 'STAFF'].includes(
+            user.role?.name || ''
+          ) && user.isActive
       );
       setUsers(employees);
       setCurrentEntries(currentData);

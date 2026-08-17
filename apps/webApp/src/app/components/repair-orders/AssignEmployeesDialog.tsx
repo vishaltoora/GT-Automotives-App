@@ -16,6 +16,8 @@ import {
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { EmployeeChipSelector } from '../appointments/EmployeeChipSelector';
 
+const ASSIGNABLE_ROLES = ['STAFF', 'ADMIN', 'SUPERVISOR', 'FOREMAN'];
+
 interface AssignEmployeesDialogProps {
   open: boolean;
   onClose: () => void;
@@ -51,20 +53,25 @@ export function AssignEmployeesDialog({
       .getUsers()
       .then((allUsers) => {
         if (!active) return;
-        const staffAndAdmin = allUsers.filter(
+        // Same roles the appointment and RO-creation pickers offer — FOREMAN
+        // included, or a foreman assigned on the appointment could never be
+        // added here.
+        const currentUserIds = new Set(currentEmployees.map((e) => e.userId));
+        const assignable = allUsers.filter(
           (user) =>
-            (user.role?.name === 'STAFF' ||
-              user.role?.name === 'ADMIN' ||
-              user.role?.name === 'SUPERVISOR') &&
-            user.isActive
+            (ASSIGNABLE_ROLES.includes(user.role?.name ?? '') &&
+              user.isActive) ||
+            // Anyone already on the RO stays in the list whatever their role or
+            // active state. Saving replaces the whole crew, so dropping them
+            // from the options would silently unassign them.
+            currentUserIds.has(user.id)
         );
-        const uniqueUsers = staffAndAdmin.filter(
+        const uniqueUsers = assignable.filter(
           (user, index, self) =>
             index === self.findIndex((u) => u.id === user.id)
         );
         setEmployees(uniqueUsers);
         // Pre-select the RO's current employees by matching userId.
-        const currentUserIds = new Set(currentEmployees.map((e) => e.userId));
         setSelectedEmployees(
           uniqueUsers.filter((u) => currentUserIds.has(u.id))
         );
