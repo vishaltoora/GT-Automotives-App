@@ -60,7 +60,7 @@ const STATUS_COLORS: Record<
 };
 
 // Default labor rate ($/hour). LABOR cost = hours × rate.
-const DEFAULT_LABOR_RATE = 100;
+const DEFAULT_LABOR_RATE = 110;
 
 const CANNED_JOBS = [
   { description: 'Oil Change', type: 'LABOR' as ROServiceType, unitPrice: 45 },
@@ -348,7 +348,7 @@ export function ServiceDrawer({
 
   const handleTypeChange = (type: ROServiceType) => {
     setNewType(type);
-    // Switching to labor defaults the rate to $100/hr if none set yet.
+    // Switching to labor defaults the rate to $110/hr if none set yet.
     if (type === 'LABOR' && !newPrice) setNewPrice(DEFAULT_LABOR_RATE);
   };
 
@@ -372,7 +372,7 @@ export function ServiceDrawer({
     }
   };
 
-  // Labor items default to the $100/hr rate when the catalog has no price.
+  // Labor items default to the $110/hr rate when the catalog has no price.
   const priceFor = (type: ROServiceType, unitPrice: number) =>
     type === 'LABOR' ? unitPrice || DEFAULT_LABOR_RATE : unitPrice;
 
