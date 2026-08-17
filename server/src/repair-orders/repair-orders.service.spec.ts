@@ -145,3 +145,113 @@ describe('RepairOrdersService vehicle mileage sync', () => {
     });
   });
 });
+
+/**
+ * Deleting a repair order raised by mistake. The guards matter more than the
+ * delete itself: an RO carrying real work must survive the attempt, and the
+ * appointment behind it is only removed when the caller asks.
+ */
+describe('RepairOrdersService remove', () => {
+  let service: RepairOrdersService;
+  let tx: any;
+  let prisma: any;
+
+  const emptyRO = {
+    id: 'ro-1',
+    appointmentId: 'apt-1',
+    vehicleId: null,
+    quotationId: null,
+    services: [],
+    inspections: [],
+    invoice: null,
+  };
+
+  const setup = (ro: any) => {
+    tx = {
+      repairOrder: { delete: jest.fn() },
+      appointment: { delete: jest.fn(), updateMany: jest.fn() },
+    };
+    prisma = {
+      $transaction: jest.fn((cb: any) => cb(tx)),
+      repairOrder: { findUnique: jest.fn().mockResolvedValue(ro) },
+    };
+    service = new RepairOrdersService(
+      prisma,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+  };
+
+  it('deletes the RO and leaves the appointment behind, back on the schedule', async () => {
+    setup(emptyRO);
+
+    const result = await service.remove('ro-1', false);
+
+    expect(tx.repairOrder.delete).toHaveBeenCalledWith({
+      where: { id: 'ro-1' },
+    });
+    expect(tx.appointment.delete).not.toHaveBeenCalled();
+    expect(tx.appointment.updateMany).toHaveBeenCalledWith({
+      where: { id: 'apt-1', status: 'IN_PROGRESS' },
+      data: { status: 'SCHEDULED' },
+    });
+    expect(result).toEqual({ deleted: true, appointmentDeleted: false });
+  });
+
+  it('deletes the appointment when asked, taking the RO with it', async () => {
+    setup(emptyRO);
+
+    const result = await service.remove('ro-1', true);
+
+    expect(tx.appointment.delete).toHaveBeenCalledWith({
+      where: { id: 'apt-1' },
+    });
+    // The RO cascades from the appointment; deleting it directly would be a
+    // second delete of a row that is already gone.
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
+    expect(result).toEqual({ deleted: true, appointmentDeleted: true });
+  });
+
+  it('refuses an RO that has a vehicle on it', async () => {
+    setup({ ...emptyRO, vehicleId: 'veh-1' });
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(/no vehicle/i);
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses an RO that has services on it', async () => {
+    setup({ ...emptyRO, services: [{ id: 'svc-1' }] });
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(/no services/i);
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses an RO that has been invoiced', async () => {
+    setup({ ...emptyRO, invoice: { id: 'inv-1' } });
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(/invoice/i);
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses an RO that has an inspection', async () => {
+    setup({ ...emptyRO, inspections: [{ id: 'insp-1' }] });
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(/inspection/i);
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses an RO that has a quotation', async () => {
+    setup({ ...emptyRO, quotationId: 'quo-1' });
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(/quotation/i);
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses an RO that does not exist', async () => {
+    setup(null);
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(/not found/i);
+  });
+});

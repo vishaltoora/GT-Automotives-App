@@ -305,6 +305,76 @@ export class RepairOrdersService {
     });
   }
 
+  /**
+   * Delete a repair order raised by mistake — one carrying no vehicle and no
+   * services. Anything with real work recorded against it is refused: an
+   * invoice, an inspection or a generated quotation outlives the RO, and
+   * deleting it would orphan or lose them.
+   *
+   * The appointment is only removed when the caller asks for it. An RO opened
+   * against a genuine booking is the ordinary case and the booking should
+   * survive; when it does, its status is wound back from IN_PROGRESS, which
+   * opening the RO had set and which would otherwise describe work that no
+   * longer exists.
+   */
+  async remove(
+    id: string,
+    deleteAppointment: boolean
+  ): Promise<{ deleted: true; appointmentDeleted: boolean }> {
+    const ro = await this.prisma.repairOrder.findUnique({
+      where: { id },
+      include: {
+        services: { select: { id: true } },
+        inspections: { select: { id: true } },
+        invoice: { select: { id: true } },
+      },
+    });
+
+    if (!ro) throw new NotFoundException(`Repair order ${id} not found`);
+
+    if (ro.vehicleId) {
+      throw new BadRequestException(
+        'Only a repair order with no vehicle can be deleted. Remove the vehicle first if this one was raised by mistake.'
+      );
+    }
+    if (ro.services.length) {
+      throw new BadRequestException(
+        'Only a repair order with no services can be deleted. Remove its services first if this one was raised by mistake.'
+      );
+    }
+    if (ro.invoice) {
+      throw new BadRequestException(
+        'This repair order has an invoice and cannot be deleted.'
+      );
+    }
+    if (ro.inspections.length) {
+      throw new BadRequestException(
+        'This repair order has an inspection and cannot be deleted.'
+      );
+    }
+    if (ro.quotationId) {
+      throw new BadRequestException(
+        'This repair order has a quotation and cannot be deleted.'
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (deleteAppointment) {
+        // The RO goes with it: repair_orders.appointmentId is onDelete Cascade.
+        await tx.appointment.delete({ where: { id: ro.appointmentId } });
+        return;
+      }
+
+      await tx.repairOrder.delete({ where: { id } });
+      await tx.appointment.updateMany({
+        where: { id: ro.appointmentId, status: 'IN_PROGRESS' },
+        data: { status: 'SCHEDULED' },
+      });
+    });
+
+    return { deleted: true, appointmentDeleted: deleteAppointment };
+  }
+
   async findOne(id: string, roleName: string, userId: string): Promise<any> {
     const ro = await this.prisma.repairOrder.findUnique({
       where: { id },
