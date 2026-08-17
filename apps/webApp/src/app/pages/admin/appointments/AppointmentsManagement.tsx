@@ -980,24 +980,18 @@ export const AppointmentsManagement: React.FC = () => {
                                 md: '120px',
                               },
                               border: 1,
-                              borderColor: hasAttentionNeeded
-                                ? 'warning.main'
-                                : isToday
-                                ? 'primary.main'
-                                : 'divider',
-                              borderWidth: hasAttentionNeeded
-                                ? { xs: 3, sm: 2 }
-                                : isToday
-                                ? 2
-                                : 1,
+                              // Only today gets a border of its own. Days
+                              // needing attention are called out by their
+                              // corner dot and the colour of what is inside
+                              // them, so the grid stays quiet enough to scan.
+                              borderColor: isToday ? 'primary.main' : 'divider',
+                              borderWidth: isToday ? 2 : 1,
+                              // Days needing attention are marked by their
+                              // border and corner dot only — filling the cell
+                              // drowned out everything inside it.
                               bgcolor: date
                                 ? isPast
                                   ? 'action.hover'
-                                  : hasAttentionNeeded
-                                  ? {
-                                      xs: 'warning.light',
-                                      sm: 'warning.lighter',
-                                    }
                                   : 'background.paper'
                                 : 'action.disabledBackground',
                               borderRadius: { xs: 1, sm: 1 },
@@ -1063,10 +1057,15 @@ export const AppointmentsManagement: React.FC = () => {
                                       : 'normal'
                                   }
                                   color={
-                                    hasAttentionNeeded
+                                    // Today reads white out of its filled
+                                    // circle. Its own colour would be lost
+                                    // there, and on a day that also needs
+                                    // attention the warning colour used to win
+                                    // and leave today with no cue at all.
+                                    isToday
+                                      ? 'primary.contrastText'
+                                      : hasAttentionNeeded
                                       ? 'warning.dark'
-                                      : isToday
-                                      ? 'primary.main'
                                       : isPast
                                       ? 'text.disabled'
                                       : 'text.primary'
@@ -1075,6 +1074,16 @@ export const AppointmentsManagement: React.FC = () => {
                                   sx={{
                                     fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                     textAlign: 'center',
+                                    // A filled circle marks today the way a
+                                    // calendar is normally read at a glance.
+                                    ...(isToday && {
+                                      bgcolor: 'primary.main',
+                                      borderRadius: '50%',
+                                      width: { xs: 20, sm: 24 },
+                                      height: { xs: 20, sm: 24 },
+                                      lineHeight: { xs: '20px', sm: '24px' },
+                                      mx: 'auto',
+                                    }),
                                   }}
                                 >
                                   {date.getDate()}
