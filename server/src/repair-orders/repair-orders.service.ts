@@ -327,6 +327,7 @@ export class RepairOrdersService {
         services: { select: { id: true } },
         inspections: { select: { id: true } },
         invoice: { select: { id: true } },
+        media: { select: { id: true } },
       },
     });
 
@@ -335,6 +336,18 @@ export class RepairOrdersService {
     if (ro.vehicleId) {
       throw new BadRequestException(
         'Only a repair order with no vehicle can be deleted. Remove the vehicle first if this one was raised by mistake.'
+      );
+    }
+    if (ro.noVehicle) {
+      throw new BadRequestException(
+        'This repair order was deliberately marked as having no vehicle (counter service) and cannot be deleted.'
+      );
+    }
+    if (ro.media.length) {
+      // The blobs behind these rows would be orphaned: ROMedia cascades with
+      // the RO, and nothing else holds their blobName.
+      throw new BadRequestException(
+        'This repair order has photos on it and cannot be deleted. Remove them first if it was raised by mistake.'
       );
     }
     if (ro.services.length) {
@@ -358,6 +371,53 @@ export class RepairOrdersService {
       );
     }
 
+    if (deleteAppointment) {
+      // The appointment has to clear its own bar, not the RO's. Payment is
+      // recorded against the appointment — paymentAmount, paymentBreakdown,
+      // productSaleAmount — and the payroll jobs raised on completion point at
+      // it with onDelete SetNull, so deleting one that has been worked would
+      // drop money out of the day's cash report and silently detach payroll.
+      const appointment = await this.prisma.appointment.findUnique({
+        where: { id: ro.appointmentId },
+        select: {
+          status: true,
+          paymentAmount: true,
+          productSaleAmount: true,
+          invoice: { select: { id: true } },
+          jobs: { select: { id: true } },
+        },
+      });
+
+      if (!appointment) {
+        throw new NotFoundException(
+          `Appointment ${ro.appointmentId} not found`
+        );
+      }
+      if (
+        appointment.paymentAmount != null ||
+        appointment.productSaleAmount != null
+      ) {
+        throw new BadRequestException(
+          'This appointment has a payment recorded against it and cannot be deleted. Delete the repair order on its own.'
+        );
+      }
+      if (appointment.status === 'COMPLETED') {
+        throw new BadRequestException(
+          'This appointment is completed and cannot be deleted. Delete the repair order on its own.'
+        );
+      }
+      if (appointment.invoice) {
+        throw new BadRequestException(
+          'This appointment has an invoice and cannot be deleted. Delete the repair order on its own.'
+        );
+      }
+      if (appointment.jobs.length) {
+        throw new BadRequestException(
+          'This appointment has payroll jobs against it and cannot be deleted. Delete the repair order on its own.'
+        );
+      }
+    }
+
     await this.prisma.$transaction(async (tx) => {
       if (deleteAppointment) {
         // The RO goes with it: repair_orders.appointmentId is onDelete Cascade.
@@ -366,6 +426,11 @@ export class RepairOrdersService {
       }
 
       await tx.repairOrder.delete({ where: { id } });
+      // create() advances SCHEDULED or CONFIRMED to IN_PROGRESS and the
+      // original is not recorded, so this cannot be a true inverse. SCHEDULED
+      // is the safe guess of the two: understating it costs a re-confirmation,
+      // while writing CONFIRMED would claim a customer confirmation that may
+      // never have happened.
       await tx.appointment.updateMany({
         where: { id: ro.appointmentId, status: 'IN_PROGRESS' },
         data: { status: 'SCHEDULED' },

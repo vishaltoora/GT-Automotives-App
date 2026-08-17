@@ -160,13 +160,24 @@ describe('RepairOrdersService remove', () => {
     id: 'ro-1',
     appointmentId: 'apt-1',
     vehicleId: null,
+    noVehicle: false,
     quotationId: null,
     services: [],
     inspections: [],
     invoice: null,
+    media: [],
   };
 
-  const setup = (ro: any) => {
+  // An appointment nobody has worked yet: no payment, no invoice, no payroll.
+  const untouchedAppointment = {
+    status: 'IN_PROGRESS',
+    paymentAmount: null,
+    productSaleAmount: null,
+    invoice: null,
+    jobs: [],
+  };
+
+  const setup = (ro: any, appointment: any = untouchedAppointment) => {
     tx = {
       repairOrder: { delete: jest.fn() },
       appointment: { delete: jest.fn(), updateMany: jest.fn() },
@@ -174,6 +185,7 @@ describe('RepairOrdersService remove', () => {
     prisma = {
       $transaction: jest.fn((cb: any) => cb(tx)),
       repairOrder: { findUnique: jest.fn().mockResolvedValue(ro) },
+      appointment: { findUnique: jest.fn().mockResolvedValue(appointment) },
     };
     service = new RepairOrdersService(
       prisma,
@@ -253,5 +265,167 @@ describe('RepairOrdersService remove', () => {
     setup(null);
 
     await expect(service.remove('ro-1', false)).rejects.toThrow(/not found/i);
+  });
+});
+
+/**
+ * Deleting the appointment along with the RO. The appointment has to clear its
+ * own bar: money is recorded against it, not against the RO, so the RO being
+ * empty says nothing about whether the booking has been worked.
+ */
+describe('RepairOrdersService remove — deleting the appointment too', () => {
+  let service: RepairOrdersService;
+  let tx: any;
+  let prisma: any;
+
+  const emptyRO = {
+    id: 'ro-1',
+    appointmentId: 'apt-1',
+    vehicleId: null,
+    noVehicle: false,
+    quotationId: null,
+    services: [],
+    inspections: [],
+    invoice: null,
+    media: [],
+  };
+
+  const setup = (appointment: any) => {
+    tx = {
+      repairOrder: { delete: jest.fn() },
+      appointment: { delete: jest.fn(), updateMany: jest.fn() },
+    };
+    prisma = {
+      $transaction: jest.fn((cb: any) => cb(tx)),
+      repairOrder: { findUnique: jest.fn().mockResolvedValue(emptyRO) },
+      appointment: { findUnique: jest.fn().mockResolvedValue(appointment) },
+    };
+    service = new RepairOrdersService(
+      prisma,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+  };
+
+  const untouched = {
+    status: 'IN_PROGRESS',
+    paymentAmount: null,
+    productSaleAmount: null,
+    invoice: null,
+    jobs: [],
+  };
+
+  it('deletes a booking nobody has worked', async () => {
+    setup(untouched);
+
+    await service.remove('ro-1', true);
+
+    expect(tx.appointment.delete).toHaveBeenCalledWith({
+      where: { id: 'apt-1' },
+    });
+  });
+
+  it('refuses a booking that has taken money — the RO being empty does not make the cash disappear', async () => {
+    setup({ ...untouched, paymentAmount: 240 });
+
+    await expect(service.remove('ro-1', true)).rejects.toThrow(/payment/i);
+    expect(tx.appointment.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses a booking with a product sale recorded', async () => {
+    setup({ ...untouched, productSaleAmount: 80 });
+
+    await expect(service.remove('ro-1', true)).rejects.toThrow(/payment/i);
+    expect(tx.appointment.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses a completed booking', async () => {
+    setup({ ...untouched, status: 'COMPLETED' });
+
+    await expect(service.remove('ro-1', true)).rejects.toThrow(/completed/i);
+    expect(tx.appointment.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses a booking that has been invoiced', async () => {
+    setup({ ...untouched, invoice: { id: 'inv-1' } });
+
+    await expect(service.remove('ro-1', true)).rejects.toThrow(/invoice/i);
+    expect(tx.appointment.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses a booking staff have been paid out for', async () => {
+    setup({ ...untouched, jobs: [{ id: 'job-1' }] });
+
+    await expect(service.remove('ro-1', true)).rejects.toThrow(/payroll/i);
+    expect(tx.appointment.delete).not.toHaveBeenCalled();
+  });
+
+  it('leaves the appointment alone entirely when it is not being deleted', async () => {
+    setup({ ...untouched, paymentAmount: 240, status: 'COMPLETED' });
+
+    // A paid booking blocks deleting the booking, not deleting the RO.
+    await service.remove('ro-1', false);
+
+    expect(tx.repairOrder.delete).toHaveBeenCalled();
+    expect(tx.appointment.delete).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The guard on the RO itself. Photos and the deliberate no-vehicle flag both
+ * mean the RO is real, not raised by mistake.
+ */
+describe('RepairOrdersService remove — RO carries something', () => {
+  let service: RepairOrdersService;
+  let tx: any;
+  let prisma: any;
+
+  const setup = (ro: any) => {
+    tx = {
+      repairOrder: { delete: jest.fn() },
+      appointment: { delete: jest.fn(), updateMany: jest.fn() },
+    };
+    prisma = {
+      $transaction: jest.fn((cb: any) => cb(tx)),
+      repairOrder: { findUnique: jest.fn().mockResolvedValue(ro) },
+      appointment: { findUnique: jest.fn() },
+    };
+    service = new RepairOrdersService(
+      prisma,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+  };
+
+  const base = {
+    id: 'ro-1',
+    appointmentId: 'apt-1',
+    vehicleId: null,
+    noVehicle: false,
+    quotationId: null,
+    services: [],
+    inspections: [],
+    invoice: null,
+    media: [],
+  };
+
+  it('refuses an RO with photos — their blobs would be orphaned', async () => {
+    setup({ ...base, media: [{ id: 'media-1' }] });
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(/photos/i);
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses a counter-service RO deliberately marked as having no vehicle', async () => {
+    setup({ ...base, noVehicle: true });
+
+    await expect(service.remove('ro-1', false)).rejects.toThrow(
+      /counter service/i
+    );
+    expect(tx.repairOrder.delete).not.toHaveBeenCalled();
   });
 });

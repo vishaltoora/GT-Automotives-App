@@ -2092,6 +2092,7 @@ export function RODetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin, isSupervisor, isStaff, isForeman } = useAuth();
+  const { showApiError } = useErrorHelpers();
 
   const [ro, setRo] = useState<RepairOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -2139,11 +2140,16 @@ export function RODetail() {
   }
 
   // An RO is only deletable while it carries nothing — the accident case the
-  // backend also enforces. Anything recorded against it makes it real work.
+  // backend also enforces. Anything recorded against it makes it real work,
+  // including photos (whose blobs would be orphaned) and the noVehicle flag,
+  // which marks a counter-service RO as deliberately vehicle-less rather than
+  // unfinished.
   const isEmptyRO =
     !ro.vehicle &&
+    !ro.noVehicle &&
     ro.services.length === 0 &&
     ro.inspections.length === 0 &&
+    ro.media.length === 0 &&
     !ro.invoice &&
     !ro.quotation;
 
@@ -2152,10 +2158,10 @@ export function RODetail() {
     try {
       await repairOrderRequests.remove(ro.id, deleteAppointment);
       navigate(`${baseRoute}/repair-orders`);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message || 'Failed to delete this repair order'
-      );
+    } catch (error) {
+      // Not setError: that channel is the page-load failure, and rendering it
+      // replaces the whole repair order with a bare alert.
+      showApiError(error, 'Failed to delete this repair order.');
       setDeleteOpen(false);
     } finally {
       setDeleting(false);
@@ -2225,7 +2231,7 @@ export function RODetail() {
           />
           <Typography variant="caption" color="text.secondary" display="block">
             {deleteAppointment
-              ? "The customer's booking will be deleted too."
+              ? "The customer's booking will be deleted too. A booking that has been paid, completed, invoiced or paid out to staff cannot be deleted — delete the repair order on its own instead."
               : 'The appointment stays and goes back to Scheduled.'}
           </Typography>
         </DialogContent>
