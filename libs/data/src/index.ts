@@ -31,6 +31,7 @@ export * from './lib/tax-report.dto';
 export * from './lib/tire-sale.dto';
 export * from './lib/repair-order.dto';
 export * from './lib/message.dto';
+export * from './lib/message-tokens';
 export * from './lib/pay-stub.dto';
 
 // Export utility functions

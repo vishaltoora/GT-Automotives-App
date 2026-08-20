@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { MessageThread } from '../../components/messaging/MessageThread';
 import {
   Alert,
   Autocomplete,
@@ -2061,27 +2062,22 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
 
 // ---- Chat tab (placeholder) ----
 
-function ChatTab() {
+function ChatTab({
+  roId,
+  currentUserId,
+  isAdmin,
+}: {
+  roId: string;
+  currentUserId: string;
+  isAdmin: boolean;
+}) {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        py: 8,
-        gap: 2,
-      }}
-    >
-      <ChatIcon sx={{ fontSize: 56, color: 'text.disabled' }} />
-      <Typography variant="h6" color="text.secondary">
-        Chat coming soon
-      </Typography>
-      <Typography variant="body2" color="text.disabled" textAlign="center">
-        Internal messaging between service advisors and technicians will appear
-        here.
-      </Typography>
-    </Box>
+    <MessageThread
+      entityType="REPAIR_ORDER"
+      entityId={roId}
+      currentUserId={currentUserId}
+      isAdmin={isAdmin}
+    />
   );
 }
 
@@ -2272,7 +2268,13 @@ export function RODetail() {
         />
       )}
       {tab === 1 && <HistoryTab ro={ro} baseRoute={baseRoute} />}
-      {tab === 2 && <ChatTab />}
+      {tab === 2 && (
+        <ChatTab
+          roId={ro.id}
+          currentUserId={user?.id ?? ''}
+          isAdmin={isAdmin}
+        />
+      )}
     </Box>
   );
 }
