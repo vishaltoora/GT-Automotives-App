@@ -419,3 +419,22 @@ export const CarfaxSyncStatus = {
 } as const;
 export type CarfaxSyncStatus = (typeof CarfaxSyncStatus)[keyof typeof CarfaxSyncStatus];
 
+export const ConversationType = {
+  GENERAL: 'GENERAL',
+  ENTITY: 'ENTITY',
+  DIRECT: 'DIRECT',
+} as const;
+export type ConversationType = (typeof ConversationType)[keyof typeof ConversationType];
+
+export const ConversationEntity = {
+  REPAIR_ORDER: 'REPAIR_ORDER',
+  APPOINTMENT: 'APPOINTMENT',
+} as const;
+export type ConversationEntity = (typeof ConversationEntity)[keyof typeof ConversationEntity];
+
+export const MessageVisibility = {
+  PUBLIC: 'PUBLIC',
+  MENTIONED_ONLY: 'MENTIONED_ONLY',
+} as const;
+export type MessageVisibility = (typeof MessageVisibility)[keyof typeof MessageVisibility];
+
