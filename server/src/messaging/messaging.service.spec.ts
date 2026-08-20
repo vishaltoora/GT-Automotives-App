@@ -69,7 +69,9 @@ describe('MessagingService', () => {
     };
 
     prisma = {
-      $transaction: jest.fn((fn: any) => fn(tx)),
+      $transaction: jest.fn((arg: any) =>
+        typeof arg === 'function' ? arg(tx) : Promise.all(arg)
+      ),
       conversation: {
         findUnique: jest.fn().mockResolvedValue({ id: 'conv-1' }),
         findFirst: jest.fn().mockResolvedValue({ id: 'conv-1' }),
@@ -78,6 +80,7 @@ describe('MessagingService', () => {
       conversationMember: {
         upsert: jest.fn().mockResolvedValue({}),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn().mockResolvedValue({ lastReadAt: null }),
       },
       user: {
         findMany: jest.fn().mockImplementation(({ where }) => {
@@ -509,6 +512,53 @@ describe('MessagingService', () => {
       const inbox = await service.getMentionInbox(author, false);
 
       expect(inbox[0].conversation.roNumber).toBeNull();
+    });
+  });
+
+  describe('marking a conversation read', () => {
+    /*
+     * The badge used to lie. Somebody tagged in a repair order would open that
+     * thread, read the message, and still be told they had an unread mention,
+     * because the only thing that cleared one was clicking it in the inbox.
+     */
+    it('clears the mentions in that conversation, not just the read mark', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      expect(prisma.messageMention.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId: author.id,
+            readAt: null,
+            message: { conversationId: 'conv-1' },
+          },
+        })
+      );
+    });
+
+    it('moves the read mark forward', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      expect(prisma.conversationMember.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { conversationId: 'conv-1', userId: author.id },
+          data: { lastReadAt: expect.any(Date) },
+        })
+      );
+    });
+
+    // Half of this applied would leave the two counts disagreeing.
+    it('does both in one transaction', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves other conversations alone', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      const where = prisma.messageMention.updateMany.mock.calls.at(-1)[0].where;
+      expect(where.message.conversationId).toBe('conv-1');
+      expect(where.userId).toBe(author.id);
     });
   });
 });

@@ -22,6 +22,7 @@ import {
 } from '../../requests/messaging.requests';
 import { colors } from '../../theme/colors';
 import { useRoleBaseRoute } from './hooks/useRoleBaseRoute';
+import { announceRead } from './messaging-read-signal';
 
 interface Props {
   /** Bumped by the caller when the unread count changes, to refetch. */
@@ -110,7 +111,10 @@ export function MentionsList({
       )
     );
     markMentionRead(item.mentionId)
-      .then(() => callbacksRef.current.onRead?.())
+      .then(() => {
+        callbacksRef.current.onRead?.();
+        announceRead();
+      })
       .catch(() => undefined);
   }, []);
 

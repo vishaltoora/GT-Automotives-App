@@ -19,6 +19,10 @@ interface Props {
     authorName: string;
     audience: string[];
   }) => void;
+  /** Arrived since this reader last looked. */
+  unread?: boolean;
+  /** Clicking a message is a deliberate "I have read this". */
+  onSeen?: () => void;
 }
 
 const displayName = (
@@ -48,6 +52,8 @@ export function MessageItem({
   onDelete,
   showReferences = true,
   onReply,
+  unread = false,
+  onSeen,
 }: Props) {
   const navigate = useNavigate();
   const baseRoute = useRoleBaseRoute();
@@ -71,7 +77,7 @@ export function MessageItem({
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: unread ? 800 : 600 }}>
           {displayName(message.author.firstName, message.author.lastName)}
         </Typography>
         <Typography variant="caption" color="text.secondary">

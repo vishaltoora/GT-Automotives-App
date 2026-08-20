@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Badge,
   Box,
@@ -20,6 +20,7 @@ import { useMessagePolling } from './hooks/useMessagePolling';
 import { useNotificationSound } from './hooks/useNotificationSound';
 import { MessageThread } from './MessageThread';
 import { MentionsList } from './MentionsList';
+import { onReadAnnounced } from './messaging-read-signal';
 import type { ReplyTarget } from './MessageThread';
 import type { MentionInboxItemDto } from '@gt-automotive/data';
 
@@ -95,6 +96,10 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
 
   const { enabled: soundEnabled, setEnabled: setSoundEnabled } =
     useNotificationSound(unreadTotal);
+
+  // The count is held open in a long poll, so it would otherwise stay wrong
+  // for up to twenty-five seconds after something was read.
+  useEffect(() => onReadAnnounced(() => void refresh()), [refresh]);
 
   return (
     <>
@@ -233,7 +238,6 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
           {open && !openedThread && tab === 1 && (
             <MentionsList
               refreshKey={unreadMentions}
-              onRead={() => void refresh()}
               onNavigate={closeDrawer}
               onOpenConversation={openThreadFor}
             />

@@ -330,15 +330,31 @@ export class MessagingService {
     });
   }
 
+  /**
+   * Reading a conversation clears its mentions too.
+   *
+   * Without this the badge lied: somebody tagged in a repair order would open
+   * that thread, read the message, and still be told they had an unread
+   * mention — because the only thing that cleared one was clicking it in the
+   * inbox. Being read is being read, wherever it happened.
+   */
   async markConversationRead(
     conversationId: string,
     userId: string
   ): Promise<void> {
     await this.ensureMembership(conversationId, userId);
-    await this.prisma.conversationMember.updateMany({
-      where: { conversationId, userId },
-      data: { lastReadAt: new Date() },
-    });
+    const now = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.conversationMember.updateMany({
+        where: { conversationId, userId },
+        data: { lastReadAt: now },
+      }),
+      this.prisma.messageMention.updateMany({
+        where: { userId, readAt: null, message: { conversationId } },
+        data: { readAt: now },
+      }),
+    ]);
   }
 
   async markMentionRead(mentionId: string, userId: string): Promise<void> {
@@ -375,7 +391,7 @@ export class MessagingService {
       }));
 
     await this.ensureMembership(conversation.id, userId);
-    return conversation;
+    return this.withReadState(conversation, userId);
   }
 
   /**
@@ -411,7 +427,29 @@ export class MessagingService {
     }
 
     await this.ensureMembership(conversation.id, userId);
-    return conversation;
+    return this.withReadState(conversation, userId);
+  }
+
+  /**
+   * Adds where this reader had got to. Everything after it is drawn as new, and
+   * the mark is taken once when the thread opens rather than followed live —
+   * otherwise the "new" line would erase itself as you looked at it.
+   */
+  private async withReadState<T extends { id: string }>(
+    conversation: T,
+    userId: string
+  ): Promise<T & { lastReadAt: string | null }> {
+    const membership = await this.prisma.conversationMember.findUnique({
+      where: {
+        conversationId_userId: { conversationId: conversation.id, userId },
+      },
+      select: { lastReadAt: true },
+    });
+
+    return {
+      ...conversation,
+      lastReadAt: membership?.lastReadAt?.toISOString() ?? null,
+    };
   }
 
   // ---- Lookups for the composer ----

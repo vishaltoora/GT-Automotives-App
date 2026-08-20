@@ -120,6 +120,8 @@ export interface MessageDto {
 
 export interface ConversationDto {
   id: string;
+  /** Where this reader had got to when the thread opened. */
+  lastReadAt?: string | null;
   type: ConversationType;
   title: string | null;
   entityType: ConversationEntity | null;

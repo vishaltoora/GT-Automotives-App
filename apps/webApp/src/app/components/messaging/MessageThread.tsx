@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   CircularProgress,
+  Divider,
   IconButton,
   Typography,
 } from '@mui/material';
@@ -23,6 +24,7 @@ import {
 } from '../../requests/messaging.requests';
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
+import { announceRead } from './messaging-read-signal';
 
 export interface ReplyTarget {
   messageId: string;
@@ -63,6 +65,7 @@ export function MessageThread({
   const [replyTo, setReplyTo] = useState<ReplyTarget | undefined>(
     initialReplyTo
   );
+  const [readMark, setReadMark] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
 
   const { messages, loading, appendLocal, removeLocal } =
@@ -98,7 +101,10 @@ export function MessageThread({
           entityType && entityId
             ? await getEntityThread(entityType, entityId)
             : await getGeneralThread();
-        if (!cancelled) setConversationId(conversation.id);
+        if (!cancelled) {
+          setConversationId(conversation.id);
+          setReadMark(conversation.lastReadAt ?? null);
+        }
       } catch (error) {
         if (!cancelled) {
           setOpenError('This conversation could not be opened.');
@@ -114,14 +120,25 @@ export function MessageThread({
     };
   }, [entityType, entityId, knownConversationId]);
 
-  // Reading the thread is what marks it read, so the badge clears on the way
-  // out rather than on every render.
-  useEffect(() => {
+  /*
+   * Mark read while the thread is on screen, not on the way out.
+   *
+   * Marking only on unmount meant the badge still showed a count for messages
+   * being looked at, and stayed wrong for as long as the thread stayed open.
+   * Re-runs when new messages land, so a thread left open keeps clearing.
+   */
+  const markRead = useCallback(() => {
     if (!conversationId) return;
-    return () => {
-      void markConversationRead(conversationId).catch(() => undefined);
-    };
+    markConversationRead(conversationId)
+      .then(announceRead)
+      .catch(() => undefined);
   }, [conversationId]);
+
+  useEffect(() => {
+    if (!conversationId || document.hidden) return;
+    const handle = setTimeout(markRead, 400);
+    return () => clearTimeout(handle);
+  }, [conversationId, markRead, messages.length]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -198,17 +215,54 @@ export function MessageThread({
             </Typography>
           </Box>
         ) : (
-          messages.map((message) => (
-            <MessageItem
-              key={message.id}
-              message={message}
-              currentUserId={currentUserId}
-              canDelete={isAdmin}
-              onDelete={handleDelete}
-              showReferences={!entityId}
-              onReply={setReplyTo}
-            />
-          ))
+          messages.map((message, index) => {
+            const isUnread =
+              message.author.id !== currentUserId &&
+              (!readMark || message.createdAt > readMark);
+            const firstUnread =
+              isUnread &&
+              !messages
+                .slice(0, index)
+                .some(
+                  (earlier) =>
+                    earlier.author.id !== currentUserId &&
+                    (!readMark || earlier.createdAt > readMark)
+                );
+
+            return (
+              <Box key={message.id}>
+                {firstUnread && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      my: 1,
+                    }}
+                  >
+                    <Divider sx={{ flexGrow: 1 }} />
+                    <Typography
+                      variant="caption"
+                      sx={{ color: colors.semantic.error, fontWeight: 700 }}
+                    >
+                      New
+                    </Typography>
+                    <Divider sx={{ flexGrow: 1 }} />
+                  </Box>
+                )}
+                <MessageItem
+                  message={message}
+                  currentUserId={currentUserId}
+                  canDelete={isAdmin}
+                  onDelete={handleDelete}
+                  showReferences={!entityId}
+                  onReply={setReplyTo}
+                  unread={isUnread}
+                  onSeen={markRead}
+                />
+              </Box>
+            );
+          })
         )}
         <div ref={bottomRef} />
       </Box>
