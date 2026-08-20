@@ -70,21 +70,27 @@ export function MessageItem({
     ? colors.primary.main
     : null;
 
+  // Identical either way. Which side it sits on is the only thing that says
+  // who wrote it — tinting your own as well made the same conversation look
+  // like two different kinds of message.
   const background = isPrivate
     ? `${colors.semantic.warningLight}22`
-    : isMine
-    ? `${colors.primary.main}12`
     : unread
     ? `${colors.primary.light}14`
     : colors.neutral[50];
 
   return (
-    // Own messages sit on the right, the way every chat does it: the side says
-    // who is talking before any of the text is read.
+    /*
+     * Your own messages are pushed to the right, and that is the whole
+     * difference — the box and everything in it is laid out identically either
+     * way. Mirroring the contents as well made the same conversation look like
+     * two kinds of message.
+     */
     <Box
       sx={{
         display: 'flex',
         justifyContent: isMine ? 'flex-end' : 'flex-start',
+        pl: isMine ? 4 : 0,
         mb: 0.5,
       }}
       onClick={() => onSeen?.()}
@@ -98,32 +104,25 @@ export function MessageItem({
           borderRadius: 1.5,
           cursor: onSeen ? 'pointer' : 'default',
           bgcolor: background,
-          // The accent follows the bubble so it stays on the outer edge rather
-          // than floating in the middle of the row.
-          ...(accent
-            ? isMine
-              ? { borderRight: `3px solid ${accent}` }
-              : { borderLeft: `3px solid ${accent}` }
-            : {}),
+          ...(accent ? { borderLeft: `3px solid ${accent}` } : {}),
           '&:hover .message-actions': { opacity: 1 },
         }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            flexDirection: isMine ? 'row-reverse' : 'row',
-          }}
-        >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <UserAvatar name={author} userId={message.author.id} size={24} />
           <Typography
             variant="subtitle2"
-            sx={{ fontWeight: unread ? 800 : 600 }}
+            noWrap
+            sx={{ fontWeight: unread ? 800 : 600, flexShrink: 0 }}
           >
             {author}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            sx={{ flexShrink: 0 }}
+          >
             {formatTime(message.createdAt)}
           </Typography>
           {message.editedAt && (
@@ -189,7 +188,6 @@ export function MessageItem({
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             mt: 0.25,
-            textAlign: isMine ? 'right' : 'left',
           }}
         >
           {segments.map((segment, index) => {
