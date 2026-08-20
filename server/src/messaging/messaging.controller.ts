@@ -37,9 +37,19 @@ export class MessagingController {
   constructor(private readonly messaging: MessagingService) {}
 
   /** The single poll: new messages for the open thread, plus every badge. */
+  /**
+   * `waitMs` opts into long polling: the request is held open until a message
+   * arrives or the wait elapses. Omitted or zero returns immediately, so an
+   * older client keeps working unchanged.
+   */
   @Get('poll')
   poll(@CurrentUser() user: MessagingUser, @Query() query: PollQueryDto) {
-    return this.messaging.poll(user, query.conversationId, query.since);
+    return this.messaging.poll(
+      user,
+      query.conversationId,
+      query.since,
+      query.waitMs ? Number(query.waitMs) : 0
+    );
   }
 
   @Get('conversations/general')
