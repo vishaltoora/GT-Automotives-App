@@ -14,7 +14,10 @@ import {
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import { useMessagePolling } from './hooks/useMessagePolling';
+import { useNotificationSound } from './hooks/useNotificationSound';
 import { MessageThread } from './MessageThread';
 import { MentionsList } from './MentionsList';
 import type { ReplyTarget } from './MessageThread';
@@ -81,7 +84,17 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
 
   // No conversation id: this poll exists for the counts alone. The server
   // returns them whether or not a thread is open.
-  const { unreadMentions, refresh } = useMessagePolling(undefined);
+  const { unreadMentions, conversationUnreads, refresh } =
+    useMessagePolling(undefined);
+
+  // Everything unread, not only mentions: an untagged message in the shop
+  // channel is still something somebody has not seen.
+  const unreadTotal =
+    unreadMentions +
+    Object.values(conversationUnreads).reduce((sum, n) => sum + n, 0);
+
+  const { enabled: soundEnabled, setEnabled: setSoundEnabled } =
+    useNotificationSound(unreadTotal);
 
   return (
     <>
@@ -147,12 +160,23 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
               {openedThread ? openedThread.title : 'Messages'}
             </Typography>
           </Box>
-          <IconButton
-            onClick={() => setOpen(false)}
-            aria-label="Close messages"
-          >
-            <CloseIcon />
-          </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Tooltip title={soundEnabled ? 'Mute new-message sound' : 'Unmute'}>
+              <IconButton
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                aria-label={
+                  soundEnabled
+                    ? 'Mute new-message sound'
+                    : 'Unmute new-message sound'
+                }
+              >
+                {soundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+              </IconButton>
+            </Tooltip>
+            <IconButton onClick={closeDrawer} aria-label="Close messages">
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </Box>
 
         {!openedThread && (
