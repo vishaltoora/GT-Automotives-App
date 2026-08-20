@@ -114,6 +114,33 @@ export class MessagingService {
   async getMentionInbox(user: MessagingUser, unreadOnly: boolean) {
     const rows = await this.messages.findMentionInbox(user.id, unreadOnly);
 
+    // A mention is read away from the thread it was written in, so it has to
+    // carry its own context. The repair order number comes from the
+    // conversation rather than from a reference row on the message: a message
+    // posted inside a repair order is about that repair order by definition,
+    // and storing it twice would leave two things to keep in step.
+    const roIds = [
+      ...new Set(
+        rows
+          .filter(
+            (row) =>
+              row.message.conversation.entityType === 'REPAIR_ORDER' &&
+              row.message.conversation.entityId
+          )
+          .map((row) => row.message.conversation.entityId as string)
+      ),
+    ];
+
+    const repairOrders = roIds.length
+      ? await this.prisma.repairOrder.findMany({
+          where: { id: { in: roIds } },
+          select: { id: true, roNumber: true },
+        })
+      : [];
+    const roNumberById = new Map(
+      repairOrders.map((ro) => [ro.id, ro.roNumber])
+    );
+
     return rows.map((row) => ({
       mentionId: row.id,
       readAt: row.readAt?.toISOString() ?? null,
@@ -122,6 +149,9 @@ export class MessagingService {
         id: row.message.conversation.id,
         entityType: row.message.conversation.entityType,
         entityId: row.message.conversation.entityId,
+        roNumber: row.message.conversation.entityId
+          ? roNumberById.get(row.message.conversation.entityId) ?? null
+          : null,
       },
     }));
   }
