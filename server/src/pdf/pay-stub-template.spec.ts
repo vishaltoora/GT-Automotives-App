@@ -270,6 +270,67 @@ describe('PdfService pay stub template', () => {
       expect(html).toContain('Vacation Pay (4.5%)');
     });
 
+    describe('paying it out', () => {
+      const withPayout: any = {
+        ...withVacation,
+        vacationPayPaidOut: 200,
+        vacationPayBalance: 322.88,
+        netPay: 3054.96,
+      };
+
+      it('shows what was taken from the bank', () => {
+        const html = service.generatePayStubHtml(withPayout);
+
+        expect(html).toContain('Vacation Paid Out');
+        expect(html).toContain('200.00');
+      });
+
+      // Otherwise the line reads as a fresh deduction on money already taxed.
+      it('says the money was already taxed', () => {
+        const html = service.generatePayStubHtml(withPayout);
+
+        expect(html).toContain('already taxed');
+      });
+
+      it('leaves the payout outside the gross total', () => {
+        const html = service.generatePayStubHtml(withPayout);
+
+        // Gross is earnings plus this period's accrual only — the payout was
+        // counted as gross in the period it was earned.
+        expect(html).toContain('3,194.88');
+      });
+
+      it('shows what the employee has left', () => {
+        const html = service.generatePayStubHtml(withPayout);
+
+        expect(html).toContain('Vacation available');
+        expect(html).toContain('322.88');
+      });
+
+      it('omits the payout line when nothing was taken', () => {
+        const html = service.generatePayStubHtml(withVacation);
+
+        expect(html).not.toContain('Vacation Paid Out');
+      });
+
+      // The balance is the figure an employee actually wants off a pay stub,
+      // so it shows as soon as there is any vacation activity at all.
+      it('still shows the balance on a stub that only accrued', () => {
+        const html = service.generatePayStubHtml({
+          ...withVacation,
+          vacationPayBalance: 122.88,
+        });
+
+        expect(html).toContain('Vacation available');
+      });
+
+      it('shows no vacation panel at all on a pre-vacation stub', () => {
+        const html = service.generatePayStubHtml(januaryStub);
+
+        expect(html).not.toContain('Vacation available');
+      });
+    });
+
     it('omits both lines on a stub that accrued nothing', () => {
       // Stubs raised before vacation was tracked carry zeros, and must print
       // exactly as they always did rather than gaining two empty rows.

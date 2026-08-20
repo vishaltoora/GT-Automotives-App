@@ -122,6 +122,11 @@ export class PayStubsService {
       );
     }
 
+    // Money leaving the bank, not new earnings. It stays out of grossPay
+    // because it was counted as gross and taxed in the period it was earned;
+    // counting it again would inflate the year and tax it twice.
+    const vacationPayPaidOut = round2(dto.vacationPayPaidOut ?? 0);
+
     const grossPay = round2(regularAmount + vacationPayAmount);
     const eiAmount = round2(dto.eiAmount ?? 0);
     const cppAmount = round2(dto.cppAmount ?? 0);
@@ -130,11 +135,27 @@ export class PayStubsService {
     const totalWithholding = round2(
       eiAmount + cppAmount + incomeTaxAmount + otherDeductions + vacationPayHeld
     );
-    const netPay = round2(grossPay - totalWithholding);
+    // Added after withholding, not before: this is already-taxed money being
+    // handed over, so it must not attract a second round of deductions.
+    const netPay = round2(grossPay - totalWithholding + vacationPayPaidOut);
 
     if (netPay < 0) {
       throw new BadRequestException(
         'Withholdings exceed gross pay — net pay would be negative'
+      );
+    }
+
+    // Paying out more vacation than the employee has banked is not a rounding
+    // problem, it is paying for time nobody earned. Checked against the balance
+    // as it stood before this stub.
+    const bankedBefore = await this.vacationBalanceBefore(
+      dto.employeeId,
+      payDate
+    );
+    if (vacationPayPaidOut > bankedBefore) {
+      throw new BadRequestException(
+        `Vacation payout of ${vacationPayPaidOut.toFixed(2)} exceeds the ` +
+          `${bankedBefore.toFixed(2)} this employee has banked`
       );
     }
 
@@ -173,6 +194,10 @@ export class PayStubsService {
         vacationPayRate,
         vacationPayAmount,
         vacationPayHeld,
+        vacationPayPaidOut,
+        vacationPayBalance: round2(
+          bankedBefore + vacationPayHeld - vacationPayPaidOut
+        ),
         eiAmount,
         cppAmount,
         incomeTaxAmount,
@@ -232,6 +257,8 @@ export class PayStubsService {
     // Run unconditionally rather than only when a later stub exists, so there
     // is one path to be right about instead of two.
     await this.recomputeYearToDate(dto.employeeId, payDate.getUTCFullYear());
+    // The balance spans years, so it gets its own pass over the whole record.
+    await this.recomputeVacationBalance(dto.employeeId);
 
     // Re-read: the row above holds the totals computed before the rewrite, and
     // returning those would show the accountant a figure the database no longer
@@ -399,6 +426,11 @@ export class PayStubsService {
       );
     }
 
+    const vacationPayPaidOut = pick(
+      dto.vacationPayPaidOut,
+      existing.vacationPayPaidOut
+    );
+
     const grossPay = round2(regularAmount + vacationPayAmount);
     const eiAmount = pick(dto.eiAmount, existing.eiAmount);
     const cppAmount = pick(dto.cppAmount, existing.cppAmount);
@@ -407,11 +439,26 @@ export class PayStubsService {
     const totalWithholding = round2(
       eiAmount + cppAmount + incomeTaxAmount + otherDeductions + vacationPayHeld
     );
-    const netPay = round2(grossPay - totalWithholding);
+    const netPay = round2(grossPay - totalWithholding + vacationPayPaidOut);
 
     if (netPay < 0) {
       throw new BadRequestException(
         'Withholdings exceed gross pay — net pay would be negative'
+      );
+    }
+
+    // Measured against the bank as it stood before this stub, with this stub's
+    // own contribution excluded — otherwise an amendment would be checked
+    // against a balance that already contains the payout being amended.
+    const bankedBefore = await this.vacationBalanceBefore(
+      existing.employeeId,
+      payDate,
+      id
+    );
+    if (vacationPayPaidOut > bankedBefore) {
+      throw new BadRequestException(
+        `Vacation payout of ${vacationPayPaidOut.toFixed(2)} exceeds the ` +
+          `${bankedBefore.toFixed(2)} this employee had banked`
       );
     }
 
@@ -429,6 +476,10 @@ export class PayStubsService {
         vacationPayRate,
         vacationPayAmount,
         vacationPayHeld,
+        vacationPayPaidOut,
+        vacationPayBalance: round2(
+          bankedBefore + vacationPayHeld - vacationPayPaidOut
+        ),
         eiAmount,
         cppAmount,
         incomeTaxAmount,
@@ -452,6 +503,7 @@ export class PayStubsService {
     for (const year of years) {
       await this.recomputeYearToDate(existing.employeeId, year);
     }
+    await this.recomputeVacationBalance(existing.employeeId);
 
     await this.auditRepository.create({
       userId,
@@ -547,6 +599,107 @@ export class PayStubsService {
           ytdNetPay: round2(running.netPay),
         },
       });
+    }
+  }
+
+  /**
+   * What this employee currently has banked in vacation.
+   *
+   * Read by the pay stub form so the accountant can see what is available
+   * before typing a payout, rather than guessing and being refused on save.
+   */
+  async getVacationBalance(
+    employeeId: string,
+    currentUser: any
+  ): Promise<{ employeeId: string; balance: number }> {
+    this.assertCanAccessEmployee(employeeId, currentUser);
+
+    const stubs = await this.prisma.payStub.findMany({
+      where: { employeeId },
+      select: { vacationPayHeld: true, vacationPayPaidOut: true },
+    });
+
+    return {
+      employeeId,
+      balance: round2(
+        stubs.reduce(
+          (balance, stub) =>
+            balance + num(stub.vacationPayHeld) - num(stub.vacationPayPaidOut),
+          0
+        )
+      ),
+    };
+  }
+
+  /**
+   * Vacation banked by this employee immediately before a given pay date.
+   *
+   * Everything held to date, less everything paid out to date. Note what this
+   * does *not* do: scope itself to a calendar year. The ytd columns reset each
+   * January because that is how earnings are reported, but a vacation bank does
+   * not — vacation earned in December is usually taken the following spring,
+   * and resetting it would either erase the liability or pay it twice.
+   *
+   * Bounded above by the pay date so a stub backfilled into the middle of the
+   * year is measured against the bank as it stood then, not as it stands now.
+   */
+  private async vacationBalanceBefore(
+    employeeId: string,
+    payDate: Date,
+    excludeStubId?: string
+  ): Promise<number> {
+    const earlier = await this.prisma.payStub.findMany({
+      where: {
+        employeeId,
+        payDate: { lt: payDate },
+        ...(excludeStubId ? { id: { not: excludeStubId } } : {}),
+      },
+      select: { vacationPayHeld: true, vacationPayPaidOut: true },
+    });
+
+    return round2(
+      earlier.reduce(
+        (balance, stub) =>
+          balance + num(stub.vacationPayHeld) - num(stub.vacationPayPaidOut),
+        0
+      )
+    );
+  }
+
+  /**
+   * Rewrite the vacation balance on every stub this employee has, in pay date
+   * order.
+   *
+   * Separate from recomputeYearToDate() and deliberately not year-scoped: the
+   * balance is a running total over the whole employment. Correcting a stub in
+   * March has to carry through to the following February, which a per-year
+   * rewrite would never reach.
+   */
+  private async recomputeVacationBalance(employeeId: string) {
+    const stubs = await this.prisma.payStub.findMany({
+      where: { employeeId },
+      orderBy: [{ payDate: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        id: true,
+        vacationPayHeld: true,
+        vacationPayPaidOut: true,
+        vacationPayBalance: true,
+      },
+    });
+
+    let balance = 0;
+    for (const stub of stubs) {
+      balance = round2(
+        balance + num(stub.vacationPayHeld) - num(stub.vacationPayPaidOut)
+      );
+      // Only write where it actually moved — a correction early in the record
+      // otherwise rewrites every stub the employee has ever had.
+      if (round2(num(stub.vacationPayBalance)) !== balance) {
+        await this.prisma.payStub.update({
+          where: { id: stub.id },
+          data: { vacationPayBalance: balance },
+        });
+      }
     }
   }
 
@@ -831,6 +984,8 @@ export class PayStubsService {
       vacationPayRate: num(stub.vacationPayRate),
       vacationPayAmount: num(stub.vacationPayAmount),
       vacationPayHeld: num(stub.vacationPayHeld),
+      vacationPayPaidOut: num(stub.vacationPayPaidOut),
+      vacationPayBalance: num(stub.vacationPayBalance),
       eiAmount: num(stub.eiAmount),
       cppAmount: num(stub.cppAmount),
       incomeTaxAmount: num(stub.incomeTaxAmount),

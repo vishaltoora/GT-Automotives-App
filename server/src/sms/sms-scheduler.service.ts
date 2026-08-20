@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+// `Cron` is deliberately not imported: both scheduled jobs in this file are
+// disabled, and an unused import would not survive the linter. Restore it
+// alongside whichever decorator is being re-enabled.
 import { PrismaService } from '@gt-automotive/database';
 import { SmsService } from './sms.service';
 import { getCurrentBusinessDate } from '../config/timezone.config';
@@ -10,14 +12,23 @@ export class SmsSchedulerService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smsService: SmsService,
+    private readonly smsService: SmsService
   ) {}
 
   /**
-   * Run daily at 8:00 AM to send daily schedule to staff members
-   * Sends list of today's appointments to each assigned staff member
+   * Send each assigned staff member their appointments for the day.
+   *
+   * DISABLED at the shop's request — staff were not finding it useful, and it
+   * was arriving at the wrong time anyway: `@Cron` fires on the server clock,
+   * which is UTC in production, so '0 8 * * *' meant midnight Pacific rather
+   * than the 8 AM the comment claimed. See GA-65.
+   *
+   * Kept rather than deleted so it can be re-enabled by restoring the
+   * decorator. If it ever is, give it the timezone —
+   * `@Cron('0 8 * * *', { timeZone: BUSINESS_TIMEZONE })` — or it will go out
+   * in the middle of the night again.
    */
-  @Cron('0 8 * * *') // Every day at 8:00 AM
+  // @Cron('0 8 * * *', { timeZone: BUSINESS_TIMEZONE }) - DISABLED (GA-65)
   async sendDailyScheduleToStaff() {
     this.logger.log('Sending daily schedule to staff members');
 
@@ -145,7 +156,10 @@ export class SmsSchedulerService {
       appointmentDateTime.setHours(hours, minutes, 0, 0);
 
       // Check if appointment is within the 1-hour window
-      if (appointmentDateTime >= oneHourFromNow && appointmentDateTime <= oneHourFifteenFromNow) {
+      if (
+        appointmentDateTime >= oneHourFromNow &&
+        appointmentDateTime <= oneHourFifteenFromNow
+      ) {
         await this.smsService.sendAppointmentReminder(appointment.id, 0); // 0 = 1 hour before
 
         // Mark reminder as sent
@@ -159,7 +173,9 @@ export class SmsSchedulerService {
     }
 
     if (remindersSent > 0) {
-      this.logger.log(`Sent 1-hour reminders for ${remindersSent} appointments`);
+      this.logger.log(
+        `Sent 1-hour reminders for ${remindersSent} appointments`
+      );
     }
   }
 }

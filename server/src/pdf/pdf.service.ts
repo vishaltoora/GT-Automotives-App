@@ -1567,6 +1567,25 @@ ${
           </tr>`
         : '';
 
+    /**
+     * Vacation drawn from the bank on this cheque.
+     *
+     * Sits under earnings because it is money the employee receives, but it is
+     * outside the Gross Pay total on purpose: it was counted as gross and taxed
+     * when it was earned. Showing it inside gross would imply it is being taxed
+     * again.
+     */
+    const vacationPayoutRow =
+      stub.vacationPayPaidOut > 0
+        ? `
+          <tr>
+            <td>Vacation Paid Out<span class="note"> (from banked, already taxed)</span></td>
+            <td class="num"></td>
+            <td class="num">${money(stub.vacationPayPaidOut)}</td>
+            <td class="num muted"></td>
+          </tr>`
+        : '';
+
     const deductionRows = deductions
       .map(
         (row) => `
@@ -1847,6 +1866,22 @@ ${
     }
     th.num, td.num { text-align: right; }
     td.muted { color: #7b8794; }
+    /* Explains a line that would otherwise look like it is being taxed twice. */
+    .note { color: #7b8794; font-weight: 400; font-size: 9px; }
+    .vacation-bank {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding: 8px 12px;
+      border: 1px solid #cbd2d9;
+      border-radius: 4px;
+      background: #f6f8fa;
+      font-size: 11px;
+      color: #3a5270;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
     .total-row td {
       font-weight: 700;
       border-top: 1px solid #cbd2d9;
@@ -1994,6 +2029,7 @@ ${
             <td class="num">${money(stub.grossPay)}</td>
             <td class="num">${money(stub.ytdGrossPay)}</td>
           </tr>
+          ${vacationPayoutRow}
         </tbody>
       </table>
     </div>
@@ -2032,6 +2068,16 @@ ${
       <div class="summary-value">$${money(stub.totalWithholding)}</div>
       <div class="summary-ytd">$${money(stub.ytdWithholding)} YTD</div>
     </div>
+    ${
+      stub.vacationPayPaidOut > 0
+        ? `<div class="summary-op">+</div>
+    <div class="summary-cell">
+      <div class="summary-label">Vacation Paid Out</div>
+      <div class="summary-value">$${money(stub.vacationPayPaidOut)}</div>
+      <div class="summary-ytd">already taxed</div>
+    </div>`
+        : ''
+    }
     <div class="summary-op">=</div>
     <div class="summary-cell net">
       <div class="summary-label">Net Pay</div>
@@ -2039,6 +2085,21 @@ ${
       <div class="summary-ytd">$${money(stub.ytdNetPay)} YTD</div>
     </div>
   </div>
+
+  ${
+    // What the employee still has banked. Shown whenever there is a balance or
+    // any vacation activity at all — this is the figure they actually want off
+    // a pay stub, and leaving them to infer it from a year-to-date column they
+    // cannot see the payouts against is no answer.
+    stub.vacationPayBalance > 0 ||
+    stub.vacationPayAmount > 0 ||
+    stub.vacationPayPaidOut > 0
+      ? `<div class="vacation-bank">
+      <span>Vacation available</span>
+      <strong>$${money(stub.vacationPayBalance)}</strong>
+    </div>`
+      : ''
+  }
 
   ${
     stub.notes

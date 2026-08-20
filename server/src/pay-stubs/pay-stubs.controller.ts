@@ -60,6 +60,22 @@ export class PayStubsController {
   }
 
   /** Every pay stub, optionally filtered to one employee. Payroll roles only. */
+  /**
+   * What an employee has banked in vacation, so the pay stub form can show it
+   * before a payout is typed. Employees may read their own; payroll roles may
+   * read anyone's.
+   */
+  @Get('employees/:employeeId/vacation-balance')
+  // The service still checks the caller may see this employee, so an employee
+  // reading their own balance is fine and reading anyone else's is not.
+  @Roles('ADMIN', 'ACCOUNTANT', 'FOREMAN', 'SUPERVISOR', 'STAFF')
+  getVacationBalance(
+    @Param('employeeId') employeeId: string,
+    @CurrentUser() user: any
+  ) {
+    return this.payStubsService.getVacationBalance(employeeId, user);
+  }
+
   @Get()
   @Roles('ADMIN', 'ACCOUNTANT')
   findAll(@CurrentUser() user: any, @Query('employeeId') employeeId?: string) {
