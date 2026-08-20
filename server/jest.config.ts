@@ -3,6 +3,8 @@ export default {
   displayName: 'server',
   preset: '../jest.preset.js',
   testEnvironment: 'node',
+  // DTOs in libs/data carry class-validator decorators, which run on import.
+  setupFiles: ['reflect-metadata'],
   transform: {
     '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },

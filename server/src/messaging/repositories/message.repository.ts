@@ -1,0 +1,165 @@
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '@gt-automotive/database';
+
+/** The slice of the authenticated user this repository needs. */
+export interface MessagingUser {
+  id: string;
+  role: { name: string };
+}
+
+/**
+ * Everything needed to render a message. Kept in one place so no read path
+ * can accidentally return a message without its mentions — the mentions are
+ * what the UI uses to draw the private badge, and their absence would make a
+ * private message look public.
+ */
+export const MESSAGE_INCLUDE = {
+  author: { select: { id: true, firstName: true, lastName: true } },
+  mentions: {
+    select: {
+      userId: true,
+      user: { select: { firstName: true, lastName: true } },
+    },
+  },
+  references: {
+    select: { entityType: true, entityId: true, label: true },
+  },
+} satisfies Prisma.MessageInclude;
+
+export type MessageWithRelations = Prisma.MessageGetPayload<{
+  include: typeof MESSAGE_INCLUDE;
+}>;
+
+@Injectable()
+export class MessageRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Who is allowed to see what.
+   *
+   * This is the security boundary for the whole feature, and it is deliberately
+   * the only place the rule is written. Every read composes it. Nothing filters
+   * on the client — a hidden message must never reach the browser at all, so
+   * hiding one with CSS would be a leak, not a fix.
+   *
+   * A message is visible when it is public, or you wrote it, or you were tagged
+   * in it. Admins see everything, which the composer tells people up front.
+   */
+  visibilityFilter(user: MessagingUser): Prisma.MessageWhereInput {
+    if (user.role.name === 'ADMIN') {
+      return {};
+    }
+
+    return {
+      OR: [
+        { visibility: 'PUBLIC' },
+        { authorId: user.id },
+        { mentions: { some: { userId: user.id } } },
+      ],
+    };
+  }
+
+  /** Messages in a thread that this user may see, oldest first. */
+  async findForConversation(
+    conversationId: string,
+    user: MessagingUser,
+    since?: Date
+  ): Promise<MessageWithRelations[]> {
+    return this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        ...(since ? { createdAt: { gt: since } } : {}),
+        AND: [this.visibilityFilter(user)],
+      },
+      include: MESSAGE_INCLUDE,
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /** A single message, or null when this user may not see it. */
+  async findByIdForUser(
+    id: string,
+    user: MessagingUser
+  ): Promise<MessageWithRelations | null> {
+    return this.prisma.message.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        AND: [this.visibilityFilter(user)],
+      },
+      include: MESSAGE_INCLUDE,
+    });
+  }
+
+  /**
+   * Unread mentions for the badge and the inbox.
+   *
+   * No visibility filter needed: being mentioned is itself the grant, so every
+   * row here is one this user is allowed to read by definition.
+   */
+  async countUnreadMentions(userId: string): Promise<number> {
+    return this.prisma.messageMention.count({
+      where: { userId, readAt: null, message: { deletedAt: null } },
+    });
+  }
+
+  async findMentionInbox(userId: string, unreadOnly: boolean) {
+    return this.prisma.messageMention.findMany({
+      where: {
+        userId,
+        message: { deletedAt: null },
+        ...(unreadOnly ? { readAt: null } : {}),
+      },
+      select: {
+        id: true,
+        readAt: true,
+        message: {
+          include: {
+            ...MESSAGE_INCLUDE,
+            conversation: {
+              select: { id: true, entityType: true, entityId: true },
+            },
+          },
+        },
+      },
+      orderBy: { message: { createdAt: 'desc' } },
+      take: 100,
+    });
+  }
+
+  /**
+   * Unread counts per conversation, for the sidebar dots.
+   *
+   * Counts only messages this user may see, so a private message they are not
+   * part of cannot betray its existence through a badge that never clears.
+   */
+  async unreadCountsByConversation(
+    user: MessagingUser
+  ): Promise<Record<string, number>> {
+    const memberships = await this.prisma.conversationMember.findMany({
+      where: { userId: user.id },
+      select: { conversationId: true, lastReadAt: true },
+    });
+
+    const counts: Record<string, number> = {};
+    for (const membership of memberships) {
+      const count = await this.prisma.message.count({
+        where: {
+          conversationId: membership.conversationId,
+          deletedAt: null,
+          authorId: { not: user.id },
+          ...(membership.lastReadAt
+            ? { createdAt: { gt: membership.lastReadAt } }
+            : {}),
+          AND: [this.visibilityFilter(user)],
+        },
+      });
+      if (count > 0) {
+        counts[membership.conversationId] = count;
+      }
+    }
+    return counts;
+  }
+}
