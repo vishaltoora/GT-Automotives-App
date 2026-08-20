@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, CircularProgress, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  IconButton,
+  Typography,
+} from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
+import ReplyIcon from '@mui/icons-material/Reply';
+import CloseIcon from '@mui/icons-material/Close';
+import { colors } from '../../theme/colors';
 import type { ConversationEntity } from '@gt-automotive/data';
 import { useMessagePolling } from './hooks/useMessagePolling';
 import { MessageComposer } from './MessageComposer';
@@ -15,27 +24,45 @@ import {
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 
+export interface ReplyTarget {
+  messageId: string;
+  authorName: string;
+  /** Names the parent is private to, if it is. Empty for a public parent. */
+  audience: string[];
+}
+
 interface Props {
-  /** Omit for the shop-wide channel. */
+  /** A conversation already known by id — skips the get-or-create. */
+  conversationId?: string;
+  /** Or the record it hangs off. Omit both for the shop-wide channel. */
   entityType?: ConversationEntity;
   entityId?: string;
   currentUserId: string;
   isAdmin: boolean;
   height?: number | string;
+  /** Opens with a reply already aimed at this message. */
+  initialReplyTo?: ReplyTarget;
 }
 
 export function MessageThread({
+  conversationId: knownConversationId,
   entityType,
   entityId,
   currentUserId,
   isAdmin,
   height = 480,
+  initialReplyTo,
 }: Props) {
   const { showApiError } = useErrorHelpers();
   const { confirmDelete } = useConfirmationHelpers();
 
-  const [conversationId, setConversationId] = useState<string | undefined>();
-  const [opening, setOpening] = useState(true);
+  const [conversationId, setConversationId] = useState<string | undefined>(
+    knownConversationId
+  );
+  const [opening, setOpening] = useState(!knownConversationId);
+  const [replyTo, setReplyTo] = useState<ReplyTarget | undefined>(
+    initialReplyTo
+  );
   const [openError, setOpenError] = useState<string | null>(null);
 
   const { messages, loading, appendLocal, removeLocal } =
@@ -55,6 +82,12 @@ export function MessageThread({
   helpersRef.current = { showApiError, confirmDelete };
 
   useEffect(() => {
+    if (knownConversationId) {
+      setConversationId(knownConversationId);
+      setOpening(false);
+      return;
+    }
+
     let cancelled = false;
     setOpening(true);
     setOpenError(null);
@@ -79,7 +112,7 @@ export function MessageThread({
     return () => {
       cancelled = true;
     };
-  }, [entityType, entityId]);
+  }, [entityType, entityId, knownConversationId]);
 
   // Reading the thread is what marks it read, so the badge clears on the way
   // out rather than on every render.
@@ -98,13 +131,18 @@ export function MessageThread({
     async (body: string) => {
       if (!conversationId) return;
       try {
-        const created = await sendMessage(conversationId, body);
+        const created = await sendMessage(
+          conversationId,
+          body,
+          replyTo?.messageId
+        );
         appendLocal(created);
+        setReplyTo(undefined);
       } catch (error) {
         helpersRef.current.showApiError(error);
       }
     },
-    [conversationId, appendLocal]
+    [conversationId, appendLocal, replyTo]
   );
 
   const handleDelete = useCallback(
@@ -168,13 +206,53 @@ export function MessageThread({
               canDelete={isAdmin}
               onDelete={handleDelete}
               showReferences={!entityId}
+              onReply={setReplyTo}
             />
           ))
         )}
         <div ref={bottomRef} />
       </Box>
 
-      <MessageComposer onSend={handleSend} disabled={!conversationId} />
+      {replyTo && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1,
+            py: 0.5,
+            mb: 0.5,
+            borderLeft: `3px solid ${colors.primary.main}`,
+            bgcolor: 'action.hover',
+          }}
+        >
+          <ReplyIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
+          <Typography variant="caption" sx={{ flexGrow: 1 }}>
+            Replying to {replyTo.authorName}
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={() => setReplyTo(undefined)}
+            aria-label="Cancel reply"
+          >
+            <CloseIcon sx={{ fontSize: 15 }} />
+          </IconButton>
+        </Box>
+      )}
+
+      <MessageComposer
+        onSend={handleSend}
+        disabled={!conversationId}
+        autoFocus={Boolean(initialReplyTo)}
+        // A reply cannot be more visible than what it answers, so the strip
+        // must name who it will actually reach rather than claiming the shop
+        // can see it.
+        inheritedAudience={
+          replyTo && replyTo.audience.length > 0
+            ? [replyTo.authorName, ...replyTo.audience]
+            : undefined
+        }
+      />
     </Box>
   );
 }

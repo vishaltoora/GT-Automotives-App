@@ -10,8 +10,8 @@ import {
 } from '@mui/material';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import LockIcon from '@mui/icons-material/Lock';
-import ReplyIcon from '@mui/icons-material/Reply';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ForumIcon from '@mui/icons-material/Forum';
 import {
   segmentMessageBody,
   type MentionInboxItemDto,
@@ -19,9 +19,7 @@ import {
 import {
   getMentionInbox,
   markMentionRead,
-  sendMessage,
 } from '../../requests/messaging.requests';
-import { MessageComposer } from './MessageComposer';
 import { colors } from '../../theme/colors';
 import { useRoleBaseRoute } from './hooks/useRoleBaseRoute';
 
@@ -30,6 +28,8 @@ interface Props {
   refreshKey?: number;
   onRead?: () => void;
   onNavigate?: () => void;
+  /** Open the thread a mention came from, so it is read in context. */
+  onOpenConversation?: (item: MentionInboxItemDto) => void;
 }
 
 const displayName = (first: string | null, last: string | null) =>
@@ -60,19 +60,22 @@ const previewOf = (body: string) =>
  * which is the whole failure this feature exists to prevent — the message was
  * directed at someone precisely so they would act on it.
  */
-export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
+export function MentionsList({
+  refreshKey,
+  onRead,
+  onNavigate,
+  onOpenConversation,
+}: Props) {
   const navigate = useNavigate();
   const baseRoute = useRoleBaseRoute();
   const [items, setItems] = useState<MentionInboxItemDto[]>([]);
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replied, setReplied] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   // Callbacks from the caller are not memoised, so they are held in a ref
   // rather than named as dependencies — see MessageThread for what happens
   // when an unstable identity drives an effect.
-  const callbacksRef = useRef({ onRead, onNavigate });
-  callbacksRef.current = { onRead, onNavigate };
+  const callbacksRef = useRef({ onRead, onNavigate, onOpenConversation });
+  callbacksRef.current = { onRead, onNavigate, onOpenConversation };
 
   useEffect(() => {
     let cancelled = false;
@@ -125,14 +128,10 @@ export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
     [navigate, baseRoute, markRead]
   );
 
-  const reply = useCallback(
-    async (item: MentionInboxItemDto, body: string) => {
-      // Threaded on the message that tagged them, which is what makes the
-      // server keep the reply inside the same private audience.
-      await sendMessage(item.conversation.id, body, item.message.id);
+  const openConversation = useCallback(
+    (item: MentionInboxItemDto) => {
       markRead(item);
-      setReplyingTo(null);
-      setReplied((prev) => ({ ...prev, [item.mentionId]: true }));
+      callbacksRef.current.onOpenConversation?.(item);
     },
     [markRead]
   );
@@ -181,11 +180,7 @@ export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
         return (
           <Box key={item.mentionId}>
             <ListItemButton
-              onClick={() =>
-                setReplyingTo((current) =>
-                  current === item.mentionId ? null : item.mentionId
-                )
-              }
+              onClick={() => openConversation(item)}
               sx={{
                 display: 'block',
                 py: 1.25,
@@ -256,45 +251,13 @@ export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
                   mt: 0.5,
                 }}
               >
-                <ReplyIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                <ForumIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
                 <Typography variant="caption" color="text.disabled">
-                  {replied[item.mentionId]
-                    ? 'Replied'
-                    : replyingTo === item.mentionId
-                    ? 'Cancel'
-                    : 'Reply'}
+                  Open conversation
                 </Typography>
               </Box>
             </ListItemButton>
 
-            {replyingTo === item.mentionId && (
-              <Box sx={{ px: 2, pb: 1.5 }}>
-                <MessageComposer
-                  autoFocus
-                  placeholder={`Reply to ${displayName(
-                    item.message.author.firstName,
-                    item.message.author.lastName
-                  )}…`}
-                  // A reply cannot be more visible than what it answers, so
-                  // the strip must show the audience it will actually reach
-                  // rather than claiming the whole shop can see it.
-                  inheritedAudience={
-                    item.message.visibility === 'MENTIONED_ONLY'
-                      ? [
-                          displayName(
-                            item.message.author.firstName,
-                            item.message.author.lastName
-                          ),
-                          ...item.message.mentions.map((m) =>
-                            displayName(m.firstName, m.lastName)
-                          ),
-                        ]
-                      : undefined
-                  }
-                  onSend={(body) => reply(item, body)}
-                />
-              </Box>
-            )}
             <Divider />
           </Box>
         );
