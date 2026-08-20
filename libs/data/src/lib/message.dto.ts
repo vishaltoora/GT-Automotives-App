@@ -136,6 +136,8 @@ export interface MentionInboxItemDto {
     id: string;
     entityType: ConversationEntity | null;
     entityId: string | null;
+    /** Repair order number, so a mention read outside its thread says which job. */
+    roNumber: string | null;
   };
 }
 

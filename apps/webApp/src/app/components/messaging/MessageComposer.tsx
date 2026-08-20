@@ -43,6 +43,14 @@ interface Props {
   onSend: (body: string) => Promise<void>;
   disabled?: boolean;
   placeholder?: string;
+  /**
+   * Names this message will reach regardless of what is typed, because it is a
+   * reply to a private message and inherits that audience. The strip has to
+   * know: without it a reply with no tag would claim everyone can see it, when
+   * the server is about to keep it private.
+   */
+  inheritedAudience?: string[];
+  autoFocus?: boolean;
 }
 
 const escapeRegExp = (value: string) =>
@@ -88,7 +96,13 @@ function activeTrigger(text: string, caret: number) {
   };
 }
 
-export function MessageComposer({ onSend, disabled, placeholder }: Props) {
+export function MessageComposer({
+  onSend,
+  disabled,
+  placeholder,
+  inheritedAudience,
+  autoFocus,
+}: Props) {
   const [text, setText] = useState('');
   const [picked, setPicked] = useState<Picked[]>([]);
   const [sending, setSending] = useState(false);
@@ -104,15 +118,20 @@ export function MessageComposer({ onSend, disabled, placeholder }: Props) {
 
   const body = useMemo(() => buildBody(text, picked), [text, picked]);
   const mentionedIds = useMemo(() => parseMentionUserIds(body), [body]);
-  const isPrivate = mentionedIds.length > 0;
+  // Compared by value, not identity: the caller builds this array inline, so
+  // depending on the array itself would recompute on every render.
+  const inheritedKey = (inheritedAudience ?? []).join('\u0000');
+  const isPrivate = mentionedIds.length > 0 || inheritedKey.length > 0;
 
-  const mentionedNames = useMemo(
-    () =>
-      picked
-        .filter((p) => p.kind === 'user' && mentionedIds.includes(p.id))
-        .map((p) => p.label),
-    [picked, mentionedIds]
-  );
+  const mentionedNames = useMemo(() => {
+    const typed = picked
+      .filter((p) => p.kind === 'user' && mentionedIds.includes(p.id))
+      .map((p) => p.label);
+    const inherited = inheritedKey ? inheritedKey.split('\u0000') : [];
+    // Both sets see it: whoever the parent was private to, plus anyone newly
+    // tagged in the reply.
+    return [...new Set([...inherited, ...typed])];
+  }, [picked, mentionedIds, inheritedKey]);
 
   // Debounced at 300ms to match the invoice and vendor search already in the app.
   useEffect(() => {
@@ -217,6 +236,7 @@ export function MessageComposer({ onSend, disabled, placeholder }: Props) {
           size="small"
           value={text}
           disabled={disabled || sending}
+          autoFocus={autoFocus}
           placeholder={placeholder ?? 'Write a message. Type @ to tag someone.'}
           onChange={(e) =>
             handleChange(e.target.value, e.target.selectionStart ?? 0)

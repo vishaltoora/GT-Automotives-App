@@ -429,4 +429,86 @@ describe('MessagingService', () => {
       );
     });
   });
+
+  describe('mention inbox', () => {
+    const inboxRow = (conversation: any) => ({
+      id: 'mention-1',
+      readAt: null,
+      message: {
+        ...messageRow(),
+        conversation,
+      },
+    });
+
+    /*
+     * A mention is read from the inbox, away from the thread it was written
+     * in, so it has to say which job it is about or it is just a sentence with
+     * no context.
+     */
+    it('carries the repair order number of the thread it came from', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest.fn().mockResolvedValue([
+        inboxRow({
+          id: 'conv-1',
+          entityType: 'REPAIR_ORDER',
+          entityId: 'ro-1',
+        }),
+      ]);
+      prisma.repairOrder.findMany.mockResolvedValue([
+        { id: 'ro-1', roNumber: 'RO-202608-0002' },
+      ]);
+
+      const inbox = await service.getMentionInbox(author, false);
+
+      expect(inbox[0].conversation.roNumber).toBe('RO-202608-0002');
+      expect(inbox[0].conversation.entityId).toBe('ro-1');
+    });
+
+    it('leaves the number null for a mention from shop chat', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest
+        .fn()
+        .mockResolvedValue([
+          inboxRow({ id: 'conv-2', entityType: null, entityId: null }),
+        ]);
+
+      const inbox = await service.getMentionInbox(author, false);
+
+      expect(inbox[0].conversation.roNumber).toBeNull();
+      expect(prisma.repairOrder.findMany).not.toHaveBeenCalled();
+    });
+
+    it('looks up each repair order once however many mentions it has', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest
+        .fn()
+        .mockResolvedValue([
+          inboxRow({ id: 'c1', entityType: 'REPAIR_ORDER', entityId: 'ro-1' }),
+          inboxRow({ id: 'c1', entityType: 'REPAIR_ORDER', entityId: 'ro-1' }),
+          inboxRow({ id: 'c2', entityType: 'REPAIR_ORDER', entityId: 'ro-2' }),
+        ]);
+      prisma.repairOrder.findMany.mockResolvedValue([
+        { id: 'ro-1', roNumber: 'RO-1' },
+        { id: 'ro-2', roNumber: 'RO-2' },
+      ]);
+
+      await service.getMentionInbox(author, false);
+
+      expect(prisma.repairOrder.findMany).toHaveBeenCalledTimes(1);
+      const ids = prisma.repairOrder.findMany.mock.calls[0][0].where.id.in;
+      expect(ids.sort()).toEqual(['ro-1', 'ro-2']);
+    });
+
+    it('survives a repair order that has since been deleted', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest.fn().mockResolvedValue([
+        inboxRow({
+          id: 'conv-1',
+          entityType: 'REPAIR_ORDER',
+          entityId: 'gone',
+        }),
+      ]);
+      prisma.repairOrder.findMany.mockResolvedValue([]);
+
+      const inbox = await service.getMentionInbox(author, false);
+
+      expect(inbox[0].conversation.roNumber).toBeNull();
+    });
+  });
 });

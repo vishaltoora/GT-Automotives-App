@@ -4,6 +4,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { segmentMessageBody, type MessageDto } from '@gt-automotive/data';
 import { colors } from '../../theme/colors';
+import { useRoleBaseRoute } from './hooks/useRoleBaseRoute';
 
 interface Props {
   message: MessageDto;
@@ -42,6 +43,7 @@ export function MessageItem({
   showReferences = true,
 }: Props) {
   const navigate = useNavigate();
+  const baseRoute = useRoleBaseRoute();
   const isPrivate = message.visibility === 'MENTIONED_ONLY';
   const isMine = message.author.id === currentUserId;
   const segments = segmentMessageBody(message.body);
@@ -130,7 +132,7 @@ export function MessageItem({
               size="small"
               clickable
               onClick={() =>
-                navigate(`/admin/repair-orders/${segment.entityId}`)
+                navigate(`${baseRoute}/repair-orders/${segment.entityId}`)
               }
               sx={{ height: 20, mx: 0.25 }}
             />

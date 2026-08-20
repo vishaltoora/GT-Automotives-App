@@ -10,6 +10,8 @@ import {
 } from '@mui/material';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import LockIcon from '@mui/icons-material/Lock';
+import ReplyIcon from '@mui/icons-material/Reply';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   segmentMessageBody,
   type MentionInboxItemDto,
@@ -17,8 +19,11 @@ import {
 import {
   getMentionInbox,
   markMentionRead,
+  sendMessage,
 } from '../../requests/messaging.requests';
+import { MessageComposer } from './MessageComposer';
 import { colors } from '../../theme/colors';
+import { useRoleBaseRoute } from './hooks/useRoleBaseRoute';
 
 interface Props {
   /** Bumped by the caller when the unread count changes, to refetch. */
@@ -57,7 +62,10 @@ const previewOf = (body: string) =>
  */
 export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
   const navigate = useNavigate();
+  const baseRoute = useRoleBaseRoute();
   const [items, setItems] = useState<MentionInboxItemDto[]>([]);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replied, setReplied] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   // Callbacks from the caller are not memoised, so they are held in a ref
@@ -86,29 +94,47 @@ export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
     };
   }, [refreshKey]);
 
-  const open = useCallback(
-    async (item: MentionInboxItemDto) => {
-      if (!item.readAt) {
-        // Optimistic: the badge should drop the moment it is opened, not after
-        // a round trip.
-        setItems((prev) =>
-          prev.map((row) =>
-            row.mentionId === item.mentionId
-              ? { ...row, readAt: new Date().toISOString() }
-              : row
-          )
-        );
-        markMentionRead(item.mentionId)
-          .then(() => callbacksRef.current.onRead?.())
-          .catch(() => undefined);
-      }
+  const markRead = useCallback((item: MentionInboxItemDto) => {
+    if (item.readAt) return;
 
-      if (item.conversation.entityId) {
+    // Optimistic: the badge should drop the moment it is dealt with, not after
+    // a round trip that only records what the user already did.
+    setItems((prev) =>
+      prev.map((row) =>
+        row.mentionId === item.mentionId
+          ? { ...row, readAt: new Date().toISOString() }
+          : row
+      )
+    );
+    markMentionRead(item.mentionId)
+      .then(() => callbacksRef.current.onRead?.())
+      .catch(() => undefined);
+  }, []);
+
+  const goToRepairOrder = useCallback(
+    (item: MentionInboxItemDto) => {
+      markRead(item);
+      if (
+        item.conversation.entityType === 'REPAIR_ORDER' &&
+        item.conversation.entityId
+      ) {
         callbacksRef.current.onNavigate?.();
-        navigate(`/admin/repair-orders/${item.conversation.entityId}`);
+        navigate(`${baseRoute}/repair-orders/${item.conversation.entityId}`);
       }
     },
-    [navigate]
+    [navigate, baseRoute, markRead]
+  );
+
+  const reply = useCallback(
+    async (item: MentionInboxItemDto, body: string) => {
+      // Threaded on the message that tagged them, which is what makes the
+      // server keep the reply inside the same private audience.
+      await sendMessage(item.conversation.id, body, item.message.id);
+      markRead(item);
+      setReplyingTo(null);
+      setReplied((prev) => ({ ...prev, [item.mentionId]: true }));
+    },
+    [markRead]
   );
 
   if (loading) {
@@ -147,12 +173,19 @@ export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
     <Box>
       {items.map((item) => {
         const unread = !item.readAt;
-        const roLabel = item.message.references[0]?.label;
+        // The conversation is the source of truth for which job this is
+        // about; a typed #reference only matters for mentions from shop chat.
+        const roLabel =
+          item.conversation.roNumber ?? item.message.references[0]?.label;
 
         return (
           <Box key={item.mentionId}>
             <ListItemButton
-              onClick={() => void open(item)}
+              onClick={() =>
+                setReplyingTo((current) =>
+                  current === item.mentionId ? null : item.mentionId
+                )
+              }
               sx={{
                 display: 'block',
                 py: 1.25,
@@ -190,7 +223,17 @@ export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
                   {formatTime(item.message.createdAt)}
                 </Typography>
                 {roLabel && (
-                  <Chip label={roLabel} size="small" sx={{ height: 18 }} />
+                  <Chip
+                    label={roLabel}
+                    size="small"
+                    clickable
+                    icon={<OpenInNewIcon sx={{ fontSize: 13 }} />}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      goToRepairOrder(item);
+                    }}
+                    sx={{ height: 20 }}
+                  />
                 )}
               </Box>
               <Typography
@@ -205,7 +248,53 @@ export function MentionsList({ refreshKey, onRead, onNavigate }: Props) {
               >
                 {previewOf(item.message.body)}
               </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  mt: 0.5,
+                }}
+              >
+                <ReplyIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                <Typography variant="caption" color="text.disabled">
+                  {replied[item.mentionId]
+                    ? 'Replied'
+                    : replyingTo === item.mentionId
+                    ? 'Cancel'
+                    : 'Reply'}
+                </Typography>
+              </Box>
             </ListItemButton>
+
+            {replyingTo === item.mentionId && (
+              <Box sx={{ px: 2, pb: 1.5 }}>
+                <MessageComposer
+                  autoFocus
+                  placeholder={`Reply to ${displayName(
+                    item.message.author.firstName,
+                    item.message.author.lastName
+                  )}…`}
+                  // A reply cannot be more visible than what it answers, so
+                  // the strip must show the audience it will actually reach
+                  // rather than claiming the whole shop can see it.
+                  inheritedAudience={
+                    item.message.visibility === 'MENTIONED_ONLY'
+                      ? [
+                          displayName(
+                            item.message.author.firstName,
+                            item.message.author.lastName
+                          ),
+                          ...item.message.mentions.map((m) =>
+                            displayName(m.firstName, m.lastName)
+                          ),
+                        ]
+                      : undefined
+                  }
+                  onSend={(body) => reply(item, body)}
+                />
+              </Box>
+            )}
             <Divider />
           </Box>
         );
