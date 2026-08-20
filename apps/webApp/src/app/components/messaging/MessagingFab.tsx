@@ -13,9 +13,12 @@ import {
 } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useMessagePolling } from './hooks/useMessagePolling';
 import { MessageThread } from './MessageThread';
 import { MentionsList } from './MentionsList';
+import type { ReplyTarget } from './MessageThread';
+import type { MentionInboxItemDto } from '@gt-automotive/data';
 
 interface Props {
   currentUserId: string;
@@ -34,6 +37,47 @@ interface Props {
 export function MessagingFab({ currentUserId, isAdmin }: Props) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState(0);
+
+  /*
+   * A mention on its own is one sentence with no surroundings, which is rarely
+   * enough to act on — the answer usually depends on what was said before it.
+   * Opening one swaps the panel for the conversation it came from, with the
+   * reply already aimed at the message that did the tagging.
+   */
+  const [openedThread, setOpenedThread] = useState<{
+    conversationId: string;
+    title: string;
+    replyTo: ReplyTarget;
+  } | null>(null);
+
+  const openThreadFor = (item: MentionInboxItemDto) => {
+    const authorName =
+      [item.message.author.firstName, item.message.author.lastName]
+        .filter(Boolean)
+        .join(' ') || 'Unknown';
+
+    setOpenedThread({
+      conversationId: item.conversation.id,
+      title: item.conversation.roNumber ?? 'Shop Chat',
+      replyTo: {
+        messageId: item.message.id,
+        authorName,
+        audience:
+          item.message.visibility === 'MENTIONED_ONLY'
+            ? item.message.mentions.map(
+                (m) =>
+                  [m.firstName, m.lastName].filter(Boolean).join(' ') ||
+                  'Unknown'
+              )
+            : [],
+      },
+    });
+  };
+
+  const closeDrawer = () => {
+    setOpen(false);
+    setOpenedThread(null);
+  };
 
   // No conversation id: this poll exists for the counts alone. The server
   // returns them whether or not a thread is open.
@@ -66,7 +110,7 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
       <Drawer
         anchor="right"
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={closeDrawer}
         slotProps={{
           paper: {
             sx: { width: { xs: '100%', sm: 420 }, display: 'flex' },
@@ -82,7 +126,27 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
             py: 1.5,
           }}
         >
-          <Typography variant="h6">Messages</Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              minWidth: 0,
+            }}
+          >
+            {openedThread && (
+              <IconButton
+                size="small"
+                onClick={() => setOpenedThread(null)}
+                aria-label="Back to mentions"
+              >
+                <ArrowBackIcon />
+              </IconButton>
+            )}
+            <Typography variant="h6" noWrap>
+              {openedThread ? openedThread.title : 'Messages'}
+            </Typography>
+          </Box>
           <IconButton
             onClick={() => setOpen(false)}
             aria-label="Close messages"
@@ -91,45 +155,63 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
           </IconButton>
         </Box>
 
-        <Tabs
-          value={tab}
-          onChange={(_, value) => setTab(value)}
-          variant="fullWidth"
-        >
-          <Tab label="Shop Chat" />
-          <Tab
-            label={
-              <Badge
-                badgeContent={unreadMentions}
-                color="error"
-                max={99}
-                sx={{ pr: unreadMentions > 0 ? 1.5 : 0 }}
-              >
-                Mentions
-              </Badge>
-            }
-          />
-        </Tabs>
+        {!openedThread && (
+          <Tabs
+            value={tab}
+            onChange={(_, value) => setTab(value)}
+            variant="fullWidth"
+          >
+            <Tab label="Shop Chat" />
+            <Tab
+              label={
+                <Badge
+                  badgeContent={unreadMentions}
+                  color="error"
+                  max={99}
+                  sx={{ pr: unreadMentions > 0 ? 1.5 : 0 }}
+                >
+                  Mentions
+                </Badge>
+              }
+            />
+          </Tabs>
+        )}
         <Divider />
 
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', px: tab === 0 ? 1.5 : 0 }}>
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflowY: 'auto',
+            px: openedThread || tab === 0 ? 1.5 : 0,
+          }}
+        >
           {/*
             Mounted only while its tab is showing. The thread holds a long poll
             open, and leaving one running behind a hidden tab would keep a
             connection busy for a conversation nobody is reading.
           */}
-          {open && tab === 0 && (
+          {open && openedThread && (
+            <MessageThread
+              conversationId={openedThread.conversationId}
+              initialReplyTo={openedThread.replyTo}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              height="100%"
+            />
+          )}
+          {open && !openedThread && tab === 0 && (
             <MessageThread
               currentUserId={currentUserId}
               isAdmin={isAdmin}
               height="100%"
             />
           )}
-          {open && tab === 1 && (
+          {open && !openedThread && tab === 1 && (
             <MentionsList
               refreshKey={unreadMentions}
               onRead={() => void refresh()}
-              onNavigate={() => setOpen(false)}
+              onNavigate={closeDrawer}
+              onOpenConversation={openThreadFor}
             />
           )}
         </Box>

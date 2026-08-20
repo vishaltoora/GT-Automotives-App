@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Chip, IconButton, Tooltip, Typography } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ReplyIcon from '@mui/icons-material/Reply';
 import { segmentMessageBody, type MessageDto } from '@gt-automotive/data';
 import { colors } from '../../theme/colors';
 import { useRoleBaseRoute } from './hooks/useRoleBaseRoute';
@@ -13,6 +14,11 @@ interface Props {
   onDelete: (id: string) => void;
   /** Hidden inside a repair order, where every message is about that RO. */
   showReferences?: boolean;
+  onReply?: (target: {
+    messageId: string;
+    authorName: string;
+    audience: string[];
+  }) => void;
 }
 
 const displayName = (
@@ -41,6 +47,7 @@ export function MessageItem({
   canDelete,
   onDelete,
   showReferences = true,
+  onReply,
 }: Props) {
   const navigate = useNavigate();
   const baseRoute = useRoleBaseRoute();
@@ -85,6 +92,31 @@ export function MessageItem({
           </Tooltip>
         )}
         <Box sx={{ flexGrow: 1 }} />
+        {onReply && (
+          <IconButton
+            className="message-actions"
+            size="small"
+            sx={{ opacity: 0, transition: 'opacity 120ms' }}
+            onClick={() =>
+              onReply({
+                messageId: message.id,
+                authorName: displayName(
+                  message.author.firstName,
+                  message.author.lastName
+                ),
+                // Carried through so the composer can say who a reply reaches.
+                audience: isPrivate
+                  ? message.mentions.map((m) =>
+                      displayName(m.firstName, m.lastName)
+                    )
+                  : [],
+              })
+            }
+            aria-label="Reply to message"
+          >
+            <ReplyIcon fontSize="small" />
+          </IconButton>
+        )}
         {(isMine || canDelete) && (
           <IconButton
             className="message-actions"
