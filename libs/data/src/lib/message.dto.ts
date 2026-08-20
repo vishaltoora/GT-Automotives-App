@@ -1,6 +1,7 @@
 import {
   IsEnum,
   IsISO8601,
+  IsNumberString,
   IsOptional,
   IsString,
   MaxLength,
@@ -57,6 +58,14 @@ export class PollQueryDto {
   @IsOptional()
   @IsISO8601()
   since?: string;
+
+  /**
+   * Opt into long polling: hold the request open this many milliseconds if
+   * there is nothing new. Server-capped; omit or send 0 to return at once.
+   */
+  @IsOptional()
+  @IsNumberString()
+  waitMs?: string;
 }
 
 export class MentionSearchDto {
