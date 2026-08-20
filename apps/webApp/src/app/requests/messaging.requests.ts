@@ -42,13 +42,18 @@ export type { MessageDto, PollResponseDto, MentionableUserDto };
 export async function pollMessages(params: {
   conversationId?: string;
   since?: string;
+  /** Hold the request open this long if nothing is new. Omit to return at once. */
+  waitMs?: number;
   signal?: AbortSignal;
 }): Promise<PollResponseDto> {
   const { data } = await apiClient.get<PollResponseDto>('/messaging/poll', {
     params: {
       conversationId: params.conversationId,
       since: params.since,
+      waitMs: params.waitMs,
     },
+    // The server may hold this open, so the client has to outlast the hold.
+    timeout: 40_000,
     signal: params.signal,
   });
   return data;

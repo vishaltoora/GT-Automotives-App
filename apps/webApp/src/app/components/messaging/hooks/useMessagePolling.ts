@@ -2,12 +2,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MessageDto } from '@gt-automotive/data';
 import { pollMessages } from '../../../requests/messaging.requests';
 
-/** Cadence while somebody is actually reading the thread. */
-const ACTIVE_INTERVAL_MS = 10_000;
-/** Cadence once the thread has been quiet for a while. */
-const IDLE_INTERVAL_MS = 60_000;
-/** How long without a new message before we consider the thread idle. */
-const IDLE_AFTER_MS = 2 * 60_000;
+/**
+ * How long the server may hold a request open waiting for something to happen.
+ *
+ * The hold is the interval. A message comes back the moment it is written
+ * rather than up to ten seconds later, and an idle thread costs one request
+ * every twenty-five seconds instead of one every ten. Capped server-side too,
+ * below the reverse proxy's thirty second timeout.
+ */
+const HOLD_MS = 25_000;
+
+/** Breather between holds, so a server answering instantly cannot spin. */
+const GAP_MS = 500;
+
+/** Backoff after a failure, so an outage is not hammered. */
+const ERROR_BACKOFF_MS = 5_000;
 
 interface PollingState {
   messages: MessageDto[];
@@ -17,16 +26,13 @@ interface PollingState {
 }
 
 /**
- * Every bit of transport for messaging lives here.
+ * Every bit of transport for messaging lives here, so components only ever see
+ * an accumulated message list.
  *
- * Components only ever see the accumulated message list, which is what makes
- * the eventual switch to long polling a change to this file alone.
- *
- * Two things keep the request count honest. Polling stops entirely while the
- * tab is hidden — a tab left open overnight is what turns a reasonable number
- * of requests into a silly one — and the interval backs off once the thread
- * goes quiet, which for a shop doing a couple of hundred messages a day is
- * most of the time.
+ * Polling stops entirely while the tab is hidden — a window left open
+ * overnight is what turns a reasonable number of requests into a silly one —
+ * and resumes with an immediate catch-up when someone comes back, rather than
+ * making them wait out a hold that started before they left.
  */
 export function useMessagePolling(conversationId?: string) {
   const [state, setState] = useState<PollingState>({
@@ -38,33 +44,18 @@ export function useMessagePolling(conversationId?: string) {
 
   // The server's clock, echoed back verbatim. Never Date.now(): a browser
   // running fast would ask for messages newer than a moment that has not
-  // happened yet and never see them.
+  // happened yet, and never see them.
   const cursorRef = useRef<string | undefined>(undefined);
-  const lastActivityRef = useRef<number>(Date.now());
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const abortRef = useRef<AbortController | undefined>(undefined);
+  const stoppedRef = useRef(false);
 
-  const runPoll = useCallback(async () => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      const result = await pollMessages({
-        conversationId,
-        since: cursorRef.current,
-        signal: controller.signal,
-      });
-
+  const applyResult = useCallback(
+    (result: Awaited<ReturnType<typeof pollMessages>>) => {
       cursorRef.current = result.serverTime;
 
       setState((prev) => {
-        if (result.messages.length > 0) {
-          lastActivityRef.current = Date.now();
-        }
-
-        // Merge rather than replace: the cursor only ever returns what is new,
-        // and a re-send of an id we already hold must not duplicate it.
+        // Merge rather than replace: the cursor only returns what is new, and
+        // a message we already hold must not appear twice.
         const seen = new Set(prev.messages.map((m) => m.id));
         const added = result.messages.filter((m) => !seen.has(m.id));
 
@@ -75,32 +66,26 @@ export function useMessagePolling(conversationId?: string) {
           loading: false,
         };
       });
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        // A failed poll is not worth interrupting anyone over — the next one
-        // is seconds away and will catch up from the same cursor.
-        setState((prev) => ({ ...prev, loading: false }));
-      }
+    },
+    []
+  );
+
+  /** One immediate round trip, for mount and for returning to the tab. */
+  const runPoll = useCallback(async () => {
+    try {
+      const result = await pollMessages({
+        conversationId,
+        since: cursorRef.current,
+      });
+      if (!stoppedRef.current) applyResult(result);
+    } catch {
+      setState((prev) => ({ ...prev, loading: false }));
     }
-  }, [conversationId]);
-
-  const scheduleNext = useCallback(() => {
-    const quietFor = Date.now() - lastActivityRef.current;
-    const delay =
-      quietFor > IDLE_AFTER_MS ? IDLE_INTERVAL_MS : ACTIVE_INTERVAL_MS;
-
-    timerRef.current = setTimeout(async () => {
-      if (!document.hidden) {
-        await runPoll();
-      }
-      scheduleNext();
-    }, delay);
-  }, [runPoll]);
+  }, [conversationId, applyResult]);
 
   useEffect(() => {
-    // A new thread starts from scratch: its cursor and history belong to it.
+    stoppedRef.current = false;
     cursorRef.current = undefined;
-    lastActivityRef.current = Date.now();
     setState({
       messages: [],
       unreadMentions: 0,
@@ -108,26 +93,55 @@ export function useMessagePolling(conversationId?: string) {
       loading: Boolean(conversationId),
     });
 
-    void runPoll();
-    scheduleNext();
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    const loop = async () => {
+      while (!stoppedRef.current) {
+        if (document.hidden) {
+          await sleep(GAP_MS);
+          continue;
+        }
+
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        try {
+          const result = await pollMessages({
+            conversationId,
+            since: cursorRef.current,
+            waitMs: HOLD_MS,
+            signal: controller.signal,
+          });
+          if (stoppedRef.current) return;
+          applyResult(result);
+          await sleep(GAP_MS);
+        } catch {
+          if (stoppedRef.current || controller.signal.aborted) return;
+          // A failed poll is not worth interrupting anyone over. Back off and
+          // pick up from the same cursor — nothing is lost.
+          setState((prev) => ({ ...prev, loading: false }));
+          await sleep(ERROR_BACKOFF_MS);
+        }
+      }
+    };
+
+    void loop();
 
     const onVisibilityChange = () => {
-      // Catch up immediately on return rather than making someone wait out
-      // the remainder of an interval that elapsed while they were away.
       if (!document.hidden) void runPoll();
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      stoppedRef.current = true;
       abortRef.current?.abort();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [conversationId, runPoll, scheduleNext]);
+  }, [conversationId, applyResult, runPoll]);
 
-  /** Push a just-sent message in without waiting for the next poll. */
+  /** Show a just-sent message without waiting for the next round trip. */
   const appendLocal = useCallback((message: MessageDto) => {
-    lastActivityRef.current = Date.now();
     setState((prev) =>
       prev.messages.some((m) => m.id === message.id)
         ? prev
