@@ -60,6 +60,7 @@ import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
 import gtLogo from '../images-and-logos/gt-automotive-logo.svg';
 import companyService from '../requests/company.requests';
+import { MessagingFab } from '../components/messaging/MessagingFab';
 
 const drawerWidth = 280;
 const drawerCollapsedWidth = 72;
@@ -76,7 +77,7 @@ export function AdminLayout() {
     reports: true,
     system: true,
   });
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -869,6 +870,7 @@ export function AdminLayout() {
           </Container>
         </Box>
       </Box>
+      <MessagingFab currentUserId={user?.id ?? ''} isAdmin={isAdmin} />
     </Box>
   );
 }
