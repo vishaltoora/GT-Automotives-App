@@ -40,6 +40,9 @@ model User {
   roServices           ROService[]            @relation("ROServiceCompletedBy") // Service items completed by this user
   roMedia              ROMedia[] // Photos uploaded by this user
   payStubs             PayStub[] // Pay stubs issued to this employee
+  messagesAuthored     Message[]              @relation("MessageAuthor") // Messages this user wrote
+  messageMentions      MessageMention[] // Messages this user was tagged in
+  conversationMembers  ConversationMember[] // Conversations this user belongs to
 }
 
 model Role {
@@ -1903,4 +1906,108 @@ enum CarfaxSyncStatus {
   SENT // Accepted by CARFAX
   FAILED // Send failed (eligible for retry)
   SKIPPED // Not reportable (e.g. no VIN, no reportable services, CARFAX disabled)
+}
+
+// ============================================================================
+// In-app messaging (GA-67)
+// Internal team chat with private @mentions, attached to repair orders and a
+// general channel. Never surfaced on printed or emailed customer documents.
+// ============================================================================
+
+model Conversation {
+  id         String              @id @default(cuid())
+  type       ConversationType
+  title      String? // General channel name; null for entity threads
+  entityType ConversationEntity? // What this thread hangs off, if anything
+  entityId   String? // RepairOrder.id or Appointment.id
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  messages Message[]
+  members  ConversationMember[]
+
+  @@unique([entityType, entityId]) // One thread per repair order
+  @@index([type, updatedAt])
+}
+
+model ConversationMember {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  joinedAt       DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id              String            @id @default(cuid())
+  conversationId  String
+  authorId        String
+  parentMessageId String? // Reply target; drives privacy inheritance
+  body            String // Holds @[Name](user:id) and #[RO-...](ro:id) tokens
+  visibility      MessageVisibility @default(PUBLIC) // Derived server-side, never client-set
+  createdAt       DateTime          @default(now())
+  editedAt        DateTime?
+  deletedAt       DateTime? // Soft delete keeps replies coherent
+
+  conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User               @relation("MessageAuthor", fields: [authorId], references: [id])
+  parent       Message?           @relation("MessageReplies", fields: [parentMessageId], references: [id])
+  replies      Message[]          @relation("MessageReplies")
+  mentions     MessageMention[]
+  references   MessageReference[]
+
+  @@index([conversationId, createdAt]) // Primary poll cursor
+  @@index([authorId])
+  @@index([parentMessageId])
+}
+
+// The authoritative ACL for a private message. The inline token in Message.body
+// is only for rendering; access is decided by these rows.
+model MessageMention {
+  id        String    @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime? // Drives the My Mentions unread badge
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId, readAt])
+}
+
+// A clickable repair-order reference embedded in a message.
+model MessageReference {
+  id         String             @id @default(cuid())
+  messageId  String
+  entityType ConversationEntity
+  entityId   String
+  label      String // Denormalized "RO-202606-0042" so chips render without a join
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, entityType, entityId])
+  @@index([entityType, entityId]) // "all chatter about this repair order"
+}
+
+enum ConversationType {
+  GENERAL
+  ENTITY
+  DIRECT // Reserved; not built yet
+}
+
+enum ConversationEntity {
+  REPAIR_ORDER
+  APPOINTMENT
+}
+
+enum MessageVisibility {
+  PUBLIC
+  MENTIONED_ONLY
 }

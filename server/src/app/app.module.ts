@@ -35,6 +35,7 @@ import { PayStubsModule } from '../pay-stubs/pay-stubs.module';
 import { InspectionsModule } from '../inspections/inspections.module';
 import { RepairOrdersModule } from '../repair-orders/repair-orders.module';
 import { CarfaxModule } from '../carfax/carfax.module';
+import { MessagingModule } from '../messaging/messaging.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 
@@ -79,6 +80,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
     InspectionsModule,
     RepairOrdersModule,
     CarfaxModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [
