@@ -120,6 +120,8 @@ export interface MessageDto {
 
 export interface ConversationDto {
   id: string;
+  /** Where this reader had got to when the thread opened. */
+  lastReadAt?: string | null;
   type: ConversationType;
   title: string | null;
   entityType: ConversationEntity | null;
@@ -136,6 +138,8 @@ export interface MentionInboxItemDto {
     id: string;
     entityType: ConversationEntity | null;
     entityId: string | null;
+    /** Repair order number, so a mention read outside its thread says which job. */
+    roNumber: string | null;
   };
 }
 

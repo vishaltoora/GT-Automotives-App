@@ -69,7 +69,9 @@ describe('MessagingService', () => {
     };
 
     prisma = {
-      $transaction: jest.fn((fn: any) => fn(tx)),
+      $transaction: jest.fn((arg: any) =>
+        typeof arg === 'function' ? arg(tx) : Promise.all(arg)
+      ),
       conversation: {
         findUnique: jest.fn().mockResolvedValue({ id: 'conv-1' }),
         findFirst: jest.fn().mockResolvedValue({ id: 'conv-1' }),
@@ -78,6 +80,7 @@ describe('MessagingService', () => {
       conversationMember: {
         upsert: jest.fn().mockResolvedValue({}),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn().mockResolvedValue({ lastReadAt: null }),
       },
       user: {
         findMany: jest.fn().mockImplementation(({ where }) => {
@@ -400,13 +403,21 @@ describe('MessagingService', () => {
       expect(result.messages).toHaveLength(1);
     });
 
-    it('returns the empty result on timeout', async () => {
+    /*
+     * Returning the pre-wait answer on a timeout handed back counts up to
+     * twenty-five seconds old, which is how a message in shop chat could sit
+     * unannounced on somebody else's screen.
+     */
+    it('re-queries on timeout rather than returning the pre-wait answer', async () => {
       events.waitForMessage.mockResolvedValue(false);
+      (messages.findForConversation as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([messageRow()]);
 
       const result = await service.poll(author, 'conv-1', undefined, 25_000);
 
-      expect(messages.findForConversation).toHaveBeenCalledTimes(1);
-      expect(result.messages).toEqual([]);
+      expect(messages.findForConversation).toHaveBeenCalledTimes(2);
+      expect(result.messages).toHaveLength(1);
     });
   });
 
@@ -427,6 +438,135 @@ describe('MessagingService', () => {
       expect(events.publish).toHaveBeenCalledWith(
         expect.objectContaining({ mentionedUserIds: [] })
       );
+    });
+  });
+
+  describe('mention inbox', () => {
+    const inboxRow = (conversation: any) => ({
+      id: 'mention-1',
+      readAt: null,
+      message: {
+        ...messageRow(),
+        conversation,
+      },
+    });
+
+    /*
+     * A mention is read from the inbox, away from the thread it was written
+     * in, so it has to say which job it is about or it is just a sentence with
+     * no context.
+     */
+    it('carries the repair order number of the thread it came from', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest.fn().mockResolvedValue([
+        inboxRow({
+          id: 'conv-1',
+          entityType: 'REPAIR_ORDER',
+          entityId: 'ro-1',
+        }),
+      ]);
+      prisma.repairOrder.findMany.mockResolvedValue([
+        { id: 'ro-1', roNumber: 'RO-202608-0002' },
+      ]);
+
+      const inbox = await service.getMentionInbox(author, false);
+
+      expect(inbox[0].conversation.roNumber).toBe('RO-202608-0002');
+      expect(inbox[0].conversation.entityId).toBe('ro-1');
+    });
+
+    it('leaves the number null for a mention from shop chat', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest
+        .fn()
+        .mockResolvedValue([
+          inboxRow({ id: 'conv-2', entityType: null, entityId: null }),
+        ]);
+
+      const inbox = await service.getMentionInbox(author, false);
+
+      expect(inbox[0].conversation.roNumber).toBeNull();
+      expect(prisma.repairOrder.findMany).not.toHaveBeenCalled();
+    });
+
+    it('looks up each repair order once however many mentions it has', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest
+        .fn()
+        .mockResolvedValue([
+          inboxRow({ id: 'c1', entityType: 'REPAIR_ORDER', entityId: 'ro-1' }),
+          inboxRow({ id: 'c1', entityType: 'REPAIR_ORDER', entityId: 'ro-1' }),
+          inboxRow({ id: 'c2', entityType: 'REPAIR_ORDER', entityId: 'ro-2' }),
+        ]);
+      prisma.repairOrder.findMany.mockResolvedValue([
+        { id: 'ro-1', roNumber: 'RO-1' },
+        { id: 'ro-2', roNumber: 'RO-2' },
+      ]);
+
+      await service.getMentionInbox(author, false);
+
+      expect(prisma.repairOrder.findMany).toHaveBeenCalledTimes(1);
+      const ids = prisma.repairOrder.findMany.mock.calls[0][0].where.id.in;
+      expect(ids.sort()).toEqual(['ro-1', 'ro-2']);
+    });
+
+    it('survives a repair order that has since been deleted', async () => {
+      (messages.findMentionInbox as jest.Mock) = jest.fn().mockResolvedValue([
+        inboxRow({
+          id: 'conv-1',
+          entityType: 'REPAIR_ORDER',
+          entityId: 'gone',
+        }),
+      ]);
+      prisma.repairOrder.findMany.mockResolvedValue([]);
+
+      const inbox = await service.getMentionInbox(author, false);
+
+      expect(inbox[0].conversation.roNumber).toBeNull();
+    });
+  });
+
+  describe('marking a conversation read', () => {
+    /*
+     * The badge used to lie. Somebody tagged in a repair order would open that
+     * thread, read the message, and still be told they had an unread mention,
+     * because the only thing that cleared one was clicking it in the inbox.
+     */
+    it('clears the mentions in that conversation, not just the read mark', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      expect(prisma.messageMention.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId: author.id,
+            readAt: null,
+            message: { conversationId: 'conv-1' },
+          },
+        })
+      );
+    });
+
+    it('moves the read mark forward', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      expect(prisma.conversationMember.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { conversationId: 'conv-1', userId: author.id },
+          data: { lastReadAt: expect.any(Date) },
+        })
+      );
+    });
+
+    // Half of this applied would leave the two counts disagreeing.
+    it('does both in one transaction', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves other conversations alone', async () => {
+      await service.markConversationRead('conv-1', author.id);
+
+      const where = prisma.messageMention.updateMany.mock.calls.at(-1)[0].where;
+      expect(where.message.conversationId).toBe('conv-1');
+      expect(where.userId).toBe(author.id);
     });
   });
 });

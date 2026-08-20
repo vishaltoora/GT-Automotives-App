@@ -66,6 +66,11 @@ export class MessagingService {
       await this.ensureMembership(conversationId, user.id);
     }
 
+    // Everyone belongs to the shop channel whether or not they have opened it.
+    // Unread counts are drawn from memberships, so without this a message in
+    // shop chat counted for nobody until each person happened to click the tab.
+    await this.ensureGeneralMembership(user.id);
+
     const first = await this.collect(user, conversationId, since);
     if (first.messages.length > 0 || waitMs <= 0) {
       return first;
@@ -80,10 +85,12 @@ export class MessagingService {
       Math.min(waitMs, MAX_HOLD_MS)
     );
 
-    // Re-query either way. The wake-up only says something happened; whether
-    // this user may read it is still the visibility filter's decision, and on
-    // a timeout the counts may have moved for other reasons.
-    return woke ? this.collect(user, conversationId, since) : first;
+    // Re-query either way, waking or timing out. A wake-up only says something
+    // happened — whether this user may read it is still the visibility
+    // filter's decision — and returning the pre-wait answer on a timeout would
+    // hand back counts up to twenty-five seconds old.
+    void woke;
+    return this.collect(user, conversationId, since);
   }
 
   private async collect(
@@ -114,6 +121,33 @@ export class MessagingService {
   async getMentionInbox(user: MessagingUser, unreadOnly: boolean) {
     const rows = await this.messages.findMentionInbox(user.id, unreadOnly);
 
+    // A mention is read away from the thread it was written in, so it has to
+    // carry its own context. The repair order number comes from the
+    // conversation rather than from a reference row on the message: a message
+    // posted inside a repair order is about that repair order by definition,
+    // and storing it twice would leave two things to keep in step.
+    const roIds = [
+      ...new Set(
+        rows
+          .filter(
+            (row) =>
+              row.message.conversation.entityType === 'REPAIR_ORDER' &&
+              row.message.conversation.entityId
+          )
+          .map((row) => row.message.conversation.entityId as string)
+      ),
+    ];
+
+    const repairOrders = roIds.length
+      ? await this.prisma.repairOrder.findMany({
+          where: { id: { in: roIds } },
+          select: { id: true, roNumber: true },
+        })
+      : [];
+    const roNumberById = new Map(
+      repairOrders.map((ro) => [ro.id, ro.roNumber])
+    );
+
     return rows.map((row) => ({
       mentionId: row.id,
       readAt: row.readAt?.toISOString() ?? null,
@@ -122,6 +156,9 @@ export class MessagingService {
         id: row.message.conversation.id,
         entityType: row.message.conversation.entityType,
         entityId: row.message.conversation.entityId,
+        roNumber: row.message.conversation.entityId
+          ? roNumberById.get(row.message.conversation.entityId) ?? null
+          : null,
       },
     }));
   }
@@ -300,15 +337,31 @@ export class MessagingService {
     });
   }
 
+  /**
+   * Reading a conversation clears its mentions too.
+   *
+   * Without this the badge lied: somebody tagged in a repair order would open
+   * that thread, read the message, and still be told they had an unread
+   * mention — because the only thing that cleared one was clicking it in the
+   * inbox. Being read is being read, wherever it happened.
+   */
   async markConversationRead(
     conversationId: string,
     userId: string
   ): Promise<void> {
     await this.ensureMembership(conversationId, userId);
-    await this.prisma.conversationMember.updateMany({
-      where: { conversationId, userId },
-      data: { lastReadAt: new Date() },
-    });
+    const now = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.conversationMember.updateMany({
+        where: { conversationId, userId },
+        data: { lastReadAt: now },
+      }),
+      this.prisma.messageMention.updateMany({
+        where: { userId, readAt: null, message: { conversationId } },
+        data: { readAt: now },
+      }),
+    ]);
   }
 
   async markMentionRead(mentionId: string, userId: string): Promise<void> {
@@ -345,7 +398,7 @@ export class MessagingService {
       }));
 
     await this.ensureMembership(conversation.id, userId);
-    return conversation;
+    return this.withReadState(conversation, userId);
   }
 
   /**
@@ -381,7 +434,29 @@ export class MessagingService {
     }
 
     await this.ensureMembership(conversation.id, userId);
-    return conversation;
+    return this.withReadState(conversation, userId);
+  }
+
+  /**
+   * Adds where this reader had got to. Everything after it is drawn as new, and
+   * the mark is taken once when the thread opens rather than followed live —
+   * otherwise the "new" line would erase itself as you looked at it.
+   */
+  private async withReadState<T extends { id: string }>(
+    conversation: T,
+    userId: string
+  ): Promise<T & { lastReadAt: string | null }> {
+    const membership = await this.prisma.conversationMember.findUnique({
+      where: {
+        conversationId_userId: { conversationId: conversation.id, userId },
+      },
+      select: { lastReadAt: true },
+    });
+
+    return {
+      ...conversation,
+      lastReadAt: membership?.lastReadAt?.toISOString() ?? null,
+    };
   }
 
   // ---- Lookups for the composer ----
@@ -470,6 +545,16 @@ export class MessagingService {
     });
     if (!found) {
       throw new NotFoundException('Conversation not found');
+    }
+  }
+
+  private async ensureGeneralMembership(userId: string): Promise<void> {
+    const general = await this.prisma.conversation.findFirst({
+      where: { type: 'GENERAL' },
+      select: { id: true },
+    });
+    if (general) {
+      await this.ensureMembership(general.id, userId);
     }
   }
 
