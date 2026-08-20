@@ -5,6 +5,7 @@ import {
   CircularProgress,
   ClickAwayListener,
   IconButton,
+  ListItemAvatar,
   ListItemButton,
   ListItemText,
   Paper,
@@ -26,6 +27,7 @@ import {
   searchReferenceableROs,
 } from '../../requests/messaging.requests';
 import { colors } from '../../theme/colors';
+import { UserAvatar } from './UserAvatar';
 
 interface Picked {
   id: string;
@@ -286,6 +288,11 @@ export function MessageComposer({
             ) : (
               suggestions.map((s) => (
                 <ListItemButton key={s.id} onClick={() => choose(s)} dense>
+                  {trigger?.sigil === '@' && (
+                    <ListItemAvatar sx={{ minWidth: 40 }}>
+                      <UserAvatar name={s.label} userId={s.id} size={28} />
+                    </ListItemAvatar>
+                  )}
                   <ListItemText primary={s.label} secondary={s.secondary} />
                 </ListItemButton>
               ))

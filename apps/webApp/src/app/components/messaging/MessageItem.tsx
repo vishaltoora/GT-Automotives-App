@@ -5,6 +5,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ReplyIcon from '@mui/icons-material/Reply';
 import { segmentMessageBody, type MessageDto } from '@gt-automotive/data';
 import { colors } from '../../theme/colors';
+import { UserAvatar } from './UserAvatar';
 import { useRoleBaseRoute } from './hooks/useRoleBaseRoute';
 
 interface Props {
@@ -77,6 +78,11 @@ export function MessageItem({
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <UserAvatar
+          name={displayName(message.author.firstName, message.author.lastName)}
+          userId={message.author.id}
+          size={24}
+        />
         <Typography variant="subtitle2" sx={{ fontWeight: unread ? 800 : 600 }}>
           {displayName(message.author.firstName, message.author.lastName)}
         </Typography>

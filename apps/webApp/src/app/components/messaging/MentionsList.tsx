@@ -23,6 +23,7 @@ import {
 import { colors } from '../../theme/colors';
 import { useRoleBaseRoute } from './hooks/useRoleBaseRoute';
 import { announceRead } from './messaging-read-signal';
+import { UserAvatar } from './UserAvatar';
 
 interface Props {
   /** Bumped by the caller when the unread count changes, to refetch. */
@@ -204,6 +205,14 @@ export function MentionsList({
                   flexWrap: 'wrap',
                 }}
               >
+                <UserAvatar
+                  name={displayName(
+                    item.message.author.firstName,
+                    item.message.author.lastName
+                  )}
+                  userId={item.message.author.id}
+                  size={24}
+                />
                 {item.message.visibility === 'MENTIONED_ONLY' && (
                   <LockIcon
                     sx={{ fontSize: 14, color: colors.semantic.warning }}
