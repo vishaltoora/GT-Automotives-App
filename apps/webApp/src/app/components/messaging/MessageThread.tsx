@@ -43,6 +43,17 @@ export function MessageThread({
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  /*
+   * useErrorHelpers and useConfirmationHelpers build a fresh object of fresh
+   * arrow functions on every render, so their identity changes constantly.
+   * Naming one in a dependency array makes that effect re-run on every render —
+   * which here meant opening the thread, setting state, re-rendering, and
+   * opening it again, forever. Held in a ref so identity cannot drive effects,
+   * while calls still reach the current context.
+   */
+  const helpersRef = useRef({ showApiError, confirmDelete });
+  helpersRef.current = { showApiError, confirmDelete };
+
   useEffect(() => {
     let cancelled = false;
     setOpening(true);
@@ -58,7 +69,7 @@ export function MessageThread({
       } catch (error) {
         if (!cancelled) {
           setOpenError('This conversation could not be opened.');
-          showApiError(error);
+          helpersRef.current.showApiError(error);
         }
       } finally {
         if (!cancelled) setOpening(false);
@@ -68,7 +79,7 @@ export function MessageThread({
     return () => {
       cancelled = true;
     };
-  }, [entityType, entityId, showApiError]);
+  }, [entityType, entityId]);
 
   // Reading the thread is what marks it read, so the badge clears on the way
   // out rather than on every render.
@@ -90,25 +101,25 @@ export function MessageThread({
         const created = await sendMessage(conversationId, body);
         appendLocal(created);
       } catch (error) {
-        showApiError(error);
+        helpersRef.current.showApiError(error);
       }
     },
-    [conversationId, appendLocal, showApiError]
+    [conversationId, appendLocal]
   );
 
   const handleDelete = useCallback(
     async (id: string) => {
-      const confirmed = await confirmDelete('this message');
+      const confirmed = await helpersRef.current.confirmDelete('this message');
       if (!confirmed) return;
 
       try {
         await deleteMessage(id);
         removeLocal(id);
       } catch (error) {
-        showApiError(error);
+        helpersRef.current.showApiError(error);
       }
     },
-    [confirmDelete, removeLocal, showApiError]
+    [removeLocal]
   );
 
   if (opening) {
