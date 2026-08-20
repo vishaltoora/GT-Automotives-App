@@ -18,6 +18,7 @@ import {
   MessagingUser,
 } from './repositories/message.repository';
 import { parseMentionUserIds, parseReferences } from './mention-parser';
+import { MessageEventsService } from './message-events.service';
 
 /** Roles that may use messaging. Customers are deliberately absent. */
 const INTERNAL_ROLES = [
@@ -31,11 +32,19 @@ const INTERNAL_ROLES = [
 /** The one shop-wide channel. */
 const GENERAL_TITLE = 'Shop Chat';
 
+/**
+ * Longest a poll may be held open. Capped below the frontend reverse proxy's
+ * 30 second timeout, which would otherwise kill the request and surface as an
+ * error rather than an empty result.
+ */
+const MAX_HOLD_MS = 25_000;
+
 @Injectable()
 export class MessagingService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly messages: MessageRepository
+    private readonly messages: MessageRepository,
+    private readonly events: MessageEventsService
   ) {}
 
   // ---- Reading ----
@@ -50,6 +59,36 @@ export class MessagingService {
   async poll(
     user: MessagingUser,
     conversationId?: string,
+    since?: string,
+    waitMs = 0
+  ): Promise<PollResponseDto> {
+    if (conversationId) {
+      await this.ensureMembership(conversationId, user.id);
+    }
+
+    const first = await this.collect(user, conversationId, since);
+    if (first.messages.length > 0 || waitMs <= 0) {
+      return first;
+    }
+
+    // Nothing new, and the caller is willing to wait. Sleep until a write
+    // announces itself rather than re-querying on a timer — see
+    // MessageEventsService for why that distinction matters.
+    const woke = await this.events.waitForMessage(
+      user.id,
+      conversationId,
+      Math.min(waitMs, MAX_HOLD_MS)
+    );
+
+    // Re-query either way. The wake-up only says something happened; whether
+    // this user may read it is still the visibility filter's decision, and on
+    // a timeout the counts may have moved for other reasons.
+    return woke ? this.collect(user, conversationId, since) : first;
+  }
+
+  private async collect(
+    user: MessagingUser,
+    conversationId?: string,
     since?: string
   ): Promise<PollResponseDto> {
     const serverTime = new Date();
@@ -58,10 +97,6 @@ export class MessagingService {
     const messages = conversationId
       ? await this.messages.findForConversation(conversationId, user, sinceDate)
       : [];
-
-    if (conversationId) {
-      await this.ensureMembership(conversationId, user.id);
-    }
 
     const [unreadMentions, conversationUnreads] = await Promise.all([
       this.messages.countUnreadMentions(user.id),
@@ -170,6 +205,12 @@ export class MessagingService {
       });
 
       return message;
+    });
+
+    this.events.publish({
+      conversationId,
+      mentionedUserIds: [...audience],
+      authorId: user.id,
     });
 
     return this.toDto(created);

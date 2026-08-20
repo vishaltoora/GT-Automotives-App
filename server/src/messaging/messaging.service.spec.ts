@@ -14,6 +14,7 @@ describe('MessagingService', () => {
   let service: MessagingService;
   let prisma: any;
   let messages: jest.Mocked<Partial<MessageRepository>>;
+  let events: { publish: jest.Mock; waitForMessage: jest.Mock };
 
   const author = { id: 'author-1', role: { name: 'STAFF' } };
 
@@ -101,7 +102,12 @@ describe('MessagingService', () => {
       unreadCountsByConversation: jest.fn().mockResolvedValue({}),
     };
 
-    service = new MessagingService(prisma, messages as never);
+    events = {
+      publish: jest.fn(),
+      waitForMessage: jest.fn().mockResolvedValue(false),
+    };
+
+    service = new MessagingService(prisma, messages as never, events as never);
   });
 
   const send = (body: string, parentMessageId?: string) =>
@@ -339,6 +345,88 @@ describe('MessagingService', () => {
       const result = await service.poll(author, 'conv-1');
 
       expect(result.messages[0].createdAt).toBe('2026-08-20T17:00:00.000Z');
+    });
+  });
+
+  describe('long polling', () => {
+    it('returns at once when the caller asks for no wait', async () => {
+      await service.poll(author, 'conv-1', undefined, 0);
+
+      expect(events.waitForMessage).not.toHaveBeenCalled();
+    });
+
+    it('does not hold when there is already something to return', async () => {
+      (messages.findForConversation as jest.Mock).mockResolvedValue([
+        messageRow(),
+      ]);
+
+      await service.poll(author, 'conv-1', undefined, 25_000);
+
+      expect(events.waitForMessage).not.toHaveBeenCalled();
+    });
+
+    it('holds when there is nothing new', async () => {
+      await service.poll(author, 'conv-1', undefined, 25_000);
+
+      expect(events.waitForMessage).toHaveBeenCalledWith(
+        author.id,
+        'conv-1',
+        25_000
+      );
+    });
+
+    // The proxy in front of this gives up at 30s, so a longer hold would
+    // surface to the browser as an error instead of an empty result.
+    it('caps the hold below the reverse proxy timeout', async () => {
+      await service.poll(author, 'conv-1', undefined, 120_000);
+
+      expect(events.waitForMessage).toHaveBeenCalledWith(
+        author.id,
+        'conv-1',
+        25_000
+      );
+    });
+
+    // Waking says something happened, not that this user may read it.
+    it('re-queries through the visibility filter after waking', async () => {
+      events.waitForMessage.mockResolvedValue(true);
+      (messages.findForConversation as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([messageRow()]);
+
+      const result = await service.poll(author, 'conv-1', undefined, 25_000);
+
+      expect(messages.findForConversation).toHaveBeenCalledTimes(2);
+      expect(result.messages).toHaveLength(1);
+    });
+
+    it('returns the empty result on timeout', async () => {
+      events.waitForMessage.mockResolvedValue(false);
+
+      const result = await service.poll(author, 'conv-1', undefined, 25_000);
+
+      expect(messages.findForConversation).toHaveBeenCalledTimes(1);
+      expect(result.messages).toEqual([]);
+    });
+  });
+
+  describe('announcing writes', () => {
+    it('publishes so held requests wake', async () => {
+      await send('@[Sarah](user:sarah-1) parts please');
+
+      expect(events.publish).toHaveBeenCalledWith({
+        conversationId: 'conv-1',
+        mentionedUserIds: ['sarah-1'],
+        authorId: author.id,
+      });
+    });
+
+    it('publishes for a public message too', async () => {
+      await send('rear brakes done');
+
+      expect(events.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ mentionedUserIds: [] })
+      );
     });
   });
 });
