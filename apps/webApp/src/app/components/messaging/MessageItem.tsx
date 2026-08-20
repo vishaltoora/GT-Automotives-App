@@ -58,131 +58,178 @@ export function MessageItem({
 }: Props) {
   const navigate = useNavigate();
   const baseRoute = useRoleBaseRoute();
+
   const isPrivate = message.visibility === 'MENTIONED_ONLY';
   const isMine = message.author.id === currentUserId;
+  const author = displayName(message.author.firstName, message.author.lastName);
   const segments = segmentMessageBody(message.body);
 
+  const accent = isPrivate
+    ? colors.semantic.warning
+    : unread
+    ? colors.primary.main
+    : null;
+
+  const background = isPrivate
+    ? `${colors.semantic.warningLight}22`
+    : isMine
+    ? `${colors.primary.main}12`
+    : unread
+    ? `${colors.primary.light}14`
+    : colors.neutral[50];
+
   return (
+    // Own messages sit on the right, the way every chat does it: the side says
+    // who is talking before any of the text is read.
     <Box
       sx={{
-        py: 1,
-        px: 1.5,
-        borderRadius: 1,
-        bgcolor: isPrivate
-          ? colors.semantic.warningLight + '22'
-          : 'transparent',
-        borderLeft: isPrivate
-          ? `3px solid ${colors.semantic.warning}`
-          : '3px solid transparent',
-        '&:hover .message-actions': { opacity: 1 },
+        display: 'flex',
+        justifyContent: isMine ? 'flex-end' : 'flex-start',
+        mb: 0.5,
       }}
+      onClick={() => onSeen?.()}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <UserAvatar
-          name={displayName(message.author.firstName, message.author.lastName)}
-          userId={message.author.id}
-          size={24}
-        />
-        <Typography variant="subtitle2" sx={{ fontWeight: unread ? 800 : 600 }}>
-          {displayName(message.author.firstName, message.author.lastName)}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {formatTime(message.createdAt)}
-        </Typography>
-        {message.editedAt && (
-          <Typography variant="caption" color="text.disabled">
-            edited
-          </Typography>
-        )}
-        {isPrivate && (
-          <Tooltip
-            title={`Private — visible to ${message.mentions
-              .map((m) => displayName(m.firstName, m.lastName))
-              .join(', ')} and admins`}
-          >
-            <LockIcon sx={{ fontSize: 15, color: colors.semantic.warning }} />
-          </Tooltip>
-        )}
-        <Box sx={{ flexGrow: 1 }} />
-        {onReply && (
-          <IconButton
-            className="message-actions"
-            size="small"
-            sx={{ opacity: 0, transition: 'opacity 120ms' }}
-            onClick={() =>
-              onReply({
-                messageId: message.id,
-                authorName: displayName(
-                  message.author.firstName,
-                  message.author.lastName
-                ),
-                // Carried through so the composer can say who a reply reaches.
-                audience: isPrivate
-                  ? message.mentions.map((m) =>
-                      displayName(m.firstName, m.lastName)
-                    )
-                  : [],
-              })
-            }
-            aria-label="Reply to message"
-          >
-            <ReplyIcon fontSize="small" />
-          </IconButton>
-        )}
-        {(isMine || canDelete) && (
-          <IconButton
-            className="message-actions"
-            size="small"
-            sx={{ opacity: 0, transition: 'opacity 120ms' }}
-            onClick={() => onDelete(message.id)}
-            aria-label="Delete message"
-          >
-            <DeleteOutlineIcon fontSize="small" />
-          </IconButton>
-        )}
-      </Box>
-
-      <Typography
-        variant="body2"
-        component="div"
-        sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', mt: 0.25 }}
+      <Box
+        sx={{
+          maxWidth: '88%',
+          minWidth: 0,
+          py: 1,
+          px: 1.5,
+          borderRadius: 1.5,
+          cursor: onSeen ? 'pointer' : 'default',
+          bgcolor: background,
+          // The accent follows the bubble so it stays on the outer edge rather
+          // than floating in the middle of the row.
+          ...(accent
+            ? isMine
+              ? { borderRight: `3px solid ${accent}` }
+              : { borderLeft: `3px solid ${accent}` }
+            : {}),
+          '&:hover .message-actions': { opacity: 1 },
+        }}
       >
-        {segments.map((segment, index) => {
-          if (segment.kind === 'text') {
-            return <span key={index}>{segment.text}</span>;
-          }
-          if (segment.kind === 'mention') {
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexDirection: isMine ? 'row-reverse' : 'row',
+          }}
+        >
+          <UserAvatar name={author} userId={message.author.id} size={24} />
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: unread ? 800 : 600 }}
+          >
+            {author}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {formatTime(message.createdAt)}
+          </Typography>
+          {message.editedAt && (
+            <Typography variant="caption" color="text.disabled">
+              edited
+            </Typography>
+          )}
+          {isPrivate && (
+            <Tooltip
+              title={`Private — visible to ${message.mentions
+                .map((m) => displayName(m.firstName, m.lastName))
+                .join(', ')} and admins`}
+            >
+              <LockIcon sx={{ fontSize: 15, color: colors.semantic.warning }} />
+            </Tooltip>
+          )}
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          {onReply && (
+            <IconButton
+              className="message-actions"
+              size="small"
+              sx={{ opacity: 0, transition: 'opacity 120ms' }}
+              onClick={(event) => {
+                event.stopPropagation();
+                onReply({
+                  messageId: message.id,
+                  authorName: author,
+                  // Carried through so the composer can say who a reply reaches.
+                  audience: isPrivate
+                    ? message.mentions.map((m) =>
+                        displayName(m.firstName, m.lastName)
+                      )
+                    : [],
+                });
+              }}
+              aria-label="Reply to message"
+            >
+              <ReplyIcon fontSize="small" />
+            </IconButton>
+          )}
+          {(isMine || canDelete) && (
+            <IconButton
+              className="message-actions"
+              size="small"
+              sx={{ opacity: 0, transition: 'opacity 120ms' }}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(message.id);
+              }}
+              aria-label="Delete message"
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+
+        <Typography
+          variant="body2"
+          component="div"
+          sx={{
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            mt: 0.25,
+            textAlign: isMine ? 'right' : 'left',
+          }}
+        >
+          {segments.map((segment, index) => {
+            if (segment.kind === 'text') {
+              return <span key={index}>{segment.text}</span>;
+            }
+            if (segment.kind === 'mention') {
+              return (
+                <Chip
+                  key={index}
+                  label={`@${segment.label}`}
+                  size="small"
+                  sx={{
+                    height: 20,
+                    mx: 0.25,
+                    bgcolor:
+                      segment.userId === currentUserId
+                        ? colors.semantic.warningLight
+                        : colors.neutral[200],
+                  }}
+                />
+              );
+            }
+            if (!showReferences) return null;
             return (
               <Chip
                 key={index}
-                label={`@${segment.label}`}
+                label={segment.label}
                 size="small"
-                sx={{
-                  height: 20,
-                  mx: 0.25,
-                  bgcolor:
-                    segment.userId === currentUserId
-                      ? colors.semantic.warningLight
-                      : colors.neutral[200],
+                clickable
+                onClick={(event) => {
+                  event.stopPropagation();
+                  navigate(`${baseRoute}/repair-orders/${segment.entityId}`);
                 }}
+                sx={{ height: 20, mx: 0.25 }}
               />
             );
-          }
-          if (!showReferences) return null;
-          return (
-            <Chip
-              key={index}
-              label={segment.label}
-              size="small"
-              clickable
-              onClick={() =>
-                navigate(`${baseRoute}/repair-orders/${segment.entityId}`)
-              }
-              sx={{ height: 20, mx: 0.25 }}
-            />
-          );
-        })}
-      </Typography>
+          })}
+        </Typography>
+      </Box>
     </Box>
   );
 }
