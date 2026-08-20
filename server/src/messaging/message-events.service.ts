@@ -71,7 +71,14 @@ export class MessageEventsService implements OnModuleDestroy {
           event.conversationId === conversationId;
         const tagsMe = event.mentionedUserIds.includes(userId);
 
-        if (inOpenThread || tagsMe) finish(true);
+        // An untagged message is visible to everybody, so it moves everybody's
+        // unread count — including people with no thread open, which is the
+        // whole reason the badge exists. Waking on it is not a disclosure: the
+        // poll still re-queries through the visibility filter, and a reader who
+        // gained nothing simply gets the counts they already had.
+        const isPublic = event.mentionedUserIds.length === 0;
+
+        if (inOpenThread || tagsMe || isPublic) finish(true);
       };
 
       const timer = setTimeout(() => finish(false), timeoutMs);

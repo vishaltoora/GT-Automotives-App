@@ -26,9 +26,12 @@ describe('MessageEventsService', () => {
     await expect(waiting).resolves.toBe(true);
   });
 
-  it('does not wake for a different thread', async () => {
+  // A public message in another thread does wake you, deliberately: it moves
+  // your unread count, which is the badge's whole job. What must not wake you
+  // is a private message you are not part of.
+  it('does not wake for a private message in a different thread', async () => {
     const waiting = events.waitForMessage('sarah-1', 'conv-1', 60);
-    publish({ conversationId: 'conv-2' });
+    publish({ conversationId: 'conv-2', mentionedUserIds: ['mike-1'] });
 
     await expect(waiting).resolves.toBe(false);
   });
@@ -89,5 +92,47 @@ describe('MessageEventsService', () => {
 
     await expect(waiting).resolves.toBe(true);
     expect(events['emitter'].listenerCount('message')).toBe(0);
+  });
+
+  /*
+   * The badge poll runs with no conversation open, so before this an untagged
+   * message in shop chat woke nobody: the reader sat out the full hold and the
+   * count stayed wrong for up to twenty-five seconds, and the sound never
+   * fired because the count never moved.
+   */
+  describe('public messages', () => {
+    it('wakes a reader with no thread open', async () => {
+      const waiting = events.waitForMessage('sarah-1', undefined, 1000);
+      publish({ conversationId: 'general-1', mentionedUserIds: [] });
+
+      await expect(waiting).resolves.toBe(true);
+    });
+
+    it('wakes a reader sitting in a different thread', async () => {
+      const waiting = events.waitForMessage('sarah-1', 'conv-9', 1000);
+      publish({ conversationId: 'general-1', mentionedUserIds: [] });
+
+      await expect(waiting).resolves.toBe(true);
+    });
+
+    it('still does not wake the author of it', async () => {
+      const waiting = events.waitForMessage('sarah-1', undefined, 60);
+      publish({
+        conversationId: 'general-1',
+        mentionedUserIds: [],
+        authorId: 'sarah-1',
+      });
+
+      await expect(waiting).resolves.toBe(false);
+    });
+
+    // Waking is not reading: a private message must still only reach the
+    // people tagged in it, which the poll re-checks after any wake-up.
+    it('does not widen who a private message wakes', async () => {
+      const waiting = events.waitForMessage('mike-1', undefined, 60);
+      publish({ conversationId: 'conv-1', mentionedUserIds: ['sarah-1'] });
+
+      await expect(waiting).resolves.toBe(false);
+    });
   });
 });

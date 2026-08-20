@@ -403,13 +403,21 @@ describe('MessagingService', () => {
       expect(result.messages).toHaveLength(1);
     });
 
-    it('returns the empty result on timeout', async () => {
+    /*
+     * Returning the pre-wait answer on a timeout handed back counts up to
+     * twenty-five seconds old, which is how a message in shop chat could sit
+     * unannounced on somebody else's screen.
+     */
+    it('re-queries on timeout rather than returning the pre-wait answer', async () => {
       events.waitForMessage.mockResolvedValue(false);
+      (messages.findForConversation as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([messageRow()]);
 
       const result = await service.poll(author, 'conv-1', undefined, 25_000);
 
-      expect(messages.findForConversation).toHaveBeenCalledTimes(1);
-      expect(result.messages).toEqual([]);
+      expect(messages.findForConversation).toHaveBeenCalledTimes(2);
+      expect(result.messages).toHaveLength(1);
     });
   });
 

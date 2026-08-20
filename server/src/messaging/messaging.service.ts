@@ -66,6 +66,11 @@ export class MessagingService {
       await this.ensureMembership(conversationId, user.id);
     }
 
+    // Everyone belongs to the shop channel whether or not they have opened it.
+    // Unread counts are drawn from memberships, so without this a message in
+    // shop chat counted for nobody until each person happened to click the tab.
+    await this.ensureGeneralMembership(user.id);
+
     const first = await this.collect(user, conversationId, since);
     if (first.messages.length > 0 || waitMs <= 0) {
       return first;
@@ -80,10 +85,12 @@ export class MessagingService {
       Math.min(waitMs, MAX_HOLD_MS)
     );
 
-    // Re-query either way. The wake-up only says something happened; whether
-    // this user may read it is still the visibility filter's decision, and on
-    // a timeout the counts may have moved for other reasons.
-    return woke ? this.collect(user, conversationId, since) : first;
+    // Re-query either way, waking or timing out. A wake-up only says something
+    // happened — whether this user may read it is still the visibility
+    // filter's decision — and returning the pre-wait answer on a timeout would
+    // hand back counts up to twenty-five seconds old.
+    void woke;
+    return this.collect(user, conversationId, since);
   }
 
   private async collect(
@@ -538,6 +545,16 @@ export class MessagingService {
     });
     if (!found) {
       throw new NotFoundException('Conversation not found');
+    }
+  }
+
+  private async ensureGeneralMembership(userId: string): Promise<void> {
+    const general = await this.prisma.conversation.findFirst({
+      where: { type: 'GENERAL' },
+      select: { id: true },
+    });
+    if (general) {
+      await this.ensureMembership(general.id, userId);
     }
   }
 
