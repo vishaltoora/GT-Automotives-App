@@ -147,11 +147,13 @@ export function MessageComposer({
         if (trigger.sigil === '@') {
           const users = await searchMentionableUsers(trigger.query);
           if (!cancelled) {
+            // Name only. Everyone here works at the same shop and knows who
+            // does what, so the role was a second line of noise under every
+            // entry in a list people scan quickly.
             setSuggestions(
               users.map((u) => ({
                 id: u.id,
                 label: [u.firstName, u.lastName].filter(Boolean).join(' '),
-                secondary: u.roleName,
               }))
             );
           }
