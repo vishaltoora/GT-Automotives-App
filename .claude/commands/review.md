@@ -2,13 +2,20 @@
 
 ## Overview
 
-Commands to invoke the [Code Reviewer agent](../agents/code-reviewer.md) — the
-pre-PR gate for GT Automotives. It runs the mechanical checks, then reviews the
-branch diff for correctness, security, project invariants, clean code and test
-coverage.
+Commands to invoke the pre-PR gate for GT Automotives. Two agents, run together:
 
-The agent is **read-only** (no Write/Edit tools). It reports; you decide what to
+| Agent                                               | Covers                                                                                                                   |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [Code Reviewer](../agents/code-reviewer.md)         | Mechanical gates, correctness, project invariants, clean code, test coverage                                             |
+| [Security Reviewer](../agents/security-reviewer.md) | Authorization, IDOR and ownership, injection, what leaves the system, mass assignment, secrets and logging, availability |
+
+Both are **read-only** (no Write/Edit tools). They report; you decide what to
 change.
+
+Why two rather than one longer checklist: a security pass done at the end of a
+correctness review gets the tired half of the attention, and the two ask
+different questions of the same diff. Run in parallel they also finish in about
+the time one used to take.
 
 ---
 
@@ -19,20 +26,30 @@ change.
 **Purpose**: Full pre-PR review of the current branch
 **Usage**: `/review`
 
-**What it does**:
+**What it does**: launches **both agents in parallel** on the same branch diff.
+
+`code-reviewer`:
 
 1. Establishes scope from `git diff origin/main...HEAD` and confirms the branch
    was cut from `main`
 2. Runs the mechanical gates — clean working tree, **committed tree typechecks**
    (in a throwaway worktree, so your working tree is untouched), lint, tests,
    build, migration integrity, no stray artifacts or secrets
-3. Reviews the diff across five dimensions: correctness, security, project
-   invariants, clean code, tests
+3. Reviews the diff for correctness, project invariants, clean code and tests
 4. Verifies each candidate finding before reporting it, and drops the ones it
    cannot make fail
-5. Returns a pass/fail gate summary, a verdict, and findings ranked by severity
 
-**Run it before every `gh pr create`.**
+`security-reviewer`:
+
+1. Works the attack surface this application has — the Clerk → `JwtAuthGuard` →
+   `RoleGuard` → ownership chain, per-record IDOR, raw SQL, generated PDFs and
+   emails, SAS URLs, mass assignment, secrets and logging, availability
+2. Reports only findings it can write the attack for
+
+Both return a verdict and findings ranked by severity.
+
+**Run it before every `gh pr create`.** A Blocker from either agent means the
+PR does not open yet.
 
 **Example output**:
 
@@ -67,12 +84,11 @@ reads it. @Roles('STAFF') gates the route but not the row.
 **Purpose**: Security-only pass — faster, for a branch whose logic is already reviewed
 **Usage**: `/review security`
 
-**What it does**: Runs §3 (authorization, IDOR/ownership, injection, XSS in
-generated documents, mass assignment, secrets and data exposure) plus the
-secrets and artifact gate. Skips clean-code and test-coverage review.
+**What it does**: runs [security-reviewer](../agents/security-reviewer.md) alone.
 
 Use when you have already had a full review and then changed only an endpoint,
-a guard or a query.
+a guard, a query, or anything that leaves the system — a template, an email, an
+SMS, a notification, a blob URL.
 
 ---
 
@@ -117,6 +133,9 @@ exactly what will land on the PR — and your working tree is never touched.
 | Secrets, stray artifacts | —                          | —           | ✅                    |
 | Clean code, duplication  | —                          | —           | ✅                    |
 | Commit message accuracy  | —                          | —           | ✅                    |
+| Ownership / IDOR per row | —                          | —           | ✅ security-reviewer  |
+| What leaves the system   | —                          | —           | ✅ security-reviewer  |
+| Availability under load  | —                          | —           | ✅ security-reviewer  |
 
 CI tells you the branch compiles. `/review` tells you it is safe and clean.
 
