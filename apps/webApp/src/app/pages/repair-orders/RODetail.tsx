@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MessageThread } from '../../components/messaging/MessageThread';
 import {
@@ -2060,7 +2060,7 @@ function HistoryTab({ ro, baseRoute }: { ro: RepairOrder; baseRoute: string }) {
   );
 }
 
-// ---- Chat tab (placeholder) ----
+// ---- Chat tab ----
 
 function ChatTab({
   roId,
@@ -2071,13 +2071,33 @@ function ChatTab({
   currentUserId: string;
   isAdmin: boolean;
 }) {
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * Bring the panel to the top of the screen when the tab is opened.
+   *
+   * Everything above it — header, status cards, tab bar — is a screenful on a
+   * phone, so the thread opened below the fold and the composer was off it
+   * entirely. Scrolling to the panel first also gives MessageThread a stable
+   * top to measure its height from.
+   */
+  useEffect(() => {
+    // Instant, not smooth: the panel measures the room left below itself, and
+    // a scroll still animating when it measures leaves it sized for wherever
+    // the page happened to be.
+    anchorRef.current?.scrollIntoView({ block: 'start' });
+  }, []);
+
   return (
-    <MessageThread
-      entityType="REPAIR_ORDER"
-      entityId={roId}
-      currentUserId={currentUserId}
-      isAdmin={isAdmin}
-    />
+    <Box ref={anchorRef} sx={{ scrollMarginTop: 8 }}>
+      <MessageThread
+        entityType="REPAIR_ORDER"
+        entityId={roId}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+        fillViewport
+      />
+    </Box>
   );
 }
 

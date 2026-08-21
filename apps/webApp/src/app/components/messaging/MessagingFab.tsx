@@ -211,7 +211,8 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
           sx={{
             flexGrow: 1,
             overflowY: 'auto',
-            px: openedThread || tab === 0 ? 1.5 : 0,
+            // Each child pads itself; doubling it here squeezed the thread.
+            px: 0,
           }}
         >
           {/*
@@ -226,6 +227,7 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
               currentUserId={currentUserId}
               isAdmin={isAdmin}
               height="100%"
+              framed={false}
             />
           )}
           {open && !openedThread && tab === 0 && (
@@ -233,6 +235,7 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
               currentUserId={currentUserId}
               isAdmin={isAdmin}
               height="100%"
+              framed={false}
             />
           )}
           {open && !openedThread && tab === 1 && (

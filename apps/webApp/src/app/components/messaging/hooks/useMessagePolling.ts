@@ -97,6 +97,18 @@ export function useMessagePolling(conversationId?: string) {
       new Promise((resolve) => setTimeout(resolve, ms));
 
     const loop = async () => {
+      /*
+       * The first trip must not hold.
+       *
+       * The server only returns early when it has something to send, so an
+       * empty thread — every repair order nobody has written in yet — held the
+       * very first request for the full twenty-five seconds. The panel sat on
+       * a spinner that whole time before admitting it had nothing to show,
+       * which read as "messaging is broken" rather than "no messages yet".
+       * Ask once without a hold to paint what exists, then settle into holds.
+       */
+      let holdThisPass = false;
+
       while (!stoppedRef.current) {
         if (document.hidden) {
           await sleep(GAP_MS);
@@ -110,9 +122,10 @@ export function useMessagePolling(conversationId?: string) {
           const result = await pollMessages({
             conversationId,
             since: cursorRef.current,
-            waitMs: HOLD_MS,
+            waitMs: holdThisPass ? HOLD_MS : undefined,
             signal: controller.signal,
           });
+          holdThisPass = true;
           if (stoppedRef.current) return;
           applyResult(result);
           await sleep(GAP_MS);
