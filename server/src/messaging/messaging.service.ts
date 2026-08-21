@@ -104,15 +104,25 @@ export class MessagingService {
       ? await this.messages.findForConversation(conversationId, user, sinceDate)
       : [];
 
-    const [unreadMentions, conversationUnreads] = await Promise.all([
-      this.messages.countUnreadMentions(user.id),
-      this.messages.unreadCountsByConversation(user),
-    ]);
+    const [unreadMentions, conversationUnreads, unjoinedMentions] =
+      await Promise.all([
+        this.messages.countUnreadMentions(user.id),
+        this.messages.unreadCountsByConversation(user),
+        this.messages.countUnreadMentionsOutsideMemberships(user.id),
+      ]);
+
+    // Each unread message once: the per-conversation counts cover everything
+    // in a thread this reader has joined, mentions included, and the rest are
+    // the tags waiting in threads they have never opened.
+    const unreadTotal =
+      Object.values(conversationUnreads).reduce((sum, n) => sum + n, 0) +
+      unjoinedMentions;
 
     return {
       messages: messages.map((m) => this.toDto(m)),
       unreadMentions,
       conversationUnreads,
+      unreadTotal,
       serverTime: serverTime.toISOString(),
     };
   }

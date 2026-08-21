@@ -90,14 +90,11 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
 
   // No conversation id: this poll exists for the counts alone. The server
   // returns them whether or not a thread is open.
-  const { unreadMentions, conversationUnreads, refresh } =
-    useMessagePolling(undefined);
-
   // Everything unread, not only mentions: an untagged message in the shop
-  // channel is still something somebody has not seen.
-  const unreadTotal =
-    unreadMentions +
-    Object.values(conversationUnreads).reduce((sum, n) => sum + n, 0);
+  // channel is still something somebody has not seen. The total is counted by
+  // the server rather than added up here, because a tagged message is both a
+  // mention and an unread message and adding the two showed two of everything.
+  const { unreadMentions, unreadTotal, refresh } = useMessagePolling(undefined);
 
   const { enabled: soundEnabled, setEnabled: setSoundEnabled } =
     useNotificationSound(unreadTotal);

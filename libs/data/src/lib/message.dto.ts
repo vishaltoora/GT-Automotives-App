@@ -148,6 +148,15 @@ export interface PollResponseDto {
   messages: MessageDto[];
   unreadMentions: number;
   conversationUnreads: Record<string, number>;
+  /**
+   * Every unread message, counted once.
+   *
+   * Not the sum of the two fields above: a message that tags you is both an
+   * unread mention and an unread message in its conversation, so adding them
+   * showed two of everything. Derived server-side because only the server can
+   * see which mentions sit in threads the reader has never opened.
+   */
+  unreadTotal: number;
   /** Send this back as `since` on the next poll. */
   serverTime: string;
 }

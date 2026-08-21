@@ -34,6 +34,8 @@ interface PollingState {
   messages: MessageDto[];
   unreadMentions: number;
   conversationUnreads: Record<string, number>;
+  /** Every unread message counted once — see PollResponseDto. */
+  unreadTotal: number;
   loading: boolean;
 }
 
@@ -53,6 +55,7 @@ export function useMessagePolling(conversationId?: string) {
     messages: [],
     unreadMentions: 0,
     conversationUnreads: {},
+    unreadTotal: 0,
     loading: Boolean(conversationId),
   });
 
@@ -77,6 +80,7 @@ export function useMessagePolling(conversationId?: string) {
           messages: added.length ? [...prev.messages, ...added] : prev.messages,
           unreadMentions: result.unreadMentions,
           conversationUnreads: result.conversationUnreads,
+          unreadTotal: result.unreadTotal,
           loading: false,
         };
       });
@@ -104,6 +108,7 @@ export function useMessagePolling(conversationId?: string) {
       messages: [],
       unreadMentions: 0,
       conversationUnreads: {},
+      unreadTotal: 0,
       loading: Boolean(conversationId),
     });
 

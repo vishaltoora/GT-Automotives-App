@@ -104,6 +104,30 @@ export class MessageRepository {
     });
   }
 
+  /**
+   * Unread mentions in threads this reader has never opened.
+   *
+   * Membership is created by opening a conversation, so being tagged in a
+   * repair order thread you have never looked at leaves no membership and no
+   * `lastReadAt` — which is exactly the case the mention badge exists for.
+   * Those messages are invisible to the per-conversation counts, so they are
+   * counted here and nowhere else; anything in a joined conversation is
+   * already counted there, and counting it twice is what made one tagged
+   * message read as two.
+   */
+  async countUnreadMentionsOutsideMemberships(userId: string): Promise<number> {
+    return this.prisma.messageMention.count({
+      where: {
+        userId,
+        readAt: null,
+        message: {
+          deletedAt: null,
+          conversation: { members: { none: { userId } } },
+        },
+      },
+    });
+  }
+
   async findMentionInbox(userId: string, unreadOnly: boolean) {
     return this.prisma.messageMention.findMany({
       where: {

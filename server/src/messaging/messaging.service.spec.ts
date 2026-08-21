@@ -103,6 +103,7 @@ describe('MessagingService', () => {
       findForConversation: jest.fn().mockResolvedValue([]),
       countUnreadMentions: jest.fn().mockResolvedValue(0),
       unreadCountsByConversation: jest.fn().mockResolvedValue({}),
+      countUnreadMentionsOutsideMemberships: jest.fn().mockResolvedValue(0),
     };
 
     events = {
@@ -343,6 +344,43 @@ describe('MessagingService', () => {
 
       expect(result.unreadMentions).toBe(3);
       expect(messages.findForConversation).not.toHaveBeenCalled();
+    });
+
+    /*
+     * A message that tags you is both an unread mention and an unread message
+     * in its conversation. Adding the two fields showed two of everything on
+     * the badge, so the total is counted here instead: once per conversation,
+     * plus the tags waiting in threads this reader has never opened and so has
+     * no membership in.
+     */
+    it('counts each unread message once, not once per reason', async () => {
+      (messages.countUnreadMentions as jest.Mock).mockResolvedValue(2);
+      (messages.unreadCountsByConversation as jest.Mock).mockResolvedValue({
+        'conv-1': 2,
+        'conv-2': 1,
+      });
+      (
+        messages.countUnreadMentionsOutsideMemberships as jest.Mock
+      ).mockResolvedValue(0);
+
+      const result = await service.poll(author);
+
+      expect(result.unreadTotal).toBe(3);
+    });
+
+    it('adds tags waiting in threads the reader has never opened', async () => {
+      (messages.unreadCountsByConversation as jest.Mock).mockResolvedValue({
+        'conv-1': 1,
+      });
+      (
+        messages.countUnreadMentionsOutsideMemberships as jest.Mock
+      ).mockResolvedValue(2);
+
+      const result = await service.poll(author);
+
+      // Those two have no membership to be counted against, and they are the
+      // whole point of the mention badge.
+      expect(result.unreadTotal).toBe(3);
     });
 
     it('emits createdAt as a real instant, not a business date', async () => {

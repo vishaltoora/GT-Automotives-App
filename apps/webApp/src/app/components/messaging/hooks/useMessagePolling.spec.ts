@@ -22,6 +22,7 @@ describe('useMessagePolling', () => {
       messages: [],
       unreadMentions: 0,
       conversationUnreads: {},
+      unreadTotal: 0,
       serverTime: '2026-08-21T17:00:00.000Z',
     });
   });
