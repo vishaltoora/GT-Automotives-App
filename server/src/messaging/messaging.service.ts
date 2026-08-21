@@ -81,7 +81,6 @@ export class MessagingService {
     // MessageEventsService for why that distinction matters.
     const woke = await this.events.waitForMessage(
       user.id,
-      conversationId,
       Math.min(waitMs, MAX_HOLD_MS)
     );
 

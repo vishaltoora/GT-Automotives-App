@@ -16,7 +16,6 @@ import {
 import SendIcon from '@mui/icons-material/Send';
 import LockIcon from '@mui/icons-material/Lock';
 import GroupIcon from '@mui/icons-material/Group';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   buildMentionToken,
   buildReferenceToken,
@@ -335,19 +334,6 @@ export function MessageComposer({
           </>
         )}
       </Box>
-
-      {isPrivate && (
-        <Box
-          sx={{ mt: 0.25, display: 'flex', alignItems: 'center', gap: 0.75 }}
-        >
-          <InfoOutlinedIcon
-            sx={{ fontSize: 14, color: colors.text.secondary }}
-          />
-          <Typography variant="caption" sx={{ color: colors.text.secondary }}>
-            Admins can also view this message
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 }

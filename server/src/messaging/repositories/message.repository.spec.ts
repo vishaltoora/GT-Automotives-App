@@ -3,8 +3,8 @@ import { MessageRepository, MessagingUser } from './message.repository';
 /**
  * The visibility filter decides who can read what, so it is tested as a value
  * rather than through a query. What matters is the shape of the clause handed
- * to Prisma — if it is ever `{}` for a non-admin, every private message in the
- * shop becomes readable.
+ * to Prisma — if it is ever `{}`, every private message in the shop becomes
+ * readable.
  */
 describe('MessageRepository.visibilityFilter', () => {
   const repo = new MessageRepository({} as never);
@@ -14,11 +14,17 @@ describe('MessageRepository.visibilityFilter', () => {
     role: { name: roleName },
   });
 
-  it('lets an admin see everything', () => {
-    expect(repo.visibilityFilter(asUser('admin1', 'ADMIN'))).toEqual({});
+  it('holds an admin to the same rule as everyone else', () => {
+    expect(repo.visibilityFilter(asUser('admin1', 'ADMIN'))).toEqual({
+      OR: [
+        { visibility: 'PUBLIC' },
+        { authorId: 'admin1' },
+        { mentions: { some: { userId: 'admin1' } } },
+      ],
+    });
   });
 
-  it.each(['STAFF', 'SUPERVISOR', 'FOREMAN', 'ACCOUNTANT'])(
+  it.each(['STAFF', 'SUPERVISOR', 'FOREMAN', 'ACCOUNTANT', 'ADMIN'])(
     'constrains %s to public, own, and mentioned',
     (roleName) => {
       const filter = repo.visibilityFilter(asUser('u1', roleName));
@@ -33,8 +39,14 @@ describe('MessageRepository.visibilityFilter', () => {
     }
   );
 
-  it('never returns an unrestricted filter for a non-admin', () => {
-    for (const roleName of ['STAFF', 'SUPERVISOR', 'FOREMAN', 'ACCOUNTANT']) {
+  it('never returns an unrestricted filter for any role', () => {
+    for (const roleName of [
+      'STAFF',
+      'SUPERVISOR',
+      'FOREMAN',
+      'ACCOUNTANT',
+      'ADMIN',
+    ]) {
       const filter = repo.visibilityFilter(asUser('u1', roleName));
 
       expect(filter).not.toEqual({});

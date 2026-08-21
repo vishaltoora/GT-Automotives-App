@@ -294,7 +294,12 @@ describe('MessagingService', () => {
       );
     });
 
-    it('lets an admin delete anyone’s message', async () => {
+    /*
+     * Delete reach is bounded by what the admin can read: findByIdForUser
+     * applies the visibility filter, so a private message they are not part of
+     * never gets this far — it 404s instead.
+     */
+    it('lets an admin delete any message they can see', async () => {
       (messages.findByIdForUser as jest.Mock).mockResolvedValue(
         messageRow({ authorId: 'mike-1' })
       );
@@ -371,11 +376,7 @@ describe('MessagingService', () => {
     it('holds when there is nothing new', async () => {
       await service.poll(author, 'conv-1', undefined, 25_000);
 
-      expect(events.waitForMessage).toHaveBeenCalledWith(
-        author.id,
-        'conv-1',
-        25_000
-      );
+      expect(events.waitForMessage).toHaveBeenCalledWith(author.id, 25_000);
     });
 
     // The proxy in front of this gives up at 30s, so a longer hold would
@@ -383,11 +384,7 @@ describe('MessagingService', () => {
     it('caps the hold below the reverse proxy timeout', async () => {
       await service.poll(author, 'conv-1', undefined, 120_000);
 
-      expect(events.waitForMessage).toHaveBeenCalledWith(
-        author.id,
-        'conv-1',
-        25_000
-      );
+      expect(events.waitForMessage).toHaveBeenCalledWith(author.id, 25_000);
     });
 
     // Waking says something happened, not that this user may read it.

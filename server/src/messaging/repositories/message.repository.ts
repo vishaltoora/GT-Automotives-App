@@ -44,13 +44,12 @@ export class MessageRepository {
    * hiding one with CSS would be a leak, not a fix.
    *
    * A message is visible when it is public, or you wrote it, or you were tagged
-   * in it. Admins see everything, which the composer tells people up front.
+   * in it. There is no role that reads past this — an admin sees a private
+   * message only by being in it, the same as everyone else. "Only Sarah will
+   * see this" has to mean what it says, or the strip in the composer is a lie
+   * and people stop trusting the feature with anything worth keeping private.
    */
   visibilityFilter(user: MessagingUser): Prisma.MessageWhereInput {
-    if (user.role.name === 'ADMIN') {
-      return {};
-    }
-
     return {
       OR: [
         { visibility: 'PUBLIC' },
