@@ -153,10 +153,15 @@ export class MessageRepository {
   }
 
   /**
-   * Unread counts per conversation, for the sidebar dots.
+   * Unread counts per conversation, for the badges.
    *
    * Counts only messages this user may see, so a private message they are not
    * part of cannot betray its existence through a badge that never clears.
+   *
+   * One query, not one per membership. It used to loop, and memberships
+   * accumulate for life — one per repair-order thread anybody opens — so an
+   * idle tab polling in the background was issuing a count per thread that
+   * person had ever visited, every minute, all night.
    */
   async unreadCountsByConversation(
     user: MessagingUser
@@ -166,22 +171,30 @@ export class MessageRepository {
       select: { conversationId: true, lastReadAt: true },
     });
 
-    const counts: Record<string, number> = {};
-    for (const membership of memberships) {
-      const count = await this.prisma.message.count({
-        where: {
+    if (memberships.length === 0) return {};
+
+    const grouped = await this.prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        deletedAt: null,
+        authorId: { not: user.id },
+        AND: [this.visibilityFilter(user)],
+        // One clause per membership, because the read mark is per
+        // conversation: this thread, and only what arrived after this
+        // reader last looked at it.
+        OR: memberships.map((membership) => ({
           conversationId: membership.conversationId,
-          deletedAt: null,
-          authorId: { not: user.id },
           ...(membership.lastReadAt
             ? { createdAt: { gt: membership.lastReadAt } }
             : {}),
-          AND: [this.visibilityFilter(user)],
-        },
-      });
-      if (count > 0) {
-        counts[membership.conversationId] = count;
-      }
+        })),
+      },
+      _count: { _all: true },
+    });
+
+    const counts: Record<string, number> = {};
+    for (const row of grouped) {
+      if (row._count._all > 0) counts[row.conversationId] = row._count._all;
     }
     return counts;
   }

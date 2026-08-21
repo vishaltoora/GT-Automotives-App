@@ -268,6 +268,36 @@ describe('MessagingService', () => {
         service.updateMessage('msg-1', author, 'edited')
       ).rejects.toThrow(ForbiddenException);
     });
+
+    /*
+     * A reply must not gain an audience by losing the message it answers.
+     *
+     * The parent is read back through the visibility filter, which excludes
+     * soft-deleted rows — so once somebody deleted the private message that
+     * started the thread, fixing a typo on the reply re-derived it as public
+     * and put it in front of the whole shop.
+     */
+    it('keeps a private reply private when its parent has been deleted', async () => {
+      (messages.findByIdForUser as jest.Mock).mockImplementation((id: string) =>
+        Promise.resolve(
+          id === 'msg-1'
+            ? messageRow({
+                id: 'msg-1',
+                authorId: author.id,
+                parentMessageId: 'parent-1',
+                visibility: 'MENTIONED_ONLY',
+                mentions: [{ userId: 'sarah-1', user: {} }],
+              })
+            : // The parent is soft-deleted, so the filtered read finds nothing.
+              null
+        )
+      );
+
+      await service.updateMessage('msg-1', author, 'calling them back now');
+
+      expect(createdMessage.visibility).toBe('MENTIONED_ONLY');
+      expect(createdMessage.mentions.create).toEqual([{ userId: 'sarah-1' }]);
+    });
   });
 
   describe('deleting', () => {

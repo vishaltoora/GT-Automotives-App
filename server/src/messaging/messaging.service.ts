@@ -285,7 +285,8 @@ export class MessagingService {
 
     // An edit re-derives visibility from the new body, so removing the last
     // mention makes a message public. Editing a reply cannot widen it, though:
-    // the inherited floor is recomputed from the parent, same as on create.
+    // the inherited floor comes from the parent, same as on create, and from
+    // what was stored if the parent has since been deleted.
     let visibility: MessageVisibility =
       audience.size > 0 ? 'MENTIONED_ONLY' : 'PUBLIC';
 
@@ -294,10 +295,22 @@ export class MessagingService {
         existing.parentMessageId,
         user
       );
+
       if (parent?.visibility === 'MENTIONED_ONLY') {
         visibility = 'MENTIONED_ONLY';
         parent.mentions.forEach((m) => audience.add(m.userId));
         audience.add(parent.authorId);
+        audience.delete(user.id);
+      } else if (!parent && existing.visibility === 'MENTIONED_ONLY') {
+        /*
+         * The parent is gone — soft-deleted, so the filtered read cannot see
+         * it any more. A reply must not gain an audience by losing the message
+         * it answers: without this, fixing a typo on a private reply whose
+         * parent had been deleted republished it to the whole shop. Hold the
+         * floor from what was stored instead.
+         */
+        visibility = 'MENTIONED_ONLY';
+        existing.mentions.forEach((m) => audience.add(m.userId));
         audience.delete(user.id);
       }
     }
