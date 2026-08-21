@@ -366,20 +366,37 @@ export class MessagingService {
        * it recomputed rather than accumulated — so an editor can still take
        * off somebody they tagged by mistake, which holding on to the stored
        * mentions would have made impossible.
-       *
-       * No disclosure in reading past the filter here: these are the ids this
-       * reply already carries as its own mentions, and the editor is its
-       * author.
        */
       const parent = await this.messages.findParentAudience(
         existing.parentMessageId
       );
 
       if (parent?.visibility === 'MENTIONED_ONLY') {
+        // The floor holds either way: a reply never widens by losing, or being
+        // shut out of, the message it answers.
         visibility = 'MENTIONED_ONLY';
-        parent.mentionUserIds.forEach((id) => audience.add(id));
-        audience.add(parent.authorId);
-        audience.delete(user.id);
+
+        /*
+         * Whose audience it becomes is a different question from whether it
+         * stays private, and this is where reading past the filter has to stop.
+         *
+         * Being in the parent when the reply was written does not mean being
+         * in it now — its author can edit it, take somebody out of it, or turn
+         * a public message private long afterwards. Copying its current
+         * audience onto the reply regardless would have echoed that audience
+         * straight back in the PATCH response, names and all: an editor could
+         * re-save an old reply on a timer and watch the membership of a
+         * message they cannot read.
+         */
+        const stillInIt =
+          parent.authorId === user.id ||
+          parent.mentionUserIds.includes(user.id);
+
+        if (stillInIt) {
+          parent.mentionUserIds.forEach((id) => audience.add(id));
+          audience.add(parent.authorId);
+          audience.delete(user.id);
+        }
       }
     }
 

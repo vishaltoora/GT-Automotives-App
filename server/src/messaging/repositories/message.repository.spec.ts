@@ -143,7 +143,11 @@ describe('MessageRepository.findRecentForConversation', () => {
   const reader: MessagingUser = { id: 'sarah-1', role: { name: 'STAFF' } };
 
   const rows = (count: number) =>
-    Array.from({ length: count }, (_, index) => ({ id: `m-${index}` }));
+    Array.from({ length: count }, (_, index) => ({
+      id: `m-${index}`,
+      // Distinct instants, so the catch-up trim has a clean boundary to find.
+      createdAt: new Date(Date.UTC(2026, 7, 21, 17, 0, index)),
+    }));
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -217,6 +221,32 @@ describe('MessageRepository.findRecentForConversation', () => {
 
     expect(prisma.message.findMany.mock.calls[0][0].take).toBe(3);
     expect(result.messages).toHaveLength(2);
+    expect(result.truncated).toBe(true);
+  });
+
+  /*
+   * The resume cursor is a timestamp, so the page has to end on a clean one:
+   * if the last message delivered shared its millisecond with the first one
+   * dropped, `gt` would step over the twin and never deliver it.
+   */
+  it('stops a truncated catch-up short of a shared millisecond', async () => {
+    const shared = new Date('2026-08-21T17:00:00.000Z');
+    prisma.message.findMany.mockResolvedValue([
+      { id: 'm-0', createdAt: new Date('2026-08-21T16:59:59.000Z') },
+      { id: 'm-1', createdAt: shared },
+      { id: 'm-2', createdAt: shared },
+    ]);
+
+    const result = await repo.findSinceForConversation(
+      'conv-1',
+      reader,
+      new Date('2026-08-18T17:00:00.000Z'),
+      2
+    );
+
+    // m-1 is dropped with its twin rather than becoming the cursor; the next
+    // trip asks for both.
+    expect(result.messages.map((m) => m.id)).toEqual(['m-0']);
     expect(result.truncated).toBe(true);
   });
 

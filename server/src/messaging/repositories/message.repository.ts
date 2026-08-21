@@ -46,10 +46,12 @@ export const CONVERSATION_PAGE_SIZE = 50;
  *
  * A tab that slept through a long weekend wakes with a cursor days old, and
  * "everything since" is then the whole weekend in one response with three
- * nested includes. Bigger than a page because catching up should take one trip
- * in the ordinary case, small enough that the pathological one stays bounded.
+ * nested includes. Kept close to a page because the cursor resumes: a real
+ * backlog costs an extra trip rather than one big response, and the size of
+ * that response is not something a caller should get to choose by sending an
+ * old enough cursor.
  */
-export const CATCHUP_LIMIT = 200;
+export const CATCHUP_LIMIT = 100;
 
 /**
  * Ordering for every windowed read, newest first.
@@ -186,8 +188,34 @@ export class MessageRepository {
     });
 
     const truncated = rows.length > limit;
+    if (!truncated) return { messages: rows, truncated };
+
+    /*
+     * Stop the page short of a shared millisecond.
+     *
+     * The cursor that resumes a truncated catch-up is a timestamp — one ISO
+     * string on the wire — so if the last message delivered shares its
+     * millisecond with the first one dropped, `gt` steps over the twin and
+     * that message is never delivered to this tab again. Trimming the trailing
+     * run means the cursor always lands on a clean boundary. The trimmed rows
+     * are not lost: the next trip asks for them.
+     */
+    const page = rows.slice(0, limit);
+    const boundary = page[page.length - 1].createdAt.getTime();
+    const firstDropped = rows[limit];
+
+    // Only when the boundary is genuinely straddled. Otherwise the cursor
+    // already lands cleanly and there is nothing to give up.
+    if (firstDropped.createdAt.getTime() !== boundary) {
+      return { messages: page, truncated };
+    }
+
+    const trimmed = page.filter((m) => m.createdAt.getTime() !== boundary);
+
+    // Unless the whole page is one millisecond, which no shop produces, and
+    // where trimming would leave nothing to advance the cursor with at all.
     return {
-      messages: truncated ? rows.slice(0, limit) : rows,
+      messages: trimmed.length > 0 ? trimmed : page,
       truncated,
     };
   }

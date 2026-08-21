@@ -297,10 +297,11 @@ describe('MessagingService', () => {
           mentions: [{ userId: 'sarah-1', user: {} }],
         })
       );
+      // Mike tagged her, which is how she came to be replying to it at all.
       (messages.findParentAudience as jest.Mock).mockResolvedValue({
         authorId: 'mike-1',
         visibility: 'MENTIONED_ONLY',
-        mentionUserIds: ['sarah-1'],
+        mentionUserIds: ['sarah-1', author.id],
       });
 
       await service.updateMessage('msg-1', author, 'calling them back now');
@@ -309,6 +310,43 @@ describe('MessagingService', () => {
       expect(createdMessage.mentions.create).toEqual(
         expect.arrayContaining([{ userId: 'sarah-1' }, { userId: 'mike-1' }])
       );
+    });
+
+    /*
+     * Being in the parent when the reply was written is not the same as being
+     * in it now: its author can edit it, drop somebody from it, or turn a
+     * public message private long afterwards. Copying its current audience
+     * onto the reply anyway echoed that audience back in the response — an
+     * editor could re-save an old reply on a timer and watch the membership of
+     * a message they cannot read.
+     */
+    it('does not copy the audience of a parent the editor is no longer in', async () => {
+      (messages.findByIdForUser as jest.Mock).mockResolvedValue(
+        messageRow({
+          id: 'msg-1',
+          authorId: author.id,
+          parentMessageId: 'parent-1',
+          visibility: 'PUBLIC',
+          mentions: [],
+        })
+      );
+      // Mike has since made his message private, to Dave rather than to her.
+      (messages.findParentAudience as jest.Mock).mockResolvedValue({
+        authorId: 'mike-1',
+        visibility: 'MENTIONED_ONLY',
+        mentionUserIds: ['dave-1'],
+      });
+
+      await service.updateMessage('msg-1', author, 'still on it');
+
+      const audience = createdMessage.mentions.create.map(
+        (m: { userId: string }) => m.userId
+      );
+      expect(audience).not.toContain('dave-1');
+      expect(audience).not.toContain('mike-1');
+      // The floor still holds — the reply narrows rather than staying public
+      // under a parent that has been closed to her.
+      expect(createdMessage.visibility).toBe('MENTIONED_ONLY');
     });
 
     /*
@@ -333,7 +371,7 @@ describe('MessagingService', () => {
       (messages.findParentAudience as jest.Mock).mockResolvedValue({
         authorId: 'mike-1',
         visibility: 'MENTIONED_ONLY',
-        mentionUserIds: [],
+        mentionUserIds: [author.id],
       });
 
       await service.updateMessage(
