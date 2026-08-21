@@ -100,7 +100,11 @@ describe('MessagingService', () => {
 
     messages = {
       findByIdForUser: jest.fn(),
+      findParentAudience: jest.fn().mockResolvedValue(null),
       findForConversation: jest.fn().mockResolvedValue([]),
+      findSinceForConversation: jest
+        .fn()
+        .mockResolvedValue({ messages: [], truncated: false }),
       findRecentForConversation: jest
         .fn()
         .mockResolvedValue({ messages: [], hasOlder: false }),
@@ -278,31 +282,72 @@ describe('MessagingService', () => {
     /*
      * A reply must not gain an audience by losing the message it answers.
      *
-     * The parent is read back through the visibility filter, which excludes
-     * soft-deleted rows — so once somebody deleted the private message that
-     * started the thread, fixing a typo on the reply re-derived it as public
-     * and put it in front of the whole shop.
+     * The parent's audience is read directly rather than through the filtered
+     * read, which excludes soft-deleted rows — so once somebody deleted the
+     * private message that started the thread, fixing a typo on the reply
+     * re-derived it as public and put it in front of the whole shop.
      */
     it('keeps a private reply private when its parent has been deleted', async () => {
-      (messages.findByIdForUser as jest.Mock).mockImplementation((id: string) =>
-        Promise.resolve(
-          id === 'msg-1'
-            ? messageRow({
-                id: 'msg-1',
-                authorId: author.id,
-                parentMessageId: 'parent-1',
-                visibility: 'MENTIONED_ONLY',
-                mentions: [{ userId: 'sarah-1', user: {} }],
-              })
-            : // The parent is soft-deleted, so the filtered read finds nothing.
-              null
-        )
+      (messages.findByIdForUser as jest.Mock).mockResolvedValue(
+        messageRow({
+          id: 'msg-1',
+          authorId: author.id,
+          parentMessageId: 'parent-1',
+          visibility: 'MENTIONED_ONLY',
+          mentions: [{ userId: 'sarah-1', user: {} }],
+        })
       );
+      (messages.findParentAudience as jest.Mock).mockResolvedValue({
+        authorId: 'mike-1',
+        visibility: 'MENTIONED_ONLY',
+        mentionUserIds: ['sarah-1'],
+      });
 
       await service.updateMessage('msg-1', author, 'calling them back now');
 
       expect(createdMessage.visibility).toBe('MENTIONED_ONLY');
-      expect(createdMessage.mentions.create).toEqual([{ userId: 'sarah-1' }]);
+      expect(createdMessage.mentions.create).toEqual(
+        expect.arrayContaining([{ userId: 'sarah-1' }, { userId: 'mike-1' }])
+      );
+    });
+
+    /*
+     * The other half of the same rule, and the reason the audience is
+     * recomputed from the parent rather than accumulated from what was stored:
+     * holding on to the stored mentions would have kept a person somebody
+     * tagged by mistake on the message for good, with no way to take them off.
+     */
+    it('still lets the author drop somebody they tagged by mistake', async () => {
+      (messages.findByIdForUser as jest.Mock).mockResolvedValue(
+        messageRow({
+          id: 'msg-1',
+          authorId: author.id,
+          parentMessageId: 'parent-1',
+          visibility: 'MENTIONED_ONLY',
+          mentions: [
+            { userId: 'sarah-1', user: {} },
+            { userId: 'wrong-sarah', user: {} },
+          ],
+        })
+      );
+      (messages.findParentAudience as jest.Mock).mockResolvedValue({
+        authorId: 'mike-1',
+        visibility: 'MENTIONED_ONLY',
+        mentionUserIds: [],
+      });
+
+      await service.updateMessage(
+        'msg-1',
+        author,
+        '@[Sarah](user:sarah-1) can you look?'
+      );
+
+      const audience = createdMessage.mentions.create.map(
+        (m: { userId: string }) => m.userId
+      );
+      expect(audience).not.toContain('wrong-sarah');
+      // The parent's author keeps access to a reply to their own message.
+      expect(audience).toEqual(expect.arrayContaining(['sarah-1', 'mike-1']));
     });
   });
 
@@ -379,7 +424,7 @@ describe('MessagingService', () => {
       const result = await service.poll(author);
 
       expect(result.unreadMentions).toBe(3);
-      expect(messages.findForConversation).not.toHaveBeenCalled();
+      expect(messages.findSinceForConversation).not.toHaveBeenCalled();
     });
 
     /*
@@ -436,8 +481,45 @@ describe('MessagingService', () => {
         'conv-1',
         author
       );
-      expect(messages.findForConversation).not.toHaveBeenCalled();
+      expect(messages.findSinceForConversation).not.toHaveBeenCalled();
       expect(result.hasOlderMessages).toBe(true);
+    });
+
+    /*
+     * A tablet that slept through a long weekend wakes with a days-old cursor,
+     * and "everything since" is then the whole weekend in one response. The
+     * cursor comes back stopped at the last message actually returned, so the
+     * next trip resumes there rather than stepping over the rest.
+     */
+    it('hands back a cursor it can resume from when a catch-up is too big', async () => {
+      (messages.findSinceForConversation as jest.Mock).mockResolvedValue({
+        messages: [messageRow({ createdAt: new Date('2026-08-21T09:00:00Z') })],
+        truncated: true,
+      });
+
+      const result = await service.poll(
+        author,
+        'conv-1',
+        '2026-08-18T17:00:00.000Z'
+      );
+
+      expect(result.serverTime).toBe('2026-08-21T09:00:00.000Z');
+    });
+
+    it('hands back the clock when the catch-up fitted', async () => {
+      (messages.findSinceForConversation as jest.Mock).mockResolvedValue({
+        messages: [messageRow({ createdAt: new Date('2026-08-21T09:00:00Z') })],
+        truncated: false,
+      });
+
+      const result = await service.poll(
+        author,
+        'conv-1',
+        '2026-08-21T08:00:00.000Z'
+      );
+
+      // Not the message's time: everything up to now has been delivered.
+      expect(result.serverTime).not.toBe('2026-08-21T09:00:00.000Z');
     });
 
     it('follows the cursor once the client has one, and says nothing about history', async () => {
@@ -447,7 +529,7 @@ describe('MessagingService', () => {
         '2026-08-20T17:00:00.000Z'
       );
 
-      expect(messages.findForConversation).toHaveBeenCalled();
+      expect(messages.findSinceForConversation).toHaveBeenCalled();
       expect(messages.findRecentForConversation).not.toHaveBeenCalled();
       // Undefined, not false — a cursor poll must not clear the client's flag.
       expect(result.hasOlderMessages).toBeUndefined();
@@ -561,13 +643,15 @@ describe('MessagingService', () => {
       const result = await service.getOlderMessages(
         'conv-1',
         author,
-        '2026-08-20T17:00:00.000Z'
+        '2026-08-20T17:00:00.000Z',
+        'msg-1'
       );
 
       expect(messages.findOlderForConversation).toHaveBeenCalledWith(
         'conv-1',
         author,
-        new Date('2026-08-20T17:00:00.000Z')
+        new Date('2026-08-20T17:00:00.000Z'),
+        'msg-1'
       );
       expect(result.messages).toHaveLength(1);
       expect(result.hasOlder).toBe(true);
@@ -578,7 +662,8 @@ describe('MessagingService', () => {
       await service.getOlderMessages(
         'conv-1',
         author,
-        '2026-08-20T17:00:00.000Z'
+        '2026-08-20T17:00:00.000Z',
+        'msg-1'
       );
 
       expect(prisma.conversationMember.upsert).toHaveBeenCalled();

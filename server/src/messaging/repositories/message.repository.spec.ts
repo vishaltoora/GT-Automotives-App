@@ -154,8 +154,9 @@ describe('MessageRepository.findRecentForConversation', () => {
 
     const args = prisma.message.findMany.mock.calls[0][0];
     expect(args.take).toBe(3);
-    // Newest first, so a window means the newest window.
-    expect(args.orderBy).toEqual({ createdAt: 'desc' });
+    // Newest first, so a window means the newest window — and the id breaks
+    // ties, without which a page boundary can lose a message for good.
+    expect(args.orderBy).toEqual([{ createdAt: 'desc' }, { id: 'desc' }]);
     expect(args.where.AND).toEqual([repo.visibilityFilter(reader)]);
   });
 
@@ -178,14 +179,57 @@ describe('MessageRepository.findRecentForConversation', () => {
     expect(page.hasOlder).toBe(false);
   });
 
-  it('pages backwards from a point, still filtered', async () => {
+  /*
+   * `createdAt` is millisecond precision, so two people sending inside the
+   * same millisecond share one. Paging on the timestamp alone excluded
+   * whichever twin did not land on the boundary — from this page and from
+   * every page after it, permanently.
+   */
+  it('pages backwards on the timestamp and the id together, still filtered', async () => {
     prisma.message.findMany.mockResolvedValue(rows(1));
     const before = new Date('2026-08-21T17:00:00.000Z');
 
-    await repo.findOlderForConversation('conv-1', reader, before, 2);
+    await repo.findOlderForConversation('conv-1', reader, before, 'm-9', 2);
 
     const args = prisma.message.findMany.mock.calls[0][0];
-    expect(args.where.createdAt).toEqual({ lt: before });
+    expect(args.where.OR).toEqual([
+      { createdAt: { lt: before } },
+      // The twin: same instant, earlier id.
+      { createdAt: before, id: { lt: 'm-9' } },
+    ]);
     expect(args.where.AND).toEqual([repo.visibilityFilter(reader)]);
+    expect(args.orderBy).toEqual([{ createdAt: 'desc' }, { id: 'desc' }]);
+  });
+
+  /*
+   * The catch-up read is capped for the tablet that slept through a long
+   * weekend and wakes with a days-old cursor.
+   */
+  it('caps a catch-up and says when it did not fit', async () => {
+    prisma.message.findMany.mockResolvedValue(rows(3));
+
+    const result = await repo.findSinceForConversation(
+      'conv-1',
+      reader,
+      new Date('2026-08-18T17:00:00.000Z'),
+      2
+    );
+
+    expect(prisma.message.findMany.mock.calls[0][0].take).toBe(3);
+    expect(result.messages).toHaveLength(2);
+    expect(result.truncated).toBe(true);
+  });
+
+  it('reports a catch-up that fitted', async () => {
+    prisma.message.findMany.mockResolvedValue(rows(2));
+
+    const result = await repo.findSinceForConversation(
+      'conv-1',
+      reader,
+      new Date('2026-08-21T17:00:00.000Z'),
+      2
+    );
+
+    expect(result.truncated).toBe(false);
   });
 });

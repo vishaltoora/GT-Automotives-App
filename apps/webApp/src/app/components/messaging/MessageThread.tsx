@@ -36,6 +36,7 @@ import {
 import { useErrorHelpers } from '../../contexts/ErrorContext';
 import { useConfirmationHelpers } from '../../contexts/ConfirmationContext';
 import { announceRead } from './messaging-read-signal';
+import { arrivalsSince } from './messaging-arrivals';
 
 export interface ReplyTarget {
   messageId: string;
@@ -107,6 +108,10 @@ const isSameTurn = (message: MessageDto, previous?: MessageDto) =>
         GROUPING_WINDOW_MS
   );
 
+/** Ids are cuids, but a selector built from data is escaped on principle. */
+const cssEscape = (value: string) =>
+  typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(value) : value;
+
 /** How close to the bottom still counts as "following the conversation". */
 const AT_BOTTOM_SLACK_PX = 80;
 
@@ -160,9 +165,8 @@ export function MessageThread({
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const followingRef = useRef(true);
-  const paintedRef = useRef(false);
-  const seenCountRef = useRef(0);
-  const loadingOlderRef = useRef(false);
+  /** The message that was last at the bottom, so an arrival is identity, not size. */
+  const seenNewestIdRef = useRef<string | undefined>(undefined);
   const [missed, setMissed] = useState(0);
 
   /*
@@ -246,23 +250,33 @@ export function MessageThread({
    * follow it.
    */
   useEffect(() => {
-    const arrived = messages.length - seenCountRef.current;
-    seenCountRef.current = messages.length;
-    if (arrived <= 0) return;
+    const newest = messages[messages.length - 1];
+    if (!newest) return;
 
-    // A page of history also grows the list, and following that would scroll
-    // to the bottom of a thread somebody just asked to read the top of.
-    if (loadingOlderRef.current) return;
+    const previous = seenNewestIdRef.current;
+    seenNewestIdRef.current = newest.id;
 
-    if (followingRef.current) {
+    // A page of history changes the list without changing what is newest, so
+    // arrivalsSince returns 0 for it — see that module for why this is
+    // identity rather than a count.
+    if (previous === newest.id) return;
+
+    if (previous === undefined) {
       // The first paint should look settled rather than animate up from the
       // top of a thread the reader never saw.
-      jumpToLatest(paintedRef.current ? 'smooth' : 'auto');
-      paintedRef.current = true;
+      jumpToLatest('auto');
+      return;
+    }
+
+    const arrived = arrivalsSince(messages, previous);
+    if (arrived <= 0) return;
+
+    if (followingRef.current) {
+      jumpToLatest('smooth');
     } else {
       setMissed((count) => count + arrived);
     }
-  }, [messages.length, jumpToLatest]);
+  }, [messages, jumpToLatest]);
 
   const handleScroll = useCallback(() => {
     const node = scrollRef.current;
@@ -299,9 +313,13 @@ export function MessageThread({
    *
    * A conversation opens with a window rather than its whole history — shop
    * chat is never purged, so "everything" grows without limit. Prepending
-   * moves the content under the reader, so the scroll position is put back by
-   * however much taller the list got: without that, loading earlier messages
-   * throws you to the top of the page you were reading.
+   * moves the content under the reader, so the message they were looking at
+   * has to be put back where it was.
+   *
+   * Anchored on that message rather than on the height the list gained: a
+   * message arriving from the poll while this request is in flight also adds
+   * height, and correcting by the total would push the reader down by a
+   * message that landed somewhere they were not looking.
    */
   const handleLoadEarlier = useCallback(async () => {
     const node = scrollRef.current;
@@ -309,25 +327,31 @@ export function MessageThread({
     if (!conversationId || !oldest || loadingOlder) return;
 
     setLoadingOlder(true);
-    loadingOlderRef.current = true;
-    const heightBefore = node?.scrollHeight ?? 0;
+    const anchorSelector = `[data-message-id="${cssEscape(oldest.id)}"]`;
+    const topBefore = node
+      ?.querySelector(anchorSelector)
+      ?.getBoundingClientRect().top;
 
     try {
-      const page = await getEarlierMessages(conversationId, oldest.createdAt);
+      const page = await getEarlierMessages(
+        conversationId,
+        oldest.createdAt,
+        oldest.id
+      );
       prependLocal(page.messages, page.hasOlder);
 
       requestAnimationFrame(() => {
-        if (!node) return;
-        node.scrollTop += node.scrollHeight - heightBefore;
+        if (!node || topBefore === undefined) return;
+        const topAfter = node
+          .querySelector(anchorSelector)
+          ?.getBoundingClientRect().top;
+        if (topAfter === undefined) return;
+        node.scrollTop += topAfter - topBefore;
       });
     } catch (error) {
       helpersRef.current.showApiError(error);
     } finally {
       setLoadingOlder(false);
-      // Cleared after the effect that reacts to the new length has run.
-      requestAnimationFrame(() => {
-        loadingOlderRef.current = false;
-      });
     }
   }, [conversationId, messages, loadingOlder, prependLocal]);
 

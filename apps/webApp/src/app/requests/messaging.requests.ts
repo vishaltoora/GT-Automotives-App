@@ -82,15 +82,18 @@ export async function getGeneralThread(): Promise<ConversationDto> {
  *
  * `before` is the `createdAt` of the oldest message held, echoed back from the
  * server's own value rather than a browser clock — same rule as the poll
- * cursor, for the same reason.
+ * cursor, for the same reason — and `beforeId` is that message's id, without
+ * which two messages sharing a millisecond lose one of themselves at a page
+ * boundary.
  */
 export async function getEarlierMessages(
   conversationId: string,
-  before: string
+  before: string,
+  beforeId: string
 ): Promise<MessagePageDto> {
   const { data } = await apiClient.get<MessagePageDto>(
     `/messaging/conversations/${conversationId}/messages`,
-    { params: { before } }
+    { params: { before, beforeId } }
   );
   return data;
 }

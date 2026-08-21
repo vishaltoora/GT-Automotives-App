@@ -47,11 +47,21 @@ export class UpdateMessageDto {
 /** Query for a page of messages older than the ones already on screen. */
 export class OlderMessagesQueryDto {
   /**
-   * `createdAt` of the oldest message the caller already holds. Everything
-   * strictly before it comes back, newest first, one page at a time.
+   * `createdAt` of the oldest message the caller already holds.
    */
   @IsISO8601()
   before!: string;
+
+  /**
+   * Its id, which makes the cursor total.
+   *
+   * `createdAt` is millisecond precision, so two people sending inside the
+   * same millisecond share one. Paging on the timestamp alone then excluded
+   * whichever twin did not land on the boundary — from this page and from
+   * every page after it.
+   */
+  @IsString()
+  beforeId!: string;
 }
 
 /** Query for the single poll endpoint. */
