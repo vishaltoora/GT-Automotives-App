@@ -12,6 +12,7 @@ import {
 import {
   CreateMessageDto,
   MentionSearchDto,
+  OlderMessagesQueryDto,
   PollQueryDto,
   UpdateMessageDto,
 } from '@gt-automotive/data';
@@ -64,6 +65,21 @@ export class MessagingController {
     @Param('entityId') entityId: string
   ) {
     return this.messaging.getEntityConversation(entityType, entityId, user.id);
+  }
+
+  /**
+   * A page of a thread older than what the caller already has on screen.
+   *
+   * Opening a conversation returns a window rather than its whole history, so
+   * this is how somebody reads back through it.
+   */
+  @Get('conversations/:id/messages')
+  older(
+    @CurrentUser() user: MessagingUser,
+    @Param('id') conversationId: string,
+    @Query() query: OlderMessagesQueryDto
+  ) {
+    return this.messaging.getOlderMessages(conversationId, user, query.before);
   }
 
   @Post('conversations/:id/messages')

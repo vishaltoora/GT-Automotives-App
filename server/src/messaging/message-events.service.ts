@@ -5,6 +5,14 @@ export interface MessageEvent {
   conversationId: string;
   /** Who the message was made private to, if anyone. */
   mentionedUserIds: string[];
+  /**
+   * As stored on the message, not inferred from the audience.
+   *
+   * They part company on a message that tags only its own author: the row is
+   * MENTIONED_ONLY, but the audience is empty once the author is removed from
+   * it, so an empty list read as "public" and woke the whole shop.
+   */
+  visibility: 'PUBLIC' | 'MENTIONED_ONLY';
   /** Excluded from their own wake-up: they already have the message. */
   authorId: string;
 }
@@ -47,11 +55,7 @@ export class MessageEventsService implements OnModuleDestroy {
    * re-queries through the visibility filter afterwards, so a wake-up can
    * never itself disclose anything.
    */
-  waitForMessage(
-    userId: string,
-    conversationId: string | undefined,
-    timeoutMs: number
-  ): Promise<boolean> {
+  waitForMessage(userId: string, timeoutMs: number): Promise<boolean> {
     return new Promise((resolve) => {
       let settled = false;
 
@@ -66,19 +70,19 @@ export class MessageEventsService implements OnModuleDestroy {
       const onMessage = (event: MessageEvent) => {
         if (event.authorId === userId) return;
 
-        const inOpenThread =
-          conversationId !== undefined &&
-          event.conversationId === conversationId;
         const tagsMe = event.mentionedUserIds.includes(userId);
 
         // An untagged message is visible to everybody, so it moves everybody's
         // unread count — including people with no thread open, which is the
-        // whole reason the badge exists. Waking on it is not a disclosure: the
-        // poll still re-queries through the visibility filter, and a reader who
-        // gained nothing simply gets the counts they already had.
-        const isPublic = event.mentionedUserIds.length === 0;
+        // whole reason the badge exists.
+        const isPublic = event.visibility === 'PUBLIC';
 
-        if (inOpenThread || tagsMe || isPublic) finish(true);
+        // Only readers the message actually reaches. Having the thread open
+        // used to be enough on its own, which meant a private message returned
+        // an empty poll early to everyone watching that thread — no content,
+        // but a reliable "something just happened in here" they were not part
+        // of. Nobody outside the audience should learn even that much.
+        if (tagsMe || isPublic) finish(true);
       };
 
       const timer = setTimeout(() => finish(false), timeoutMs);

@@ -31,6 +31,16 @@ export type MessageWithRelations = Prisma.MessageGetPayload<{
   include: typeof MESSAGE_INCLUDE;
 }>;
 
+/**
+ * How many messages a thread opens with.
+ *
+ * Opening a conversation used to read every message it had ever held. Repair
+ * order threads are purged thirty days after the job closes so they stay
+ * small, but shop chat is kept forever — so that read grew without limit, on
+ * every panel open, for every person.
+ */
+export const CONVERSATION_PAGE_SIZE = 50;
+
 @Injectable()
 export class MessageRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -44,13 +54,12 @@ export class MessageRepository {
    * hiding one with CSS would be a leak, not a fix.
    *
    * A message is visible when it is public, or you wrote it, or you were tagged
-   * in it. Admins see everything, which the composer tells people up front.
+   * in it. There is no role that reads past this — an admin sees a private
+   * message only by being in it, the same as everyone else. "Only Sarah will
+   * see this" has to mean what it says, or the strip in the composer is a lie
+   * and people stop trusting the feature with anything worth keeping private.
    */
   visibilityFilter(user: MessagingUser): Prisma.MessageWhereInput {
-    if (user.role.name === 'ADMIN') {
-      return {};
-    }
-
     return {
       OR: [
         { visibility: 'PUBLIC' },
@@ -60,7 +69,65 @@ export class MessageRepository {
     };
   }
 
-  /** Messages in a thread that this user may see, oldest first. */
+  /**
+   * The newest page of a thread, oldest first, plus whether more sit behind it.
+   *
+   * Reads one row more than the page to answer that question without a second
+   * count query.
+   */
+  async findRecentForConversation(
+    conversationId: string,
+    user: MessagingUser,
+    limit: number = CONVERSATION_PAGE_SIZE
+  ): Promise<{ messages: MessageWithRelations[]; hasOlder: boolean }> {
+    const newestFirst = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        AND: [this.visibilityFilter(user)],
+      },
+      include: MESSAGE_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+    });
+
+    const hasOlder = newestFirst.length > limit;
+    const page = hasOlder ? newestFirst.slice(0, limit) : newestFirst;
+
+    return { messages: page.reverse(), hasOlder };
+  }
+
+  /** The page before a point in a thread, for scrolling back through it. */
+  async findOlderForConversation(
+    conversationId: string,
+    user: MessagingUser,
+    before: Date,
+    limit: number = CONVERSATION_PAGE_SIZE
+  ): Promise<{ messages: MessageWithRelations[]; hasOlder: boolean }> {
+    const newestFirst = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        createdAt: { lt: before },
+        AND: [this.visibilityFilter(user)],
+      },
+      include: MESSAGE_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+    });
+
+    const hasOlder = newestFirst.length > limit;
+    const page = hasOlder ? newestFirst.slice(0, limit) : newestFirst;
+
+    return { messages: page.reverse(), hasOlder };
+  }
+
+  /**
+   * Everything in a thread after a cursor, oldest first.
+   *
+   * Bounded by the cursor rather than by a page size: this answers "what has
+   * happened since I last asked", which is a handful of messages at most.
+   */
   async findForConversation(
     conversationId: string,
     user: MessagingUser,
@@ -105,6 +172,30 @@ export class MessageRepository {
     });
   }
 
+  /**
+   * Unread mentions in threads this reader has never opened.
+   *
+   * Membership is created by opening a conversation, so being tagged in a
+   * repair order thread you have never looked at leaves no membership and no
+   * `lastReadAt` — which is exactly the case the mention badge exists for.
+   * Those messages are invisible to the per-conversation counts, so they are
+   * counted here and nowhere else; anything in a joined conversation is
+   * already counted there, and counting it twice is what made one tagged
+   * message read as two.
+   */
+  async countUnreadMentionsOutsideMemberships(userId: string): Promise<number> {
+    return this.prisma.messageMention.count({
+      where: {
+        userId,
+        readAt: null,
+        message: {
+          deletedAt: null,
+          conversation: { members: { none: { userId } } },
+        },
+      },
+    });
+  }
+
   async findMentionInbox(userId: string, unreadOnly: boolean) {
     return this.prisma.messageMention.findMany({
       where: {
@@ -130,10 +221,15 @@ export class MessageRepository {
   }
 
   /**
-   * Unread counts per conversation, for the sidebar dots.
+   * Unread counts per conversation, for the badges.
    *
    * Counts only messages this user may see, so a private message they are not
    * part of cannot betray its existence through a badge that never clears.
+   *
+   * One query, not one per membership. It used to loop, and memberships
+   * accumulate for life — one per repair-order thread anybody opens — so an
+   * idle tab polling in the background was issuing a count per thread that
+   * person had ever visited, every minute, all night.
    */
   async unreadCountsByConversation(
     user: MessagingUser
@@ -143,22 +239,30 @@ export class MessageRepository {
       select: { conversationId: true, lastReadAt: true },
     });
 
-    const counts: Record<string, number> = {};
-    for (const membership of memberships) {
-      const count = await this.prisma.message.count({
-        where: {
+    if (memberships.length === 0) return {};
+
+    const grouped = await this.prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        deletedAt: null,
+        authorId: { not: user.id },
+        AND: [this.visibilityFilter(user)],
+        // One clause per membership, because the read mark is per
+        // conversation: this thread, and only what arrived after this
+        // reader last looked at it.
+        OR: memberships.map((membership) => ({
           conversationId: membership.conversationId,
-          deletedAt: null,
-          authorId: { not: user.id },
           ...(membership.lastReadAt
             ? { createdAt: { gt: membership.lastReadAt } }
             : {}),
-          AND: [this.visibilityFilter(user)],
-        },
-      });
-      if (count > 0) {
-        counts[membership.conversationId] = count;
-      }
+        })),
+      },
+      _count: { _all: true },
+    });
+
+    const counts: Record<string, number> = {};
+    for (const row of grouped) {
+      if (row._count._all > 0) counts[row.conversationId] = row._count._all;
     }
     return counts;
   }

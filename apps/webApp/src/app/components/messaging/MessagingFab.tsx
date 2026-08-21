@@ -16,8 +16,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import { useMessagePolling } from './hooks/useMessagePolling';
 import { useNotificationSound } from './hooks/useNotificationSound';
+import { useBrowserNotifications } from './hooks/useBrowserNotifications';
+import { useDocumentTitleBadge } from './hooks/useDocumentTitleBadge';
 import { MessageThread } from './MessageThread';
 import { MentionsList } from './MentionsList';
 import { onReadAnnounced } from './messaging-read-signal';
@@ -30,13 +35,14 @@ interface Props {
 }
 
 /**
- * Always-present entry point to messaging, with the count of things tagged at
- * you.
+ * Always-present entry point to messaging, and the thing that carries every
+ * count.
  *
- * Notification for this feature is in-app only, so the badge is the whole
- * mechanism — nothing else tells somebody they were tagged. It therefore polls
- * with no conversation open, which is what keeps the count live wherever the
- * user happens to be in the app.
+ * Nothing here sends an SMS or an email, so what this component does is the
+ * whole of how anybody finds out: the badge, the ping, the tab title and — for
+ * a tab that is not in front of them — a desktop notification. It therefore
+ * polls with no conversation open, which is what keeps all four live wherever
+ * the user happens to be in the app.
  */
 export function MessagingFab({ currentUserId, isAdmin }: Props) {
   const [open, setOpen] = useState(false);
@@ -85,21 +91,38 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
 
   // No conversation id: this poll exists for the counts alone. The server
   // returns them whether or not a thread is open.
-  const { unreadMentions, conversationUnreads, refresh } =
-    useMessagePolling(undefined);
-
   // Everything unread, not only mentions: an untagged message in the shop
-  // channel is still something somebody has not seen.
-  const unreadTotal =
-    unreadMentions +
-    Object.values(conversationUnreads).reduce((sum, n) => sum + n, 0);
+  // channel is still something somebody has not seen. The total is counted by
+  // the server rather than added up here, because a tagged message is both a
+  // mention and an unread message and adding the two showed two of everything.
+  const { unreadMentions, unreadTotal, refresh } = useMessagePolling(undefined);
 
   const { enabled: soundEnabled, setEnabled: setSoundEnabled } =
     useNotificationSound(unreadTotal);
 
+  // Works in a background tab with nobody's permission needed, which makes it
+  // the floor under everything else here.
+  useDocumentTitleBadge(unreadTotal);
+
+  const notifications = useBrowserNotifications({
+    unreadTotal,
+    unreadMentions,
+    // Clicking the toast should land on the messages, not just the app.
+    onActivate: () => setOpen(true),
+  });
+
   // The count is held open in a long poll, so it would otherwise stay wrong
   // for up to twenty-five seconds after something was read.
   useEffect(() => onReadAnnounced(() => void refresh()), [refresh]);
+
+  const notificationTooltip =
+    notifications.permission === 'denied'
+      ? 'Notifications are blocked in your browser settings'
+      : notifications.permission !== 'granted'
+      ? 'Notify me when I am not on this tab'
+      : notifications.enabled
+      ? 'Turn off notifications when I am away'
+      : 'Notify me when I am not on this tab';
 
   return (
     <>
@@ -107,9 +130,7 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
         <Fab
           color="primary"
           aria-label={
-            unreadMentions > 0
-              ? `Messages, ${unreadMentions} unread`
-              : 'Messages'
+            unreadTotal > 0 ? `Messages, ${unreadTotal} unread` : 'Messages'
           }
           onClick={() => setOpen(true)}
           sx={{
@@ -119,7 +140,13 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
             zIndex: (theme) => theme.zIndex.drawer - 1,
           }}
         >
-          <Badge badgeContent={unreadMentions} color="error" max={99}>
+          {/*
+            Everything unread, matching the ping and the tab title. The badge
+            used to count mentions alone, so a shop-chat message rang a sound
+            with no number anywhere to explain it. The Mentions tab inside
+            still carries the narrower count.
+          */}
+          <Badge badgeContent={unreadTotal} color="error" max={99}>
             <ChatIcon />
           </Badge>
         </Fab>
@@ -166,6 +193,32 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {notifications.permission !== 'unsupported' && (
+              <Tooltip title={notificationTooltip}>
+                {/* Wrapped: a disabled button gives a Tooltip nothing to hang on. */}
+                <span>
+                  <IconButton
+                    disabled={notifications.permission === 'denied'}
+                    onClick={() => {
+                      if (notifications.permission === 'granted') {
+                        notifications.setEnabled(!notifications.enabled);
+                      } else {
+                        void notifications.request();
+                      }
+                    }}
+                    aria-label={notificationTooltip}
+                  >
+                    {notifications.permission === 'denied' ? (
+                      <NotificationsOffIcon />
+                    ) : notifications.active ? (
+                      <NotificationsActiveIcon />
+                    ) : (
+                      <NotificationsNoneIcon />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
             <Tooltip title={soundEnabled ? 'Mute new-message sound' : 'Unmute'}>
               <IconButton
                 onClick={() => setSoundEnabled(!soundEnabled)}
@@ -211,7 +264,8 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
           sx={{
             flexGrow: 1,
             overflowY: 'auto',
-            px: openedThread || tab === 0 ? 1.5 : 0,
+            // Each child pads itself; doubling it here squeezed the thread.
+            px: 0,
           }}
         >
           {/*
@@ -226,6 +280,7 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
               currentUserId={currentUserId}
               isAdmin={isAdmin}
               height="100%"
+              framed={false}
             />
           )}
           {open && !openedThread && tab === 0 && (
@@ -233,6 +288,7 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
               currentUserId={currentUserId}
               isAdmin={isAdmin}
               height="100%"
+              framed={false}
             />
           )}
           {open && !openedThread && tab === 1 && (

@@ -147,7 +147,8 @@ git push origin main
 
 ## 🤖 Specialized Agents & Workflows
 
-- **Code Reviewer** (`.claude/agents/code-reviewer.md`) - **CRITICAL**: Pre-PR gate. Run `/review` before every `gh pr create` — mechanical gates (incl. typechecking the _committed_ tree), security, project invariants, clean code ⭐ NEW
+- **Code Reviewer** (`.claude/agents/code-reviewer.md`) - **CRITICAL**: Pre-PR gate. Run `/review` before every `gh pr create` — mechanical gates (incl. typechecking the _committed_ tree), correctness, project invariants, clean code ⭐ NEW
+- **Security Reviewer** (`.claude/agents/security-reviewer.md`) - **CRITICAL**: Runs alongside the code reviewer on `/review`, and alone on `/review security` — authorization, IDOR/ownership, injection, what leaves the system (PDFs, emails, SMS, SAS URLs, notifications), mass assignment, secrets and logging, availability ⭐ NEW
 - **Migration Manager** (`.claude/agents/migration-manager.md`) - **CRITICAL**: Enforces proper database migration workflows
 - **Migration Enforcement** (`.claude/workflows/migration-enforcement.md`) - Automated migration validation and CI/CD integration
 - **SMS Feature Manager** (`.claude/agents/sms-feature-manager.md`) - Complete SMS/text messaging management and troubleshooting ⭐ NEW
@@ -155,7 +156,8 @@ git push origin main
 - **Enhanced Git Workflows** (`.claude/scripts/git-workflows-enhanced.sh`) - Build-validated git operations
 - **Integration Workflows** (`.claude/workflows/dto-git-integration.md`) - Combined DTO + Git workflows
 - **Commands**:
-  - `/review` | `/review security` | `/review gates` - Pre-PR code review (run before opening any PR) ⭐ NEW
+  - `/review` - Pre-PR review: code-reviewer + security-reviewer in parallel (run before opening any PR) ⭐ NEW
+  - `/review security` - Security-only pass | `/review gates` - Mechanical gates only
   - `/dto create|update|validate|fix-imports` - DTO management commands
   - `/migration check|create|deploy|status|validate` - Migration management commands
   - `/sms test|history|preferences|troubleshoot` - SMS feature management ⭐ NEW

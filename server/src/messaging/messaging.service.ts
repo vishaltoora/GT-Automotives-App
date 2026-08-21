@@ -8,6 +8,7 @@ import {
   ConversationEntity,
   CreateMessageDto,
   MessageDto,
+  MessagePageDto,
   MessageVisibility,
   PollResponseDto,
 } from '@gt-automotive/data';
@@ -81,7 +82,6 @@ export class MessagingService {
     // MessageEventsService for why that distinction matters.
     const woke = await this.events.waitForMessage(
       user.id,
-      conversationId,
       Math.min(waitMs, MAX_HOLD_MS)
     );
 
@@ -101,20 +101,78 @@ export class MessagingService {
     const serverTime = new Date();
     const sinceDate = since ? new Date(since) : undefined;
 
-    const messages = conversationId
-      ? await this.messages.findForConversation(conversationId, user, sinceDate)
-      : [];
+    /*
+     * Opening a thread reads a window; every poll after it reads the cursor.
+     *
+     * The window is what keeps shop chat from returning a year of messages to
+     * anybody who opens the panel — that conversation is never purged, so it
+     * only grows.
+     */
+    let messages: MessageWithRelations[] = [];
+    let hasOlderMessages: boolean | undefined;
 
-    const [unreadMentions, conversationUnreads] = await Promise.all([
-      this.messages.countUnreadMentions(user.id),
-      this.messages.unreadCountsByConversation(user),
-    ]);
+    if (conversationId && sinceDate) {
+      messages = await this.messages.findForConversation(
+        conversationId,
+        user,
+        sinceDate
+      );
+    } else if (conversationId) {
+      const page = await this.messages.findRecentForConversation(
+        conversationId,
+        user
+      );
+      messages = page.messages;
+      hasOlderMessages = page.hasOlder;
+    }
+
+    const [unreadMentions, conversationUnreads, unjoinedMentions] =
+      await Promise.all([
+        this.messages.countUnreadMentions(user.id),
+        this.messages.unreadCountsByConversation(user),
+        this.messages.countUnreadMentionsOutsideMemberships(user.id),
+      ]);
+
+    // Each unread message once: the per-conversation counts cover everything
+    // in a thread this reader has joined, mentions included, and the rest are
+    // the tags waiting in threads they have never opened.
+    const unreadTotal =
+      Object.values(conversationUnreads).reduce((sum, n) => sum + n, 0) +
+      unjoinedMentions;
 
     return {
       messages: messages.map((m) => this.toDto(m)),
       unreadMentions,
       conversationUnreads,
+      unreadTotal,
+      ...(hasOlderMessages === undefined ? {} : { hasOlderMessages }),
       serverTime: serverTime.toISOString(),
+    };
+  }
+
+  /**
+   * The page of a thread before what the caller already holds.
+   *
+   * Membership is checked the same way the poll checks it, so this is not a
+   * way to read a conversation you could not otherwise open — and every row
+   * still goes through the visibility filter.
+   */
+  async getOlderMessages(
+    conversationId: string,
+    user: MessagingUser,
+    before: string
+  ): Promise<MessagePageDto> {
+    await this.ensureMembership(conversationId, user.id);
+
+    const page = await this.messages.findOlderForConversation(
+      conversationId,
+      user,
+      new Date(before)
+    );
+
+    return {
+      messages: page.messages.map((m) => this.toDto(m)),
+      hasOlder: page.hasOlder,
     };
   }
 
@@ -247,6 +305,7 @@ export class MessagingService {
     this.events.publish({
       conversationId,
       mentionedUserIds: [...audience],
+      visibility,
       authorId: user.id,
     });
 
@@ -275,7 +334,8 @@ export class MessagingService {
 
     // An edit re-derives visibility from the new body, so removing the last
     // mention makes a message public. Editing a reply cannot widen it, though:
-    // the inherited floor is recomputed from the parent, same as on create.
+    // the inherited floor comes from the parent, same as on create, and from
+    // what was stored if the parent has since been deleted.
     let visibility: MessageVisibility =
       audience.size > 0 ? 'MENTIONED_ONLY' : 'PUBLIC';
 
@@ -284,10 +344,22 @@ export class MessagingService {
         existing.parentMessageId,
         user
       );
+
       if (parent?.visibility === 'MENTIONED_ONLY') {
         visibility = 'MENTIONED_ONLY';
         parent.mentions.forEach((m) => audience.add(m.userId));
         audience.add(parent.authorId);
+        audience.delete(user.id);
+      } else if (!parent && existing.visibility === 'MENTIONED_ONLY') {
+        /*
+         * The parent is gone — soft-deleted, so the filtered read cannot see
+         * it any more. A reply must not gain an audience by losing the message
+         * it answers: without this, fixing a typo on a private reply whose
+         * parent had been deleted republished it to the whole shop. Hold the
+         * floor from what was stored instead.
+         */
+        visibility = 'MENTIONED_ONLY';
+        existing.mentions.forEach((m) => audience.add(m.userId));
         audience.delete(user.id);
       }
     }

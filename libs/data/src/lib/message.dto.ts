@@ -44,6 +44,16 @@ export class UpdateMessageDto {
   body!: string;
 }
 
+/** Query for a page of messages older than the ones already on screen. */
+export class OlderMessagesQueryDto {
+  /**
+   * `createdAt` of the oldest message the caller already holds. Everything
+   * strictly before it comes back, newest first, one page at a time.
+   */
+  @IsISO8601()
+  before!: string;
+}
+
 /** Query for the single poll endpoint. */
 export class PollQueryDto {
   /** Thread currently open, if any. Counts come back either way. */
@@ -148,8 +158,31 @@ export interface PollResponseDto {
   messages: MessageDto[];
   unreadMentions: number;
   conversationUnreads: Record<string, number>;
+  /**
+   * Whether the thread has messages older than the ones in `messages`.
+   *
+   * Present only on the first poll of a conversation, which is the one that
+   * returns a window rather than everything since a cursor. Later polls leave
+   * it undefined and the client keeps what it had.
+   */
+  hasOlderMessages?: boolean;
+  /**
+   * Every unread message, counted once.
+   *
+   * Not the sum of the two fields above: a message that tags you is both an
+   * unread mention and an unread message in its conversation, so adding them
+   * showed two of everything. Derived server-side because only the server can
+   * see which mentions sit in threads the reader has never opened.
+   */
+  unreadTotal: number;
   /** Send this back as `since` on the next poll. */
   serverTime: string;
+}
+
+/** A page of older messages, oldest first, plus whether more remain behind it. */
+export interface MessagePageDto {
+  messages: MessageDto[];
+  hasOlder: boolean;
 }
 
 export interface MentionableUserDto {

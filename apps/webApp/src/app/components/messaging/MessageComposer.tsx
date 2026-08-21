@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
-  Chip,
   CircularProgress,
   ClickAwayListener,
   IconButton,
@@ -16,7 +15,6 @@ import {
 import SendIcon from '@mui/icons-material/Send';
 import LockIcon from '@mui/icons-material/Lock';
 import GroupIcon from '@mui/icons-material/Group';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   buildMentionToken,
   buildReferenceToken,
@@ -57,6 +55,17 @@ interface Props {
 
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Enter sends on a real keyboard only.
+ *
+ * On a phone the same key is Return: taking it to mean "send" makes a second
+ * line impossible and fires half-written messages at the shop. Checked at
+ * press time rather than at mount so a tablet that gains a keyboard is right.
+ */
+const sendsOnEnter = () =>
+  typeof window.matchMedia !== 'function' ||
+  window.matchMedia('(pointer: fine)').matches;
 
 /**
  * Turns what is on screen into what gets sent.
@@ -228,10 +237,14 @@ export function MessageComposer({
   };
 
   const open = Boolean(trigger) && (suggestions.length > 0 || searching);
+  const canSend = Boolean(body.trim()) && !sending && !disabled;
 
   return (
     <Box>
-      <Box ref={anchorRef}>
+      <Box
+        ref={anchorRef}
+        sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}
+      >
         <TextField
           inputRef={inputRef}
           fullWidth
@@ -241,33 +254,54 @@ export function MessageComposer({
           value={text}
           disabled={disabled || sending}
           autoFocus={autoFocus}
-          placeholder={placeholder ?? 'Write a message. Type @ to tag someone.'}
+          placeholder={placeholder ?? 'Write a message…  @ to tag someone'}
           onChange={(e) =>
             handleChange(e.target.value, e.target.selectionStart ?? 0)
           }
           onKeyDown={(e) => {
             if (e.key === 'Escape') setTrigger(null);
             // Enter sends; Shift+Enter is a newline. Never send while the
-            // suggestion list is open — Enter belongs to the list then.
-            if (e.key === 'Enter' && !e.shiftKey && !open) {
+            // suggestion list is open — Enter belongs to the list then. And
+            // never on a touch keyboard, where Return is how you write a
+            // second line and the only send anyone looks for is the button.
+            if (e.key === 'Enter' && !e.shiftKey && !open && sendsOnEnter()) {
               e.preventDefault();
               void handleSend();
             }
           }}
-          InputProps={{
-            endAdornment: (
-              <IconButton
-                size="small"
-                color="primary"
-                disabled={!body.trim() || sending || disabled}
-                onClick={() => void handleSend()}
-                aria-label="Send message"
-              >
-                {sending ? <CircularProgress size={18} /> : <SendIcon />}
-              </IconButton>
-            ),
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 3,
+              bgcolor: colors.neutral[50],
+              py: 0.75,
+            },
           }}
         />
+        <IconButton
+          color="primary"
+          disabled={!canSend}
+          onClick={() => void handleSend()}
+          aria-label="Send message"
+          sx={{
+            mb: 0.25,
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            color: colors.primary.contrast,
+            bgcolor: canSend ? colors.primary.main : colors.neutral[300],
+            '&:hover': { bgcolor: colors.primary.dark },
+            '&.Mui-disabled': {
+              bgcolor: colors.neutral[200],
+              color: colors.text.disabled,
+            },
+          }}
+        >
+          {sending ? (
+            <CircularProgress size={18} sx={{ color: 'inherit' }} />
+          ) : (
+            <SendIcon sx={{ fontSize: 20 }} />
+          )}
+        </IconButton>
       </Box>
 
       <Popper
@@ -309,45 +343,51 @@ export function MessageComposer({
       <Box
         sx={{
           mt: 0.75,
+          px: 0.75,
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          flexWrap: 'wrap',
+          gap: 0.75,
+          minWidth: 0,
         }}
       >
         {isPrivate ? (
           <>
-            <LockIcon sx={{ fontSize: 16, color: colors.semantic.warning }} />
-            <Typography variant="caption" sx={{ color: colors.text.secondary }}>
-              Only {mentionedNames.join(' and ') || 'the people tagged'} will
-              see this
+            <LockIcon
+              sx={{
+                fontSize: 14,
+                flexShrink: 0,
+                color: colors.semantic.warning,
+              }}
+            />
+            <Typography
+              variant="caption"
+              noWrap
+              sx={{
+                minWidth: 0,
+                fontWeight: 600,
+                color: colors.semantic.warning,
+              }}
+            >
+              Private — only{' '}
+              {mentionedNames.join(' and ') || 'the people tagged'} will see
+              this
             </Typography>
-            {mentionedNames.map((name) => (
-              <Chip key={name} label={name} size="small" variant="outlined" />
-            ))}
           </>
         ) : (
           <>
-            <GroupIcon sx={{ fontSize: 16, color: colors.text.secondary }} />
-            <Typography variant="caption" sx={{ color: colors.text.secondary }}>
-              Everyone can see this
+            <GroupIcon
+              sx={{ fontSize: 14, flexShrink: 0, color: colors.text.secondary }}
+            />
+            <Typography
+              variant="caption"
+              noWrap
+              sx={{ minWidth: 0, color: colors.text.secondary }}
+            >
+              Everyone in the shop can see this
             </Typography>
           </>
         )}
       </Box>
-
-      {isPrivate && (
-        <Box
-          sx={{ mt: 0.25, display: 'flex', alignItems: 'center', gap: 0.75 }}
-        >
-          <InfoOutlinedIcon
-            sx={{ fontSize: 14, color: colors.text.secondary }}
-          />
-          <Typography variant="caption" sx={{ color: colors.text.secondary }}>
-            Admins can also view this message
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 }

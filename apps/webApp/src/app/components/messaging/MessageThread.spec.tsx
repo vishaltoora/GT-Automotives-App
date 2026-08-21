@@ -8,6 +8,7 @@ const mockPollMessages = jest.fn();
 jest.mock('../../requests/messaging.requests', () => ({
   getEntityThread: (...args: unknown[]) => mockGetEntityThread(...args),
   getGeneralThread: jest.fn(),
+  getEarlierMessages: jest.fn(),
   pollMessages: (...args: unknown[]) => mockPollMessages(...args),
   sendMessage: jest.fn(),
   deleteMessage: jest.fn(),
@@ -53,6 +54,7 @@ describe('MessageThread', () => {
       messages: [],
       unreadMentions: 0,
       conversationUnreads: {},
+      unreadTotal: 0,
       serverTime: '2026-08-20T17:00:00.000Z',
     });
   });
@@ -91,6 +93,35 @@ describe('MessageThread', () => {
     expect(
       mockPollMessages.mock.calls.length - pollsAfterSettling
     ).toBeLessThan(3);
+  });
+
+  /*
+   * The server only answers a held poll when it has something to send, so the
+   * first request on an empty thread — every repair order nobody has written
+   * in yet — used to sit open for the full twenty-five second hold. The panel
+   * showed a spinner that entire time before admitting there was nothing,
+   * which is what "the chat tab takes forever to load" turned out to be.
+   */
+  it('asks once without a hold, so an empty thread paints at once', async () => {
+    renderThread();
+
+    await waitFor(() => expect(mockPollMessages).toHaveBeenCalled());
+
+    expect(mockPollMessages.mock.calls[0][0].waitMs).toBeUndefined();
+    await waitFor(() =>
+      expect(screen.getByText('No messages yet')).toBeTruthy()
+    );
+
+    // Only then does it settle into holding the connection open.
+    await waitFor(
+      () =>
+        expect(
+          mockPollMessages.mock.calls.some(
+            (call: [{ waitMs?: number }]) => call[0].waitMs === 25_000
+          )
+        ).toBe(true),
+      { timeout: 3000 }
+    );
   });
 
   it('shows an error rather than an empty thread when opening fails', async () => {

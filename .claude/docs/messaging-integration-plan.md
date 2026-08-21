@@ -23,7 +23,7 @@
 | D1  | **@mention = private.** Tagging someone makes the message visible to them only. No tag = visible to everyone.                               | ✅ Confirmed                |
 | D2  | Messages **never appear on printed/PDF repair orders**. Internal communication only.                                                        | ✅ Confirmed                |
 | D3  | Chat lives **inside each RO** (auto-linked, clickable) **and** in a **general chat** outside ROs. Both support public and private messages. | ✅ Confirmed                |
-| D4  | Admin can read all messages, with a visible notice on private ones.                                                                         | ⚠️ Assumed — flag to change |
+| D4  | **Nobody reads past the rule, admins included.** An admin sees a private message only by being tagged in it or writing it.                  | ✅ Confirmed Aug 21, 2026   |
 | D5  | Internal users only (STAFF, SUPERVISOR, FOREMAN, ACCOUNTANT, ADMIN). Customers excluded — no `clerkId`, no login.                           | ⚠️ Assumed — flag to change |
 | D6  | **No retention after an RO closes.** Purged 30 days after close (§12).                                                                      | ✅ Confirmed                |
 
@@ -128,8 +128,11 @@ stream useless for debugging.
 
 ### 4.4 Polling discipline
 
-1. **Pause on `document.hidden`** (Page Visibility API) — tabs left open overnight are what
-   turn 54k requests into 130k. Cuts 60–80%.
+1. **Back off on `document.hidden`** (Page Visibility API) — tabs left open overnight are
+   what turn 54k requests into 130k. A hidden tab drops to one plain request a minute
+   (§10.1) instead of holding a connection open. It originally stopped polling altogether,
+   which cut more but left nothing able to notice a message had arrived while somebody was
+   in another tab — the one moment being told is worth anything.
 2. **Idle backoff** — 10s while the thread is active, 60s after 2 minutes of silence.
 3. **Skip the poll route** in the proxy's request logger.
 4. Optional: 60s in-memory `clerkId → user` cache in the Clerk strategy.
@@ -305,8 +308,8 @@ CSS-hiding anywhere.
 
 ```ts
 // server/src/messaging/repositories/message.repository.ts
-private visibilityFilter(user: AuthUser): Prisma.MessageWhereInput {
-  if (user.role.name === 'ADMIN') return {};        // D4: admin sees all
+visibilityFilter(user: MessagingUser): Prisma.MessageWhereInput {
+  // No role bypass — D4. An admin reads a private message only by being in it.
   return {
     OR: [
       { visibility: 'PUBLIC' },
@@ -328,7 +331,6 @@ that":
 │ @Sarah please order 4 Michelins for this RO    │
 │                                                │
 │ 🔒 Only Sarah Chen will see this               │
-│ ℹ️  Admins can also view this message           │
 │                                    [ Send ]    │
 └────────────────────────────────────────────────┘
 ```
@@ -531,21 +533,58 @@ composer visibility strip, polling discipline (§4.4), long-polling swap, and th
 retention purge job (§12). **This phase completes notifications** — there is no separate
 notification phase.
 
-### Notifications — in-app only, no separate phase ⛔
+### Notifications — no SMS, no email, no separate phase ⛔
 
-Messaging sends **no SMS, no email, and no browser push.** It does not import `SmsModule` or
-`EmailService`, and adds no `SmsType` enum value. Telnyx stays scoped to customer appointment
-confirmations and reminders as documented in the
-[SMS Integration Plan](./sms-integration-plan.md).
+Messaging sends **no SMS and no email.** It does not import `SmsModule` or `EmailService`,
+and adds no `SmsType` enum value. Telnyx stays scoped to customer appointment confirmations
+and reminders as documented in the [SMS Integration Plan](./sms-integration-plan.md).
 
-Everything a user needs to notice is delivered by the poll in §8.1:
+Everything is carried by the poll in §8.1, on four surfaces:
 
-- **Unread badge** on the Messages sidebar entry (count of unread mentions)
-- **Per-conversation unread dots** in the conversation list and on the RO detail tab
+- **Unread badge** on the floating messages button — mentions _and_ unread messages, the
+  same total the sound listens to
+- **A two-note ping** on any rise in that total, muted from the panel header, remembered in
+  localStorage
+- **The browser tab title** — `(3) GT Automotives`, which costs nobody a permission prompt
+- **A desktop notification** while the tab is in the background (§10.1)
 - **My Mentions inbox** as the catch-up surface
 
-This is genuinely sufficient for a shop floor where staff keep the app open all day, and it
-costs nothing beyond the poll that's already running. See §13 for the one tradeoff it carries.
+**Web Push is still out** — see §10.1 for the line between the two.
+
+### 10.1 Desktop notifications — added Aug 21, 2026
+
+Shipped in-app-only first, and the gap showed up within a day of real use: the badge and the
+ping only reach somebody with the app in front of them, and the tagged work that goes unseen
+is the work tagged while they were in another tab.
+
+The **Notification API** closes that without a service worker, a vendor, or a monthly cost.
+It is not Web Push, and the difference is what each one reaches:
+
+|                                | Reaches                                                     | Needs                                                |
+| ------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
+| **Notification API** (shipped) | any tab, background or minimised, while the browser is open | a permission click                                   |
+| **Web Push** (still GA-72)     | the browser closed entirely                                 | service worker + VAPID; iOS only as an installed PWA |
+
+Three rules the implementation holds to, all covered by
+`useBrowserNotifications.spec.ts`:
+
+1. **Nothing about the message is in the toast** — no author, no body, no RO number. A
+   private message exists so only the people in it can read it, and a notification on a shop
+   counter screen is read by whoever walks past. It says how much arrived; the rest stays
+   behind the login.
+2. **Only while the tab is hidden.** With the page in front of them the badge already moved
+   and the ping already sounded.
+3. **Only on a rise, never on the first reading**, or opening the app would announce
+   everything that arrived while it was shut. All notifications share one `tag`, so stepping
+   away for an hour leaves one notification that updated rather than a stack.
+
+The permission prompt is wired to a bell in the panel header, never to page load — browsers
+refuse an ungestured prompt, and the ones that allow it penalise the site.
+
+**This changed the polling contract.** A backgrounded tab used to stop polling entirely,
+which would have made all of the above dead on arrival. It now drops to one plain request a
+minute (`BACKGROUND_GAP_MS`) instead of holding a connection open — roughly 15 requests a
+minute across the shop, against the 1.5 req/s budget in §4.2.
 
 ### Phase 3 — Optional — [GA-72](https://gt-automotives.atlassian.net/browse/GA-72)
 
@@ -564,7 +603,7 @@ DMs, photo attachments (reusing the `ROMedia` blob + SAS-URL pattern), appointme
 | Message with `@Sarah`, Mike                           | **hidden**                                          |
 | Message with `@Sarah`, author                         | visible                                             |
 | Message with `@Sarah @Mike`, either                   | visible; third party hidden                         |
-| Private message, admin                                | visible (per D4)                                    |
+| Private message, admin not tagged                     | **hidden** (per D4)                                 |
 | Untagged **reply** to a private message               | inherits `MENTIONED_ONLY` (§6.2)                    |
 | Forged mention token in body                          | server re-derives; grants nothing                   |
 | Client sends `visibility: PUBLIC` on a tagged message | ignored; derived server-side                        |
@@ -661,6 +700,29 @@ and it's a reasonable one; noting it so it isn't a surprise later.
 The plan below is what was designed. These are the places the build departed
 from it, and why.
 
+### D4 reversed: admins do not read private messages either
+
+Shipped with the assumed rule — admin sees everything — and it was rejected on
+first use in production (Aug 21, 2026): a locked message showed up in shop chat
+for an admin who was not tagged in it.
+
+The bypass is gone. `visibilityFilter()` now returns the same clause for every
+role, so the audience of a private message is exactly the people in it. The
+composer's "Admins can also view this message" line went with it, because it
+no longer described anything true.
+
+Two consequences worth knowing:
+
+- **Deleting is bounded by reading.** `deleteMessage` still lets an admin
+  remove somebody else's message, but it loads that message through
+  `findByIdForUser` — so a private message they are not part of 404s rather
+  than being deletable.
+- **The long-poll wake was narrowed to match.** Having a thread open used to be
+  enough to be woken by any message landing in it, private ones included. The
+  poll returned nothing, so no content leaked, but the early return still
+  announced that _something_ had been said. `waitForMessage` now wakes only on
+  messages the reader can actually see, and no longer takes a conversation id.
+
 ### The token format lives in `libs/data`, not the server
 
 Originally the parser sat in `server/src/messaging/mention-parser.ts`. It moved
@@ -718,25 +780,25 @@ Neither is caused by this epic; both are worth their own tickets.
 
 ## 13. Risks
 
-| Risk                                                                  | Mitigation                                                                                                                                                                                               |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tagged work goes unseen when that person is off or not in the app** | Accepted tradeoff of in-app-only notification. Mitigations: My Mentions inbox, admin sees all, tag a second person for time-critical work. If this bites in practice, revisit Web Push — free, no vendor |
-| Reply to a private message leaks it                                   | Privacy inheritance (§6.2)                                                                                                                                                                               |
-| Private message leaks via API payload                                 | Filter in the repository; assert on network response in tests                                                                                                                                            |
-| Log flood degrades B1                                                 | Phase 0, before any polling ships                                                                                                                                                                        |
-| Idle tabs polling overnight                                           | Page Visibility pause + idle backoff (§4.4)                                                                                                                                                              |
-| Timezone bug in timestamps                                            | Real instants only; never business-calendar helpers (§6.6)                                                                                                                                               |
-| Client-forged mentions or visibility                                  | Server re-derives everything from the body                                                                                                                                                               |
-| Accidental RO close destroys the thread                               | 30-day delay before purge (§12.1); `reopen()` removes it from the purge set entirely                                                                                                                     |
-| Purge deletes more than intended                                      | Scoped to `entityType: REPAIR_ORDER`; explicit tests that general chat and RO/invoice rows survive                                                                                                       |
-| Schema drift                                                          | `migration-create.sh`, never `db push`                                                                                                                                                                   |
-| Staff privacy expectations                                            | D4 disclosure notice in the composer                                                                                                                                                                     |
+| Risk                                                                  | Mitigation                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tagged work goes unseen when that person is off or not in the app** | Largely closed by desktop notifications (§10.1), which reach any background tab while the browser is open. Remaining gap is a closed browser — mitigations: My Mentions inbox, tag a second person for time-critical work, and Web Push if it bites |
+| Reply to a private message leaks it                                   | Privacy inheritance (§6.2)                                                                                                                                                                                                                          |
+| Private message leaks via API payload                                 | Filter in the repository; assert on network response in tests                                                                                                                                                                                       |
+| Log flood degrades B1                                                 | Phase 0, before any polling ships                                                                                                                                                                                                                   |
+| Idle tabs polling overnight                                           | Page Visibility backoff to one request a minute (§4.4, §10.1)                                                                                                                                                                                       |
+| Timezone bug in timestamps                                            | Real instants only; never business-calendar helpers (§6.6)                                                                                                                                                                                          |
+| Client-forged mentions or visibility                                  | Server re-derives everything from the body                                                                                                                                                                                                          |
+| Accidental RO close destroys the thread                               | 30-day delay before purge (§12.1); `reopen()` removes it from the purge set entirely                                                                                                                                                                |
+| Purge deletes more than intended                                      | Scoped to `entityType: REPAIR_ORDER`; explicit tests that general chat and RO/invoice rows survive                                                                                                                                                  |
+| Schema drift                                                          | `migration-create.sh`, never `db push`                                                                                                                                                                                                              |
+| Staff privacy expectations                                            | D4: no role bypass at all, so the composer's "Only Sarah will see this" is literally true                                                                                                                                                           |
 
 ---
 
 ## 14. Remaining Questions
 
-1. **D4** — admin reads all with disclosure? (assumed yes)
+1. ~~**D4** — admin reads all with disclosure?~~ **Answered Aug 21, 2026: no.** Admins are held to the same rule as everyone else; the bypass and the composer's admin notice were both removed.
 2. **D5** — internal users only? (assumed yes)
 3. **Closed ROs** — does the thread go read-only at close, or stay writable until purge? (assumed read-only)
 4. **General chat retention** — indefinite, or cap it too? (assumed indefinite)
