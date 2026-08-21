@@ -27,6 +27,7 @@ import { MessageComposer } from './MessageComposer';
 import { MessageItem } from './MessageItem';
 import {
   deleteMessage,
+  getEarlierMessages,
   getEntityThread,
   getGeneralThread,
   markConversationRead,
@@ -142,8 +143,16 @@ export function MessageThread({
   );
   const [openError, setOpenError] = useState<string | null>(null);
 
-  const { messages, loading, appendLocal, removeLocal } =
-    useMessagePolling(conversationId);
+  const {
+    messages,
+    loading,
+    hasOlder,
+    appendLocal,
+    prependLocal,
+    removeLocal,
+  } = useMessagePolling(conversationId);
+
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const { ref: panelRef, height: filledHeight } =
     useViewportFill<HTMLDivElement>({ enabled: fillViewport, min: 340 });
@@ -153,6 +162,7 @@ export function MessageThread({
   const followingRef = useRef(true);
   const paintedRef = useRef(false);
   const seenCountRef = useRef(0);
+  const loadingOlderRef = useRef(false);
   const [missed, setMissed] = useState(0);
 
   /*
@@ -240,6 +250,10 @@ export function MessageThread({
     seenCountRef.current = messages.length;
     if (arrived <= 0) return;
 
+    // A page of history also grows the list, and following that would scroll
+    // to the bottom of a thread somebody just asked to read the top of.
+    if (loadingOlderRef.current) return;
+
     if (followingRef.current) {
       // The first paint should look settled rather than animate up from the
       // top of a thread the reader never saw.
@@ -279,6 +293,43 @@ export function MessageThread({
     },
     [conversationId, appendLocal, replyTo]
   );
+
+  /*
+   * Reading back through a thread.
+   *
+   * A conversation opens with a window rather than its whole history — shop
+   * chat is never purged, so "everything" grows without limit. Prepending
+   * moves the content under the reader, so the scroll position is put back by
+   * however much taller the list got: without that, loading earlier messages
+   * throws you to the top of the page you were reading.
+   */
+  const handleLoadEarlier = useCallback(async () => {
+    const node = scrollRef.current;
+    const oldest = messages[0];
+    if (!conversationId || !oldest || loadingOlder) return;
+
+    setLoadingOlder(true);
+    loadingOlderRef.current = true;
+    const heightBefore = node?.scrollHeight ?? 0;
+
+    try {
+      const page = await getEarlierMessages(conversationId, oldest.createdAt);
+      prependLocal(page.messages, page.hasOlder);
+
+      requestAnimationFrame(() => {
+        if (!node) return;
+        node.scrollTop += node.scrollHeight - heightBefore;
+      });
+    } catch (error) {
+      helpersRef.current.showApiError(error);
+    } finally {
+      setLoadingOlder(false);
+      // Cleared after the effect that reacts to the new length has run.
+      requestAnimationFrame(() => {
+        loadingOlderRef.current = false;
+      });
+    }
+  }, [conversationId, messages, loadingOlder, prependLocal]);
 
   const handleDelete = useCallback(
     async (id: string) => {
@@ -358,6 +409,19 @@ export function MessageThread({
           py: 1.5,
         }}
       >
+        {hasOlder && !showSkeleton && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', pb: 1 }}>
+            <Button
+              size="small"
+              onClick={() => void handleLoadEarlier()}
+              disabled={loadingOlder}
+              sx={{ textTransform: 'none', borderRadius: 5 }}
+            >
+              {loadingOlder ? 'Loading…' : 'Load earlier messages'}
+            </Button>
+          </Box>
+        )}
+
         {showSkeleton ? (
           <ThreadSkeleton />
         ) : messages.length === 0 ? (

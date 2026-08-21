@@ -101,6 +101,12 @@ describe('MessagingService', () => {
     messages = {
       findByIdForUser: jest.fn(),
       findForConversation: jest.fn().mockResolvedValue([]),
+      findRecentForConversation: jest
+        .fn()
+        .mockResolvedValue({ messages: [], hasOlder: false }),
+      findOlderForConversation: jest
+        .fn()
+        .mockResolvedValue({ messages: [], hasOlder: false }),
       countUnreadMentions: jest.fn().mockResolvedValue(0),
       unreadCountsByConversation: jest.fn().mockResolvedValue({}),
       countUnreadMentionsOutsideMemberships: jest.fn().mockResolvedValue(0),
@@ -413,10 +419,45 @@ describe('MessagingService', () => {
       expect(result.unreadTotal).toBe(3);
     });
 
+    /*
+     * Shop chat is never purged, so "every message in this conversation" is a
+     * read that grows for as long as the shop exists. Opening one takes a
+     * window; only the incremental polls after it follow the cursor.
+     */
+    it('opens a thread with a window, not its whole history', async () => {
+      (messages.findRecentForConversation as jest.Mock).mockResolvedValue({
+        messages: [messageRow()],
+        hasOlder: true,
+      });
+
+      const result = await service.poll(author, 'conv-1');
+
+      expect(messages.findRecentForConversation).toHaveBeenCalledWith(
+        'conv-1',
+        author
+      );
+      expect(messages.findForConversation).not.toHaveBeenCalled();
+      expect(result.hasOlderMessages).toBe(true);
+    });
+
+    it('follows the cursor once the client has one, and says nothing about history', async () => {
+      const result = await service.poll(
+        author,
+        'conv-1',
+        '2026-08-20T17:00:00.000Z'
+      );
+
+      expect(messages.findForConversation).toHaveBeenCalled();
+      expect(messages.findRecentForConversation).not.toHaveBeenCalled();
+      // Undefined, not false — a cursor poll must not clear the client's flag.
+      expect(result.hasOlderMessages).toBeUndefined();
+    });
+
     it('emits createdAt as a real instant, not a business date', async () => {
-      (messages.findForConversation as jest.Mock).mockResolvedValue([
-        messageRow(),
-      ]);
+      (messages.findRecentForConversation as jest.Mock).mockResolvedValue({
+        messages: [messageRow()],
+        hasOlder: false,
+      });
 
       const result = await service.poll(author, 'conv-1');
 
@@ -432,9 +473,10 @@ describe('MessagingService', () => {
     });
 
     it('does not hold when there is already something to return', async () => {
-      (messages.findForConversation as jest.Mock).mockResolvedValue([
-        messageRow(),
-      ]);
+      (messages.findRecentForConversation as jest.Mock).mockResolvedValue({
+        messages: [messageRow()],
+        hasOlder: false,
+      });
 
       await service.poll(author, 'conv-1', undefined, 25_000);
 
@@ -458,13 +500,13 @@ describe('MessagingService', () => {
     // Waking says something happened, not that this user may read it.
     it('re-queries through the visibility filter after waking', async () => {
       events.waitForMessage.mockResolvedValue(true);
-      (messages.findForConversation as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([messageRow()]);
+      (messages.findRecentForConversation as jest.Mock)
+        .mockResolvedValueOnce({ messages: [], hasOlder: false })
+        .mockResolvedValueOnce({ messages: [messageRow()], hasOlder: false });
 
       const result = await service.poll(author, 'conv-1', undefined, 25_000);
 
-      expect(messages.findForConversation).toHaveBeenCalledTimes(2);
+      expect(messages.findRecentForConversation).toHaveBeenCalledTimes(2);
       expect(result.messages).toHaveLength(1);
     });
 
@@ -475,13 +517,13 @@ describe('MessagingService', () => {
      */
     it('re-queries on timeout rather than returning the pre-wait answer', async () => {
       events.waitForMessage.mockResolvedValue(false);
-      (messages.findForConversation as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([messageRow()]);
+      (messages.findRecentForConversation as jest.Mock)
+        .mockResolvedValueOnce({ messages: [], hasOlder: false })
+        .mockResolvedValueOnce({ messages: [messageRow()], hasOlder: false });
 
       const result = await service.poll(author, 'conv-1', undefined, 25_000);
 
-      expect(messages.findForConversation).toHaveBeenCalledTimes(2);
+      expect(messages.findRecentForConversation).toHaveBeenCalledTimes(2);
       expect(result.messages).toHaveLength(1);
     });
   });
@@ -506,6 +548,40 @@ describe('MessagingService', () => {
       expect(events.publish).toHaveBeenCalledWith(
         expect.objectContaining({ mentionedUserIds: [], visibility: 'PUBLIC' })
       );
+    });
+  });
+
+  describe('reading back through a thread', () => {
+    it('returns the page before what the caller holds, and whether more remain', async () => {
+      (messages.findOlderForConversation as jest.Mock).mockResolvedValue({
+        messages: [messageRow()],
+        hasOlder: true,
+      });
+
+      const result = await service.getOlderMessages(
+        'conv-1',
+        author,
+        '2026-08-20T17:00:00.000Z'
+      );
+
+      expect(messages.findOlderForConversation).toHaveBeenCalledWith(
+        'conv-1',
+        author,
+        new Date('2026-08-20T17:00:00.000Z')
+      );
+      expect(result.messages).toHaveLength(1);
+      expect(result.hasOlder).toBe(true);
+    });
+
+    // Not a way into a conversation somebody could not otherwise open.
+    it('checks membership the same way the poll does', async () => {
+      await service.getOlderMessages(
+        'conv-1',
+        author,
+        '2026-08-20T17:00:00.000Z'
+      );
+
+      expect(prisma.conversationMember.upsert).toHaveBeenCalled();
     });
   });
 

@@ -8,6 +8,7 @@ const mockPollMessages = jest.fn();
 jest.mock('../../requests/messaging.requests', () => ({
   getEntityThread: (...args: unknown[]) => mockGetEntityThread(...args),
   getGeneralThread: jest.fn(),
+  getEarlierMessages: jest.fn(),
   pollMessages: (...args: unknown[]) => mockPollMessages(...args),
   sendMessage: jest.fn(),
   deleteMessage: jest.fn(),

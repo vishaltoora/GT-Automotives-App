@@ -8,6 +8,7 @@ import {
   ConversationEntity,
   CreateMessageDto,
   MessageDto,
+  MessagePageDto,
   MessageVisibility,
   PollResponseDto,
 } from '@gt-automotive/data';
@@ -100,9 +101,30 @@ export class MessagingService {
     const serverTime = new Date();
     const sinceDate = since ? new Date(since) : undefined;
 
-    const messages = conversationId
-      ? await this.messages.findForConversation(conversationId, user, sinceDate)
-      : [];
+    /*
+     * Opening a thread reads a window; every poll after it reads the cursor.
+     *
+     * The window is what keeps shop chat from returning a year of messages to
+     * anybody who opens the panel — that conversation is never purged, so it
+     * only grows.
+     */
+    let messages: MessageWithRelations[] = [];
+    let hasOlderMessages: boolean | undefined;
+
+    if (conversationId && sinceDate) {
+      messages = await this.messages.findForConversation(
+        conversationId,
+        user,
+        sinceDate
+      );
+    } else if (conversationId) {
+      const page = await this.messages.findRecentForConversation(
+        conversationId,
+        user
+      );
+      messages = page.messages;
+      hasOlderMessages = page.hasOlder;
+    }
 
     const [unreadMentions, conversationUnreads, unjoinedMentions] =
       await Promise.all([
@@ -123,7 +145,34 @@ export class MessagingService {
       unreadMentions,
       conversationUnreads,
       unreadTotal,
+      ...(hasOlderMessages === undefined ? {} : { hasOlderMessages }),
       serverTime: serverTime.toISOString(),
+    };
+  }
+
+  /**
+   * The page of a thread before what the caller already holds.
+   *
+   * Membership is checked the same way the poll checks it, so this is not a
+   * way to read a conversation you could not otherwise open — and every row
+   * still goes through the visibility filter.
+   */
+  async getOlderMessages(
+    conversationId: string,
+    user: MessagingUser,
+    before: string
+  ): Promise<MessagePageDto> {
+    await this.ensureMembership(conversationId, user.id);
+
+    const page = await this.messages.findOlderForConversation(
+      conversationId,
+      user,
+      new Date(before)
+    );
+
+    return {
+      messages: page.messages.map((m) => this.toDto(m)),
+      hasOlder: page.hasOlder,
     };
   }
 

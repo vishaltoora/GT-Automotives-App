@@ -31,6 +31,16 @@ export type MessageWithRelations = Prisma.MessageGetPayload<{
   include: typeof MESSAGE_INCLUDE;
 }>;
 
+/**
+ * How many messages a thread opens with.
+ *
+ * Opening a conversation used to read every message it had ever held. Repair
+ * order threads are purged thirty days after the job closes so they stay
+ * small, but shop chat is kept forever — so that read grew without limit, on
+ * every panel open, for every person.
+ */
+export const CONVERSATION_PAGE_SIZE = 50;
+
 @Injectable()
 export class MessageRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -59,7 +69,65 @@ export class MessageRepository {
     };
   }
 
-  /** Messages in a thread that this user may see, oldest first. */
+  /**
+   * The newest page of a thread, oldest first, plus whether more sit behind it.
+   *
+   * Reads one row more than the page to answer that question without a second
+   * count query.
+   */
+  async findRecentForConversation(
+    conversationId: string,
+    user: MessagingUser,
+    limit: number = CONVERSATION_PAGE_SIZE
+  ): Promise<{ messages: MessageWithRelations[]; hasOlder: boolean }> {
+    const newestFirst = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        AND: [this.visibilityFilter(user)],
+      },
+      include: MESSAGE_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+    });
+
+    const hasOlder = newestFirst.length > limit;
+    const page = hasOlder ? newestFirst.slice(0, limit) : newestFirst;
+
+    return { messages: page.reverse(), hasOlder };
+  }
+
+  /** The page before a point in a thread, for scrolling back through it. */
+  async findOlderForConversation(
+    conversationId: string,
+    user: MessagingUser,
+    before: Date,
+    limit: number = CONVERSATION_PAGE_SIZE
+  ): Promise<{ messages: MessageWithRelations[]; hasOlder: boolean }> {
+    const newestFirst = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        createdAt: { lt: before },
+        AND: [this.visibilityFilter(user)],
+      },
+      include: MESSAGE_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+    });
+
+    const hasOlder = newestFirst.length > limit;
+    const page = hasOlder ? newestFirst.slice(0, limit) : newestFirst;
+
+    return { messages: page.reverse(), hasOlder };
+  }
+
+  /**
+   * Everything in a thread after a cursor, oldest first.
+   *
+   * Bounded by the cursor rather than by a page size: this answers "what has
+   * happened since I last asked", which is a handful of messages at most.
+   */
   async findForConversation(
     conversationId: string,
     user: MessagingUser,

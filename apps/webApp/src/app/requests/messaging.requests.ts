@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type {
   ConversationDto,
+  MessagePageDto,
   MentionInboxItemDto,
   MentionableUserDto,
   MessageDto,
@@ -72,6 +73,24 @@ export async function getEntityThread(
 export async function getGeneralThread(): Promise<ConversationDto> {
   const { data } = await apiClient.get<ConversationDto>(
     '/messaging/conversations/general'
+  );
+  return data;
+}
+
+/**
+ * The page before what is already on screen.
+ *
+ * `before` is the `createdAt` of the oldest message held, echoed back from the
+ * server's own value rather than a browser clock — same rule as the poll
+ * cursor, for the same reason.
+ */
+export async function getEarlierMessages(
+  conversationId: string,
+  before: string
+): Promise<MessagePageDto> {
+  const { data } = await apiClient.get<MessagePageDto>(
+    `/messaging/conversations/${conversationId}/messages`,
+    { params: { before } }
   );
   return data;
 }

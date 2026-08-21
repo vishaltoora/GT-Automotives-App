@@ -131,3 +131,61 @@ describe('MessageRepository.unreadCountsByConversation', () => {
     expect(prisma.message.groupBy).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Opening a thread used to read every message it had ever held. Repair order
+ * threads are purged thirty days after the job closes, but shop chat is kept
+ * for good — so this is the read that grows for as long as the shop exists.
+ */
+describe('MessageRepository.findRecentForConversation', () => {
+  const prisma = { message: { findMany: jest.fn() } };
+  const repo = new MessageRepository(prisma as never);
+  const reader: MessagingUser = { id: 'sarah-1', role: { name: 'STAFF' } };
+
+  const rows = (count: number) =>
+    Array.from({ length: count }, (_, index) => ({ id: `m-${index}` }));
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('asks for one row more than the page, to know whether more remain', async () => {
+    prisma.message.findMany.mockResolvedValue(rows(3));
+
+    await repo.findRecentForConversation('conv-1', reader, 2);
+
+    const args = prisma.message.findMany.mock.calls[0][0];
+    expect(args.take).toBe(3);
+    // Newest first, so a window means the newest window.
+    expect(args.orderBy).toEqual({ createdAt: 'desc' });
+    expect(args.where.AND).toEqual([repo.visibilityFilter(reader)]);
+  });
+
+  it('returns the page oldest first, dropping the extra row', async () => {
+    // Newest first from the database: m-0 is newest, m-2 is the probe.
+    prisma.message.findMany.mockResolvedValue(rows(3));
+
+    const page = await repo.findRecentForConversation('conv-1', reader, 2);
+
+    expect(page.messages.map((m) => m.id)).toEqual(['m-1', 'm-0']);
+    expect(page.hasOlder).toBe(true);
+  });
+
+  it('reports no more history when the thread fits in one page', async () => {
+    prisma.message.findMany.mockResolvedValue(rows(2));
+
+    const page = await repo.findRecentForConversation('conv-1', reader, 2);
+
+    expect(page.messages.map((m) => m.id)).toEqual(['m-1', 'm-0']);
+    expect(page.hasOlder).toBe(false);
+  });
+
+  it('pages backwards from a point, still filtered', async () => {
+    prisma.message.findMany.mockResolvedValue(rows(1));
+    const before = new Date('2026-08-21T17:00:00.000Z');
+
+    await repo.findOlderForConversation('conv-1', reader, before, 2);
+
+    const args = prisma.message.findMany.mock.calls[0][0];
+    expect(args.where.createdAt).toEqual({ lt: before });
+    expect(args.where.AND).toEqual([repo.visibilityFilter(reader)]);
+  });
+});

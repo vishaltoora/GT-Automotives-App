@@ -36,6 +36,8 @@ interface PollingState {
   conversationUnreads: Record<string, number>;
   /** Every unread message counted once — see PollResponseDto. */
   unreadTotal: number;
+  /** Whether the thread holds messages older than the ones loaded. */
+  hasOlder: boolean;
   loading: boolean;
 }
 
@@ -56,6 +58,7 @@ export function useMessagePolling(conversationId?: string) {
     unreadMentions: 0,
     conversationUnreads: {},
     unreadTotal: 0,
+    hasOlder: false,
     loading: Boolean(conversationId),
   });
 
@@ -83,6 +86,9 @@ export function useMessagePolling(conversationId?: string) {
           unreadMentions: result.unreadMentions,
           conversationUnreads: result.conversationUnreads,
           unreadTotal: result.unreadTotal,
+          // Only the opening poll answers this; later ones say nothing about
+          // history and must not overwrite what it said.
+          hasOlder: result.hasOlderMessages ?? prev.hasOlder,
           loading: false,
         };
       });
@@ -111,6 +117,7 @@ export function useMessagePolling(conversationId?: string) {
       unreadMentions: 0,
       conversationUnreads: {},
       unreadTotal: 0,
+      hasOlder: false,
       loading: Boolean(conversationId),
     });
 
@@ -195,6 +202,15 @@ export function useMessagePolling(conversationId?: string) {
     };
   }, [conversationId, applyResult, runPoll]);
 
+  /** Put a page of history in front of what is already loaded. */
+  const prependLocal = useCallback((older: MessageDto[], hasOlder: boolean) => {
+    setState((prev) => {
+      const seen = new Set(prev.messages.map((m) => m.id));
+      const added = older.filter((m) => !seen.has(m.id));
+      return { ...prev, messages: [...added, ...prev.messages], hasOlder };
+    });
+  }, []);
+
   /** Show a just-sent message without waiting for the next round trip. */
   const appendLocal = useCallback((message: MessageDto) => {
     setState((prev) =>
@@ -218,5 +234,12 @@ export function useMessagePolling(conversationId?: string) {
     }));
   }, []);
 
-  return { ...state, refresh: runPoll, appendLocal, replaceLocal, removeLocal };
+  return {
+    ...state,
+    refresh: runPoll,
+    appendLocal,
+    prependLocal,
+    replaceLocal,
+    removeLocal,
+  };
 }
