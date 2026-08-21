@@ -59,9 +59,14 @@ export class OlderMessagesQueryDto {
    * same millisecond share one. Paging on the timestamp alone then excluded
    * whichever twin did not land on the boundary — from this page and from
    * every page after it.
+   *
+   * Optional because the frontend and the backend deploy separately: a tab
+   * opened before the frontend caught up still sends the timestamp alone, and
+   * a 400 in its face is a worse trade than the tie it cannot break.
    */
+  @IsOptional()
   @IsString()
-  beforeId!: string;
+  beforeId?: string;
 }
 
 /** Query for the single poll endpoint. */

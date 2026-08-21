@@ -206,6 +206,23 @@ describe('MessageRepository.findRecentForConversation', () => {
   });
 
   /*
+   * The two apps deploy separately, so a tab opened before the frontend caught
+   * up still pages on the timestamp alone. It gets the old behaviour rather
+   * than a validation error in its face.
+   */
+  it('falls back to the timestamp when the caller sends no id', async () => {
+    prisma.message.findMany.mockResolvedValue(rows(1));
+    const before = new Date('2026-08-21T17:00:00.000Z');
+
+    await repo.findOlderForConversation('conv-1', reader, before, undefined, 2);
+
+    const args = prisma.message.findMany.mock.calls[0][0];
+    expect(args.where.createdAt).toEqual({ lt: before });
+    expect(args.where.OR).toBeUndefined();
+    expect(args.where.AND).toEqual([repo.visibilityFilter(reader)]);
+  });
+
+  /*
    * The catch-up read is capped for the tablet that slept through a long
    * weekend and wakes with a days-old cursor.
    */

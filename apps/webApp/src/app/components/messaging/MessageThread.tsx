@@ -251,10 +251,25 @@ export function MessageThread({
    */
   useEffect(() => {
     const newest = messages[messages.length - 1];
-    if (!newest) return;
-
     const previous = seenNewestIdRef.current;
-    seenNewestIdRef.current = newest.id;
+
+    /*
+     * Recorded before the empty check, not after it.
+     *
+     * The polling hook empties the list when the conversation changes, so a
+     * guard that returns first would leave the previous conversation's newest
+     * id behind — and the next thread would then find that id nowhere in its
+     * own messages, count no arrivals, and open scrolled to the top of its
+     * window with the old thread's count still showing. Nothing reaches that
+     * today because every caller remounts the component, but nothing states
+     * that either.
+     */
+    seenNewestIdRef.current = newest?.id;
+
+    if (!newest) {
+      setMissed(0);
+      return;
+    }
 
     // A page of history changes the list without changing what is newest, so
     // arrivalsSince returns 0 for it — see that module for why this is

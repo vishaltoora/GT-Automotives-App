@@ -175,7 +175,7 @@ export class MessagingService {
     conversationId: string,
     user: MessagingUser,
     before: string,
-    beforeId: string
+    beforeId?: string
   ): Promise<MessagePageDto> {
     await this.ensureMembership(conversationId, user.id);
 
@@ -350,8 +350,8 @@ export class MessagingService {
 
     // An edit re-derives visibility from the new body, so removing the last
     // mention makes a message public. Editing a reply cannot widen it, though:
-    // the inherited floor comes from the parent, same as on create, and from
-    // what was stored if the parent has since been deleted.
+    // the inherited floor comes from the parent, the same as on create, and
+    // still comes from it once the parent has been deleted.
     let visibility: MessageVisibility =
       audience.size > 0 ? 'MENTIONED_ONLY' : 'PUBLIC';
 

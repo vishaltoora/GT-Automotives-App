@@ -135,17 +135,25 @@ export class MessageRepository {
     conversationId: string,
     user: MessagingUser,
     before: Date,
-    beforeId: string,
+    beforeId: string | undefined,
     limit: number = CONVERSATION_PAGE_SIZE
   ): Promise<{ messages: MessageWithRelations[]; hasOlder: boolean }> {
+    // Without an id — a client from before the two deployed apart — the
+    // timestamp has to stand on its own, tie and all.
+    const olderThanCursor = beforeId
+      ? {
+          OR: [
+            { createdAt: { lt: before } },
+            { createdAt: before, id: { lt: beforeId } },
+          ],
+        }
+      : { createdAt: { lt: before } };
+
     const newestFirst = await this.prisma.message.findMany({
       where: {
         conversationId,
         deletedAt: null,
-        OR: [
-          { createdAt: { lt: before } },
-          { createdAt: before, id: { lt: beforeId } },
-        ],
+        ...olderThanCursor,
         AND: [this.visibilityFilter(user)],
       },
       include: MESSAGE_INCLUDE,
