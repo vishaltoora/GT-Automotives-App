@@ -110,13 +110,27 @@ export class MessagingService {
      */
     let messages: MessageWithRelations[] = [];
     let hasOlderMessages: boolean | undefined;
+    /*
+     * What the caller should send back next time.
+     *
+     * Normally the instant this poll ran. When a catch-up is too big to carry
+     * in one response, it becomes the last message actually returned instead,
+     * so the next trip resumes from there rather than stepping over the rest.
+     */
+    let cursor = serverTime;
 
     if (conversationId && sinceDate) {
-      messages = await this.messages.findForConversation(
+      const catchUp = await this.messages.findSinceForConversation(
         conversationId,
         user,
         sinceDate
       );
+      messages = catchUp.messages;
+
+      const last = messages[messages.length - 1];
+      if (catchUp.truncated && last) {
+        cursor = last.createdAt;
+      }
     } else if (conversationId) {
       const page = await this.messages.findRecentForConversation(
         conversationId,
@@ -146,7 +160,7 @@ export class MessagingService {
       conversationUnreads,
       unreadTotal,
       ...(hasOlderMessages === undefined ? {} : { hasOlderMessages }),
-      serverTime: serverTime.toISOString(),
+      serverTime: cursor.toISOString(),
     };
   }
 
@@ -160,14 +174,16 @@ export class MessagingService {
   async getOlderMessages(
     conversationId: string,
     user: MessagingUser,
-    before: string
+    before: string,
+    beforeId?: string
   ): Promise<MessagePageDto> {
     await this.ensureMembership(conversationId, user.id);
 
     const page = await this.messages.findOlderForConversation(
       conversationId,
       user,
-      new Date(before)
+      new Date(before),
+      beforeId
     );
 
     return {
@@ -334,33 +350,53 @@ export class MessagingService {
 
     // An edit re-derives visibility from the new body, so removing the last
     // mention makes a message public. Editing a reply cannot widen it, though:
-    // the inherited floor comes from the parent, same as on create, and from
-    // what was stored if the parent has since been deleted.
+    // the inherited floor comes from the parent, the same as on create, and
+    // still comes from it once the parent has been deleted.
     let visibility: MessageVisibility =
       audience.size > 0 ? 'MENTIONED_ONLY' : 'PUBLIC';
 
     if (existing.parentMessageId) {
-      const parent = await this.messages.findByIdForUser(
-        existing.parentMessageId,
-        user
+      /*
+       * The parent's audience, read whether or not the parent still stands.
+       *
+       * A soft-deleted parent is invisible to the filtered read, and taking
+       * that to mean "no parent" dropped the inherited floor: fixing a typo on
+       * a private reply whose parent had been deleted republished it to the
+       * whole shop. Reading the audience directly keeps the floor, and keeps
+       * it recomputed rather than accumulated — so an editor can still take
+       * off somebody they tagged by mistake, which holding on to the stored
+       * mentions would have made impossible.
+       */
+      const parent = await this.messages.findParentAudience(
+        existing.parentMessageId
       );
 
       if (parent?.visibility === 'MENTIONED_ONLY') {
+        // The floor holds either way: a reply never widens by losing, or being
+        // shut out of, the message it answers.
         visibility = 'MENTIONED_ONLY';
-        parent.mentions.forEach((m) => audience.add(m.userId));
-        audience.add(parent.authorId);
-        audience.delete(user.id);
-      } else if (!parent && existing.visibility === 'MENTIONED_ONLY') {
+
         /*
-         * The parent is gone — soft-deleted, so the filtered read cannot see
-         * it any more. A reply must not gain an audience by losing the message
-         * it answers: without this, fixing a typo on a private reply whose
-         * parent had been deleted republished it to the whole shop. Hold the
-         * floor from what was stored instead.
+         * Whose audience it becomes is a different question from whether it
+         * stays private, and this is where reading past the filter has to stop.
+         *
+         * Being in the parent when the reply was written does not mean being
+         * in it now — its author can edit it, take somebody out of it, or turn
+         * a public message private long afterwards. Copying its current
+         * audience onto the reply regardless would have echoed that audience
+         * straight back in the PATCH response, names and all: an editor could
+         * re-save an old reply on a timer and watch the membership of a
+         * message they cannot read.
          */
-        visibility = 'MENTIONED_ONLY';
-        existing.mentions.forEach((m) => audience.add(m.userId));
-        audience.delete(user.id);
+        const stillInIt =
+          parent.authorId === user.id ||
+          parent.mentionUserIds.includes(user.id);
+
+        if (stillInIt) {
+          parent.mentionUserIds.forEach((id) => audience.add(id));
+          audience.add(parent.authorId);
+          audience.delete(user.id);
+        }
       }
     }
 

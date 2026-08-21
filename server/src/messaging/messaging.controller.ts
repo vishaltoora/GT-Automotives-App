@@ -79,7 +79,12 @@ export class MessagingController {
     @Param('id') conversationId: string,
     @Query() query: OlderMessagesQueryDto
   ) {
-    return this.messaging.getOlderMessages(conversationId, user, query.before);
+    return this.messaging.getOlderMessages(
+      conversationId,
+      user,
+      query.before,
+      query.beforeId
+    );
   }
 
   @Post('conversations/:id/messages')

@@ -111,6 +111,8 @@ export function MessageItem({
      * two kinds of message.
      */
     <Box
+      // The anchor the thread scrolls back to after prepending history.
+      data-message-id={message.id}
       sx={{
         display: 'flex',
         justifyContent: isMine ? 'flex-end' : 'flex-start',

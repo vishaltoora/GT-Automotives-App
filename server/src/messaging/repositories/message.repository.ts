@@ -41,6 +41,33 @@ export type MessageWithRelations = Prisma.MessageGetPayload<{
  */
 export const CONVERSATION_PAGE_SIZE = 50;
 
+/**
+ * How much of a backlog one catch-up poll will carry.
+ *
+ * A tab that slept through a long weekend wakes with a cursor days old, and
+ * "everything since" is then the whole weekend in one response with three
+ * nested includes. Kept close to a page because the cursor resumes: a real
+ * backlog costs an extra trip rather than one big response, and the size of
+ * that response is not something a caller should get to choose by sending an
+ * old enough cursor.
+ */
+export const CATCHUP_LIMIT = 100;
+
+/**
+ * Ordering for every windowed read, newest first.
+ *
+ * `createdAt` alone is not unique — it is `TIMESTAMP(3)` defaulting to the
+ * transaction clock, so two people sending inside the same millisecond get the
+ * same value. Which of them landed on a page boundary was then arbitrary, and
+ * paging on `createdAt < that` excluded its twin from the next page as well:
+ * the message existed and no amount of scrolling back would ever show it. The
+ * id breaks the tie and makes the cursor total.
+ */
+const NEWEST_FIRST = [
+  { createdAt: 'desc' },
+  { id: 'desc' },
+] satisfies Prisma.MessageOrderByWithRelationInput[];
+
 @Injectable()
 export class MessageRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -87,32 +114,7 @@ export class MessageRepository {
         AND: [this.visibilityFilter(user)],
       },
       include: MESSAGE_INCLUDE,
-      orderBy: { createdAt: 'desc' },
-      take: limit + 1,
-    });
-
-    const hasOlder = newestFirst.length > limit;
-    const page = hasOlder ? newestFirst.slice(0, limit) : newestFirst;
-
-    return { messages: page.reverse(), hasOlder };
-  }
-
-  /** The page before a point in a thread, for scrolling back through it. */
-  async findOlderForConversation(
-    conversationId: string,
-    user: MessagingUser,
-    before: Date,
-    limit: number = CONVERSATION_PAGE_SIZE
-  ): Promise<{ messages: MessageWithRelations[]; hasOlder: boolean }> {
-    const newestFirst = await this.prisma.message.findMany({
-      where: {
-        conversationId,
-        deletedAt: null,
-        createdAt: { lt: before },
-        AND: [this.visibilityFilter(user)],
-      },
-      include: MESSAGE_INCLUDE,
-      orderBy: { createdAt: 'desc' },
+      orderBy: NEWEST_FIRST,
       take: limit + 1,
     });
 
@@ -123,26 +125,139 @@ export class MessageRepository {
   }
 
   /**
-   * Everything in a thread after a cursor, oldest first.
+   * The page before a point in a thread, for scrolling back through it.
    *
-   * Bounded by the cursor rather than by a page size: this answers "what has
-   * happened since I last asked", which is a handful of messages at most.
+   * The cursor is the `(createdAt, id)` pair of the oldest message the caller
+   * holds, not the timestamp alone — see NEWEST_FIRST for what a bare
+   * timestamp loses.
    */
-  async findForConversation(
+  async findOlderForConversation(
     conversationId: string,
     user: MessagingUser,
-    since?: Date
-  ): Promise<MessageWithRelations[]> {
-    return this.prisma.message.findMany({
+    before: Date,
+    beforeId: string | undefined,
+    limit: number = CONVERSATION_PAGE_SIZE
+  ): Promise<{ messages: MessageWithRelations[]; hasOlder: boolean }> {
+    // Without an id — a client from before the two deployed apart — the
+    // timestamp has to stand on its own, tie and all.
+    const olderThanCursor = beforeId
+      ? {
+          OR: [
+            { createdAt: { lt: before } },
+            { createdAt: before, id: { lt: beforeId } },
+          ],
+        }
+      : { createdAt: { lt: before } };
+
+    const newestFirst = await this.prisma.message.findMany({
       where: {
         conversationId,
         deletedAt: null,
-        ...(since ? { createdAt: { gt: since } } : {}),
+        ...olderThanCursor,
         AND: [this.visibilityFilter(user)],
       },
       include: MESSAGE_INCLUDE,
-      orderBy: { createdAt: 'asc' },
+      orderBy: NEWEST_FIRST,
+      take: limit + 1,
     });
+
+    const hasOlder = newestFirst.length > limit;
+    const page = hasOlder ? newestFirst.slice(0, limit) : newestFirst;
+
+    return { messages: page.reverse(), hasOlder };
+  }
+
+  /**
+   * What has happened in a thread since a cursor, oldest first.
+   *
+   * Usually a handful of messages — but not always, and the exception is what
+   * this is capped for: a tablet that slept through a long weekend wakes with
+   * a days-old cursor, and "everything since" is then the entire weekend in
+   * one response. `truncated` says the caller has not caught up yet, so the
+   * poll can hand back a cursor that stops at what it actually returned and
+   * let the next trip carry the rest.
+   */
+  async findSinceForConversation(
+    conversationId: string,
+    user: MessagingUser,
+    since: Date,
+    limit: number = CATCHUP_LIMIT
+  ): Promise<{ messages: MessageWithRelations[]; truncated: boolean }> {
+    const rows = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        createdAt: { gt: since },
+        AND: [this.visibilityFilter(user)],
+      },
+      include: MESSAGE_INCLUDE,
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: limit + 1,
+    });
+
+    const truncated = rows.length > limit;
+    if (!truncated) return { messages: rows, truncated };
+
+    /*
+     * Stop the page short of a shared millisecond.
+     *
+     * The cursor that resumes a truncated catch-up is a timestamp — one ISO
+     * string on the wire — so if the last message delivered shares its
+     * millisecond with the first one dropped, `gt` steps over the twin and
+     * that message is never delivered to this tab again. Trimming the trailing
+     * run means the cursor always lands on a clean boundary. The trimmed rows
+     * are not lost: the next trip asks for them.
+     */
+    const page = rows.slice(0, limit);
+    const boundary = page[page.length - 1].createdAt.getTime();
+    const firstDropped = rows[limit];
+
+    // Only when the boundary is genuinely straddled. Otherwise the cursor
+    // already lands cleanly and there is nothing to give up.
+    if (firstDropped.createdAt.getTime() !== boundary) {
+      return { messages: page, truncated };
+    }
+
+    const trimmed = page.filter((m) => m.createdAt.getTime() !== boundary);
+
+    // Unless the whole page is one millisecond, which no shop produces, and
+    // where trimming would leave nothing to advance the cursor with at all.
+    return {
+      messages: trimmed.length > 0 ? trimmed : page,
+      truncated,
+    };
+  }
+
+  /**
+   * Who a message was private to, without its content.
+   *
+   * Deliberately outside the visibility filter and unfiltered by `deletedAt`,
+   * and deliberately returning ids only: it exists so an edit can recompute
+   * the floor a reply inherited even after the parent has been deleted. No
+   * body, no author name — nothing the caller could not already read off the
+   * mentions stored on their own reply.
+   */
+  async findParentAudience(id: string): Promise<{
+    authorId: string;
+    visibility: string;
+    mentionUserIds: string[];
+  } | null> {
+    const parent = await this.prisma.message.findUnique({
+      where: { id },
+      select: {
+        authorId: true,
+        visibility: true,
+        mentions: { select: { userId: true } },
+      },
+    });
+
+    if (!parent) return null;
+
+    return {
+      authorId: parent.authorId,
+      visibility: parent.visibility,
+      mentionUserIds: parent.mentions.map((m) => m.userId),
+    };
   }
 
   /** A single message, or null when this user may not see it. */
