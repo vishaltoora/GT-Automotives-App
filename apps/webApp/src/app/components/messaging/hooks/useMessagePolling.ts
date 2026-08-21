@@ -65,6 +65,8 @@ export function useMessagePolling(conversationId?: string) {
   const cursorRef = useRef<string | undefined>(undefined);
   const abortRef = useRef<AbortController | undefined>(undefined);
   const stoppedRef = useRef(false);
+  /** Ends the current wait early. Set only while the loop is between polls. */
+  const cutSleepShortRef = useRef<(() => void) | null>(null);
 
   const applyResult = useCallback(
     (result: Awaited<ReturnType<typeof pollMessages>>) => {
@@ -112,8 +114,24 @@ export function useMessagePolling(conversationId?: string) {
       loading: Boolean(conversationId),
     });
 
+    /*
+     * Interruptible, because the background wait is a minute long.
+     *
+     * Coming back to the tab used to fire a one-off catch-up while the loop
+     * itself stayed asleep, so the next held poll could be up to a minute
+     * away — a message written ten seconds after somebody returned would not
+     * arrive until the interval that started while they were gone ran out.
+     */
     const sleep = (ms: number) =>
-      new Promise((resolve) => setTimeout(resolve, ms));
+      new Promise<void>((resolve) => {
+        const finish = () => {
+          clearTimeout(timer);
+          cutSleepShortRef.current = null;
+          resolve();
+        };
+        const timer = setTimeout(finish, ms);
+        cutSleepShortRef.current = finish;
+      });
 
     const loop = async () => {
       /*
@@ -161,13 +179,18 @@ export function useMessagePolling(conversationId?: string) {
     void loop();
 
     const onVisibilityChange = () => {
-      if (!document.hidden) void runPoll();
+      if (document.hidden) return;
+      // Catch up now, and let the loop stop waiting so its next pass holds a
+      // connection open again rather than finishing a background interval.
+      void runPoll();
+      cutSleepShortRef.current?.();
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       stoppedRef.current = true;
       abortRef.current?.abort();
+      cutSleepShortRef.current?.();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [conversationId, applyResult, runPoll]);

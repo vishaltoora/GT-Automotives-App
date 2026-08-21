@@ -256,6 +256,7 @@ export class MessagingService {
     this.events.publish({
       conversationId,
       mentionedUserIds: [...audience],
+      visibility,
       authorId: user.id,
     });
 

@@ -89,5 +89,5 @@ export function useViewportFill<T extends HTMLElement>({
     };
   }, [enabled, measure]);
 
-  return { ref, height, remeasure: measure };
+  return { ref, height };
 }

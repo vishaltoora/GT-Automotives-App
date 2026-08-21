@@ -130,7 +130,16 @@ export function MessageThread({
   const [replyTo, setReplyTo] = useState<ReplyTarget | undefined>(
     initialReplyTo
   );
-  const [readMark, setReadMark] = useState<string | null>(null);
+  /*
+   * Three states, not two: a timestamp, `null` for a thread this reader has
+   * never opened, and `undefined` for a thread opened by id — from the
+   * mentions inbox — where nobody fetched the mark. Collapsing the last two
+   * drew a red "New" line above the whole history of a thread somebody had
+   * read a dozen times.
+   */
+  const [readMark, setReadMark] = useState<string | null | undefined>(
+    knownConversationId ? undefined : null
+  );
   const [openError, setOpenError] = useState<string | null>(null);
 
   const { messages, loading, appendLocal, removeLocal } =
@@ -296,8 +305,9 @@ export function MessageThread({
         !previous || dayKey(previous.createdAt) !== dayKey(message.createdAt);
 
       const unread =
+        readMark !== undefined &&
         message.author.id !== currentUserId &&
-        (!readMark || message.createdAt > readMark);
+        (readMark === null || message.createdAt > readMark);
       const firstUnread = unread && !unreadMarked;
       if (firstUnread) unreadMarked = true;
 

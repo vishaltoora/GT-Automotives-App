@@ -463,6 +463,9 @@ describe('MessagingService', () => {
       expect(events.publish).toHaveBeenCalledWith({
         conversationId: 'conv-1',
         mentionedUserIds: ['sarah-1'],
+        // Carried so the wake predicate reads the visibility the row was
+        // stored with rather than guessing it from an empty audience.
+        visibility: 'MENTIONED_ONLY',
         authorId: author.id,
       });
     });
@@ -471,7 +474,7 @@ describe('MessagingService', () => {
       await send('rear brakes done');
 
       expect(events.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ mentionedUserIds: [] })
+        expect.objectContaining({ mentionedUserIds: [], visibility: 'PUBLIC' })
       );
     });
   });

@@ -5,6 +5,14 @@ export interface MessageEvent {
   conversationId: string;
   /** Who the message was made private to, if anyone. */
   mentionedUserIds: string[];
+  /**
+   * As stored on the message, not inferred from the audience.
+   *
+   * They part company on a message that tags only its own author: the row is
+   * MENTIONED_ONLY, but the audience is empty once the author is removed from
+   * it, so an empty list read as "public" and woke the whole shop.
+   */
+  visibility: 'PUBLIC' | 'MENTIONED_ONLY';
   /** Excluded from their own wake-up: they already have the message. */
   authorId: string;
 }
@@ -67,7 +75,7 @@ export class MessageEventsService implements OnModuleDestroy {
         // An untagged message is visible to everybody, so it moves everybody's
         // unread count — including people with no thread open, which is the
         // whole reason the badge exists.
-        const isPublic = event.mentionedUserIds.length === 0;
+        const isPublic = event.visibility === 'PUBLIC';
 
         // Only readers the message actually reaches. Having the thread open
         // used to be enough on its own, which meant a private message returned

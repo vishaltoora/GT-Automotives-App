@@ -15,6 +15,7 @@ describe('MessageEventsService', () => {
     events.publish({
       conversationId: 'conv-1',
       mentionedUserIds: [],
+      visibility: 'PUBLIC' as const,
       authorId: 'someone-else',
       ...overrides,
     });
@@ -31,7 +32,11 @@ describe('MessageEventsService', () => {
   // is a private message you are not part of.
   it('does not wake for a private message you are not in', async () => {
     const waiting = events.waitForMessage('sarah-1', 60);
-    publish({ conversationId: 'conv-2', mentionedUserIds: ['mike-1'] });
+    publish({
+      conversationId: 'conv-2',
+      mentionedUserIds: ['mike-1'],
+      visibility: 'MENTIONED_ONLY',
+    });
 
     await expect(waiting).resolves.toBe(false);
   });
@@ -40,14 +45,22 @@ describe('MessageEventsService', () => {
   // something else — that is the whole point of the mentions badge.
   it('wakes a tagged user with no thread open', async () => {
     const waiting = events.waitForMessage('sarah-1', 1000);
-    publish({ conversationId: 'conv-9', mentionedUserIds: ['sarah-1'] });
+    publish({
+      conversationId: 'conv-9',
+      mentionedUserIds: ['sarah-1'],
+      visibility: 'MENTIONED_ONLY',
+    });
 
     await expect(waiting).resolves.toBe(true);
   });
 
   it('does not wake someone who was not tagged', async () => {
     const waiting = events.waitForMessage('mike-1', 60);
-    publish({ conversationId: 'conv-9', mentionedUserIds: ['sarah-1'] });
+    publish({
+      conversationId: 'conv-9',
+      mentionedUserIds: ['sarah-1'],
+      visibility: 'MENTIONED_ONLY',
+    });
 
     await expect(waiting).resolves.toBe(false);
   });
@@ -128,7 +141,28 @@ describe('MessageEventsService', () => {
     // people tagged in it, which the poll re-checks after any wake-up.
     it('does not widen who a private message wakes', async () => {
       const waiting = events.waitForMessage('mike-1', 60);
-      publish({ conversationId: 'conv-1', mentionedUserIds: ['sarah-1'] });
+      publish({
+        conversationId: 'conv-1',
+        mentionedUserIds: ['sarah-1'],
+        visibility: 'MENTIONED_ONLY',
+      });
+
+      await expect(waiting).resolves.toBe(false);
+    });
+
+    /*
+     * A message tagging nobody but its own author is stored MENTIONED_ONLY
+     * with an empty audience — the author is taken out of their own mention
+     * list. Reading "public" off that empty list woke the whole shop for a
+     * message only one person can see.
+     */
+    it('does not wake anyone for a note somebody tagged themselves in', async () => {
+      const waiting = events.waitForMessage('mike-1', 60);
+      publish({
+        conversationId: 'conv-1',
+        mentionedUserIds: [],
+        visibility: 'MENTIONED_ONLY',
+      });
 
       await expect(waiting).resolves.toBe(false);
     });
@@ -142,7 +176,11 @@ describe('MessageEventsService', () => {
      */
     it('does not wake a bystander watching the thread it lands in', async () => {
       const waiting = events.waitForMessage('admin-1', 60);
-      publish({ conversationId: 'conv-1', mentionedUserIds: ['sarah-1'] });
+      publish({
+        conversationId: 'conv-1',
+        mentionedUserIds: ['sarah-1'],
+        visibility: 'MENTIONED_ONLY',
+      });
 
       await expect(waiting).resolves.toBe(false);
     });

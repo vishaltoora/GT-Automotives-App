@@ -128,8 +128,11 @@ stream useless for debugging.
 
 ### 4.4 Polling discipline
 
-1. **Pause on `document.hidden`** (Page Visibility API) — tabs left open overnight are what
-   turn 54k requests into 130k. Cuts 60–80%.
+1. **Back off on `document.hidden`** (Page Visibility API) — tabs left open overnight are
+   what turn 54k requests into 130k. A hidden tab drops to one plain request a minute
+   (§10.1) instead of holding a connection open. It originally stopped polling altogether,
+   which cut more but left nothing able to notice a message had arrived while somebody was
+   in another tab — the one moment being told is worth anything.
 2. **Idle backoff** — 10s while the thread is active, 60s after 2 minutes of silence.
 3. **Skip the poll route** in the proxy's request logger.
 4. Optional: 60s in-memory `clerkId → user` cache in the Clerk strategy.
@@ -783,7 +786,7 @@ Neither is caused by this epic; both are worth their own tickets.
 | Reply to a private message leaks it                                   | Privacy inheritance (§6.2)                                                                                                                                                                                                                          |
 | Private message leaks via API payload                                 | Filter in the repository; assert on network response in tests                                                                                                                                                                                       |
 | Log flood degrades B1                                                 | Phase 0, before any polling ships                                                                                                                                                                                                                   |
-| Idle tabs polling overnight                                           | Page Visibility pause + idle backoff (§4.4)                                                                                                                                                                                                         |
+| Idle tabs polling overnight                                           | Page Visibility backoff to one request a minute (§4.4, §10.1)                                                                                                                                                                                       |
 | Timezone bug in timestamps                                            | Real instants only; never business-calendar helpers (§6.6)                                                                                                                                                                                          |
 | Client-forged mentions or visibility                                  | Server re-derives everything from the body                                                                                                                                                                                                          |
 | Accidental RO close destroys the thread                               | 30-day delay before purge (§12.1); `reopen()` removes it from the purge set entirely                                                                                                                                                                |

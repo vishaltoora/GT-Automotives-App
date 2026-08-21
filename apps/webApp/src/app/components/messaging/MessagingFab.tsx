@@ -35,13 +35,14 @@ interface Props {
 }
 
 /**
- * Always-present entry point to messaging, with the count of things tagged at
- * you.
+ * Always-present entry point to messaging, and the thing that carries every
+ * count.
  *
- * Notification for this feature is in-app only, so the badge is the whole
- * mechanism — nothing else tells somebody they were tagged. It therefore polls
- * with no conversation open, which is what keeps the count live wherever the
- * user happens to be in the app.
+ * Nothing here sends an SMS or an email, so what this component does is the
+ * whole of how anybody finds out: the badge, the ping, the tab title and — for
+ * a tab that is not in front of them — a desktop notification. It therefore
+ * polls with no conversation open, which is what keeps all four live wherever
+ * the user happens to be in the app.
  */
 export function MessagingFab({ currentUserId, isAdmin }: Props) {
   const [open, setOpen] = useState(false);
