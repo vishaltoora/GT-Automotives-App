@@ -530,21 +530,58 @@ composer visibility strip, polling discipline (§4.4), long-polling swap, and th
 retention purge job (§12). **This phase completes notifications** — there is no separate
 notification phase.
 
-### Notifications — in-app only, no separate phase ⛔
+### Notifications — no SMS, no email, no separate phase ⛔
 
-Messaging sends **no SMS, no email, and no browser push.** It does not import `SmsModule` or
-`EmailService`, and adds no `SmsType` enum value. Telnyx stays scoped to customer appointment
-confirmations and reminders as documented in the
-[SMS Integration Plan](./sms-integration-plan.md).
+Messaging sends **no SMS and no email.** It does not import `SmsModule` or `EmailService`,
+and adds no `SmsType` enum value. Telnyx stays scoped to customer appointment confirmations
+and reminders as documented in the [SMS Integration Plan](./sms-integration-plan.md).
 
-Everything a user needs to notice is delivered by the poll in §8.1:
+Everything is carried by the poll in §8.1, on four surfaces:
 
-- **Unread badge** on the Messages sidebar entry (count of unread mentions)
-- **Per-conversation unread dots** in the conversation list and on the RO detail tab
+- **Unread badge** on the floating messages button — mentions _and_ unread messages, the
+  same total the sound listens to
+- **A two-note ping** on any rise in that total, muted from the panel header, remembered in
+  localStorage
+- **The browser tab title** — `(3) GT Automotives`, which costs nobody a permission prompt
+- **A desktop notification** while the tab is in the background (§10.1)
 - **My Mentions inbox** as the catch-up surface
 
-This is genuinely sufficient for a shop floor where staff keep the app open all day, and it
-costs nothing beyond the poll that's already running. See §13 for the one tradeoff it carries.
+**Web Push is still out** — see §10.1 for the line between the two.
+
+### 10.1 Desktop notifications — added Aug 21, 2026
+
+Shipped in-app-only first, and the gap showed up within a day of real use: the badge and the
+ping only reach somebody with the app in front of them, and the tagged work that goes unseen
+is the work tagged while they were in another tab.
+
+The **Notification API** closes that without a service worker, a vendor, or a monthly cost.
+It is not Web Push, and the difference is what each one reaches:
+
+|                                | Reaches                                                     | Needs                                                |
+| ------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
+| **Notification API** (shipped) | any tab, background or minimised, while the browser is open | a permission click                                   |
+| **Web Push** (still GA-72)     | the browser closed entirely                                 | service worker + VAPID; iOS only as an installed PWA |
+
+Three rules the implementation holds to, all covered by
+`useBrowserNotifications.spec.ts`:
+
+1. **Nothing about the message is in the toast** — no author, no body, no RO number. A
+   private message exists so only the people in it can read it, and a notification on a shop
+   counter screen is read by whoever walks past. It says how much arrived; the rest stays
+   behind the login.
+2. **Only while the tab is hidden.** With the page in front of them the badge already moved
+   and the ping already sounded.
+3. **Only on a rise, never on the first reading**, or opening the app would announce
+   everything that arrived while it was shut. All notifications share one `tag`, so stepping
+   away for an hour leaves one notification that updated rather than a stack.
+
+The permission prompt is wired to a bell in the panel header, never to page load — browsers
+refuse an ungestured prompt, and the ones that allow it penalise the site.
+
+**This changed the polling contract.** A backgrounded tab used to stop polling entirely,
+which would have made all of the above dead on arrival. It now drops to one plain request a
+minute (`BACKGROUND_GAP_MS`) instead of holding a connection open — roughly 15 requests a
+minute across the shop, against the 1.5 req/s budget in §4.2.
 
 ### Phase 3 — Optional — [GA-72](https://gt-automotives.atlassian.net/browse/GA-72)
 
@@ -740,19 +777,19 @@ Neither is caused by this epic; both are worth their own tickets.
 
 ## 13. Risks
 
-| Risk                                                                  | Mitigation                                                                                                                                                                               |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tagged work goes unseen when that person is off or not in the app** | Accepted tradeoff of in-app-only notification. Mitigations: My Mentions inbox, tag a second person for time-critical work. If this bites in practice, revisit Web Push — free, no vendor |
-| Reply to a private message leaks it                                   | Privacy inheritance (§6.2)                                                                                                                                                               |
-| Private message leaks via API payload                                 | Filter in the repository; assert on network response in tests                                                                                                                            |
-| Log flood degrades B1                                                 | Phase 0, before any polling ships                                                                                                                                                        |
-| Idle tabs polling overnight                                           | Page Visibility pause + idle backoff (§4.4)                                                                                                                                              |
-| Timezone bug in timestamps                                            | Real instants only; never business-calendar helpers (§6.6)                                                                                                                               |
-| Client-forged mentions or visibility                                  | Server re-derives everything from the body                                                                                                                                               |
-| Accidental RO close destroys the thread                               | 30-day delay before purge (§12.1); `reopen()` removes it from the purge set entirely                                                                                                     |
-| Purge deletes more than intended                                      | Scoped to `entityType: REPAIR_ORDER`; explicit tests that general chat and RO/invoice rows survive                                                                                       |
-| Schema drift                                                          | `migration-create.sh`, never `db push`                                                                                                                                                   |
-| Staff privacy expectations                                            | D4: no role bypass at all, so the composer's "Only Sarah will see this" is literally true                                                                                                |
+| Risk                                                                  | Mitigation                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tagged work goes unseen when that person is off or not in the app** | Largely closed by desktop notifications (§10.1), which reach any background tab while the browser is open. Remaining gap is a closed browser — mitigations: My Mentions inbox, tag a second person for time-critical work, and Web Push if it bites |
+| Reply to a private message leaks it                                   | Privacy inheritance (§6.2)                                                                                                                                                                                                                          |
+| Private message leaks via API payload                                 | Filter in the repository; assert on network response in tests                                                                                                                                                                                       |
+| Log flood degrades B1                                                 | Phase 0, before any polling ships                                                                                                                                                                                                                   |
+| Idle tabs polling overnight                                           | Page Visibility pause + idle backoff (§4.4)                                                                                                                                                                                                         |
+| Timezone bug in timestamps                                            | Real instants only; never business-calendar helpers (§6.6)                                                                                                                                                                                          |
+| Client-forged mentions or visibility                                  | Server re-derives everything from the body                                                                                                                                                                                                          |
+| Accidental RO close destroys the thread                               | 30-day delay before purge (§12.1); `reopen()` removes it from the purge set entirely                                                                                                                                                                |
+| Purge deletes more than intended                                      | Scoped to `entityType: REPAIR_ORDER`; explicit tests that general chat and RO/invoice rows survive                                                                                                                                                  |
+| Schema drift                                                          | `migration-create.sh`, never `db push`                                                                                                                                                                                                              |
+| Staff privacy expectations                                            | D4: no role bypass at all, so the composer's "Only Sarah will see this" is literally true                                                                                                                                                           |
 
 ---
 

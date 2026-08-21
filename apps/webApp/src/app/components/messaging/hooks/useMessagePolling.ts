@@ -15,6 +15,18 @@ const HOLD_MS = 25_000;
 /** Breather between holds, so a server answering instantly cannot spin. */
 const GAP_MS = 500;
 
+/**
+ * Poll rate while the tab is in the background.
+ *
+ * Backgrounded tabs used to stop asking altogether, which meant nothing could
+ * tell you a message had arrived while you were somewhere else — the one
+ * moment being told is worth anything. A plain request a minute costs about
+ * fifteen requests a minute across the whole shop and keeps the badge, the
+ * ping and the desktop notification alive without holding a connection open
+ * for a tab nobody is looking at.
+ */
+const BACKGROUND_GAP_MS = 60_000;
+
 /** Backoff after a failure, so an outage is not hammered. */
 const ERROR_BACKOFF_MS = 5_000;
 
@@ -29,10 +41,12 @@ interface PollingState {
  * Every bit of transport for messaging lives here, so components only ever see
  * an accumulated message list.
  *
- * Polling stops entirely while the tab is hidden — a window left open
- * overnight is what turns a reasonable number of requests into a silly one —
- * and resumes with an immediate catch-up when someone comes back, rather than
- * making them wait out a hold that started before they left.
+ * A tab in front holds a request open, so a message appears the moment it is
+ * written. A tab in the background drops to one plain request a minute — cheap
+ * enough for a window left open overnight, but still enough to raise the
+ * badge, the ping and the desktop notification while somebody is working
+ * somewhere else. Coming back polls immediately rather than making them wait
+ * out an interval that started before they left.
  */
 export function useMessagePolling(conversationId?: string) {
   const [state, setState] = useState<PollingState>({
@@ -110,10 +124,9 @@ export function useMessagePolling(conversationId?: string) {
       let holdThisPass = false;
 
       while (!stoppedRef.current) {
-        if (document.hidden) {
-          await sleep(GAP_MS);
-          continue;
-        }
+        // Read once per pass: whether the tab is in front decides both how the
+        // request is made and how long to wait before the next one.
+        const backgrounded = document.hidden;
 
         const controller = new AbortController();
         abortRef.current = controller;
@@ -122,13 +135,14 @@ export function useMessagePolling(conversationId?: string) {
           const result = await pollMessages({
             conversationId,
             since: cursorRef.current,
-            waitMs: holdThisPass ? HOLD_MS : undefined,
+            // Never hold a connection open for a tab nobody is looking at.
+            waitMs: backgrounded || !holdThisPass ? undefined : HOLD_MS,
             signal: controller.signal,
           });
           holdThisPass = true;
           if (stoppedRef.current) return;
           applyResult(result);
-          await sleep(GAP_MS);
+          await sleep(backgrounded ? BACKGROUND_GAP_MS : GAP_MS);
         } catch {
           if (stoppedRef.current || controller.signal.aborted) return;
           // A failed poll is not worth interrupting anyone over. Back off and

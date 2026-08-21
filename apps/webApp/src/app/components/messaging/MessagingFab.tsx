@@ -16,8 +16,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import { useMessagePolling } from './hooks/useMessagePolling';
 import { useNotificationSound } from './hooks/useNotificationSound';
+import { useBrowserNotifications } from './hooks/useBrowserNotifications';
+import { useDocumentTitleBadge } from './hooks/useDocumentTitleBadge';
 import { MessageThread } from './MessageThread';
 import { MentionsList } from './MentionsList';
 import { onReadAnnounced } from './messaging-read-signal';
@@ -97,9 +102,29 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
   const { enabled: soundEnabled, setEnabled: setSoundEnabled } =
     useNotificationSound(unreadTotal);
 
+  // Works in a background tab with nobody's permission needed, which makes it
+  // the floor under everything else here.
+  useDocumentTitleBadge(unreadTotal);
+
+  const notifications = useBrowserNotifications({
+    unreadTotal,
+    unreadMentions,
+    // Clicking the toast should land on the messages, not just the app.
+    onActivate: () => setOpen(true),
+  });
+
   // The count is held open in a long poll, so it would otherwise stay wrong
   // for up to twenty-five seconds after something was read.
   useEffect(() => onReadAnnounced(() => void refresh()), [refresh]);
+
+  const notificationTooltip =
+    notifications.permission === 'denied'
+      ? 'Notifications are blocked in your browser settings'
+      : notifications.permission !== 'granted'
+      ? 'Notify me when I am not on this tab'
+      : notifications.enabled
+      ? 'Turn off notifications when I am away'
+      : 'Notify me when I am not on this tab';
 
   return (
     <>
@@ -107,9 +132,7 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
         <Fab
           color="primary"
           aria-label={
-            unreadMentions > 0
-              ? `Messages, ${unreadMentions} unread`
-              : 'Messages'
+            unreadTotal > 0 ? `Messages, ${unreadTotal} unread` : 'Messages'
           }
           onClick={() => setOpen(true)}
           sx={{
@@ -119,7 +142,13 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
             zIndex: (theme) => theme.zIndex.drawer - 1,
           }}
         >
-          <Badge badgeContent={unreadMentions} color="error" max={99}>
+          {/*
+            Everything unread, matching the ping and the tab title. The badge
+            used to count mentions alone, so a shop-chat message rang a sound
+            with no number anywhere to explain it. The Mentions tab inside
+            still carries the narrower count.
+          */}
+          <Badge badgeContent={unreadTotal} color="error" max={99}>
             <ChatIcon />
           </Badge>
         </Fab>
@@ -166,6 +195,32 @@ export function MessagingFab({ currentUserId, isAdmin }: Props) {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {notifications.permission !== 'unsupported' && (
+              <Tooltip title={notificationTooltip}>
+                {/* Wrapped: a disabled button gives a Tooltip nothing to hang on. */}
+                <span>
+                  <IconButton
+                    disabled={notifications.permission === 'denied'}
+                    onClick={() => {
+                      if (notifications.permission === 'granted') {
+                        notifications.setEnabled(!notifications.enabled);
+                      } else {
+                        void notifications.request();
+                      }
+                    }}
+                    aria-label={notificationTooltip}
+                  >
+                    {notifications.permission === 'denied' ? (
+                      <NotificationsOffIcon />
+                    ) : notifications.active ? (
+                      <NotificationsActiveIcon />
+                    ) : (
+                      <NotificationsNoneIcon />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
             <Tooltip title={soundEnabled ? 'Mute new-message sound' : 'Unmute'}>
               <IconButton
                 onClick={() => setSoundEnabled(!soundEnabled)}
